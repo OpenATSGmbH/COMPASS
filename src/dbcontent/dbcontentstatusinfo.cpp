@@ -81,7 +81,7 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         // cat019: 001 Start of Update Cycle
         // cat023: ?
         // cat034: 001 North marker message;002 Sector crossing message;
-        // cat065: 002 End of Batch
+        // cat065: 002 End of Batch, I020 Batch Number 
 
         unsigned char message_type_cycle{255};
 
@@ -122,6 +122,16 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         traced_assert(buf_it.second->has<unsigned char>(message_type_var.name()));
         NullableVector<unsigned char>& message_type_vec = buf_it.second->get<unsigned char>(message_type_var.name());
 
+        NullableVector<unsigned char>* batch_number_vec {nullptr};
+
+        if (dbcontent_name == "CAT065")
+        {
+            traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
+            Variable& batch_number_var = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_);
+            traced_assert(buf_it.second->has<unsigned char>(batch_number_var.name()));
+            batch_number_vec = &buf_it.second->get<unsigned char>(batch_number_var.name());
+        }
+
         traced_assert(ds_id_vec.isNeverNull());
         traced_assert(line_id_vec.isNeverNull());
 
@@ -133,6 +143,10 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
                 && message_type_vec.get(cnt) == message_type_cycle 
                 && !timestamp_vec.isNull(cnt))
             {
+                // skip if batch number does not mark beginning of batch
+                if (batch_number_vec && !batch_number_vec->isNull(cnt) && batch_number_vec->get(cnt) != 0)
+                    continue;
+
                 scan_info_[ds_id_vec.get(cnt)][line_id_vec.get(cnt)].push_back(
                     timestamp_vec.get(cnt));
             }

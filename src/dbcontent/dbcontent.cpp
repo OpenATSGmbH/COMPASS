@@ -145,6 +145,8 @@ const Property DBContent::var_cat062_vy_stddev_ {"Vy StdDev", PropertyDataType::
 const Property DBContent::var_cat063_sensor_sac_ {"Sensor SAC", PropertyDataType::UCHAR};
 const Property DBContent::var_cat063_sensor_sic_ {"Sensor SIC", PropertyDataType::UCHAR};
 
+const Property DBContent::var_cat065_batch_number_ {"Batch Number", PropertyDataType::UCHAR};
+
 const Property DBContent::selected_var {"selected", PropertyDataType::BOOL};
 
 /**

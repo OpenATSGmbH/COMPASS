@@ -228,6 +228,8 @@ public:
     static const Property var_cat063_sensor_sac_;
     static const Property var_cat063_sensor_sic_;
 
+    static const Property var_cat065_batch_number_;
+
     static const Property selected_var;
 
 public:

@@ -150,6 +150,12 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
     if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_))
         read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
 
+    if (dbcontent_name == "CAT065")
+    {
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
+    }
+
     read_set.add(dbContent::TargetReportAccessor::getReadSetFor(dbcontent_name));
 
     return read_set;
