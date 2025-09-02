@@ -21,6 +21,8 @@
 
 #include <boost/optional.hpp>
 
+#include <vector>
+
 /**
  * https://stackoverflow.com/questions/41538095/evaluate-multivariate-normal-gaussian-density-in-c
 */
