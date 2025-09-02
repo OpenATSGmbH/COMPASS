@@ -760,6 +760,136 @@
                     "short_name": "MA",
                     "unit": ""
                 }
+            },
+            "VariableRefTrajNumContribSources": {
+                "parameters": {
+                    "data_type_str": "UINT",
+                    "db_column_name": "contrib_sources_num",
+                    "description": "Number of Contributing Sources",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Contributing Sources Number",
+                    "representation_str": "STANDARD",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajContribSources": {
+                "parameters": {
+                    "data_type_str": "JSON",
+                    "db_column_name": "contrib_sources",
+                    "description": "Contributing Sources",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Contributing Source",
+                    "representation_str": "STANDARD",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajContribADSBAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "contrib_adsb_age",
+                    "description": "Time since last updated by contributing ADS-B",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Contributing ADS-B Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajContribMLATAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "contrib_mlat_age",
+                    "description": "Time since last updated by contributing MLAT",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Contributing MLAT Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            }, 
+            "VariableRefTrajContribRadarAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "contrib_radar_age",
+                    "description": "Time since last updated by contributing Radar",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Contributing Radar Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajContribTrackerAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "contrib_tracker_age",
+                    "description": "Time since last updated by contributing Tracker",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Contributing Tracker Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },  
+            "VariableRefTrajContribRefTrajAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "contrib_reftraj_age",
+                    "description": "Time since last updated by contributing RefTraj",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Contributing RefTraj Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajPriUpdateAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "update_age_primary",
+                    "description": "Time since last updated by primary source",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Primary Update Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajModeACUpdateAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "update_age_modeac",
+                    "description": "Time since last updated by Mode A/C",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Mode A/C Update Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajModeACUpdateAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "update_age_modes",
+                    "description": "Time since last updated by Mode S",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Mode S Update Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
             }
         }
     }

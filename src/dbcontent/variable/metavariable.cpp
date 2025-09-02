@@ -38,6 +38,8 @@ MetaVariable::MetaVariable(const std::string& class_id, const std::string& insta
 {
     registerParameter("name", &name_, std::string());
 
+    registerParameter("dbcont_variables", &dbcont_variables_, nlohmann::json::object());
+
     // DBContVAR LOWERCASE HACK
     // boost::algorithm::to_lower(name_);
 
@@ -45,44 +47,12 @@ MetaVariable::MetaVariable(const std::string& class_id, const std::string& insta
 
     createSubConfigurables();
 
-    checkSubVariables();
-    updateDescription();
-}
-
-MetaVariable::~MetaVariable()
-{
-    if (widget_)
+    loginf << "name " << name_;
+    for (auto& [dbcontent_name, dbcontvar_name] : dbcont_variables_.items())
     {
-        delete widget_;
-        widget_ = nullptr;
-    }
+        loginf << "dbcontent " << dbcontent_name << ": variable name '" << dbcontvar_name << "'";
 
-    for (auto& it : definitions_)
-        delete it.second;
-
-    definitions_.clear();
-    variables_.clear();
-}
-
-void MetaVariable::checkSubConfigurables()
-{
-    // nothing to do here
-}
-
-void MetaVariable::generateSubConfigurable(const std::string& class_id,
-                                              const std::string& instance_id)
-{
-    if (class_id.compare("VariableDefinition") == 0)
-    {
-        VariableDefinition* definition = new VariableDefinition(class_id, instance_id, this);
-
-        const std::string& dbcontent_name = definition->dbContentName();
-        std::string dbcontvar_name = definition->variableName();
-
-        // DBContVAR LOWERCASE HACK
-        // boost::algorithm::to_lower(dbcontvar_name);
-
-        if (!object_manager_.existsDBContent(dbcontent_name))
+if (!object_manager_.existsDBContent(dbcontent_name))
         {
             logerr << "name " << name_
                    << " dbcontvariable definition " << instance_id << " has unknown dbcont, ignoring";
@@ -110,13 +80,34 @@ void MetaVariable::generateSubConfigurable(const std::string& class_id,
         traced_assert(object_manager_.dbContent(dbcontent_name).hasVariable(dbcontvar_name));
         traced_assert(variables_.find(dbcontent_name) == variables_.end());
 
-        definitions_[dbcontent_name] = definition;
         variables_.insert(std::pair<std::string, Variable&>(
             dbcontent_name, object_manager_.dbContent(dbcontent_name).variable(dbcontvar_name)));
     }
-    else
-        throw std::runtime_error("MetaVariable: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+
+    checkSubVariables();
+    updateDescription();
+}
+
+MetaVariable::~MetaVariable()
+{
+    if (widget_)
+    {
+        delete widget_;
+        widget_ = nullptr;
+    }
+
+    variables_.clear();
+}
+
+void MetaVariable::checkSubConfigurables()
+{
+    // nothing to do here
+}
+
+void MetaVariable::generateSubConfigurable(const std::string& class_id,
+                                              const std::string& instance_id)
+{
+    throw std::runtime_error("MetaVariable: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 bool MetaVariable::existsIn(const std::string& dbcontent_name)
@@ -152,8 +143,8 @@ void MetaVariable::removeVariable(const std::string& dbcontent_name)
 {
     loginf << name_ << ": dbcont " << dbcontent_name;
     traced_assert(existsIn(dbcontent_name));
-    delete definitions_.at(dbcontent_name);
-    definitions_.erase(dbcontent_name);
+    
+    dbcont_variables_.erase(dbcontent_name);
     variables_.erase(dbcontent_name);
 
     updateDescription();
@@ -166,13 +157,7 @@ void MetaVariable::addVariable(const std::string& dbcontent_name, const std::str
 
     traced_assert(!existsIn(dbcontent_name));
 
-    std::string instance_id = "VariableDefinition" + dbcontent_name + dbcontvariable_name + "0";
-
-    auto config = Configuration::create("VariableDefinition", instance_id);
-    config->addParameter<std::string>("dbcontent_name", dbcontent_name);
-    config->addParameter<std::string>("variable_name", dbcontvariable_name);
-
-    generateSubConfigurableFromConfig(std::move(config));
+    dbcont_variables_[dbcontent_name] = dbcontvariable_name;
     updateDescription();
 }
 
@@ -304,38 +289,6 @@ Variable::Representation MetaVariable::representation()
 //    traced_assert(variables_.size());
 //    return variables_.begin()->second.getRepresentationStringFromValue(getMaxString());
 //}
-
-void MetaVariable::removeOutdatedVariables()
-{
-    loginf << name();
-
-    bool delete_var;
-
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
-    for (auto var_it = definitions_.begin(); var_it != definitions_.end();)
-    {
-        delete_var = false;
-
-        if (!dbcont_man.existsDBContent(var_it->second->dbContentName()))
-            delete_var = true;
-        else if (!dbcont_man.dbContent(var_it->second->dbContentName())
-                      .hasVariable(var_it->second->variableName()))
-            delete_var = true;
-
-        if (delete_var)
-        {
-            loginf << "removing var " << var_it->first;
-            traced_assert(variables_.count(var_it->first));
-            variables_.erase(var_it->first);
-
-            delete var_it->second;
-            definitions_.erase(var_it++);
-        }
-        else
-            ++var_it;
-    }
-}
 
 bool MetaVariable::hasDBContent() const
 {
