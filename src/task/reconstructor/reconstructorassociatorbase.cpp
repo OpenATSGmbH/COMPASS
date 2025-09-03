@@ -246,8 +246,7 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
             reconstructor().acc_estimator_->correctPosition(tr);
         }
 
-        is_unreliable_primary_only =
-            tr.dbcont_id_ != 62 && tr.dbcont_id_ != 255 && tr.isPrimaryOnlyDetection();
+        is_unreliable_primary_only = tr.isUnreliablePrimaryOnlyDetection();
 
         if (do_debug_rec_num)
             loginf << "is_unreliable_primary_only " << is_unreliable_primary_only;
@@ -297,6 +296,8 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
             if (do_debug_rec_num)
                 loginf << "DBG adding to unassoc_rec_nums_";
 
+            ReconstructorTarget::globalStats().num_sec_unassoc += 1;
+
             unassoc_rec_nums_.push_back(rec_num);
         }
     }
@@ -317,6 +318,8 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
         batch_stats.batch_po_size_max   = std::max(batch_stats.batch_po_size_max, n_po);
         batch_stats.batch_po_size_mean += n_po;
         batch_stats.num_batches_po     += 1;
+
+        ReconstructorTarget::globalStats().num_po_unassoc += unreliable_primary_only_trs.size();
 
         associateUnreliablePrimaryOnly(ts, unreliable_primary_only_trs, do_debug_rec_num);
     }
@@ -535,7 +538,6 @@ void ReconstructorAssociatorBase::retryAssociateTargetReports()
 
     unsigned int assocated_cnt{0};
 
-
     for (auto rec_num_it = unassoc_rec_nums_.rbegin(); rec_num_it != unassoc_rec_nums_.rend();)
     {
         if (reconstructor().isCancelled())
@@ -551,6 +553,7 @@ void ReconstructorAssociatorBase::retryAssociateTargetReports()
                    && reconstructor().task().debugSettings().debugRecNum(rec_num);
 
         dbContent::targetReport::ReconstructorInfo& tr = reconstructor().target_reports_.at(rec_num);
+        bool is_unreliable_primary_only = tr.isUnreliablePrimaryOnlyDetection();
 
         //do_debug = tr.dbcont_id_ == 10;
 
@@ -579,6 +582,11 @@ void ReconstructorAssociatorBase::retryAssociateTargetReports()
         {
             if (do_debug || reconstructor().task().debugSettings().debugUTN(utn))
                 loginf << "DBG retry-associating tr " << rec_num << " to UTN " << utn;
+
+            if (is_unreliable_primary_only)
+                ReconstructorTarget::globalStats().num_po_reassociated += 1;
+            else
+                ReconstructorTarget::globalStats().num_sec_reassociated += 1;
 
             associate(tr, utn);
 

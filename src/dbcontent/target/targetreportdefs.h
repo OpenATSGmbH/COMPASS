@@ -261,6 +261,7 @@ struct ReconstructorInfo : public BaseInfo
     bool isModeSDetection() const;
     bool isModeACDetection() const;
     bool isPrimaryOnlyDetection() const;
+    bool isUnreliablePrimaryOnlyDetection() const;
 
     bool isOnGround() const; // false if unknown
 

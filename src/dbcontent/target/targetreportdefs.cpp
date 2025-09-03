@@ -262,6 +262,11 @@ bool ReconstructorInfo::isPrimaryOnlyDetection() const
     return !(acad_ || acid_ || mode_a_code_ || barometric_altitude_);
 }
 
+bool ReconstructorInfo::isUnreliablePrimaryOnlyDetection() const
+{
+    return dbcont_id_ != 62 && dbcont_id_ != 255 && isPrimaryOnlyDetection();
+}
+
 bool ReconstructorInfo::isOnGround() const
 {
     if (data_source_is_ground_only)
