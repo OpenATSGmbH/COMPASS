@@ -965,7 +965,7 @@ shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const DBContent& object,
     for (auto var_it : read_list.getSet())
     {
         Variable* variable = var_it;
-        property_list.addProperty(variable->dbColumnName(), variable->dataType());
+        property_list.addProperty(variable->dbColumnOrExpression(), variable->dataType());
     }
 
     return getSelectCommand(object.dbTableName(), 
@@ -1000,7 +1000,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
         if (!first)
             ss << ", ";
 
-        ss << table_name << "." << p.name();
+        ss << p.name();
 
         first = false;
     }

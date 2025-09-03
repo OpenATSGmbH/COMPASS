@@ -893,32 +893,32 @@ void Buffer::transformVariables(dbContent::VariableSet& list, bool dbcol2dbcontv
 
     const vector<dbContent::Variable*>& variables = list.getSet();
     string variable_name;
-    string db_column_name;
+    string name_in_db;
 
     string current_var_name;
     string transformed_var_name;
 
     for (auto var_it : variables)
     {
-        logdbg << "variable " << var_it->name() << " db column " << db_column_name;
+        logdbg << "variable " << var_it->name() << " db column " << name_in_db;
 
         variable_name = var_it->name();
-        db_column_name = var_it->dbColumnName();
+        name_in_db = var_it->dbColumnOrExpression();
 
         PropertyDataType data_type = var_it->dataType();
 
         if (dbcol2dbcontvar)
         {
-            if (!properties_.hasProperty(db_column_name))
+            if (!properties_.hasProperty(name_in_db))
             {
                 //logerr << "property '" << db_column_name << "' not found";
                 continue;
             }
 
-            traced_assert(properties_.hasProperty(db_column_name));
-            traced_assert(properties_.get(db_column_name).dataType() == var_it->dataType());
+            traced_assert(properties_.hasProperty(name_in_db));
+            traced_assert(properties_.get(name_in_db).dataType() == var_it->dataType());
 
-            current_var_name = db_column_name;
+            current_var_name = name_in_db;
             transformed_var_name = variable_name;
         }
         else
@@ -933,7 +933,7 @@ void Buffer::transformVariables(dbContent::VariableSet& list, bool dbcol2dbcontv
             traced_assert(properties_.get(variable_name).dataType() == var_it->dataType());
 
             current_var_name = variable_name;
-            transformed_var_name = db_column_name;
+            transformed_var_name = name_in_db;
         }
 
         // rename to reflect dbcont variable

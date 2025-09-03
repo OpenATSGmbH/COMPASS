@@ -896,6 +896,18 @@
                     },
                     "name": "Rate Of Climb/Descent"
                 }
+            },
+            "Metamax_std_dev0": {
+                "parameters": {
+                    "dbcont_variables": {
+                        "CAT010": "X/Y StdDev Max",
+                        "CAT020": "X/Y StdDev Max",
+                        "CAT021": "X/Y StdDev Max",
+                        "CAT062": "X/Y StdDev Max",
+                        "RefTraj": "X/Y StdDev Max"
+                    },
+                    "name": "X/Y StdDev Max"
+                }
             }
         }
     }

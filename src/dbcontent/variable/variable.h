@@ -89,7 +89,12 @@ class Variable : public QObject, public Property, public Configurable
     void dbColumnName(const std::string& value);
 
     std::string dbTableName() const;
-    std::string dbColumnIdentifier() const;
+    //std::string dbColumnIdentifier() const;
+
+    const std::string& dbExpression() const { return db_expression_; }
+    std::vector<std::string> dbExpressionVariables() const;
+
+    const std::string& dbColumnOrExpression() const;
 
     bool isKey() const;
     void isKey(bool value);
@@ -229,12 +234,14 @@ private:
     Representation representation_;
 
     std::string description_;
+    
     std::string db_column_name_;
     bool is_key_ {false};
 
-    /// Unit dimension such as time
+    std::string db_expression_;
+    nlohmann::json db_expression_variables_;
+
     std::string dimension_;
-    /// Unit unit such as seconds
     std::string unit_;
 
 //    bool min_max_set_{false};

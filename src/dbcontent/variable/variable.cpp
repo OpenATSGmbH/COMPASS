@@ -83,37 +83,30 @@ Variable::Variable(const std::string& class_id, const std::string& instance_id,
     registerParameter("name", &name_, std::string());
     registerParameter("short_name", &short_name_, std::string());
     registerParameter("description", &description_, std::string());
+    
     registerParameter("db_column_name", &db_column_name_, std::string());
-    registerParameter("data_type_str", &data_type_str_, std::string());
     registerParameter("is_key", &is_key_, false);
+
+    registerParameter("db_expression", &db_expression_, std::string());
+    registerParameter("db_expression_variables", &db_expression_variables_, nlohmann::json::object());
+    
+    registerParameter("data_type_str", &data_type_str_, std::string());
     registerParameter("representation_str", &representation_str_, std::string());
     registerParameter("dimension", &dimension_, std::string());
     registerParameter("unit", &unit_, std::string());
 
-    if (name_.size() == 0)
-        logerr << "instance " << instance_id << " has no name";
+    traced_assert_msg(name_.size(), "Name required");
 
+    traced_assert_msg(db_column_name_.size() || db_expression_.size(),
+                      "DB name or expression required");  // one or the other
 
-    traced_assert(name_.size() > 0);
-
-    if (data_type_str_.size() == 0)
-        logerr << "name " << name_ << " has no data type";
-
-    traced_assert(data_type_str_.size() > 0);
+    traced_assert_msg(data_type_str_.size(), "Data type required");
     data_type_ = Property::asDataType(data_type_str_);
 
     if (representation_str_.size() == 0)
-    {
         representation_str_ = representationToString(Representation::STANDARD);
-    }
 
     representation_ = stringToRepresentation(representation_str_);
-
-    // loginf << "name " << id_ << " unitdim '" << unit_dimension_ << "'
-    // unitunit '" << unit_unit_ << "'";
-
-    traced_assert(db_column_name_.size());
-    //boost::algorithm::to_lower(db_column_name_); // modifies str
 
     createSubConfigurables();
 }
@@ -282,10 +275,10 @@ std::string Variable::dbTableName() const
     return dbcontent_->dbTableName();
 }
 
-std::string Variable::dbColumnIdentifier() const
-{
-    return dbTableName()+":"+dbColumnName();
-}
+// std::string Variable::dbColumnIdentifier() const
+// {
+//     return dbTableName()+":"+dbColumnName();
+// }
 
 //void Variable::setMinMax()
 //{
@@ -801,6 +794,21 @@ bool Variable::hasDBContent() const
 void Variable::setHasDBContent()
 {
     COMPASS::instance().dbInterface().setContentIn(dbTableName(), db_column_name_);
+}
+
+std::vector<std::string> Variable::dbExpressionVariables() const
+{
+    return db_expression_variables_.get<std::vector<std::string>>(); ; 
+}
+
+const std::string& Variable::dbColumnOrExpression() const
+{
+    traced_assert (db_column_name_.size() || db_expression_.size());
+
+    if (db_column_name_.size())
+        return db_column_name_;
+    else
+        return db_expression_;
 }
 
 bool Variable::isKey() const

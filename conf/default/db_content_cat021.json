@@ -11,6 +11,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "arv_capability",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.ARV\n\nAir-Referenced Velocity Report Capability\n0 no capability to generate ARV-reports\n1 capable of generate ARV-reports",
                     "dimension": "",
                     "is_key": false,
@@ -24,6 +26,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "position_check_failed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.IPC\n\nIndependent Position Check\n0 default (see note)\n1 Independent Position Check failed\n\nIf set to 1, indicates that the position reported by the target\nwas validated by an independent means and a discrepancy was\ndetected. If no independent position check is implemented, the default value “0” is to be used.",
                     "dimension": "",
                     "is_key": false,
@@ -37,6 +41,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_rrl_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.RRL#VAL\n\nAircraft Status Reply Rate Limiting Value\n0 Reply Rate Limiting is not active\n1 Reply Rate Limiting is active",
                     "dimension": "",
                     "is_key": false,
@@ -50,6 +56,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_ps3_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.PS3#EP\n\nAircraft Status Priority Status for Version 3 ADS-B Systems Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -63,6 +71,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_ps3_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.PS3#VAL\n\nAircraft Status Priority Status for Version 3 ADS-B Systems\n0 No emergency / not reported\n1 General emergency\n2 UAS/RPAS - Lost Link\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 Aircraft in Distress Automatic Activation\n7 Aircraft in Distress Manual Activation",
                     "dimension": "",
                     "is_key": false,
@@ -76,6 +86,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_tpw_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.TPW#EP\n\nAircraft Status Transmit Power Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -89,6 +101,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_tpw_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.TPW#VAL\n\nAircraft Status Transmit Power Value\n0 Unavailable, Unknown, or less than 70 W\n1 70 W\n2 125 W\n3 200W",
                     "dimension": "",
                     "is_key": false,
@@ -102,6 +116,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_tsi_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.TSI#EP\n\nAircraft Status Transponder Side Indication Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -115,6 +131,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_tsi_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.TSI#VAL\n\nAircraft Status Transponder Side Indication Value\n0 Unknown\nTransponder #1 (left/pilot side or single)\n2 Transponder #2 (right/co-pilot side)\n3 Transponder #3 (auxiliary or Back-up)",
                     "dimension": "",
                     "is_key": false,
@@ -128,6 +146,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_muo_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.MUO#EP\n\nAircraft Status Manned / Unmanned Operation Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -141,6 +161,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_muo_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.MUO#VAL\n\nAircraft Status Manned / Unmanned Operation Value\n0 Manned Operation\n1 Unmanned Operation",
                     "dimension": "",
                     "is_key": false,
@@ -154,6 +176,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_rwc_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.RWC#EP\n\nAircraft Status Remain Well Clear Corrective Alert Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -167,6 +191,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "local_decoding_position_jump",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.LDPJ\n\nLocal Decoding Position Jump\n0 LDPJ not detected\n1 LDPJ detected",
                     "dimension": "",
                     "is_key": false,
@@ -180,6 +206,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_rwc_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.RWC#VAL\n\nAircraft Status Remain Well Clear Corrective Alert Value\n0 RWC Corrective Alert not active\n1 RWC Corrective Alert active",
                     "dimension": "",
                     "is_key": false,
@@ -193,6 +221,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_daa_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.DAA#EP\n\nAircraft Status Detect and Avoid Capabilities Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -206,6 +236,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_daa_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.DAA#VAL\n\nAircraft Status Detect and Avoid Capabilities Value\n0 No RWC Capability\n1 RWC/RA/OCM Capability\n2 RWC/OCM Capability\n3 Invalid ASTERIX Value",
                     "dimension": "",
                     "is_key": false,
@@ -219,6 +251,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_df17ca_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.DF17CA#EP\n\nAircraft Status Transponder Capability Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -232,6 +266,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_df17ca_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.DF17CA#VAL\n\nAircraft Status Transponder Capability Value\nCA is transmitted in Downlink Format 17 messages.",
                     "dimension": "",
                     "is_key": false,
@@ -245,6 +281,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_svh_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.SVH#EP\n\nAircraft Status Sense Vertical & Horizontal Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -258,6 +296,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_svh_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.SVH#VAL\n\nAircraft Status Sense Vertical & Horizontal Value\n0 Vertical Only\n1 Horizontal Only\n2 Blended\n3 Vertical Only or Horizontal Only per intruder",
                     "dimension": "",
                     "is_key": false,
@@ -271,6 +311,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_catc_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.CATC#EP\n\nAircraft Status CAS Type & Capability Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -284,6 +326,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_catc_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.CATC#VAL\n\nAircraft Status CAS Type & Capability Value\n0 Active CAS (TCAS II) or no CAS\n1 Active CAS (not TCAS II)\n2 Active CAS (not TCAS II) with OCM transmit capability\n3 Active CAS of Junior Status\n4 Passive CAS with 1030 TCAS Resolution Message receive capability\n5Passive CAS with only OCM receive capability\n6 Reserved for future use\n7 Reserved for future use",
                     "dimension": "",
                     "is_key": false,
@@ -297,6 +341,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_tao_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.TAO#EP\n\nTransponder Antenna Offset Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -310,6 +356,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "list_lookup_check_failed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.LLC\n\nList Lookup Check\n0 default\n1 List Lookup failed",
                     "dimension": "",
                     "is_key": false,
@@ -323,6 +371,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_tao_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.TAO#VAL\n\nAircraft Status Transponder Antenna Offset Value",
                     "dimension": "",
                     "is_key": false,
@@ -336,6 +386,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "true_north_heading",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.TNH.True North Heading\n\n(Element of Air Vector)",
                     "dimension": "",
                     "is_key": false,
@@ -349,6 +401,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "selh_hrd",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SelH.HRD\n\nSelected Heading Horizontal Reference Direction\n0 = True North\n1 = Magnetic North",
                     "dimension": "",
                     "is_key": false,
@@ -362,6 +416,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "selh_stat",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SelH.Stat\n\nSelected Heading Status\n0 = Data is either unavailable or invalid.\n1 = Data is available and valid.",
                     "dimension": "",
                     "is_key": false,
@@ -375,6 +431,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "selh",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SelH.SelH\n\nSelected Heading",
                     "dimension": "",
                     "is_key": false,
@@ -388,6 +446,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "mode_s_mb_data",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 250.Mode S MB Data.MB Data\n\n56-bit message conveying Mode S Comm B message data",
                     "dimension": "",
                     "is_key": false,
@@ -401,6 +461,8 @@
                 "parameters": {
                     "data_type_str": "STRING",
                     "db_column_name": "acas_mb_data",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 260.MB DATA\n\n56-bit message conveying Mode S Comm B message data of BDS Register 3,0.",
                     "dimension": "",
                     "is_key": false,
@@ -414,6 +476,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "no_go_bit",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.NOGO\n\nNo-go Bit Status\n0 NOGO-bit not set\n1 NOGO-bit set",
                     "dimension": "",
                     "is_key": false,
@@ -427,6 +491,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "range_check_passed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.RC\n\nRange Check\n0 Default\n1 Range Check passed,CPR Validation pending\n\nIndicates that the position reported by the target is within a\ncredible range from the ground station. The range check is followed\nby the CPR validation to ensure that global and local position\ndecoding both indicate valid position information. Bit 3=1 indicates\nthat the range check was done, but the CPR validation is not yet\ncompleted.\nOnce CPR validation is completed, Bit 3 will be reset to 0.",
                     "dimension": "",
                     "is_key": false,
@@ -440,6 +506,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "range_check_failed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.RCF\n\nRange Check\n0 default\n1 Range Check failed\n\nIndicates that the Range Check failed, i.e. the target is\nreported outside the credible range for the Ground Station. For\noperational users such a target will be suppressed. In services\nused for monitoring the Ground Station, the target will be\ntransmitted with bit 2 indicating the fault condition.",
                     "dimension": "",
                     "is_key": false,
@@ -453,6 +521,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "spi",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.SPI\n\n0 Absence of SPI\n1 Special Position Identification\n\nOutdated, set in Surveillance Status for newer categories",
                     "dimension": "",
                     "is_key": false,
@@ -466,6 +536,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mode_3a_garbled",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.G\n\n0 Default\n1 Garbled code\n\nOutdated",
                     "dimension": "",
                     "is_key": false,
@@ -479,6 +551,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mode_3a_smoothed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.L\n\n0 Mode-3/A code derived during last update\n1 Mode-3/A code not extracted during the last update\n\nOutdated",
                     "dimension": "",
                     "is_key": false,
@@ -492,6 +566,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mode_3a_valid",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.V\n\n0 Code not validated\n1 Code validated\n\nOutdated",
                     "dimension": "",
                     "is_key": false,
@@ -505,6 +581,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "cockpit_display_of_traffic_information",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.CDTI/A\n\nCockpit Display of Traffic Information airborne\n0 CDTI not operational\n1 CDTI operational",
                     "dimension": "",
                     "is_key": false,
@@ -518,6 +596,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "toa_position",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 071.Time of Applicability for Position\n\nTime of applicability of the reported position, in the form of\nelapsed time since last midnight, expressed as UTC.",
                     "dimension": "Time",
                     "is_key": false,
@@ -531,6 +611,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "toa_velocity",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 072.Time of Applicability for Velocity\n\nTime of applicability (measurement) of the reported velocity, in\nthe form of elapsed time since last midnight, expressed as UTC.",
                     "dimension": "Time",
                     "is_key": false,
@@ -544,6 +626,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "tort",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 077.Time Of ASTERIX Report Transmission\n\nTime Of ASTERIX Report Transmission\n\nFrom 077.Time Of ASTERIX Report Transmission",
                     "dimension": "Time",
                     "is_key": false,
@@ -557,6 +641,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "acas_status",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.AC\n\n0 unknown\n1 ACAS not operational\n2 ACAS operational\n3 invalid\n\nOutdated",
                     "dimension": "",
                     "is_key": false,
@@ -570,6 +656,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "multiple_navigational_aids",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.MN\n\n00 unknown\n01 Multiple navigational aids not operating\n10 Multiple navigational aids operating\n11 invalid\n\nOutdated",
                     "dimension": "",
                     "is_key": false,
@@ -583,6 +671,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sda",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.SDA\n\nHorizontal Position System Design Assurance Level (as defined in version 2)",
                     "dimension": "",
                     "is_key": false,
@@ -596,6 +686,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "latitude_hr",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 131.Latitude\n\nPosition in WGS-84 Co-ordinates in high resolution.\n\nIn WGS.84 in two’s complement.\nRange -90 <= latitude <= 90 deg.",
                     "dimension": "Angle",
                     "is_key": false,
@@ -609,6 +701,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "trajectory_change_report_capability",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.TC\n\nTarget Trajectory Change Report Capability\n0 no capability for Trajectory Change Reports\n1 support for TC+0 reports only\n2 support for multiple TC reports\n3 reserved",
                     "dimension": "",
                     "is_key": false,
@@ -622,6 +716,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "longitude_hr",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 131.Longitude\n\nPosition in WGS-84 Co-ordinates in high resolution.\n\nIn WGS.84 in two’s complement.\nRange -180 <= longitude < 180 deg.",
                     "dimension": "Angle",
                     "is_key": false,
@@ -635,6 +731,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "selected_altitude",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 146.Altitude\n\nThe Selected Altitude as provided by the avionics and\ncorresponding either to the MCP/FCU Selected Altitude (the ATC\ncleared altitude entered by the flight crew into the avionics) or to the FMS Selected Altitude.\n\n-1300ft <= Altitude <= 100000ft",
                     "dimension": "Height",
                     "is_key": false,
@@ -648,6 +746,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "selected_altitude_source_availability",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 146.SAS\n\nSource Availability\n0 No source information provided\n1 Source Information provided",
                     "dimension": "",
                     "is_key": false,
@@ -661,6 +761,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "selected_altitude_source",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 146.Source\n\n0 Unknown\n1 Aircraft Altitude (Holding Altitude)\n2 MCP/FCU Selected Altitude\n3 FMS Selected Altitude",
                     "dimension": "",
                     "is_key": false,
@@ -674,6 +776,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "fs_sa",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 148.Altitude\n\nFinal State Selected Altitude\n\nAltitude in in two’s complement form\n-1300ft <= Altitude <= 100000ft",
                     "dimension": "Height",
                     "is_key": false,
@@ -687,6 +791,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "fs_sa_ah",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 148.AH\n\nFinal State Selected Altitude Altitude Hold Mode\n0 Not active or unknown\n1 Active",
                     "dimension": "",
                     "is_key": false,
@@ -700,6 +806,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "fs_sa_am",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 148.AM\n\nFinal State Selected Altitude Approach Mode\n0 Not active or unknown\n1 Active",
                     "dimension": "",
                     "is_key": false,
@@ -713,6 +821,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "fs_sa_mv",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 148.MV\n\nFinal State Selected Altitude Manage Vertical Mode\n0 Not active or unknown\n1 Active",
                     "dimension": "",
                     "is_key": false,
@@ -726,6 +836,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "air_speed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 150.Air Speed\n\nCalculated Air Speed (Element of Air Vector).\n\nAir Speed (in knots, set using IM)\n",
                     "dimension": "",
                     "is_key": false,
@@ -739,6 +851,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "target_state_report_capability",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.TS\n\nTarget State Report Capability\n0 no capability to support Target State Reports\n1 capable of supporting target State Reports",
                     "dimension": "",
                     "is_key": false,
@@ -752,6 +866,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "true_airspeed_re",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 151.RE\n\n'Range Exceeded' Indicator\n0 Value in defined range\n1 Value exceeds defined range",
                     "dimension": "",
                     "is_key": false,
@@ -765,6 +881,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "ground_speed_re",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 160.RE\n\n'Range Exceeded' Indicator\n0 Value in defined range\n1 Value exceeds defined range",
                     "dimension": "",
                     "is_key": false,
@@ -778,6 +896,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "track_number",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 161.Track Number\n\nAn integer value representing a unique reference to a track record within a particular track file.\n\nTRACK NUMBER(0...4095)",
                     "dimension": "",
                     "is_key": false,
@@ -791,6 +911,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "intent_change_flag",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 200.ICF\n\nIntent Change Flag\n0 No intent change active\n1 Intent change flag raised\n\nWhen set to '1' indicates that new information is available in the Mode S GICB registers 40, 41 or 42. As of MOPS Version 3 (see I021/210) as defined in Ref. [11] this flag is no longer used and shall be set to “0”.",
                     "dimension": "",
                     "is_key": false,
@@ -804,6 +926,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "lnav_mode",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 200.LNAV\n\nLNAV Mode\n0 LNAV Mode engaged\n1 LNAV Mode not engaged",
                     "dimension": "",
                     "is_key": false,
@@ -817,6 +941,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "military_emergency",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 200.ME\n\n0 No military emergency\n1 Military emergency",
                     "dimension": "",
                     "is_key": false,
@@ -830,6 +956,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "surveillance_status",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 200.SS\n\nSurveillance Status\n0 No condition reported\n1 Permanent Alert (Emergency condition)\n2 Temporary Alert (change in Mode 3/A Code other than emergency)\n3 SPI set",
                     "dimension": "",
                     "is_key": false,
@@ -843,6 +971,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "version_not_supported",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 210.VNS\n\nVersion Not Supported\n0 The MOPS Version is supported by the GS\n1 The MOPS Version is not supported by the GS",
                     "dimension": "",
                     "is_key": false,
@@ -856,6 +986,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "met_temperature",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 220.TMP.Temperature\n\n(LSB) = 0.25 °C\n-100 °C <= Temperature <= 100 °C",
                     "dimension": "",
                     "is_key": false,
@@ -869,6 +1001,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "report_period",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 016.RP\n\nService Management Report Period\n\n0: Data driven mode\nRange 0 ... 127.5 seconds, a value of 127.5 indicates 127.5 seconds or above",
                     "dimension": "",
                     "is_key": false,
@@ -882,6 +1016,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "met_turbulence",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 220.TRB.Turbulence\n\nInteger between 0 and 15 inclusive",
                     "dimension": "",
                     "is_key": false,
@@ -895,6 +1031,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "met_wind_direction",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 220.WD.Wind Direction\n\n(LSB) = 1 degree\n1 <= Wind Direction <= 360",
                     "dimension": "",
                     "is_key": false,
@@ -908,6 +1046,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "met_wind_speed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 220.WS.Wind Speed\n\n(LSB) = 1 knot\n0 <= Wind Speed <= 300",
                     "dimension": "",
                     "is_key": false,
@@ -921,6 +1061,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sc_b2_low",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 271.B2 low\n\nSurface Capabilities and Characteristics:  Operational capabilities of the aircraft while on the ground.\n\nClass B2 transmit power less than 70 Watts\n0 >= 70 Watts\n1 < 70 Watts",
                     "dimension": "",
                     "is_key": false,
@@ -934,6 +1076,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sc_cdti_s",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 271.CDTI/S\n\nSurface Capabilities and Characteristics:  Operational capabilities of the aircraft while on the ground.\n\nCockpit Display of Traffic Information Surface\n0 CDTI not operational\n1 CDTI operational",
                     "dimension": "",
                     "is_key": false,
@@ -947,6 +1091,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sc_ident",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 271.IDENT\n\nSurface Capabilities and Characteristics:  Operational capabilities of the aircraft while on the ground.\n\nSetting of 'IDENT'-switch\n0 IDENT switch not active\n1 IDENT switch active",
                     "dimension": "",
                     "is_key": false,
@@ -960,6 +1106,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sc_poa",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 271.POA\n\nSurface Capabilities and Characteristics:  Operational capabilities of the aircraft while on the ground.\n\nPosition Offset Applied\n0 Position transmitted is not ADS-B position reference point\n1 Position transmitted is the ADS-B position reference point",
                     "dimension": "",
                     "is_key": false,
@@ -973,6 +1121,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sc_ras",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 271.RAS\n\nSurface Capabilities and Characteristics:  Operational capabilities of the aircraft while on the ground.\n\nReceiving ATC Services\n0 Aircraft not receiving ATC-services\n1 Aircraft receiving ATC services",
                     "dimension": "",
                     "is_key": false,
@@ -986,6 +1136,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "air_speed_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Air Speed.Age\n\nAge of the Air Speed contained in item I021/150",
                     "dimension": "Time",
                     "is_key": false,
@@ -999,6 +1151,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "aos_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Aircraft Operational Status.Age\n\nAge of the latest received information transmitted in item I021/008.",
                     "dimension": "Time",
                     "is_key": false,
@@ -1012,6 +1166,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "time_of_day",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Time of day, either from 030.Time of Day (edition 0.26) or\n \n\nin the form of elapsed time since last midnight, expressed as UTC",
                     "dimension": "Time",
                     "is_key": false,
@@ -1025,6 +1181,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "barometric_vertical_rate_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Barometric Vertical Rate.Age\n\nAge of the Barometric Vertical Rate contained in I021/155",
                     "dimension": "Time",
                     "is_key": false,
@@ -1038,6 +1196,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "fs_sa_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Final State Selected Altitude.Age\n\nAge of the Final State Selected Altitude in item I021/148",
                     "dimension": "Time",
                     "is_key": false,
@@ -1051,6 +1211,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "mode_c_code_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Flight Level.Age\n\nAge of the Flight Level information in item I021/145",
                     "dimension": "Time",
                     "is_key": false,
@@ -1064,6 +1226,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "geometric_height_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Geometric Height.Age\n\nAge of the information contained in item 021/140\n\nRenamed to match CAT062",
                     "dimension": "Time",
                     "is_key": false,
@@ -1077,6 +1241,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "geometric_vertical_rate_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Geometric Vertical Rate.Age\n\nAge of the Geometric Vertical Rate in item I021/157",
                     "dimension": "Time",
                     "is_key": false,
@@ -1090,6 +1256,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "ground_vector_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Ground Vector.Age\n\nAge of the Ground Vector in item I021/160",
                     "dimension": "Time",
                     "is_key": false,
@@ -1103,6 +1271,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "is_sa_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Intermediate State Selected Altitude.Age\n\nAge of the Intermediate State Selected Altitude in item I021/146",
                     "dimension": "Time",
                     "is_key": false,
@@ -1116,6 +1286,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "magnetic_heading_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Magnetic Heading.Age\n\nAge of the value for the Magnetic Heading in item I021/152",
                     "dimension": "Time",
                     "is_key": false,
@@ -1129,6 +1301,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "message_amplitude_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Message Amplitude.Age\n\nAge of the latest measurement of the message amplitude, item I021/132",
                     "dimension": "Time",
                     "is_key": false,
@@ -1142,6 +1316,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "met_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Met Information.Age\n\nAge of the Meteorological data contained in I021/220",
                     "dimension": "Time",
                     "is_key": false,
@@ -1155,6 +1331,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "time_of_day_dep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Deprecated Time of day from 030.Time of Day\n \n\nTime of applicability (measurement) of the reported position, in the form of elapsed time since last midnight, expressed as UTC.\n\nOutdated in Edition 0.26",
                     "dimension": "Time",
                     "is_key": false,
@@ -1168,6 +1346,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "time_of_day_accuracy",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 032.Time of Day Accuracy\n\nThe maximum difference between the actual time of applicability of\nthe reported position and the time reported in the Time of Day item\n(I021/030).",
                     "dimension": "Time",
                     "is_key": false,
@@ -1181,6 +1361,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "mode_3a_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Mode 3/A.Age\n\nAge of the last update of the Mode 3/A Code, item I021/070",
                     "dimension": "Time",
                     "is_key": false,
@@ -1194,6 +1376,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "quality_indicators_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Quality Indicators.Age\n\nAge of the latest information received to update the Quality Indicators, item I021/090",
                     "dimension": "Time",
                     "is_key": false,
@@ -1207,6 +1391,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "roll_angle_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Roll Angle.Age\n\nAge of the Roll Angle value as in item I021/230",
                     "dimension": "Time",
                     "is_key": false,
@@ -1220,6 +1406,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "sc_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Surface Capabilities and Characteristics.Age\n\nAge of the latest information received on the surface capabilities and characteristics of the respective target",
                     "dimension": "Time",
                     "is_key": false,
@@ -1233,6 +1421,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "aircraft_identification_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Target Identification.Age\n\nAge of the Target Identification in item I021/170",
                     "dimension": "Time",
                     "is_key": false,
@@ -1246,6 +1436,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "trd_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Target Report Descriptor.Age\n\nAge of the last update of the Target Report Descriptor, item I021/040",
                     "dimension": "Time",
                     "is_key": false,
@@ -1259,6 +1451,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "target_status_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Target Status.Age\n\nAge of the Target Status as contained in item I021/200",
                     "dimension": "Time",
                     "is_key": false,
@@ -1272,6 +1466,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "track_angle_rate_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.Track Angle Rate.Age\n\nAge of item I021/165 Track Angle Rate",
                     "dimension": "Time",
                     "is_key": false,
@@ -1285,6 +1481,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "true_air_speed_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 295.True Air Speed.Age\n\nAge of the value for the True Air Speed in item I021/151",
                     "dimension": "Time",
                     "is_key": false,
@@ -1298,6 +1496,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "receiver_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 400.RID\n\nDesignator of Ground Station in Distributed System.",
                     "dimension": "",
                     "is_key": false,
@@ -1311,6 +1511,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "confidence_level",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.CL\n\nConfidence Level\n0 Report valid\n1 Report suspect\n2 No information\n3 Reserved for future use",
                     "dimension": "",
                     "is_key": false,
@@ -1324,6 +1526,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "barometric_pressure_setting",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.BPS.BPS\n\nBPS is the barometric pressure setting of the aircraft minus 800 hPa.\nA value of '0' indicates that in the aircraft a value of 800 hPa or less has been selected.\nA value of '409.5' indicates that in the aircraft a value of 1209.5 hPa or more has been selected.",
                     "dimension": "",
                     "is_key": false,
@@ -1337,6 +1541,8 @@
                 "parameters": {
                     "data_type_str": "INT",
                     "db_column_name": "gao_lateral",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.GAO.Lateral\n\nLateral axis GPS Antenna Offset",
                     "dimension": "",
                     "is_key": false,
@@ -1350,6 +1556,8 @@
                 "parameters": {
                     "data_type_str": "INT",
                     "db_column_name": "gao_longitudinal",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.GAO.Longitudinal\n\nLongitudinal axis GPS Antenna Offset",
                     "dimension": "",
                     "is_key": false,
@@ -1363,6 +1571,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "nav_ah",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.NAV.AH\n\n1 = Altitude Hold engaged",
                     "dimension": "",
                     "is_key": false,
@@ -1376,6 +1586,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "nav_am",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.NAV.AM\n\n1 = Approach Mode active",
                     "dimension": "",
                     "is_key": false,
@@ -1389,6 +1601,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "nav_ap",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.NAV.AP\n\n1 = Autopilot engaged",
                     "dimension": "",
                     "is_key": false,
@@ -1402,6 +1616,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "nav_vnav",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.NAV.VN\n\n1 = VNAV Active (Vertical Navigation)",
                     "dimension": "",
                     "is_key": false,
@@ -1415,6 +1631,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mfm_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.NAV.MFM#EP\n\nStatus of MCP/FCU Mode Bits Element Populated Bit\n0  Element not populated\n1  Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -1428,6 +1646,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mfm_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.NAV.MFM#VAL\n\nStatus of MCP/FCU Mode Bits Value\n0 MCP/FCU Mode Bits not populated\n1 MCP/FCU Mode Bits populated",
                     "dimension": "",
                     "is_key": false,
@@ -1441,6 +1661,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "sgv_gss",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SGV.GSS\n\nSurface Ground Vector Ground speed, kts",
                     "dimension": "",
                     "is_key": false,
@@ -1454,6 +1676,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "cpr_valid",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.CPR\n\nCompact Position Reporting\n\n0 CPR Validation failed\n1 CPR Validation correct\n",
                     "dimension": "",
                     "is_key": false,
@@ -1467,6 +1691,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "sgv_hgt",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SGV.HGT\n\nSurface Ground Vector Heading/Ground Track information, deg",
                     "dimension": "",
                     "is_key": false,
@@ -1480,6 +1706,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sgv_hrd",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SGV.HRD\n\n0 True North\n1 Magnetic North",
                     "dimension": "",
                     "is_key": false,
@@ -1493,6 +1721,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sgv_hts",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SGV.HTS\n\n0 Heading/Ground Track data is not valid\n1 Heading/Ground Track data is valid",
                     "dimension": "",
                     "is_key": false,
@@ -1506,6 +1736,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sgv_htt",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SGV.HTT\n\n0 Heading data provided\n1 Ground Track provided",
                     "dimension": "",
                     "is_key": false,
@@ -1519,6 +1751,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sgv_stp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.SGV.STP\n\n0 Aircraft has not stopped\n1 Aircraft has stopped",
                     "dimension": "",
                     "is_key": false,
@@ -1532,6 +1766,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_es",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.ES\n\nAircraft Status ES IN Capability\n0 Target is not 1090 ES IN capable\n1 Target is 1090 ES IN capable",
                     "dimension": "",
                     "is_key": false,
@@ -1545,6 +1781,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_uat",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.UAT\n\nAircraft Status UAT IN Capability\n0 Target is not UAT IN capable\n1 Target is UAT IN capable",
                     "dimension": "",
                     "is_key": false,
@@ -1558,6 +1796,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_rce_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.RCE#EP\n\nAircraft Status Reduced Capability Equipment Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -1571,6 +1811,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sta_rce_val",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.RCE#VAL\n\nAircraft Status Reduced Capability Equipment Value\n0 Not RCE\n1 TABS\n2 Reserved for future use\n3 Other RCE",
                     "dimension": "",
                     "is_key": false,
@@ -1584,6 +1826,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sta_rrl_ep",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From REF.STA.RRL#EP\n\nAircraft Status Reply Rate Limiting Element Populated Bit\n0 Element not populated\n1 Element populated",
                     "dimension": "",
                     "is_key": false,
@@ -1597,6 +1841,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "utn",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Unique Target Number",
                     "dimension": "",
                     "is_key": false,
@@ -1610,6 +1856,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sc_l_w",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 271.L+W\n\nSurface Capabilities and Characteristics:  Operational capabilities of the aircraft while on the ground.\n\nAircraft L+W",
                     "dimension": "",
                     "is_key": false,
@@ -1623,6 +1871,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "mode_c_code",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 145.Flight Level\n\nFlight Level from barometric measurements, not QNH corrected",
                     "dimension": "Height",
                     "is_key": false,
@@ -1636,6 +1886,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "geometric_height",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 140.Geometric Height\n\nMinimum height from a plane tangent to the earth’s ellipsoid,\ndefined by WGS-84\n\nRenamed to match CAT062",
                     "dimension": "Height",
                     "is_key": false,
@@ -1649,6 +1901,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "altitude_reporting_capability",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.ARC\n\nAltitude Reporting Capability\n0 Unknown\n1 25 ft\n2 100 ft\n3 undefined",
                     "dimension": "",
                     "is_key": false,
@@ -1662,6 +1916,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "barometric_vertical_rate",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 155.Barometric Vertical Rate\n\nBarometric Vertical Rate in ft/min",
                     "dimension": "",
                     "is_key": false,
@@ -1675,6 +1931,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "barometric_vertical_rate_re",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 155.RE\n\nBarometric Vertical Rate Range Exceeded\n\n0 Value in defined range\n1 Value exceeds defined range",
                     "dimension": "",
                     "is_key": false,
@@ -1688,6 +1946,8 @@
                 "parameters": {
                     "data_type_str": "STRING",
                     "db_column_name": "aircraft_identification",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 170.Target Identification\n\nTarget (aircraft or vehicle) identification in 8 characters, as\nreported by the target.",
                     "dimension": "",
                     "is_key": false,
@@ -1701,6 +1961,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "acad_type",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.ATP\n\nAddress Type\n0 Non unique address\n1 24-Bit ICAO address\n2 Surface vehicle address\n3 Anonymous address\n4 Reserved for future use\n5 Reserved for future use\n6 Reserved for future use\n7 Reserved for future use",
                     "dimension": "",
                     "is_key": false,
@@ -1714,6 +1976,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "differential_correction",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.DCR\n\nDifferential Correction\n0 No differential correction (ADS-B)\n1 Differential correction (ADS-B)",
                     "dimension": "",
                     "is_key": false,
@@ -1727,6 +1991,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "ds_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From ds_id\n\nData Source Identification",
                     "dimension": "",
                     "is_key": false,
@@ -1740,6 +2006,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "emitter_category",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 020.ECAT\n\n0 No ADS-B Emitter Category Information\n1 light aircraft <= 7000 kg\n2 reserved\n3 7000 kg < medium aircraft < 136000 kg\n4 reserved\n5 136000 kg <= heavy aircraft\n6 highly manoeuvrable (5g acceleration capability) and high speed (>400 knots cruise)\n7 reserved\n8 reserved\n9 reserved\n10 rotocraft\n11 glider / sailplane\n12 lighter-than-air\n13 unmanned aerial vehicle\n14 space / transatmospheric vehicle\n15 ultralight / handglider / paraglider\n16 parachutist / skydiver\n17 reserved\n18 reserved\n19 reserved\n20 surface emergency vehicle\n21 surface service vehicle\n22 fixed ground or tethered obstruction\n23 reserved",
                     "dimension": "",
                     "is_key": false,
@@ -1753,6 +2021,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "fft",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.RAB\n\nReport Type\n0 Report from target transponder\n1 Report from field monitor(fixed transponder)",
                     "dimension": "",
                     "is_key": false,
@@ -1766,6 +2036,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "geometric_altitude_accuracy",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.GVA\n\nGeometric Height Accuracy\n\nRenamed to match CAT062",
                     "dimension": "",
                     "is_key": false,
@@ -1779,6 +2051,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "geometric_vertical_rate",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 157.Geometric Vertical Rate\n\nGeometric Vertical Rate, with reference to WGS-84.\n\nUnit is ft/min",
                     "dimension": "",
                     "is_key": false,
@@ -1792,6 +2066,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "geometric_vertical_rate_re",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 157.RE\n\nGeometric Vertical Rate Range Exceeded\n\n0 Value in defined range\n1 Value exceeds defined range",
                     "dimension": "",
                     "is_key": false,
@@ -1805,6 +2081,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "ground_bit",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.GBS\n\nGround Bit Setting\n0 Ground Bit not set\n1 Ground Bit set",
                     "dimension": "",
                     "is_key": false,
@@ -1818,6 +2096,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "ground_speed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 160.Ground Speed or REF SGV GSS\n\nGround Speed referenced to WGS-84\n0 ≤ Ground Speed < 2 NM/s",
                     "dimension": "Speed",
                     "is_key": false,
@@ -1831,6 +2111,8 @@
                 "parameters": {
                     "data_type_str": "STRING",
                     "db_column_name": "artas_hash",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From artas_md5\n\nARTAS MD5 Hash Code ",
                     "dimension": "",
                     "is_key": false,
@@ -1844,6 +2126,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "line_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Communication line ID",
                     "dimension": "",
                     "is_key": false,
@@ -1857,6 +2141,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "magnetic_heading",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 152.Magnetic Heading\n\nMagnetic Heading (Element of Air Vector)",
                     "dimension": "Angle",
                     "is_key": false,
@@ -1870,6 +2156,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "mode_3a_code",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.Mode-3/A\n\n",
                     "dimension": "",
                     "is_key": false,
@@ -1883,6 +2171,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "mops_version",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 210.VN\n\nVersion Number\nThis sub-field shall contain a value describing the MOPS used by each aircraft.\nCurrently defined for 1090 ES (LTT=2):\n0 ED102/DO-260\n1 DO-260A\n2 ED102A/DO-260B",
                     "dimension": "",
                     "is_key": false,
@@ -1896,6 +2186,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "nacp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.NACp\n\nNavigation Accuracy Category for Position",
                     "dimension": "",
                     "is_key": false,
@@ -1909,6 +2201,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "nicbaro",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.NICbaro\n\nNavigation Integrity Category for Barometric Altitude",
                     "dimension": "",
                     "is_key": false,
@@ -1922,6 +2216,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "nucp_or_nic",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.NUCp or NIC\n\n'Navigation Uncertainty Category for Position' NUCp or 'Navigation Integrity Category 'NIC'",
                     "dimension": "",
                     "is_key": false,
@@ -1935,6 +2231,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "nucr_or_nacv",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.NUCr or NACv\n\n'Navigation Uncertainty Category for velocity' NUCr or the 'Navigation Accuracy Category for Velocity' NACv",
                     "dimension": "",
                     "is_key": false,
@@ -1948,6 +2246,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "tcas_resolution_advisory",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.RA\n\nTCAS Resolution Advisory active\n0 TCAS II or ACAS RA not active\n1 TCAS RA active",
                     "dimension": "",
                     "is_key": false,
@@ -1961,6 +2261,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "single_antenna",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.SA\n\n0  Antenna Diversity\n1 Single Antenna only",
                     "dimension": "",
                     "is_key": false,
@@ -1974,6 +2276,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "tcas_system_status",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 008.Not TCAS\n\nTCAS System Status\n0 TCAS not operational\n1 TCAS operational",
                     "dimension": "",
                     "is_key": false,
@@ -1987,6 +2291,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "pic",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.PIC\n\nPosition Integrity Category",
                     "dimension": "",
                     "is_key": false,
@@ -2000,6 +2306,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "latitude",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 130.Latitude\n\nPosition in WGS-84 Co-ordinates latitude or from Latitude HR",
                     "dimension": "Angle",
                     "is_key": false,
@@ -2013,6 +2321,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "longitude",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 130.Longitude\n\nPosition in WGS-84 Co-ordinates longitude or from Longitude HR",
                     "dimension": "Angle",
                     "is_key": false,
@@ -2026,6 +2336,8 @@
                 "parameters": {
                     "data_type_str": "ULONGINT",
                     "db_column_name": "record_number",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Ascending record number",
                     "dimension": "",
                     "is_key": true,
@@ -2039,6 +2351,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "roll_angle",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 230.Roll Angle\n\nThe roll angle, in two’s complement form, of an aircraft executing a turn.\n\n(LSB) = 0.01 degree",
                     "dimension": "",
                     "is_key": false,
@@ -2052,6 +2366,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sac",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 010.SAC\n\nSystem Area Code",
                     "dimension": "",
                     "is_key": false,
@@ -2065,6 +2381,8 @@
                 "parameters": {
                     "data_type_str": "CHAR",
                     "db_column_name": "message_amplitude",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 132.MAM\n\nAmplitude, in dBm, of ADS-B messages received by the ground\nstation, coded in two’s complement.",
                     "dimension": "",
                     "is_key": false,
@@ -2078,6 +2396,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "selected_altitude_available",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.SAA\n\nSelected Altitude Available\n0 Altitude Equipment not capable to provide Selected Altitude\n1 Equipment capable to provide Selected Altitude\n",
                     "dimension": "",
                     "is_key": false,
@@ -2091,6 +2411,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "service_identification",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 015.Service Identification\n\nIdentification of the service provided to one or more users.",
                     "dimension": "",
                     "is_key": false,
@@ -2104,6 +2426,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sic",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 010.SIC\n\nSystem Identification Code",
                     "dimension": "",
                     "is_key": false,
@@ -2117,6 +2441,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sil",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.SIL\n\nSurveillance (version 1) or Source (version 2) Integrity Level",
                     "dimension": "",
                     "is_key": false,
@@ -2130,6 +2456,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "sil_supplement",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.SIL-Supplement\n\nSIL-Supplement\n0 measured per flight-hour\n1 measured per sample",
                     "dimension": "",
                     "is_key": false,
@@ -2143,6 +2471,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "simulated",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.SIM\n\nSimulated Target\n0 Actual target report\n1 Simulated target report",
                     "dimension": "",
                     "is_key": false,
@@ -2156,6 +2486,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "aircraft_address",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 080.Target Address\n\n24-Bit aircraft address",
                     "dimension": "",
                     "is_key": false,
@@ -2169,6 +2501,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "priority_status",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 200.PS\n\n0 No emergency / not reported\n1 General emergency\n2 Lifeguard / medical emergency\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 'Downed' Aircraft",
                     "dimension": "",
                     "is_key": false,
@@ -2182,6 +2516,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "test",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 040.TST\n\nTest Target\n0 Default\n1 Test Target",
                     "dimension": "",
                     "is_key": false,
@@ -2195,6 +2531,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "tomr_position",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 073.Time of Message Reception for Position\n\nTime of Message Reception for Position\n\nTime of reception of the latest position squitter in the Ground\nStation, in the form of elapsed time since last midnight,\nexpressed as UTC.",
                     "dimension": "Time",
                     "is_key": false,
@@ -2208,6 +2546,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "tomr_position_fsi",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 074.FSI\n\nTime of Reception HP Full Second Indication\n\nFull Second Indication\n3 Reserved\n2 TOMRp whole seconds = (I021/073) Whole seconds – 1\n1 TOMRp whole seconds = (I021/073) Whole seconds + 1\n0 TOMRp whole seconds = (I021/073) Whole seconds",
                     "dimension": "",
                     "is_key": false,
@@ -2221,6 +2561,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "tomr_position_hp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 074.Time of Message Reception of Position - high precision\n\nTime of Message Reception of Position - High Precision\n\nFractional part of the time of message reception for position in the ground station.\n\nTime at which the latest ADS-B position information was received\nby the ground station, expressed as fraction of the second of the\nUTC Time.",
                     "dimension": "Time",
                     "is_key": false,
@@ -2234,6 +2576,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "tomrv",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 075.Time of Message Reception of Velocity\n\nTime of Message Reception for Velocity\n\nTime of reception of the latest velocity squitter in the Ground\nStation, in the form of elapsed time since last midnight,\nexpressed as UTC.",
                     "dimension": "Time",
                     "is_key": false,
@@ -2247,6 +2591,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "tomr_velocity_fsi",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 076.FSI\n\nTime of Message Reception for Velocity - High Precision Full Second Indication\n\n3 Reserved\n2 TOMRv whole seconds = (I021/075) Whole seconds – 1\n1 TOMRv whole seconds = (I021/075) Whole seconds + 1\n0 TOMRv whole seconds = (I021/075) Whole seconds",
                     "dimension": "",
                     "is_key": false,
@@ -2260,6 +2606,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "tomr_velocity_hp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 076.Time of Message Reception of Velocity - high precision\n\nTime of Message Reception of Position - High Precision\n\nFractional part of the time of message reception for velocity in the ground station.\n\nTime at which the latest ADS-B position information was received\nby the ground station, expressed as fraction of the second of the\nUTC Time.",
                     "dimension": "",
                     "is_key": false,
@@ -2273,6 +2621,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "track_angle",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 160.Track Angle or REF SGV HGT\n\nTrack Angle clockwise reference to 'True North'",
                     "dimension": "Angle",
                     "is_key": false,
@@ -2286,6 +2636,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "true_airspeed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 151.True Air Speed\n\n ",
                     "dimension": "Speed",
                     "is_key": false,
@@ -2299,6 +2651,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "track_angle_rate",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 165.TAR\n\nTrack Angle Rate\nFor Edition 0.26: (LSB) = 1/4 deg/s\nLater: (LSB) = 1/32 deg/s",
                     "dimension": "",
                     "is_key": false,
@@ -2312,6 +2666,8 @@
                 "parameters": {
                     "data_type_str": "TIMESTAMP",
                     "db_column_name": "timestamp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Epoch timestamp based on Time of Day",
                     "dimension": "",
                     "is_key": false,
@@ -2319,6 +2675,21 @@
                     "representation_str": "STANDARD",
                     "short_name": "",
                     "unit": ""
+                }
+            },
+            "Variablepos_max_std_dev_m0": {
+                "parameters": {
+                    "data_type_str": "DOUBLE",
+                    "db_column_name": "CAST((CASE WHEN nacp IS NOT NULL THEN CASE nacp WHEN 1 THEN 18520 WHEN 2 THEN 7408 WHEN 3 THEN 3704 WHEN 4 THEN 1852 WHEN 5 THEN 926 WHEN 6 THEN 556 WHEN 7 THEN 185 WHEN 8 THEN 92.6 WHEN 9 THEN 30 WHEN 10 THEN 10 WHEN 11 THEN 3 ELSE NULL END WHEN nucp_or_nic IS NOT NULL THEN CASE nucp_or_nic WHEN 1 THEN 37040 WHEN 2 THEN 18520 WHEN 3 THEN 3704 WHEN 4 THEN 1852 WHEN 5 THEN 926 WHEN 6 THEN 370 WHEN 7 THEN 185 WHEN 8 THEN 25 WHEN 9 THEN 7.5 ELSE NULL END ELSE NULL END)/2.45 AS DOUBLE)",
+                    "db_expression": "",
+                    "db_expression_variables": "",
+                    "description": "Maximum standard deviation in meters",
+                    "dimension": "Length",
+                    "is_key": false,
+                    "name": "X/Y StdDev Max",
+                    "representation_str": "FLOAT_PREC2",
+                    "short_name": "",
+                    "unit": "Meter"
                 }
             }
         }

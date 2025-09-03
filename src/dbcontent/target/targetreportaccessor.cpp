@@ -309,14 +309,8 @@ boost::optional<targetReport::PositionAccuracy> TargetReportAccessor::positionAc
             return {}; // unknown mops version
         }
 
-        float conversion_factor = 2.5f;  // Default for NACp >= 9.
-
-        if (qi_epu < 9)
-            conversion_factor = 2.0f;
-
-        // Assuming an isotropic Gaussian error, the standard deviation (σ)
-        // is approximated by dividing the 95% bound (EPU) by the conversion factor.
-        float sigma = qi_epu / conversion_factor;
+        // EPU is the 95% horizontal error radius (R95). For a 2-D isotropic error (Rayleigh), R95≈2.45σ, so σ≈EPU/2.45
+        float sigma = qi_epu / 2.45;
 
         x_stddev = sigma;
         y_stddev = sigma;

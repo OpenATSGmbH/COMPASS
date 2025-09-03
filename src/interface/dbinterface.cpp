@@ -2700,7 +2700,7 @@ void DBInterface::prepareRead(const DBContent& dbcontent,
     shared_ptr<DBCommand> read = sqlGenerator().getSelectCommand(
         dbcontent, read_list, custom_filter_clause, use_order, order_variable);
 
-    logdbg << "sql '" << read->get() << "'";
+    loginf << "sql '" << read->get() << "'";
 
     Result res;
 
@@ -2714,8 +2714,8 @@ void DBInterface::prepareRead(const DBContent& dbcontent,
     
     if (!res.ok())
     {
-        logerr << "preparing read for dbcontent '" << dbcontent.name() << "' failed: " << res.error();
-        throw runtime_error("DBInterface: prepareRead: preparing read for dbcontent '" + dbcontent.name() + "' failed: " + res.error());
+        logerr << "preparing read for dbcontent '" << dbcontent.name() << "' command '" << read->get() << "' failed: " << res.error();
+        throw runtime_error("DBInterface: prepareRead: preparing read for dbcontent '" + dbcontent.name() + "' command '" + read->get() + "'failed: " + res.error());
     }
 }
 
