@@ -295,7 +295,7 @@ void VariableSelectionWidget::selectedVariable(Variable& variable)
     traced_assert(object_label_);
     traced_assert(variable_label_);
 
-    object_label_->setText(QString::fromStdString(variable.dbObject().name()));
+    object_label_->setText(QString::fromStdString(variable.dbContent().name()));
     variable_label_->setText(variable.name().c_str());
 
     variable_selected_ = true;

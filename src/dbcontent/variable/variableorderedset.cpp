@@ -277,7 +277,7 @@ bool VariableOrderedSet::hasVariable(const Variable& variable) const
     std::vector<std::pair<std::string,std::string>> tmp_vec = definitions();
 
     return std::find(tmp_vec.begin(), tmp_vec.end(),
-                     std::pair<std::string,std::string>{variable.dbObject().name(), variable.name()}) != tmp_vec.end();
+                     std::pair<std::string,std::string>{variable.dbContent().name(), variable.name()}) != tmp_vec.end();
 }
 
 bool VariableOrderedSet::hasMetaVariable(const MetaVariable& variable) const

@@ -106,7 +106,7 @@ class Variable : public QObject, public Property, public Configurable
     std::string& unit() { return unit_; }
     std::string dimensionUnitStr() const;
 
-    DBContent& dbObject() const
+    DBContent& dbContent() const
     {
         traced_assert(dbcontent_);
         return *dbcontent_;

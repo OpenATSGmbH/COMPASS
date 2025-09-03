@@ -132,7 +132,7 @@ std::string MetaVariable::getNameFor(const std::string& dbcontent_name)
 
 void MetaVariable::set(Variable& var)
 {
-    string dbcontent_name = var.dbObject().name();
+    string dbcontent_name = var.dbContent().name();
 
     loginf << name_ << ": dbcont " << dbcontent_name << " name " << var.name();
 

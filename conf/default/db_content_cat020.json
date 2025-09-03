@@ -1152,8 +1152,11 @@
                     "data_type_str": "DOUBLE",
                     "db_column_name": "",
                     "db_expression": "greatest(x_stddev,y_stddev)",
-                    "db_expression_variables": "{'X StdDev','Y StdDev'}",
-                    "description": "Maximum standard deviation in meters",
+                    "db_expression_variables": [
+                        "X StdDev",
+                        "Y StdDev"
+                    ],
+                    "description": "Derived maximum standard deviation based on X StdDev,Y StdDev in meters",
                     "dimension": "Length",
                     "is_key": false,
                     "name": "X/Y StdDev Max",
