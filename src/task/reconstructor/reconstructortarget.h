@@ -97,6 +97,10 @@ public:
             num_rec_smooth_target_failed    = 0;
             num_rec_interp_failed           = 0;
 
+            num_sec_unassoc           = 0;
+            num_po_unassoc            = 0;
+            num_sec_reassociated      = 0;
+            num_po_reassociated       = 0;
             num_jpda_runs             = 0;
             num_jpda_success          = 0;
             num_jpda_failed           = 0;
@@ -145,6 +149,10 @@ public:
         size_t num_rec_smooth_target_failed    = 0;
         size_t num_rec_interp_failed           = 0;
 
+        size_t num_sec_unassoc           = 0;
+        size_t num_po_unassoc            = 0;
+        size_t num_sec_reassociated      = 0;
+        size_t num_po_reassociated       = 0;
         size_t num_jpda_runs             = 0;
         size_t num_jpda_success          = 0;
         size_t num_jpda_failed           = 0;

@@ -1572,19 +1572,31 @@ void ReconstructorBase::doReconstructionReporting()
     table.addRow({"Rec interp steps", "", "", ""});
     table.addRow({"", "failed", stats.num_rec_interp_failed, ""});
 
+    table.addRow({"", "", "", ""});
+    table.addRow({"Primary Only", "", "", ""});
+
+    table.addRow({"secondarys unassoc", stats.num_sec_unassoc, "", ""});
+    table.addRow({"secondarys reassociated", stats.num_sec_reassociated, "", ""});
+    table.addRow({"secondary reassoc ratio", (double)stats.num_sec_reassociated / (double)stats.num_sec_unassoc * 100, "", ""});
+
+    table.addRow({"primary onlys unassoc", stats.num_po_unassoc, "", ""});
+    table.addRow({"primary onlys reassociated", stats.num_po_reassociated, "", ""});
+    table.addRow({"primary only reassoc ratio", (double)stats.num_po_reassociated / (double)stats.num_po_unassoc * 100, "", ""});
+
+    table.addRow({"reassociated", stats.num_sec_reassociated + stats.num_po_reassociated, "", ""});
+    table.addRow({"reassoc ratio", (double)(stats.num_sec_reassociated + stats.num_po_reassociated) / (double)(stats.num_po_unassoc + stats.num_sec_unassoc) * 100, "", ""});
+
     if (stats.num_jpda_runs > 0)
     {
-        table.addRow({"", "", "", ""});
-        table.addRow({"JPDA", "", "", ""});
-        table.addRow({"runs", stats.num_jpda_runs, "", ""});
-        table.addRow({"success", stats.num_jpda_success, "", ""});
-        table.addRow({"failed", stats.num_jpda_failed, "", ""});
-        table.addRow({"hypotheses max", stats.num_jpda_hyp_max, "", ""});
-        table.addRow({"measurements max", stats.num_jpda_mms_max, "", ""});
-        table.addRow({"assignments total", stats.num_jpda_assignments, "", ""});
-        table.addRow({"clutter total", stats.num_jpda_clutters, "", ""});
-        table.addRow({"assignment ratio 1", (double)stats.num_jpda_assignments / (double)(stats.num_jpda_assignments + stats.num_jpda_clutters) * 100, "", ""});
-        table.addRow({"assignment ratio 2", stats.jpda_assignment_ratio_sum / stats.num_jpda_success * 100, "", ""});
+        table.addRow({"jpda runs", stats.num_jpda_runs, "", ""});
+        table.addRow({"jpda success", stats.num_jpda_success, "", ""});
+        table.addRow({"jpda failed", stats.num_jpda_failed, "", ""});
+        table.addRow({"jpda hypotheses max", stats.num_jpda_hyp_max, "", ""});
+        table.addRow({"jpda measurements max", stats.num_jpda_mms_max, "", ""});
+        table.addRow({"jpda assignments total", stats.num_jpda_assignments, "", ""});
+        table.addRow({"jpda clutter total", stats.num_jpda_clutters, "", ""});
+        table.addRow({"jpda assignment ratio", (double)stats.num_jpda_assignments / (double)stats.num_po_unassoc * 100, "", ""});
+        table.addRow({"jpda assignment ratio per-batch", stats.jpda_assignment_ratio_sum / stats.num_jpda_success * 100, "", ""});
     }
 
     for (const auto& batch_stats : associator().batchStatistics())
