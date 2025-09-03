@@ -69,6 +69,10 @@ string SQLGenerator::getCreateTableStatement(const DBContent& object)
     for (auto& var_it : object.variables())
     {
         const auto& v = var_it.second;
+
+        if (!v->dbColumnName().size()) // if only db expression
+            continue;
+
         column_infos.push_back(DBTableColumnInfo(v->dbColumnName(), v->dataType(), v->isKey()));
     }
 
