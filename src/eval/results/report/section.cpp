@@ -327,7 +327,7 @@ namespace EvaluationResultsReport
     */
     void Section::accept(LatexVisitor& v) const
     {
-        loginf << "start";
+        loginf;
         v.visit(this);
     }
 

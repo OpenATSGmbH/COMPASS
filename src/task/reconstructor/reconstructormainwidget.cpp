@@ -171,7 +171,7 @@ ReconstructorMainWidget::~ReconstructorMainWidget() = default;
 */
 void ReconstructorMainWidget::updateValues()
 {
-    loginf << "start";
+    loginf;
 
     const auto& settings = reconstructor_.settings();
 

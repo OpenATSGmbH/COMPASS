@@ -845,7 +845,7 @@ void COMPASS::shutdown()
     //shut down command manager at the end
     RTCommandManager::instance().shutdown();
 
-    loginf << "end";
+    loginf << "done. goodbye.";
 }
 
 MainWindow& COMPASS::mainWindow()

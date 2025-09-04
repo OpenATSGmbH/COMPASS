@@ -295,7 +295,7 @@ void LabelGeneratorWidget::editDBContentSlot()
 
 void LabelGeneratorWidget::toggleUseUTNSlot()
 {
-    loginf << "start";
+    loginf;
 
     label_generator_.toggleUseUTN();
 }
@@ -303,7 +303,7 @@ void LabelGeneratorWidget::toggleUseUTNSlot()
 
 void LabelGeneratorWidget::labelAllDSSlot()
 {
-    loginf << "start";
+    loginf;
 
     label_generator_.labelAllDSIDs();
 
@@ -313,7 +313,7 @@ void LabelGeneratorWidget::labelAllDSSlot()
 
 void LabelGeneratorWidget::labelNoDSSlot()
 {
-    loginf << "start";
+    loginf;
 
     label_generator_.labelNoDSIDs();
 

@@ -222,7 +222,7 @@ void FilterManagerWidget::updateUseFilters ()
  */
 void FilterManagerWidget::addFilter()
 {
-    loginf << "start";
+    loginf;
     traced_assert(!filter_generator_widget_);
 
     filter_generator_widget_.reset(new FilterGeneratorWidget());
@@ -246,7 +246,7 @@ void FilterManagerWidget::filterWidgetActionSlot(bool generated)
  */
 void FilterManagerWidget::updateFilters()
 {
-    loginf << "start";
+    loginf;
 
     QLayoutItem* child;
     while (!ds_filter_layout_->isEmpty() && (child = ds_filter_layout_->takeAt(0)))

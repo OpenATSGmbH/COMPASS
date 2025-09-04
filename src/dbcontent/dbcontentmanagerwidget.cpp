@@ -150,7 +150,7 @@ DBContentManagerWidget::~DBContentManagerWidget()
 
 // void DBContentManagerWidget::databaseOpenedSlot ()
 //{
-//    loginf << "start";
+//    loginf;
 //}
 
 void DBContentManagerWidget::addDBContSlot()

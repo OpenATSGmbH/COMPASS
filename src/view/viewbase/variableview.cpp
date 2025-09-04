@@ -332,7 +332,7 @@ void VariableView::onEvalResultsChanged()
  */
 void VariableView::unshowViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     unshowViewPoint(vp);
 
@@ -351,7 +351,7 @@ void VariableView::unshowViewPointSlot (const ViewableDataConfig* vp)
  */
 void VariableView::showViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     showViewPoint(vp);
 

@@ -205,7 +205,7 @@ void EvaluationStandard::name(const std::string &name)
 
 void EvaluationStandard::groupsChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     emit configChangedSignal();
 }

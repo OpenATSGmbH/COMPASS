@@ -61,7 +61,7 @@ ViewPointsImportTaskWidget::~ViewPointsImportTaskWidget()
 
 void ViewPointsImportTaskWidget::updateText ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(context_edit_);
     context_edit_->setText("");

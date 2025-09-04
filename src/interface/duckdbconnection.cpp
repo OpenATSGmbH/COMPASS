@@ -51,14 +51,14 @@
 DuckDBConnection::DuckDBConnection(DuckDBInstance* instance, bool verbose)
 :   DBConnection(instance, verbose)
 {
-    //loginf << "start";
+    //loginf;
 }
 
 /**
  */
 DuckDBConnection::~DuckDBConnection()
 {
-    //loginf << "start";
+    //loginf;
 
     if (connected())
         disconnect();

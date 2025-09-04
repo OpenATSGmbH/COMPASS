@@ -189,7 +189,7 @@ nlohmann::json TaskResultHeader::toJSON() const
  */
 bool TaskResultHeader::fromJSON(const nlohmann::json& j)
 {
-    loginf << "HEADER:\n" << j.dump(4);
+    logdbg << "header:\n" << j.dump(4);
 
     if (!j.is_object() ||
         !j.contains(TaskResult::FieldMetaData)             ||

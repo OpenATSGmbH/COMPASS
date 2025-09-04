@@ -458,7 +458,7 @@ void EvaluationResultsGenerator::clear()
  */
 void EvaluationResultsGenerator::generateResultsReportGUI()
 {
-    loginf << "start";
+    loginf;
 
     boost::posix_time::ptime loading_start_time;
     boost::posix_time::ptime loading_stop_time;

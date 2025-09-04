@@ -148,7 +148,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateVariableDisplay()
  */
 bool HistogramViewDataWidget::updateFromAnnotations()
 {
-    loginf << "start";
+    loginf;
 
     if (!view_->hasCurrentAnnotation())
         return false;
@@ -185,7 +185,7 @@ bool HistogramViewDataWidget::updateFromAnnotations()
  */
 void HistogramViewDataWidget::updateFromVariables()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(view_->numVariables() == 1);
     traced_assert(view_->variable(0).hasVariable());
@@ -298,7 +298,7 @@ QPixmap HistogramViewDataWidget::renderPixmap()
  */
 ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 {
-    loginf << "start";
+    loginf;
 
     //check if data is present/valid
     bool has_data = histogram_raw_.hasData() && (variablesOk() || view_->showsAnnotation());
@@ -518,7 +518,7 @@ void HistogramViewDataWidget::rectangleSelectedSlot(unsigned int index1, unsigne
  */
 void HistogramViewDataWidget::invertSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
@@ -541,7 +541,7 @@ void HistogramViewDataWidget::invertSelectionSlot()
  */
 void HistogramViewDataWidget::clearSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
@@ -559,7 +559,7 @@ void HistogramViewDataWidget::clearSelectionSlot()
  */
 void HistogramViewDataWidget::resetZoomSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (histogram_generator_ && histogram_generator_->subRangeActive())
     {

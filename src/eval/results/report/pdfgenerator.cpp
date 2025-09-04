@@ -94,7 +94,7 @@ bool PDFGenerator::pdfLatexFound() const
 
 void PDFGenerator::run ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->setRunning(true);
@@ -333,7 +333,7 @@ void PDFGenerator::run ()
 
 void PDFGenerator::cancel ()
 {
-    loginf << "start";
+    loginf;
 
     cancel_ = true;
 

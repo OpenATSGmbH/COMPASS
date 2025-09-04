@@ -482,7 +482,7 @@ void Sector::setMinimumAltitude(double value)
 */
 void Sector::removeMinimumAltitude()
 {
-    loginf << "start";
+    loginf;
 
     min_altitude_.reset();
 
@@ -515,7 +515,7 @@ void Sector::setMaximumAltitude(double value)
 */
 void Sector::removeMaximumAltitude()
 {
-    loginf << "start";
+    loginf;
 
     max_altitude_.reset();
 

@@ -132,7 +132,7 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
  */
 void EvaluationStandardTabWidget::changedStandardsSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(standard_box_);
     standard_box_->updateStandards();
@@ -142,7 +142,7 @@ void EvaluationStandardTabWidget::changedStandardsSlot()
  */
 void EvaluationStandardTabWidget::changedCurrentStandardSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(standard_box_);
     standard_box_->setStandardName(calculator_.currentStandardName());
@@ -155,7 +155,7 @@ void EvaluationStandardTabWidget::changedCurrentStandardSlot()
  */
 void EvaluationStandardTabWidget::addStandardSlot ()
 {
-    loginf << "start";
+    loginf;
 
     bool ok;
     QString text =
@@ -190,7 +190,7 @@ void EvaluationStandardTabWidget::addStandardSlot ()
  */
 void EvaluationStandardTabWidget::renameStandardSlot ()
 {
-    loginf << "start";
+    loginf;
 
     bool ok;
     QString text =
@@ -226,7 +226,7 @@ void EvaluationStandardTabWidget::renameStandardSlot ()
  */
 void EvaluationStandardTabWidget::copyStandardSlot ()
 {
-    loginf << "start";
+    loginf;
 
     bool ok;
     QString text =
@@ -261,7 +261,7 @@ void EvaluationStandardTabWidget::copyStandardSlot ()
  */
 void EvaluationStandardTabWidget::removeStandardSlot ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(calculator_.hasCurrentStandard());
     calculator_.deleteCurrentStandard();

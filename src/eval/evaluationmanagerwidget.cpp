@@ -195,7 +195,7 @@ void EvaluationManagerWidget::reshowLastResultId()
  */
 void EvaluationManagerWidget::generateReportSlot()
 {
-    loginf << "start";
+    loginf;
 
     eval_man_.generateReport();
 }

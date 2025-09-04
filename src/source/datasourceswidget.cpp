@@ -944,7 +944,7 @@ void DataSourcesWidget::updateAdditionalInfo()
  */
 void DataSourcesWidget::selectAllDSTypes()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& ds_type_name : DataSourceManager::data_source_types_)
         setUseDSType(ds_type_name, true);
@@ -956,7 +956,7 @@ void DataSourcesWidget::selectAllDSTypes()
  */
 void DataSourcesWidget::deselectAllDSTypes()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& ds_type_name : DataSourceManager::data_source_types_)
         setUseDSType(ds_type_name, false);
@@ -968,7 +968,7 @@ void DataSourcesWidget::deselectAllDSTypes()
  */
 void DataSourcesWidget::selectAllDataSources()
 {
-    loginf << "start";
+    loginf;
 
     for (const auto& ds_it : ds_man_.dbDataSources())
         setUseDS(ds_it->id(), true);
@@ -980,7 +980,7 @@ void DataSourcesWidget::selectAllDataSources()
  */
 void DataSourcesWidget::deselectAllDataSources()
 {
-    loginf << "start";
+    loginf;
 
     for (const auto& ds_it : ds_man_.dbDataSources())
         setUseDS(ds_it->id(), false);
@@ -1028,7 +1028,7 @@ void DataSourcesWidget::deselectDSTypeSpecificDataSources()
  */
 void DataSourcesWidget::deselectAllLines()
 {
-    loginf << "start";
+    loginf;
 
     for (const auto& ds_it : ds_man_.dbDataSources())
         for (int line = 0; line < 4; ++line)
@@ -1058,7 +1058,7 @@ void DataSourcesWidget::selectSpecificLines()
  */
 void DataSourcesWidget::toogleShowCounts()
 {
-    loginf << "start";
+    loginf;
 
     setShowCounts(!getShowCounts());
 

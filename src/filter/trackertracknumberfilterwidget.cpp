@@ -41,7 +41,7 @@ TrackerTrackNumberFilterWidget::~TrackerTrackNumberFilterWidget() = default;
 
 void TrackerTrackNumberFilterWidget::update()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(child_layout_);
 

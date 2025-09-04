@@ -55,7 +55,7 @@ ViewPointsTableModel::ViewPointsTableModel(ViewManager& view_manager)
 
 void ViewPointsTableModel::loadViewPoints()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -85,7 +85,7 @@ void ViewPointsTableModel::loadViewPoints()
 }
 void ViewPointsTableModel::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -101,7 +101,7 @@ void ViewPointsTableModel::addViewPoints(const std::vector <nlohmann::json>& vie
 
 void ViewPointsTableModel::clearViewPoints()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -282,7 +282,7 @@ bool ViewPointsTableModel::setData(const QModelIndex& index, const QVariant &val
 
 bool ViewPointsTableModel::updateTableColumns()
 {
-    loginf << "start";
+    loginf;
 
     bool changed = false;
 
@@ -314,7 +314,7 @@ bool ViewPointsTableModel::updateTableColumns()
 
 void ViewPointsTableModel::updateTypes()
 {
-    loginf << "start";
+    loginf;
 
     QStringList old_types = types_;
     types_.clear();
@@ -342,7 +342,7 @@ void ViewPointsTableModel::updateTypes()
 
 void ViewPointsTableModel::updateStatuses()
 {
-    loginf << "start";
+    loginf;
 
     QStringList old_statuses = statuses_;
     statuses_.clear();
@@ -530,7 +530,7 @@ void ViewPointsTableModel::exportViewPoints (const std::string& filename)
 
 //void ViewPointsTableModel::update()
 //{
-//    loginf << "start";
+//    loginf;
 //    beginResetModel();
 //    updateTableColumns();
 //    endResetModel();

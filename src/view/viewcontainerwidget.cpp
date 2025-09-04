@@ -86,7 +86,7 @@ ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
 
 ViewContainerWidget::~ViewContainerWidget()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(view_container_);
     delete view_container_;

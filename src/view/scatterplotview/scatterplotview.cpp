@@ -67,7 +67,7 @@ ScatterPlotView::ScatterPlotView(const std::string& class_id,
 */
 ScatterPlotView::~ScatterPlotView()
 {
-    loginf << "start";
+    loginf;
 
     if (data_source_)
     {
@@ -214,7 +214,7 @@ void ScatterPlotView::useConnectionLines(bool value, bool redraw)
 */
 void ScatterPlotView::updateSelection()
 {
-    loginf << "start";
+    loginf;
     traced_assert(widget_);
 
     widget_->getViewDataWidget()->redrawData(true);
@@ -229,7 +229,7 @@ void ScatterPlotView::updateSelection()
 */
 void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(vp);
     traced_assert(data_source_);
@@ -240,7 +240,7 @@ void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
 */
 void ScatterPlotView::showViewPoint(const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(vp);
     traced_assert(data_source_);

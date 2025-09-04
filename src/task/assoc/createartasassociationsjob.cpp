@@ -168,7 +168,7 @@ size_t CreateARTASAssociationsJob::missingHashesAtBeginning() const
 
 void CreateARTASAssociationsJob::createUniqueARTASTracks()
 {
-    loginf << "start";
+    loginf;
 
     if (!buffers_.count(tracker_dbcontent_name_))
     {
@@ -383,7 +383,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
 
 void CreateARTASAssociationsJob::createARTASAssociations()
 {
-    loginf << "start";
+    loginf;
 
     // set utns in tracker rec_nums
 
@@ -395,7 +395,7 @@ void CreateARTASAssociationsJob::createARTASAssociations()
 
 void CreateARTASAssociationsJob::saveAssociations()
 {
-    loginf << "start";
+    loginf;
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
@@ -518,7 +518,7 @@ void CreateARTASAssociationsJob::saveAssociations()
 
 void CreateARTASAssociationsJob::createSensorAssociations()
 {
-    loginf << "start";
+    loginf;
     // for each rec_num + tri, find sensor hash + rec_num
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
@@ -701,7 +701,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
 
 void CreateARTASAssociationsJob::removePreviousAssociations()
 {
-    loginf << "start";
+    loginf;
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 

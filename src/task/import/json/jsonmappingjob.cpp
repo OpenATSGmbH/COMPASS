@@ -57,7 +57,7 @@ JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
 
 JSONMappingJob::~JSONMappingJob()
 {
-    loginf << "start";
+    loginf;
     traced_assert(done_);
 }
 

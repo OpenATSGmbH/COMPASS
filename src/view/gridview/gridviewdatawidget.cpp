@@ -159,7 +159,7 @@ ViewDataWidget::DrawState GridViewDataWidget::updateVariableDisplay()
 */
 void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 {
-    loginf << "start";
+    loginf;
 
     const auto& data_ranges = getStash().dataRanges();
 
@@ -266,7 +266,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 */
 bool GridViewDataWidget::updateFromAnnotations()
 {
-    loginf << "start";
+    loginf;
 
     if (!view_->hasCurrentAnnotation())
         return false;
@@ -383,7 +383,7 @@ boost::optional<std::pair<double, double>> GridViewDataWidget::getZVariableBound
 */
 void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
 {
-    loginf << "start";
+    loginf;
 
     if (grid_chart_ && grid_chart_->chart())
     {
@@ -413,7 +413,7 @@ void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
 */
 void GridViewDataWidget::invertSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
@@ -436,7 +436,7 @@ void GridViewDataWidget::invertSelectionSlot()
 */
 void GridViewDataWidget::clearSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
@@ -454,7 +454,7 @@ void GridViewDataWidget::clearSelectionSlot()
 */
 void GridViewDataWidget::resetZoomSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (grid_chart_)
         grid_chart_->resetZoom();

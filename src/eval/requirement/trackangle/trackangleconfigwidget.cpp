@@ -89,7 +89,7 @@ void TrackAngleConfigWidget::thresholdValueEditSlot(QString value)
 
 void TrackAngleConfigWidget::toggleUseMinimumSpeedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_minimum_speed_check_);
     config().useMinimumSpeed(use_minimum_speed_check_->checkState() == Qt::Checked);
@@ -120,7 +120,7 @@ void TrackAngleConfigWidget::changedThresholdValueCheckTypeSlot()
 
 void TrackAngleConfigWidget::toggleFailedValuesOfInterestSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(failed_values_of_interest_check_);
     config().failedValuesOfInterest(failed_values_of_interest_check_->checkState() == Qt::Checked);

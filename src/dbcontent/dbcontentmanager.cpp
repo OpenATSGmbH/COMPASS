@@ -187,7 +187,7 @@ void DBContentManager::deleteDBContent(const std::string& dbcontent_name)
  */
 void DBContentManager::deleteDBContentData(boost::posix_time::ptime before_timestamp)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(!delete_job_);
 
@@ -493,7 +493,7 @@ std::map<std::string, std::shared_ptr<Buffer>> DBContentManager::loadedData()
  */
 void DBContentManager::quitLoading()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(load_in_progress_);
 
@@ -510,7 +510,7 @@ void DBContentManager::quitLoading()
  */
 void DBContentManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     loadMaxRecordNumberWODBContentID();
     loadMaxRefTrajTrackNum();
@@ -581,7 +581,7 @@ void DBContentManager::databaseOpenedSlot()
  */
 void DBContentManager::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     max_rec_num_wo_dbcontid_ = 0;
     has_max_rec_num_wo_dbcontid_ = false;
@@ -735,7 +735,7 @@ bool DBContentManager::loadInProgress() const
  */
 void DBContentManager::clearData()
 {
-    loginf << "start";
+    loginf;
 
     data_.clear();
 
@@ -1086,7 +1086,7 @@ void DBContentManager::finishInserting()
  */
 void DBContentManager::addInsertedDataToChache()
 {
-    loginf << "start";
+    loginf;
 
     //assert (label_generator_);
 
@@ -1558,7 +1558,7 @@ dbContent::Target& DBContentManager::target(unsigned int utn)
  */
 void DBContentManager::loadTargets()
 {
-    loginf << "start";
+    loginf;
 
     target_model_->loadFromDB();
 
@@ -1570,7 +1570,7 @@ void DBContentManager::loadTargets()
  */
 void DBContentManager::saveTargets()
 {
-    loginf << "start";
+    loginf;
 
     target_model_->saveToDB();
 }
@@ -1794,7 +1794,7 @@ void DBContentManager::storeSelectedRecNums(const std::vector<unsigned long>& se
 
 void DBContentManager::clearSelectedRecNums()
 {
-    loginf << "start";
+    loginf;
 
     tmp_selected_rec_nums_.clear();
 
@@ -1811,7 +1811,7 @@ void DBContentManager::clearSelectedRecNums()
  */
 void DBContentManager::saveSelectedRecNums()
 {
-    loginf << "start";
+    loginf;
 
     if(tmp_selected_rec_nums_.size())
         return; // already stored from view point

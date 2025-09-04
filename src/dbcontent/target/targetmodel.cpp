@@ -457,7 +457,7 @@ void TargetModel::setTargetComment (std::set<unsigned int> utns, std::string com
  */
 void TargetModel::clearAllTargetComments ()
 {
-    loginf << "start";
+    loginf;
 
     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
         target_data_.modify(target_it, [](Target& p) { p.comment(""); });
@@ -494,7 +494,7 @@ void TargetModel::clearEvalExcludeTimeWindows(std::set<unsigned int> utns)
 
 void TargetModel::clearAllEvalExcludeTimeWindows()
 {
-    loginf << "start";
+    loginf;
 
     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
         target_data_.modify(target_it, [](Target& p) { p.clearEvalExcludedTimeWindows(); });
@@ -529,7 +529,7 @@ void TargetModel::clearEvalExcludeRequirements(std::set<unsigned int> utns)
 
 void TargetModel::clearAllEvalExcludeRequirements()
 {
-    loginf << "start";
+    loginf;
 
     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
         target_data_.modify(target_it, [](Target& p) { p.clearEvalExcludedRequirements(); });
@@ -544,7 +544,7 @@ void TargetModel::clearAllEvalExcludeRequirements()
  */
 void TargetModel::setUseByFilter ()
 {
-    loginf << "start";
+    loginf;
 
     COMPASS::instance().evaluationManager().targetFilter().setUse(target_data_);
 
@@ -776,7 +776,7 @@ nlohmann::json TargetModel::utnsAsJSON() const
  */
 void TargetModel::loadFromDB()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 

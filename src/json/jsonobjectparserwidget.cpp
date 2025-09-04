@@ -161,7 +161,7 @@ void JSONObjectParserWidget::updateActive()
 
 void JSONObjectParserWidget::updateMappingsGrid()
 {
-    loginf << "start";
+    loginf;
     traced_assert(parser_);
     traced_assert(mappings_grid_);
 
@@ -309,7 +309,7 @@ void JSONObjectParserWidget::setParser(JSONObjectParser& parser) { parser_ = &pa
 
 //void JSONObjectParserWidget::toggleActiveSlot ()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    QCheckBox* widget = static_cast<QCheckBox*>(sender());
 //    traced_assert(widget);
@@ -372,7 +372,7 @@ void JSONObjectParserWidget::addNewMappingSlot()
 
 void JSONObjectParserWidget::mappingActiveChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
     traced_assert(widget);
@@ -410,7 +410,7 @@ void JSONObjectParserWidget::mappingActiveChangedSlot()
 
 void JSONObjectParserWidget::mappingKeyChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     QLineEdit* widget = static_cast<QLineEdit*>(sender());
     traced_assert(widget);
@@ -424,7 +424,7 @@ void JSONObjectParserWidget::mappingKeyChangedSlot()
 
 void JSONObjectParserWidget::mappingCommentChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     QLineEdit* widget = static_cast<QLineEdit*>(sender());
     traced_assert(widget);
@@ -438,7 +438,7 @@ void JSONObjectParserWidget::mappingCommentChangedSlot()
 
 void JSONObjectParserWidget::mappingDBContentVariableChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     dbContent::VariableSelectionWidget* var_widget =
             static_cast<dbContent::VariableSelectionWidget*>(sender());
@@ -465,7 +465,7 @@ void JSONObjectParserWidget::mappingDBContentVariableChangedSlot()
 
 void JSONObjectParserWidget::mappingMandatoryChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
     traced_assert(widget);
@@ -479,7 +479,7 @@ void JSONObjectParserWidget::mappingMandatoryChangedSlot()
 
 void JSONObjectParserWidget::mappingInArrayChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
     traced_assert(widget);
@@ -493,7 +493,7 @@ void JSONObjectParserWidget::mappingInArrayChangedSlot()
 
 void JSONObjectParserWidget::mappingAppendChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
     traced_assert(widget);
@@ -507,7 +507,7 @@ void JSONObjectParserWidget::mappingAppendChangedSlot()
 
 void JSONObjectParserWidget::mappingDeleteSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* widget = static_cast<QPushButton*>(sender());
     traced_assert(widget);

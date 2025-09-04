@@ -170,7 +170,7 @@ void IntervalBaseConfigWidget::updateIntervalEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleUseMinGapLengthSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (use_min_gap_length_check_)
     {
@@ -195,7 +195,7 @@ void IntervalBaseConfigWidget::minGapLengthEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleUseMaxGapLengthSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (use_max_gap_length_check_)
     {
@@ -220,7 +220,7 @@ void IntervalBaseConfigWidget::maxGapLengthEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleUseMissToleranceSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (use_miss_tolerance_check_)
     {
@@ -245,7 +245,7 @@ void IntervalBaseConfigWidget::missToleranceEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleHoldForAnyTargetSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (hold_for_any_target_check_)
     {

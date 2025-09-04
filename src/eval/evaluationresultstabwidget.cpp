@@ -103,7 +103,7 @@ EvaluationResultsTabWidget::~EvaluationResultsTabWidget() = default;
 
 void EvaluationResultsTabWidget::expand()
 {
-    loginf << "start";
+    loginf;
 
     tree_view_->expandToDepth(3);
 }
@@ -217,7 +217,7 @@ void EvaluationResultsTabWidget::showFigure(const QModelIndex& index)
 
 void EvaluationResultsTabWidget::stepBackSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(id_history_.size() > 1);
 

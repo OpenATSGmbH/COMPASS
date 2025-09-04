@@ -75,7 +75,7 @@ IdentificationFalseConfigWidget::IdentificationFalseConfigWidget(IdentificationF
 
 void IdentificationFalseConfigWidget::toggleRequireCorrectnessOfAllSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(require_all_false_check_);
     config().requireAllFalse(require_all_false_check_->checkState() == Qt::Checked);
@@ -84,7 +84,7 @@ void IdentificationFalseConfigWidget::toggleRequireCorrectnessOfAllSlot()
 
 void IdentificationFalseConfigWidget::toggleUseModeASlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_mode_a_check_);
     config().useModeA(use_mode_a_check_->checkState() == Qt::Checked);
@@ -92,7 +92,7 @@ void IdentificationFalseConfigWidget::toggleUseModeASlot()
 
 void IdentificationFalseConfigWidget::toggleUseMsTaSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_ms_ta_check_);
     config().useMsTa(use_ms_ta_check_->checkState() == Qt::Checked);
@@ -101,7 +101,7 @@ void IdentificationFalseConfigWidget::toggleUseMsTaSlot()
 
 void IdentificationFalseConfigWidget::toggleUseMsTiSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_ms_ti_check_);
     config().useMsTi(use_ms_ti_check_->checkState() == Qt::Checked);

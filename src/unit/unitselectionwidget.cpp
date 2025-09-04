@@ -106,7 +106,7 @@ void UnitSelectionWidget::clear()
 
 void UnitSelectionWidget::showMenuSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(pointers_set_);
 

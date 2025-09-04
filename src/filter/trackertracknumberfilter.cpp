@@ -264,7 +264,7 @@ std::map<std::string, std::map<std::string, std::string>> TrackerTrackNumberFilt
 
 void TrackerTrackNumberFilter::updateDataSourcesSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
         widget_->update();

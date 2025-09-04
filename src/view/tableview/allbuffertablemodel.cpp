@@ -591,7 +591,7 @@ void AllBufferTableModel::rebuild()
 
 std::pair<int,int> AllBufferTableModel::getSelectedRows()
 {
-    loginf << "start";
+    loginf;
 
     unsigned int dbcont_num;
     unsigned int buffer_index;

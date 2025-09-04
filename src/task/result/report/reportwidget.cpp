@@ -139,7 +139,7 @@ void ReportWidget::clear()
 
 void ReportWidget::expand()
 {
-    loginf << "start";
+    loginf;
 
     tree_view_->expandToDepth(3);
 }
@@ -282,7 +282,7 @@ void ReportWidget::showFigure(const QModelIndex& index)
 
 void ReportWidget::stepBackSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(id_history_.size() > 1);
 

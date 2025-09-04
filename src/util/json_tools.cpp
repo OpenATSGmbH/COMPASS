@@ -142,7 +142,7 @@ void applyFunctionToValues(nlohmann::json& j, const std::vector<std::string>& ke
 
     if (j.contains(*current_key_it))
     {
-        // loginf << "start";
+        // loginf;
         nlohmann::json& value = j.at(*current_key_it);
 
         if (value.is_object())

@@ -335,7 +335,7 @@ void EvaluationCalculator::reset()
  */
 void EvaluationCalculator::clearData()
 {
-    loginf << "start";
+    loginf;
 
     data_->clear();
     results_gen_->clear();
@@ -355,7 +355,7 @@ Result EvaluationCalculator::evaluate(bool update_report,
                                       const std::vector<unsigned int>& utns,
                                       const std::vector<Evaluation::RequirementResultID>& requirements)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(canEvaluate().ok());
 
@@ -415,7 +415,7 @@ Result EvaluationCalculator::evaluate(bool update_report,
  */
 Result EvaluationCalculator::loadingDone()
 {
-    loginf << "start";
+    loginf;
 
     if (active_load_connection_)
     {
@@ -472,7 +472,7 @@ Result EvaluationCalculator::loadingDone()
  */
 Result EvaluationCalculator::evaluateData()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(data_loaded_);
     traced_assert(canEvaluate().ok());
@@ -1055,7 +1055,7 @@ void EvaluationCalculator::updateSectorLayers()
  */
 void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
 {
-    loginf << "start";
+    loginf;
 
     if (!hasValidReferenceDBContent())
         return;
@@ -1097,7 +1097,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
  */
 void EvaluationCalculator::checkTestDataSources(bool update_settings)
 {
-    loginf << "start";
+    loginf;
 
     if (!hasValidTestDBContent())
         return;
@@ -1550,7 +1550,7 @@ void EvaluationCalculator::useRequirement(const std::string& standard_name,
  */
 void EvaluationCalculator::updateSectorROI()
 {
-    loginf << "start";
+    loginf;
 
     sector_roi_.reset();
 
@@ -1618,7 +1618,7 @@ void EvaluationCalculator::updateSectorROI()
  */
 void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sources)
 {
-    loginf << "start";
+    loginf;
 
     tst_srcs_coverage_->clear();
 

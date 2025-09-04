@@ -53,7 +53,7 @@ ASTERIXDecodeJob::ASTERIXDecodeJob(ASTERIXImportTask& task,
 */
 ASTERIXDecodeJob::~ASTERIXDecodeJob()
 {
-    loginf << "start";
+    loginf;
     traced_assert(done_);
 }
 
@@ -61,7 +61,7 @@ ASTERIXDecodeJob::~ASTERIXDecodeJob()
 */
 void ASTERIXDecodeJob::run_impl()
 {
-    loginf << "start";
+    loginf;
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
     started_    = true;

@@ -98,7 +98,7 @@ ASTERIXJSONParserWidget::~ASTERIXJSONParserWidget()
 
 void ASTERIXJSONParserWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }

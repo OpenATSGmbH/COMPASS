@@ -242,7 +242,7 @@ void GPSImportCSVTaskWidget::todOffsetEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::mode3ACheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(set_mode_3a_code_check_);
     task_.setMode3aCode(set_mode_3a_code_check_->checkState() == Qt::Checked);
@@ -260,7 +260,7 @@ void GPSImportCSVTaskWidget::mode3AEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::targetAddressCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(set_target_address_check_);
     task_.setTargetAddress(set_target_address_check_->checkState() == Qt::Checked);
@@ -278,7 +278,7 @@ void GPSImportCSVTaskWidget::targetAddressEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::callsignCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(set_callsign_check_);
     task_.setCallsign(set_callsign_check_->checkState() == Qt::Checked);
@@ -345,21 +345,21 @@ void GPSImportCSVTaskWidget::expertModeChangedSlot() {}
 
 //void GPSImportCSVTaskWidget::runStarted()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    //test_button_->setDisabled(true);
 //}
 
 //void GPSImportCSVTaskWidget::runDone()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    //test_button_->setDisabled(false);
 //}
 
 void GPSImportCSVTaskWidget::updateText ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(text_edit_);
 

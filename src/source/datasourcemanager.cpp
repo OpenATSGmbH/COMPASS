@@ -182,7 +182,7 @@ void DataSourceManager::importDataSources(const std::string& filename)
 
 void DataSourceManager::importDataSourcesJSONDeprecated(const nlohmann::json& j)
 {
-    loginf << "start";
+    loginf;
 
     for (auto& j_dbcont_it : j.items())
     {
@@ -216,7 +216,7 @@ void DataSourceManager::importDataSourcesJSONDeprecated(const nlohmann::json& j)
 
 void DataSourceManager::importDataSourcesJSON(const nlohmann::json& j)
 {
-    loginf << "start";
+    loginf;
 
     if (!j.contains("content_type")
             || !j.at("content_type").is_string()
@@ -259,7 +259,7 @@ void DataSourceManager::importDataSourcesJSON(const nlohmann::json& j)
 
 void DataSourceManager::deleteAllConfigDataSources()
 {
-    loginf << "start";
+    loginf;
 
     for(auto it = config_data_sources_.begin(); it != config_data_sources_.end();)
     {
@@ -576,7 +576,7 @@ void DataSourceManager::setLoadDataSources (bool loading_wanted)
 
 void DataSourceManager::setLoadAllDataSourceLines ()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& ds_it : db_data_sources_)
         ds_it->enableAllLines();
@@ -587,7 +587,7 @@ void DataSourceManager::setLoadAllDataSourceLines ()
 
 void DataSourceManager::setLoadOnlyDataSources (std::map<unsigned int, std::set<unsigned int>> ds_ids)
 {
-    loginf << "start";
+    loginf;
 
     // deactivate all loading
     setLoadDataSources(false);
@@ -630,7 +630,7 @@ std::map<unsigned int, std::set<unsigned int>> DataSourceManager::getLoadDataSou
 
 void DataSourceManager::resetToStartupConfiguration()
 {
-    loginf << "start";
+    loginf;
 
     selectAllDSTypes();
     selectAllDataSources();
@@ -640,7 +640,7 @@ void DataSourceManager::resetToStartupConfiguration()
 void DataSourceManager::databaseOpenedSlot()
 {
 
-    loginf << "start";
+    loginf;
 
     loadDBDataSources();
 
@@ -664,7 +664,7 @@ void DataSourceManager::databaseClosedSlot()
 
 void DataSourceManager::configurationDialogDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     config_dialog_->hide();
     config_dialog_ = nullptr;
@@ -817,7 +817,7 @@ void DataSourceManager::createConfigDataSourcesFromDB()
 
 void DataSourceManager::saveDBDataSources()
 {
-    loginf << "start";
+    loginf;
 
     DBInterface& db_interface = COMPASS::instance().dbInterface();
 

@@ -931,7 +931,7 @@ void GPSTrailImportTask::run()
 */
 void GPSTrailImportTask::insertDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     buffer_ = nullptr;
 
@@ -992,5 +992,5 @@ void GPSTrailImportTask::onConfigurationChanged(const std::vector<std::string>& 
 
 //void GPSTrailImportTask::checkParsedData ()
 //{
-//    loginf << "start";
+//    loginf;
 //}

@@ -336,13 +336,13 @@ void FilterManager::reset()
 
 void FilterManager::unshowViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
     traced_assert(vp);
 }
 
 void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
     traced_assert(vp);
 
     const json& data = vp->data();
@@ -433,7 +433,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
 void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
-    loginf << "start";
+    loginf;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -473,7 +473,7 @@ FilterManagerWidget* FilterManager::widget()
 
 void FilterManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
         widget_->setDisabled(false);
@@ -484,7 +484,7 @@ void FilterManager::databaseOpenedSlot()
 
 void FilterManager::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
         widget_->setDisabled(true);
@@ -492,7 +492,7 @@ void FilterManager::databaseClosedSlot()
 
 void FilterManager::dataSourcesChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (hasFilter("Tracker Track Number"))
     {
@@ -504,7 +504,7 @@ void FilterManager::dataSourcesChangedSlot()
 
 void FilterManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
-    loginf << "start";
+    loginf;
 
     for (auto& fil_it : filters_)
         fil_it->updateToAppMode(app_mode_current);
@@ -512,7 +512,7 @@ void FilterManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mo
 
 //void FilterManager::startedSlot()
 //{
-//    loginf << "start";
+//    loginf;
 //    createSubConfigurables();
 
 //    std::string tmpstr = COMPASS::instance().interface().connection().identifier();
@@ -540,7 +540,7 @@ void FilterManager::disableAllFilters ()
 
 void FilterManager::filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>& data)
 {
-    loginf << "start";
+    loginf;
 
     vector<unsigned int> indexes_to_remove;
 
@@ -559,7 +559,7 @@ void FilterManager::filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>
 
 void FilterManager::resetToStartupConfiguration()
 {
-    loginf << "start";
+    loginf;
 
     disableAllFilters();
 

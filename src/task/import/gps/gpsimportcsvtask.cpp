@@ -644,7 +644,7 @@ void GPSImportCSVTask::run()
 
 void GPSImportCSVTask::insertDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     buffer_ = nullptr;
 
@@ -691,5 +691,5 @@ void GPSImportCSVTask::dialogCancelSlot()
 
 //void GPSImportCSVTask::checkParsedData ()
 //{
-//    loginf << "start";
+//    loginf;
 //}

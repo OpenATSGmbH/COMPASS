@@ -95,7 +95,7 @@ void TableViewDataWidget::clearIntermediateRedrawData_impl()
 
 void TableViewDataWidget::loadingStarted_impl()
 {
-    loginf << "start";
+    loginf;
     //nothing to do yet
 }
 
@@ -184,7 +184,7 @@ void TableViewDataWidget::exportDoneSlot(bool cancelled)
 
 void TableViewDataWidget::updateToSettingsChange()
 {
-    loginf << "start";
+    loginf;
 
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->updateToSettingsChange();

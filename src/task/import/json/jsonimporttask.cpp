@@ -308,7 +308,7 @@ void JSONImportTask::run()
 
 void JSONImportTask::dialogImportSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->hide();
@@ -319,7 +319,7 @@ void JSONImportTask::dialogImportSlot()
 
 void JSONImportTask::dialogTestImportSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->hide();
@@ -332,7 +332,7 @@ void JSONImportTask::dialogTestImportSlot()
 }
 void JSONImportTask::dialogCancelSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->hide();
@@ -340,7 +340,7 @@ void JSONImportTask::dialogCancelSlot()
 
 void JSONImportTask::addReadJSONSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(read_json_job_);
 
@@ -407,7 +407,7 @@ void JSONImportTask::readJSONFileObsoleteSlot()
 
 void JSONImportTask::parseJSONDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(json_parse_job_);
 
@@ -490,7 +490,7 @@ void JSONImportTask::parseJSONObsoleteSlot()
 
 void JSONImportTask::mapJSONDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     JSONMappingJob* map_job = dynamic_cast<JSONMappingJob*>(QObject::sender());
     traced_assert(map_job);
@@ -1044,7 +1044,7 @@ bool JSONImportTask::maxLoadReached()
 
 void JSONImportTask::insertDoneSlot()
 {
-    loginf << "start";
+    loginf;
     --insert_active_;
 
     bool test = test_; // test_ cleared by checkAllDone

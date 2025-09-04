@@ -46,7 +46,7 @@ ProjectionManager::ProjectionManager()
     : Configurable("ProjectionManager", "ProjectionManager0", 0, "projection.json"),
     mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
 {
-    loginf << "start";
+    loginf;
 
     registerParameter("current_projection_name", &current_projection_name_, RS2G_NAME);
 

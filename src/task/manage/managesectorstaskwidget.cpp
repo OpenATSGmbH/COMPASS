@@ -393,7 +393,7 @@ void ManageSectorsTaskWidget::selectFile(const std::string& filename)
 
 void ManageSectorsTaskWidget::updateParseMessage ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(parse_msg_edit_);
     parse_msg_edit_->setText(task_.parseMessage().c_str());
@@ -403,7 +403,7 @@ void ManageSectorsTaskWidget::updateParseMessage ()
 
 void ManageSectorsTaskWidget::deleteFileSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (!file_list_->currentItem() || !task_.currentFilename().size())
     {
@@ -420,7 +420,7 @@ void ManageSectorsTaskWidget::deleteFileSlot()
 
 void ManageSectorsTaskWidget::deleteAllFilesSlot()
 {
-    loginf << "start";
+    loginf;
     task_.removeAllFiles();
 }
 
@@ -459,7 +459,7 @@ void ManageSectorsTaskWidget::updateFileListSlot()
 
 void ManageSectorsTaskWidget::importSlot()
 {
-    loginf << "start";
+    loginf;
 
 
     string filename = task_.currentFilename();
@@ -488,7 +488,7 @@ void ManageSectorsTaskWidget::importSlot()
 
 void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(item);
     traced_assert(sector_table_);
@@ -576,7 +576,7 @@ void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
 
 void ManageSectorsTaskWidget::changeSectorColorSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* button = dynamic_cast<QPushButton*>(sender());
     traced_assert(button);
@@ -607,7 +607,7 @@ void ManageSectorsTaskWidget::changeSectorColorSlot()
 
 void ManageSectorsTaskWidget::deleteSectorSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* button = dynamic_cast<QPushButton*>(sender());
     traced_assert(button);
@@ -630,7 +630,7 @@ void ManageSectorsTaskWidget::deleteSectorSlot()
 
 void ManageSectorsTaskWidget::exportSectorsSlot ()
 {
-    loginf << "start";
+    loginf;
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
@@ -657,7 +657,7 @@ void ManageSectorsTaskWidget::exportSectorsSlot ()
 
 void ManageSectorsTaskWidget::clearSectorsSlot ()
 {
-    loginf << "start";
+    loginf;
 
     COMPASS::instance().evaluationManager().deleteAllSectors();
 
@@ -666,7 +666,7 @@ void ManageSectorsTaskWidget::clearSectorsSlot ()
 
 void ManageSectorsTaskWidget::importSectorsSlot ()
 {
-    loginf << "start";
+    loginf;
 
     QString filename =
         QFileDialog::getOpenFileName(nullptr, "Import Sectors from JSON",
@@ -693,7 +693,7 @@ void ManageSectorsTaskWidget::importSectorsJSON (const std::string& filename)
 
 void ManageSectorsTaskWidget::importAirSpaceSectorsSlot()
 {
-    loginf << "start";
+    loginf;
 
     QString filename =
         QFileDialog::getOpenFileName(nullptr, "Import Air Space Sectors from JSON",

@@ -232,7 +232,7 @@ void ASTERIXOverrideWidget::updateSlot()
 
 void ASTERIXOverrideWidget::overrideActiveCheckedSlot()
 {
-    loginf << "start";
+    loginf;
     traced_assert(override_active_check_);
 
     task_.settings().override_tod_active_ = override_active_check_->checkState() == Qt::Checked;
@@ -249,7 +249,7 @@ void ASTERIXOverrideWidget::todOffsetEditedSlot(const QString& value)
 
 void ASTERIXOverrideWidget::filterTimeOfDayActiveCheckedSlot()
 {
-    loginf << "start";
+    loginf;
     traced_assert(filter_tod_active_check_);
 
     task_.settings().filter_tod_active_ = filter_tod_active_check_->checkState() == Qt::Checked;
@@ -275,7 +275,7 @@ void ASTERIXOverrideWidget::maxTimeChanged(QTime time)
 
 void ASTERIXOverrideWidget::filterPositionActiveCheckedSlot()
 {
-    loginf << "start";
+    loginf;
     traced_assert(filter_position_active_check_);
 
     task_.settings().filter_position_active_ = filter_position_active_check_->checkState() == Qt::Checked;
@@ -319,7 +319,7 @@ void ASTERIXOverrideWidget::longitudeMaxEditedSlot(const QString& value_str)
 
 void ASTERIXOverrideWidget::filterModeCActiveCheckedSlot()
 {
-    loginf << "start";
+    loginf;
     traced_assert(filter_modec_active_check_);
 
     task_.settings().filter_modec_active_ = filter_modec_active_check_->checkState() == Qt::Checked;
@@ -345,7 +345,7 @@ void ASTERIXOverrideWidget::modeCMaxEditedSlot(const QString& value_str)
 
 void ASTERIXOverrideWidget::obfuscateSecondaryInfoCheckedSlot()
 {
-    loginf << "start";
+    loginf;
     traced_assert(obfuscate_secondary_info_check_);
 
     task_.settings().obfuscate_secondary_info_ = obfuscate_secondary_info_check_->checkState() == Qt::Checked;

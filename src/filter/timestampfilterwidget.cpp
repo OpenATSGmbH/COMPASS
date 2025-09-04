@@ -54,7 +54,7 @@ TimestampFilterWidget::~TimestampFilterWidget()
 
 void TimestampFilterWidget::update()
 {
-    loginf << "start";
+    loginf;
 
     update_active_ = true;
 

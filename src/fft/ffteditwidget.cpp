@@ -155,7 +155,7 @@ void FFTEditWidget::showFFT(const std::string& name)
 
 void FFTEditWidget::clear()
 {
-    loginf << "start";
+    loginf;
 
     has_current_fft_ = false;
     current_name_ = "";
@@ -296,7 +296,7 @@ void FFTEditWidget::altitudeEditedSlot(const QString& value_str)
 
 void FFTEditWidget::deleteSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_fft_);
     //assert (!current_fft_in_db_);

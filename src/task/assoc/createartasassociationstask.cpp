@@ -279,7 +279,7 @@ void CreateARTASAssociationsTask::loadedDataDataSlot(
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(status_dialog_);
 
@@ -318,7 +318,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
 void CreateARTASAssociationsTask::dialogRunSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->hide();
@@ -329,7 +329,7 @@ void CreateARTASAssociationsTask::dialogRunSlot()
 
 void CreateARTASAssociationsTask::dialogCancelSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->hide();
@@ -338,7 +338,7 @@ void CreateARTASAssociationsTask::dialogCancelSlot()
 
 void CreateARTASAssociationsTask::createDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(create_job_);
 

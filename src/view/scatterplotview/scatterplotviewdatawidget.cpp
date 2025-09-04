@@ -136,7 +136,7 @@ void ScatterPlotViewDataWidget::resetVariableDisplay()
 */
 ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay() 
 {
-    loginf << "start";
+    loginf;
 
     auto draw_state = updateChart();
 
@@ -268,7 +268,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 */
 bool ScatterPlotViewDataWidget::updateFromAnnotations()
 {
-    loginf << "start";
+    loginf;
 
     bounds_ = {};
 
@@ -361,7 +361,7 @@ boost::optional<QRectF> ScatterPlotViewDataWidget::getViewBounds() const
 */
 void ScatterPlotViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2) // TODO
 {
-    loginf << "start";
+    loginf;
 
     if (chart_view_ && chart_view_->chart())
     {
@@ -402,7 +402,7 @@ void ScatterPlotViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2) /
 */
 void ScatterPlotViewDataWidget::invertSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
@@ -425,7 +425,7 @@ void ScatterPlotViewDataWidget::invertSelectionSlot()
 */
 void ScatterPlotViewDataWidget::clearSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
@@ -502,7 +502,7 @@ ScatterSeriesModel& ScatterPlotViewDataWidget::dataModel()
 */
 void ScatterPlotViewDataWidget::resetZoomSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (chart_view_ && chart_view_->chart())
     {

@@ -129,7 +129,7 @@ void DataTypeFormatSelectionWidget::showMenuSlot()
 
 void DataTypeFormatSelectionWidget::triggerSlot(QAction* action)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(pointers_set_);
 

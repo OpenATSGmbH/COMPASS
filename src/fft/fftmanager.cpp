@@ -245,7 +245,7 @@ void FFTManager::checkSubConfigurables() {}
 
 void FFTManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     loadDBFFTs();
 
@@ -270,7 +270,7 @@ void FFTManager::databaseClosedSlot()
 
 void FFTManager::configurationDialogDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     config_dialog_->hide();
     config_dialog_ = nullptr;
@@ -280,7 +280,7 @@ void FFTManager::configurationDialogDoneSlot()
 
 void FFTManager::saveDBFFTs()
 {
-    loginf << "start";
+    loginf;
 
     DBInterface& db_interface = COMPASS::instance().dbInterface();
 

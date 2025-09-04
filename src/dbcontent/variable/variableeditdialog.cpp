@@ -229,7 +229,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 
 void VariableEditDialog::doneSlot()
 {
-    loginf << "start";
+    loginf;
 
     accept();
 }

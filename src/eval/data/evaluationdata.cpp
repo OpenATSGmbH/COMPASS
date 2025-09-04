@@ -70,7 +70,7 @@ EvaluationData::EvaluationData(EvaluationCalculator& calculator,
  */
 void EvaluationData::setBuffers(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    loginf << "start";
+    loginf;
 
     accessor_->clear();
     accessor_->add(buffers);
@@ -290,7 +290,7 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
  */
 void EvaluationData::finalize ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(!finalized_);
 

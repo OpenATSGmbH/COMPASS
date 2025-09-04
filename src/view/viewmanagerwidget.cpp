@@ -173,7 +173,7 @@ void ViewManagerWidget::databaseIdle()
 
 void ViewManagerWidget::update()
 {
-    loginf << "start";
+    loginf;
 
 //    cont_widgets_.clear();
 

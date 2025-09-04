@@ -59,7 +59,7 @@ void EvaluationStandardComboBox::setStandardName(const std::string& value)
 
 void EvaluationStandardComboBox::updateStandards()
 {
-    loginf << "start";
+    loginf;
 
     clear();
 

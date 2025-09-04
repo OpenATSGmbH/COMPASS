@@ -175,7 +175,7 @@ void DataSourcesConfigurationDialog::currentRowChanged(const QModelIndex& curren
 
 void DataSourcesConfigurationDialog::newDSClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     create_dialog_.reset(new DataSourceCreateDialog(*this, ds_man_));
     connect(create_dialog_.get(), &DataSourceCreateDialog::doneSignal,
@@ -186,7 +186,7 @@ void DataSourcesConfigurationDialog::newDSClickedSlot()
 
 void DataSourcesConfigurationDialog::newDSDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(create_dialog_);
 
@@ -226,7 +226,7 @@ void DataSourcesConfigurationDialog::newDSDoneSlot()
 
 void DataSourcesConfigurationDialog::importClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import Data Sources",
@@ -268,7 +268,7 @@ void DataSourcesConfigurationDialog::deleteAllClickedSlot()
 
 void DataSourcesConfigurationDialog::exportClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export Data Sources as JSON",

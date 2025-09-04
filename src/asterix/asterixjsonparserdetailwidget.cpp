@@ -435,7 +435,7 @@ void ASTERIXJSONParserDetailWidget::mappingActiveChangedSlot()
     if (setting_new_content_)
         return;
 
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping);
@@ -453,7 +453,7 @@ void ASTERIXJSONParserDetailWidget::mappingJSONKeyChangedSlot (const QString& te
     if (setting_new_content_)
         return;
 
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping);
@@ -471,7 +471,7 @@ void ASTERIXJSONParserDetailWidget::mappingInArrayChangedSlot()
     if (setting_new_content_)
         return;
 
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping);
@@ -485,7 +485,7 @@ void ASTERIXJSONParserDetailWidget::mappingAppendChangedSlot()
     if (setting_new_content_)
         return;
 
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping);
@@ -499,7 +499,7 @@ void ASTERIXJSONParserDetailWidget::mappingDBContentVariableChangedSlot()
     if (setting_new_content_)
         return;
 
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping
@@ -565,7 +565,7 @@ void ASTERIXJSONParserDetailWidget::dbcontVariableCommentChangedSlot()
 
 void ASTERIXJSONParserDetailWidget::createNewDBVariableSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping
@@ -694,7 +694,7 @@ void ASTERIXJSONParserDetailWidget::createNewDBVariableSlot()
 
 void ASTERIXJSONParserDetailWidget::deleteDBVariableSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping
@@ -712,7 +712,7 @@ void ASTERIXJSONParserDetailWidget::deleteDBVariableSlot()
     traced_assert(parser_.dbContent().hasVariable(dbcontvar_name));
     parser_.dbContent().deleteVariable(dbcontvar_name);
     
-    loginf << "start";
+    loginf;
 
     if (entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping)
     {
@@ -750,7 +750,7 @@ void ASTERIXJSONParserDetailWidget::deleteDBVariableSlot()
 }
 void ASTERIXJSONParserDetailWidget::editDBVariableSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(entry_type_ == ASTERIXJSONParser::EntryType::ExistingMapping

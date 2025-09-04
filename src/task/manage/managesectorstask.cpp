@@ -165,7 +165,7 @@ void ManageSectorsTask::removeCurrentFilename()
 
 void ManageSectorsTask::removeAllFiles ()
 {
-    loginf << "start";
+    loginf;
 
     file_list_.clear();
     current_filename_ = "";

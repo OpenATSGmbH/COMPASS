@@ -256,7 +256,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
 }
 void ASTERIXImportTaskWidget::removeObjectParserSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(object_parser_box_);
 
@@ -343,7 +343,7 @@ void ASTERIXImportTaskWidget::dateChangedSlot(QDate date)
 
 void ASTERIXImportTaskWidget::updateParserBox()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(object_parser_box_);
     object_parser_box_->clear();
@@ -367,7 +367,7 @@ void ASTERIXImportTaskWidget::resetDateChangedSlot()
 
 void ASTERIXImportTaskWidget::ignoreTimeJumpsCheckedSlot()
 {
-    loginf << "start";
+    loginf;
     traced_assert(ignore_timejumps_check_);
 
     task_.settings().ignore_time_jumps_ = ignore_timejumps_check_->checkState() == Qt::Checked;

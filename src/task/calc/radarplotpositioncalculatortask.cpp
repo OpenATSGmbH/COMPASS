@@ -105,7 +105,7 @@ bool RadarPlotPositionCalculatorTask::canRun()
 
 void RadarPlotPositionCalculatorTask::run()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(canRun());
 
@@ -257,7 +257,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 
 void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
 {
-    loginf << "start";
+    loginf;
 
     disconnect(&db_content, &DBContent::updateDoneSignal,
                this, &RadarPlotPositionCalculatorTask::updateDoneSlot);

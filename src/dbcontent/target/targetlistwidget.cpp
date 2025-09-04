@@ -272,7 +272,7 @@ void TargetListWidget::loadingDone()
 
 void TargetListWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
 
     table_view_->resizeColumnsToContents();
 }
@@ -289,7 +289,7 @@ void TargetListWidget::evalUseNoneSlot()
 
 void TargetListWidget::evalFilterSlot()
 {
-    loginf << "start";
+    loginf;
 
     EvaluationTargetFilterDialog dialog (COMPASS::instance().evaluationManager().targetFilter(), model_);
     dialog.exec();
@@ -304,7 +304,7 @@ void TargetListWidget::clearAllCommentsSlot()
 
 void TargetListWidget::evalClearAllExcludeTimeWindowsSlot()
 {
-    loginf << "start";
+    loginf;
 
     model_.clearAllEvalExcludeTimeWindows();
 
@@ -313,7 +313,7 @@ void TargetListWidget::evalClearAllExcludeTimeWindowsSlot()
 
 void TargetListWidget::evalClearAllExcludeRequirementsSlot()
 {
-    loginf << "start";
+    loginf;
 
     model_.clearAllEvalExcludeRequirements();
 
@@ -322,7 +322,7 @@ void TargetListWidget::evalClearAllExcludeRequirementsSlot()
 
 void TargetListWidget::evalEditGlobalExcludeTimeWindowsSlot()
 {
-    loginf << "start";
+    loginf;
 
     EvaluationTimestampConditionsDialog dialog (COMPASS::instance().evaluationManager());
     dialog.exec();
@@ -450,7 +450,7 @@ void TargetListWidget::createTargetEvalMenu(QMenu& menu,
 
 void TargetListWidget::clearSelectedTargetsComments(const std::set<unsigned int>& utns)
 {
-    loginf << "start";
+    loginf;
 
     model_.setTargetComment(utns, "");
 
@@ -459,21 +459,21 @@ void TargetListWidget::clearSelectedTargetsComments(const std::set<unsigned int>
 
 void TargetListWidget::evalUseSelectedTargets(const std::set<unsigned int>& utns)
 {
-    loginf << "start";
+    loginf;
 
     model_.setEvalUseTarget(utns, true);
 }
 
 void TargetListWidget::evalDisableSelectedTargets(const std::set<unsigned int>& utns)
 {
-    loginf << "start";
+    loginf;
 
     model_.setEvalUseTarget(utns, false);
 }
 
 void TargetListWidget::evalClearTargetsExcludeTimeWindows(const std::set<unsigned int>& utns)
 {
-    loginf << "start";
+    loginf;
 
     model_.clearEvalExcludeTimeWindows(utns);
 
@@ -482,7 +482,7 @@ void TargetListWidget::evalClearTargetsExcludeTimeWindows(const std::set<unsigne
 
 void TargetListWidget::evalClearTargetsExcludeRequirements(const std::set<unsigned int>& utns)
 {
-    loginf << "start";
+    loginf;
 
     model_.clearEvalExcludeRequirements(utns);
 
@@ -492,7 +492,7 @@ void TargetListWidget::evalClearTargetsExcludeRequirements(const std::set<unsign
 void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>& utns,
                                                     const Utils::TimeWindowCollection* exclude_windows)
 {
-    loginf << "start";
+    loginf;
 
     auto& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -546,7 +546,7 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
 void TargetListWidget::evalExcludeRequirementsTarget(const std::set<unsigned int>& utns,
                                                      const std::set<std::string>* exclude_requirements)
 {
-    loginf << "start";
+    loginf;
 
     auto& dbcont_man = COMPASS::instance().dbContentManager();
     auto& eval_man = COMPASS::instance().evaluationManager();

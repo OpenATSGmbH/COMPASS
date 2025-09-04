@@ -397,7 +397,7 @@ void DBDataSourceWidget::updateWidgets()
 
 void DBDataSourceWidget::loadingChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     set_use_ds_func_(!get_use_ds_func_());
 

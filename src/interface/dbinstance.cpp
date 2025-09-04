@@ -33,7 +33,7 @@ const std::string DBInstance::InMemFilename = "In-Memory";
 DBInstance::DBInstance(DBInterface* interface)
 :   interface_(*interface)
 {
-    loginf << "start";
+    loginf;
 }
 
 /**

@@ -145,7 +145,7 @@ void SectionContentTable::addToLayout (QVBoxLayout* layout)
 
 void SectionContentTable::accept(LatexVisitor& v)
 {
-    loginf << "start";
+    loginf;
 
     createOnDemandIfNeeded();
 
@@ -746,7 +746,7 @@ void SectionContentTable::toggleShowUnusedSlot()
 
 void SectionContentTable::copyContentSlot()
 {
-    loginf << "start";
+    loginf;
 
     stringstream ss;
 

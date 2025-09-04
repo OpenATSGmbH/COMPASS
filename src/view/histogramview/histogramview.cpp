@@ -226,7 +226,7 @@ void HistogramView::useLogScale(bool use_log_scale, bool notify_changes)
  */
 void HistogramView::updateSelection()
 {
-    loginf << "start";
+    loginf;
     traced_assert(widget_);
     
     widget_->getViewDataWidget()->redrawData(true);

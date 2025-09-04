@@ -398,7 +398,7 @@ std::vector<Joined::SectorInfo> JoinedSpeed::sectorInfos() const
 */
 bool JoinedSpeed::exportAsCSV(std::ofstream& strm) const
 {
-    // loginf << "start";
+    // loginf;
 
     // strm << "speed_offset\n";
     

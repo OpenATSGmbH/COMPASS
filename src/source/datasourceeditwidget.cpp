@@ -434,7 +434,7 @@ void DataSourceEditWidget::showID(unsigned int ds_id)
 
 void DataSourceEditWidget::clear()
 {
-    loginf << "start";
+    loginf;
 
     has_current_ds_ = false;
     current_ds_id_ = 0;
@@ -650,7 +650,7 @@ void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 
 void DataSourceEditWidget::addRadarRangesSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_ds_);
 
@@ -706,7 +706,7 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
 
 void DataSourceEditWidget::addRadarAccuraciesSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_ds_);
 
@@ -745,7 +745,7 @@ void DataSourceEditWidget::radarAccuraciesEditedSlot(const QString& value_str)
 
 void DataSourceEditWidget::addNetLinesSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_ds_);
 
@@ -829,7 +829,7 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
 
 void DataSourceEditWidget::deleteSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_ds_);
     traced_assert(!current_ds_in_db_);

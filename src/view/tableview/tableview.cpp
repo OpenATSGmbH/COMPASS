@@ -207,7 +207,7 @@ void TableView::accept(LatexVisitor& v)
 
 void TableView::updateSelection()
 {
-    loginf << "start";
+    loginf;
     traced_assert(widget_);
 
     if (settings_.show_only_selected_)
@@ -218,7 +218,7 @@ void TableView::updateSelection()
 
 void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(vp);
     traced_assert(data_source_);
@@ -227,7 +227,7 @@ void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
 
 void TableView::showViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(vp);
     traced_assert(data_source_);

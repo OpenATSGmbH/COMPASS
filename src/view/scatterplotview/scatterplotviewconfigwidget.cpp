@@ -96,7 +96,7 @@ ScatterPlotViewConfigWidget::~ScatterPlotViewConfigWidget() = default;
 */
 void ScatterPlotViewConfigWidget::useConnectionLinesSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_connection_lines_);
     view_->useConnectionLines(use_connection_lines_->checkState() == Qt::Checked);

@@ -120,7 +120,7 @@ ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()
 
 void ViewPointsReportGenerator::run ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(dialog_);
     dialog_->setRunning(true);
@@ -378,7 +378,7 @@ void ViewPointsReportGenerator::run ()
 
 void ViewPointsReportGenerator::cancel ()
 {
-    loginf << "start";
+    loginf;
 
     cancel_ = true;
 

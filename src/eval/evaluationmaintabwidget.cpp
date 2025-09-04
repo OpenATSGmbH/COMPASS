@@ -248,7 +248,7 @@ void EvaluationMainTabWidget::usedDataSourcesChangedSlot()
  */
 void EvaluationMainTabWidget::changedStandardsSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(standard_box_);
     standard_box_->updateStandards();
@@ -258,7 +258,7 @@ void EvaluationMainTabWidget::changedStandardsSlot()
  */
 void EvaluationMainTabWidget::changedCurrentStandardSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(standard_box_);
     standard_box_->setStandardName(calculator_.currentStandardName());

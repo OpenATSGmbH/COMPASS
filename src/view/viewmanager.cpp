@@ -232,7 +232,7 @@ void ViewManager::checkSubConfigurables()
 
 void ViewManager::enableStoredReadSets()
 {
-    loginf << "start";
+    loginf;
 
     for (const auto& cont_it : COMPASS::instance().dbContentManager())
     {
@@ -244,7 +244,7 @@ void ViewManager::enableStoredReadSets()
 }
 void ViewManager::disableStoredReadSets()
 {
-    loginf << "start";
+    loginf;
 
     use_tmp_stored_readset_ = false;
     tmp_stored_readset_.clear();
@@ -622,7 +622,7 @@ bool ViewManager::isProcessingData() const
 
 void ViewManager::resetToStartupConfiguration()
 {
-    loginf << "start";
+    loginf;
 
     enableStoredReadSets();
 
@@ -793,13 +793,13 @@ void ViewManager::viewShutdown(View* view, const std::string& err)
 
 void ViewManager::selectionChangedSlot()
 {
-    loginf << "start";
+    loginf;
     emit selectionChangedSignal();
 }
 
 void ViewManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->databaseOpened();
@@ -807,7 +807,7 @@ void ViewManager::databaseOpenedSlot()
 
 void ViewManager::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     unsetCurrentViewPoint();
     clearDataInViews();
@@ -824,7 +824,7 @@ void ViewManager::loadingStartedSlot()
     //reset reload flag
     reload_needed_ = false;
 
-    loginf << "start";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();
@@ -863,7 +863,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
     if (disable_data_distribution_)
         return;
 
-    loginf << "start";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->loadingDone();

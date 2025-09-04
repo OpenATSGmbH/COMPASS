@@ -90,7 +90,7 @@ EvaluationDataWidget::EvaluationDataWidget(EvaluationData& eval_data,
 
 void EvaluationDataWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }

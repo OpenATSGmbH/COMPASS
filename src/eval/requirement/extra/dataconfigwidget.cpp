@@ -95,7 +95,7 @@ void ExtraDataConfigWidget::minNumUpdatesEditSlot(QString value)
 
 void ExtraDataConfigWidget::toggleIgnorePrimaryOnlySlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ignore_primary_only_check_);
     config().ignorePrimaryOnly(ignore_primary_only_check_->checkState() == Qt::Checked);

@@ -143,7 +143,7 @@ namespace EvaluationResultsReport
 
     void TreeModel::clear()
     {
-        loginf << "start";
+        loginf;
 
         root_item_ = make_shared<RootItem>(eval_man_);
     }

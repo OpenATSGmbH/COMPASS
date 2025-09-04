@@ -341,7 +341,7 @@ std::string SectionContentTable::resourceExtension() const
 void SectionContentTable::addContentUI(QVBoxLayout* layout, 
                                        bool force_ui_reset)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(layout);
 
@@ -1205,7 +1205,7 @@ void SectionContentTable::toggleShowUnused()
  */
 void SectionContentTable::copyContent()
 {
-    loginf << "start";
+    loginf;
 
     std::stringstream ss;
 
@@ -2120,7 +2120,7 @@ int SectionContentTableWidget::fromProxy(int proxy_row) const
  */
 void SectionContentTableWidget::clicked(const QModelIndex& index)
 {
-    loginf << "start";
+    loginf;
 
     if (!index.isValid())
     {
@@ -2150,7 +2150,7 @@ void SectionContentTableWidget::clicked(const QModelIndex& index)
  */
 void SectionContentTableWidget::performClickAction()
 {
-    loginf << "start";
+    loginf;
 
     //double click did not interrupt click action => perform
     if (!last_clicked_row_index_.has_value())
@@ -2174,7 +2174,7 @@ void SectionContentTableWidget::performClickAction()
  */
 void SectionContentTableWidget::doubleClicked(const QModelIndex& index)
 {
-    loginf << "start";
+    loginf;
 
     //double click detected => interrupt any previously triggered click action
     click_action_timer_.stop();
@@ -2269,7 +2269,7 @@ void SectionContentTableWidget::updateOptionsMenu()
  */
 void SectionContentTableWidget::updateScrollBarV()
 {
-    //loginf << "start";
+    //loginf;
 
     if (!content_table_->isComplete())
         return;
@@ -2290,7 +2290,7 @@ void SectionContentTableWidget::updateScrollBarV()
  */
 void SectionContentTableWidget::updateScrollBarH()
 {
-    //loginf << "start";
+    //loginf;
 
     if (!content_table_->isComplete())
         return;

@@ -337,7 +337,7 @@ void DBInterface::openDBFileFromMemory(const std::string& filename)
  */
 void DBInterface::closeDB()
 {
-    loginf << "start";
+    loginf;
 
     if (properties_loaded_)  // false if database not opened
         saveProperties();
@@ -399,7 +399,7 @@ void DBInterface::exportDBFile(const std::string& filename)
  */
 bool DBInterface::cleanupDB(bool show_dialog)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
 
@@ -961,11 +961,11 @@ void DBInterface::saveDataSources(const std::vector<std::unique_ptr<dbContent::D
         ++cnt;
     }
 
-    loginf << "buffer size " << buffer->size();
+    logdbg << "buffer size " << buffer->size();
 
     insertBuffer(DBDataSource::table_name_, buffer);
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**
@@ -1154,7 +1154,7 @@ bool DBInterface::hasProperty(const string& id)
  */
 void DBInterface::loadProperties()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
     traced_assert(!properties_loaded_);
@@ -1239,7 +1239,7 @@ void DBInterface::setContentIn(const std::string& table_name, const std::string&
  */
 void DBInterface::saveProperties()
 {
-    loginf << "start";
+    loginf << "num " << properties_.size();
 
     if (!db_instance_)
     {
@@ -1267,14 +1267,14 @@ void DBInterface::saveProperties()
         }
     }
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**
  */
 std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
 
@@ -1456,7 +1456,7 @@ void DBInterface::setViewPoint(const unsigned int id, const string& value)
  */
 map<unsigned int, string> DBInterface::viewPoints()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
     traced_assert(existsViewPointsTable());
@@ -1536,7 +1536,7 @@ bool DBInterface::existsSectorsTable()
  */
 void DBInterface::createSectorsTable()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
     traced_assert(!existsSectorsTable());
@@ -1629,7 +1629,7 @@ bool DBInterface::existsTargetsTable()
  */
 void DBInterface::createTargetsTable()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
     traced_assert(!existsTargetsTable());
@@ -1659,7 +1659,7 @@ void DBInterface::clearTargetsTable()
  */
 std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
 
@@ -1723,7 +1723,7 @@ std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
  */
 void DBInterface::saveTargets(const std::map<unsigned int, nlohmann::json>& targets_info)
 {
-    loginf << "start";
+    logdbg;
 
     traced_assert(ready());
 
@@ -1747,7 +1747,7 @@ void DBInterface::saveTargets(const std::map<unsigned int, nlohmann::json>& targ
         insertBuffer(TABLE_NAME_TARGETS, buffer);
     }
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**
@@ -1802,7 +1802,7 @@ bool DBInterface::existsTaskLogTable()
 }
 void DBInterface::createTaskLogTable()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
     traced_assert(!existsTaskLogTable());
@@ -1822,7 +1822,7 @@ void DBInterface::createTaskLogTable()
 }
 std::vector<nlohmann::json> DBInterface::loadTaskLogInfo()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(ready());
     traced_assert(existsTaskLogTable());

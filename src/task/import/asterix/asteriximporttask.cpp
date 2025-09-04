@@ -799,7 +799,7 @@ void ASTERIXImportTask::stop()
 */
 void ASTERIXImportTask::run() // , bool create_mapping_stubs
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(!running_);
     traced_assert(decoder_);

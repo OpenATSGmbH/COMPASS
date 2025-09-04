@@ -93,7 +93,7 @@ GridView::GridView(const std::string& class_id,
 */
 GridView::~GridView()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
     {
@@ -174,7 +174,7 @@ void GridView::accept(LatexVisitor& v)
 */
 void GridView::updateSelection()
 {
-    loginf << "start";
+    loginf;
     traced_assert(widget_);
 
     widget_->getViewDataWidget()->redrawData(true);

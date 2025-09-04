@@ -49,7 +49,7 @@ DBConnection::DBConnection(DBInstance* instance, bool verbose)
 ,   verbose_  (verbose   )
 {
     if (verbose_)
-        loginf << "start";
+        loginf;
 
     traced_assert(instance_);
 }

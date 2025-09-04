@@ -458,7 +458,7 @@ LogStreamType LogStore::LogEntry::logStreamTypeFromStr (const std::string& type_
 
 void LogStore::clearMessages()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -469,7 +469,7 @@ void LogStore::clearMessages()
 }
 void LogStore::loadMessagesFromDB()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 

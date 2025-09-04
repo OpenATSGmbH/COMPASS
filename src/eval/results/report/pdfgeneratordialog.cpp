@@ -375,14 +375,14 @@ void PDFGeneratorDialog::openPDFChangedSlot (bool checked)
 
 void PDFGeneratorDialog::runSlot()
 {
-    loginf << "start";
+    loginf;
 
     generator_.run();
 }
 
 void PDFGeneratorDialog::cancelSlot()
 {
-    loginf << "start";
+    loginf;
     generator_.cancel();
 }
 

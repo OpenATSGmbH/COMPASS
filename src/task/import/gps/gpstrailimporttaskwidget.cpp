@@ -247,7 +247,7 @@ void GPSTrailImportTaskWidget::nameEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::useTodOffsetCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_tod_offset_check_);
     task_.useTodOffset(use_tod_offset_check_->checkState() == Qt::Checked);
@@ -268,7 +268,7 @@ void GPSTrailImportTaskWidget::todOffsetEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::overrideDateCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_override_date_check_);
     task_.useOverrideDate(use_override_date_check_->checkState() == Qt::Checked);
@@ -285,7 +285,7 @@ void GPSTrailImportTaskWidget::overrideDateChangedSlot(QDate date)
 
 void GPSTrailImportTaskWidget::mode3ACheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(set_mode_3a_code_check_);
     task_.setMode3aCode(set_mode_3a_code_check_->checkState() == Qt::Checked);
@@ -303,7 +303,7 @@ void GPSTrailImportTaskWidget::mode3AEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::targetAddressCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(set_target_address_check_);
     task_.setTargetAddress(set_target_address_check_->checkState() == Qt::Checked);
@@ -321,7 +321,7 @@ void GPSTrailImportTaskWidget::targetAddressEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::callsignCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(set_callsign_check_);
     task_.setCallsign(set_callsign_check_->checkState() == Qt::Checked);
@@ -399,21 +399,21 @@ void GPSTrailImportTaskWidget::expertModeChangedSlot() {}
 
 //void GPSTrailImportTaskWidget::runStarted()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    //test_button_->setDisabled(true);
 //}
 
 //void GPSTrailImportTaskWidget::runDone()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    //test_button_->setDisabled(false);
 //}
 
 void GPSTrailImportTaskWidget::updateText ()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(text_edit_);
 

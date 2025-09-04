@@ -139,7 +139,7 @@ void EvaluationManager::checkSubConfigurables()
  */
 void EvaluationManager::init()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(!initialized_);
     initialized_ = true;
@@ -192,7 +192,7 @@ Result EvaluationManager::canEvaluate() const
  */
 Result EvaluationManager::evaluate(bool show_dialog)
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(initialized_);
     traced_assert(calculator_);
@@ -253,7 +253,7 @@ Result EvaluationManager::evaluate(bool show_dialog)
  */
 void EvaluationManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(calculator_);
 
@@ -320,7 +320,7 @@ void EvaluationManager::databaseOpenedSlot()
  */
 void EvaluationManager::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     //disconnect result locking before clearing the sectors
     disconnect(this, &EvaluationManager::sectorsChangedSignal, this, &EvaluationManager::lockResultsSlot);
@@ -357,35 +357,35 @@ void EvaluationManager::associationStatusChangedSlot()
 
 void EvaluationManager::targetInfoChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     emit resultsNeedUpdate(task::UpdateState::ContentUpdateNeeded);
 }
 
 void EvaluationManager::partialResultsUpdateNeededSlot()
 {
-    loginf << "start";
+    loginf;
 
     emit resultsNeedUpdate(task::UpdateState::PartialUpdateNeeded);
 }
 
 void EvaluationManager::fullResultsUpdateNeededSlot()
 {
-    loginf << "start";
+    loginf;
 
     emit resultsNeedUpdate(task::UpdateState::FullUpdateNeeded);
 }
 
 void EvaluationManager::lockResultsSlot()
 {
-    loginf << "start";
+    loginf;
 
     emit resultsNeedUpdate(task::UpdateState::Locked);
 }
 
 void EvaluationManager::saveTimeConstraints()
 {
-    loginf << "start";
+    loginf;
 
     nlohmann::json constraints_json = nlohmann::json::object();
 
@@ -545,7 +545,7 @@ void EvaluationManager::updateMaxSectorID()
 */
 void EvaluationManager::loadSectors()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(!sectors_loaded_);
 
@@ -567,7 +567,7 @@ void EvaluationManager::loadSectors()
 */
 void EvaluationManager::clearSectors()
 {
-    loginf << "start";
+    loginf;
 
     sector_layers_.clear();
     sectors_loaded_ = false;
@@ -1183,7 +1183,7 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
  */
 void EvaluationManager::loadingDone()
 {
-    loginf << "start";
+    loginf;
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 

@@ -1306,7 +1306,7 @@ void LabelGenerator::updateAvailableLabelLines()
 
 void LabelGenerator::editLabelContentsDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     auto cfg_new = label_edit_dialog_->labelConfig();
 

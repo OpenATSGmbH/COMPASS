@@ -169,7 +169,7 @@ ReconstructorTaskAnalysisWidget::~ReconstructorTaskAnalysisWidget()
 
 void ReconstructorTaskAnalysisWidget::updateValues()
 {
-    loginf << "start";
+    loginf;
 
     bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
 

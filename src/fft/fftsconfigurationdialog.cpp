@@ -175,7 +175,7 @@ void FFTsConfigurationDialog::currentRowChanged(const QModelIndex& current, cons
 
 void FFTsConfigurationDialog::newFFTClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     bool ok;
     QString text =
@@ -228,7 +228,7 @@ void FFTsConfigurationDialog::newFFTClickedSlot()
 
 void FFTsConfigurationDialog::importClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import FFTs",
@@ -270,7 +270,7 @@ void FFTsConfigurationDialog::deleteAllClickedSlot()
 
 void FFTsConfigurationDialog::exportClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export FFTs as JSON",

@@ -211,7 +211,7 @@ void ViewDataWidget::endTool()
  */
 void ViewDataWidget::loadingStarted()
 {
-    loginf << "start";
+    loginf;
 
     //clear and update display
     clearData();
@@ -226,7 +226,7 @@ void ViewDataWidget::loadingStarted()
  */
 void ViewDataWidget::loadingDone()
 {
-    loginf << "start";
+    loginf;
 
     //invoke derived
     loadingDone_impl();

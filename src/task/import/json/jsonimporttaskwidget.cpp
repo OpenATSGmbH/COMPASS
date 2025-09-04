@@ -221,7 +221,7 @@ void JSONImportTaskWidget::selectSchema(const std::string& schema_name)
 
 void JSONImportTaskWidget::addSchemaSlot()
 {
-    loginf << "start";
+    loginf;
 
     bool ok;
     QString text =
@@ -263,7 +263,7 @@ void JSONImportTaskWidget::addSchemaSlot()
 
 void JSONImportTaskWidget::removeSchemaSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (!task_.currentSchemaName().size())
     {
@@ -290,7 +290,7 @@ void JSONImportTaskWidget::selectedSchemaChangedSlot(const QString& text)
 
 void JSONImportTaskWidget::updateSchemasBox()
 {
-    loginf << "start";
+    loginf;
 
     schema_box_->clear();
 
@@ -378,7 +378,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
 }
 void JSONImportTaskWidget::removeObjectParserSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (object_parser_box_->currentIndex() >= 0)
     {
@@ -448,7 +448,7 @@ void JSONImportTaskWidget::dateChangedSlot(QDate date)
 
 void JSONImportTaskWidget::testImportSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (!task_.canImportFile())
     {
@@ -464,21 +464,21 @@ void JSONImportTaskWidget::testImportSlot()
 
 void JSONImportTaskWidget::runStarted()
 {
-    loginf << "start";
+    loginf;
 
     test_button_->setDisabled(true);
 }
 
 void JSONImportTaskWidget::runDone()
 {
-    loginf << "start";
+    loginf;
 
     test_button_->setDisabled(false);
 }
 
 void JSONImportTaskWidget::updateParserBox()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(object_parser_box_);
     object_parser_box_->clear();

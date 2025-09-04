@@ -217,34 +217,34 @@ void DataSourcesUseWidget::loadDSTypeChangedSlot()
 
 void DataSourcesUseWidget::editClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     edit_menu_.exec(QCursor::pos());
 }
 
 void DataSourcesUseWidget::selectAllDSTypesSlot()
 {
-    loginf << "start";
+    loginf;
 
     ds_man_.selectAllDSTypes();
 
 }
 void DataSourcesUseWidget::deselectAllDSTypesSlot()
 {
-    loginf << "start";
+    loginf;
 
     ds_man_.deselectAllDSTypes();
 }
 
 void DataSourcesUseWidget::selectAllDataSourcesSlot()
 {
-    loginf << "start";
+    loginf;
 
     ds_man_.selectAllDataSources();
 }
 void DataSourcesUseWidget::deselectAllDataSourcesSlot()
 {
-    loginf << "start";
+    loginf;
 
     ds_man_.deselectAllDataSources();
 }
@@ -275,7 +275,7 @@ void DataSourcesUseWidget::deselectDSTypeSpecificDataSourcesSlot()
 
 void DataSourcesUseWidget::deselectAllLinesSlot()
 {
-    loginf << "start";
+    loginf;
 
     ds_man_.deselectAllLines();
 }

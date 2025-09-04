@@ -120,7 +120,7 @@ void ASTERIXConfigWidget::editCategoriesSlot()
 
 void ASTERIXConfigWidget::refreshjASTERIXSlot()
 {
-    loginf << "start";
+    loginf;
 
     task_.jASTERIX(true);
     task_.testFileDecoding(); // in case anything was changed
@@ -130,7 +130,7 @@ void ASTERIXConfigWidget::refreshjASTERIXSlot()
 
 void ASTERIXConfigWidget::updateSlot()
 {
-    loginf << "start";
+    loginf;
     updateFraming();
     updateCategories();
 }
@@ -360,7 +360,7 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
 
 void ASTERIXConfigWidget::categoryEditionEditSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* widget = static_cast<QPushButton*>(sender());
     traced_assert(widget);
@@ -384,7 +384,7 @@ void ASTERIXConfigWidget::categoryEditionEditSlot()
 
 void ASTERIXConfigWidget::categoryREFEditionEditSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* widget = static_cast<QPushButton*>(sender());
     traced_assert(widget);
@@ -411,7 +411,7 @@ void ASTERIXConfigWidget::categoryREFEditionEditSlot()
 
 void ASTERIXConfigWidget::categorySPFEditionEditSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* widget = static_cast<QPushButton*>(sender());
     traced_assert(widget);

@@ -42,7 +42,7 @@ DBContentAccessor::DBContentAccessor()
 */
 bool DBContentAccessor::add(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    loginf << "start";
+    loginf;
 
     bool something_changed = false;
 
@@ -83,7 +83,7 @@ bool DBContentAccessor::add(std::map<std::string, std::shared_ptr<Buffer>> buffe
 
 void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime remove_before_time)
 {
-    loginf << "start";
+    loginf;
 
     unsigned int buffer_size;
 
@@ -273,7 +273,7 @@ std::shared_ptr<Buffer> DBContentAccessor::get(const std::string& dbcontent_name
 */
 void DBContentAccessor::updateDBContentLookup()
 {
-    loginf << "start";
+    loginf;
 
     dbcontent_lookup_.clear();
 

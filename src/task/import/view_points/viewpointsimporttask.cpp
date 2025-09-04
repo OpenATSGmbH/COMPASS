@@ -152,7 +152,7 @@ void ViewPointsImportTask::parseCurrentFile ()
 
 void ViewPointsImportTask::checkParsedData ()
 {
-    loginf << "start";
+    loginf;
 
     std::string err;
     if (!ViewPoint::isValidJSON(current_data_, current_filename_, &err, true))
@@ -171,7 +171,7 @@ bool ViewPointsImportTask::canRun()
 
 void ViewPointsImportTask::run()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(canImport()); // checked file content, version etc
     done_ = false;
@@ -317,7 +317,7 @@ void ViewPointsImportTask::run()
 
     emit doneSignal();
 
-    loginf << "start";
+    loginf;
 }
 void ViewPointsImportTask::stop()
 {

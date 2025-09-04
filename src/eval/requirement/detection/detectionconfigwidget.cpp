@@ -137,7 +137,7 @@ void DetectionConfigWidget::updateIntervalEditSlot(QString value)
 // min
 void DetectionConfigWidget::toggleUseMinGapLengthSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_min_gap_length_check_);
     config().useMinGapLength(use_min_gap_length_check_->checkState() == Qt::Checked);
@@ -160,7 +160,7 @@ void DetectionConfigWidget::minGapLengthEditSlot(QString value)
 // max
 void DetectionConfigWidget::toggleUseMaxGapLengthSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_max_gap_length_check_);
     config().useMaxGapLength(use_max_gap_length_check_->checkState() == Qt::Checked);
@@ -183,7 +183,7 @@ void DetectionConfigWidget::maxGapLengthEditSlot(QString value)
 // invert prob
 void DetectionConfigWidget::toggleInvertProbSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_invert_prob_check_);
     config().invertProb(use_invert_prob_check_->checkState() == Qt::Checked);
@@ -194,7 +194,7 @@ void DetectionConfigWidget::toggleInvertProbSlot()
 // miss tol
 void DetectionConfigWidget::toggleUseMissToleranceSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_miss_tolerance_check_);
     config().useMissTolerance(use_miss_tolerance_check_->checkState() == Qt::Checked);
@@ -216,7 +216,7 @@ void DetectionConfigWidget::missToleranceEditSlot(QString value)
 
 void DetectionConfigWidget::toggleHoldForAnyTargetSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(hold_for_any_target_check_);
     config().holdForAnyTarget(hold_for_any_target_check_->checkState() == Qt::Checked);

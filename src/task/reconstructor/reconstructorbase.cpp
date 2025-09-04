@@ -774,7 +774,7 @@ std::unique_ptr<ReconstructorBase::DataSlice> ReconstructorBase::getNextTimeSlic
 
 void ReconstructorBase::reset()
 {
-    loginf << "start";
+    loginf;
 
     dbContent::ReconstructorTarget::globalStats().reset();
 
@@ -1302,7 +1302,7 @@ void ReconstructorBase::removeTargetReportsLaterOrEqualThan(const boost::posix_t
 
 std::map<unsigned int, std::map<unsigned long, unsigned int>> ReconstructorBase::createAssociations()
 {
-    loginf << "start";
+    loginf;
 
     std::map<unsigned int, std::map<unsigned long, unsigned int>> associations;
     unsigned int num_assoc {0};

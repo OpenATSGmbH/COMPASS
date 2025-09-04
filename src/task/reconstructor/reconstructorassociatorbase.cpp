@@ -398,7 +398,7 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
 
 void ReconstructorAssociatorBase::selfAssociateNewUTNs()
 {
-    loginf << "start";
+    loginf;
 
     unsigned int loop_cnt {0};
 
@@ -525,7 +525,7 @@ RESTART_SELF_ASSOC:
 
 void ReconstructorAssociatorBase::retryAssociateTargetReports()
 {
-    loginf << "start";
+    loginf;
 
     if (!unassoc_rec_nums_.size())
         return;

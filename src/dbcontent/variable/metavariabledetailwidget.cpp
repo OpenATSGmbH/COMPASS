@@ -154,7 +154,7 @@ void MetaVariableDetailWidget::nameEditedSlot()
 
 void MetaVariableDetailWidget::variableChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (!has_current_entry_)
         return;
@@ -169,7 +169,7 @@ void MetaVariableDetailWidget::variableChangedSlot()
 
 void MetaVariableDetailWidget::deleteVariableSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(has_current_entry_);
     traced_assert(meta_var_);

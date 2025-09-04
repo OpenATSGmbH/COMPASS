@@ -163,7 +163,7 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
 
 void SimpleReconstructor::reset()
 {
-    loginf << "start";
+    loginf;
 
 //    target_reports_.clear(); // done in base
 //    tr_timestamps_.clear();

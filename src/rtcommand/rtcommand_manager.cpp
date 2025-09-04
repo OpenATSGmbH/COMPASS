@@ -192,12 +192,12 @@ void RTCommandManager::run()
     }
 
     stopped_ = true;
-    loginf << "stopped";
+    logdbg << "stopped";
 }
 
 void RTCommandManager::startCommandProcessing()
 {
-    loginf << "start";
+    loginf;
     started_ = true;
 }
 
@@ -205,7 +205,7 @@ void RTCommandManager::startCommandProcessing()
  */
 void RTCommandManager::shutdown()
 {
-    loginf << "start";
+    loginf;
 
     stop_requested_ = true;
 

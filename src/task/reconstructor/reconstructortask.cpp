@@ -491,7 +491,7 @@ void ReconstructorTask::run()
 
 void ReconstructorTask::deleteCalculatedReferencesDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     updateProgressSlot("Deleting Previous Targets", false);
 
@@ -519,7 +519,7 @@ void ReconstructorTask::deleteCalculatedReferencesDoneSlot()
 
 void ReconstructorTask::deleteTargetsDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     updateProgressSlot("Deleting Previous Associations", false);
 
@@ -559,7 +559,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
 
 void ReconstructorTask::deleteAssociationsDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     // enable cancelling
 
@@ -596,7 +596,7 @@ void ReconstructorTask::loadDataSlice()
     traced_assert(currentReconstructor()->hasNextTimeSlice());
     traced_assert(!loading_slice_);
 
-    loginf << "start";
+    loginf;
 
     loading_slice_ = currentReconstructor()->getNextTimeSlice();
 
@@ -691,7 +691,7 @@ void ReconstructorTask::loadDataSlice()
 
 void ReconstructorTask::processDataSlice()
 {
-    loginf << "start";
+    loginf;
 
     if (cancelled_)
         return;
@@ -761,7 +761,7 @@ void ReconstructorTask::processDataSlice()
 
 void ReconstructorTask::writeDataSlice()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(writing_slice_);
 
@@ -812,7 +812,7 @@ void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_p
 
 void ReconstructorTask::loadingDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(loading_data_);
     loading_data_ = false;
@@ -944,7 +944,7 @@ void ReconstructorTask::loadingDoneSlot()
 
 void ReconstructorTask::processingDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (cancelled_)
     {
@@ -1137,7 +1137,7 @@ void ReconstructorTask::endReconstruction()
 
 void ReconstructorTask::runCancelledSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(progress_dialog_);
 
@@ -1399,7 +1399,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 
 // void ReconstructorTask::saveDebugViewPoints()
 // {
-//     loginf << "start";
+//     loginf;
 
 //     COMPASS::instance().viewManager().clearViewPoints();
 

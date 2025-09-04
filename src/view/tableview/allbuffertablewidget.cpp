@@ -82,7 +82,7 @@ void AllBufferTableWidget::show(std::map<std::string, std::shared_ptr<Buffer>> b
 
 void AllBufferTableWidget::exportSlot()
 {
-    loginf << "start";
+    loginf;
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -149,7 +149,7 @@ void AllBufferTableWidget::resizeColumns()
 
 void AllBufferTableWidget::selectSelectedRows()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(table_);
     traced_assert(model_);

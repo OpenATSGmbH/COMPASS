@@ -171,7 +171,7 @@ void ConfigurationManager::parseJSONConfigurationFile(const std::string& filenam
 
 void ConfigurationManager::saveConfiguration()
 {
-    loginf << "start";
+    loginf;
     saveJSONConfiguration();
 }
 
@@ -195,8 +195,7 @@ void ConfigurationManager::saveJSONConfiguration()
 
     for (const auto& it : root_configurables_)  // iterate over root configurables
     {
-        loginf << "for configurable "
-               << it.first.second;
+        logdbg << "for configurable " << it.first.second;
         it.second.writeJSON(main_config, Configuration::JSONExportType::General);
         // root_element->LinkEndChild(it.second.configuration().generateXMLElement(document));
     }
@@ -206,7 +205,7 @@ void ConfigurationManager::saveJSONConfiguration()
         if (root_configurables_.find(it.first) ==
             root_configurables_.end())  // unused root configuration, not yet in save_info
         {
-            loginf << "configuration "
+            logdbg << "configuration "
                    << it.second->getInstanceId() << " unused";
 
             it.second->writeJSON(main_config, Configuration::JSONExportType::General);

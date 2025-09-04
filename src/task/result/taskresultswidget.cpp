@@ -211,7 +211,7 @@ void TaskResultsWidget::updateResultsSlot()
  */
 void TaskResultsWidget::updateResults(const std::string& selected_result)
 {
-    loginf << "start";
+    loginf;
 
     report_combo_->blockSignals(true);
     report_combo_->clear();

@@ -83,7 +83,7 @@ void ASTERIXJSONParser::generateSubConfigurable(const std::string& class_id,
 
 void ASTERIXJSONParser::doMappingChecks()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 

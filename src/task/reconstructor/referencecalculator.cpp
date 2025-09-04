@@ -174,7 +174,7 @@ void ReferenceCalculator::prepareForCurrentSlice()
  */
 void ReferenceCalculator::reset()
 {
-    loginf << "start";
+    loginf;
 
     references_.clear();
     interp_options_.clear();
@@ -211,7 +211,7 @@ void ReferenceCalculator::updateInterpOptions()
  */
 bool ReferenceCalculator::computeReferences()
 {
-    loginf << "start";
+    loginf;
 
     resetDataStructs();
 

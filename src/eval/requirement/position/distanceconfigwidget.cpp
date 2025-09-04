@@ -94,7 +94,7 @@ void PositionDistanceConfigWidget::changedThresholdValueCheckTypeSlot()
 
 void PositionDistanceConfigWidget::toggleFailedValuesOfInterestSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(failed_values_of_interest_check_);
     config().failedValuesOfInterest(failed_values_of_interest_check_->checkState() == Qt::Checked);

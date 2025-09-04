@@ -149,7 +149,7 @@ Result ReportExporterJSON::exportSection_impl(Section& section,
 Result ReportExporterJSON::exportContentToJSON(SectionContent& content, 
                                                bool is_root_section)
 {
-    //loginf << "start";
+    //loginf;
 
     auto res_dir     = exportResourceDir();
     auto res_dir_ptr = exportCreatesResources() ? &res_dir : nullptr;

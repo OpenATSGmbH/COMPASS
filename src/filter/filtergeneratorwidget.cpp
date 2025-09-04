@@ -258,7 +258,7 @@ void FilterGeneratorWidget::closeEvent(QCloseEvent* event) { emit filterWidgetAc
 
 void FilterGeneratorWidget::accept()
 {
-    loginf << "start";
+    loginf;
 
     std::string filter_name = filter_name_->text().toStdString();
 

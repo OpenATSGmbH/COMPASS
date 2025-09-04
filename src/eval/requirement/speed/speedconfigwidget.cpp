@@ -89,7 +89,7 @@ void SpeedConfigWidget::thresholdValueEditSlot(QString value)
 
 void SpeedConfigWidget::toggleUsePercentIfHigherSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(use_percent_if_higher_check_);
     config().usePercentIfHigher(use_percent_if_higher_check_->checkState() == Qt::Checked);
@@ -120,7 +120,7 @@ void SpeedConfigWidget::changedThresholdValueCheckTypeSlot()
 
 void SpeedConfigWidget::toggleFailedValuesOfInterestSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(failed_values_of_interest_check_);
     config().failedValuesOfInterest(failed_values_of_interest_check_->checkState() == Qt::Checked);

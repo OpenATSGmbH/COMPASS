@@ -307,7 +307,7 @@ void ViewPointsWidget::loadingDone()
 
 void ViewPointsWidget::loadViewPoints()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(table_model_);
     table_model_->clearViewPoints();
@@ -335,7 +335,7 @@ void ViewPointsWidget::addViewPoints(const std::vector <nlohmann::json>& viewpoi
 
 void ViewPointsWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }
@@ -557,24 +557,24 @@ void ViewPointsWidget::editCommentSlot()
 
 //void ViewPointsWidget::openCurrentSelectNext()
 //{
-//    loginf << "start";
+//    loginf;
 //}
 
 //void ViewPointsWidget::closeCurrentSelectNext()
 //{
-//    loginf << "start";
+//    loginf;
 //}
 
 void ViewPointsWidget::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     loadViewPoints();
 }
 
 void ViewPointsWidget::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(table_model_);
     table_model_->clearViewPoints();
@@ -583,7 +583,7 @@ void ViewPointsWidget::databaseClosedSlot()
 
 void ViewPointsWidget::exportSlot()
 {
-    loginf << "start";
+    loginf;
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -609,7 +609,7 @@ void ViewPointsWidget::exportSlot()
 
 void ViewPointsWidget::exportPDFSlot()
 {
-    loginf << "start";
+    loginf;
 
     ViewPointsReportGeneratorDialog& dialog = view_manager_.viewPointsGenerator().dialog();
     dialog.exec();
@@ -617,7 +617,7 @@ void ViewPointsWidget::exportPDFSlot()
 
 void ViewPointsWidget::deleteAllSlot()
 {
-    loginf << "start";
+    loginf;
 
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(nullptr, "Delete All", "Delete All Viewpoints?",
@@ -633,7 +633,7 @@ void ViewPointsWidget::deleteAllSlot()
 
 void ViewPointsWidget::importSlot()
 {
-    loginf << "start";
+    loginf;
 
     COMPASS::instance().mainWindow().importViewPointsSlot();
 
@@ -661,14 +661,14 @@ void ViewPointsWidget::currentRowChanged(const QModelIndex& current, const QMode
 
 void ViewPointsWidget::typesChangedSlot(QStringList types)
 {
-    loginf << "start";
+    loginf;
 
     types_ = types;
 }
 
 void ViewPointsWidget::statusesChangedSlot(QStringList statuses)
 {
-    loginf << "start";
+    loginf;
 
     statuses_ = statuses;
 }

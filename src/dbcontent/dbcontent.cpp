@@ -806,7 +806,7 @@ void DBContent::updateDoneSlot()
  */
 void DBContent::deleteJobDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     traced_assert(delete_job_);
 
