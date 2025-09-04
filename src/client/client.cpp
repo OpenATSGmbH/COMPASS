@@ -174,7 +174,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
          "ignore future timestamps during ASTERIX network import'")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
-         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'")
+         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
          "sets ASTERIX decoder config using JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
          " (including one pair of single quotes)")
@@ -488,8 +488,6 @@ bool Client::run ()
 
             if (asterix_framing.size() && asterix_framing != "none")
                 cmd += " --framing " + asterix_framing;
-            else
-                cmd += " --framing none";
 
             if (import_asterix_file_line_.size())
                 cmd += " --line " + import_asterix_file_line_;
@@ -512,10 +510,8 @@ bool Client::run ()
         {
             string cmd = "import_asterix_files '" + import_asterix_filenames_ + "'";
 
-            if (asterix_framing.size() && asterix_framing != "none")
+            if (asterix_framing.size())
                 cmd += " --framing " + asterix_framing;
-            else
-                cmd += " --framing none";
 
             if (import_asterix_file_line_.size())
                 cmd += " --line " + import_asterix_file_line_;
