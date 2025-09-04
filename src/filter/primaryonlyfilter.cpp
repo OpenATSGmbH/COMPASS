@@ -139,7 +139,7 @@ void PrimaryOnlyFilter::generateSubConfigurable(const std::string& class_id, con
 
 void PrimaryOnlyFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* PrimaryOnlyFilter::createWidget()

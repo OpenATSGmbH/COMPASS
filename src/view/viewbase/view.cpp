@@ -52,7 +52,7 @@ View::View(const std::string& class_id,
       widget_(nullptr),
       container_(container)
 {
-    logdbg << "start";
+    logdbg;
 
     registerParameter("name", &name_, std::string());
 
@@ -101,7 +101,7 @@ then the model, which will need the widget in it's constructor.
  */
 bool View::init()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(!init_);
 
@@ -239,7 +239,7 @@ void View::selectionChangedSlot()
 */
 void View::loadingStarted()
 {
-    logdbg << "start";
+    logdbg;
 
     //reload reverts any pending view updates
     issued_update_.reset();
@@ -252,7 +252,7 @@ void View::loadingStarted()
 */
 void View::loadedData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
 {
-    logdbg << "start";
+    logdbg;
 
     if (widget_ && widget_->getViewDataWidget())
         widget_->getViewDataWidget()->updateData(data, requires_reset);
@@ -262,7 +262,7 @@ void View::loadedData(const std::map<std::string, std::shared_ptr<Buffer>>& data
 */
 void View::loadingDone()
 {
-    logdbg << "start";
+    logdbg;
 
     if (widget_)
         widget_->loadingDone();
@@ -272,7 +272,7 @@ void View::loadingDone()
 */
 void View::clearData()
 {
-    logdbg << "start";
+    logdbg;
 
     if (widget_)
         widget_->clearData();
@@ -296,7 +296,7 @@ void View::appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current)
  */
 void View::onConfigurationChanged(const std::vector<std::string>& changed_params)
 {
-    logdbg << "start";
+    logdbg;
 
     //invoke derived for view-specific updates
     onConfigurationChanged_impl(changed_params);

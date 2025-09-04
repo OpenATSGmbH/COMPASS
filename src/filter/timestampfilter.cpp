@@ -106,7 +106,7 @@ DBFilterWidget* TimestampFilter::createWidget()
 
 void TimestampFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 

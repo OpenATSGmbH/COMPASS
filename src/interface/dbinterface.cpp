@@ -102,7 +102,7 @@ DBInterface::DBInterface(string class_id,
  */
 DBInterface::~DBInterface()
 {
-    logdbg << "start";
+    logdbg;
 
     db_instance_ = nullptr;
 
@@ -826,7 +826,7 @@ void DBInterface::createDataSourcesTable()
  */
 std::vector<std::unique_ptr<dbContent::DBDataSource>> DBInterface::getDataSources()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(ready());
 
@@ -996,7 +996,7 @@ void DBInterface::createFFTsTable()
  */
 std::vector<std::unique_ptr<DBFFT>> DBInterface::getFFTs()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(ready());
 

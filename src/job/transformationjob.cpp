@@ -33,7 +33,7 @@ TransformationJob::TransformationJob(JobOrderer* orderer, boost::function<void(J
 {
     WorkerThreadManager::getInstance().addJob(this);
 
-    logdbg << "start";
+    logdbg;
 
     traced_assert(transformation);
     transformation_ = transformation;
@@ -46,7 +46,7 @@ TransformationJob::~TransformationJob() {}
  */
 void TransformationJob::execute()
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(!done_);
     traced_assert(transformation_);
     transformation_->doExecute();

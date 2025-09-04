@@ -134,7 +134,7 @@ ViewVariable& VariableView::addVariable(const std::string& id,
 */
 dbContent::VariableSet VariableView::getSet(const std::string& dbcontent_name)
 {
-    logdbg << "start";
+    logdbg;
 
     dbContent::VariableSet set = getBaseSet(dbcontent_name);
 

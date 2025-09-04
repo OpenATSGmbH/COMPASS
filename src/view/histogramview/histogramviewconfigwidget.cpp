@@ -115,7 +115,7 @@ void HistogramViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
  */
 //void HistogramViewConfigWidget::exportSlot()
 //{
-//    logdbg << "start";
+//    logdbg;
 //    //assert(overwrite_check_);
 //    traced_assert(export_button_);
 

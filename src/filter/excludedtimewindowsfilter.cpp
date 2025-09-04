@@ -108,7 +108,7 @@ DBFilterWidget* ExcludedTimeWindowsFilter::createWidget()
 
 void ExcludedTimeWindowsFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 

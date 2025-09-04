@@ -147,7 +147,7 @@ void ScatterPlotViewConfigWidget::configChanged_impl()
 
 //void ScatterPlotViewConfigWidget::exportSlot()
 //{
-//    logdbg << "start";
+//    logdbg;
 //    //assert(overwrite_check_);
 //    traced_assert(export_button_);
 

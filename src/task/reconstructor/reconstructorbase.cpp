@@ -1334,7 +1334,7 @@ std::map<unsigned int, std::map<unsigned long, unsigned int>> ReconstructorBase:
 std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createAssociationBuffers(
     std::map<unsigned int, std::map<unsigned long,unsigned int>> associations)
 {
-    logdbg << "start";
+    logdbg;
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 

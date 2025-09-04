@@ -383,7 +383,7 @@ void ViewPointsWidget::showNoTypes ()
 
 void ViewPointsWidget::selectPreviousSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (load_in_progress_)
         return;
@@ -420,7 +420,7 @@ void ViewPointsWidget::selectPreviousSlot()
 
 void ViewPointsWidget::selectNextSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (load_in_progress_)
         return;

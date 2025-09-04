@@ -192,7 +192,7 @@ void ManageSectorsTaskWidget::addManageTab()
 
 void ManageSectorsTaskWidget::updateSectorTableSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(sector_table_);
 

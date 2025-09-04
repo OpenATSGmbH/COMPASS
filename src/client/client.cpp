@@ -655,7 +655,7 @@ bool Client::run ()
 
 Client::~Client()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 bool Client::notify(QObject* receiver, QEvent* event)

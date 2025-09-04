@@ -188,7 +188,7 @@ void ADSBQualityFilter::generateSubConfigurable(const std::string& class_id,
 
 void ADSBQualityFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* ADSBQualityFilter::createWidget()

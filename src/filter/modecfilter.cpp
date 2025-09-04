@@ -161,7 +161,7 @@ DBFilterWidget* ModeCFilter::createWidget()
 
 void ModeCFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 

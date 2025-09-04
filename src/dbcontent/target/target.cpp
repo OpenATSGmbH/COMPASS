@@ -375,7 +375,7 @@ void Target::adsbCount(unsigned int count)
 
 unsigned int Target::adsbCount() const
 {
-    logdbg << "start";
+    logdbg;
 
     unsigned int count = 0;
 
@@ -390,7 +390,7 @@ unsigned int Target::adsbCount() const
 
 void Target::adsbMOPSCount(std::map<std::string, unsigned int> adsb_mops_count)
 {
-    logdbg << "start";
+    logdbg;
 
     info_[KEY_ADSB_INFO][KEY_ADSB_MOPS] = adsb_mops_count;
 }
@@ -403,7 +403,7 @@ bool Target::hasADSBMOPS() const
 
 std::set<unsigned int> Target::adsbMopsList() const
 {
-    logdbg << "start";
+    logdbg;
 
     std::set<unsigned int> ret;
 
@@ -419,7 +419,7 @@ std::set<unsigned int> Target::adsbMopsList() const
 
 std::string Target::adsbMopsStr() const
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(hasADSBMOPS());
 

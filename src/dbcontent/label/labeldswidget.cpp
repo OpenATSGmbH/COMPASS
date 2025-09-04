@@ -76,7 +76,7 @@ void LabelDSWidget::forceUpdateList()
 
 void LabelDSWidget::updateListSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 

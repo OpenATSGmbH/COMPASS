@@ -389,7 +389,7 @@ void JSONImportTask::addReadJSONSlot()
 
 void JSONImportTask::readJSONFileDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     read_status_percent_ = 100.0;
     read_json_job_ = nullptr;
@@ -402,7 +402,7 @@ void JSONImportTask::readJSONFileDoneSlot()
 
 void JSONImportTask::readJSONFileObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 void JSONImportTask::parseJSONDoneSlot()
@@ -485,7 +485,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
 void JSONImportTask::parseJSONObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 void JSONImportTask::mapJSONDoneSlot()
@@ -563,7 +563,7 @@ void JSONImportTask::mapJSONDoneSlot()
 
 void JSONImportTask::mapJSONObsoleteSlot()
 {
-     logdbg << "start"; 
+     logdbg; 
 }
 
 
@@ -852,7 +852,7 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 
 void JSONImportTask::checkAllDone()
 {
-    logdbg << "start";
+    logdbg;
 
     loginf << "all done " << all_done_ << " read "
            << (read_json_job_ == nullptr) << " parse jobs " << (json_parse_job_ == nullptr)
@@ -903,7 +903,7 @@ void JSONImportTask::checkAllDone()
 
 void JSONImportTask::updateMsgBox()
 {
-    logdbg << "start";
+    logdbg;
 
     if (all_done_ && !allow_user_interactions_)
     {

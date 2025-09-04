@@ -125,7 +125,7 @@ void UTNFilter::generateSubConfigurable(const std::string& class_id,
 
 void UTNFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 
 }
 

@@ -102,7 +102,7 @@ void Mode3AFilter::generateSubConfigurable(const std::string& class_id, const st
 
 void Mode3AFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* Mode3AFilter::createWidget()

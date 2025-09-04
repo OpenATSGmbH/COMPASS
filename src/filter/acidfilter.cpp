@@ -131,7 +131,7 @@ void ACIDFilter::generateSubConfigurable(const std::string& class_id, const std:
 
 void ACIDFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* ACIDFilter::createWidget()

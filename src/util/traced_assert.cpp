@@ -32,7 +32,7 @@ namespace compass_assert
         {
             log4cpp::Category& root = log4cpp::Category::getRoot();
             // If we get here, log4cpp is initialized
-            msghandler::MessageHandler::log(logerr, msg);
+            msghandler::MessageHandler::log(logerr.getStream(), msg);
         }
         catch (...) // failed, switch to cerr
         {

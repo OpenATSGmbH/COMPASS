@@ -203,7 +203,7 @@ void EvaluationDataSourceWidget::dbContentNameChangedSlot()
  */
 void EvaluationDataSourceWidget::toggleDataSourceSlot()
 {
-    logdbg << "start";
+    logdbg;
     QCheckBox* check = (QCheckBox*)sender();
 
     unsigned int ds_id = check->property("id").toInt();

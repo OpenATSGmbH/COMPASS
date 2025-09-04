@@ -241,7 +241,7 @@ void VariableOrderedSetWidget::moveDownSlot()
 
 void VariableOrderedSetWidget::updateVariableListSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(list_widget_);
 

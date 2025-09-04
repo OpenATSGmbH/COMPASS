@@ -56,7 +56,7 @@ EvaluationSectorWidget::EvaluationSectorWidget(EvaluationCalculator& calculator,
 */
 void EvaluationSectorWidget::update()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(grid_layout_);
 

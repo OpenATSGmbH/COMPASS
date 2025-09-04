@@ -51,7 +51,7 @@ db::SQLConfig DBInstance::sqlConfiguration(bool verbose) const
  */
 DBInstance::~DBInstance()
 {
-    logdbg << "start";
+    logdbg;
 
     close();
 }

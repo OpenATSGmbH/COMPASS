@@ -46,7 +46,7 @@ const std::string RTCommandManager::PingName = "ping";
 RTCommandManager::RTCommandManager()
     : Configurable("RTCommandManager", "RTCommandManager0", 0, "rtcommand.json")
 {
-    logdbg << "start";
+    logdbg;
 
     registerParameter("port_num", &port_num_, 27960u);
     registerParameter("db_file_list", &command_backlog_, nlohmann::json::array());
@@ -56,7 +56,7 @@ RTCommandManager::RTCommandManager()
  */
 RTCommandManager::~RTCommandManager() 
 {
-     logdbg << "start"; 
+     logdbg; 
 }
 
 /**

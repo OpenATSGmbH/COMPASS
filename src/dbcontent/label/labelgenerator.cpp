@@ -1258,7 +1258,7 @@ void LabelGenerator::labelLine (unsigned int ds_id, unsigned int line)
 // updates lines to be label according to available lines with loaded data
 void LabelGenerator::updateAvailableLabelLines()
 {
-    logdbg << "start";
+    logdbg;
 
     unsigned int ds_id;
     unsigned int line_id;

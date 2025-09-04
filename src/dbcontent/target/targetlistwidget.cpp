@@ -339,7 +339,7 @@ void TargetListWidget::evalEditGlobalExcludeTimeWindowsSlot()
 
 void TargetListWidget::customContextMenuSlot(const QPoint& p)
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(table_view_);
 

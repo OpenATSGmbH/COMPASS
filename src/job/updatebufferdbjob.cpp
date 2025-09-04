@@ -43,7 +43,7 @@ UpdateBufferDBJob::~UpdateBufferDBJob() {}
 
 void UpdateBufferDBJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     started_ = true;
 

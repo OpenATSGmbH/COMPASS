@@ -23,7 +23,7 @@ DataTypeFormatSelectionWidget::DataTypeFormatSelectionWidget(std::string& data_t
                                                              Format& format)
     : QPushButton(), data_type_str_(&data_type_str), format_(&format)
 {
-    logdbg << "start";
+    logdbg;
 
     pointers_set_ = true;
 
@@ -86,7 +86,7 @@ void DataTypeFormatSelectionWidget::showValues()
 
 void DataTypeFormatSelectionWidget::createMenu()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(pointers_set_);
 
@@ -119,7 +119,7 @@ void DataTypeFormatSelectionWidget::createMenu()
 
 void DataTypeFormatSelectionWidget::showMenuSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(pointers_set_);
     traced_assert(menu_);

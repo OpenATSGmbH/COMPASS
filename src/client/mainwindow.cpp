@@ -97,7 +97,7 @@ using namespace std;
 
 MainWindow::MainWindow()
 {
-    logdbg << "start";
+    logdbg;
 
     QLocale::setDefault(QLocale::c());
     setLocale(QLocale::c());
@@ -161,7 +161,7 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-    logdbg << "start";
+    logdbg;
 
             // remember: this not called! insert deletes into closeEvent function
 }
@@ -641,7 +641,7 @@ void MainWindow::updateBottomWidget()
 
 void MainWindow::disableConfigurationSaving()
 {
-    logdbg << "start";
+    logdbg;
     save_configuration_ = false;
 
     traced_assert(quit_wo_cfg_sav_action_);

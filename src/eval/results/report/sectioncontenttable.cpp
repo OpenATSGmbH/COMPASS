@@ -583,7 +583,7 @@ void SectionContentTable::doubleClickedSlot(const QModelIndex& index)
 
 void SectionContentTable::customContextMenuSlot(const QPoint& p)
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(table_view_);
 

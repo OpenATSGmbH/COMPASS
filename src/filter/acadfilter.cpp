@@ -100,7 +100,7 @@ void ACADFilter::generateSubConfigurable(const std::string& class_id, const std:
 
 void ACADFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* ACADFilter::createWidget()

@@ -25,7 +25,7 @@
 UnitSelectionWidget::UnitSelectionWidget(std::string& dimension, std::string& unit)
     : QPushButton(), dimension_(&dimension), unit_(&unit)
 {
-    logdbg << "start";
+    logdbg;
 
     pointers_set_ = true;
 

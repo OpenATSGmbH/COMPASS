@@ -354,7 +354,7 @@ void DataSourcesUseWidget::clear()
 
 void DataSourcesUseWidget::arrangeSourceWidgetWidths()
 {
-    logdbg << "start";
+    logdbg;
 
     unsigned int min_width = 0;
 
@@ -372,7 +372,7 @@ void DataSourcesUseWidget::arrangeSourceWidgetWidths()
 
 void DataSourcesUseWidget::clearAndCreateContent()
 {
-    logdbg << "start";
+    logdbg;
 
     clear();
 

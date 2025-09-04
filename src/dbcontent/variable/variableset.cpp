@@ -85,7 +85,7 @@ void VariableSet::removeVariable(const Variable& var)
 
 VariableSet& VariableSet::operator=(const VariableSet& source)
 {
-    logdbg << "start";
+    logdbg;
 
     if (this == &source)  // self assignment
         return *this;

@@ -67,7 +67,7 @@ LogStream MessageHandler::getStream(log4cpp::CategoryStream& strm,
     auto cb = [ &strm, severity, component, err_code, file, line, info, stack_trace, user_level ] (const std::string& content)
     {
         Message msg;
-        msg.content     = content;
+        msg.content     = content.empty() ? component : content;  // Use component as message if content is empty
         msg.severity    = severity;
         msg.component   = component;
         msg.err_code    = err_code;

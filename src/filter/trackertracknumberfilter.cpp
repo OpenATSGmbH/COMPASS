@@ -130,7 +130,7 @@ DBFilterWidget* TrackerTrackNumberFilter::createWidget()
 
 void TrackerTrackNumberFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 

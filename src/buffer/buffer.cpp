@@ -29,7 +29,7 @@ using namespace std;
 Buffer::Buffer(PropertyList properties, const string& dbcontent_name)
     : dbcontent_name_(dbcontent_name) //, last_one_(false)
 {
-    logdbg << "start";
+    logdbg;
 
     for (unsigned int cnt = 0; cnt < properties.size(); cnt++)
         addProperty(properties.at(cnt));

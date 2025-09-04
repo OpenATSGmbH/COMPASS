@@ -57,7 +57,7 @@ const bool COMPASS::is_app_image_ = {getenv("APPDIR") != nullptr};
 COMPASS::COMPASS()
     : Configurable("COMPASS", "COMPASS0", 0, "compass.json"), log_store_(!is_app_image_)
 {
-    logdbg << "start";
+    logdbg;
 
     std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
 
@@ -218,7 +218,7 @@ COMPASS::COMPASS()
 
 COMPASS::~COMPASS()
 {
-    logdbg << "start";
+    logdbg;
 
     if (app_state_ != AppState::Shutdown)
     {

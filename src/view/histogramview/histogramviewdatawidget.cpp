@@ -459,7 +459,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
  */
 void HistogramViewDataWidget::exportDataSlot(bool overwrite)
 {
-    logdbg << "start";
+    logdbg;
 
 }
 

@@ -85,7 +85,7 @@ DataSourceManager::DataSourceManager(const std::string& class_id, const std::str
 
 DataSourceManager::~DataSourceManager()
 {
-    logdbg << "start";
+    logdbg;
 
     config_data_sources_.clear();
     db_data_sources_.clear(); // delete their widgets, which removes them from load_widget_

@@ -226,7 +226,7 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
 
 void DBContentAccessor::removeEmptyBuffers()
 {
-    logdbg << "start";
+    logdbg;
 
     bool something_changed = false;
 

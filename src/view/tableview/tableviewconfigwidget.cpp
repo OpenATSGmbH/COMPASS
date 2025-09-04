@@ -123,7 +123,7 @@ void TableViewConfigWidget::toggleIgnoreNonTargetReports()
 
 void TableViewConfigWidget::exportSlot()
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(export_button_);
 
     export_button_->setDisabled(true);

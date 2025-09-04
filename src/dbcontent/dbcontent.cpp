@@ -909,7 +909,7 @@ void DBContent::databaseOpenedSlot()
  */
 void DBContent::databaseClosedSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     is_loadable_ = false;
     count_ = 0;

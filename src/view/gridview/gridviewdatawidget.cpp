@@ -83,7 +83,7 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 */
 GridViewDataWidget::~GridViewDataWidget()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**

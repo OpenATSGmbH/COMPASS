@@ -123,7 +123,7 @@ void BufferTableWidget::exportDoneSlot(bool cancelled) { emit exportDoneSignal(c
 
 void BufferTableWidget::updateToSettingsChange()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(model_);
     model_->rebuild();

@@ -91,7 +91,7 @@ ViewContainer::ViewContainer(const std::string& class_id,
 
 ViewContainer::~ViewContainer()
 {
-    logdbg << "start";
+    logdbg;
 
     view_manager_.removeContainer(instanceId());
 

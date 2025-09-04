@@ -55,7 +55,7 @@ DBContentInsertDBJob::~DBContentInsertDBJob() = default;
  */
 void DBContentInsertDBJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     started_ = true;
 

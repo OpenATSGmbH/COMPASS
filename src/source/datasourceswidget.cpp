@@ -626,7 +626,7 @@ void DataSourcesWidget::clear()
  */
 int DataSourcesWidget::generateContent(bool force_rebuild)
 {
-    logdbg << "start";
+    logdbg;
 
     tree_widget_->blockSignals(true);
 

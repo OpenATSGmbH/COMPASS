@@ -35,7 +35,7 @@
 ViewManagerWidget::ViewManagerWidget(ViewManager& view_manager)
     : view_manager_(view_manager), layout_(nullptr), cont_layout_(nullptr), add_button_(nullptr)
 {
-    logdbg << "start";
+    logdbg;
 
     QFont font_bold;
     font_bold.setBold(true);

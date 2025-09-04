@@ -1263,7 +1263,7 @@ void Chain::updateACADs() const
 
 void Chain::updateModeACodes() const
 {
-    logdbg << "start";
+    logdbg;
 
     mode_a_codes_.clear();
 
@@ -1291,7 +1291,7 @@ void Chain::updateModeACodes() const
 
 void Chain::updateModeCMinMax() const
 {
-    logdbg << "start";
+    logdbg;
 
     // garbled, valid flags?
 

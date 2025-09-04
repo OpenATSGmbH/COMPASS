@@ -44,7 +44,7 @@ ASTERIXDecodeJob::ASTERIXDecodeJob(ASTERIXImportTask& task,
     decoder_     (task.decoder()),
     post_process_(post_process)
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(decoder_);
 }
@@ -90,7 +90,7 @@ void ASTERIXDecodeJob::run_impl()
 */
 void ASTERIXDecodeJob::setObsolete()
 {
-    logdbg << "start";
+    logdbg;
 
     Job::setObsolete();
 

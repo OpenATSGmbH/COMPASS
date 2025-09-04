@@ -42,14 +42,14 @@ VariableViewDataWidget::VariableViewDataWidget(ViewWidget* view_widget,
 */
 VariableViewDataWidget::~VariableViewDataWidget()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
 */
 void VariableViewDataWidget::clearData_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //reset everything
     resetVariableStates();
@@ -80,7 +80,7 @@ void VariableViewDataWidget::clearIntermediateRedrawData_impl()
 */
 void VariableViewDataWidget::loadingStarted_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //nothing to do yet
 
@@ -91,7 +91,7 @@ void VariableViewDataWidget::loadingStarted_impl()
 */
 void VariableViewDataWidget::updateData_impl(bool requires_reset)
 {
-    logdbg << "start";
+    logdbg;
 
     //react on data update
     updateDataEvent(requires_reset);
@@ -103,7 +103,7 @@ void VariableViewDataWidget::updateData_impl(bool requires_reset)
 */
 void VariableViewDataWidget::loadingDone_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //redraw already triggered by post load trigger? => return
     if (postLoadTrigger())
@@ -155,7 +155,7 @@ ViewDataWidget::DrawState VariableViewDataWidget::redrawData_impl(bool recompute
 */
 void VariableViewDataWidget::liveReload_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //@TODO: implement live reload for variable based views
 
@@ -354,7 +354,7 @@ bool VariableViewDataWidget::variableIsDateTime(int var_idx) const
  */
 void VariableViewDataWidget::updateFromVariables()
 {
-    logdbg << "start";
+    logdbg;
 
     for (const auto& buf_it : viewData())
     {

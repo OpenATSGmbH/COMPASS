@@ -97,7 +97,7 @@ DBFilterWidget* RefTrajAccuracyFilter::createWidget()
 
 void RefTrajAccuracyFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 

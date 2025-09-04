@@ -142,7 +142,7 @@ protected:
      */
     virtual bool refill_impl() override final
     {
-        logdbg << "start";
+        logdbg;
 
         //reinit intermediate data
 
@@ -284,7 +284,7 @@ private:
      */
     void initIntermediateData()
     {
-        logdbg << "start";
+        logdbg;
 
         //reset existing histogram bins
         for (auto& elem : histograms_)

@@ -41,12 +41,12 @@ ASTERIXJSONMappingJob::ASTERIXJSONMappingJob(std::vector<std::unique_ptr<nlohman
     data_record_keys_(data_record_keys),
     parsers_(parsers)
 {
-    logdbg << "start";
+    logdbg;
 }
 
 ASTERIXJSONMappingJob::~ASTERIXJSONMappingJob()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 void ASTERIXJSONMappingJob::run_impl()

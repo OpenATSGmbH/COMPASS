@@ -39,7 +39,7 @@ JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
       data_record_keys_(data_record_keys), line_id_(line_id),
       json_parsers_(&parsers), asterix_parsers_(nullptr)
 {
-    logdbg << "start";
+    logdbg;
 }
 
 JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
@@ -51,7 +51,7 @@ JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
       data_record_keys_(data_record_keys), line_id_(line_id),
       json_parsers_(nullptr), asterix_parsers_(&parsers)
 {
-    logdbg << "start";
+    logdbg;
 
 }
 
@@ -63,7 +63,7 @@ JSONMappingJob::~JSONMappingJob()
 
 void JSONMappingJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     started_ = true;
 

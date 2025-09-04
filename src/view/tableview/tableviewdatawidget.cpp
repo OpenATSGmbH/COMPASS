@@ -148,7 +148,7 @@ void TableViewDataWidget::liveReload_impl()
 
 void TableViewDataWidget::exportDataSlot()
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(tab_widget_);
 
     AllBufferTableWidget* all_buffer_widget =

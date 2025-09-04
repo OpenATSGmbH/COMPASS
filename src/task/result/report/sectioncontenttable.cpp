@@ -2203,7 +2203,7 @@ void SectionContentTableWidget::doubleClicked(const QModelIndex& index)
  */
 void SectionContentTableWidget::customContextMenu(const QPoint& p)
 {
-    logdbg << "start";
+    logdbg;
 
     QModelIndex index = table_view_->indexAt(p);
     if (!index.isValid())

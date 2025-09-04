@@ -55,7 +55,7 @@ void ConfigurationManager::init(const std::string& main_config_filename)
 
 ConfigurationManager::~ConfigurationManager()
 {
-    logdbg << "start";
+    logdbg;
     initialized_ = false;
 }
 
@@ -191,7 +191,7 @@ void ConfigurationManager::saveJSONConfiguration()
 
     json main_config;
 
-    logdbg << "start";
+    logdbg;
 
     for (const auto& it : root_configurables_)  // iterate over root configurables
     {

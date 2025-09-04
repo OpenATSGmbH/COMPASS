@@ -97,7 +97,7 @@ void ReconstructorSectorWidget::toggleSectorSlot()
 */
 void ReconstructorSectorWidget::update()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(use_sectors_check_);
     use_sectors_check_->setChecked(task_.useSectorsExtend());

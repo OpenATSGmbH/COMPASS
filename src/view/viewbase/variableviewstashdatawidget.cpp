@@ -349,7 +349,7 @@ void VariableViewStashDataWidget::updateStash()
 
     const auto& data_ranges = stash_.dataRanges();
 
-    logdbg << "start";
+    logdbg;
 
     for (size_t i = 0; i < variableView()->numVariables(); ++i)
     {

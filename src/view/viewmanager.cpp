@@ -56,7 +56,7 @@ using namespace std;
 ViewManager::ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
     : Configurable(class_id, instance_id, compass, "views.json"), compass_(*compass)
 {
-    logdbg << "start";
+    logdbg;
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
@@ -68,7 +68,7 @@ ViewManager::ViewManager(const std::string& class_id, const std::string& instanc
 
 void ViewManager::init(QTabWidget* main_tab_widget)
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(main_tab_widget);
     traced_assert(!main_tab_widget_);
@@ -125,7 +125,7 @@ void ViewManager::loadViewPoints()
 
 void ViewManager::close()
 {
-    logdbg << "start";
+    logdbg;
     initialized_ = false;
 
     logdbg << "deleting container widgets";
@@ -160,7 +160,7 @@ void ViewManager::close()
 
 ViewManager::~ViewManager()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(!container_widgets_.size());
     traced_assert(!containers_.size());
@@ -386,7 +386,7 @@ void ViewManager::unsetCurrentViewPoint ()
 
 void ViewManager::doViewPointAfterLoad ()
 {
-    logdbg << "start";
+    logdbg;
 
     if (!current_viewable_)
     {
@@ -676,7 +676,7 @@ bool ViewManager::isInitialized() const
 
 ViewContainerWidget* ViewManager::addNewContainerWidget()
 {
-    logdbg << "start";
+    logdbg;
     
     container_count_++;
     std::string container_widget_name = "ViewWindow" + std::to_string(container_count_);
@@ -698,7 +698,7 @@ void ViewManager::clearDataInViews()
 
 void ViewManager::registerView(View* view)
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(view);
     traced_assert(!isRegistered(view));
     views_[view->instanceId()] = view;
@@ -718,7 +718,7 @@ void ViewManager::unregisterView(View* view)
 
 bool ViewManager::isRegistered(View* view)
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(view);
 
     std::map<std::string, View*>::iterator it;

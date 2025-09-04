@@ -35,7 +35,7 @@ WriteBufferDBJob::~WriteBufferDBJob() {}
 
 void WriteBufferDBJob::execute()
 {
-    logdbg << "start";
+    logdbg;
 
     boost::posix_time::ptime loading_start_time_;
     boost::posix_time::ptime loading_stop_time_;

@@ -38,7 +38,7 @@ JSONMappingStubsJob::~JSONMappingStubsJob() {}
 
 void JSONMappingStubsJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     started_ = true;
 

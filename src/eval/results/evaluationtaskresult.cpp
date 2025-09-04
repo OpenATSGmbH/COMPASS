@@ -436,7 +436,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
                                                   ResultReport::SectionContentTable* table, 
                                                   unsigned int row)
 {
-    logdbg << "start";
+    logdbg;
 
     if (table->name() == EvaluationRequirementResult::Single::TRDetailsTableName)
     {

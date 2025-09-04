@@ -61,7 +61,7 @@ AccuracyEstimatorBase::AccuracyEstimatorBase()
 
 void AccuracyEstimatorBase::init(ReconstructorBase* reconstructor_ptr)
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(reconstructor_ptr);
     reconstructor_ = reconstructor_ptr;

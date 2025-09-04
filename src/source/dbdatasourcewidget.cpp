@@ -250,7 +250,7 @@ QWidget* DBDataSourceWidget::createLinesWidget()
 
 void DBDataSourceWidget::updateWidgets()
 {
-    logdbg << "start";
+    logdbg;
 
     bool show_counts = show_counts_func_();
 

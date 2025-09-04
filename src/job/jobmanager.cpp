@@ -140,7 +140,7 @@ unsigned int JobManagerBase::numJobs() const
  */
 void JobManagerBase::run()
 {
-    logdbg << "start";
+    logdbg;
 
     //boost::posix_time::ptime log_time_ = boost::posix_time::microsec_clock::local_time();
 
@@ -893,12 +893,12 @@ void JobManagerThreadPool::setJobsObsolete()
 JobManager::JobManager()
 :   Configurable("JobManager", "JobManager0", 0, "threads.json")
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
  */
 JobManager::~JobManager() 
 { 
-    logdbg << "start"; 
+    logdbg; 
 }

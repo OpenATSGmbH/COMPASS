@@ -119,7 +119,7 @@ void AllBufferTableWidget::exportDoneSlot(bool cancelled) { emit exportDoneSigna
 
 void AllBufferTableWidget::updateToSettingsChange()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(model_);
     model_->rebuild();

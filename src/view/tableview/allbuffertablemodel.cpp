@@ -413,7 +413,7 @@ bool AllBufferTableModel::setData(const QModelIndex& index, const QVariant& valu
 
 void AllBufferTableModel::clearData()
 {
-    logdbg << "start";
+    logdbg;
 
     beginResetModel();
 
@@ -453,7 +453,7 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
 
 void AllBufferTableModel::updateTimeIndexes()
 {
-    logdbg << "start";
+    logdbg;
 
     unsigned int buffer_index;
     std::string dbcontent_name;
@@ -564,14 +564,14 @@ void AllBufferTableModel::saveAsCSV(const std::string& file_name)
 
 void AllBufferTableModel::exportJobObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     emit exportDoneSignal(true);
 }
 
 void AllBufferTableModel::exportJobDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     emit exportDoneSignal(false);
 }

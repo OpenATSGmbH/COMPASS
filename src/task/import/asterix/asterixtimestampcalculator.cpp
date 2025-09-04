@@ -52,7 +52,7 @@ void ASTERIXTimestampCalculator::calculate(
                bool override_tod_active, float override_tod_offset,
                bool ignore_time_jumps, bool do_timestamp_checks)
 {
-    logdbg << "start";
+    logdbg;
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -106,7 +106,7 @@ void ASTERIXTimestampCalculator::calculate(
 
 std::map<std::string, std::shared_ptr<Buffer>> ASTERIXTimestampCalculator::buffers()
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(processing_);
 
     return std::move(buffers_);
@@ -499,7 +499,7 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
 
 void ASTERIXTimestampCalculator::setProcessingDone()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(!buffers_.size());
     traced_assert(processing_);
@@ -529,7 +529,7 @@ void ASTERIXTimestampCalculator::resetDateInfo()
 
 void ASTERIXTimestampCalculator::clearTimeStats()
 {
-    logdbg << "start";
+    logdbg;
 
     first_time_ = true;
     timestamp_first_ = {};

@@ -91,7 +91,7 @@ DBContentManager::DBContentManager(const std::string& class_id, const std::strin
  */
 DBContentManager::~DBContentManager()
 {
-    logdbg << "start";
+    logdbg;
 
     data_.clear();
 
@@ -437,7 +437,7 @@ void DBContentManager::loadBlocking(const std::string& custom_filter_clause,
  */
 void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffer>> data)
 {
-    logdbg << "start";
+    logdbg;
 
     // newest data batch has been finalized, ready to be added
 
@@ -634,7 +634,7 @@ void DBContentManager::loadingDone(DBContent& object)
  */
 void DBContentManager::deleteJobDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(delete_job_);
 
@@ -746,7 +746,7 @@ void DBContentManager::clearData()
  */
 void DBContentManager::insertData(std::map<std::string, std::shared_ptr<Buffer>> data)
 {
-    logdbg << "start";
+    logdbg;
 
     while (load_in_progress_) // pending insert
     {
@@ -788,7 +788,7 @@ void DBContentManager::insertData(std::map<std::string, std::shared_ptr<Buffer>>
  */
 void DBContentManager::finishInserting()
 {
-    logdbg << "start";
+    logdbg;
 
     //delete insert job
     insert_job_ = nullptr;
@@ -1167,7 +1167,7 @@ void DBContentManager::addInsertedDataToChache()
  */
 void DBContentManager::filterDataSources()
 {
-    logdbg << "start";
+    logdbg;
 
     std::map<unsigned int, std::set<unsigned int>> wanted_data_sources =
         COMPASS::instance().dataSourceManager().getLoadDataSources();
@@ -1302,7 +1302,7 @@ void DBContentManager::cutCachedData()
  */
 void DBContentManager::updateNumLoadedCounts()
 {
-    logdbg << "start";
+    logdbg;
 
     // ds id->dbcont->line->cnt
     std::map<unsigned int, std::map<std::string,

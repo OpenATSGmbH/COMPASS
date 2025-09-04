@@ -115,7 +115,7 @@ void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selecti
 
 void SelectDataSourcesWidget::toggleDataSourceSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     std::map<std::string, bool> selection;
 

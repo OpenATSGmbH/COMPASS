@@ -76,7 +76,7 @@ void DBContentDeleteDBJob::cleanupDB(bool cleanup_db)
 
 void DBContentDeleteDBJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
     started_ = true;
 
     if (obsolete_)

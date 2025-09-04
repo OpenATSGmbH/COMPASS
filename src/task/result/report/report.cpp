@@ -48,7 +48,7 @@ Report::Report(TaskResult* result)
  */
 Report::~Report()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**

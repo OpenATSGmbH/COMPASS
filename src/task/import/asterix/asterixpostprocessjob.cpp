@@ -72,7 +72,7 @@ ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buf
 
 ASTERIXPostprocessJob::~ASTERIXPostprocessJob()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 
@@ -134,7 +134,7 @@ void ASTERIXPostprocessJob::doRadarPlotPositionCalculations()
 
 void ASTERIXPostprocessJob::doXYPositionCalculations()
 {
-    logdbg << "start";
+    logdbg;
 
     // tracked data sources with only x/y coordinates
     ProjectionManager::instance().doXYPositionCalculations(buffers_);

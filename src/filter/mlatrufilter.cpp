@@ -121,7 +121,7 @@ void MLATRUFilter::generateSubConfigurable(const std::string& class_id,
 
 void MLATRUFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 
 }
 

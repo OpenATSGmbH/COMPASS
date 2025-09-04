@@ -88,7 +88,7 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
 */
 ScatterPlotViewDataWidget::~ScatterPlotViewDataWidget()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
@@ -600,7 +600,7 @@ void ScatterPlotViewDataWidget::updateChartSlot()
 */
 ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(main_layout_);
 

@@ -47,7 +47,7 @@ ReadJSONFileJob::~ReadJSONFileJob()
 
 void ReadJSONFileJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
     started_ = true;
 
     traced_assert(!done_);

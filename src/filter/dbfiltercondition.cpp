@@ -172,7 +172,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
  */
 void DBFilterCondition::valueChanged()
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(usable_);
     traced_assert(edit_);
 

@@ -259,7 +259,7 @@ void TaskManager::init()
  */
 void TaskManager::shutdown()
 {
-    logdbg << "start";
+    logdbg;
 
     asterix_importer_task_->stop(); // stops if active
     asterix_importer_task_ = nullptr;

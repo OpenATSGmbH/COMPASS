@@ -114,7 +114,7 @@ void ViewPoint::print() const
 
 void ViewPoint::accept(LatexVisitor& v) const
 {
-    logdbg << "start";
+    logdbg;
     v.visit(this);
 }
 

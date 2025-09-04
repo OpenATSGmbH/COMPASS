@@ -59,7 +59,7 @@ DBConnection::DBConnection(DBInstance* instance, bool verbose)
 DBConnection::~DBConnection()
 {
     if (verbose_)
-        logdbg << "start";
+        logdbg;
 
     traced_assert(!connected());
 }

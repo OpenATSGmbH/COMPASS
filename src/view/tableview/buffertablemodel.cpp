@@ -51,7 +51,7 @@ BufferTableModel::~BufferTableModel()
 
 void BufferTableModel::setChangedSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     beginResetModel();
     read_set_ = data_source_.getSet()->getFor(object_.name());
@@ -397,7 +397,7 @@ void BufferTableModel::clearData()
 
 void BufferTableModel::setData(std::shared_ptr<Buffer> buffer)
 {
-    logdbg << "start";
+    logdbg;
     traced_assert(buffer);
     beginResetModel();
 
@@ -485,14 +485,14 @@ void BufferTableModel::saveAsCSV(const std::string& file_name)
 
 void BufferTableModel::exportJobObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     emit exportDoneSignal(true);
 }
 
 void BufferTableModel::exportJobDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     emit exportDoneSignal(false);
 }

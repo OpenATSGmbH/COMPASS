@@ -47,7 +47,7 @@ FilterManager::FilterManager(const std::string& class_id, const std::string& ins
                              COMPASS* compass)
     : Configurable(class_id, instance_id, compass, "filter.json")
 {
-    logdbg << "start";
+    logdbg;
 
     registerParameter("use_filters", &use_filters_, false);
     registerParameter("db_id", &db_id_, std::string());

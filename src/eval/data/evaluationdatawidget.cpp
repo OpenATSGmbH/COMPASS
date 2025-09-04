@@ -220,7 +220,7 @@ namespace
 
 void EvaluationDataWidget::customContextMenuSlot(const QPoint& p)
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(table_view_);
 

@@ -187,7 +187,7 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
 */
 ASTERIXImportTask::~ASTERIXImportTask()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
@@ -747,7 +747,7 @@ void ASTERIXImportTask::reset()
 */
 void ASTERIXImportTask::stop()
 {
-    logdbg << "start";
+    logdbg;
 
     stopped_ = true;
 
@@ -890,7 +890,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 */
 void ASTERIXImportTask::decodeASTERIXDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (!decode_job_) // called twice?
         return;
@@ -922,7 +922,7 @@ void ASTERIXImportTask::decodeASTERIXDoneSlot()
 */
 void ASTERIXImportTask::decodeASTERIXObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     decode_job_ = nullptr;
 }
@@ -931,7 +931,7 @@ void ASTERIXImportTask::decodeASTERIXObsoleteSlot()
 */
 void ASTERIXImportTask::addDecodedASTERIXSlot()
 {
-    logdbg << "start";
+    logdbg;
     //int cpu = sched_getcpu();
     //loginf << "running on cpu " << cpu;
 
@@ -1032,7 +1032,7 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 */
 void ASTERIXImportTask::mapJSONDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (stopped_)
     {
@@ -1125,7 +1125,7 @@ void ASTERIXImportTask::mapJSONDoneSlot()
 */
 void ASTERIXImportTask::mapJSONObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     ASTERIXJSONMappingJob* map_job = dynamic_cast<ASTERIXJSONMappingJob*>(QObject::sender());
     traced_assert(map_job);
@@ -1140,7 +1140,7 @@ void ASTERIXImportTask::mapJSONObsoleteSlot()
 
 void ASTERIXImportTask::timestampCalculationDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     std::map<std::string, std::shared_ptr<Buffer>> job_buffers {ts_calculator_.buffers()};
     ts_calculator_.setProcessingDone();
@@ -1174,7 +1174,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
 */
 void ASTERIXImportTask::postprocessDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (stopped_)
     {
@@ -1415,7 +1415,7 @@ void ASTERIXImportTask::insertData()
 */
 void ASTERIXImportTask::insertDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     traced_assert(insert_slot_connected_);
 

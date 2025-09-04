@@ -143,7 +143,7 @@ void ReconstructorAssociatorBase::associateNewData()
 
 void ReconstructorAssociatorBase::reset()
 {
-    logdbg << "start";
+    logdbg;
 
     reconstructor().targets_container_.utn_vec_.clear();
     reconstructor().targets_container_.acad_2_utn_.clear();
