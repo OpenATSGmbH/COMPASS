@@ -130,20 +130,20 @@ std::string reportExportMode2Extension(ReportExportMode mode)
 
 /**
  */
-std::string reportExportMode2Folder(ReportExportMode mode)
-{
-    switch(mode)
-    {
-        case ReportExportMode::JSONFile:
-        case ReportExportMode::JSONBlob:
-            return "json";
-        case ReportExportMode::Latex:
-        case ReportExportMode::LatexPDF:
-            return "tex";
-        case ReportExportMode::CSV:
-            return "csv";
-    }
-    return "";
-}
+// std::string reportExportMode2Folder(ReportExportMode mode)
+// {
+//     switch(mode)
+//     {
+//         case ReportExportMode::JSONFile:
+//         case ReportExportMode::JSONBlob:
+//             return "json";
+//         case ReportExportMode::Latex:
+//         case ReportExportMode::LatexPDF:
+//             return "tex";
+//         case ReportExportMode::CSV:
+//             return "csv";
+//     }
+//     return "";
+// }
 
 }

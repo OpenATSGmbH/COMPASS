@@ -135,12 +135,14 @@ ResultT<nlohmann::json> ReportExporter::exportReport(TaskResult& result,
             return Result::failed("Filename not provided");
         if (exportCreatesResources() && export_resource_dir_.empty())
             return Result::failed("Resource directory not provided");
-        if (exportCreatesResources() && Utils::Files::directoryExists(export_resource_dir_))
-        {
-            Utils::Files::deleteFolder(export_resource_dir_);
-            if (Utils::Files::directoryExists(export_resource_dir_))
-                return Result::failed("Existing report resources could not be removed");
-        }
+
+        // do not delete, user error
+        // if (exportCreatesResources() && Utils::Files::directoryExists(export_resource_dir_))
+        // {
+        //     Utils::Files::deleteFolder(export_resource_dir_);
+        //     if (Utils::Files::directoryExists(export_resource_dir_))
+        //         return Result::failed("Existing report resources could not be removed");
+        // }
         if (exportCreatesResources() && !Utils::Files::createMissingDirectories(export_resource_dir_))
             return Result::failed("Resource directory could not be created");
 

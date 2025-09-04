@@ -52,7 +52,10 @@ Allowed options:
   --evaluate                            run evaluation
   --evaluation_parameters arg           evaluation parameters as JSON string, e.g. ''{"current_standard": "test", "dbcontent_name_ref": "CAT062", "dbcontent_name_tst": "CAT020"}'' (including one pair of single quotes)
   --evaluate_run_filter                 run evaluation filter before evaluation
-  --export_eval_report arg              export evaluation report after start with given filename, e.g. '/data/eval_db2/report.tex
+  --export_report arg                   report name to export, e.g. 'EUROCAE 
+                                        ED-87E Evaluation', PDF per default
+  --export_report_directory arg         export directory, e.g. '/data/report2/'
+  --export_report_mode arg              export mode, i.e. 'JSON','Latex','PDF'
   --no_cfg_save                         do not save configuration upon quitting
   --open_rt_cmd_port                    open runtime command port (default at 27960)
   --enable_event_log                    collect warnings and errors in the event log
@@ -301,11 +304,19 @@ The configuration of such parameters is rather complex, and it is recommended to
 When an Evaluation task is started an automatic filtering of targets is performed, as configured using the 'Filter UTNs' dialog defined in \nameref{sec:eval_filter_targets}.
 
 
-\subsubsection{--export\_eval\_report}
+\subsubsection{--export\_report 'str'}
 
-After a pre-configured evaluation run is was performed a report PDF is generated as described in \nameref{sec:eval}.
+Existing reports can be exported as described in the section \nameref{sec:report_export}.
 
-The given argument filename defines the report filename, with the report directory as the parent directory of the given filename.
+The given argument filename defines the report name, which will be exported with the report directory as the database directory  and the report name as subfolder, as PDF (unless other values are set).
+
+\subsubsection{--export\_report\_directory 'str'}
+
+Sets the report directory to the given value when exporting a report as described in the section \nameref{sec:report_export}.
+
+\subsubsection{--export\_report\_mode 'str'}
+
+Sets the report export type to the given value (i.e. 'JSON','Latex','PDF') when exporting a report as described in the section \nameref{sec:report_export}.
 
 \subsubsection{--no\_cfg\_save}
 

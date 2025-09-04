@@ -97,7 +97,7 @@ protected:
     QHBoxLayout*     base_dir_layout_      = nullptr;
     QPushButton*     base_dir_button_      = nullptr;
     QLineEdit*       base_dir_edit_        = nullptr;
-    QLineEdit*       res_dir_name_edit_    = nullptr;
+    //QLineEdit*       res_dir_name_edit_    = nullptr;
     QLineEdit*       report_name_edit_     = nullptr;
 
     QLineEdit*       author_edit_          = nullptr;

@@ -180,11 +180,9 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
          " (including one pair of single quotes)")
         ("import_asterix_parameters", po::value<std::string>(&import_asterix_parameters_),
          "ASTERIX import parameters as JSON string, e.g. ''{\"filter_modec_active\": true,\"filter_modec_max\": 50000.0,\"filter_modec_min\": -10000.0}'' (including one pair of single quotes)")
-
+        
         ("import_json", po::value<std::string>(&import_json_filename_),
          "imports JSON file with given filename, e.g. '/data/file1.json'")
-        //            ("json_schema", po::value<std::string>(&import_json_schema),
-        //             "JSON file import schema, e.g. 'jASTERIX', 'OpenSkyNetwork', 'ADSBExchange', 'SDDL'")
         ("import_gps_trail", po::value<std::string>(&import_gps_trail_filename_),
          "imports gps trail NMEA with given filename, e.g. '/data/file2.txt'")
         ("import_gps_parameters", po::value<std::string>(&import_gps_parameters_),
@@ -203,9 +201,12 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("evaluation_parameters", po::value<std::string>(&evaluation_parameters_),
          "evaluation parameters as JSON string, e.g. ''{\"current_standard\": \"test\", \"dbcontent_name_ref\": \"CAT062\", \"dbcontent_name_tst\": \"CAT020\"}'' (including one pair of single quotes)")
         ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "run evaluation filter before evaluation")
-        ("export_eval_report", po::value<std::string>(&export_eval_report_filename_),
-         "export evaluation report after start with given filename, e.g. '/data/eval_db2/report.tex")
-        ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
+        
+        ("export_report", po::value<std::string>(&export_report_name_), "report name to export, e.g. 'EUROCAE ED-87E Evaluation', PDF per default")
+        ("export_report_directory", po::value<std::string>(&export_report_directory_), "export directory, e.g. '/data/report2/'")
+        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'JSON','Latex','PDF'")
+        
+         ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
         ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
         ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
         ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
@@ -629,8 +630,17 @@ bool Client::run ()
             rt_man.addCommandFromConsole(cmd);
         }
 
-        if (export_eval_report_filename_.size())
-            rt_man.addCommandFromConsole("export_eval_report " + export_eval_report_filename_);
+        if (export_report_name_.size())
+        {
+            string cmd = "export_report --report '"+export_report_name_+"'";
+
+            if (export_report_directory_.size())
+                cmd += " --dir "+export_report_directory_;
+
+            cmd += " --mode "+export_report_mode_; // default value PDF always set
+
+            rt_man.addCommandFromConsole(cmd);
+        }
 
         if (quit_)
             rt_man.addCommandFromConsole("quit");
