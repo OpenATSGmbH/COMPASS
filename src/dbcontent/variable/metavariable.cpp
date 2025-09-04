@@ -47,13 +47,13 @@ MetaVariable::MetaVariable(const std::string& class_id, const std::string& insta
 
     createSubConfigurables();
 
-    loginf << "name " << name_;
+    logdbg << "name " << name_;
     for (auto it = dbcont_variables_.begin(); it != dbcont_variables_.end(); ++it)
     {
         const std::string& dbcontent_name = it.key();
         const std::string& dbcontvar_name = it.value();
 
-        loginf << "dbcontent " << dbcontent_name << ": variable name '" << dbcontvar_name << "'";
+        logdbg << "dbcontent " << dbcontent_name << ": variable name '" << dbcontvar_name << "'";
 
         if (!object_manager_.existsDBContent(dbcontent_name))
         {

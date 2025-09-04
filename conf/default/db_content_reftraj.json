@@ -406,7 +406,7 @@
                     "description": "Contributing Sources",
                     "dimension": "",
                     "is_key": false,
-                    "name": "Contributing Source",
+                    "name": "Contributing Sources",
                     "representation_str": "STANDARD",
                     "short_name": "",
                     "unit": "Second"
@@ -428,6 +428,21 @@
                 }
             },
             "VariableRefTrajModeACUpdateAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "update_age_modeac",
+                    "db_expression": "",
+                    "db_expression_variables": {},
+                    "description": "Time since last updated by Mode A/C",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Mode A/C Update Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },
+            "VariableRefTrajModeSUpdateAge": {
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "update_age_modes",
