@@ -125,7 +125,7 @@ void ViewManager::loadViewPoints()
 
 void ViewManager::close()
 {
-    loginf << "start";
+    logdbg << "start";
     initialized_ = false;
 
     logdbg << "deleting container widgets";
@@ -155,7 +155,7 @@ void ViewManager::close()
 
     view_points_report_gen_ = nullptr;
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 ViewManager::~ViewManager()

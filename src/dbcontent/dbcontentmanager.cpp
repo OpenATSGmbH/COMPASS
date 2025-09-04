@@ -91,7 +91,7 @@ DBContentManager::DBContentManager(const std::string& class_id, const std::strin
  */
 DBContentManager::~DBContentManager()
 {
-    loginf << "start";
+    logdbg << "start";
 
     data_.clear();
 
@@ -103,7 +103,7 @@ DBContentManager::~DBContentManager()
 
     widget_ = nullptr;
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**

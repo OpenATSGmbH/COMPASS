@@ -50,7 +50,7 @@ FFTManager::FFTManager(const std::string& class_id, const std::string& instance_
 
 FFTManager::~FFTManager()
 {
-    loginf << "start";
+    logdbg << "start";
 }
 
 void FFTManager::generateSubConfigurable(const std::string& class_id,

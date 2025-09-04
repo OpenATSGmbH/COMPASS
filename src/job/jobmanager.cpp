@@ -200,17 +200,17 @@ void JobManagerBase::run()
  */
 void JobManagerBase::shutdown()
 {
-    loginf << "setting jobs obsolete";
+    logdbg << "setting jobs obsolete";
 
     stop_requested_ = true;
 
     setJobsObsolete();
 
-    loginf << "waiting on jobs to quit";
+    logdbg << "waiting on jobs to quit";
 
     while (hasAnyJobs())
     {
-        loginf << "waiting on jobs to finish: db " << hasDBJobs()
+        logdbg << "waiting on jobs to finish: db " << hasDBJobs()
                << " blocking " << hasBlockingJobs() << " non-locking " << hasNonBlockingJobs();
 
         msleep(1000);
@@ -218,13 +218,13 @@ void JobManagerBase::shutdown()
 
     while (!stopped_)
     {
-        loginf << "waiting on run stop";
+        logdbg << "waiting on run stop";
         msleep(1000);
     }
 
     traced_assert(numJobs() == 0);
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /*************************************************************************************

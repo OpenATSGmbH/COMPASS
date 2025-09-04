@@ -51,7 +51,7 @@ db::SQLConfig DBInstance::sqlConfiguration(bool verbose) const
  */
 DBInstance::~DBInstance()
 {
-    loginf << "start";
+    logdbg << "start";
 
     close();
 }
@@ -180,12 +180,12 @@ Result DBInstance::openInternal(const std::string& file_name)
  */
 void DBInstance::close()
 {
-    loginf << "db open " << db_open_;
+    logdbg << "db open " << db_open_;
 
     if (!dbOpen())
         return;
 
-    loginf << "";
+    logdbg << "closing";
 
     //destroy connections
     if (default_connection_)

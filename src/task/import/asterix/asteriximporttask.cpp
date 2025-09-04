@@ -187,7 +187,7 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
 */
 ASTERIXImportTask::~ASTERIXImportTask()
 {
-    loginf << "start";
+    logdbg << "start";
 }
 
 /**
@@ -747,7 +747,7 @@ void ASTERIXImportTask::reset()
 */
 void ASTERIXImportTask::stop()
 {
-    loginf << "start";
+    logdbg << "start";
 
     stopped_ = true;
 
@@ -767,7 +767,7 @@ void ASTERIXImportTask::stop()
 
     while(decode_job_ && !decode_job_->done())
     {
-        loginf << "waiting for decode job to finish";
+        logdbg << "waiting for decode job to finish";
 
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
@@ -776,7 +776,7 @@ void ASTERIXImportTask::stop()
 
     while(json_map_jobs_.size())
     {
-        loginf << "waiting for map job to finish";
+        logdbg << "waiting for map job to finish";
 
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
@@ -785,14 +785,14 @@ void ASTERIXImportTask::stop()
 
     while(postprocess_jobs_.size())
     {
-        loginf << "waiting for post-process job to finish";
+        logdbg << "waiting for post-process job to finish";
 
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
         QThread::msleep(1);
     }
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**

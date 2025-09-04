@@ -59,7 +59,7 @@ DBConnection::DBConnection(DBInstance* instance, bool verbose)
 DBConnection::~DBConnection()
 {
     if (verbose_)
-        loginf << "start";
+        logdbg << "start";
 
     traced_assert(!connected());
 }
@@ -114,13 +114,13 @@ Result DBConnection::connect()
 void DBConnection::disconnect()
 {
     if (verbose_)
-        loginf << "connected " << connected_;
+        logdbg << "connected " << connected_;
 
     if (!connected_)
         return;
 
     if (verbose_)
-        loginf << "";
+        logdbg << "";
 
     //close any active reader
     stopRead();
