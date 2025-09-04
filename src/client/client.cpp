@@ -665,8 +665,8 @@ bool Client::notify(QObject* receiver, QEvent* event)
         return QApplication::notify(receiver, event);
     }
     catch (exception& e)
-    std::string msg = "Unhandled exception '" + std::string(e.what()) + "'";
     {
+        std::string msg = "Unhandled exception '" + std::string(e.what()) + "'";
         traced_assert_msg(false, msg.c_str());
 
         // traced_assert(false);
