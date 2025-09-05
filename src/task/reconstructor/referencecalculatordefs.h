@@ -17,7 +17,10 @@
 
 #pragma once
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 /**
+ * Information on input measurement used for annotations.
 */
 struct ReferenceCalculatorInputInfo
 {

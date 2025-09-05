@@ -75,9 +75,13 @@ struct Reference : public Measurement
 struct MeasurementInterp : public Measurement
 {
     MeasurementInterp() = default;
-    MeasurementInterp(const Measurement& mm, bool is_interp, bool is_corrected) : Measurement(mm), corrected(is_corrected) 
+    MeasurementInterp(const Measurement& mm, 
+                      bool is_interp,
+                      bool is_interp_first, 
+                      bool is_corrected) : Measurement(mm), corrected(is_corrected) 
     {
-        mm_interp = is_interp;
+        mm_interp       = is_interp;
+        mm_interp_first = is_interp_first;
     }
 
     bool corrected = false; //interpolation failed, so the measurement was interpolated linearly
@@ -183,5 +187,34 @@ struct PredictionComparison
     boost::optional<double> log_likelihood;
     boost::optional<double> mahalanobis;
 };
+
+/**
+ * Reconstruction usage information for a target report.
+ */
+struct TRUsage
+{
+    /**
+     */
+    enum Flags
+    {
+        Repeated         = 1 << 0,
+        SkippedTimeStep  = 1 << 1,
+        SkippedNumeric   = 1 << 2,
+        SkippedInvalid   = 1 << 3,
+        SkippedUnknown   = 1 << 4,
+        SkippedSmoothing = 1 << 5,
+    };
+
+    bool isRepeated() const
+    {
+        return (flags & Repeated) != 0;
+    };
+
+    unsigned long            rec_num;
+    boost::posix_time::ptime t;
+    bool                     used  = false;
+    unsigned char            flags = 0;
+};
+
 
 } // namespace reconstruction

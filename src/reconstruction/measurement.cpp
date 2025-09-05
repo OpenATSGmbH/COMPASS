@@ -29,39 +29,40 @@
 namespace reconstruction
 {
 
-const std::string Measurement::FieldSourceID   = "source_id";
-const std::string Measurement::FieldTS         = "t";
+const std::string Measurement::FieldSourceID    = "source_id";
+const std::string Measurement::FieldTS          = "t";
 
-const std::string Measurement::FieldInterp     = "mm_interp";
-const std::string Measurement::FieldPosAccCorr = "pos_acc_corrected";
+const std::string Measurement::FieldInterp      = "mm_interp";
+const std::string Measurement::FieldInterpFirst = "mm_interp_first";
+const std::string Measurement::FieldPosAccCorr  = "pos_acc_corrected";
 
-const std::string Measurement::FieldLat        = "lat";
-const std::string Measurement::FieldLon        = "lon";
+const std::string Measurement::FieldLat         = "lat";
+const std::string Measurement::FieldLon         = "lon";
 
-const std::string Measurement::FieldX          = "x";
-const std::string Measurement::FieldY          = "y";
-const std::string Measurement::FieldZ          = "z";
+const std::string Measurement::FieldX           = "x";
+const std::string Measurement::FieldY           = "y";
+const std::string Measurement::FieldZ           = "z";
 
-const std::string Measurement::FieldVX         = "vx";
-const std::string Measurement::FieldVY         = "vy";
-const std::string Measurement::FieldVZ         = "vz";
+const std::string Measurement::FieldVX          = "vx";
+const std::string Measurement::FieldVY          = "vy";
+const std::string Measurement::FieldVZ          = "vz";
 
-const std::string Measurement::FieldAX         = "ax";
-const std::string Measurement::FieldAY         = "ay";
-const std::string Measurement::FieldAZ         = "az";
+const std::string Measurement::FieldAX          = "ax";
+const std::string Measurement::FieldAY          = "ay";
+const std::string Measurement::FieldAZ          = "az";
 
-const std::string Measurement::FieldXStdDev    = "x_stddev";
-const std::string Measurement::FieldYStdDev    = "y_stddev";
-const std::string Measurement::FieldXYCov      = "xy_cov";
+const std::string Measurement::FieldXStdDev     = "x_stddev";
+const std::string Measurement::FieldYStdDev     = "y_stddev";
+const std::string Measurement::FieldXYCov       = "xy_cov";
 
-const std::string Measurement::FieldVXStdDev   = "vx_stddev";
-const std::string Measurement::FieldVYStdDev   = "vy_stddev";
+const std::string Measurement::FieldVXStdDev    = "vx_stddev";
+const std::string Measurement::FieldVYStdDev    = "vy_stddev";
 
-const std::string Measurement::FieldAXStdDev   = "ax_stddev";
-const std::string Measurement::FieldAYStdDev   = "ay_stddev";
+const std::string Measurement::FieldAXStdDev    = "ax_stddev";
+const std::string Measurement::FieldAYStdDev    = "ay_stddev";
 
-const std::string Measurement::FieldQVar       = "Q_var";
-const std::string Measurement::FieldQVarInterp = "Q_var_interp";
+const std::string Measurement::FieldQVar        = "Q_var";
+const std::string Measurement::FieldQVarInterp  = "Q_var_interp";
 
 /**
 */
@@ -611,6 +612,7 @@ nlohmann::json Measurement::toJSON() const
 
     j[ FieldTS ] = Utils::Time::toString(t);
     j[ FieldInterp ] = mm_interp;
+    j[ FieldInterpFirst ] = mm_interp_first;
     j[ FieldPosAccCorr ] = pos_acc_corrected;
 
     j[ FieldLat ] = lat;
@@ -683,6 +685,8 @@ bool Measurement::fromJSON(const nlohmann::json& j)
 
     if (j.contains(FieldInterp))
         mm_interp = j[ FieldInterp ].get<bool>();
+    if (j.contains(FieldInterpFirst))
+        mm_interp_first = j[ FieldInterpFirst ].get<bool>();
     if (j.contains(FieldPosAccCorr))
         pos_acc_corrected = j[ FieldPosAccCorr ].get<bool>();
 

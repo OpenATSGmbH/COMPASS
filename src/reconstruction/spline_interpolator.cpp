@@ -287,14 +287,15 @@ MeasurementInterp SplineInterpolator::interpMeasurement(const Eigen::Vector2d& p
                                                         CovMatInterpMode covmat_interp_mode)
 {
     if (interp_factor == 0.0)
-        return MeasurementInterp(mm0, false, false);
+        return MeasurementInterp(mm0, true, true, false);
     if (interp_factor == 1.0)
-        return MeasurementInterp(mm1, false, false);
+        return MeasurementInterp(mm1, true, true, false);
 
     MeasurementInterp mm_interp;
-    mm_interp.source_id = mm0.source_id; //!note: other components (e.g. reference calculation) rely on this assumption!
-    mm_interp.t         = t;
-    mm_interp.mm_interp = true;
+    mm_interp.source_id       = mm0.source_id; //!note: other components (e.g. reference calculation) rely on this assumption!
+    mm_interp.t               = t;
+    mm_interp.mm_interp       = true;
+    mm_interp.mm_interp_first = false;
 
     traced_assert(interp_factor >= 0.0 && interp_factor <= 1.0);
     
@@ -390,6 +391,38 @@ void SplineInterpolator::finalizeInterp(std::vector<MeasurementInterp>& samples,
     samples.push_back(generateMeasurement(mm_last));
 }
 
+namespace
+{
+    void determineFirstPosInIntervalFlag(MeasurementInterp& mm_interp,
+                                         const boost::posix_time::ptime& interval_t0,
+                                         const std::vector<MeasurementInterp>& last_measurements,
+                                         const boost::optional<size_t>& idx)
+    {
+        assert(!idx.has_value() || idx.value() < last_measurements.size());
+
+        mm_interp.mm_interp_first = true;
+
+        //last measurements empty => must be first in interval
+        if (last_measurements.empty())
+            return;
+
+        //current mm's index is at 0 => must be first in interval
+        if (idx.has_value() && idx.value() == 0)
+            return;
+
+        const auto& last_mm = idx.has_value() ? last_measurements[ idx.value() - 1 ] : last_measurements.back();
+
+        //last mm is in interval and is already first => can't be first
+        if (last_mm.t >= interval_t0 && last_mm.mm_interp_first)
+        {
+            mm_interp.mm_interp_first = false;
+            return;
+        }
+
+        //must be first
+    }
+}
+
 /**
 */
 std::vector<MeasurementInterp> SplineInterpolator::interpolateLinear(const std::vector<Measurement>& measurements) const
@@ -424,6 +457,7 @@ std::vector<MeasurementInterp> SplineInterpolator::interpolateLinear(const std::
 
         double dt01 = Utils::Time::partialSeconds(t1 - t0);
 
+        bool first = true;
         while (tcur >= t0 && tcur < t1)
         {
             if (dt01 < config().min_dt)
@@ -440,7 +474,16 @@ std::vector<MeasurementInterp> SplineInterpolator::interpolateLinear(const std::
 
             auto pos_interp = pos0 * (1.0 - f) + pos1 * f;
 
-            interpolation.push_back(generateMeasurement(pos_interp, tcur, mm0, mm1, f, false));
+            auto mm_gen = generateMeasurement(pos_interp, tcur, mm0, mm1, f, false);
+
+            //detect if this is the first sample in the interval
+            if (first)
+            {
+                determineFirstPosInIntervalFlag(mm_gen, t0, interpolation, {});
+                first = false;
+            }
+            
+            interpolation.push_back(mm_gen);
 
             tcur += time_incr;
         }
@@ -641,6 +684,8 @@ std::vector<MeasurementInterp> SplineInterpolator::interpolatePart(const std::ve
 
         auto t_cur_seg = tcur;
 
+        bool first = true;
+
         //interpolate segment with spline
         while (t_cur_seg >= t0 && t_cur_seg < t1)
         {
@@ -654,7 +699,16 @@ std::vector<MeasurementInterp> SplineInterpolator::interpolatePart(const std::ve
             traced_assert(num_refs_segment < tmp_refs.size());
 
             //collect temporary references
-            tmp_refs[num_refs_segment++] = generateMeasurement(pos_interp, t_cur_seg, mm0, mm1, f, false);
+            auto mm_gen = generateMeasurement(pos_interp, t_cur_seg, mm0, mm1, f, false);
+
+            //detect if this is the first sample in the interval
+            if (first)
+            {
+                determineFirstPosInIntervalFlag(mm_gen, t0, tmp_refs, num_refs_segment);
+                first = false;
+            }
+
+            tmp_refs[num_refs_segment++] = mm_gen;
 
             t_cur_seg += time_incr;
         }
@@ -669,6 +723,8 @@ std::vector<MeasurementInterp> SplineInterpolator::interpolatePart(const std::ve
             auto pos0 = position2D(mm0);
             auto pos1 = position2D(mm1);
 
+            first = false;
+
             while (t_cur_seg >= t0 && t_cur_seg < t1)
             {
                 double dt = Utils::Time::partialSeconds(t_cur_seg - t0);
@@ -678,7 +734,16 @@ std::vector<MeasurementInterp> SplineInterpolator::interpolatePart(const std::ve
             
                 traced_assert(num_refs_segment < tmp_refs.size());
 
-                tmp_refs[num_refs_segment++] = generateMeasurement(pos_interp, t_cur_seg, mm0, mm1, f, true);
+                auto mm_gen = generateMeasurement(pos_interp, t_cur_seg, mm0, mm1, f, true);
+
+                //detect if this is the first sample in the interval
+                if (first)
+                {
+                    determineFirstPosInIntervalFlag(mm_gen, t0, tmp_refs, num_refs_segment);
+                    first = false;
+                }
+
+                tmp_refs[num_refs_segment++] = mm_gen;
 
                 t_cur_seg += time_incr;
             }
