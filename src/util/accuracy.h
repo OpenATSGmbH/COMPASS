@@ -31,6 +31,19 @@ struct EllipseDef
     double theta_rad;
 };
 
+/**
+ */
+struct GeodeticDistanceInfo
+{
+    double mahalanobisDistance(double eps = 1e-09) const;
+    double mahalanobisDistanceSqr(double eps = 1e-09) const;
+
+    double distance = 0.0;
+    double bearing  = 0.0;
+    double stddev0  = 0.0;
+    double stddev1  = 0.0;
+};
+
 void estimateEllipse(EllipseDef& def,
                      double x_stddev,
                      double y_stddev,

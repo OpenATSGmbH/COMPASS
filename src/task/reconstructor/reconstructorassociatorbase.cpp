@@ -1409,7 +1409,23 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
         return std::pair<float, std::pair<unsigned int, unsigned int>>{score, {utn,best_other_utn}};
     else
         return std::pair<float, std::pair<unsigned int, unsigned int>>{std::numeric_limits<float>::lowest(), {0,0}};
+}
 
+bool ReconstructorAssociatorBase::isTargetAccuracyAcceptable(double tgt_est_std_dev, 
+                                                             unsigned int utn, 
+                                                             const dbContent::targetReport::ReconstructorInfo& tr, 
+                                                             bool do_debug) const
+{
+    const double thres = targetAccuracyAcceptableThreshold(utn, tr, do_debug);
+
+    if (do_debug)
+    {
+        loginf << "DBG tr " << tr.record_num_ << " other_utn " << utn << " iTAAc"
+               << " tgt_est_std_dev " << tgt_est_std_dev << " comp_value " << thres << " acceptable "
+               << (tgt_est_std_dev <= thres);
+    }
+
+    return tgt_est_std_dev <= thres;
 }
 
 const std::map<unsigned int, std::map<unsigned int,

@@ -21,7 +21,6 @@
 #include "kalman_filter.h"
 
 #include "global.h"
-#include "accuracy.h"
 #include "timeconv.h"
 #include "logger.h"
 
@@ -132,9 +131,7 @@ double Measurement::bearing(const Measurement& other) const
                                       other.lon * DEG2RAD);
 }
 
-/**
-*/
-double Measurement::mahalanobisDistanceGeodetic(const Measurement& other) const
+Utils::Accuracy::GeodeticDistanceInfo Measurement::geodeticDistanceInfo(const Measurement& other) const
 {
     double d = geodeticDistance(other);
     double b = bearing(other);
@@ -147,17 +144,29 @@ double Measurement::mahalanobisDistanceGeodetic(const Measurement& other) const
     Utils::Accuracy::estimateEllipse(acc_ell, other.x_stddev.value(), other.y_stddev.value(), other.xy_cov.value());
     double stddev1 = Utils::Accuracy::estimateAccuracyAt(acc_ell, b);
 
-    double sum_std_dev = std::max(1e-06, stddev0 + stddev1);
+    Utils::Accuracy::GeodeticDistanceInfo gdi;
+    gdi.distance = d;
+    gdi.bearing  = b;
+    gdi.stddev0  = stddev0;
+    gdi.stddev1  = stddev1;
 
-    return d / sum_std_dev;
+    return gdi;
 }
 
 /**
 */
-double Measurement::approxLikelihood(const Measurement& other) const
+double Measurement::mahalanobisDistanceGeodetic(const Measurement& other) const
 {
-    double dm = mahalanobisDistanceGeodetic(other);
-    return std::exp(-0.5*std::pow(dm, 2));
+    auto gdi = geodeticDistanceInfo(other);
+    return gdi.mahalanobisDistance();
+}
+
+/**
+*/
+double Measurement::mahalanobisDistanceGeodeticSqr(const Measurement& other) const
+{
+    auto gdi = geodeticDistanceInfo(other);
+    return gdi.mahalanobisDistanceSqr();
 }
 
 /**

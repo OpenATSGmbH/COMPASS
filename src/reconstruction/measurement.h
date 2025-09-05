@@ -18,6 +18,7 @@
 #pragma once
 
 #include "targetreportdefs.h"
+#include "accuracy.h"
 
 #include <Eigen/Core>
 
@@ -56,8 +57,9 @@ struct Measurement
 
     double geodeticDistance(const Measurement& other) const;
     double bearing(const Measurement& other) const;
+    Utils::Accuracy::GeodeticDistanceInfo geodeticDistanceInfo(const Measurement& other) const;
     double mahalanobisDistanceGeodetic(const Measurement& other) const;
-    double approxLikelihood(const Measurement& other) const;
+    double mahalanobisDistanceGeodeticSqr(const Measurement& other) const;
 
     boost::optional<double> mahalanobisDistance(const Measurement& other, 
                                                 unsigned char components = CovMatPos,

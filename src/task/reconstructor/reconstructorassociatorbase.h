@@ -102,8 +102,10 @@ class ReconstructorAssociatorBase
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) = 0;
 
+    virtual double targetAccuracyAcceptableThreshold(
+        unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) const = 0;
     virtual bool isTargetAccuracyAcceptable(
-        double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) = 0;
+        double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) const;
 
     const std::vector<unsigned long>& unassociatedRecNums() const;
     const std::map<unsigned int, BatchStats>& batchStatistics() const;
