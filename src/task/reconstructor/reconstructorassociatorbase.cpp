@@ -51,6 +51,7 @@ void ReconstructorAssociatorBase::associateNewData()
     max_time_diff_ = Time::partialSeconds(reconstructor().settings().max_time_diff_);
 
     unassoc_rec_nums_.clear();
+    unassoc_rec_nums_no_retry_.clear();
 
     if (reconstructor().isCancelled())
         return;
@@ -151,6 +152,7 @@ void ReconstructorAssociatorBase::reset()
     reconstructor().targets_container_.tn2utn_.clear();
 
     unassoc_rec_nums_.clear();
+    unassoc_rec_nums_no_retry_.clear();
     assoc_counts_.clear();
 
     num_merges_ = 0;
@@ -391,7 +393,9 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
                 associate(tr, utn);
             }
             else  // not associated
+            {
                 unassoc_rec_nums_.push_back(rec_num);
+            }
         }
     }
 }
@@ -657,11 +661,9 @@ void ReconstructorAssociatorBase::associate(
     postAssociate (tr, utn);
 }
 
-
-
-void ReconstructorAssociatorBase::countUnAssociated()
+void ReconstructorAssociatorBase::countUnAssociated(const std::vector<unsigned long> &rec_nums)
 {
-    for (auto rn_it : unassoc_rec_nums_)
+    for (auto rn_it : rec_nums)
     {
         if (reconstructor().isCancelled())
             return;
@@ -675,10 +677,16 @@ void ReconstructorAssociatorBase::countUnAssociated()
 
         traced_assert(reconstructor().target_reports_.count(rec_num));
 
-        dbContent::targetReport::ReconstructorInfo& tr = reconstructor().target_reports_.at(rec_num);
+        dbContent::targetReport::ReconstructorInfo &tr = reconstructor().target_reports_.at(rec_num);
 
         assoc_counts_[tr.ds_id_][dbcont_id].second++;
     }
+}
+
+void ReconstructorAssociatorBase::countUnAssociated()
+{
+    countUnAssociated(unassoc_rec_nums_);
+    countUnAssociated(unassoc_rec_nums_no_retry_);
 }
 
 int ReconstructorAssociatorBase::findUTNFor (dbContent::targetReport::ReconstructorInfo& tr)

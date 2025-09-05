@@ -117,6 +117,7 @@ protected:
     std::map<unsigned int, std::map<unsigned int, std::pair<unsigned int, unsigned int>>> assoc_counts_;
     // ds_id -> dbcont id -> (assoc, unassoc cnt)
     std::vector<unsigned long> unassoc_rec_nums_;
+    std::vector<unsigned long> unassoc_rec_nums_no_retry_;
 
     unsigned int num_merges_ {0};
 
@@ -140,7 +141,8 @@ protected:
     void associate(dbContent::targetReport::ReconstructorInfo& tr, int utn);
     virtual void postAssociate(dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn) {};
     //void checkACADLookup();
-    void countUnAssociated();
+    virtual void countUnAssociated();
+    void countUnAssociated(const std::vector<unsigned long>& rec_nums);
 
     int findUTNFor (dbContent::targetReport::ReconstructorInfo& tr);
 
