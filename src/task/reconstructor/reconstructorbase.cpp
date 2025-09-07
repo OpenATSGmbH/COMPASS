@@ -977,6 +977,7 @@ void ReconstructorBase::createTargetReports()
     auto& ds_man = COMPASS::instance().dataSourceManager();
 
     std::set<unsigned int> ground_only_ds_ids = ds_man.groundOnlyDBDataSources();
+    std::map<unsigned int, dbContent::DataSourceType> ds_types = ds_man.dsTypes();
 
     std::vector<std::shared_ptr<SectorLayer>> used_sector_layers;
     //bool inside_any;
@@ -1086,6 +1087,10 @@ void ReconstructorBase::createTargetReports()
                 info.record_num_ = record_num;
                 info.dbcont_id_ = dbcont_id;
                 info.ds_id_ = tgt_acc.dsID(cnt);
+
+                traced_assert(ds_types.count(info.ds_id_));
+                info.ds_type_ = ds_types.at(info.ds_id_);
+
                 info.line_id_ = tgt_acc.lineID(cnt);
                 info.timestamp_ = ts;
 

@@ -66,6 +66,8 @@ class DataSourceManager : public QObject, public Configurable
     };
 
     const static std::vector<std::string> data_source_types_;
+    static dbContent::DataSourceType typeFromString(const std::string& type_str);
+    static std::string stringFromType(dbContent::DataSourceType type);
 
     DataSourceManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
     virtual ~DataSourceManager();
@@ -92,6 +94,7 @@ class DataSourceManager : public QObject, public Configurable
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& dbDataSources() const;
 
     std::set<unsigned int> groundOnlyDBDataSources() const;
+    std::map<unsigned int, dbContent::DataSourceType> dsTypes() const;
 
     void createNetworkDBDataSources();
     std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>>> getNetworkLines() const;

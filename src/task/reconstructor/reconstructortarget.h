@@ -58,6 +58,25 @@ struct AltitudeState
     float alt_baro_ft;
 };
 
+struct ContributingSourcesInfo
+{
+    boost::posix_time::ptime timestamp_;
+    
+    std::vector<unsigned long> rec_nums_;
+
+    boost::optional<float> adsb_age_;
+    boost::optional<float> mlat_age_;
+    boost::optional<float> radar_age_;
+    boost::optional<float> reftraj_age_;
+    boost::optional<float> tracker_age_;
+
+    boost::optional<float> primary_age_;
+    boost::optional<float> mode_ac_age_;
+    boost::optional<float> modes_age_;
+
+    void add(const dbContent::targetReport::ReconstructorInfo& tr, bool add_to_rec_nums);
+};
+
 class ReconstructorTarget : public TargetBase
 {
 public:
@@ -254,7 +273,7 @@ public:
 
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
 
-    boost::posix_time::ptime ts_prev_;
+    boost::posix_time::ptime ref_ts_prev_;
     bool has_prev_v_ {false};
     double v_x_prev_, v_y_prev_;
 

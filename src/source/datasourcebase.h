@@ -25,6 +25,16 @@
 namespace dbContent
 {
 
+enum class DataSourceType
+{
+    ADSB,
+    MLAT,
+    Radar,
+    Tracker,
+    RefTraj,
+    Other
+};
+
 class DataSourceBase
 {
 public:

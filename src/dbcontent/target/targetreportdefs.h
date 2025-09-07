@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "datasourcebase.h"
+
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/optional.hpp>
 
@@ -212,6 +214,7 @@ struct BaseInfo
     unsigned long record_num_ {0};
     unsigned int dbcont_id_ {0};
     unsigned int ds_id_ {0};
+    dbContent::DataSourceType ds_type_{DataSourceType::Other};
     unsigned int line_id_ {0};
     boost::posix_time::ptime timestamp_;
 

@@ -37,8 +37,44 @@ using namespace Utils;
 using namespace dbContent;
 using namespace nlohmann;
 
-const std::vector<std::string> DataSourceManager::data_source_types_ {"Radar", "MLAT", "ADSB", "Tracker", "RefTraj",
-                                                                      "Other"};
+const std::vector<std::string> DataSourceManager::data_source_types_ 
+    {"Radar", "MLAT", "ADSB", "Tracker", "RefTraj", "Other"};
+
+dbContent::DataSourceType DataSourceManager::typeFromString(const std::string& type_str)
+{
+    if (type_str == "ADSB")
+        return DataSourceType::ADSB;
+    else if (type_str == "MLAT")
+        return DataSourceType::MLAT;
+    else if (type_str == "Radar")
+        return DataSourceType::Radar;
+    else if (type_str == "Tracker")
+        return DataSourceType::Tracker;
+    else if (type_str == "RefTraj")
+        return DataSourceType::RefTraj;
+    else if (type_str == "Other")
+        return DataSourceType::Other;
+
+    traced_assert(false);
+}
+
+std::string DataSourceManager::stringFromType(dbContent::DataSourceType type)
+{
+        if (type == DataSourceType::ADSB)
+        return "ADSB";
+    else if (type == DataSourceType::MLAT)
+        return "MLAT";
+    else if (type == DataSourceType::Radar)
+        return "Radar";
+    else if (type == DataSourceType::Tracker)
+        return "Tracker";
+    else if (type == DataSourceType::RefTraj)
+        return "RefTraj";
+    else if (type ==  DataSourceType::Other)
+        return "Other";
+
+    traced_assert(false);
+}
 
 DataSourceManager::Config::Config()
 :   load_widget_show_counts_ {true}
@@ -1000,6 +1036,19 @@ std::set<unsigned int> DataSourceManager::groundOnlyDBDataSources() const
     }
 
     return ds_ids;
+}
+
+std::map<unsigned int, dbContent::DataSourceType> DataSourceManager::dsTypes() const
+{
+    std::map<unsigned int, dbContent::DataSourceType> ret;
+
+        for (auto& ds_it : db_data_sources_)
+    {
+        if (ds_it->detectionType() == DataSourceBase::DetectionType::PrimaryOnlyGround)
+            ret[ds_it->id()] = DataSourceManager::typeFromString(ds_it->dsType());
+    }
+
+    return ret;
 }
 
 void DataSourceManager::createNetworkDBDataSources()

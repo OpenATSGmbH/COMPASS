@@ -38,6 +38,7 @@ using namespace std;
 using namespace Utils;
 using namespace boost::posix_time;
 
+
 namespace dbContent 
 {
 
@@ -45,6 +46,40 @@ const double ReconstructorTarget::on_ground_max_alt_ft_ {500};
 const double ReconstructorTarget::on_ground_max_speed_ms_ {30};
 
 ReconstructorTarget::GlobalStats ReconstructorTarget::global_stats_ = ReconstructorTarget::GlobalStats();
+
+void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorInfo& tr,
+     bool add_to_rec_nums)
+{
+    if (timestamp_.is_not_a_date_time())
+        timestamp_ = tr.timestamp_;
+    else
+    {
+        assert (tr.timestamp_ >= timestamp_);
+        auto time_to_add = (tr.timestamp_ - timestamp_).total_milliseconds() / 1000.0;
+
+        if (adsb_age_)
+            *adsb_age_ += time_to_add;
+
+        if (mlat_age_)
+            *mlat_age_ += time_to_add;
+
+        if (radar_age_)
+            *radar_age_ += time_to_add;
+
+        if (reftraj_age_)
+            *reftraj_age_ += time_to_add;
+
+        if (primary_age_)
+            *primary_age_ += time_to_add;
+
+        if (mode_ac_age_)
+            *mode_ac_age_ += time_to_add;
+
+        if (modes_age_)
+            *modes_age_ += time_to_add;
+    }
+}
+
 
 ReconstructorTarget::ReconstructorTarget(ReconstructorBase& reconstructor, 
                                          unsigned int utn,
@@ -2289,15 +2324,39 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
     unsigned int buffer_cnt = 0;
 
+    const auto& ref_calc_settings = reconstructor_.referenceCalculatorSettings();
+
     boost::posix_time::time_duration d_max = Time::partialSeconds(10);
     boost::posix_time::time_duration track_end_time = Time::partialSeconds(30);
+    boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings().resample_dt);
 
     auto m3a_series = getMode3ASeries();
     auto altitude_series = getAltitudeSeries();
     auto gbs_series = getGroundBitSeries();
 
-    const auto& ref_calc_settings = reconstructor_.referenceCalculatorSettings();
+    ContributingSourcesInfo contrib_info;
 
+    // update contrib info
+    for (auto& ref_it : references_)
+    {
+        auto tr_start_it = contrib_info.timestamp_.is_not_a_date_time()
+                               ? tr_timestamps_.begin()  // if not set, iterate from beginning
+                               : tr_timestamps_.upper_bound(contrib_info.timestamp_);
+        // else iterator pointing to first which is strictly greater than last timestamp
+
+        // process all target reports up to this time
+        for (auto tr_ts_it = tr_start_it;
+             tr_ts_it != tr_timestamps_.end() && tr_ts_it->first <= ref_it.first; 
+             ++tr_ts_it)
+        {
+            // Process target report with record number tr_ts_it->second
+            traced_assert(reconstructor_.target_reports_.count(tr_ts_it->second));
+            contrib_info.add(reconstructor_.target_reports_.at(tr_ts_it->second), true);
+        }
+        //ref_ts_prev_ = ref_it.first;
+    }
+
+    // generate buffer
     for (auto& ref_it : references_)
     {
         // loginf << "utn " << utn_
@@ -2308,8 +2367,8 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         if (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_)
             continue;
 
-        if (!ts_prev_.is_not_a_date_time())
-            traced_assert(ref_it.second.t > ts_prev_);
+        if (!ref_ts_prev_.is_not_a_date_time())
+            traced_assert(ref_it.second.t > ref_ts_prev_);
 
         // final filtering using max stddev
         if (ref_calc_settings.filter_references_max_stddev_ &&
@@ -2357,8 +2416,8 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         track_num_vec.set(buffer_cnt, utn_);
 
         // track end
-        if (!ts_prev_.is_not_a_date_time()
-            && ref_it.second.t - ts_prev_ > track_end_time) // have time before and dt > track end time
+        if (!ref_ts_prev_.is_not_a_date_time()
+            && ref_it.second.t - ref_ts_prev_ > track_end_time) // have time before and dt > track end time
         {
             if (buffer_cnt != 0)
                 track_end_vec.set(buffer_cnt-1, true); // set at previous update if possible
@@ -2471,7 +2530,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
             {
                 if (has_prev_baro_alt_)
                 {
-                    dt = (ts_vec.get(buffer_cnt) - ts_prev_).total_milliseconds() / 1000.0;
+                    dt = (ts_vec.get(buffer_cnt) - ref_ts_prev_).total_milliseconds() / 1000.0;
 
                     rocd_ft_s = (mc_vec.get(buffer_cnt) - baro_alt_prev_) / dt;
                     rocd_vec.set(buffer_cnt, rocd_ft_s * 60); // ft per minute
@@ -2500,20 +2559,6 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
             if (m3a_series.hasValueAt(ref_it.second.t))
                 m3a_vec.set(buffer_cnt, m3a_series.getValueAt(ref_it.second.t));
-
-            // ReconstructorInfoPair info = dataFor(
-            //     ref_it.second.t, d_max,
-            //     [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) {
-            //         return tr.mode_a_code_.has_value() && tr.mode_a_code_->hasReliableValue(); });
-
-            // if (info.first && info.first->mode_a_code_
-            //     && info.first->mode_a_code_->hasReliableValue() && m3a_vec.isNull(buffer_cnt))
-            //     m3a_vec.set(buffer_cnt, info.first->mode_a_code_->code_);
-
-            // if (info.second && info.second->mode_a_code_
-            //     && info.second->mode_a_code_->hasReliableValue() && m3a_vec.isNull(buffer_cnt))
-            //     m3a_vec.set(buffer_cnt, info.second->mode_a_code_->code_);
-
         }
 
         { // acad
@@ -2552,7 +2597,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
         ++buffer_cnt;
 
-        ts_prev_ = ref_it.second.t;
+        ref_ts_prev_ = ref_it.second.t;
     }
 
     // check last update for track end
