@@ -60,7 +60,7 @@ dbContent::DataSourceType DataSourceManager::typeFromString(const std::string& t
 
 std::string DataSourceManager::stringFromType(dbContent::DataSourceType type)
 {
-        if (type == DataSourceType::ADSB)
+    if (type == DataSourceType::ADSB)
         return "ADSB";
     else if (type == DataSourceType::MLAT)
         return "MLAT";
@@ -1042,11 +1042,8 @@ std::map<unsigned int, dbContent::DataSourceType> DataSourceManager::dsTypes() c
 {
     std::map<unsigned int, dbContent::DataSourceType> ret;
 
-        for (auto& ds_it : db_data_sources_)
-    {
-        if (ds_it->detectionType() == DataSourceBase::DetectionType::PrimaryOnlyGround)
-            ret[ds_it->id()] = DataSourceManager::typeFromString(ds_it->dsType());
-    }
+    for (auto& ds_it : db_data_sources_)
+        ret[ds_it->id()] = DataSourceManager::typeFromString(ds_it->dsType());
 
     return ret;
 }

@@ -988,7 +988,7 @@ void ReferenceCalculator::updateReferences()
         //store target report usages to target
         for (auto& tru_it : ref.second.measurement_usage)
             if (!tru_it.isRepeated())
-                target.reference_tr_usages_[tru_it.t] = tru_it;
+                target.reference_tr_usages_[tru_it.t].push_back(tru_it);
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;

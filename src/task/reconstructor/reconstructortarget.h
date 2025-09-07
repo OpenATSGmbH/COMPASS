@@ -70,12 +70,14 @@ struct ContributingSourcesInfo
     boost::optional<float> radar_age_;
     boost::optional<float> reftraj_age_;
     boost::optional<float> tracker_age_;
+    boost::optional<float> other_age_;
 
     boost::optional<float> primary_age_;
     boost::optional<float> mode_ac_age_;
     boost::optional<float> modes_age_;
 
     void add(const dbContent::targetReport::ReconstructorInfo& tr, bool add_to_rec_nums);
+    void increaseTimeTo(boost::posix_time::ptime new_timestamp);
 };
 
 class ReconstructorTarget : public TargetBase
@@ -273,7 +275,7 @@ public:
     std::map<std::string, unsigned int> adsb_mops_count_; // mops str -> count
 
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
-    std::map<boost::posix_time::ptime, reconstruction::TRUsage>   reference_tr_usages_;
+    std::map<boost::posix_time::ptime, std::vector<reconstruction::TRUsage>> reference_tr_usages_;
 
     boost::posix_time::ptime ref_ts_prev_;
     bool has_prev_v_ {false};

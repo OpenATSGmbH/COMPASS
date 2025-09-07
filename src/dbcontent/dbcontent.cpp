@@ -147,6 +147,20 @@ const Property DBContent::var_cat063_sensor_sic_ {"Sensor SIC", PropertyDataType
 
 const Property DBContent::var_cat065_batch_number_ {"Batch Number", PropertyDataType::UCHAR};
 
+const Property DBContent::var_reftraj_contrib_adsb_age_{"Contributing ADS-B Age", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_contrib_mlat_age_{"Contributing MLAT Age", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_contrib_radar_age_{"Contributing Radar Age", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_contrib_tracker_age_{"Contributing Tracker Age", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_contrib_reftraj_age_{"Contributing RefTraj Age", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_contrib_other_age_{"Contributing Other Age", PropertyDataType::FLOAT};
+
+const Property DBContent::var_reftraj_contrib_sources_{"Contributing Sources", PropertyDataType::JSON};
+const Property DBContent::var_reftraj_contrib_sources_num_{"Contributing Sources Number", PropertyDataType::UINT};
+
+const Property DBContent::var_reftraj_update_age_primary_{"Primary Update Age", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_update_age_modeac_{"Mode A/C Update Ag", PropertyDataType::FLOAT};
+const Property DBContent::var_reftraj_update_age_modes_{"Mode S Update Age", PropertyDataType::FLOAT};
+
 const Property DBContent::selected_var {"selected", PropertyDataType::BOOL};
 
 /**

@@ -397,6 +397,21 @@
                     "unit": "Second"
                 }
             },
+            "VariableRefTrajContribOtherAge": {
+                "parameters": {
+                    "data_type_str": "FLOAT",
+                    "db_column_name": "contrib_other_age",
+                    "db_expression": "",
+                    "db_expression_variables": {},
+                    "description": "Time since last updated by contributing Other",
+                    "dimension": "Time",
+                    "is_key": false,
+                    "name": "Contributing Other Age",
+                    "representation_str": "SECONDS_TO_TIME",
+                    "short_name": "",
+                    "unit": "Second"
+                }
+            },            
             "VariableRefTrajContribSources": {
                 "parameters": {
                     "data_type_str": "JSON",
@@ -469,7 +484,7 @@
                     "name": "Contributing Sources Number",
                     "representation_str": "STANDARD",
                     "short_name": "",
-                    "unit": "Second"
+                    "unit": ""
                 }
             },
             "VariableRefTrajPriUpdateAge": {

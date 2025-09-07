@@ -29,6 +29,7 @@
 #include "kalman_chain.h"
 #include "fftmanager.h"
 #include "timeddataseries.h"
+#include "datasourcemanager.h"
 
 #include <boost/optional/optional_io.hpp>
 
@@ -50,36 +51,105 @@ ReconstructorTarget::GlobalStats ReconstructorTarget::global_stats_ = Reconstruc
 void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorInfo& tr,
      bool add_to_rec_nums)
 {
-    if (timestamp_.is_not_a_date_time())
-        timestamp_ = tr.timestamp_;
-    else
+    // update timestamps
+    increaseTimeTo(tr.timestamp_);
+
+    switch (tr.ds_type_)
     {
-        assert (tr.timestamp_ >= timestamp_);
-        auto time_to_add = (tr.timestamp_ - timestamp_).total_milliseconds() / 1000.0;
+        case DataSourceType::ADSB:
+            adsb_age_ = 0.0;
+            break;
+        case DataSourceType::MLAT:
+            mlat_age_ = 0.0;
+            break;
+        case DataSourceType::Radar:
+            radar_age_ = 0.0;
+            break;
+        case DataSourceType::RefTraj:
+            reftraj_age_ = 0.0;
+            break;
+        case DataSourceType::Tracker:
+            tracker_age_ = 0.0;
+            break;            
+        case DataSourceType::Other:
+            other_age_ = 0.0;
+            break;            
+        default:
+            logerr << "unknown ds type " << DataSourceManager::stringFromType(tr.ds_type_);
+            break;
+    }    
 
-        if (adsb_age_)
-            *adsb_age_ += time_to_add;
+    if (tr.isPrimaryOnlyDetection())
+        primary_age_ = 0.0;
 
-        if (mlat_age_)
-            *mlat_age_ += time_to_add;
+    if (tr.isModeACDetection())
+        mode_ac_age_ = 0.0;
 
-        if (radar_age_)
-            *radar_age_ += time_to_add;
+    if (tr.isModeSDetection())
+        modes_age_ = 0.0;
 
-        if (reftraj_age_)
-            *reftraj_age_ += time_to_add;
-
-        if (primary_age_)
-            *primary_age_ += time_to_add;
-
-        if (mode_ac_age_)
-            *mode_ac_age_ += time_to_add;
-
-        if (modes_age_)
-            *modes_age_ += time_to_add;
-    }
+    if (add_to_rec_nums)
+        rec_nums_.push_back(tr.record_num_);
 }
 
+void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timestamp)
+{
+    if (!timestamp_.is_not_a_date_time()) // increase ages of valid time exists
+    {
+        assert(new_timestamp >= timestamp_);
+        auto time_to_add = (new_timestamp - timestamp_).total_milliseconds() / 1000.0;
+
+        if (adsb_age_)
+        {
+            *adsb_age_ += time_to_add;
+            if (*adsb_age_ > 60.0)
+                adsb_age_ = {};
+        }
+
+        if (mlat_age_)
+        {
+            *mlat_age_ += time_to_add;
+            if (*mlat_age_ > 60.0)
+                mlat_age_ = {};
+        }
+
+        if (radar_age_)
+        {
+            *radar_age_ += time_to_add;
+            if (*radar_age_ > 60.0)
+                radar_age_ = {};
+        }
+        if (reftraj_age_)
+        {
+            *reftraj_age_ += time_to_add;
+            if (*reftraj_age_ > 60.0)
+                reftraj_age_ = {};
+        }
+
+        if (primary_age_)
+        {
+            *primary_age_ += time_to_add;
+            if (*primary_age_ > 60.0)
+                primary_age_ = {};
+        }
+
+        if (mode_ac_age_)
+        {
+            *mode_ac_age_ += time_to_add;
+            if (*mode_ac_age_ > 60.0)
+                mode_ac_age_ = {};
+        }
+
+        if (modes_age_)
+        {
+            *modes_age_ += time_to_add;
+            if (*modes_age_ > 60.0)
+                modes_age_ = {};
+        }
+    }
+
+    timestamp_ = new_timestamp;
+}
 
 ReconstructorTarget::ReconstructorTarget(ReconstructorBase& reconstructor, 
                                          unsigned int utn,
@@ -2328,7 +2398,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
     boost::posix_time::time_duration d_max = Time::partialSeconds(10);
     boost::posix_time::time_duration track_end_time = Time::partialSeconds(30);
-    boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings().resample_dt);
+    //boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings().resample_dt);
 
     auto m3a_series = getMode3ASeries();
     auto altitude_series = getAltitudeSeries();
@@ -2336,25 +2406,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
     ContributingSourcesInfo contrib_info;
 
-    // update contrib info
-    for (auto& ref_it : references_)
-    {
-        auto tr_start_it = contrib_info.timestamp_.is_not_a_date_time()
-                               ? tr_timestamps_.begin()  // if not set, iterate from beginning
-                               : tr_timestamps_.upper_bound(contrib_info.timestamp_);
-        // else iterator pointing to first which is strictly greater than last timestamp
-
-        // process all target reports up to this time
-        for (auto tr_ts_it = tr_start_it;
-             tr_ts_it != tr_timestamps_.end() && tr_ts_it->first <= ref_it.first; 
-             ++tr_ts_it)
-        {
-            // Process target report with record number tr_ts_it->second
-            traced_assert(reconstructor_.target_reports_.count(tr_ts_it->second));
-            contrib_info.add(reconstructor_.target_reports_.at(tr_ts_it->second), true);
-        }
-        //ref_ts_prev_ = ref_it.first;
-    }
+    bool skip = false;
 
     // generate buffer
     for (auto& ref_it : references_)
@@ -2364,7 +2416,31 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         //        << " wbt " << Time::toString(reconstructor_.currentSlice().write_before_time_) <<
         //     " skip " << (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_);
 
-        if (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_)
+        skip = ref_it.second.t >= reconstructor_.currentSlice().write_before_time_;
+
+        // update contrib info
+        contrib_info.rec_nums_.clear();
+
+        // but add to contributions to build history
+        if (reference_tr_usages_.count(ref_it.first))
+        {
+            for (auto& tr_usage_it : reference_tr_usages_.at(ref_it.first))
+            {
+                if (tr_usage_it.used)
+                {
+                    if(!reconstructor_.target_reports_.count(tr_usage_it.rec_num))
+                    {
+                        logerr << "unknown record number " << tr_usage_it.rec_num;
+                        continue;
+                    }
+                    contrib_info.add(reconstructor_.target_reports_.at(tr_usage_it.rec_num), !skip);
+                }
+            }
+        }
+
+        contrib_info.increaseTimeTo(ref_it.first); // set ages to ref update time
+
+        if (skip) // skip, too early
             continue;
 
         if (!ref_ts_prev_.is_not_a_date_time())

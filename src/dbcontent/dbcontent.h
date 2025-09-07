@@ -230,6 +230,21 @@ public:
 
     static const Property var_cat065_batch_number_;
 
+    // reftraj contrib
+    static const Property var_reftraj_contrib_adsb_age_;
+    static const Property var_reftraj_contrib_mlat_age_;
+    static const Property var_reftraj_contrib_radar_age_;
+    static const Property var_reftraj_contrib_tracker_age_;
+    static const Property var_reftraj_contrib_reftraj_age_;
+    static const Property var_reftraj_contrib_other_age_;
+
+    static const Property var_reftraj_contrib_sources_;
+    static const Property var_reftraj_contrib_sources_num_;
+
+    static const Property var_reftraj_update_age_primary_;
+    static const Property var_reftraj_update_age_modeac_;
+    static const Property var_reftraj_update_age_modes_;
+
     static const Property selected_var;
 
 public:
