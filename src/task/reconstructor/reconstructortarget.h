@@ -21,6 +21,7 @@
 #include "projection/transformation.h"
 #include "reconstruction_defs.h"
 #include "reconstructorbase.h"
+#include "referencecalculatordefs.h"
 #include "targetbase.h"
 
 #include <boost/date_time/posix_time/ptime.hpp>
@@ -272,6 +273,7 @@ public:
     std::map<std::string, unsigned int> adsb_mops_count_; // mops str -> count
 
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
+    std::map<boost::posix_time::ptime, reconstruction::TRUsage>   reference_tr_usages_;
 
     boost::posix_time::ptime ref_ts_prev_;
     bool has_prev_v_ {false};

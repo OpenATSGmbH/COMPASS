@@ -27,6 +27,22 @@ namespace Accuracy
 
 /**
  */
+double GeodeticDistanceInfo::mahalanobisDistance(double eps) const
+{
+    const double sum_std_dev = std::max(eps, stddev0 + stddev1);
+    return distance / sum_std_dev;
+}
+
+/**
+ */
+double GeodeticDistanceInfo::mahalanobisDistanceSqr(double eps) const
+{
+    const double d_m = mahalanobisDistance(eps);
+    return std::pow(d_m, 2);
+}
+
+/**
+ */
 void estimateEllipse(EllipseDef& def,
                      double x_stddev,
                      double y_stddev,

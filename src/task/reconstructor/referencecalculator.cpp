@@ -140,19 +140,21 @@ void ReferenceCalculator::prepareForCurrentSlice()
         }
         else 
         {
-            // target still exists, remove updates
+            // target still exists => remove updates out of join region
             auto it = std::remove_if(ref_it->second.updates.begin(),
                                      ref_it->second.updates.end(),
                                      [ & ] (const kalman::KalmanUpdate& update) { return update.t <  ThresRemove ||
                                                                                          update.t >= ThresJoin; });
             ref_it->second.updates.erase(it, ref_it->second.updates.end());
 
+            // remove smooth updates out of join region
             auto it_s = std::remove_if(ref_it->second.updates_smooth.begin(),
                                        ref_it->second.updates_smooth.end(),
                                        [ & ] (const kalman::KalmanUpdate& update) { return update.t <  ThresRemove ||
                                                                                            update.t >= ThresJoin; });
             ref_it->second.updates_smooth.erase(it_s, ref_it->second.updates_smooth.end());
 
+            // remove input infos out of join region
             auto& input_infos = ref_it->second.input_infos;
             for (auto first = input_infos.begin(), last = input_infos.end(); first != last;)
             {
@@ -161,6 +163,13 @@ void ReferenceCalculator::prepareForCurrentSlice()
                 else
                     ++first;
             }
+
+            // remove target report usage flags out of join region out of join region
+            auto it_u = std::remove_if(ref_it->second.measurement_usage.begin(),
+                                       ref_it->second.measurement_usage.end(),
+                                       [ & ] (const reconstruction::TRUsage& usage) { return usage.t <  ThresRemove ||
+                                                                                             usage.t >= ThresJoin; });
+            ref_it->second.measurement_usage.erase(it_u, ref_it->second.measurement_usage.end());
 
             ++ref_it;
         }
@@ -494,6 +503,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
     std::vector<QPointF> failed_updates;
     std::vector<QPointF> skipped_updates;
+    std::vector<size_t>  update_usages;
 
     if (debug_target && shallAddAnnotationData())
     {
@@ -503,6 +513,25 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
+    auto collectUsage = [ & ] (const reconstruction::Measurement& mm, int usage_flags)
+    {
+        reconstruction::TRUsage tr_usage;
+        tr_usage.rec_num = mm.source_id.value();
+        tr_usage.t       = mm.t;
+        tr_usage.flags   = usage_flags;
+        tr_usage.used    = usage_flags == 0;
+
+        //flag if this update stems from an interpolation and is not the first in the interpolated interval
+        if (mm.mm_interp && !mm.mm_interp_first)
+            tr_usage.flags |= reconstruction::TRUsage::Flags::Repeated;
+
+        size_t idx = refs.measurement_usage.size();
+
+        refs.measurement_usage.emplace_back(tr_usage);
+
+        return idx;
+    };
+
     auto collectUpdate = [ & ] (const kalman::KalmanUpdate& update, 
                                 const reconstruction::Measurement& mm,
                                 unsigned int mm_idx,
@@ -510,6 +539,10 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
     {
         refs.updates.push_back(update);
         refs.updates.back().Q_var_interp = mm.Q_var_interp;
+
+        //collect usage and separate info where the usage is located for the kalman update
+        auto idx = collectUsage(mm, 0);
+        update_usages.push_back(idx);
 
         if (debug_target)
         {
@@ -528,6 +561,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             refs.updates.back().debugUpdate();
         }
     };
+
 
     auto debugMM = [ & ] (const reconstruction::Measurement& mm)
     {
@@ -638,6 +672,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                 skipped_updates.push_back(estimator.currentPositionWGS84());
             
             ++refs.num_updates_skipped;
+            collectUsage(mm, reconstruction::TRUsage::SkippedTimeStep);
         }
         else if (res == reconstruction::KalmanEstimator::StepResult::FailKalmanError)
         {
@@ -651,11 +686,20 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             const auto& step_info = estimator.stepInfo();
 
             if (step_info.kalman_error == kalman::KalmanError::Numeric)
+            {
                 ++refs.num_updates_failed_numeric;
+                collectUsage(mm, reconstruction::TRUsage::SkippedNumeric);
+            }
             else if (step_info.kalman_error == kalman::KalmanError::InvalidState)
+            {
                 ++refs.num_updates_failed_badstate;
+                collectUsage(mm, reconstruction::TRUsage::SkippedInvalid);
+            }
             else
+            {
                 ++refs.num_updates_failed_other;
+                collectUsage(mm, reconstruction::TRUsage::SkippedUnknown);
+            }
         }
         else
         {
@@ -663,6 +707,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
             ++refs.num_updates_failed;
             ++refs.num_updates_failed_other;
+            collectUsage(mm, reconstruction::TRUsage::SkippedUnknown);
         }
 
         //!only add update if valid!
@@ -711,6 +756,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
         if (!ok)
         {
+            //revert to unsmoothed updates
             updates = refs.updates;
             ++refs.num_smoothing_failed;
         }
@@ -732,9 +778,22 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         for (size_t i = n_before; i < n_updates; ++i)
         {
             if (updates[ i ].valid)
+            {
                 refs.updates_smooth.push_back(updates[ i ]);
+            }
             else
+            {
                 ++refs.num_smooth_steps_failed;
+
+                //flag usages of failed smoothing updates
+                size_t new_update_idx = i - n_before;
+                traced_assert(new_update_idx < update_usages.size());
+
+                size_t usage_idx = update_usages[ new_update_idx ];
+                traced_assert(usage_idx < refs.measurement_usage.size());
+
+                refs.measurement_usage[ usage_idx ].flags |= reconstruction::TRUsage::SkippedSmoothing;
+            }
         }
 
         updates = refs.updates_smooth;
@@ -916,14 +975,20 @@ void ReferenceCalculator::updateReferences()
         traced_assert(reconstructor_.targets_container_.targets_.count(ref.first));
 
         auto& target = reconstructor_.targets_container_.targets_.at(ref.first);
-        //target.references_ = std::move(ref.second.references);
 
         target.references_.clear();
+        target.reference_tr_usages_.clear();
 
+        //store references to target
         for (auto& ref_it : ref.second.references)
             target.references_[ref_it.t] = ref_it;
 
         ref.second.references.clear();
+
+        //store target report usages to target
+        for (auto& tru_it : ref.second.measurement_usage)
+            if (!tru_it.isRepeated())
+                target.reference_tr_usages_[tru_it.t] = tru_it;
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;

@@ -64,6 +64,7 @@ struct ReferenceCalculatorTargetReferences
     unsigned int utn;
 
     std::vector<reconstruction::Measurement>    measurements;
+    std::vector<reconstruction::TRUsage>        measurement_usage;
     std::vector<kalman::KalmanUpdate>           updates;
     std::vector<kalman::KalmanUpdate>           updates_smooth;
     std::vector<double>                         updates_smooth_Qvars;

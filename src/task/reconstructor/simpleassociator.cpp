@@ -44,6 +44,7 @@ SimpleAssociator::SimpleAssociator(SimpleReconstructor& reconstructor)
 void SimpleAssociator::associateNewData()
 {
     unassoc_rec_nums_.clear();
+    unassoc_rec_nums_no_retry_.clear();
 
     loginf << "associating RefTraj data";
 
@@ -265,8 +266,14 @@ SimpleAssociator::checkPositionOffsetScore (double distance_m, double sum_stddev
         classif, settings.max_distance_acceptable_ - distance_m);
 }
 
+double SimpleAssociator::targetAccuracyAcceptableThreshold(
+    unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) const 
+{
+    return std::numeric_limits<double>::max();
+}
+
 bool SimpleAssociator::isTargetAccuracyAcceptable(
-    double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug)
+    double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) const 
 {
     return true;
 }

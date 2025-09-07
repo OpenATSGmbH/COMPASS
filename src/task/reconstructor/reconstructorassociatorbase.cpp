@@ -51,6 +51,7 @@ void ReconstructorAssociatorBase::associateNewData()
     max_time_diff_ = Time::partialSeconds(reconstructor().settings().max_time_diff_);
 
     unassoc_rec_nums_.clear();
+    unassoc_rec_nums_no_retry_.clear();
 
     if (reconstructor().isCancelled())
         return;
@@ -151,6 +152,7 @@ void ReconstructorAssociatorBase::reset()
     reconstructor().targets_container_.tn2utn_.clear();
 
     unassoc_rec_nums_.clear();
+    unassoc_rec_nums_no_retry_.clear();
     assoc_counts_.clear();
 
     num_merges_ = 0;
@@ -391,7 +393,9 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
                 associate(tr, utn);
             }
             else  // not associated
+            {
                 unassoc_rec_nums_.push_back(rec_num);
+            }
         }
     }
 }
@@ -657,11 +661,9 @@ void ReconstructorAssociatorBase::associate(
     postAssociate (tr, utn);
 }
 
-
-
-void ReconstructorAssociatorBase::countUnAssociated()
+void ReconstructorAssociatorBase::countUnAssociated(const std::vector<unsigned long> &rec_nums)
 {
-    for (auto rn_it : unassoc_rec_nums_)
+    for (auto rn_it : rec_nums)
     {
         if (reconstructor().isCancelled())
             return;
@@ -675,10 +677,16 @@ void ReconstructorAssociatorBase::countUnAssociated()
 
         traced_assert(reconstructor().target_reports_.count(rec_num));
 
-        dbContent::targetReport::ReconstructorInfo& tr = reconstructor().target_reports_.at(rec_num);
+        dbContent::targetReport::ReconstructorInfo &tr = reconstructor().target_reports_.at(rec_num);
 
         assoc_counts_[tr.ds_id_][dbcont_id].second++;
     }
+}
+
+void ReconstructorAssociatorBase::countUnAssociated()
+{
+    countUnAssociated(unassoc_rec_nums_);
+    countUnAssociated(unassoc_rec_nums_no_retry_);
 }
 
 int ReconstructorAssociatorBase::findUTNFor (dbContent::targetReport::ReconstructorInfo& tr)
@@ -1409,7 +1417,23 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
         return std::pair<float, std::pair<unsigned int, unsigned int>>{score, {utn,best_other_utn}};
     else
         return std::pair<float, std::pair<unsigned int, unsigned int>>{std::numeric_limits<float>::lowest(), {0,0}};
+}
 
+bool ReconstructorAssociatorBase::isTargetAccuracyAcceptable(double tgt_est_std_dev, 
+                                                             unsigned int utn, 
+                                                             const dbContent::targetReport::ReconstructorInfo& tr, 
+                                                             bool do_debug) const
+{
+    const double thres = targetAccuracyAcceptableThreshold(utn, tr, do_debug);
+
+    if (do_debug)
+    {
+        loginf << "DBG tr " << tr.record_num_ << " other_utn " << utn << " iTAAc"
+               << " tgt_est_std_dev " << tgt_est_std_dev << " comp_value " << thres << " acceptable "
+               << (tgt_est_std_dev <= thres);
+    }
+
+    return tgt_est_std_dev <= thres;
 }
 
 const std::map<unsigned int, std::map<unsigned int,
