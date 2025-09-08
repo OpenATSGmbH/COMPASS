@@ -207,13 +207,13 @@ struct TRUsage
 
     bool isRepeated() const
     {
-        return (flags & Repeated) != 0;
+        return (usage_flags & Repeated) != 0;
     };
 
     unsigned long            rec_num;
     boost::posix_time::ptime t;
-    bool                     used  = false;
-    unsigned char            flags = 0;
+    bool                     contributes = false;
+    unsigned char            usage_flags = 0;
 };
 
 
