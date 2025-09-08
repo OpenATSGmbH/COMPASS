@@ -51,7 +51,7 @@ ReconstructorTarget::GlobalStats ReconstructorTarget::global_stats_ = Reconstruc
 void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorInfo& tr,
      bool add_to_rec_nums)
 {
-    loginf << "timestamp " << Time::toString(tr.timestamp_);
+    logdbg << "timestamp " << Time::toString(tr.timestamp_);
 
     // update timestamps
     increaseTimeTo(tr.timestamp_);
@@ -155,7 +155,7 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
         }
     }
 
-    loginf << "new_timestamp " << Time::toString(new_timestamp);
+    logdbg << "new_timestamp " << Time::toString(new_timestamp);
     timestamp_ = new_timestamp;
 }
 
@@ -2420,14 +2420,14 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
     traced_assert(ref_it != references_.end());
     references_tr_contributions_[ref_it->first] = contrib_info;
 
-    loginf << "utn " << utn_;
+    logdbg << "utn " << utn_;
 
     for (auto tr_it = reference_tr_usages_.begin(); tr_it != reference_tr_usages_.end(); ++tr_it)
     {
         // advance ref_it to the next element where ref_it.first >= tr_it.first
         while (ref_it != references_.end() && ref_it->first < tr_it->first)
         {
-            loginf << "utn " << utn_ << " stepping to new ref up, current " << Time::toString(ref_it->first);
+            logdbg << "utn " << utn_ << " stepping to new ref up, current " << Time::toString(ref_it->first);
             // step info
             contrib_info.increaseTimeTo(ref_it->first);
             references_tr_contributions_[ref_it->first] = contrib_info;
@@ -2451,7 +2451,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         }
         if (tr_it->second.contributes)
         {
-            loginf << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
+            logdbg << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
             contrib_info.add(reconstructor_.target_reports_.at(tr_it->second.rec_num),
                              (ref_it->first - tr_it->first) < reftraj_ui);
         }
@@ -2460,10 +2460,12 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
     // finish up for ref updates without target reports
     while (ref_it != references_.end())
     {
-        traced_assert (!references_tr_contributions_.count(ref_it->first));
-        contrib_info.rec_nums_.clear();
-        contrib_info.increaseTimeTo(ref_it->first);
-        references_tr_contributions_[ref_it->first] = contrib_info;
+        if (!references_tr_contributions_.count(ref_it->first))
+        {
+            contrib_info.rec_nums_.clear();
+            contrib_info.increaseTimeTo(ref_it->first);
+            references_tr_contributions_[ref_it->first] = contrib_info;
+        }
 
         // step to next reference update
         ++ref_it;
