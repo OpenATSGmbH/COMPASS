@@ -544,11 +544,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
             //get original timestamp of target report
             auto tr_info = reconstructor_.getInfo(id);
-            if (!tr_info)
-            {
-                logerr << "FIXME: record number " << id << " missing from data";
-                return;
-            }
+            traced_assert(tr_info);
 
             t = tr_info->timestamp_;
         }
@@ -1004,26 +1000,8 @@ void ReferenceCalculator::updateReferences()
         std::set<unsigned long> rec_nums;
 
         //store target report usages to target
-        size_t cnt = 0;
         for (auto& tru_it : ref.second.measurement_contributions)
             target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it.rec_num));
-
-        // if (reconstructor_.getInfo(tru_it.rec_num) != 0)
-        // {
-        //     loginf << "UTN" << ref.first << ": usage " << cnt << " recnum " << tru_it.rec_num << " t " << Utils::Time::toString(tru_it.t);
-        // }
-        // else
-        // {
-        //     auto ThresRemove = reconstructor_.currentSlice().remove_before_time_;
-        //     auto ThresJoin   = getJoinThreshold();
-
-        //     loginf << "Missing info for usage " << cnt << " with recnum " << tru_it.rec_num << " at t=" 
-        //            << Utils::Time::toString(tru_it.t) << " interpolated " << tru_it.interpolated << " interp_first " << tru_it.interpolated_first
-        //            << " (remove thres = " << Utils::Time::toString(ThresRemove) << ", join thres = " << Utils::Time::toString(ThresJoin) << ")";
-        //     traced_assert(false);
-        // }
-        // target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it));
-        // ++cnt;
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;
