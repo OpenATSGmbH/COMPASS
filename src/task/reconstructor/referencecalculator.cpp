@@ -514,7 +514,6 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
     std::vector<QPointF> failed_updates;
     std::vector<QPointF> skipped_updates;
-    std::vector<size_t>  update_usages;
 
     if (debug_target && shallAddAnnotationData())
     {
@@ -524,23 +523,40 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
-    auto collectUsage = [ & ] (const reconstruction::Measurement& mm, int usage_flags)
+    std::set<unsigned long> usage_interp_used_recnums;
+    for (const auto& usage : refs.measurement_usage)
+        if (usage.interpolated)
+            usage_interp_used_recnums.insert(usage.rec_num);
+
+    auto collectUsage = [ & ] (const reconstruction::Measurement& mm)
     {
+        auto t  = mm.t;
+        auto id = mm.source_id.value();
+
+        if (mm.mm_interp)
+        {
+            if (usage_interp_used_recnums.count(id))
+                return;
+
+            usage_interp_used_recnums.insert(id);
+
+            auto tr_info = reconstructor_.getInfo(id);
+            if (!tr_info)
+            {
+                logerr << "FIXME: record number " << id << " missing from data";
+                return;
+            }
+
+            t = tr_info->timestamp_;
+        }
+        
         reconstruction::TRUsage tr_usage;
-        tr_usage.rec_num      = mm.source_id.value();
-        tr_usage.t            = mm.t;
-        tr_usage.usage_flags  = usage_flags;
+        tr_usage.rec_num            = id;
+        tr_usage.t                  = t;
+        tr_usage.interpolated       = mm.mm_interp;
+        tr_usage.interpolated_first = mm.mm_interp_first;
 
-        //flag if this update stems from an interpolation and is not the first in the interpolated interval
-        if (mm.mm_interp && !mm.mm_interp_first)
-            tr_usage.usage_flags |= reconstruction::TRUsage::Flags::Repeated;
-
-        tr_usage.contributes = tr_usage.usage_flags == 0;
-
-        size_t idx = refs.measurement_usage.size();
         refs.measurement_usage.emplace_back(tr_usage);
-
-        return idx;
     };
 
     auto collectUpdate = [ & ] (const kalman::KalmanUpdate& update, 
@@ -552,8 +568,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         refs.updates.back().Q_var_interp = mm.Q_var_interp;
 
         //collect usage and separate info where the usage is located for the kalman update
-        auto idx = collectUsage(mm, 0);
-        update_usages.push_back(idx);
+        collectUsage(mm);
 
         if (debug_target)
         {
@@ -683,7 +698,6 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                 skipped_updates.push_back(estimator.currentPositionWGS84());
             
             ++refs.num_updates_skipped;
-            collectUsage(mm, reconstruction::TRUsage::SkippedTimeStep);
         }
         else if (res == reconstruction::KalmanEstimator::StepResult::FailKalmanError)
         {
@@ -699,17 +713,14 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             if (step_info.kalman_error == kalman::KalmanError::Numeric)
             {
                 ++refs.num_updates_failed_numeric;
-                collectUsage(mm, reconstruction::TRUsage::SkippedNumeric);
             }
             else if (step_info.kalman_error == kalman::KalmanError::InvalidState)
             {
                 ++refs.num_updates_failed_badstate;
-                collectUsage(mm, reconstruction::TRUsage::SkippedInvalid);
             }
             else
             {
                 ++refs.num_updates_failed_other;
-                collectUsage(mm, reconstruction::TRUsage::SkippedUnknown);
             }
         }
         else
@@ -718,7 +729,6 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
             ++refs.num_updates_failed;
             ++refs.num_updates_failed_other;
-            collectUsage(mm, reconstruction::TRUsage::SkippedUnknown);
         }
 
         //!only add update if valid!
@@ -795,15 +805,6 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             else
             {
                 ++refs.num_smooth_steps_failed;
-
-                //flag usages of failed smoothing updates
-                size_t new_update_idx = i - n_before;
-                traced_assert(new_update_idx < update_usages.size());
-
-                size_t usage_idx = update_usages[ new_update_idx ];
-                traced_assert(usage_idx < refs.measurement_usage.size());
-
-                refs.measurement_usage[ usage_idx ].usage_flags |= reconstruction::TRUsage::SkippedSmoothing;
             }
         }
 
@@ -999,20 +1000,26 @@ void ReferenceCalculator::updateReferences()
         std::set<unsigned long> rec_nums;
 
         //store target report usages to target
-        size_t num_repeated = 0;
+        size_t cnt = 0;
         for (auto& tru_it : ref.second.measurement_usage)
-        {
-            if (!tru_it.isRepeated())
-            {
-                if (!reconstructor_.target_reports_.count(tru_it.rec_num))
-                {
-                    logerr << "PHIL FIXME!";
-                    continue;
-                }
-                target.reference_tr_usages_.insert(
-                    std::make_pair(reconstructor_.target_reports_.at(tru_it.rec_num).timestamp_, tru_it));
-            }
-        }
+            target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it.rec_num));
+
+        // if (reconstructor_.getInfo(tru_it.rec_num) != 0)
+        // {
+        //     loginf << "UTN" << ref.first << ": usage " << cnt << " recnum " << tru_it.rec_num << " t " << Utils::Time::toString(tru_it.t);
+        // }
+        // else
+        // {
+        //     auto ThresRemove = reconstructor_.currentSlice().remove_before_time_;
+        //     auto ThresJoin   = getJoinThreshold();
+
+        //     loginf << "Missing info for usage " << cnt << " with recnum " << tru_it.rec_num << " at t=" 
+        //            << Utils::Time::toString(tru_it.t) << " interpolated " << tru_it.interpolated << " interp_first " << tru_it.interpolated_first
+        //            << " (remove thres = " << Utils::Time::toString(ThresRemove) << ", join thres = " << Utils::Time::toString(ThresJoin) << ")";
+        //     traced_assert(false);
+        // }
+        // target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it));
+        // ++cnt;
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;

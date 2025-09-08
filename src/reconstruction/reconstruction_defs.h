@@ -193,28 +193,11 @@ struct PredictionComparison
  */
 struct TRUsage
 {
-    /**
-     */
-    enum Flags
-    {
-        Repeated         = 1 << 0,
-        SkippedTimeStep  = 1 << 1,
-        SkippedNumeric   = 1 << 2,
-        SkippedInvalid   = 1 << 3,
-        SkippedUnknown   = 1 << 4,
-        SkippedSmoothing = 1 << 5,
-    };
-
-    bool isRepeated() const
-    {
-        return (usage_flags & Repeated) != 0;
-    };
-
     unsigned long            rec_num;
     boost::posix_time::ptime t;
-    bool                     contributes = false;
-    unsigned char            usage_flags = 0;
-};
 
+    bool interpolated       = false;
+    bool interpolated_first = false;
+};
 
 } // namespace reconstruction

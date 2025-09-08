@@ -2444,17 +2444,16 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         traced_assert (tr_it->first <= ref_it->first);
 
         // ref_it is ok and points to next ref update in time
-        if (!reconstructor_.target_reports_.count(tr_it->second.rec_num))
+        if (!reconstructor_.target_reports_.count(tr_it->second))
         {
-            logerr << "unknown record number " << tr_it->second.rec_num;
+            logerr << "unknown record number " << tr_it->second;
             continue;
         }
-        if (tr_it->second.contributes)
-        {
-            logdbg << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
-            contrib_info.add(reconstructor_.target_reports_.at(tr_it->second.rec_num),
-                             (ref_it->first - tr_it->first) < reftraj_ui);
-        }
+
+        logdbg << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
+        contrib_info.add(reconstructor_.target_reports_.at(tr_it->second),
+                            (ref_it->first - tr_it->first) < reftraj_ui);
+        
     }
 
     // finish up for ref updates without target reports
