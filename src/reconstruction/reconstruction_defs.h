@@ -189,9 +189,9 @@ struct PredictionComparison
 };
 
 /**
- * Reconstruction usage information for a target report.
+ * Reconstruction contribution entry for a measurement
  */
-struct TRUsage
+struct MMContribution
 {
     unsigned long            rec_num;
     boost::posix_time::ptime t;

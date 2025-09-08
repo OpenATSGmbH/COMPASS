@@ -165,11 +165,11 @@ void ReferenceCalculator::prepareForCurrentSlice()
             }
 
             // remove target report usage flags out of join region out of join region
-            auto it_u = std::remove_if(ref_it->second.measurement_usage.begin(),
-                                       ref_it->second.measurement_usage.end(),
-                                       [ & ] (const reconstruction::TRUsage& usage) { return usage.t <  ThresRemove ||
+            auto it_u = std::remove_if(ref_it->second.measurement_contributions.begin(),
+                                       ref_it->second.measurement_contributions.end(),
+                                       [ & ] (const reconstruction::MMContribution& usage) { return usage.t <  ThresRemove ||
                                                                                              usage.t >= ThresJoin; });
-            ref_it->second.measurement_usage.erase(it_u, ref_it->second.measurement_usage.end());
+            ref_it->second.measurement_contributions.erase(it_u, ref_it->second.measurement_contributions.end());
 
             ++ref_it;
         }
@@ -524,22 +524,25 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
     }
 
     std::set<unsigned long> usage_interp_used_recnums;
-    for (const auto& usage : refs.measurement_usage)
+    for (const auto& usage : refs.measurement_contributions)
         if (usage.interpolated)
             usage_interp_used_recnums.insert(usage.rec_num);
 
-    auto collectUsage = [ & ] (const reconstruction::Measurement& mm)
+    auto addContribution = [ & ] (const reconstruction::Measurement& mm)
     {
         auto t  = mm.t;
         auto id = mm.source_id.value();
 
         if (mm.mm_interp)
         {
+            //check if rec num has already been added (e.g. because of interpolation)
             if (usage_interp_used_recnums.count(id))
                 return;
 
+            //register rec num
             usage_interp_used_recnums.insert(id);
 
+            //get original timestamp of target report
             auto tr_info = reconstructor_.getInfo(id);
             if (!tr_info)
             {
@@ -550,13 +553,14 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             t = tr_info->timestamp_;
         }
         
-        reconstruction::TRUsage tr_usage;
-        tr_usage.rec_num            = id;
-        tr_usage.t                  = t;
-        tr_usage.interpolated       = mm.mm_interp;
-        tr_usage.interpolated_first = mm.mm_interp_first;
+        //add contribution
+        reconstruction::MMContribution contrib;
+        contrib.rec_num            = id;
+        contrib.t                  = t;
+        contrib.interpolated       = mm.mm_interp;
+        contrib.interpolated_first = mm.mm_interp_first;
 
-        refs.measurement_usage.emplace_back(tr_usage);
+        refs.measurement_contributions.emplace_back(contrib);
     };
 
     auto collectUpdate = [ & ] (const kalman::KalmanUpdate& update, 
@@ -567,8 +571,8 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         refs.updates.push_back(update);
         refs.updates.back().Q_var_interp = mm.Q_var_interp;
 
-        //collect usage and separate info where the usage is located for the kalman update
-        collectUsage(mm);
+        //collect contribution of measurement resulting in valid kalman update
+        addContribution(mm);
 
         if (debug_target)
         {
@@ -1001,7 +1005,7 @@ void ReferenceCalculator::updateReferences()
 
         //store target report usages to target
         size_t cnt = 0;
-        for (auto& tru_it : ref.second.measurement_usage)
+        for (auto& tru_it : ref.second.measurement_contributions)
             target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it.rec_num));
 
         // if (reconstructor_.getInfo(tru_it.rec_num) != 0)
