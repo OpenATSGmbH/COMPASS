@@ -336,8 +336,19 @@ bool mmSortPred(const reconstruction::Measurement& mm0,
     if (mm0.t != mm1.t)
         return mm0.t < mm1.t;
 
-    //otherwise sort by source at least
-    return mm0.source_id < mm1.source_id;
+    //otherwise sort by source id
+    if (mm0.source_id != mm1.source_id)
+        return mm0.source_id < mm1.source_id;
+
+    //time and source id are the same => must be interpolated
+    traced_assert(mm0.mm_interp && mm1.mm_interp);
+
+    //otherwise non-interpolated first
+    if (mm0.mm_interp != mm1.mm_interp)
+        return mm0.mm_interp < mm1.mm_interp;
+
+    //otherwise first interpolated first
+    return mm0.mm_interp_first > mm1.mm_interp_first;
 }
 }
 
@@ -516,17 +527,17 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
     auto collectUsage = [ & ] (const reconstruction::Measurement& mm, int usage_flags)
     {
         reconstruction::TRUsage tr_usage;
-        tr_usage.rec_num = mm.source_id.value();
-        tr_usage.t       = mm.t;
-        tr_usage.flags   = usage_flags;
-        tr_usage.used    = usage_flags == 0;
+        tr_usage.rec_num      = mm.source_id.value();
+        tr_usage.t            = mm.t;
+        tr_usage.usage_flags  = usage_flags;
 
         //flag if this update stems from an interpolation and is not the first in the interpolated interval
         if (mm.mm_interp && !mm.mm_interp_first)
-            tr_usage.flags |= reconstruction::TRUsage::Flags::Repeated;
+            tr_usage.usage_flags |= reconstruction::TRUsage::Flags::Repeated;
+
+        tr_usage.contributes = tr_usage.usage_flags == 0;
 
         size_t idx = refs.measurement_usage.size();
-
         refs.measurement_usage.emplace_back(tr_usage);
 
         return idx;
@@ -792,7 +803,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                 size_t usage_idx = update_usages[ new_update_idx ];
                 traced_assert(usage_idx < refs.measurement_usage.size());
 
-                refs.measurement_usage[ usage_idx ].flags |= reconstruction::TRUsage::SkippedSmoothing;
+                refs.measurement_usage[ usage_idx ].usage_flags |= reconstruction::TRUsage::SkippedSmoothing;
             }
         }
 
@@ -985,10 +996,12 @@ void ReferenceCalculator::updateReferences()
 
         ref.second.references.clear();
 
+        std::set<unsigned long> rec_nums;
+
         //store target report usages to target
+        size_t num_repeated = 0;
         for (auto& tru_it : ref.second.measurement_usage)
-            if (!tru_it.isRepeated())
-                target.reference_tr_usages_[tru_it.t] = tru_it;
+            target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it));
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;
