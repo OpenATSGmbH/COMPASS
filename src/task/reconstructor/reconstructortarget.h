@@ -275,7 +275,8 @@ public:
     std::map<std::string, unsigned int> adsb_mops_count_; // mops str -> count
 
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
-    std::map<boost::posix_time::ptime, std::vector<reconstruction::TRUsage>> reference_tr_usages_;
+    std::multimap<boost::posix_time::ptime, reconstruction::TRUsage> reference_tr_usages_;
+    std::map<boost::posix_time::ptime, ContributingSourcesInfo> references_tr_contributions_;
 
     boost::posix_time::ptime ref_ts_prev_;
     bool has_prev_v_ {false};

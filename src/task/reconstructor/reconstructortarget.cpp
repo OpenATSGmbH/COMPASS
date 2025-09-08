@@ -51,6 +51,8 @@ ReconstructorTarget::GlobalStats ReconstructorTarget::global_stats_ = Reconstruc
 void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorInfo& tr,
      bool add_to_rec_nums)
 {
+    loginf << "timestamp " << Time::toString(tr.timestamp_);
+
     // update timestamps
     increaseTimeTo(tr.timestamp_);
 
@@ -96,7 +98,12 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
 {
     if (!timestamp_.is_not_a_date_time()) // increase ages of valid time exists
     {
-        assert(new_timestamp >= timestamp_);
+        if (timestamp_ > new_timestamp)
+            logerr << " timestamp " << Time::toString(timestamp_) 
+                   << " new_timestamp " << Time::toString(new_timestamp) 
+                   << " diff " << (new_timestamp - timestamp_).total_milliseconds() / 1000.0;
+
+        traced_assert(new_timestamp >= timestamp_);
         auto time_to_add = (new_timestamp - timestamp_).total_milliseconds() / 1000.0;
 
         if (adsb_age_)
@@ -148,6 +155,7 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
         }
     }
 
+    loginf << "new_timestamp " << Time::toString(new_timestamp);
     timestamp_ = new_timestamp;
 }
 
@@ -2398,7 +2406,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
     boost::posix_time::time_duration d_max = Time::partialSeconds(10);
     boost::posix_time::time_duration track_end_time = Time::partialSeconds(30);
-    //boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings().resample_dt);
+    boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings().resample_dt);
 
     auto m3a_series = getMode3ASeries();
     auto altitude_series = getAltitudeSeries();
@@ -2406,7 +2414,48 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
     ContributingSourcesInfo contrib_info;
 
-    bool skip = false;
+    // collect correct target reports for each reference update
+    // double iteration over reference_tr_usages_ and references_
+    auto ref_it = references_.begin();
+    traced_assert(ref_it != references_.end());
+    references_tr_contributions_[ref_it->first] = contrib_info;
+
+    loginf << "utn " << utn_;
+
+    for (auto tr_it = reference_tr_usages_.begin(); tr_it != reference_tr_usages_.end(); ++tr_it)
+    {
+        // advance ref_it to the next element where ref_it.first >= tr_it.first
+        while (ref_it != references_.end() && ref_it->first < tr_it->first)
+        {
+            loginf << "utn " << utn_ << " stepping to new ref up, current " << Time::toString(ref_it->first);
+            // step info
+            contrib_info.increaseTimeTo(ref_it->first);
+            references_tr_contributions_[ref_it->first] = contrib_info;
+
+            // step to next reference update
+            ++ref_it;
+
+            contrib_info.rec_nums_.clear();
+        }
+
+        if (ref_it == references_.end())
+            break;
+
+        traced_assert (tr_it->first <= ref_it->first);
+
+        // ref_it is ok and points to next ref update in time
+        if (!reconstructor_.target_reports_.count(tr_it->second.rec_num))
+        {
+            logerr << "unknown record number " << tr_it->second.rec_num;
+            continue;
+        }
+        if (tr_it->second.used)
+        {
+            loginf << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
+            contrib_info.add(reconstructor_.target_reports_.at(tr_it->second.rec_num),
+                             (ref_it->first - tr_it->first) < reftraj_ui);
+        }
+    }
 
     // generate buffer
     for (auto& ref_it : references_)
@@ -2416,31 +2465,7 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         //        << " wbt " << Time::toString(reconstructor_.currentSlice().write_before_time_) <<
         //     " skip " << (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_);
 
-        skip = ref_it.second.t >= reconstructor_.currentSlice().write_before_time_;
-
-        // update contrib info
-        contrib_info.rec_nums_.clear();
-
-        // but add to contributions to build history
-        if (reference_tr_usages_.count(ref_it.first))
-        {
-            for (auto& tr_usage_it : reference_tr_usages_.at(ref_it.first))
-            {
-                if (tr_usage_it.used)
-                {
-                    if(!reconstructor_.target_reports_.count(tr_usage_it.rec_num))
-                    {
-                        logerr << "unknown record number " << tr_usage_it.rec_num;
-                        continue;
-                    }
-                    contrib_info.add(reconstructor_.target_reports_.at(tr_usage_it.rec_num), !skip);
-                }
-            }
-        }
-
-        contrib_info.increaseTimeTo(ref_it.first); // set ages to ref update time
-
-        if (skip) // skip, too early
+        if (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_) // skip, too early
             continue;
 
         if (!ref_ts_prev_.is_not_a_date_time())
@@ -2455,6 +2480,8 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
             if (stddev_max > ref_calc_settings.filter_references_max_stddev_m_)
                 continue;
         }
+
+        traced_assert(references_tr_contributions_.count(ref_it.second.t));
 
         ds_id_vec.set(buffer_cnt, ref_ds_id);
         sac_vec.set(buffer_cnt, ref_sac);
