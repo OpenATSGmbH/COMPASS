@@ -2449,12 +2449,24 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
             logerr << "unknown record number " << tr_it->second.rec_num;
             continue;
         }
-        if (tr_it->second.used)
+        if (tr_it->second.contributes)
         {
             loginf << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
             contrib_info.add(reconstructor_.target_reports_.at(tr_it->second.rec_num),
                              (ref_it->first - tr_it->first) < reftraj_ui);
         }
+    }
+
+    // finish up for ref updates without target reports
+    while (ref_it != references_.end())
+    {
+        traced_assert (!references_tr_contributions_.count(ref_it->first));
+        contrib_info.rec_nums_.clear();
+        contrib_info.increaseTimeTo(ref_it->first);
+        references_tr_contributions_[ref_it->first] = contrib_info;
+
+        // step to next reference update
+        ++ref_it;
     }
 
     // generate buffer

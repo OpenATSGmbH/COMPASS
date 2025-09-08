@@ -1001,7 +1001,18 @@ void ReferenceCalculator::updateReferences()
         //store target report usages to target
         size_t num_repeated = 0;
         for (auto& tru_it : ref.second.measurement_usage)
-            target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it));
+        {
+            if (!tru_it.isRepeated())
+            {
+                if (!reconstructor_.target_reports_.count(tru_it.rec_num))
+                {
+                    logerr << "PHIL FIXME!";
+                    continue;
+                }
+                target.reference_tr_usages_.insert(
+                    std::make_pair(reconstructor_.target_reports_.at(tru_it.rec_num).timestamp_, tru_it));
+            }
+        }
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;
