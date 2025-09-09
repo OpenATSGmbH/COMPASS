@@ -38,7 +38,7 @@
 using namespace std;
 using namespace Utils;
 using namespace boost::posix_time;
-
+using namespace nlohmann;
 
 namespace dbContent 
 {
@@ -157,6 +157,27 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
 
     logdbg << "new_timestamp " << Time::toString(new_timestamp);
     timestamp_ = new_timestamp;
+}
+
+nlohmann::json ContributingSourcesInfo::contributions(ReconstructorBase& reconstructor) const
+{
+    json ret;
+
+    for (auto rec_num : rec_nums_)
+    {
+        traced_assert (reconstructor.target_reports_.count(rec_num));
+        auto& tr = reconstructor.target_reports_.at(rec_num);
+
+        json contrib;
+
+        contrib["rec_num"] = rec_num;
+        contrib["ds_id"] = tr.ds_id_;
+        contrib["ds_type"] = tr.ds_type_;
+        
+        ret.push_back(std::move(contrib));
+    }
+
+    return ret;
 }
 
 ReconstructorTarget::ReconstructorTarget(ReconstructorBase& reconstructor, 
@@ -2305,6 +2326,21 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_));
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_));
 
+    // contrib
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_));
+
     std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>(buffer_list, dbcontent_name);
 
     // exit if no data
@@ -2386,6 +2422,32 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_).name());
     NullableVector<unsigned char>& mom_vert_rate_vec = buffer->get<unsigned char> (
         dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_).name());
+
+    // contribution
+    NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_).name());
+    NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_).name());
+    NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_).name());
+    NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_).name());
+    NullableVector<float>& cont_reftraj_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_).name());
+    NullableVector<float>& cont_other_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_).name());
+
+    NullableVector<json>& cont_sources_vec = buffer->get<json>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_).name());
+    NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_).name());        
+
+    NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_).name());
+    NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_).name());
+    NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_).name());
 
     NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
         dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_).name());
@@ -2709,6 +2771,40 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
             if (gbs_series.hasValueAt(ref_it.second.t))
                 gb_vec.set(buffer_cnt, gbs_series.getValueAt(ref_it.second.t));
+        }
+
+        if (references_tr_contributions_.count(ref_it.second.t))
+        {
+            auto& contrib = references_tr_contributions_.at(ref_it.second.t);
+
+            if (contrib.adsb_age_)
+                cont_adsb_age_vec.set(buffer_cnt, *contrib.adsb_age_);
+
+            if (contrib.mlat_age_)
+                cont_mlat_age_vec.set(buffer_cnt, *contrib.mlat_age_);
+
+            if (contrib.radar_age_)
+                cont_radar_age_vec.set(buffer_cnt, *contrib.radar_age_);
+
+            if (contrib.reftraj_age_)
+                cont_reftraj_age_vec.set(buffer_cnt, *contrib.reftraj_age_);
+
+            if (contrib.tracker_age_)
+                cont_tracker_age_vec.set(buffer_cnt, *contrib.tracker_age_);
+
+            if (contrib.other_age_)
+                cont_other_age_vec.set(buffer_cnt, *contrib.other_age_);
+
+            if (contrib.rec_nums_.size())
+                cont_sources_vec.set(buffer_cnt, contrib.contributions(reconstructor_));
+            cont_source_num_vec.set(buffer_cnt, contrib.rec_nums_.size());
+
+            if (contrib.primary_age_)
+                cont_primary_age_vec.set(buffer_cnt, *contrib.primary_age_);
+            if (contrib.mode_ac_age_)
+                cont_modeac_age_vec.set(buffer_cnt, *contrib.mode_ac_age_);
+            if (contrib.modes_age_)
+                cont_modes_age_vec.set(buffer_cnt, *contrib.modes_age_);                                                
         }
 
         ++buffer_cnt;

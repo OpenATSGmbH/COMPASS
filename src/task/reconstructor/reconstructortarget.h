@@ -78,6 +78,8 @@ struct ContributingSourcesInfo
 
     void add(const dbContent::targetReport::ReconstructorInfo& tr, bool add_to_rec_nums);
     void increaseTimeTo(boost::posix_time::ptime new_timestamp);
+
+    nlohmann::json contributions(ReconstructorBase& reconstructor) const;
 };
 
 class ReconstructorTarget : public TargetBase
