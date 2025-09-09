@@ -124,6 +124,12 @@ struct UpdateStats
         num_proj_changed = 0;
     };
 
+    //general counts
+    size_t num_standing_adsb               = 0;
+    size_t num_standing_adsb_updates_min   = std::numeric_limits<size_t>::max();
+    size_t num_standing_adsb_updates_max   = 0;
+    size_t num_standing_adsb_updates_total = 0;
+
     //preemptive insertion check
     size_t num_checked            = 0;
     size_t num_skipped_preemptive = 0;

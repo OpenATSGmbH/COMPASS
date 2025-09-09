@@ -256,6 +256,8 @@ struct ReconstructorInfo : public BaseInfo
     boost::optional<unsigned int> mops_;
     boost::optional<unsigned int> ecat_;
 
+    static const double GroundSpeedMin;
+
     boost::optional<targetReport::Position>& position();
     const boost::optional<targetReport::Position>& position() const;
 
@@ -267,9 +269,9 @@ struct ReconstructorInfo : public BaseInfo
     bool isUnreliablePrimaryOnlyDetection() const;
 
     bool isOnGround() const; // false if unknown
+    bool isMoving() const;   // true if unknown
 
     bool doNotUsePosition() const;
-
 };
 
 // tmp list

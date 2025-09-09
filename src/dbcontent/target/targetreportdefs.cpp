@@ -209,6 +209,8 @@ void VelocityAccuracy::scaleToMinStdDev(double min_stddev)
     }
 }
 
+const double ReconstructorInfo::GroundSpeedMin = 0.257; //m/s
+
 boost::optional<targetReport::Position>& ReconstructorInfo::position()
 {
     if (position_corrected_)
@@ -276,6 +278,14 @@ bool ReconstructorInfo::isOnGround() const
         return *ground_bit_;
 
     return false;
+}
+
+bool ReconstructorInfo::isMoving() const
+{
+    if (!velocity_)
+        return true;
+
+    return velocity_->speed_ >= GroundSpeedMin;
 }
 
 bool ReconstructorInfo::doNotUsePosition() const
