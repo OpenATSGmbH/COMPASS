@@ -126,6 +126,14 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
             if (*radar_age_ > 60.0)
                 radar_age_ = {};
         }
+
+        if (tracker_age_)
+        {
+            *tracker_age_ += time_to_add;
+            if (*tracker_age_ > 60.0)
+                tracker_age_ = {};
+        }
+
         if (reftraj_age_)
         {
             *reftraj_age_ += time_to_add;
