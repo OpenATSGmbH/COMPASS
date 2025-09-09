@@ -512,6 +512,10 @@ ReconstructorBase::ReconstructorBase(const std::string& class_id,
     // registerParameter("vehicle_acids", &base_settings_.vehicle_acids_, std::string());
     // registerParameter("vehicle_acads", &base_settings_.vehicle_acads_, std::string());
 
+    registerParameter("use_stopped_adsb_tracking_",
+                      &base_settings_.use_stopped_adsb_tracking_,
+                      base_settings_.use_stopped_adsb_tracking_);
+
     // reference computation
     {
         registerParameter("ref_Q_std", &ref_calc_settings_.Q_std.Q_std_static,
@@ -1524,6 +1528,13 @@ void ReconstructorBase::doReconstructionReporting()
 
     auto& table = section.getTable("Reconstruction Statistics");
 
+    table.addRow({"Standing ADSB", "", "", ""});
+    table.addRow({"rec nums added", "", stats.num_standing_adsb, ""});
+    table.addRow({"updates added min", "", stats.num_standing_adsb_updates_min, ""});
+    table.addRow({"updates added max", "", stats.num_standing_adsb_updates_max, ""});
+    table.addRow({"updates added total", "", stats.num_standing_adsb_updates_total, ""});
+
+    table.addRow({"", "", "", ""});
     table.addRow({"Chain updates", "", "", ""});
     table.addRow({"mm checked", "", stats.num_chain_checked, ""});
     table.addRow({"skipped pre", "", stats.num_chain_skipped_preempt, num_chain_skipped_preempt_p});

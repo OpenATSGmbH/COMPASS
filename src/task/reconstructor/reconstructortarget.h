@@ -89,6 +89,11 @@ public:
     {
         void reset()
         {
+            num_standing_adsb               = 0;
+            num_standing_adsb_updates_min   = std::numeric_limits<size_t>::max();
+            num_standing_adsb_updates_max   = 0;
+            num_standing_adsb_updates_total = 0;
+
             num_chain_added                   = 0;
             num_chain_updates                 = 0;
             num_chain_updates_valid           = 0;
@@ -134,6 +139,11 @@ public:
             num_jpda_clutters         = 0;
             jpda_assignment_ratio_sum = 0.0;
         }
+
+        size_t num_standing_adsb               = 0;
+        size_t num_standing_adsb_updates_min   = std::numeric_limits<size_t>::max();
+        size_t num_standing_adsb_updates_max   = 0;
+        size_t num_standing_adsb_updates_total = 0;
 
         size_t num_chain_checked                 = 0;
         size_t num_chain_skipped_preempt         = 0;
@@ -217,6 +227,29 @@ public:
         unsigned long init_rec_num_ = 0;
 
         bool debug_ = false;
+    };
+
+    /**
+     * Describes a currently standing ADSB update.
+     */
+    struct StandingADSBTarget
+    {
+        StandingADSBTarget() = default;
+        StandingADSBTarget(const dbContent::targetReport::ReconstructorInfo& tr) { init(tr); }
+
+        void init(const dbContent::targetReport::ReconstructorInfo& tr);
+        bool needsUpdate(const boost::posix_time::ptime& ts) const;
+        bool isOutdated() const;
+        void addUpdate();
+
+        static boost::posix_time::time_duration TimeIncrement;
+        static unsigned int                     MaxUpdates;
+
+        unsigned long            rec_num;         // record number of first standing update
+        boost::posix_time::ptime ts_init;         // timestamp at initialization
+        boost::posix_time::ptime ts_last_update;  // timestamp of last added standing update
+        boost::posix_time::ptime ts_next_update;  // timestamp of next standing update
+        unsigned int             num_updated = 0; // number of already added standing updates
     };
 
     typedef std::pair<dbContent::targetReport::ReconstructorInfo*,
@@ -468,11 +501,19 @@ protected:
 
     nlohmann::json adsb_info_json_;
 
+    boost::optional<StandingADSBTarget> standing_adsb_target_;
+
     static GlobalStats global_stats_;
+
     bool hasTracker() const;
     void reinitTracker();
     //void reinitChain();
+
+    TargetReportAddResult addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+                                            bool reestimate = true,
+                                            reconstruction::UpdateStats* stats = nullptr);
     TargetReportAddResult addToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+                                       const boost::posix_time::ptime& ts,
                                        bool reestimate = true,
                                        reconstruction::UpdateStats* stats = nullptr);
 
@@ -483,9 +524,9 @@ protected:
     bool checkChainBeforeAdd(const dbContent::targetReport::ReconstructorInfo& tr,
                              std::pair<int, int>& idxs_remove) const;
 
-    TargetReportAddResult addTargetReport (unsigned long rec_num,
-                                           bool add_to_tracker,
-                                           bool reestimate);
+    TargetReportAddResult addTargetReportInternal (unsigned long rec_num,
+                                                   bool add_to_tracker,
+                                                   bool reestimate);
 
     TargetReportSkipResult skipTargetReport (const dbContent::targetReport::ReconstructorInfo& tr,
                                             const InfoValidFunc& tr_valid_func = InfoValidFunc()) const;

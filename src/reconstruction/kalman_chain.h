@@ -96,15 +96,19 @@ public:
         Update() {}
         Update(unsigned long id, 
                const boost::posix_time::ptime& ts, 
+               bool check_timestamp,
                const kalman::KalmanUpdateMinimal& update = kalman::KalmanUpdateMinimal()) 
         :   mm_id        (id)
         ,   t            (ts)
-        ,   kalman_update(update) {}
+        ,   kalman_update(update)
+        ,   check_ts     (check_timestamp) {}
 
         unsigned long               mm_id;
         boost::posix_time::ptime    t;
         kalman::KalmanUpdateMinimal kalman_update;
-        bool                        init = false;
+
+        bool                        init     = false;
+        bool                        check_ts = true;
     };
 
     typedef std::pair<int, int>                              Interval;
@@ -135,16 +139,20 @@ public:
     bool add(unsigned long mm_id,
              const boost::posix_time::ptime& ts,
              bool reestim,
+             bool check_ts = true,
              UpdateStats* stats = nullptr);
     bool add(const std::vector<std::pair<unsigned long, boost::posix_time::ptime>>& mms,
              bool reestim,
+             bool check_ts = true,
              UpdateStats* stats = nullptr);
     bool insert(unsigned long mm_id,
                 const boost::posix_time::ptime& ts,
                 bool reestim,
+                bool check_ts = true,
                 UpdateStats* stats = nullptr);
     bool insert(const std::vector<std::pair<unsigned long, boost::posix_time::ptime>>& mms,
                 bool reestim,
+                bool check_ts = true,
                 UpdateStats* stats = nullptr);
     bool remove(size_t idx,
                 bool reestim,
@@ -214,12 +222,15 @@ private:
 
     bool addToTracker(unsigned long mm_id,
                       const boost::posix_time::ptime& ts,
+                      bool check_ts,
                       UpdateStats* stats = nullptr);
     void addToEnd(unsigned long mm_id,
-                  const boost::posix_time::ptime& ts);
+                  const boost::posix_time::ptime& ts,
+                  bool check_ts);
     void insertAt(int idx, 
                   unsigned long mm_id,
-                  const boost::posix_time::ptime& ts);
+                  const boost::posix_time::ptime& ts,
+                  bool check_ts);
     bool reinit(int idx) const;
     bool reestimate(int idx, 
                     KalmanEstimator::StepInfo* info = nullptr);
@@ -244,7 +255,7 @@ private:
                          unsigned int thread_id,
                          PredictionStats* stats) const;
 
-    Settings settings_;
+    Settings              settings_;
 
     MeasurementGetFunc    get_func_;
     MeasurementAssignFunc assign_func_;

@@ -73,7 +73,6 @@ struct Measurement
     boost::optional<double> logLikelihood(const Measurement& other, 
                                           unsigned char components = CovMatPos,
                                           bool verbose = false) const;
-
     bool hasVelocity() const;
     bool hasAcceleration() const;
     bool hasStdDevPosition() const;
@@ -93,6 +92,8 @@ struct Measurement
     bool setFromCovMat(const Eigen::MatrixXd& C, unsigned char components = 255);
 
     std::pair<unsigned long, boost::posix_time::ptime> uniqueID() const;
+
+    Measurement replaceTimestamp(const boost::posix_time::ptime& t) const;
 
     nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& j);

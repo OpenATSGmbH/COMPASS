@@ -603,6 +603,16 @@ std::pair<unsigned long, boost::posix_time::ptime> Measurement::uniqueID() const
 
 /**
 */
+Measurement Measurement::replaceTimestamp(const boost::posix_time::ptime& t) const
+{
+    auto mm_cpy = *this;
+    mm_cpy.t = t;
+
+    return mm_cpy;
+}
+
+/**
+*/
 nlohmann::json Measurement::toJSON() const
 {
     nlohmann::json j;

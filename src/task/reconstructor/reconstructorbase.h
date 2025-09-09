@@ -124,6 +124,8 @@ class ReconstructorBaseSettings
 
     float no_value_acc_fallback_ {10000};
 
+    bool use_stopped_adsb_tracking_ {true};
+
     void setVehicleACIDs(const std::string& value);
     void setVehicleACADs(const std::string& value);
 };

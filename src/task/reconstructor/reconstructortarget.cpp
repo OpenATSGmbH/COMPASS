@@ -48,6 +48,10 @@ const double ReconstructorTarget::on_ground_max_speed_ms_ {30};
 
 ReconstructorTarget::GlobalStats ReconstructorTarget::global_stats_ = ReconstructorTarget::GlobalStats();
 
+/********************************************************************************************
+ * ContributingSourcesInfo
+ ********************************************************************************************/
+
 void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorInfo& tr,
      bool add_to_rec_nums)
 {
@@ -180,6 +184,45 @@ nlohmann::json ContributingSourcesInfo::contributions(ReconstructorBase& reconst
     return ret;
 }
 
+/********************************************************************************************
+ * ReconstructorTarget::StandingADSBTarget
+ ********************************************************************************************/
+
+boost::posix_time::time_duration ReconstructorTarget::StandingADSBTarget::TimeIncrement = boost::posix_time::seconds(1);
+unsigned int                     ReconstructorTarget::StandingADSBTarget::MaxUpdates    = 4;
+
+void ReconstructorTarget::StandingADSBTarget::init(const dbContent::targetReport::ReconstructorInfo& tr)
+{
+    rec_num        = tr.record_num_;
+    ts_init        = tr.timestamp_;
+    ts_last_update = tr.timestamp_;
+    ts_next_update = tr.timestamp_ + TimeIncrement;
+    num_updated    = 0;
+}
+
+bool ReconstructorTarget::StandingADSBTarget::needsUpdate(const boost::posix_time::ptime& ts) const
+{
+    return (!isOutdated() && ts_next_update < ts);
+}
+
+bool ReconstructorTarget::StandingADSBTarget::isOutdated() const
+{
+    return num_updated >= MaxUpdates;
+}
+
+void ReconstructorTarget::StandingADSBTarget::addUpdate()
+{
+    traced_assert(!isOutdated());
+
+    ts_last_update  = ts_next_update;
+    ts_next_update += TimeIncrement;
+    num_updated    += 1;
+}
+
+/********************************************************************************************
+ * ReconstructorTarget
+ ********************************************************************************************/
+
 ReconstructorTarget::ReconstructorTarget(ReconstructorBase& reconstructor, 
                                          unsigned int utn,
                                          bool multithreaded_predictions,
@@ -199,6 +242,11 @@ ReconstructorTarget::~ReconstructorTarget()
 
 void ReconstructorTarget::addUpdateToGlobalStats(const reconstruction::UpdateStats& s)
 {
+    global_stats_.num_standing_adsb               += s.num_standing_adsb;
+    global_stats_.num_standing_adsb_updates_min    = std::min(global_stats_.num_standing_adsb_updates_min, s.num_standing_adsb_updates_min);
+    global_stats_.num_standing_adsb_updates_max    = std::max(global_stats_.num_standing_adsb_updates_max, s.num_standing_adsb_updates_max);
+    global_stats_.num_standing_adsb_updates_total += s.num_standing_adsb_updates_total;
+
     global_stats_.num_chain_checked                 += s.num_checked;
     global_stats_.num_chain_skipped_preempt         += s.num_skipped_preemptive;
     global_stats_.num_chain_replaced                += s.num_replaced;
@@ -213,6 +261,8 @@ void ReconstructorTarget::addUpdateToGlobalStats(const reconstruction::UpdateSta
     global_stats_.num_chain_updates_skipped         += s.num_skipped;
 
     global_stats_.num_chain_updates_proj_changed += s.num_proj_changed;
+
+
 }
 
 void ReconstructorTarget::addPredictionToGlobalStats(const reconstruction::PredictionStats& s)
@@ -230,7 +280,7 @@ void ReconstructorTarget::addPredictionToGlobalStats(const reconstruction::Predi
 void ReconstructorTarget::addTargetReport (unsigned long rec_num,
                                            bool add_to_tracker)
 {
-    addTargetReport(rec_num, add_to_tracker, true);
+    addTargetReportInternal(rec_num, add_to_tracker, true);
 }
 
 void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other,
@@ -239,7 +289,7 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other,
     //add single tr without reestimating
     size_t num_added = 0;
     for (auto& rn_it : other.tr_timestamps_)
-        if (addTargetReport(rn_it.second, add_to_tracker, false) != TargetReportAddResult::Skipped)
+        if (addTargetReportInternal(rn_it.second, add_to_tracker, false) != TargetReportAddResult::Skipped)
             ++num_added;
 
     //reestimate chain after adding
@@ -259,20 +309,23 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other,
         // if (!ok) // collected in stats
         //     logwrn << "chain reestimation failed";
     }
+
+    //obtain other target's standing adsb target if newer
+    if (other.standing_adsb_target_ &&
+        !other.standing_adsb_target_->isOutdated() &&
+        (!standing_adsb_target_ || other.standing_adsb_target_->ts_init > standing_adsb_target_->ts_init))
+        standing_adsb_target_ = other.standing_adsb_target_;
 }
 
-ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReport (unsigned long rec_num,
-                                                                                 bool add_to_tracker,
-                                                                                 bool reestimate)
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal (unsigned long rec_num,
+                                                                                         bool add_to_tracker,
+                                                                                         bool reestimate)
 {
     bool do_debug = false;
 
     traced_assert(reconstructor_.target_reports_.count(rec_num));
 
     const dbContent::targetReport::ReconstructorInfo& tr = reconstructor_.target_reports_.at(rec_num);
-
-
-
 
     if (tr.acad_ && acads_.size() && !acads_.count(*tr.acad_))
     {
@@ -483,7 +536,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReport 
         if (do_debug)
             loginf << "DBG add to tracker: addToTracker";
 
-        result = addToTracker(tr, reestimate, &stats);
+        result = addNewTRToTracker(tr, reestimate, &stats);
 
         if (reestimate && result != TargetReportAddResult::Skipped)
         {
@@ -2837,6 +2890,9 @@ void ReconstructorTarget::removeOutdatedTargetReports()
     tr_timestamps_.clear();
     tr_ds_timestamps_.clear();
 
+    //@TODO: check record number?
+    standing_adsb_target_.reset();
+
     // if (chain())
     //     chain()->removeUpdatesBefore(reconstructor_.currentSlice().remove_before_time_);
 
@@ -2848,9 +2904,9 @@ void ReconstructorTarget::removeOutdatedTargetReports()
             traced_assert(!reconstructor_.target_reports_.at(ts_it.second).in_current_slice_);
 #endif
 
-            addTargetReport(ts_it.second, false, false);
+            addTargetReportInternal(ts_it.second, false, false);
         }
-    }
+    } 
 
     references_.clear();
 }
@@ -2862,6 +2918,9 @@ void ReconstructorTarget::removeTargetReportsLaterOrEqualThan(boost::posix_time:
     target_reports_.clear();
     tr_timestamps_.clear();
     tr_ds_timestamps_.clear();
+
+    //@TODO: check timestamp?
+    standing_adsb_target_.reset();
 
     // if (chain()) // moved to repeat run in probimmreconstructor
     //     chain()->removeUpdatesLaterThan(ts);
@@ -2876,7 +2935,7 @@ void ReconstructorTarget::removeTargetReportsLaterOrEqualThan(boost::posix_time:
 #endif
 
         if (ts_it.first < ts) // add if older than ts
-            addTargetReport(ts_it.second, false, false);
+            addTargetReportInternal(ts_it.second, false, false);
         else
             break;
     }
@@ -2978,7 +3037,73 @@ bool ReconstructorTarget::checkChainBeforeAdd(const dbContent::targetReport::Rec
     return true;
 }
 
+
+
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+                                                                                  bool reestimate,
+                                                                                  reconstruction::UpdateStats* stats)
+{
+    //handle standing adsb
+    if (reconstructor_.settings().use_stopped_adsb_tracking_)
+    {
+        if (tr.dbcont_id_ == 21)
+        {
+            //invalidate standing adsb target in any case if new target report stems from adsb
+            standing_adsb_target_.reset();
+        }
+        else if (standing_adsb_target_ && 
+                standing_adsb_target_->needsUpdate(tr.timestamp_))
+        {
+            //check if standing adsb target needs new extended updates
+            const auto& tr_adsb_standing = reconstructor_.target_reports_.at(standing_adsb_target_->rec_num);
+
+            size_t num_updates = 0;
+
+            //add needed updates
+            while (standing_adsb_target_->needsUpdate(tr.timestamp_))
+            {
+                //@TODO: save some reestimation runs
+                addToTracker(tr_adsb_standing, standing_adsb_target_->ts_next_update, reestimate);
+                standing_adsb_target_->addUpdate();
+
+                ++num_updates;
+            }
+
+            if (stats)
+            {
+                stats->num_standing_adsb_updates_total += num_updates;
+                stats->num_standing_adsb_updates_min = std::min(stats->num_standing_adsb_updates_min, (size_t)standing_adsb_target_->num_updated);
+                stats->num_standing_adsb_updates_max = std::max(stats->num_standing_adsb_updates_max, (size_t)standing_adsb_target_->num_updated);
+            }
+        }
+
+        //reset outdated adsb target
+        if (standing_adsb_target_ && standing_adsb_target_->isOutdated())
+            standing_adsb_target_.reset();
+    }
+
+    //add new tr to tracker
+    auto ret = addToTracker(tr, tr.timestamp_, reestimate, stats);
+
+    if (reconstructor_.settings().use_stopped_adsb_tracking_)
+    {
+        //if successful => check if new target report is new standing adsb target
+        if (ret == TargetReportAddResult::Added && 
+            tr.dbcont_id_ == 21 &&
+            !tr.isMoving())
+        {
+            standing_adsb_target_ = StandingADSBTarget(tr);
+
+            if (stats)
+                stats->num_standing_adsb += 1;
+        }
+    }
+
+    return ret;
+}
+
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+                                                                             const boost::posix_time::ptime& ts,
                                                                              bool reestimate, 
                                                                              reconstruction::UpdateStats* stats)
 {
@@ -2992,7 +3117,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToTracker(con
     if (do_debug)
         loginf << "DBG indexes near";
 
-    auto idxs_remove = chain()->indicesNear(tr.timestamp_, reconstructor_.referenceCalculatorSettings().min_dt);
+    auto idxs_remove = chain()->indicesNear(ts, reconstructor_.referenceCalculatorSettings().min_dt);
 
     if (do_debug)
         loginf << "DBG checkChainBeforeAdd " << idxs_remove.first << ", " << idxs_remove.second;
@@ -3034,7 +3159,9 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToTracker(con
         loginf << "DBG insert";
 
     //insert measurement
-    bool reestim_ok = chain()->insert(tr.record_num_, tr.timestamp_, reestimate, stats);
+    bool check_ts = false; //tr.timestamp_ == ts;
+
+    bool reestim_ok = chain()->insert(tr.record_num_, ts, reestimate, check_ts, stats);
 
     if (!reestimate)
         return TargetReportAddResult::Added;

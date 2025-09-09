@@ -1003,6 +1003,26 @@ void ReferenceCalculator::updateReferences()
         for (auto& tru_it : ref.second.measurement_contributions)
             target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it.rec_num));
 
+        // for (size_t i = 0; i < ref.second.measurement_contributions.size(); ++i)
+        // {
+        //     const auto& tru_it = ref.second.measurement_contributions[ i ];
+
+        //     if (reconstructor_.getInfo(tru_it.rec_num) != 0)
+        //     {
+        //         loginf << "UTN" << ref.first << ": usage " << i << " recnum " << tru_it.rec_num << " t " << Utils::Time::toString(tru_it.t);
+        //     }
+        //     else
+        //     {
+        //         auto ThresRemove = reconstructor_.currentSlice().remove_before_time_;
+        //         auto ThresJoin   = getJoinThreshold();
+
+        //         loginf << "Missing info for usage " << i << " with recnum " << tru_it.rec_num << " at t=" 
+        //                << Utils::Time::toString(tru_it.t) << " interpolated " << tru_it.interpolated << " interp_first " << tru_it.interpolated_first
+        //                << " (remove thres = " << Utils::Time::toString(ThresRemove) << ", join thres = " << Utils::Time::toString(ThresJoin) << ")";
+        //         traced_assert(false);
+        //     }
+        // }
+
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;
 
