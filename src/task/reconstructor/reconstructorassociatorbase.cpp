@@ -201,6 +201,8 @@ void ReconstructorAssociatorBase::associateTargetReports()
 void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_time::ptime& ts, 
                                                              const ReconstructorBase::TargetReportBatch& batch)
 {
+    logdbg << "batch size " << batch.rec_nums_.size();
+
     bool do_debug_rec_num = false;
     
     unsigned long rec_num;
@@ -216,9 +218,13 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
 
     std::vector<unsigned long> unreliable_primary_only_trs;
     size_t num_in_slice = 0;
+
     for (auto& rn_it : batch.rec_nums_)
     {
         rec_num = rn_it;
+
+        logdbg << "rec_num " << rec_num;
+
         traced_assert(reconstructor().target_reports_.count(rec_num));
 
         dbContent::targetReport::ReconstructorInfo& tr =
@@ -323,8 +329,11 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
 
         ReconstructorTarget::globalStats().num_po_unassoc += unreliable_primary_only_trs.size();
 
+        logdbg << "associating primary onlies";
         associateUnreliablePrimaryOnly(ts, unreliable_primary_only_trs, do_debug_rec_num);
     }
+
+    logdbg << "done";
 }
 
 void ReconstructorAssociatorBase::associateUnreliablePrimaryOnly(const boost::posix_time::ptime& ts,

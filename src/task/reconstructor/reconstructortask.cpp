@@ -860,17 +860,20 @@ void ReconstructorTask::loadingDoneSlot()
         return;
 
     // check if not already processing
+    unsigned int cnt{0};
     while (currentReconstructor()->processing() || processing_data_slice_)
     {
         if (cancelled_)
             return;
 
-        logdbg << "waiting on reconst processing "
-               << currentReconstructor()->processing()
-               << " data slice proc " << processing_data_slice_;
+        if (cnt % 100 == 0)
+            logdbg << "waiting on reconst processing "
+                << currentReconstructor()->processing()
+                << " data slice proc " << processing_data_slice_;
 
         QCoreApplication::processEvents();
         QThread::msleep(10);
+        ++cnt;
     }
 
     if (cancelled_)
