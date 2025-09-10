@@ -321,6 +321,47 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         unsigned int buffer_size = buffer->size();
         traced_assert(buffer_size);
 
+        if (!buffer->has<float>(DBContent::var_cat021_sgv_gss_.name()) &&
+            buffer->has<bool>(DBContent::var_cat021_sgv_stp_.name()))
+        {  // no speed but sgv stopped bit
+            logdbg << "got ads-b no gss but stp";
+
+            unsigned int stp_set {0};
+
+            dbContent::Variable& speed_var =
+                dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
+            traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
+
+            NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
+            NullableVector<bool>& sgv_stp_vec = buffer->get<bool>(DBContent::var_cat021_sgv_stp_.name());
+
+            for (unsigned int index = 0; index < buffer_size; index++)
+            {
+                if (!speed_vec.isNull(index))  // already set
+                {
+                    spd_already_set++;
+                    continue;
+                }
+
+                if (sgv_stp_vec.isNull(index)) // speed not set
+                {
+                    ++sgv_spd_no_val;
+                    continue;
+                }
+
+                if (sgv_stp_vec.get(index))
+                {
+                    speed_vec.set(index, 0.0);
+                    ++stp_set;
+                }
+            }
+
+            logdbg << "CAT021 spd_already_set " << spd_already_set << " sgv_spd_no_val "
+                   << sgv_spd_no_val << " stp_set " << stp_set;
+
+            return;
+        }
+
         logdbg << "got ads-b sgv gss "
                << buffer->has<float>(DBContent::var_cat021_sgv_gss_.name())
                << " hgt " << buffer->has<double>(DBContent::var_cat021_sgv_hgt_.name())
