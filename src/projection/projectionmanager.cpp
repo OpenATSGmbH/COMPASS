@@ -480,13 +480,13 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
         if (!target_latitudes_vec.isNull(cnt) && !target_longitudes_vec.isNull(cnt))
         {
-            loginf << "position already set";
+            logdbg << "position already set";
             continue;
         }
 
         if (x_vec.isNull(cnt) || y_vec.isNull(cnt))
         {
-            loginf << "position null";
+            logdbg << "position null";
             continue;
         }
 

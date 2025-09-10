@@ -63,7 +63,14 @@ public:
             stream_ << ": ";
             used_with_stream_ = true;
         }
-        return stream_ << value;
+            log4cpp::CategoryStream& result = stream_ << value;
+    
+        // Check if this is an error stream and flush immediately
+        if (stream_.getPriority() == log4cpp::Priority::ERROR) {
+            stream_.flush();
+        }
+        
+        return result;
     }
     
     // For cases where the stream needs to be passed to other functions

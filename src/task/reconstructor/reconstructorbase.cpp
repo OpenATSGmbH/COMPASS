@@ -950,7 +950,7 @@ void ReconstructorBase::clearOldTargetReports()
             if (!chain_it.second->checkMeasurementAvailability())
             {
                 logerr << "not all measurements available for chain with UTN " << chain_it.first;
-                traced_assert( false);
+                traced_assert(false);
             }
 
             if (!chain_it.second->hasData())
