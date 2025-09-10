@@ -3168,9 +3168,11 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToTracker(con
         loginf << "DBG insert";
 
     //insert measurement
-    bool check_ts = false; //tr.timestamp_ == ts;
-
-    bool reestim_ok = chain()->insert(tr.record_num_, ts, reestimate, check_ts, stats);
+    boost::optional<boost::posix_time::ptime> ts_mm;
+    if (tr.timestamp_ != ts)
+        ts_mm = tr.timestamp_;
+    
+    bool reestim_ok = chain()->insert(tr.record_num_, ts, ts_mm, reestimate, stats);
 
     if (!reestimate)
         return TargetReportAddResult::Added;

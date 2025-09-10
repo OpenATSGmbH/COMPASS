@@ -415,7 +415,7 @@ int KalmanChain::predictionRefIndex(const boost::posix_time::ptime& ts) const
     else if (iv.first >= 0 && iv.second >= 0)
         return iv.first;                 // mid
     else
-        traced_assert(false);                   // should-never-happen-case
+        traced_assert(false);            // should-never-happen-case
     
     return -1;
 }
@@ -459,16 +459,18 @@ std::pair<int, int> KalmanChain::indicesNear(const boost::posix_time::ptime& ts,
 */
 bool KalmanChain::addToTracker(unsigned long mm_id,
                                const boost::posix_time::ptime& ts,
-                               bool check_ts,
+                               const boost::optional<boost::posix_time::ptime>& ts_mm,
                                UpdateStats* stats)
 {
     traced_assert(!canReestimate());
 
+    auto t_mm = ts_mm.has_value() ? ts_mm.value() : ts;
+
     const auto& mm = getMeasurement(mm_id);
-    traced_assert(!check_ts || mm.t == ts);
+    traced_assert(mm.t == t_mm);
 
     //just track measurement
-    bool ok = tracker_.tracker_ptr->track(mm.t != ts ? mm.replaceTimestamp(ts) : mm);
+    bool ok = tracker_.tracker_ptr->track(ts_mm.has_value() ? mm.replaceTimestamp(ts) : mm);
 
     if (stats)
     {
@@ -489,12 +491,12 @@ bool KalmanChain::addToTracker(unsigned long mm_id,
 */
 void KalmanChain::addToEnd(unsigned long mm_id,
                            const boost::posix_time::ptime& ts,
-                           bool check_ts)
+                           const boost::optional<boost::posix_time::ptime>& ts_mm)
 {
     traced_assert(canReestimate());
     traced_assert(updates_.empty() || ts >= updates_.rbegin()->t);
     
-    updates_.emplace_back(mm_id, ts, check_ts);
+    updates_.emplace_back(mm_id, ts, ts_mm.has_value() ? ts_mm.value() : ts);
     needs_reestimate_ = true;
 }
 
@@ -503,8 +505,8 @@ void KalmanChain::addToEnd(unsigned long mm_id,
 */
 bool KalmanChain::add(unsigned long mm_id,
                       const boost::posix_time::ptime& ts,
+                      const boost::optional<boost::posix_time::ptime>& ts_mm,
                       bool reestim,
-                      bool check_ts,
                       UpdateStats* stats)
 {
     if (stats)
@@ -512,14 +514,14 @@ bool KalmanChain::add(unsigned long mm_id,
 
     if (canReestimate())
     {
-        addToEnd(mm_id, ts, check_ts);
+        addToEnd(mm_id, ts, ts_mm);
 
         if (reestim && !reestimate(stats))
             return false;
     }
     else
     {
-        if (!addToTracker(mm_id, ts, stats))
+        if (!addToTracker(mm_id, ts, ts_mm, stats))
             return false;
     }
 
@@ -529,9 +531,8 @@ bool KalmanChain::add(unsigned long mm_id,
 /**
  * Adds new measurements to the end of the chain.
 */
-bool KalmanChain::add(const std::vector<std::pair<unsigned long, boost::posix_time::ptime>>& mms,
+bool KalmanChain::add(const std::vector<MMDefinition>& mms,
                       bool reestim,
-                      bool check_ts,
                       UpdateStats* stats)
 {
     if (stats)
@@ -543,13 +544,12 @@ bool KalmanChain::add(const std::vector<std::pair<unsigned long, boost::posix_ti
     if (canReestimate())
     {
         //presort for safety
-        typedef std::pair<unsigned long, boost::posix_time::ptime> MM;
-        std::vector<MM> mms_sorted = mms;
-        std::sort(mms_sorted.begin(), mms_sorted.end(), [ & ] (const MM& mm0, const MM& mm1) { return mm0.second < mm1.second; });
+        std::vector<MMDefinition> mms_sorted = mms;
+        std::sort(mms_sorted.begin(), mms_sorted.end(), [ & ] (const MMDefinition& mm0, const MMDefinition& mm1) { return mm0.second.first < mm1.second.first; });
 
         //check correct time ordering
         if (!updates_.empty())
-            traced_assert(mms_sorted.begin()->second >= updates_.rbegin()->t);
+            traced_assert(mms_sorted.begin()->second.first >= updates_.rbegin()->t);
 
         size_t n  = updates_.size();
         size_t ni = mms_sorted.size();
@@ -560,7 +560,8 @@ bool KalmanChain::add(const std::vector<std::pair<unsigned long, boost::posix_ti
         for (size_t idx = 0, idx0 = n; idx < ni; ++idx, ++idx0)
         {
             updates_[ idx0 ].mm_id = mms_sorted[ idx ].first;
-            updates_[ idx0 ].t     = mms_sorted[ idx ].second;
+            updates_[ idx0 ].t     = mms_sorted[ idx ].second.first;
+            updates_[ idx0 ].t_mm  = mms_sorted[ idx ].second.second.has_value() ? mms_sorted[ idx ].second.second.value() : mms_sorted[ idx ].second.first;
         }
 
         if (reestim && !reestimate(stats))
@@ -571,7 +572,7 @@ bool KalmanChain::add(const std::vector<std::pair<unsigned long, boost::posix_ti
         //just track measurements one after another
         bool has_failed_updates = false;
         for (const auto& mm : mms)
-            if (!addToTracker(mm.first, mm.second, stats))
+            if (!addToTracker(mm.first, mm.second.first, mm.second.second, stats))
                 has_failed_updates = true;
 
         if (has_failed_updates)
@@ -586,8 +587,8 @@ bool KalmanChain::add(const std::vector<std::pair<unsigned long, boost::posix_ti
 */
 void KalmanChain::insertAt(int idx, 
                            unsigned long mm_id,
-                           const boost::posix_time::ptime& ts,
-                           bool check_ts)
+                           const boost::posix_time::ptime& ts, 
+                           const boost::optional<boost::posix_time::ptime>& ts_mm)
 {
     traced_assert(canReestimate());
 
@@ -609,13 +610,13 @@ void KalmanChain::insertAt(int idx,
     if (idx < 0)
     {
         //just add to end
-        addToEnd(mm_id, ts, check_ts);
+        addToEnd(mm_id, ts, ts_mm);
     }
     else
     {
         //insert
         traced_assert(idx <= count());
-        updates_.insert(updates_.begin() + idx, Update(mm_id, ts, check_ts));
+        updates_.insert(updates_.begin() + idx, Update(mm_id, ts, ts_mm.has_value() ? ts_mm.value() : ts));
         needs_reestimate_ = true;
     }
 
@@ -627,17 +628,17 @@ void KalmanChain::insertAt(int idx,
 */
 bool KalmanChain::insert(unsigned long mm_id,
                          const boost::posix_time::ptime& ts, 
+                         const boost::optional<boost::posix_time::ptime>& ts_mm,
                          bool reestim,
-                         bool check_ts,
                          UpdateStats* stats)
 {
     //mode does not support inserts? => add instead
     if (!canReestimate())
-        return add(mm_id, ts, reestim, check_ts, stats);
+        return add(mm_id, ts, ts_mm, reestim, stats);
 
     int idx = insertionIndex(ts);
 
-    insertAt(idx, mm_id, ts, check_ts);
+    insertAt(idx, mm_id, ts, ts_mm);
 
     bool ok = true;
 
@@ -650,19 +651,18 @@ bool KalmanChain::insert(unsigned long mm_id,
 /**
  * Inserts new measurements into the chain.
 */
-bool KalmanChain::insert(const std::vector<std::pair<unsigned long, boost::posix_time::ptime>>& mms,
+bool KalmanChain::insert(const std::vector<MMDefinition>& mms,
                          bool reestim,
-                         bool check_ts,
                          UpdateStats* stats)
 {
     //mode does not support inserts? => add instead
     if (!canReestimate())
-        return add(mms, reestim, check_ts, stats);
+        return add(mms, reestim, stats);
 
     for (const auto& mm : mms)
     {
-        int idx = insertionIndex(mm.second);
-        insertAt(idx, mm.first, mm.second, check_ts);
+        int idx = insertionIndex(mm.second.first);
+        insertAt(idx, mm.first, mm.second.first, mm.second.second);
     }
 
     if (reestim)
@@ -700,7 +700,7 @@ void KalmanChain::removeUpdatesBefore(const boost::posix_time::ptime& ts)
     if (size() == 0)
         return;
 
-    auto it = std::remove_if(updates_.begin(), updates_.end(), [ & ] (const Update& u) { return u.t < ts; });
+    auto it = std::remove_if(updates_.begin(), updates_.end(), [ & ] (const Update& u) { return u.t_mm < ts; });
     updates_.erase(it, updates_.end());
     updates_.shrink_to_fit();
 
@@ -718,7 +718,7 @@ void KalmanChain::removeUpdatesLaterOrEqualThan(const boost::posix_time::ptime& 
     if (size() == 0)
         return;
 
-    auto it = std::remove_if(updates_.begin(), updates_.end(), [ & ] (const Update& u) { return u.t >= ts; });
+    auto it = std::remove_if(updates_.begin(), updates_.end(), [ & ] (const Update& u) { return u.t_mm >= ts; });
     updates_.erase(it, updates_.end());
     updates_.shrink_to_fit();
 
@@ -1159,7 +1159,7 @@ bool KalmanChain::reestimate(int idx,
     auto&       update = updates_[ idx ];
     const auto& mm     = getMeasurement(update.mm_id);
 
-    traced_assert(!update.check_ts || update.t == mm.t);
+    traced_assert(update.t_mm == mm.t);
 
     bool chain_input_mm_check = tracker_.tracker_ptr->estimator().checkPrediction(mm);
     if (!chain_input_mm_check)
