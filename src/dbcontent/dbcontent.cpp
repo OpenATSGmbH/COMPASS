@@ -125,7 +125,7 @@ const Property DBContent::var_cat021_sgv_gss_ {"SGV GSS", PropertyDataType::FLOA
 const Property DBContent::var_cat021_sgv_hgt_ {"SGV HGT", PropertyDataType::DOUBLE};
 const Property DBContent::var_cat021_sgv_htt_ {"SGV HTT", PropertyDataType::BOOL};
 const Property DBContent::var_cat021_sgv_hrd_ {"SGV HRD", PropertyDataType::BOOL};
-const Property DBContent::var_cat021_sgv_hrd_ {"SGV STP", PropertyDataType::BOOL};
+const Property DBContent::var_cat021_sgv_stp_ {"SGV STP", PropertyDataType::BOOL};
 
 const Property DBContent::var_cat062_tris_ {"Target Report Identifiers", PropertyDataType::STRING};
 const Property DBContent::var_cat062_tri_recnums_ {"TRI Record Numbers", PropertyDataType::JSON};
