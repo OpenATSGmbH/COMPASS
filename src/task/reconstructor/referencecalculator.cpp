@@ -19,6 +19,7 @@
 #include "spline_interpolator.h"
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
+#include "reconstructortarget.h"
 #include "targetreportdefs.h"
 
 #include "kalman_estimator.h"
@@ -325,6 +326,10 @@ void ReferenceCalculator::preprocessMeasurements(unsigned int dbcontent_id,
     //interpolate if options are set for dbcontent
     if (interp_options_.count(dbcontent_id))
         interpolateMeasurements(measurements, interp_options_.at(dbcontent_id));
+
+    //track stoped adsb targets 
+    if (settings_.track_stopped_adsb && dbcontent_id == 21)
+        addStoppedADSBMeasurements(measurements);
 }
 
 namespace
@@ -379,6 +384,53 @@ void ReferenceCalculator::interpolateMeasurements(Measurements& measurements,
 
     for (size_t i = 0; i < ni; ++i)
         measurements[ i ] = mms_interp[ i ];
+}
+
+/**
+ */
+void ReferenceCalculator::addStoppedADSBMeasurements(Measurements& measurements) const
+{
+    size_t n = measurements.size();
+    if (n == 0)
+        return;
+
+    Measurements measurements_mod;
+    measurements_mod.reserve(n);
+
+    dbContent::ReconstructorTarget::StandingADSBTarget st;
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        const auto& mm  = measurements[ i ];
+        const auto  mm1 = i == n - 1 ? nullptr : &measurements[ i + 1 ];
+
+        measurements_mod.push_back(mm);
+
+        // not in stopped state? => just continue
+        if (!mm.stopped)
+            continue;
+
+        boost::posix_time::ptime ts_next;
+        if (mm1)
+            ts_next = mm1->t;
+
+        auto tr = reconstructor_.getInfo(mm.source_id.value());
+        traced_assert(tr);
+
+        st.init(*tr);
+
+        auto mm_cpy = mm;
+
+        while (st.needsUpdate(ts_next))
+        {
+            mm_cpy.t = st.ts_next_update;
+            measurements_mod.push_back(mm_cpy);
+
+            st.addUpdate();
+        }
+    }
+
+    measurements = measurements_mod;
 }
 
 /**
@@ -523,24 +575,24 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
-    std::set<unsigned long> usage_interp_used_recnums;
+    std::set<unsigned long> usage_used_recnums;
     for (const auto& usage : refs.measurement_contributions)
-        if (usage.interpolated)
-            usage_interp_used_recnums.insert(usage.rec_num);
+        if (usage.interpolated || usage.stopped)
+            usage_used_recnums.insert(usage.rec_num);
 
     auto addContribution = [ & ] (const reconstruction::Measurement& mm)
     {
         auto t  = mm.t;
         auto id = mm.source_id.value();
 
-        if (mm.mm_interp)
+        if (mm.mm_interp || mm.stopped)
         {
             //check if rec num has already been added (e.g. because of interpolation)
-            if (usage_interp_used_recnums.count(id))
+            if (usage_used_recnums.count(id))
                 return;
 
             //register rec num
-            usage_interp_used_recnums.insert(id);
+            usage_used_recnums.insert(id);
 
             //get original timestamp of target report
             auto tr_info = reconstructor_.getInfo(id);
@@ -555,6 +607,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         contrib.t                  = t;
         contrib.interpolated       = mm.mm_interp;
         contrib.interpolated_first = mm.mm_interp_first;
+        contrib.stopped            = mm.stopped;
 
         refs.measurement_contributions.emplace_back(contrib);
     };

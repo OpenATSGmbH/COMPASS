@@ -104,6 +104,7 @@ struct Measurement
     static const std::string FieldInterp;
     static const std::string FieldInterpFirst;
     static const std::string FieldPosAccCorr;
+    static const std::string FieldStopped;
 
     static const std::string FieldLat;
     static const std::string FieldLon;
@@ -140,6 +141,7 @@ struct Measurement
     bool                     mm_interp         = false; // measurement has been interpolated (e.g. by spline interpolator)
     bool                     mm_interp_first   = false; // measurement is the first one in an interpolated interval
     bool                     pos_acc_corrected = false; // position accuracy has been corrected due to invalid correlation coefficient
+    bool                     stopped           = false; // measurement in stopped state (adsb related)
     bool                     test_clutter      = false; // measurement is test clutter (for debugging purpose)
 
     double                   lat;                       // wgs84 latitude 

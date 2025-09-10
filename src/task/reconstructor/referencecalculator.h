@@ -164,6 +164,7 @@ private:
                                 Measurements& measurements);
     void interpolateMeasurements(Measurements& measurements, 
                                  const reconstruction::InterpOptions& options) const;
+    void addStoppedADSBMeasurements(Measurements& measurements) const;
     
     InitRecResult initReconstruction(TargetReferences& refs);
     void reconstructMeasurements(TargetReferences& refs);

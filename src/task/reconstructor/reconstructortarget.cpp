@@ -3071,6 +3071,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
             while (standing_adsb_target_->needsUpdate(tr.timestamp_))
             {
                 //@TODO: save some reestimation runs
+                //@TODO: log fails/skips
                 addToTracker(tr_adsb_standing, standing_adsb_target_->ts_next_update, reestimate);
                 standing_adsb_target_->addUpdate();
 

@@ -67,6 +67,8 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
                       (int)kalman::KalmanType::UMKalman2D);
     registerParameter("ref_rec_type_final", (int*)&referenceCalculatorSettings().kalman_type_final,
                       (int)kalman::KalmanType::UMKalman2D);
+
+    
 }
 
 SimpleReconstructor::~SimpleReconstructor() {}

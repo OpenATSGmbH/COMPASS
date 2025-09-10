@@ -35,6 +35,7 @@ const std::string Measurement::FieldTS          = "t";
 const std::string Measurement::FieldInterp      = "mm_interp";
 const std::string Measurement::FieldInterpFirst = "mm_interp_first";
 const std::string Measurement::FieldPosAccCorr  = "pos_acc_corrected";
+const std::string Measurement::FieldStopped     = "stopped";
 
 const std::string Measurement::FieldLat         = "lat";
 const std::string Measurement::FieldLon         = "lon";
@@ -624,6 +625,7 @@ nlohmann::json Measurement::toJSON() const
     j[ FieldInterp ] = mm_interp;
     j[ FieldInterpFirst ] = mm_interp_first;
     j[ FieldPosAccCorr ] = pos_acc_corrected;
+    j[ FieldStopped ] = stopped;
 
     j[ FieldLat ] = lat;
     j[ FieldLon ] = lon;
@@ -699,6 +701,8 @@ bool Measurement::fromJSON(const nlohmann::json& j)
         mm_interp_first = j[ FieldInterpFirst ].get<bool>();
     if (j.contains(FieldPosAccCorr))
         pos_acc_corrected = j[ FieldPosAccCorr ].get<bool>();
+    if (j.contains(FieldStopped))
+        stopped = j[ FieldStopped ].get<bool>();
 
     lat = j[ FieldLat ].get<double>();
     lon = j[ FieldLon ].get<double>();

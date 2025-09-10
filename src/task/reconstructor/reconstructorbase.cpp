@@ -565,6 +565,8 @@ ReconstructorBase::ReconstructorBase(const std::string& class_id,
                           ReferenceCalculatorSettings().filter_references_max_stddev_);
         registerParameter("filter_references_max_stddev_m", &ref_calc_settings_.filter_references_max_stddev_m_,
                           ReferenceCalculatorSettings().filter_references_max_stddev_m_);
+
+        ref_calc_settings_.track_stopped_adsb = base_settings_.use_stopped_adsb_tracking_;
     }
 
     traced_assert(acc_estimator_);
@@ -1947,6 +1949,9 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
 
         mm.pos_acc_corrected = true;
     }
+
+    //other flags
+    mm.stopped = !ri.isMoving();
 }
 
 void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,

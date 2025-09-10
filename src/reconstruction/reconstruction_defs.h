@@ -204,6 +204,7 @@ struct MMContribution
 
     bool interpolated       = false;
     bool interpolated_first = false;
+    bool stopped            = false;
 };
 
 } // namespace reconstruction
