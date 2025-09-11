@@ -96,16 +96,12 @@ SingleExtraTrack::SingleExtraTrack(const std::string& result_id,
                                    const EvaluationTargetData* target,
                                    EvaluationCalculator& calculator,
                                    const EvaluationDetails& details,
-                                   bool ignore,
                                    unsigned int num_inside,
                                    unsigned int num_extra,
                                    unsigned int num_ok)
 :   ExtraTrackBase(num_inside, num_extra, num_ok)
 ,   SingleProbabilityBase("SingleExtraTrack", result_id, requirement, sector_layer, utn, target, calculator, details)
 {
-    if (ignore)
-        setIgnored();
-
     updateResult();
 }
 
@@ -151,7 +147,7 @@ std::vector<std::string> SingleExtraTrack::targetTableHeadersCustom() const
 */
 nlohmann::json::array_t SingleExtraTrack::targetTableValuesCustom() const
 {
-    return { target_->numTstUpdates(), isIgnored(), num_extra_ + num_ok_, num_ok_, num_extra_ };
+    return { target_->numTstUpdates(), ignoreResult(), num_extra_ + num_ok_, num_ok_, num_extra_ };
 }
 
 /**
@@ -159,7 +155,7 @@ nlohmann::json::array_t SingleExtraTrack::targetTableValuesCustom() const
 std::vector<Single::TargetInfo> SingleExtraTrack::targetInfos() const
 {
     return { TargetInfo("#Tst [1]", "Number of test updates"              , target_->numTstUpdates()),
-             TargetInfo("Ign."    , "Ignore target"                       , isIgnored()             ),
+             TargetInfo("Ign."    , "Ignore target"                       , ignoreResult()          ),
              TargetInfo("#Check." , "Number of checked test track updates", num_extra_ + num_ok_    ),
              TargetInfo("#OK."    , "Number of OK test track updates"     , num_ok_                 ),
              TargetInfo("#Extra"  , "Number of extra test track updates"  , num_extra_              ) };

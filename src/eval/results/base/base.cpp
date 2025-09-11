@@ -154,7 +154,7 @@ const boost::optional<double>& Base::result() const
 */
 bool Base::resultUsable() const
 {
-    return (result_.has_value() && !ignore_);
+    return (result_.has_value() && !ignore_result_);
 }
 
 /**
@@ -214,16 +214,22 @@ std::string Base::conditionResultString() const
 
 /**
 */
-void Base::setIgnored()
+void Base::setIgnoreResult(const std::string& comment)
 {
-    ignore_ = true;
+    ignore_result_ = true;
+    ignore_result_comment_ = comment;
 }
 
 /**
 */
-bool Base::isIgnored() const
+bool Base::ignoreResult() const
 {
-    return ignore_;
+    return ignore_result_;
+}
+
+const std::string& Base::ignoreResultComment() const
+{
+    return ignore_result_comment_;
 }
 
 /**
