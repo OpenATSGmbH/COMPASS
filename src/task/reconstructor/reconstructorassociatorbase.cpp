@@ -972,21 +972,6 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                           std::tie(distance_m, tgt_est_std_dev, tr_est_std_dev) = pos_offs.value();
 
-                          // TODO HP here be danger
-                          if (!secondary_verified
-                              && !isTargetAccuracyAcceptable(tgt_est_std_dev, other_utn, tr, do_debug))
-                          {
-                              if (do_debug)
-                                  loginf << "DBG tr " << tr.record_num_ << " other_utn " << other_utn
-                                         << " tgt accuracy not acceptable";
-
-#ifdef FIND_UTN_FOR_TARGET_REPORT_MT
-                              return;
-#else
-                              continue;
-#endif
-                          }
-
                           boost::optional<std::pair<bool, double>> check_ret = calculatePositionOffsetScore(
                               tr, other_utn, distance_m, tgt_est_std_dev, tr_est_std_dev, secondary_verified, do_debug);
 
@@ -1112,15 +1097,12 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
 
             tie(distance_m, stddev_est_target, stddev_est_other) = pos_offs.value();
 
-            bool target_acc_acc = isTargetAccuracyAcceptable(stddev_est_target, utn, tr, do_debug)
-                                  && isTargetAccuracyAcceptable(stddev_est_other, other.utn_, tr, do_debug);
-
             double sum_stddev_est = stddev_est_target + stddev_est_other;
             ReconstructorAssociatorBase::DistanceClassification score_class;
             double distance_score;
 
             std::tie(score_class, distance_score) = checkPositionOffsetScore (
-                distance_m, sum_stddev_est, secondary_verified, target_acc_acc);
+                distance_m, sum_stddev_est, secondary_verified);
 
             // distance_score is supposed to be positve, the higher the better
 
@@ -1426,23 +1408,6 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
         return std::pair<float, std::pair<unsigned int, unsigned int>>{score, {utn,best_other_utn}};
     else
         return std::pair<float, std::pair<unsigned int, unsigned int>>{std::numeric_limits<float>::lowest(), {0,0}};
-}
-
-bool ReconstructorAssociatorBase::isTargetAccuracyAcceptable(double tgt_est_std_dev, 
-                                                             unsigned int utn, 
-                                                             const dbContent::targetReport::ReconstructorInfo& tr, 
-                                                             bool do_debug) const
-{
-    const double thres = targetAccuracyAcceptableThreshold(utn, tr, do_debug);
-
-    if (do_debug)
-    {
-        loginf << "DBG tr " << tr.record_num_ << " other_utn " << utn << " iTAAc"
-               << " tgt_est_std_dev " << tgt_est_std_dev << " comp_value " << thres << " acceptable "
-               << (tgt_est_std_dev <= thres);
-    }
-
-    return tgt_est_std_dev <= thres;
 }
 
 const std::map<unsigned int, std::map<unsigned int,
