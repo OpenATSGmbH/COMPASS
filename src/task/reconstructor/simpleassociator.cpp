@@ -247,7 +247,7 @@ boost::optional<std::pair<bool, double>> SimpleAssociator::calculatePositionOffs
 
 std::tuple<ReconstructorAssociatorBase::DistanceClassification, double>
 SimpleAssociator::checkPositionOffsetScore (double distance_m, double sum_stddev_est,
-                                           bool secondary_verified, bool target_acccuracy_acceptable)
+                                           bool secondary_verified)
 {
     const auto& settings = reconstructor_.settings();
 
@@ -266,17 +266,7 @@ SimpleAssociator::checkPositionOffsetScore (double distance_m, double sum_stddev
         classif, settings.max_distance_acceptable_ - distance_m);
 }
 
-double SimpleAssociator::targetAccuracyAcceptableThreshold(
-    unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) const 
-{
-    return std::numeric_limits<double>::max();
-}
 
-bool SimpleAssociator::isTargetAccuracyAcceptable(
-    double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) const 
-{
-    return true;
-}
 
 // bool SimpleAssociator::isTargetAverageDistanceAcceptable(double distance_score_avg, bool secondary_verified)
 // {

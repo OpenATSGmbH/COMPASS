@@ -1619,6 +1619,12 @@ void ReconstructorBase::doReconstructionReporting()
 
     for (const auto& batch_stats : associator().batchStatistics())
     {
+        if (!COMPASS::instance().dataSourceManager().hasDBDataSource(batch_stats.first))
+        {
+            logerr << "batch statistics for unknown data source id " << batch_stats.first;
+            continue;
+        }
+
         auto& ds = COMPASS::instance().dataSourceManager().dbDataSource(batch_stats.first);
 
         loginf << "* batch statistics for data source '" << ds.name() << "':";
