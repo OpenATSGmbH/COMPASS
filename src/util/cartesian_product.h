@@ -107,7 +107,7 @@ private:
 /**
  */
 template <class T, class Callback, class DuplicateCheck = DefaultDuplicateCheck<T>>
-void cartesianProduct(const std::vector<std::vector<T>>& input,
+bool cartesianProduct(const std::vector<std::vector<T>>& input,
                       Callback&& callback,
                       bool distinct_values = false,
                       const DuplicateCheck& duplicate_check = DuplicateCheck())
@@ -115,11 +115,10 @@ void cartesianProduct(const std::vector<std::vector<T>>& input,
     // Edge cases
     if (input.empty()) {                     // product of zero sets is {()}
         static const std::vector<T> empty;
-        callback(empty);
-        return;
+        return callback(empty);
     }
     for (const auto& v : input) {            // any empty factor => empty product
-        if (v.empty()) return;
+        if (v.empty()) return true;
     }
 
     const std::size_t k = input.size();
@@ -131,7 +130,8 @@ void cartesianProduct(const std::vector<std::vector<T>>& input,
 
         while (true) {
             for (std::size_t i = 0; i < k; ++i) tuple[i] = input[i][idx[i]];
-            callback(tuple);
+            if (!callback(tuple))
+                return false;
 
             std::size_t pos = k;
             while (pos > 0) {
@@ -142,7 +142,7 @@ void cartesianProduct(const std::vector<std::vector<T>>& input,
                 }
                 idx[pos] = 0;
             }
-            if (pos == 0 && idx[0] == 0) return;
+            if (pos == 0 && idx[0] == 0) return true;
         }
     }
 
@@ -156,7 +156,8 @@ void cartesianProduct(const std::vector<std::vector<T>>& input,
 
     while (true) {
         if (depth == k) {
-            callback(tuple);
+            if (!callback(tuple))
+                return false;
             --depth;
             if (counted[depth]) { is_duplicate.erase(tuple[depth]); counted[depth] = false; }
             continue;
@@ -188,6 +189,8 @@ void cartesianProduct(const std::vector<std::vector<T>>& input,
         --depth;
         if (counted[depth]) { is_duplicate.erase(tuple[depth]); counted[depth] = false; }
     }
+
+    return true;
 }
 
 /**
@@ -199,9 +202,10 @@ std::vector<std::vector<T>> cartesianProduct(const std::vector<std::vector<T>>& 
 {
     std::vector<std::vector<T>> result;
 
-    std::function<void(const std::vector<T>&)> cb = [ &result ] (const std::vector<T>& combo)
+    std::function<bool(const std::vector<T>&)> cb = [ &result ] (const std::vector<T>& combo)
     {
         result.push_back(combo);
+        return true;
     };
 
     cartesianProduct(input, cb, distinct, duplicate_check);
