@@ -1609,6 +1609,7 @@ void ReconstructorBase::doReconstructionReporting()
         table.addRow({"jpda runs", stats.num_jpda_runs, "", ""});
         table.addRow({"jpda success", stats.num_jpda_success, "", ""});
         table.addRow({"jpda failed", stats.num_jpda_failed, "", ""});
+        table.addRow({"jpda runs greedy", stats.num_jpda_runs_greedy, "", ""});
         table.addRow({"jpda hypotheses max", stats.num_jpda_hyp_max, "", ""});
         table.addRow({"jpda measurements max", stats.num_jpda_mms_max, "", ""});
         table.addRow({"jpda assignments total", stats.num_jpda_assignments, "", ""});

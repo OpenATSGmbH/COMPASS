@@ -133,6 +133,7 @@ public:
             num_jpda_runs             = 0;
             num_jpda_success          = 0;
             num_jpda_failed           = 0;
+            num_jpda_runs_greedy      = 0;
             num_jpda_hyp_max          = 0;
             num_jpda_mms_max          = 0;
             num_jpda_assignments      = 0;
@@ -190,6 +191,7 @@ public:
         size_t num_jpda_runs             = 0;
         size_t num_jpda_success          = 0;
         size_t num_jpda_failed           = 0;
+        size_t num_jpda_runs_greedy      = 0;
         size_t num_jpda_hyp_max          = 0;
         size_t num_jpda_mms_max          = 0;
         size_t num_jpda_assignments      = 0;
