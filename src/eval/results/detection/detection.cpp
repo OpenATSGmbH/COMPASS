@@ -143,6 +143,16 @@ nlohmann::json::array_t SingleDetection::targetTableValuesCustom() const
     return { sum_uis_, missed_uis_ };
 }
 
+std::string SingleDetection::targetTableCustomSortColumn() const
+{
+    return "#MUIs";
+}
+
+ Qt::SortOrder SingleDetection::targetTableSortOrder() const
+ {
+    return  Qt::SortOrder::DescendingOrder;
+ }
+
 /**
 */
 std::vector<Single::TargetInfo> SingleDetection::targetInfos() const
@@ -254,6 +264,8 @@ void JoinedDetection::clearResults_impl()
 void JoinedDetection::accumulateSingleResult(const std::shared_ptr<Single>& single_result, bool first, bool last)
 {
     std::shared_ptr<SingleDetection> single = std::static_pointer_cast<SingleDetection>(single_result);
+
+    assert (single->resultUsable());
 
     missed_uis_ += single->missedUIs();
     sum_uis_    += single->sumUIs();

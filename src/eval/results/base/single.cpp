@@ -509,7 +509,7 @@ bool Single::addHighlightToViewable(ResultReport::SectionContentViewable& viewab
 */
 std::vector<std::string> Single::targetTableHeadersCommon() const
 {
-    return { "UTN", "Begin", "End", "ACIDs", "ACADs", "M3/A", "MC Min", "MC Max" };
+    return { "UTN", "Begin", "End", "ACIDs", "ACADs", "M3/A" }; // , "MC Min", "MC Max"
 }
 
 /**
@@ -541,8 +541,28 @@ std::vector<std::string> Single::targetTableHeaders(unsigned int* sort_column) c
     //set sort column
     if (sort_column)
     {
-        const int sort_column_custom = targetTableCustomSortColumn();
-        *sort_column = (sort_column_custom >= 0 ? (unsigned int)sort_column_custom : result_value_idx);
+        std::string sort_column_custom_name = targetTableCustomSortColumn();
+
+        if (sort_column_custom_name.size())
+        {
+            int index = -1;
+            for (size_t i = 0; i < headers.size(); ++i)
+            {
+                if (headers[i] == sort_column_custom_name)
+                {
+                    index = static_cast<int>(i);
+                    break;
+                }
+            }
+            // index is -1 if not found, otherwise contains the index
+            if (index >= 0)
+                *sort_column = (unsigned int)index;
+            else
+            {
+                logerr << "undefined header '" << sort_column_custom_name;
+                *sort_column = result_value_idx;
+            }
+        }
     }
 
     return headers;
@@ -565,9 +585,9 @@ nlohmann::json::array_t Single::targetTableValuesCommon() const
              target_->timeEndStr(),
              target_->acidsStr(), 
              target_->acadsStr(),
-             target_->modeACodesStr(), 
-             target_->modeCMinStr(), 
-             target_->modeCMaxStr() };
+             target_->modeACodesStr() };
+            //  target_->modeCMinStr(), 
+            //  target_->modeCMaxStr() 
 }
 
 /**

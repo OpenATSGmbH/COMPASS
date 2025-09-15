@@ -250,7 +250,7 @@ protected:
     /// derive to obtain custom target table row values (size must match targetTableHeadersDerived())
     virtual nlohmann::json::array_t targetTableValuesCustom() const = 0;
     /// derive to obtain a custom sort column for the target table (!index relative to custom values!)
-    virtual int targetTableCustomSortColumn() const { return -1; }
+    virtual std::string targetTableCustomSortColumn() const { return ""; }
     /// derive to obtain a custom sort order for the target table
     virtual Qt::SortOrder targetTableSortOrder() const;
     /// derive to obtain items for the target details overview table

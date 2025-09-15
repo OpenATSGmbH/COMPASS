@@ -90,6 +90,9 @@ protected:
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
 
+    virtual std::string targetTableCustomSortColumn() const override;
+    virtual Qt::SortOrder targetTableSortOrder() const override;
+
     TimePeriodCollection ref_periods_;
 };
 

@@ -27,44 +27,33 @@ namespace EvaluationRequirement
 class Detection : public ProbabilityBase
 {
 public:
-    Detection(
-            const std::string& name, 
-            const std::string& short_name, 
-            const std::string& group_name,
-            double prob, 
-            COMPARISON_TYPE prob_check_type, 
-            EvaluationCalculator& calculator,
-            float update_interval_s,
-            bool use_min_gap_length, 
-            float min_gap_length_s,
-            bool use_max_gap_length, 
-            float max_gap_length_s, 
-            bool invert_prob,
-            bool use_miss_tolerance, 
-            float miss_tolerance_s,
-            bool hold_for_any_target);
+  Detection(const std::string& name, const std::string& short_name, const std::string& group_name,
+            double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
+            float update_interval_s, bool use_min_gap_length, float min_gap_length_s,
+            bool use_max_gap_length, float max_gap_length_s, bool invert_prob,
+            bool use_miss_tolerance, float miss_tolerance_s, bool hold_for_any_target,
+            bool ignore_primary_only);
 
-    float updateInterval() const;
-    bool useMinGapLength() const;
-    float minGapLength() const;
-    bool useMaxGapLength() const;
-    float maxGapLength() const;
-    bool useMissTolerance() const;
-    float missTolerance() const;
-    float missThreshold() const;
+  float updateInterval() const;
+  bool useMinGapLength() const;
+  float minGapLength() const;
+  bool useMaxGapLength() const;
+  float maxGapLength() const;
+  bool useMissTolerance() const;
+  float missTolerance() const;
+  float missThreshold() const;
 
-    virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate (
-            const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
-            const SectorLayer& sector_layer) override;
+  bool ignorePrimaryOnly() const;
 
-    std::string probabilityNameShort() const override final 
-    { 
-        return (invertProb() ? "PG" : "PD"); 
-    }
-    std::string probabilityName() const override final 
-    { 
-        return (invertProb() ? "Probability of Gap" : "Probability of Detection"); 
-    }
+  virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate(
+      const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
+      const SectorLayer& sector_layer) override;
+
+  std::string probabilityNameShort() const override final { return (invertProb() ? "PG" : "PD"); }
+  std::string probabilityName() const override final
+  {
+      return (invertProb() ? "Probability of Gap" : "Probability of Detection");
+  }
 
 protected:
     bool isMiss (float d_tod) const;
@@ -80,6 +69,8 @@ protected:
 
     bool  use_miss_tolerance_{false};
     float miss_tolerance_s_  {0};
+
+    bool ignore_primary_only_ {true};
 };
 
 }

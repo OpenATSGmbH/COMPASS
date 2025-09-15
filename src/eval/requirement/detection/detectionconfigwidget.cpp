@@ -117,6 +117,16 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
     form_layout_->addRow("Hold for any target", hold_for_any_target_check_);
 
 
+    // ignore_primary_only
+    ignore_primary_only_check_ = new QCheckBox ();
+    ignore_primary_only_check_->setChecked(config().ignorePrimaryOnly());
+    ignore_primary_only_check_->setToolTip("Requirement result is ignored if target is primary only (has no"
+                                           " secondary attributes, also not in reference)");
+    connect(ignore_primary_only_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleIgnorePrimaryOnlySlot);
+
+    form_layout_->addRow("Ignore Primary Only", ignore_primary_only_check_);
+
     updateActive();
 }
 
@@ -228,6 +238,15 @@ DetectionConfig& DetectionConfigWidget::config()
     traced_assert(config);
 
     return *config;
+}
+
+
+void DetectionConfigWidget::toggleIgnorePrimaryOnlySlot()
+{
+    loginf;
+
+    traced_assert(ignore_primary_only_check_);
+    config().ignorePrimaryOnly(ignore_primary_only_check_->checkState() == Qt::Checked);
 }
 
 void DetectionConfigWidget::updateActive()
