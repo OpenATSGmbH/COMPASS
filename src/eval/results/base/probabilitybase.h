@@ -40,6 +40,8 @@ public:
                           const EvaluationDetails& details);
     virtual ~SingleProbabilityBase();
 
+    nlohmann::json resultValue(double value) const override;
+
     static nlohmann::json formatProbability(double prob);
     static nlohmann::json formatProbabilityOptional(const boost::optional<double>& prob);
 

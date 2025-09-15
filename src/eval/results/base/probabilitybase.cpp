@@ -113,6 +113,13 @@ nlohmann::json SingleProbabilityBase::formatProbabilityOptional(const boost::opt
     return SingleProbabilityBase::formatProbability(prob.value());
 }
 
+/**
+*/
+nlohmann::json SingleProbabilityBase::resultValue(double value) const
+{
+    return formatProbability(value);
+}
+
 /****************************************************************************************
  * JoinedProbabilityBase
  ****************************************************************************************/

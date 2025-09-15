@@ -199,7 +199,8 @@ nlohmann::json Base::resultValueOptional(const boost::optional<double>& value) c
 */
 nlohmann::json Base::resultValue(double value) const
 {
-    return requirement_->getResultValueString(value);
+    return formatValue(value, requirement_->getNumThresholdDecimals());
+    //return requirement_->getResultValueString(value);
 }
 
 /**
