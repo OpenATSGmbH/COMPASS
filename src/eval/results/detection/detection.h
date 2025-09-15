@@ -90,8 +90,9 @@ protected:
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
 
-    virtual std::string targetTableCustomSortColumn() const override;
-    virtual Qt::SortOrder targetTableSortOrder() const override;
+    virtual std::string targetTableCustomSortColumn() const override { return "#MUIs";};
+    virtual Qt::SortOrder targetTableSortOrder() const override  { return  Qt::SortOrder::DescendingOrder; }
+
 
     TimePeriodCollection ref_periods_;
 };

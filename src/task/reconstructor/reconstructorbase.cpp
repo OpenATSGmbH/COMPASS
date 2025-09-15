@@ -54,7 +54,7 @@
 using namespace std;
 using namespace Utils;
 
-std::set<std::string> ReconstructorBase::TargetsContainer::unspecific_acids_ {"00000000","????????","        "};
+std::set<std::string> ReconstructorBase::TargetsContainer::unspecific_acids_;
 
 unsigned int ReconstructorBase::TargetsContainer::createNewTarget(const dbContent::targetReport::ReconstructorInfo& tr)
 {

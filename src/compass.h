@@ -161,6 +161,9 @@ public:
 
     LogStore& logStore();
 
+    const nlohmann::json& unspecificACIDs() const { return unspecific_acids_; }
+    //const nlohmann::json& unspecificModeAs() const { return unspecific_mode_3as_; }
+
 protected:
     COMPASS();
 
@@ -224,6 +227,9 @@ protected:
     bool db_export_in_progress_ {false};
 
     MainWindow* main_window_;
+
+    nlohmann::json unspecific_acids_;
+    //nlohmann::json unspecific_mode_3as_;
 
 private:
     friend class Client;

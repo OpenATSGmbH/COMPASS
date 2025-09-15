@@ -107,6 +107,10 @@ COMPASS::COMPASS()
 
     registerParameter("disable_native_dialogs", &disable_native_dialogs_, disable_native_dialogs_);
 
+
+    registerParameter("unspecific_acids", &unspecific_acids_, {"00000000","????????","        "});
+    //registerParameter("unspecific_mode_3as", &unspecific_mode_3as_, {});
+
     traced_assert(auto_live_running_resume_ask_time_ > 0);
     traced_assert(auto_live_running_resume_ask_wait_time_ > 0);
     traced_assert(auto_live_running_resume_ask_time_ > auto_live_running_resume_ask_wait_time_);

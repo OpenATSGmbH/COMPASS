@@ -43,6 +43,9 @@ public:
                                 unsigned int num_not_correct);
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
+
+    virtual std::string targetTableCustomSortColumn() const override { return "#NCID";};
+    virtual Qt::SortOrder targetTableSortOrder() const override  { return  Qt::SortOrder::DescendingOrder; }
 };
 
 /**

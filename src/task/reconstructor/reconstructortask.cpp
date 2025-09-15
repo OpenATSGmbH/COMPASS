@@ -422,6 +422,8 @@ void ReconstructorTask::run()
     delassocs_future_ = {};
     process_future_ = {};
 
+    ReconstructorBase::TargetsContainer::unspecific_acids_ = COMPASS::instance().unspecificACIDs();
+
     COMPASS::instance().dbContentManager().clearAssociationsIdentifier();
     COMPASS::instance().dbInterface().startPerformanceMetrics();
 

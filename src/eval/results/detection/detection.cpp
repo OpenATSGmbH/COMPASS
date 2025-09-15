@@ -143,16 +143,6 @@ nlohmann::json::array_t SingleDetection::targetTableValuesCustom() const
     return { sum_uis_, missed_uis_ };
 }
 
-std::string SingleDetection::targetTableCustomSortColumn() const
-{
-    return "#MUIs";
-}
-
- Qt::SortOrder SingleDetection::targetTableSortOrder() const
- {
-    return  Qt::SortOrder::DescendingOrder;
- }
-
 /**
 */
 std::vector<Single::TargetInfo> SingleDetection::targetInfos() const

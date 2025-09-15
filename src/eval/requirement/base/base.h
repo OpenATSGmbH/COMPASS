@@ -304,7 +304,22 @@ std::pair<ValueComparisonResult, std::string> Base::compare (
     }
     else
     {
-        return {ValueComparisonResult::Unknown_NoTstData, "No test value"};
+        std::string ref_tmp;
+
+        if (ref_value_lower)
+            ref_tmp = "'"+to_str(*ref_value_lower)+"'";
+        
+        if (ref_value_upper && ref_tmp != "'"+to_str(*ref_value_upper)+"'")
+        {
+            assert (ref_value_upper);
+            if (ref_tmp.size())
+                ref_tmp += ",";
+            
+            ref_tmp += "'"+to_str(*ref_value_upper)+"'";
+        }
+        assert (ref_tmp.size());
+
+        return {ValueComparisonResult::Unknown_NoTstData, "No test value, ref "+ref_tmp};
     }
 }
 
