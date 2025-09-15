@@ -26,8 +26,17 @@ namespace EvaluationRequirementResult
 {
 
 /**
+ */
+class ProbabilityBase
+{
+public:
+    static nlohmann::json formatProbability(double prob);
+    static nlohmann::json formatProbabilityOptional(const boost::optional<double>& prob);
+};
+
+/**
 */
-class SingleProbabilityBase : public Single
+class SingleProbabilityBase : public Single, public ProbabilityBase
 {
 public:
     SingleProbabilityBase(const std::string& type, 
@@ -42,9 +51,6 @@ public:
 
     nlohmann::json resultValue(double value) const override;
 
-    static nlohmann::json formatProbability(double prob);
-    static nlohmann::json formatProbabilityOptional(const boost::optional<double>& prob);
-
 protected:
     EvaluationRequirement::ProbabilityBase& probRequirement() const;
 
@@ -56,7 +62,7 @@ private:
 
 /**
 */
-class JoinedProbabilityBase : public Joined
+class JoinedProbabilityBase : public Joined, public ProbabilityBase
 {
 public:
     JoinedProbabilityBase(const std::string& type, 
@@ -65,6 +71,8 @@ public:
                           const SectorLayer& sector_layer,
                           EvaluationCalculator& calculator);
     virtual ~JoinedProbabilityBase();
+
+    nlohmann::json resultValue(double value) const override;
 
 protected:
     EvaluationRequirement::ProbabilityBase& probRequirement() const;
