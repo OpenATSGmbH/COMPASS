@@ -70,7 +70,10 @@ public:
     bool holdForAnyTarget() const;
     void holdForAnyTarget(bool value);
 
-protected:
+    bool ignorePrimaryOnly() const;
+    void ignorePrimaryOnly(bool value);
+
+  protected:
     float update_interval_s_{0};
 
     bool use_min_gap_length_ {false};
@@ -85,6 +88,8 @@ protected:
     float miss_tolerance_s_{0};
 
     bool hold_for_any_target_ {false}; // if requirement must hold for any target (all single targets)
+
+    bool ignore_primary_only_ {false};
 
     virtual BaseConfigWidget* createWidget() override;
 };

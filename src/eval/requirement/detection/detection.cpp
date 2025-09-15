@@ -52,7 +52,7 @@ Detection::Detection(const std::string& name,
                      bool invert_prob,
                      bool use_miss_tolerance, 
                      float miss_tolerance_s, 
-                     bool hold_for_any_target)
+                     bool hold_for_any_target, bool ignore_primary_only)
     : ProbabilityBase     (name, short_name, group_name, prob, prob_check_type, invert_prob, calculator, hold_for_any_target),
     update_interval_s_  (update_interval_s),
     use_min_gap_length_ (use_min_gap_length),
@@ -60,7 +60,8 @@ Detection::Detection(const std::string& name,
     use_max_gap_length_ (use_max_gap_length),
     max_gap_length_s_   (max_gap_length_s),
     use_miss_tolerance_ (use_miss_tolerance),
-    miss_tolerance_s_   (miss_tolerance_s)
+    miss_tolerance_s_   (miss_tolerance_s),
+    ignore_primary_only_(ignore_primary_only)
 {
 }
 
@@ -118,6 +119,11 @@ float Detection::missTolerance() const
 float Detection::missThreshold() const
 {
     return use_miss_tolerance_ ? update_interval_s_+miss_tolerance_s_ : update_interval_s_;
+}
+
+bool Detection::ignorePrimaryOnly() const
+{
+    return ignore_primary_only_;
 }
 
 /**
@@ -311,9 +317,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             }
         }
 
-        return make_shared<EvaluationRequirementResult::SingleDetection>(
+        auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
             "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
             calculator_, details, sum_uis, sum_missed_uis, ref_periods);
+
+        if (ignore_primary_only_ && target_data.isPrimaryOnly())
+            ret->setIgnoreResult("Primary-only");
+
+        return ret;
     }
 
     // collect test times in ref periods
@@ -641,9 +652,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         loginf << "'" << name_ << ": utn " << target_data.utn_
                << " sum_uis " << sum_uis;
 
-    return make_shared<EvaluationRequirementResult::SingleDetection>(
+    auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
         calculator_, details, sum_uis, sum_missed_uis, ref_periods);
+
+    if (ignore_primary_only_ && target_data.isPrimaryOnly())
+        ret->setIgnoreResult("Primary-only");
+
+    return ret;
 }
 
 /**

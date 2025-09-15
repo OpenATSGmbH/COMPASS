@@ -47,7 +47,8 @@ public slots:
     void missToleranceEditSlot(QString value);
 
     void toggleHoldForAnyTargetSlot();
-
+    
+    void toggleIgnorePrimaryOnlySlot();
 public:
     DetectionConfigWidget(DetectionConfig& cfg);
 
@@ -66,6 +67,8 @@ protected:
     QLineEdit* miss_tolerance_edit_{nullptr};
 
     QCheckBox* hold_for_any_target_check_{nullptr};
+
+    QCheckBox* ignore_primary_only_check_{nullptr};
 
     DetectionConfig& config();
 
