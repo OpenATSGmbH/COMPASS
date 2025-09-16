@@ -437,6 +437,9 @@ namespace
  */
 boost::optional<QColor> SectionContentTable::cellTextColor(unsigned int style)
 {
+    if (cellIsInactive(style))
+        return boost::optional<QColor>();
+    
     if (style & CellStyleTextColorRed)
         return ColorTextRed;
     else if (style & CellStyleTextColorOrange)
@@ -453,6 +456,9 @@ boost::optional<QColor> SectionContentTable::cellTextColor(unsigned int style)
  */
 boost::optional<QColor> SectionContentTable::cellBGColor(unsigned int style)
 {
+    if (cellIsInactive(style))
+        return ColorBGGray; 
+
     if (style & CellStyleBGColorRed)
         return ColorBGRed;
     else if (style & CellStyleBGColorOrange)
@@ -471,6 +477,9 @@ boost::optional<QColor> SectionContentTable::cellBGColor(unsigned int style)
  */
 std::string SectionContentTable::cellTextColorLatex(unsigned int style)
 {
+    if (cellIsInactive(style))
+        return ""; 
+
     if (style & CellStyleTextColorRed)
         return ColorTextLatexRed;
     else if (style & CellStyleTextColorOrange)
@@ -487,6 +496,9 @@ std::string SectionContentTable::cellTextColorLatex(unsigned int style)
  */
 std::string SectionContentTable::cellBGColorLatex(unsigned int style)
 {
+    if (cellIsInactive(style))
+        return ColorBGLatexGray; 
+    
     if (style & CellStyleBGColorRed)
         return ColorBGLatexRed;
     else if (style & CellStyleBGColorOrange)
@@ -577,6 +589,13 @@ void SectionContentTable::cellFont(QFont& font, unsigned int style)
     font.setBold(style & CellStyleTextBold);
     font.setItalic(style & CellStyleTextItalic);
     font.setStrikeOut(style & CellStyleTextStrikeOut);
+}
+
+/**
+ */
+bool SectionContentTable::cellIsInactive(unsigned int style)
+{
+    return (style & CellStyleInactive) != 0;
 }
 
 /**
@@ -841,16 +860,20 @@ QVariant SectionContentTable::data(int row, int col, int role) const
 
 /**
  */
-Qt::ItemFlags SectionContentTable::flags(const QModelIndex &index) const
+std::pair<Qt::ItemFlags, bool> SectionContentTable::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return Qt::NoItemFlags;
+        return std::make_pair(Qt::NoItemFlags, false);
 
     auto style = cellStyle(index.row(), index.column());
-    if (style & CellStyleCheckable)
-        return Qt::ItemIsUserCheckable;
 
-    return Qt::NoItemFlags;
+    if ((style & CellStyleInactive) == 0)
+    {
+        if (style & CellStyleCheckable)
+            return std::make_pair(Qt::ItemIsUserCheckable, true);
+    }
+
+    return std::make_pair(Qt::NoItemFlags, true);
 }
 
 /**
@@ -1172,8 +1195,10 @@ void SectionContentTable::addActionsToMenu(QMenu* menu)
     //add general actions
 
     //@TODO: seems to be broken at the moment, fix functionality
-    //QAction* unused_action = menu->addAction("Toggle Show Unused");
-    //QObject::connect (unused_action, &QAction::triggered, [ this ] { this->toggleShowUnused(); });
+    QAction* unused_action = menu->addAction("Show Unused");
+    unused_action->setCheckable(true);
+    unused_action->setChecked(show_unused_);
+    QObject::connect (unused_action, &QAction::triggered, [ this ] { this->toggleShowUnused(); });
 
     QAction* copy_action = menu->addAction("Copy Content");
     QObject::connect (copy_action, &QAction::triggered, [ this ] { this->copyContent(); });
@@ -1840,8 +1865,17 @@ QModelIndex SectionContentTableModel::parent(const QModelIndex& index) const
  */
 Qt::ItemFlags SectionContentTableModel::flags(const QModelIndex &index) const
 {
-    auto f = QAbstractItemModel::flags(index);
-    f |= content_table_->flags(index);
+    if (!index.isValid())
+        return Qt::NoItemFlags;
+
+    //combine default flags with provided ones
+    auto fc = content_table_->flags(index);
+    auto f  = QAbstractItemModel::flags(index);
+    f |= fc.first;
+
+    //disable item?
+    if (!fc.second)
+        f &= ~Qt::ItemIsEnabled;
 
     return f;
 }

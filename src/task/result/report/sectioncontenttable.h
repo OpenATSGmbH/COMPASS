@@ -89,10 +89,11 @@ protected:
 
         QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
 
-        if (show_unused_)
-            return true;
-        else
-            return (sourceModel()->data(index, Qt::BackgroundRole) != QBrush(Qt::lightGray));
+        bool accepted = show_unused_ ? true : (sourceModel()->flags(index) & Qt::ItemIsEnabled) != 0;
+
+        //loginf << "row " << index.row() << " col " << index.column() << " => " << accepted;
+
+        return accepted;
     }
 };
 
@@ -181,7 +182,7 @@ public:
 
     QVariant data(const QModelIndex& index, int role) const;
     QVariant data(int row, int col, int role) const;
-    Qt::ItemFlags flags(const QModelIndex &index) const;
+    std::pair<Qt::ItemFlags, bool> flags(const QModelIndex &index) const;
     
     bool clicked(unsigned int row);
     void doubleClicked(unsigned int row);
@@ -218,6 +219,7 @@ public:
     static boost::optional<std::pair<QIcon, std::string>> cellIcon(const nlohmann::json& data);
     static boost::optional<bool> cellChecked(const nlohmann::json& data);
     static void cellFont(QFont& font, unsigned int style);
+    static bool cellIsInactive(unsigned int style);
     static bool cellShowsText(unsigned int style);
     static bool cellShowsCheckBox(unsigned int style);
     static bool cellShowsIcon(unsigned int style);

@@ -351,7 +351,8 @@ void Single::addTargetToOverviewTable(ResultReport::Section& section,
     std::string link = getTargetRequirementSectionID();
     std::string fig  = hasIssues() ? TargetOverviewID : "";
 
-    target_table.addRow(values, ResultReport::SectionContentViewable(), link, fig);
+    bool is_active = use() && resultUsable();
+    target_table.addRow(values, ResultReport::SectionContentViewable(), link, fig, QVariant(), is_active ? 0u : ResultReport::CellStyleInactive);
 }
 
 /**

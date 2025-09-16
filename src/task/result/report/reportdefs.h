@@ -28,6 +28,7 @@ namespace ResultReport
     {
         CellStyleCheckable         = 1 << 0,  // cell obtains an icon coded into the cells bool value
         CellStyleIcon              = 1 << 1,  // cell is checkable, its check state coded into the cells string value
+        CellStyleInactive          = 1 << 2,  // cell is inactive
 
         CellStyleTextBold          = 1 << 5,  // cell obtains bold text
         CellStyleTextItalic        = 1 << 6,  // cell obtains italic text
