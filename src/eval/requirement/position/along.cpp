@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 {
 
 PositionAlong::PositionAlong(const std::string& name, const std::string& short_name, const std::string& group_name,
-                             double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
-                             float max_abs_value)
+                             double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, 
+                             EvaluationCalculator& calculator, float max_abs_value)
     : ProbabilityBase(name, short_name, group_name, prob, prob_check_type, false, calculator), 
       max_abs_value_(max_abs_value)
 {

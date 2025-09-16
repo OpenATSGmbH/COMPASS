@@ -125,10 +125,8 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
     unsigned int utn;
 
     loginf << "adding target data";
-    loginf << "use_active_srcs " << use_active_srcs;
-
-    for (auto ds_id : active_srcs)
-        loginf << "start" << ds_id;
+    loginf << "use_active_srcs " << use_active_srcs
+           << " active_srcs " << String::compress(active_srcs, ',');
 
     for (unsigned int cnt = 0; cnt < buffer_size; ++cnt)
     {
@@ -237,10 +235,8 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
 
         loginf << "adding target data";
 
-        loginf << "use_active_srcs " << use_active_srcs;
-
-        for (auto ds_id : active_srcs)
-            loginf << "start" << ds_id;
+        loginf << "use_active_srcs " << use_active_srcs << " active_srcs "
+               << String::compress(active_srcs, ',');
 
         for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
         {

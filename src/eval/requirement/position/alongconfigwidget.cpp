@@ -17,7 +17,6 @@
 
 #include "eval/requirement/position/alongconfigwidget.h"
 #include "eval/requirement/position/alongconfig.h"
-//#include "textfielddoublevalidator.h"
 #include "logger.h"
 
 #include <QLineEdit>
@@ -29,7 +28,7 @@ namespace EvaluationRequirement
 {
 
 PositionAlongConfigWidget::PositionAlongConfigWidget(PositionAlongConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of acceptable along-track position");

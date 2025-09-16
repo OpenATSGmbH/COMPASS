@@ -17,27 +17,26 @@
 
 #pragma once
 
-#include "eval/requirement/base/base.h"
+#include "eval/requirement/base/positionbase.h"
 
 namespace EvaluationRequirement
 {
 
 /**
 */
-class PositionRadarAzimuth : public Base
+class PositionRadarAzimuth : public PositionBase
 {
 public:
     PositionRadarAzimuth(
-            const std::string& name, const std::string& short_name, const std::string& group_name,
+            const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
             EvaluationCalculator& calculator, double threshold_value);
 
     virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate (
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
             const SectorLayer& sector_layer) override;
 
-    std::string getConditionResultNameShort() const override final { return "PosAzmMean"; }
-    std::string getConditionResultName() const override final { return "Position Azimuth Mean"; }
-    std::string getConditionUnits() const override final { return "deg"; }
+    virtual std::string probabilityNameShort() const override { return "PosAzmMean"; }
+    virtual std::string probabilityName() const override  { return "Position Azimuth Mean"; }
 };
 
 }

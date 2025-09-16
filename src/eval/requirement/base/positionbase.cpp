@@ -15,35 +15,19 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "eval/requirement/base/positionbaseconfigwidget.h"
-
-class ComparisonTypeComboBox;
-
-class QLineEdit;
-class QCheckBox;
-
-class QFormLayout;
+#include "positionbase.h"
 
 namespace EvaluationRequirement
 {
-class PositionDistanceRMSConfig;
 
-class PositionDistanceRMSConfigWidget : public PositionBaseConfigWidget
+PositionBase::PositionBase(const std::string& name, const std::string& short_name,
+                           const std::string& group_name, double prob_threshold,
+                           COMPARISON_TYPE prob_check_type,
+                           float ref_min_accuracy, EvaluationCalculator& calculator)
+    :ProbabilityBase(name, short_name, group_name, prob_threshold, prob_check_type, false, calculator),
+    ref_min_accuracy_(ref_min_accuracy)
 {
-    Q_OBJECT
-
-public slots:
-    void thresholdValueEditSlot(QString value);
-
-public:
-    PositionDistanceRMSConfigWidget(PositionDistanceRMSConfig& cfg);
-
-protected:
-    QLineEdit* threshold_value_edit_{nullptr};
-
-    PositionDistanceRMSConfig& config();
-};
-
 }
+PositionBase::~PositionBase() {}
+
+}  // namespace EvaluationRequirement

@@ -17,27 +17,26 @@
 
 #pragma once
 
-#include "eval/requirement/base/base.h"
+#include "eval/requirement/base/positionbase.h"
 
 namespace EvaluationRequirement
 {
 
 /**
 */
-class PositionDistanceRMS : public Base
+class PositionDistanceRMS : public PositionBase
 {
 public:
     PositionDistanceRMS(
             const std::string& name, const std::string& short_name, const std::string& group_name,
-            EvaluationCalculator& calculator, double threshold_value);
+            float ref_min_accuracy, EvaluationCalculator& calculator, double threshold_value);
 
     virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate (
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
             const SectorLayer& sector_layer) override;
 
-    std::string getConditionResultNameShort() const override final { return "RMS"; }
-    std::string getConditionResultName() const override final { return "Root mean square"; }
-    std::string getConditionUnits() const override final { return "m"; }
+    std::string probabilityNameShort() const override { return "RMS"; }
+    std::string probabilityName() const override { return "Root mean square"; }
 };
 
 }

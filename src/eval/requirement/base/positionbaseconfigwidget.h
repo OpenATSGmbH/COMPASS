@@ -17,33 +17,32 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbaseconfigwidget.h"
-
-class ComparisonTypeComboBox;
+#include "eval/requirement/base/probabilitybaseconfigwidget.h"
 
 class QLineEdit;
-class QCheckBox;
 
-class QFormLayout;
-
-namespace EvaluationRequirement
+namespace EvaluationRequirement 
 {
-class PositionDistanceRMSConfig;
 
-class PositionDistanceRMSConfigWidget : public PositionBaseConfigWidget
+class PositionBaseConfig;
+
+/**
+*/
+class PositionBaseConfigWidget : public ProbabilityBaseConfigWidget
 {
     Q_OBJECT
 
 public slots:
-    void thresholdValueEditSlot(QString value);
+    void minRefAccuracyEditSlot(QString value);
 
 public:
-    PositionDistanceRMSConfigWidget(PositionDistanceRMSConfig& cfg);
+    PositionBaseConfigWidget(PositionBaseConfig& cfg);
+    virtual ~PositionBaseConfigWidget() = default;
 
 protected:
-    QLineEdit* threshold_value_edit_{nullptr};
+    PositionBaseConfig& config();
 
-    PositionDistanceRMSConfig& config();
+    QLineEdit* ref_min_acc_edit_{nullptr};
 };
 
-}
+} // namespace EvaluationRequirement

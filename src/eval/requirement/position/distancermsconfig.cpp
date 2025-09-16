@@ -19,7 +19,7 @@
 #include "eval/requirement/position/distancermsconfigwidget.h"
 #include "eval/requirement/position/distancerms.h"
 #include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "eval/requirement/base/positionbase.h"
 
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
@@ -33,7 +33,7 @@ namespace EvaluationRequirement
 PositionDistanceRMSConfig::PositionDistanceRMSConfig(
         const std::string& class_id, const std::string& instance_id,
         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : BaseConfig(class_id, instance_id, group, standard, calculator)
+    : PositionBaseConfig(class_id, instance_id, group, standard, calculator)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0);
 }
@@ -45,7 +45,7 @@ PositionDistanceRMSConfig::~PositionDistanceRMSConfig()
 std::shared_ptr<Base> PositionDistanceRMSConfig::createRequirement()
 {
     shared_ptr<PositionDistanceRMS> req = make_shared<PositionDistanceRMS>(
-                name_, short_name_, group_.name(), calculator_, threshold_value_);
+                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_);
 
     return req;
 }

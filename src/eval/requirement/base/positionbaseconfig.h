@@ -17,33 +17,44 @@
 
 #pragma once
 
+#include "eval/requirement/base/probabilitybaseconfig.h"
 #include "eval/requirement/base/positionbaseconfigwidget.h"
+#include "evaluationstandardtreeitem.h"
 
-class ComparisonTypeComboBox;
+class Group;
+class EvaluationStandard;
 
-class QLineEdit;
-class QCheckBox;
-
+class QWidget;
 class QFormLayout;
+class EvaluationCalculator;
+
+namespace ResultReport
+{
+class Report;
+}
 
 namespace EvaluationRequirement
 {
-class PositionDistanceRMSConfig;
 
-class PositionDistanceRMSConfigWidget : public PositionBaseConfigWidget
+class PositionBase;
+
+/**
+ */
+class PositionBaseConfig : public ProbabilityBaseConfig
 {
     Q_OBJECT
+  public:
+    PositionBaseConfig(const std::string& class_id, const std::string& instance_id, Group& group,
+                       EvaluationStandard& standard, EvaluationCalculator& calculator);
+    virtual ~PositionBaseConfig();
 
-public slots:
-    void thresholdValueEditSlot(QString value);
+    virtual void addToReport(std::shared_ptr<ResultReport::Report> report);
 
-public:
-    PositionDistanceRMSConfigWidget(PositionDistanceRMSConfig& cfg);
+    float refMinimumAccuracy() const { return ref_min_accuracy_; }
+    void refMinimumAccuracy(float val) { ref_min_accuracy_ = val; }
 
-protected:
-    QLineEdit* threshold_value_edit_{nullptr};
-
-    PositionDistanceRMSConfig& config();
+  protected:
+    float ref_min_accuracy_{10};
 };
 
-}
+}  // namespace EvaluationRequirement

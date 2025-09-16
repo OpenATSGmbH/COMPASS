@@ -17,7 +17,6 @@
 
 #include "eval/requirement/position/distanceconfigwidget.h"
 #include "eval/requirement/position/distanceconfig.h"
-//#include "textfielddoublevalidator.h"
 #include "eval/requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
@@ -30,7 +29,7 @@ namespace EvaluationRequirement
 {
 
 PositionDistanceConfigWidget::PositionDistanceConfigWidget(PositionDistanceConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of correct/false position");

@@ -17,7 +17,7 @@
 
 #include "eval/requirement/position/acrossconfigwidget.h"
 #include "eval/requirement/position/acrossconfig.h"
-//#include "textfielddoublevalidator.h"
+
 #include "logger.h"
 
 #include <QLineEdit>
@@ -29,7 +29,7 @@ namespace EvaluationRequirement
 {
 
 PositionAcrossConfigWidget::PositionAcrossConfigWidget(PositionAcrossConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of acceptable across-track position");

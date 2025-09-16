@@ -35,7 +35,7 @@ namespace EvaluationRequirement
 PositionDistanceConfig::PositionDistanceConfig(
         const std::string& class_id, const std::string& instance_id,
         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+    : PositionBaseConfig(class_id, instance_id, group, standard, calculator)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0f);
     registerParameter("threshold_value_check_type", (unsigned int*)&threshold_value_check_type_,
@@ -50,7 +50,7 @@ PositionDistanceConfig::~PositionDistanceConfig()
 std::shared_ptr<Base> PositionDistanceConfig::createRequirement()
 {
     shared_ptr<PositionDistance> req = make_shared<PositionDistance>(
-                name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_,
+                name_, short_name_, group_.name(), prob_, prob_check_type_, ref_min_accuracy_, calculator_,
                 threshold_value_, threshold_value_check_type_, failed_values_of_interest_);
 
     return req;

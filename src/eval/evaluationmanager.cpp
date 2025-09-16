@@ -1045,7 +1045,6 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
     fil_man.useFilters(true);
     fil_man.disableAllFilters();
 
-    const auto& settings = calculator.settings();
     const auto& roi      = calculator.sectorROI();
     const auto& utns     = calculator.evaluationUTNs();
     

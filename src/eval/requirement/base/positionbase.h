@@ -17,33 +17,24 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbaseconfigwidget.h"
-
-class ComparisonTypeComboBox;
-
-class QLineEdit;
-class QCheckBox;
-
-class QFormLayout;
+#include "eval/requirement/base/probabilitybase.h"
 
 namespace EvaluationRequirement
 {
-class PositionDistanceRMSConfig;
 
-class PositionDistanceRMSConfigWidget : public PositionBaseConfigWidget
+/**
+*/
+class PositionBase : public ProbabilityBase
 {
-    Q_OBJECT
-
-public slots:
-    void thresholdValueEditSlot(QString value);
-
 public:
-    PositionDistanceRMSConfigWidget(PositionDistanceRMSConfig& cfg);
+  PositionBase(const std::string& name, const std::string& short_name,
+               const std::string& group_name, double prob_threshold,
+               COMPARISON_TYPE prob_check_type, float ref_min_accuracy,
+               EvaluationCalculator& calculator);
+  virtual ~PositionBase();            
 
 protected:
-    QLineEdit* threshold_value_edit_{nullptr};
-
-    PositionDistanceRMSConfig& config();
+    float ref_min_accuracy_ {0};
 };
 
 }

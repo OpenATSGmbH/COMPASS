@@ -17,19 +17,20 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "eval/requirement/base/positionbase.h"
 
 namespace EvaluationRequirement
 {
 
 /**
 */
-class PositionLatency : public ProbabilityBase
+class PositionLatency : public PositionBase
 {
 public:
     PositionLatency(
             const std::string& name, const std::string& short_name, const std::string& group_name,
-            double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator, float max_abs_value);
+            double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
+             float max_abs_value);
 
     float maxAbsValue() const;
 
