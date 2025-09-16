@@ -139,6 +139,10 @@ public:
     boost::optional<dbContent::TargetPosition> mappedRefPos(
             const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
         bool debug=false) const;
+    boost::optional<double> mappedRefMinAcc(
+            const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
+        bool debug=false) const;
+
     // bool ok
     boost::optional<dbContent::TargetVelocity> mappedRefSpeed(
             const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max) const;

@@ -594,6 +594,95 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
     return {};
 }
 
+boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
+    const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
+    bool debug) const
+{
+    auto timestamp = tst_id.timestamp();
+    auto index     = tst_chain_.indexFromDataID(tst_id);
+
+    if (debug)
+        loginf << "utn " << utn_ << " timestamp "
+               << Time::toString(timestamp) << " d_max " << Time::toString(d_max);
+
+    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
+
+    if (debug)
+        loginf << "utn " << utn_ << " has_ref1 "
+               << mapping.has_ref1_ << " has_ref2 " << mapping.has_ref2_;
+
+    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
+    {
+        if (debug)
+            loginf << "utn " << utn_ << " no ref data";
+
+        return {};
+    }
+
+    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
+    {
+        if (debug)
+            loginf << "utn " << utn_ << " exact match";
+
+        auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
+
+        if (acc1)
+            return acc1->max();
+        else
+            return {};
+    }
+
+    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
+    {
+        if (debug)
+            loginf << "utn " << utn_ << " both ref data";
+
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
+
+        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
+        {
+            //            if (utn_ == debug_utn)
+            //                loginf << "lower too far";
+
+            if (debug)
+                loginf << "utn " << utn_ << " lower too far "
+                    << Time::toString(mapping.timestamp_ref1_ - timestamp);
+
+            return {};
+        }
+
+        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
+        {
+            //            if (utn_ == debug_utn)
+            //                loginf << "upper too far";
+
+            if (debug)
+                loginf << "utn " << utn_ << " higher too far "
+                       << Time::toString(mapping.timestamp_ref2_ - timestamp);
+
+            return {};
+        }
+
+        auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
+        auto acc2 = ref_chain_.posAccuracy(mapping.dataid_ref2_);
+
+        if (acc1 && acc2)
+            return std::max(acc1->max(), acc2->max());
+        else if (acc1)
+            return acc1->max();
+        else if (acc2)
+            return acc2->max();            
+        else
+            return {};
+    }
+
+    if (debug)
+        loginf << "utn " << utn_ << " only 1";
+
+    return {};    
+}
+
 /**
  */
 boost::optional<dbContent::TargetVelocity> EvaluationTargetData::mappedRefSpeed(const DataID& tst_id,

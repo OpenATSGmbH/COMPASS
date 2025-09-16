@@ -89,7 +89,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
     dbContent::TargetPosition tst_pos;
 
     bool is_inside;
-    //boost::optional<dbContent::TargetPosition> ret_pos;
     boost::optional<dbContent::TargetPosition> ref_pos;
 
     bool comp_passed;
@@ -163,6 +162,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
 
             ++num_no_ref;
             continue;
+        }
+
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+
+        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
+        {
+            if (!skip_no_data_details)
+                addDetail(timestamp, tst_pos,
+                            {}, // ref_pos
+                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_comp_passed, num_comp_failed,
+                            "Inaccurate reference position");
+
+            ++num_no_ref;
+            continue;            
         }
 
         is_inside = target_data.isTimeStampNotExcluded(timestamp)

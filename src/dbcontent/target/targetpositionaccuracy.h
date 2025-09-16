@@ -34,6 +34,8 @@ public:
     double x_stddev_ {0}; // m
     double y_stddev_ {0}; // m
     double xy_cov_ {0}; // m^2
+
+    double max() const { return std::max(x_stddev_, y_stddev_); }
 };
 
 class DBContentAccessor;
