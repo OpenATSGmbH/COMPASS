@@ -82,11 +82,6 @@ protected:
 
     QMenu menu_;
 
-    std::unique_ptr<QWidget> main_widget_;
-
-    QLineEdit* ref_max_time_diff_edit_{nullptr};
-    QLineEdit* ref_min_acc_edit_{nullptr};
-
-    void createMainWidget();
+    QWidget* createMainWidget();
 };
 

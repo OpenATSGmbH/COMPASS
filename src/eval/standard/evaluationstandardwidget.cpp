@@ -92,8 +92,6 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
         QAction* add_action = menu_.addAction("Add Group");
         connect(add_action, &QAction::triggered, this, &EvaluationStandardWidget::addGroupSlot);
     }
-
-    createMainWidget();
 }
 
 EvaluationStandardWidget::~EvaluationStandardWidget()
@@ -154,7 +152,7 @@ void EvaluationStandardWidget::itemClickedSlot(const QModelIndex& index)
     {
         loginf << "got standard";
 
-        showRequirementWidget(main_widget_.get());
+        showRequirementWidget(createMainWidget());
     }
     else if (dynamic_cast<Group*>(item))
     {
@@ -412,29 +410,31 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
 }
 
 
-void EvaluationStandardWidget::createMainWidget()
+QWidget* EvaluationStandardWidget::createMainWidget()
 {
-    main_widget_.reset(new QWidget());
+    QWidget* widget = new QWidget();
 
     QFormLayout* layout = new QFormLayout();
 
     // max ref time diff
-    ref_max_time_diff_edit_ =
+    QLineEdit* ref_max_time_diff_edit =
         new QLineEdit(QString::number(standard_.referenceMaxTimeDiff()));
-    ref_max_time_diff_edit_->setValidator(new QDoubleValidator(0.1, 30.0, 2, this));
-    connect(ref_max_time_diff_edit_, &QLineEdit::textEdited, this,
-            &EvaluationStandardWidget::refMaxTimeDiffEditSlot);
+    ref_max_time_diff_edit->setValidator(new QDoubleValidator(0.1, 30.0, 2, this));
+    connect(ref_max_time_diff_edit, &QLineEdit::textEdited, 
+        this, &EvaluationStandardWidget::refMaxTimeDiffEditSlot);
 
-    layout->addRow("Reference Maximum Time Difference [s]", ref_max_time_diff_edit_);
+    layout->addRow("Reference Maximum Time Difference [s]", ref_max_time_diff_edit);
 
-    ref_min_acc_edit_ = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
-    ref_min_acc_edit_->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
-    connect(ref_min_acc_edit_, &QLineEdit::textEdited, this,
-            &EvaluationStandardWidget::refMinAccEditSlot);
+    QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
+    ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
+    connect(ref_min_acc_edit, &QLineEdit::textEdited, 
+        this, &EvaluationStandardWidget::refMinAccEditSlot);
 
-    layout->addRow("Reference Minimum Accuracy [m]", ref_min_acc_edit_);
+    layout->addRow("Reference Minimum Accuracy [m]", ref_min_acc_edit);
 
-    main_widget_->setLayout(layout);
+    widget->setLayout(layout);
+
+    return widget;
 }
 
 void EvaluationStandardWidget::refMaxTimeDiffEditSlot(QString value)
