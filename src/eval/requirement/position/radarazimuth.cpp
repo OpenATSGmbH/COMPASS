@@ -17,6 +17,7 @@
 
 #include "eval/requirement/position/radarazimuth.h"
 #include "eval/results/position/radarazimuth.h"
+#include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 #include "util/number.h"
@@ -48,7 +49,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " threshold_value " << threshold();
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 

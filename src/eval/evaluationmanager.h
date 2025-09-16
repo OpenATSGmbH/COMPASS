@@ -155,8 +155,6 @@ protected:
                   bool blocking);
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
-    //COMPASS& compass() { return compass_; }
-
 private:
     void loadSectors();
     void clearSectors();
@@ -165,7 +163,6 @@ private:
     void configureLoadFilters(const EvaluationCalculator& calculator);
     void loadingDone();
 
-    //COMPASS& compass_;
     DBContentManager& dbcontent_man_;
 
     bool sectors_loaded_ {false};

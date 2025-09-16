@@ -44,8 +44,6 @@ private slots:
     void copyStandardSlot ();
     void removeStandardSlot ();
 
-    void maxRefTimeDiffEditSlot(QString value);
-
 public:
     EvaluationStandardTabWidget(EvaluationCalculator& calculator);
 
@@ -59,10 +57,7 @@ protected:
     QPushButton* copy_button_ {nullptr};
     QPushButton* remove_button_ {nullptr};
 
-    //QStackedWidget* standards_widget_{nullptr};
     QHBoxLayout* standards_layout_{nullptr};
-
-    QLineEdit* max_ref_time_diff_edit_{nullptr};
 
     void updateButtons();
     void updateStandardWidget();

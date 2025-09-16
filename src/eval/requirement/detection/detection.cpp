@@ -16,8 +16,8 @@
  */
 
 #include "eval/requirement/detection/detection.h"
-
 #include "eval/results/detection/detection.h"
+#include "eval/standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "evaluationdetail.h"
@@ -139,7 +139,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                << " update_interval " << update_interval_s_ << " prob " << threshold()
                << " use_miss_tolerance " << use_miss_tolerance_ << " miss_tolerance " << miss_tolerance_s_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     // create ref time periods
     TimePeriodCollection ref_periods;

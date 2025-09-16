@@ -16,7 +16,7 @@
  */
 
 #include "eval/requirement/extra/data.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/extra/data.h"
 
 #include "evaluationmanager.h"
@@ -81,7 +81,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
            << " min_duration " << min_duration_ << " min_num_updates " << min_num_updates_
            << " ignore_primary_only " << ignore_primary_only_ << " prob " << threshold();
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     // create ref time periods, irrespective of inside
     TimePeriodCollection ref_periods;

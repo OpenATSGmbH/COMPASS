@@ -16,7 +16,7 @@
  */
 
 #include "eval/requirement/mode_a/present.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/mode_a/present.h"
 
 #include "evaluationmanager.h"
@@ -45,7 +45,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
 {
     logdbg << "'" << name_ << "': utn " << target_data.utn_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 

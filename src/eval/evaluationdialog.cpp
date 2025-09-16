@@ -20,7 +20,7 @@
 #include "evaluationcalculator.h"
 #include "evaluationsettings.h"
 #include "evaluationmaintabwidget.h"
-#include "evaluationfiltertabwidget.h"
+//#include "evaluationfiltertabwidget.h"
 #include "evaluationstandardtabwidget.h"
 #include "evaluationreporttabwidget.h"
 #include "evaluationdatasourcewidget.h"
@@ -56,8 +56,8 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator)
     main_tab_widget_.reset(new EvaluationMainTabWidget(calculator_, *this));
     tab_widget->addTab(main_tab_widget_.get(), "Main");
 
-    filter_widget_.reset(new EvaluationFilterTabWidget(calculator_));
-    tab_widget->addTab(filter_widget_.get(), "Filter");
+    // filter_widget_.reset(new EvaluationFilterTabWidget(calculator_));
+    // tab_widget->addTab(filter_widget_.get(), "Filter");
 
     std_tab_widget_.reset(new EvaluationStandardTabWidget(calculator_));
     tab_widget->addTab(std_tab_widget_.get(), "Standard");
@@ -97,7 +97,7 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator)
     updateDataSources();
     updateSectors();
     updateButtons();
-    updateFilterWidget();
+    //updateFilterWidget();
 }
 
 /**
@@ -124,11 +124,11 @@ void EvaluationDialog::updateSectors()
 
 /**
  */
-void EvaluationDialog::updateFilterWidget()
-{
-    traced_assert(filter_widget_);
-    filter_widget_->update();
-}
+// void EvaluationDialog::updateFilterWidget()
+// {
+//     traced_assert(filter_widget_);
+//     filter_widget_->update();
+// }
 
 /**
  */

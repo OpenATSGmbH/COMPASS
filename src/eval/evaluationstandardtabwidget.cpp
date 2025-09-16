@@ -103,21 +103,6 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
     if (calculator_.hasCurrentStandard())
         updateStandardWidget();
 
-    // some cfg
-    {
-        QFormLayout* form_layout = new QFormLayout();
-
-        // max ref time diff
-        max_ref_time_diff_edit_ = new QLineEdit(QString::number(calculator_.settings().max_ref_time_diff_));
-        max_ref_time_diff_edit_->setValidator(new QDoubleValidator(0.0, 30.0, 2, this));
-        connect(max_ref_time_diff_edit_, &QLineEdit::textEdited,
-                this, &EvaluationStandardTabWidget::maxRefTimeDiffEditSlot);
-
-        form_layout->addRow("Reference Maximum Time Difference [s]", max_ref_time_diff_edit_);
-
-        main_layout->addLayout(form_layout);
-    }
-
     // connections
     connect (&calculator_, &EvaluationCalculator::standardsChanged,
              this, &EvaluationStandardTabWidget::changedStandardsSlot);
@@ -326,19 +311,4 @@ void EvaluationStandardTabWidget::updateStandardWidget()
 
         standards_layout_->addWidget(widget);
     }
-}
-
-/**
- */
-void EvaluationStandardTabWidget::maxRefTimeDiffEditSlot(QString value)
-{
-    loginf << "value " << value.toStdString();
-
-    bool ok;
-    float val = value.toFloat(&ok);
-
-    if (ok)
-        calculator_.settings().max_ref_time_diff_ = val;
-    else
-        loginf << "invalid value";
 }

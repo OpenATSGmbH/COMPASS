@@ -45,6 +45,9 @@ EvaluationStandard::EvaluationStandard(const std::string& class_id,
 {
     registerParameter("name", &name_, std::string());
 
+    registerParameter("reference_max_time_diff", &reference_max_time_diff_, reference_max_time_diff_);
+    registerParameter("reference_min_accuracy", &reference_min_accuracy_, reference_min_accuracy_);
+
     traced_assert(name_.size());
 
     createSubConfigurables();

@@ -16,8 +16,8 @@
  */
 
 #include "eval/requirement/identification/correct.h"
-
 #include "eval/results/identification/correct.h"
+#include "eval/standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
@@ -63,7 +63,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                     calculator_, Details(), 0, 0, 0, 0, 0, 0, 0);
     }
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 

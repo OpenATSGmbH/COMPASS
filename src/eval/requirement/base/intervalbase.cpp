@@ -21,6 +21,7 @@
 #include "timeconv.h"
 
 #include "eval/results/base/intervalbase.h"
+#include "eval/standard/evaluationstandard.h"
 
 #include "util/timeconv.h"
 
@@ -78,7 +79,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                                                                             std::shared_ptr<Base> instance,
                                                                             const SectorLayer& sector_layer)
 {
-    auto max_ref_time_diff    = Utils::Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    auto max_ref_time_diff    = Utils::Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
     typedef EvaluationRequirementResult::SingleIntervalBase Result;
@@ -309,7 +310,7 @@ std::vector<Event> IntervalBase::periodEvents(const TimePeriod& period,
     else
     {
         //period obtains updates
-        auto max_ref_time_diff = Utils::Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+        auto max_ref_time_diff = Utils::Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
         size_t n = updates.size();
 

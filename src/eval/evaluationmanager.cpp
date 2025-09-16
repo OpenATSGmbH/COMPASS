@@ -1115,68 +1115,68 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
 
     // load filters
 
-    if (settings.use_load_filter_)
-    {
-        if (settings.use_ref_traj_accuracy_filter_)
-        {
-            traced_assert(fil_man.hasFilter("RefTraj Accuracy"));
-            DBFilter* fil = fil_man.getFilter("RefTraj Accuracy");
+    // if (settings.use_load_filter_)
+    // {
+    //     if (settings.use_ref_traj_accuracy_filter_)
+    //     {
+    //         traced_assert(fil_man.hasFilter("RefTraj Accuracy"));
+    //         DBFilter* fil = fil_man.getFilter("RefTraj Accuracy");
 
-            fil->setActive(true);
+    //         fil->setActive(true);
 
-            json filter;
+    //         json filter;
 
-            filter["RefTraj Accuracy"]["Accuracy Minimum"] = to_string(settings.ref_traj_minimum_accuracy_);
+    //         filter["RefTraj Accuracy"]["Accuracy Minimum"] = to_string(settings.ref_traj_minimum_accuracy_);
 
-            fil->loadViewPointConditions(filter);
-        }
+    //         fil->loadViewPointConditions(filter);
+    //     }
 
-        if (settings.use_adsb_filter_)
-        {
-            traced_assert(fil_man.hasFilter("ADSB Quality"));
-            DBFilter* adsb_fil = fil_man.getFilter("ADSB Quality");
+    //     if (settings.use_adsb_filter_)
+    //     {
+    //         traced_assert(fil_man.hasFilter("ADSB Quality"));
+    //         DBFilter* adsb_fil = fil_man.getFilter("ADSB Quality");
 
-            adsb_fil->setActive(true);
+    //         adsb_fil->setActive(true);
 
-            json filter;
+    //         json filter;
 
-            filter["ADSB Quality"]["use_v0"] = settings.use_v0_;
-            filter["ADSB Quality"]["use_v1"] = settings.use_v1_;
-            filter["ADSB Quality"]["use_v2"] = settings.use_v2_;
+    //         filter["ADSB Quality"]["use_v0"] = settings.use_v0_;
+    //         filter["ADSB Quality"]["use_v1"] = settings.use_v1_;
+    //         filter["ADSB Quality"]["use_v2"] = settings.use_v2_;
 
-            // nucp
-            filter["ADSB Quality"]["use_min_nucp"] = settings.use_min_nucp_;
-            filter["ADSB Quality"]["min_nucp"] = settings.min_nucp_;
-            filter["ADSB Quality"]["use_max_nucp"] = settings.use_max_nucp_;
-            filter["ADSB Quality"]["max_nucp"] = settings.max_nucp_;
+    //         // nucp
+    //         filter["ADSB Quality"]["use_min_nucp"] = settings.use_min_nucp_;
+    //         filter["ADSB Quality"]["min_nucp"] = settings.min_nucp_;
+    //         filter["ADSB Quality"]["use_max_nucp"] = settings.use_max_nucp_;
+    //         filter["ADSB Quality"]["max_nucp"] = settings.max_nucp_;
 
-            // nic
-            filter["ADSB Quality"]["use_min_nic"] = settings.use_min_nic_;
-            filter["ADSB Quality"]["min_nic"] = settings.min_nic_;
-            filter["ADSB Quality"]["use_max_nic"] = settings.use_max_nic_;
-            filter["ADSB Quality"]["max_nic"] = settings.max_nic_;
+    //         // nic
+    //         filter["ADSB Quality"]["use_min_nic"] = settings.use_min_nic_;
+    //         filter["ADSB Quality"]["min_nic"] = settings.min_nic_;
+    //         filter["ADSB Quality"]["use_max_nic"] = settings.use_max_nic_;
+    //         filter["ADSB Quality"]["max_nic"] = settings.max_nic_;
 
-            // nacp
-            filter["ADSB Quality"]["use_min_nacp"] = settings.use_min_nacp_;
-            filter["ADSB Quality"]["min_nacp"] = settings.min_nacp_;
-            filter["ADSB Quality"]["use_max_nacp"] = settings.use_max_nacp_;
-            filter["ADSB Quality"]["max_nacp"] = settings.max_nacp_;
+    //         // nacp
+    //         filter["ADSB Quality"]["use_min_nacp"] = settings.use_min_nacp_;
+    //         filter["ADSB Quality"]["min_nacp"] = settings.min_nacp_;
+    //         filter["ADSB Quality"]["use_max_nacp"] = settings.use_max_nacp_;
+    //         filter["ADSB Quality"]["max_nacp"] = settings.max_nacp_;
 
-            // sil v1
-            filter["ADSB Quality"]["use_min_sil_v1"] = settings.use_min_sil_v1_;
-            filter["ADSB Quality"]["min_sil_v1"] = settings.min_sil_v1_;
-            filter["ADSB Quality"]["use_max_sil_v1"] = settings.use_max_sil_v1_;
-            filter["ADSB Quality"]["max_sil_v1"] = settings.max_sil_v1_;
+    //         // sil v1
+    //         filter["ADSB Quality"]["use_min_sil_v1"] = settings.use_min_sil_v1_;
+    //         filter["ADSB Quality"]["min_sil_v1"] = settings.min_sil_v1_;
+    //         filter["ADSB Quality"]["use_max_sil_v1"] = settings.use_max_sil_v1_;
+    //         filter["ADSB Quality"]["max_sil_v1"] = settings.max_sil_v1_;
 
-            // sil v2
-            filter["ADSB Quality"]["use_min_sil_v2"] = settings.use_min_sil_v2_;
-            filter["ADSB Quality"]["min_sil_v2"] = settings.min_sil_v2_;
-            filter["ADSB Quality"]["use_max_sil_v2"] = settings.use_max_sil_v2_;
-            filter["ADSB Quality"]["max_sil_v2"] = settings.max_sil_v2_;
+    //         // sil v2
+    //         filter["ADSB Quality"]["use_min_sil_v2"] = settings.use_min_sil_v2_;
+    //         filter["ADSB Quality"]["min_sil_v2"] = settings.min_sil_v2_;
+    //         filter["ADSB Quality"]["use_max_sil_v2"] = settings.use_max_sil_v2_;
+    //         filter["ADSB Quality"]["max_sil_v2"] = settings.max_sil_v2_;
 
-            adsb_fil->loadViewPointConditions(filter);
-        }
-    }
+    //         adsb_fil->loadViewPointConditions(filter);
+    //     }
+    // }
 }
 
 /**

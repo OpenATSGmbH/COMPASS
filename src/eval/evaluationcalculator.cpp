@@ -177,53 +177,53 @@ void EvaluationCalculator::readSettings()
     registerParameter("use_grp_in_sector", &settings_.use_grp_in_sector_, Settings().use_grp_in_sector_);
     registerParameter("use_requirement", &settings_.use_requirement_, Settings().use_requirement_);
 
-    registerParameter("max_ref_time_diff", &settings_.max_ref_time_diff_, Settings().max_ref_time_diff_);
+    // registerParameter("max_ref_time_diff", &settings_.max_ref_time_diff_, Settings().max_ref_time_diff_);
 
-    // load filter
-    registerParameter("use_load_filter", &settings_.use_load_filter_, Settings().use_load_filter_);
+    // // load filter
+    // registerParameter("use_load_filter", &settings_.use_load_filter_, Settings().use_load_filter_);
 
-    registerParameter("use_ref_traj_accuracy_filter_", &settings_.use_ref_traj_accuracy_filter_, Settings().use_ref_traj_accuracy_filter_);
-    registerParameter("ref_traj_minimum_accuracy", &settings_.ref_traj_minimum_accuracy_, Settings().ref_traj_minimum_accuracy_);
+    // registerParameter("use_ref_traj_accuracy_filter_", &settings_.use_ref_traj_accuracy_filter_, Settings().use_ref_traj_accuracy_filter_);
+    // registerParameter("ref_traj_minimum_accuracy", &settings_.ref_traj_minimum_accuracy_, Settings().ref_traj_minimum_accuracy_);
 
-    registerParameter("use_adsb_filter", &settings_.use_adsb_filter_, Settings().use_adsb_filter_);
-    registerParameter("use_v0", &settings_.use_v0_, Settings().use_v0_);
-    registerParameter("use_v1", &settings_.use_v1_, Settings().use_v1_);
-    registerParameter("use_v2", &settings_.use_v2_, Settings().use_v2_);
+    // registerParameter("use_adsb_filter", &settings_.use_adsb_filter_, Settings().use_adsb_filter_);
+    // registerParameter("use_v0", &settings_.use_v0_, Settings().use_v0_);
+    // registerParameter("use_v1", &settings_.use_v1_, Settings().use_v1_);
+    // registerParameter("use_v2", &settings_.use_v2_, Settings().use_v2_);
 
-    // nucp
-    registerParameter("use_min_nucp", &settings_.use_min_nucp_, Settings().use_min_nucp_);
-    registerParameter("min_nucp", &settings_.min_nucp_, Settings().min_nucp_);
+    // // nucp
+    // registerParameter("use_min_nucp", &settings_.use_min_nucp_, Settings().use_min_nucp_);
+    // registerParameter("min_nucp", &settings_.min_nucp_, Settings().min_nucp_);
 
-    registerParameter("use_max_nucp", &settings_.use_max_nucp_, Settings().use_max_nucp_);
-    registerParameter("max_nucp", &settings_.max_nucp_, Settings().max_nucp_);
+    // registerParameter("use_max_nucp", &settings_.use_max_nucp_, Settings().use_max_nucp_);
+    // registerParameter("max_nucp", &settings_.max_nucp_, Settings().max_nucp_);
 
-    // nic
-    registerParameter("use_min_nic", &settings_.use_min_nic_, Settings().use_min_nic_);
-    registerParameter("min_nic", &settings_.min_nic_, Settings().min_nic_);
+    // // nic
+    // registerParameter("use_min_nic", &settings_.use_min_nic_, Settings().use_min_nic_);
+    // registerParameter("min_nic", &settings_.min_nic_, Settings().min_nic_);
 
-    registerParameter("use_max_nic", &settings_.use_max_nic_, Settings().use_max_nic_);
-    registerParameter("max_nic", &settings_.max_nic_, Settings().max_nic_);
+    // registerParameter("use_max_nic", &settings_.use_max_nic_, Settings().use_max_nic_);
+    // registerParameter("max_nic", &settings_.max_nic_, Settings().max_nic_);
 
-    // nacp
-    registerParameter("use_min_nacp", &settings_.use_min_nacp_, Settings().use_min_nacp_);
-    registerParameter("min_nacp", &settings_.min_nacp_, Settings().min_nacp_);
+    // // nacp
+    // registerParameter("use_min_nacp", &settings_.use_min_nacp_, Settings().use_min_nacp_);
+    // registerParameter("min_nacp", &settings_.min_nacp_, Settings().min_nacp_);
 
-    registerParameter("use_max_nacp", &settings_.use_max_nacp_, Settings().use_max_nacp_);
-    registerParameter("max_nacp", &settings_.max_nacp_, Settings().max_nacp_);
+    // registerParameter("use_max_nacp", &settings_.use_max_nacp_, Settings().use_max_nacp_);
+    // registerParameter("max_nacp", &settings_.max_nacp_, Settings().max_nacp_);
 
-    // sil v1
-    registerParameter("use_min_sil_v1", &settings_.use_min_sil_v1_, Settings().use_min_sil_v1_);
-    registerParameter("min_sil_v1", &settings_.min_sil_v1_, Settings().min_sil_v1_);
+    // // sil v1
+    // registerParameter("use_min_sil_v1", &settings_.use_min_sil_v1_, Settings().use_min_sil_v1_);
+    // registerParameter("min_sil_v1", &settings_.min_sil_v1_, Settings().min_sil_v1_);
 
-    registerParameter("use_max_sil_v1", &settings_.use_max_sil_v1_, Settings().use_max_sil_v1_);
-    registerParameter("max_sil_v1", &settings_.max_sil_v1_, Settings().max_sil_v1_);
+    // registerParameter("use_max_sil_v1", &settings_.use_max_sil_v1_, Settings().use_max_sil_v1_);
+    // registerParameter("max_sil_v1", &settings_.max_sil_v1_, Settings().max_sil_v1_);
 
-    // sil v2
-    registerParameter("use_min_sil_v2", &settings_.use_min_sil_v2_, Settings().use_min_sil_v2_);
-    registerParameter("min_sil_v2", &settings_.min_sil_v2_, Settings().min_sil_v2_);
+    // // sil v2
+    // registerParameter("use_min_sil_v2", &settings_.use_min_sil_v2_, Settings().use_min_sil_v2_);
+    // registerParameter("min_sil_v2", &settings_.min_sil_v2_, Settings().min_sil_v2_);
 
-    registerParameter("use_max_sil_v2", &settings_.use_max_sil_v2_, Settings().use_max_sil_v2_);
-    registerParameter("max_sil_v2", &settings_.max_sil_v2_, Settings().max_sil_v2_);
+    // registerParameter("use_max_sil_v2", &settings_.use_max_sil_v2_, Settings().use_max_sil_v2_);
+    // registerParameter("max_sil_v2", &settings_.max_sil_v2_, Settings().max_sil_v2_);
 
     registerParameter("result_detail_zoom", &settings_.result_detail_zoom_, Settings().result_detail_zoom_);
 
@@ -1283,50 +1283,52 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
         data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(sector_roi_->longitude_min);
     }
 
-    if (settings_.use_load_filter_)
-    {
-        if (settings_.use_ref_traj_accuracy_filter_)
-        {
-            data[ViewPoint::VP_FILTERS_KEY]["RefTraj Accuracy"]["Accuracy Minimum"] = to_string(settings_.ref_traj_minimum_accuracy_);
-        }
+    // if (settings_.use_ref_traj_accuracy_filter_)
+    // {
+    //     data[ViewPoint::VP_FILTERS_KEY]["RefTraj Accuracy"]["Accuracy Minimum"] =
+    //         to_string(settings_.ref_traj_minimum_accuracy_);
+    // }
 
-        if (settings_.use_adsb_filter_)
-        {
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
+    // if (settings_.use_adsb_filter_)
+    // {
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
 
-            // nucp
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
+    //     // nucp
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
 
-            // nic
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
+    //     // nic
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
 
-            // nacp
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
+    //     // nacp
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
 
-            // sil v1
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] = settings_.use_min_sil_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] = settings_.use_max_sil_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
+    //     // sil v1
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
+    //         settings_.use_min_sil_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
+    //         settings_.use_max_sil_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
 
-            // sil v2
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] = settings_.use_min_sil_v2_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] = settings_.use_max_sil_v2_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
-        }
-    }
+    //     // sil v2
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
+    //         settings_.use_min_sil_v2_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
+    //         settings_.use_max_sil_v2_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
+    // }
 
     if (eval_man_.use_timestamp_filter_)
     {

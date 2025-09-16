@@ -17,6 +17,7 @@
 
 #include "eval/requirement/position/across.h"
 #include "eval/results/position/across.h"
+#include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 #include "util/timeconv.h"
@@ -52,7 +53,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " max_abs_value " << max_abs_value_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 

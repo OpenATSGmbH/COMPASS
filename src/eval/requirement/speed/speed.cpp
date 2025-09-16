@@ -17,10 +17,10 @@
 
 #include "eval/requirement/speed/speed.h"
 #include "eval/results/speed/speed.h"
-//#include "evaluationdata.h"
+#include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-//#include "util/stringconv.h"
+
 #include "util/timeconv.h"
 #include "sectorlayer.h"
 
@@ -80,7 +80,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " threshold_value " << threshold_value_ << " threshold_value_check_type " << threshold_value_check_type_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
