@@ -94,86 +94,100 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
 
     set<unsigned int> active_srcs = calculator_.activeDataSourcesRef();
     bool use_active_srcs = (calculator_.dbContentNameRef() == calculator_.dbContentNameTst());
+    
+    double min_std_dev_xy = calculator_.currentStandard().referenceMinAccuracy();
+
     unsigned int num_skipped {0};
 
-    if (accessor_->hasMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_))
+    traced_assert(accessor_->hasMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_));
+    traced_assert(accessor_->hasMetaVar<double>(dbcontent_name, DBContent::meta_var_max_stddev_xy));
+
+    NullableVector<ptime>& ts_vec =
+        accessor_->getMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_);
+    NullableVector<unsigned int>& ds_ids =
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_);
+    NullableVector<unsigned int>& line_ids =
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_);
+    NullableVector<unsigned int>& utn_vec =
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_);
+
+    NullableVector<double>& max_stddev_xy_vec =
+        accessor_->getMetaVar<double>(dbcontent_name, DBContent::meta_var_max_stddev_xy);
+
+    unsigned int buffer_size = ts_vec.contentSize();
+
+    ptime timestamp;
+    // vector<unsigned int> utn_vec;
+
+    unsigned int utn;
+
+    loginf << "adding target data";
+    loginf << "use_active_srcs " << use_active_srcs;
+
+    for (auto ds_id : active_srcs)
+        loginf << "start" << ds_id;
+
+    for (unsigned int cnt = 0; cnt < buffer_size; ++cnt)
     {
-        NullableVector<ptime>& ts_vec = accessor_->getMetaVar<ptime>(
-                    dbcontent_name, DBContent::meta_var_timestamp_);
-        NullableVector<unsigned int>& ds_ids = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_ds_id_);
-        NullableVector<unsigned int>& line_ids = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_line_id_);
-        NullableVector<unsigned int>& utn_vec = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_utn_);
+        traced_assert(!ds_ids.isNull(cnt));
 
-        unsigned int buffer_size = ts_vec.contentSize();
-
-        ptime timestamp;
-        //vector<unsigned int> utn_vec;
-
-        unsigned int utn;
-
-        loginf << "adding target data";
-        loginf << "use_active_srcs " << use_active_srcs;
-
-        for (auto ds_id : active_srcs)
-            loginf << "start" << ds_id;
-
-        for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
+        if (use_active_srcs &&
+            !active_srcs.count(ds_ids.get(cnt)))  // skip those entries not for tst src
         {
-            traced_assert(!ds_ids.isNull(cnt));
-
-            if (use_active_srcs && !active_srcs.count(ds_ids.get(cnt))) // skip those entries not for tst src
-            {
-                ++num_skipped;
-                continue;
-            }
-
-            traced_assert(!line_ids.isNull(cnt));
-
-            if (line_ids.get(cnt) != ref_line_id_)
-            {
-                ++num_skipped;
-                continue;
-            }
-
-            if (ts_vec.isNull(cnt))
-            {
-                ++num_skipped;
-                continue;
-            }
-
-            timestamp = ts_vec.get(cnt);
-
-            if (utn_vec.isNull(cnt))
-            {
-                ++unassociated_ref_cnt_;
-                continue;
-            }
-
-            utn = utn_vec.get(cnt);
-            if (!dbcont_man_.existsTarget(utn))
-            {
-                logerr << "ignoring unknown utn " << utn;
-                continue;
-            }
-
-            if (!hasTargetData(utn))
-                target_data_.emplace_back(utn, *this, accessor_, calculator_, eval_man_, dbcont_man_);
-
-            traced_assert(hasTargetData(utn));
-
-            auto tr_tag_it = target_data_.get<target_tag>().find(utn);
-            auto index_it = target_data_.project<0>(tr_tag_it); // get iterator for random access
-
-            target_data_.modify(index_it, [timestamp, cnt](EvaluationTargetData& t) { t.addRefIndex(timestamp, cnt); });
-
-            ++associated_ref_cnt_;
+            ++num_skipped;
+            continue;
         }
+
+        traced_assert(!line_ids.isNull(cnt));
+
+        if (line_ids.get(cnt) != ref_line_id_)
+        {
+            ++num_skipped;
+            continue;
+        }
+
+        if (ts_vec.isNull(cnt))
+        {
+            ++num_skipped;
+            continue;
+        }
+
+        timestamp = ts_vec.get(cnt);
+
+        if (utn_vec.isNull(cnt))
+        {
+            ++unassociated_ref_cnt_;
+            continue;
+        }
+
+        utn = utn_vec.get(cnt);
+        if (!dbcont_man_.existsTarget(utn))
+        {
+            logerr << "ignoring unknown utn " << utn;
+            continue;
+        }
+
+        if (!max_stddev_xy_vec.isNull(cnt) && max_stddev_xy_vec.get(cnt) > min_std_dev_xy)
+        {
+            ++num_skipped;
+            continue;
+        }
+
+        if (!hasTargetData(utn))
+            target_data_.emplace_back(utn, *this, accessor_, calculator_, eval_man_, dbcont_man_);
+
+        traced_assert(hasTargetData(utn));
+
+        auto tr_tag_it = target_data_.get<target_tag>().find(utn);
+        auto index_it = target_data_.project<0>(tr_tag_it);  // get iterator for random access
+
+        target_data_.modify(
+            index_it, [timestamp, cnt](EvaluationTargetData& t) { t.addRefIndex(timestamp, cnt); });
+
+        ++associated_ref_cnt_;
     }
 
     loginf << "num targets " << target_data_.size()

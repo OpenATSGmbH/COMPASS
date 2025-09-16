@@ -167,6 +167,8 @@ public:
     static const Property meta_var_y_stddev_;
     static const Property meta_var_xy_cov_;
 
+    static const Property meta_var_max_stddev_xy;
+
     static const Property meta_var_latitude_stddev_;
     static const Property meta_var_longitude_stddev_;
     static const Property meta_var_latlon_cov_;

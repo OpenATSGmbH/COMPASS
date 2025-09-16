@@ -427,6 +427,9 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_max_stddev_xy))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_max_stddev_xy));
+
     if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
         read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
 
@@ -489,12 +492,6 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
 
     if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_coasting_))
         read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_coasting_));
-
-    //        // for mono sensor + lu sensor
-
-    //        read_set.add(dbcontent.variable("multiple_sources")); // string
-    //        read_set.add(dbcontent.variable("track_lu_ds_id")); // int
-
 }
 
 /**
