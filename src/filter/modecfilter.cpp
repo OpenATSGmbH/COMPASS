@@ -254,6 +254,8 @@ float ModeCFilter::minValue() const
 void ModeCFilter::minValue(float min_value)
 {
     min_value_ = min_value;
+
+    loginf << "min_value " << min_value_;
 }
 
 float ModeCFilter::maxValue() const
@@ -263,7 +265,9 @@ float ModeCFilter::maxValue() const
 
 void ModeCFilter::maxValue(float max_value)
 {
-    max_value_ = max_value_;
+    max_value_ = max_value;
+
+    loginf << "max_value " << max_value_;
 }
 
 bool ModeCFilter::nullWanted() const

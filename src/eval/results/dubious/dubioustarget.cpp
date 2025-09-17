@@ -154,8 +154,8 @@ std::vector<Single::TargetInfo> SingleDubiousTarget::targetInfos() const
     auto p_dubious_update_var = SingleProbabilityBase::formatProbabilityOptional(p_dubious_update_);
 
     return { TargetInfo("#Up [1]"        , "Number of updates"                      , num_updates_              ),
-             TargetInfo("#PosInside [1]" , "Number of updates inside sector"        , num_pos_inside_           ),
              TargetInfo("#PosOutside [1]", "Number of updates outside sector"       , num_pos_outside_          ),
+             TargetInfo("#PosInside [1]" , "Number of updates inside sector"        , num_pos_inside_           ),
              TargetInfo("#DU [1]"        , "Number of dubious updates inside sector", num_pos_inside_dubious_   ),
              TargetInfo("PDU [%]"        , "Probability of dubious update"          , p_dubious_update_var      ),
              TargetInfo("Duration [s]"   , "Duration"                               , duration_var              ) };
@@ -323,8 +323,8 @@ std::vector<Joined::SectorInfo> JoinedDubiousTarget::sectorInfos() const
 
     std::vector<Joined::SectorInfo> infos = 
         { { "#Up [1]"             , "Number of updates"                      , num_updates_                   },
-          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#PosOutside [1]"     , "Number of updates outside sector"       , num_pos_outside_               },
+          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#DU [1]"             , "Number of dubious updates inside sector", num_pos_inside_dubious_        },
           { "PDU [%]"             , "Probability of dubious update"          , p_dubious_update_var           },
           { "#T [1]"              , "Number of targets"                      , num_utns_                      },

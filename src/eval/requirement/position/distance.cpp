@@ -182,7 +182,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
         }
         ++num_pos_inside;
 
-        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff, false); // max std dev
+
+        logdbg << "utn " << target_data.utn_ << " ref_pos_acc " << (bool) ref_pos_acc << " acc " << (ref_pos_acc ? *ref_pos_acc : 666.0) << " ref_min_accuracy " << ref_min_accuracy_;
 
         if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
         {
@@ -195,6 +197,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
                             "Inaccurate reference position");
 
             ++num_ref_inaccurate;
+
             continue;            
         }
 

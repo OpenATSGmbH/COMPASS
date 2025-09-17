@@ -227,8 +227,8 @@ std::vector<Single::TargetInfo> SingleGeneric::targetInfos() const
           { "#NoRef [1]"     , "Number of updates w/o reference position or " + valname, no_ref           },
           { "#NoRefPos [1]"  , "Number of updates w/o reference position "             , num_no_ref_pos_  },
           { "#NoRef [1]"     , "Number of updates w/o reference " + valname            , num_no_ref_val_  },
-          { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_  },
           { "#PosOutside [1]", "Number of updates outside sector"                      , num_pos_outside_ }, 
+          { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_  },
           { "#Unknown [1]"   , "Number of updates unknown " + valname                  , num_unknown_     },
           { "#Correct [1]"   , "Number of updates with correct " + valname             , num_correct_     }, 
           { "#False [1]"     , "Number of updates with incorrect " + valname           , num_false_       } };
@@ -398,8 +398,8 @@ std::vector<Joined::SectorInfo> JoinedGeneric::sectorInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or "+name, no_ref           }, 
              { "#NoRefPos [1]"  , "Number of updates w/o reference position"         , num_no_ref_pos_  }, 
              { "#NoRef [1]"     , "Number of updates w/o reference " + name          , num_no_ref_val_  }, 
-             { "#PosInside [1]" , "Number of updates inside sector"                  , num_pos_inside_  }, 
              { "#PosOutside [1]", "Number of updates outside sector"                 , num_pos_outside_ },
+             { "#PosInside [1]" , "Number of updates inside sector"                  , num_pos_inside_  }, 
              { "#Unknown [1]"   , "Number of updates unknown " + name                , num_unknown_     },
              { "#Correct [1]"   , "Number of updates with correct " + name           , num_correct_     }, 
              { "#False [1]"     , "Number of updates with incorrect " + name         , num_false_       } };

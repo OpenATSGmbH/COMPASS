@@ -243,8 +243,8 @@ std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
     }
 
     return { TargetInfo("#Up [1]"                        , "Number of updates"                      , num_updates_             ),
-             TargetInfo("#PosInside [1]"                 , "Number of updates inside sector"        , num_pos_inside_          ),
              TargetInfo("#PosOutside [1]"                , "Number of updates outside sector"       , num_pos_outside_         ),
+             TargetInfo("#PosInside [1]"                 , "Number of updates inside sector"        , num_pos_inside_          ),
              TargetInfo("#DU [1]"                        , "Number of dubious updates inside sector", num_pos_inside_dubious_  ),
              TargetInfo("PDU [%]"                        , "Probability of dubious update"          , p_dubious_up_var         ),
              TargetInfo("#T [1]"                         , "Number of tracks"                       , num_tracks_              ),
@@ -409,8 +409,8 @@ std::vector<Joined::SectorInfo> JoinedDubiousTrack::sectorInfos() const
 
     std::vector<Joined::SectorInfo> infos = 
         { { "#Up [1]"             , "Number of updates"                      , num_updates_                   },
-          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#PosOutside [1]"     , "Number of updates outside sector"       , num_pos_outside_               },
+          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#DU [1]"             , "Number of dubious updates inside sector", num_pos_inside_dubious_        },
           { "PDU [%]"             , "Probability of dubious update"          , p_dubious_up_var               },
           { "#T [1]"              , "Number of tracks"                       , num_tracks_                    },

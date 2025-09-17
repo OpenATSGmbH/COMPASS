@@ -81,8 +81,9 @@ std::vector<Single::TargetInfo> SinglePositionDistanceRMS::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
+             { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
-             { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   }, 
              { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 
@@ -96,7 +97,7 @@ std::vector<Single::TargetInfo> SinglePositionDistanceRMS::targetInfos() const
 */
 std::vector<std::string> SinglePositionDistanceRMS::detailHeaders() const
 {
-    return { "ToD", "NoRef", "PosInside", "Distance", "CP", "#CF", "#CP", "Comment" };
+    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Distance", "CP", "#CF", "#CP", "Comment" };
 }
 
 /**
@@ -109,6 +110,7 @@ nlohmann::json::array_t SinglePositionDistanceRMS::detailValues(const Evaluation
     return { Utils::Time::toString(detail.timestamp()),
             !has_ref_pos,
              detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
+             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
              detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
@@ -146,8 +148,9 @@ std::vector<Joined::SectorInfo> JoinedPositionDistanceRMS::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 

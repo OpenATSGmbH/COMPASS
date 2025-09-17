@@ -209,8 +209,8 @@ std::vector<Single::TargetInfo> SingleCorrectBase::targetInfos() const
           { "#NoRef [1]"     , "Number of updates w/o reference position or " + cvn, num_no_ref_pos_ + num_no_ref_id_ },
           { "#NoRefPos [1]"  , "Number of updates w/o reference position "         , num_no_ref_pos_                  },
           { "#NoRef [1]"     , "Number of updates w/o reference " + cvn            , num_no_ref_id_                   },
-          { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
           { "#PosOutside [1]", "Number of updates outside sector"                  , num_pos_outside_                 },
+          { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
           { sn_c + " [1]"    , "Number of updates with correct " + cvn             , num_correct_                     },
           { sn_nc + " [1]"   , "Number of updates with no correct " + cvn          , num_not_correct_                 } };
 
@@ -369,8 +369,8 @@ std::vector<Joined::SectorInfo> JoinedCorrectBase::sectorInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or " + cvn, num_no_ref_pos_ + num_no_ref_id_ },
              { "#NoRefPos [1]"  , "Number of updates w/o reference position "         , num_no_ref_pos_                  },
              { "#NoRef [1]"     , "Number of updates w/o reference " + cvn            , num_no_ref_id_                   },
-             { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
              { "#PosOutside [1]", "Number of updates outside sector"                  , num_pos_outside_                 },
+             { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
              { sn_c + " [1]"    , "Number of updates with correct " + cvn             , num_correct_                     },
              { sn_nc + " [1]"   , "Number of updates with no correct " + cvn          , num_not_correct_                 } };
 }

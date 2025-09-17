@@ -627,9 +627,19 @@ boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
         auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
 
         if (acc1)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " acc1 "
+                       << String::doubleToStringPrecision(acc1->max(), 1);
+
             return acc1->max();
+        }
         else
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " no acc1";
             return {};
+        }
     }
 
     if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
@@ -668,13 +678,36 @@ boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
         auto acc2 = ref_chain_.posAccuracy(mapping.dataid_ref2_);
 
         if (acc1 && acc2)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both, max acc1,2 "
+                       << String::doubleToStringPrecision(std::max(acc1->max(), acc2->max()), 1);
+
             return std::max(acc1->max(), acc2->max());
+        }
         else if (acc1)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both, acc1 "
+                       << String::doubleToStringPrecision(acc1->max(), 1);
+
             return acc1->max();
+        }
         else if (acc2)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both, acc2 "
+                       << String::doubleToStringPrecision(acc2->max(), 1);
+
             return acc2->max();            
+        }
         else
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both no acc";
+
             return {};
+        }
     }
 
     if (debug)

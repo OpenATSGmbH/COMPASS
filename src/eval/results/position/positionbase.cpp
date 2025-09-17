@@ -57,6 +57,7 @@ PositionBase::PositionBase(unsigned int num_pos,
 ,   num_no_ref_     (num_no_ref)
 ,   num_pos_outside_(num_pos_outside)
 ,   num_pos_inside_ (num_pos_inside)
+,   num_ref_inaccurate_(num_ref_inaccurate)
 ,   num_passed_     (num_passed)
 ,   num_failed_     (num_failed)
 {

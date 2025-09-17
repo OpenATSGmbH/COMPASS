@@ -223,8 +223,8 @@ std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                            , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference trackangles"  , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
+             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
              { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
              { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
@@ -394,8 +394,8 @@ std::vector<Joined::SectorInfo> JoinedTrackAngle::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                            , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference trackangles"  , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
+             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
              { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
              { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 

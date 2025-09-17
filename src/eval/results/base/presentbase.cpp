@@ -175,8 +175,8 @@ std::vector<Single::TargetInfo> SinglePresentBase::targetInfos() const
     return { { "#Up [1]"        , "Number of updates"                        , num_updates_     },
              { "#NoRef [1]"     , "Number of updates w/o reference position" , num_no_ref_pos_  },
              { "#NoRefPos [1]"  , "Number of updates w/o reference position ", num_no_ref_pos_  },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_  }, 
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_ }, 
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_  }, 
              { nrvn + " [1]"    , "Number of updates without reference code" , num_no_ref_val_  }, 
              { "#Present [1]"   , "Number of updates with present tst code"  , num_present_     }, 
              { "#Missing [1]"   , "Number of updates with missing tst code"  , num_missing_     } };
@@ -326,8 +326,8 @@ std::vector<Joined::SectorInfo> JoinedPresentBase::sectorInfos() const
     return { { "#Up [1]"        , "Number of updates"                        , num_updates_    },
              { "#NoRef [1]"     , "Number of updates w/o reference position" , num_no_ref_pos_ }, 
              { "#NoRefPos [1]"  , "Number of updates w/o reference position ", num_no_ref_pos_ },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_ },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_},
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_ },
              { nrvn + " [1]"    , "Number of updates without reference code" , num_no_ref_val_ },
              { "#Present [1]"   , "Number of updates with present tst code"  , num_present_    },
              { "#Missing [1]"   , "Number of updates with missing tst code"  , num_missing_    } };

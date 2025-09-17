@@ -16,7 +16,6 @@
  */
 
 #include "modecfilterwidget.h"
-//#include "stringconv.h"
 #include "textfielddoublevalidator.h"
 #include "logger.h"
 #include "rangeedit.h"

@@ -83,8 +83,9 @@ std::vector<Single::TargetInfo> SinglePositionAcross::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                                     , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions"             , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"                      , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_                   },
              { "ACMin [m]"      , "Minimum of across-track error"                         , formatValue(accumulator_.min())    }, 
              { "ACMax [m]"      , "Maximum of across-track error"                         , formatValue(accumulator_.max())    },
              { "ACAvg [m]"      , "Average of across-track error"                         , formatValue(accumulator_.mean())   }, 
@@ -98,7 +99,7 @@ std::vector<Single::TargetInfo> SinglePositionAcross::targetInfos() const
 */
 std::vector<std::string> SinglePositionAcross::detailHeaders() const
 {
-    return { "ToD", "NoRef", "PosInside", "DAcross", "DAcrossOK", "#ACOK", "#ACNOK", "Comment" };
+    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "DAcross", "DAcrossOK", "#ACOK", "#ACNOK", "Comment" };
 }
 
 /**
@@ -111,6 +112,7 @@ nlohmann::json::array_t SinglePositionAcross::detailValues(const EvaluationDetai
     return { Utils::Time::toString(detail.timestamp()),
             !has_ref_pos,
              detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
+             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
              detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
@@ -138,8 +140,9 @@ std::vector<Joined::SectorInfo> JoinedPositionAcross::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                                     , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions"             , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"                      , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "ACMin [m]"      , "Minimum of across-track error"                         , formatValue(accumulator_.min())    }, 
              { "ACMax [m]"      , "Maximum of across-track error"                         , formatValue(accumulator_.max())    },
              { "ACAvg [m]"      , "Average of across-track error"                         , formatValue(accumulator_.mean())   }, 

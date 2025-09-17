@@ -185,8 +185,8 @@ std::vector<Single::TargetInfo> SingleFalseBase::targetInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or " + name, num_no_ref_pos_ + num_no_ref_val_}, 
              { "#NoRefPos [1]"  , "Number of updates w/o reference position "          , num_no_ref_pos_                  }, 
              { "#NoRef [1]"     , "Number of updates w/o reference " + name            , num_no_ref_val_                  }, 
-             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                  }, 
              { "#PosOutside [1]", "Number of updates outside sector"                   , num_pos_outside_                 }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                  }, 
              { "#Unknown [1]"   , "Number of updates unknown " + name                  , num_unknown_                     }, 
              { "#Correct [1]"   , "Number of updates with correct " + name             , num_correct_                     }, 
              { "#False [1]"     , "Number of updates with false " + name               , num_false_                       } };
@@ -340,8 +340,8 @@ std::vector<Joined::SectorInfo> JoinedFalseBase::sectorInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or " + name, num_no_ref_pos_+num_no_ref_val_ },
              { "#NoRefPos [1]"  , "Number of updates w/o reference position "          , num_no_ref_pos_                 }, 
              { "#NoRef [1]"     , "Number of updates w/o reference " + name            , num_no_ref_val_                 }, 
-             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                 }, 
              { "#PosOutside [1]", "Number of updates outside sector"                   , num_pos_outside_                }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                 }, 
              { "#Unknown [1]"   , "Number of updates unknown " + name                  , num_unknown_                    }, 
              { "#Correct [1]"   , "Number of updates with correct " + name             , num_correct_                    }, 
              { "#False [1]"     , "Number of updates with false " + name               , num_false_                      } };
