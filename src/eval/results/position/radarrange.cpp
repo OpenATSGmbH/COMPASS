@@ -43,12 +43,13 @@ SinglePositionRadarRange::SinglePositionRadarRange(const std::string& result_id,
                                                    unsigned int num_no_ref,
                                                    unsigned int num_pos_outside,
                                                    unsigned int num_pos_inside,
+                                                   unsigned int num_ref_inaccurate,
                                                    unsigned int num_comp_passed,
                                                    unsigned int num_comp_failed,
                                                    const std::vector<double>& range_values_ref,
                                                    const std::vector<double>& range_values_tst)
 :   SinglePositionValueBase("SinglePositionRadarRange", result_id, requirement, sector_layer, utn, target, calculator, details,
-                            num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_comp_passed, num_comp_failed)
+                            num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_ref_inaccurate, num_comp_passed, num_comp_failed)
 ,   range_values_ref_(range_values_ref)
 ,   range_values_tst_(range_values_tst)
 {

@@ -17,14 +17,14 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "eval/requirement/base/positionbase.h"
 
 namespace EvaluationRequirement
 {
 
 /**
 */
-class PositionAlong : public ProbabilityBase
+class PositionAlong : public PositionBase
 {
 public:
     PositionAlong(

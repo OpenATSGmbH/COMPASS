@@ -58,6 +58,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
     unsigned int num_no_ref {0};
     unsigned int num_pos_outside {0};
     unsigned int num_pos_inside {0};
+    unsigned int num_ref_inaccurate {0};
     unsigned int num_pos_calc_errors {0};
     unsigned int num_comp_failed {0};
     unsigned int num_comp_passed {0};
@@ -193,6 +194,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
         }
         ++num_pos_inside;
 
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+
+        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
+        {
+            if (!skip_no_data_details)
+                addDetail(timestamp, tst_pos,
+                            ref_pos, // ref_pos
+                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_comp_passed, num_comp_failed, 
+                            "Inaccurate reference position");
+
+            ++num_ref_inaccurate;
+            continue;            
+        }
+
         ok = projection.wgs842PolarHorizontal(tst_ds_id,
                                               ref_pos->latitude_, ref_pos->longitude_, 0,
                                               ref_azm_rad, ref_slant_range_m, ref_ground_range_m,
@@ -281,7 +298,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
 
     return make_shared<EvaluationRequirementResult::SinglePositionRadarAzimuth>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_comp_passed, num_comp_failed);
+                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate,
+                num_comp_passed, num_comp_failed);
 }
 
 }

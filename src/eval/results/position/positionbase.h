@@ -41,6 +41,7 @@ public:
                  unsigned int num_no_ref,
                  unsigned int num_pos_outside,
                  unsigned int num_pos_inside,
+                 unsigned int num_ref_inaccurate,
                  unsigned int num_passed,
                  unsigned int num_failed);
 
@@ -48,6 +49,7 @@ public:
     unsigned int numNoRef() const;
     unsigned int numPosOutside() const;
     unsigned int numPosInside() const;
+    unsigned int numRefInaccurate() const;
     unsigned int numPassed() const;
     unsigned int numFailed() const;
 
@@ -58,6 +60,7 @@ protected:
     unsigned int num_no_ref_      {0};
     unsigned int num_pos_outside_ {0};
     unsigned int num_pos_inside_  {0};
+    unsigned int num_ref_inaccurate_ {0};
     unsigned int num_passed_      {0};
     unsigned int num_failed_      {0};
 
@@ -74,6 +77,7 @@ public:
                              unsigned int num_no_ref,
                              unsigned int num_pos_outside,
                              unsigned int num_pos_inside,
+                             unsigned int num_ref_inaccurate,
                              unsigned int num_passed,
                              unsigned int num_failed);
 
@@ -86,6 +90,7 @@ public:
         NumNoRef,       //unsigned int
         NumInside,      //unsigned int
         NumOutside,     //unsigned int
+        NumRefInaccurate,     //unsigned int
         NumCheckPassed, //unsigned int
         NumCheckFailed, //unsigned int
         PositionBaseMax
@@ -121,6 +126,7 @@ public:
                                   unsigned int num_no_ref,
                                   unsigned int num_pos_outside,
                                   unsigned int num_pos_inside,
+                                  unsigned int num_ref_inaccurate,
                                   unsigned int num_passed,
                                   unsigned int num_failed);
     virtual ~SinglePositionProbabilityBase() = default;
@@ -158,6 +164,7 @@ public:
                        unsigned int num_no_ref,
                        unsigned int num_pos_outside,
                        unsigned int num_pos_inside,
+                       unsigned int num_ref_inaccurate,
                        unsigned int num_passed,
                        unsigned int num_failed);
     virtual ~SinglePositionValueBase() = default;

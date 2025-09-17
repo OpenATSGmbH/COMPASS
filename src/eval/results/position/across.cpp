@@ -41,10 +41,12 @@ SinglePositionAcross::SinglePositionAcross(const std::string& result_id,
                                            unsigned int num_no_ref,
                                            unsigned int num_pos_outside,
                                            unsigned int num_pos_inside,
+                                           unsigned int num_ref_inaccurate,
                                            unsigned int num_value_ok,
                                            unsigned int num_value_nok)
 :   SinglePositionProbabilityBase("SinglePositionAcross", result_id, requirement, sector_layer, utn, target, calculator, details,
-                                  num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_value_ok, num_value_nok)
+                                  num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_ref_inaccurate, 
+                                  num_value_ok, num_value_nok)
 {
     updateResult();
 }

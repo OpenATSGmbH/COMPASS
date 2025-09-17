@@ -61,6 +61,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     unsigned int num_no_ref {0};
     unsigned int num_pos_outside {0};
     unsigned int num_pos_inside {0};
+    unsigned int num_ref_inaccurate {0};
     unsigned int num_pos_calc_errors {0};
     unsigned int num_value_ok {0};
     unsigned int num_value_nok {0};
@@ -79,9 +80,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     double d_across;
 
     bool is_inside;
-    //pair<dbContent::TargetPosition, bool> ret_pos;
     boost::optional<dbContent::TargetPosition> ref_pos;
-    //pair<dbContent::TargetVelocity, bool> ret_spd;
     boost::optional<dbContent::TargetVelocity> ref_spd;
 
     bool along_ok;
@@ -193,6 +192,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
         }
         ++num_pos_inside;
 
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+
+        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
+        {
+            if (!skip_no_data_details)
+                addDetail(timestamp, tst_pos,
+                            ref_pos, // ref_pos
+                            is_inside, {}, along_ok, // pos_inside, value, value_ok
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_value_ok, num_value_nok,
+                            "Inaccurate reference position");
+
+            ++num_ref_inaccurate;
+            continue;            
+        }
+
         bool   transform_ok;
         double distance, angle;
 
@@ -273,7 +288,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
 
     return std::make_shared<EvaluationRequirementResult::SinglePositionAcross>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_value_ok, num_value_nok);
+                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate, 
+                num_value_ok, num_value_nok);
 }
 
 }

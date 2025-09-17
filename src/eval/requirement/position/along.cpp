@@ -35,7 +35,7 @@ namespace EvaluationRequirement
 PositionAlong::PositionAlong(const std::string& name, const std::string& short_name, const std::string& group_name,
                              double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, 
                              EvaluationCalculator& calculator, float max_abs_value)
-    : ProbabilityBase(name, short_name, group_name, prob, prob_check_type, false, calculator), 
+    : PositionBase(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator), 
       max_abs_value_(max_abs_value)
 {
 }
@@ -60,6 +60,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
     unsigned int num_no_ref {0};
     unsigned int num_pos_outside {0};
     unsigned int num_pos_inside {0};
+    unsigned int num_ref_inaccurate {0};
     unsigned int num_pos_calc_errors {0};
     unsigned int num_value_ok {0};
     unsigned int num_value_nok {0};
@@ -145,7 +146,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, along_ok, // pos_inside, value, value_ok
+                            {}, {}, along_ok, // pos_inside, value, value_ok,
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_value_ok, num_value_nok,
                             "No reference position");
@@ -186,6 +187,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
             continue;
         }
         ++num_pos_inside;
+
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+
+        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
+        {
+            if (!skip_no_data_details)
+                addDetail(timestamp, tst_pos,
+                            ref_pos, // ref_pos
+                            is_inside, {}, along_ok, // pos_inside, value, value_ok
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_value_ok, num_value_nok,
+                            "Inaccurate reference position");
+
+            ++num_ref_inaccurate;
+            continue;            
+        }
 
         bool   transform_ok;
         double distance, angle;
@@ -264,7 +281,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
 
     return std::make_shared<EvaluationRequirementResult::SinglePositionAlong>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_value_ok, num_value_nok);
+                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate, 
+                num_value_ok, num_value_nok);
 }
 
 }
