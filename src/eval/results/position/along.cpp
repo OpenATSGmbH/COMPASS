@@ -16,10 +16,13 @@
  */
 
 #include "eval/results/position/along.h"
+#include "stringconv.h"
 
 #include "logger.h"
 
 #include "traced_assert.h"
+
+using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
@@ -86,6 +89,7 @@ std::vector<Single::TargetInfo> SinglePositionAlong::targetInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"                     , num_pos_outside_                   }, 
              { "#PosInside [1]" , "Number of updates inside sector"                      , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_                   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "ALMin [m]"      , "Minimum of along-track error"                         , formatValue(accumulator_.min())    }, 
              { "ALMax [m]"      , "Maximum of along-track error"                         , formatValue(accumulator_.max())    },
              { "ALAvg [m]"      , "Average of along-track error"                         , formatValue(accumulator_.mean())   }, 
@@ -143,6 +147,7 @@ std::vector<Joined::SectorInfo> JoinedPositionAlong::sectorInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"                     , num_pos_outside_                   }, 
              { "#PosInside [1]" , "Number of updates inside sector"                      , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "ALMin [m]"      , "Minimum of along-track error"                         , formatValue(accumulator_.min())    }, 
              { "ALMax [m]"      , "Maximum of along-track error"                         , formatValue(accumulator_.max())    },
              { "ALAvg [m]"      , "Average of along-track error"                         , formatValue(accumulator_.mean())   }, 

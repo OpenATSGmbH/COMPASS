@@ -82,6 +82,18 @@ std::string percentToString(double number, unsigned int precision)
     return out.str();
 }
 
+std::string percentToStringProtected(double x, double y, unsigned int precision)
+{
+    if (y == 0)
+        return "";
+
+    std::ostringstream out;
+    
+    out << std::fixed << std::setprecision(precision) << x / y;
+
+    return out.str();
+}
+
 std::string boolToString(bool value)
 {
     return value ? "true" : "false";

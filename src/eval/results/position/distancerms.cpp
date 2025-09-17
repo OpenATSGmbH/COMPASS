@@ -16,8 +16,11 @@
  */
 
 #include "eval/results/position/distancerms.h"
+#include "stringconv.h"
 
 #include "logger.h"
+
+using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
@@ -84,6 +87,7 @@ std::vector<Single::TargetInfo> SinglePositionDistanceRMS::targetInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   }, 
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 
@@ -151,6 +155,7 @@ std::vector<Joined::SectorInfo> JoinedPositionDistanceRMS::sectorInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 
