@@ -35,10 +35,12 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
                                          const std::string& instance_id,
                                          ReconstructorTask& task, 
                                          std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
-    : ReconstructorBase(class_id, instance_id, task, std::move(acc_estimator), settings_, 0)
+    : ReconstructorBase(class_id, instance_id, task, std::move(acc_estimator))
     , associatior_   (*this)
     , ref_calculator_(*this)
 {
+    registerBaseSettings(settings_);
+
     registerParameter("max_distance_notok", &settings_.max_distance_notok_, 5*NM2M); // kb 5nm
     registerParameter("max_distance_dubious", &settings_.max_distance_dubious_, 2*NM2M);
     registerParameter("max_distance_acceptable", &settings_.max_distance_acceptable_, 1*NM2M);
@@ -53,14 +55,6 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
                       settings_.unspecifc_acc_acc_fallback_);
     registerParameter("no_value_acc_fallback", &settings_.no_value_acc_fallback_, settings_.no_value_acc_fallback_);
 
-
-    // target classification
-    registerParameter("min_aircraft_modec", &base_settings_.min_aircraft_modec_, base_settings_.min_aircraft_modec_);
-
-    registerParameter("vehicle_acids", &base_settings_.vehicle_acids_, {});
-    base_settings_.setVehicleACIDs(base_settings_.vehicle_acids_);
-    registerParameter("vehicle_acads", &base_settings_.vehicle_acads_, {});
-    base_settings_.setVehicleACADs(base_settings_.vehicle_acads_);
 
     // reconstruction settings (check base for other settings)
     registerParameter("ref_rec_type", (int*)&referenceCalculatorSettings().kalman_type_assoc,

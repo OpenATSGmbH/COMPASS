@@ -16,11 +16,11 @@
  */
 
 #include "targetreportaccessor.h"
-#include "dbcontent/variable/metavariable.h"
 #include "dbcontent.h"
 #include "dbcontentmanager.h"
 #include "compass.h"
 #include "global.h"
+#include "accuracy.h"
 
 #include "targetreportdefs.h"
 
@@ -349,6 +349,8 @@ boost::optional<targetReport::PositionAccuracy> TargetReportAccessor::positionAc
             //         xy_cov =  std::pow(xy_cov, 2);
             // }
         }
+
+        Utils::Accuracy::checkMaxCovariance(meta_pos_std_dev_x_m_vec_->get(index), meta_pos_std_dev_y_m_vec_->get(index), xy_cov);
 
         return targetReport::PositionAccuracy(meta_pos_std_dev_x_m_vec_->get(index),
                                               meta_pos_std_dev_y_m_vec_->get(index),

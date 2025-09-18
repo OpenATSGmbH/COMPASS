@@ -52,5 +52,7 @@ void estimateEllipse(EllipseDef& def,
 double estimateAccuracyAt(const EllipseDef& def, 
                           double bearing_rad);
 
+extern void checkMaxCovariance(double x_stddev, double y_stddev, double &xy_cov);
+
 }  // namespace Accuracy
 }  // namespace Utils

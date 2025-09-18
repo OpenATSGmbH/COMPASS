@@ -2754,10 +2754,12 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
             // else
             //     xy_cov = pow(xy_cov, 2);
 
-            if (xy_cov < 0)
-                xy_cov_vec.set(buffer_cnt, -sqrt(-xy_cov));
-            else
-                xy_cov_vec.set(buffer_cnt, sqrt(xy_cov));
+            // if (xy_cov < 0)
+            //     xy_cov_vec.set(buffer_cnt, -sqrt(-xy_cov));
+            // else
+            //     xy_cov_vec.set(buffer_cnt, sqrt(xy_cov));
+
+            xy_cov_vec.set(buffer_cnt, xy_cov);
         }
 
         // set other data

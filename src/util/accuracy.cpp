@@ -74,5 +74,18 @@ double estimateAccuracyAt(const EllipseDef& def,
     return std::sqrt(std::pow(x_e, 2) + std::pow(y_e, 2));
 }
 
+void checkMaxCovariance(double x_stddev, double y_stddev, double &xy_cov)
+{
+    double max_valid_cov = x_stddev * y_stddev;
+    if (std::abs(xy_cov) > max_valid_cov)
+    {
+        // if (verbose) {
+        //     logwrn << "invalid covariance " << xy_cov << " exceeds max valid " 
+        //            << max_valid_cov << ", clamping";
+        // }
+        xy_cov = (xy_cov > 0) ? max_valid_cov : -max_valid_cov;
+    }
+}
+
 }  // namespace Accuracy
 }  // namespace Utils

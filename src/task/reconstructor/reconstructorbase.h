@@ -234,9 +234,7 @@ public:
     ReconstructorBase(const std::string& class_id, 
                       const std::string& instance_id,
                       ReconstructorTask& task, 
-                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
-                      ReconstructorBaseSettings& base_settings,
-                      unsigned int default_line_id = 0);
+                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator);
     virtual ~ReconstructorBase();
 
     const boost::posix_time::ptime& timestampMin() const { return timestamp_min_; }
@@ -245,7 +243,7 @@ public:
     bool hasNextTimeSlice();
     std::unique_ptr<ReconstructorBase::DataSlice> getNextTimeSlice();
 
-    int numSlices() const;
+    int numSlices();
 
     void processSlice();
     ReconstructorBase::DataSlice& currentSlice();
@@ -257,7 +255,7 @@ public:
 
     virtual void reset();
 
-    virtual ReconstructorBaseSettings& settings() { return base_settings_; };
+    virtual ReconstructorBaseSettings& settings()=0;
 
     ReferenceCalculatorSettings& referenceCalculatorSettings() { return ref_calc_settings_; }
     const ReferenceCalculatorSettings& referenceCalculatorSettings() const { return ref_calc_settings_; }
@@ -338,7 +336,7 @@ protected:
 
     std::shared_ptr<dbContent::DBContentAccessor> accessor_;
 
-    ReconstructorBaseSettings& base_settings_;
+    //ReconstructorBaseSettings& base_settings_;
 
     bool cancelled_ {false};
 
@@ -347,6 +345,8 @@ protected:
     unsigned int num_target_reports_ {0};
     unsigned int num_target_reports_associated_ {0};
     unsigned int num_target_reports_unassociated_ {0};
+
+    void registerBaseSettings(ReconstructorBaseSettings& settings);
 
     void removeOldBufferData(); // remove all data before current_slice_begin_
     virtual void processSlice_impl() = 0;
@@ -377,10 +377,10 @@ private:
 
     double determineProcessNoise(const dbContent::targetReport::ReconstructorInfo& ri,
                                  const dbContent::ReconstructorTarget& target,
-                                 const ReferenceCalculatorSettings::ProcessNoise& Q) const;
+                                 const ReferenceCalculatorSettings::ProcessNoise& Q);
     double determineProcessNoiseVariance(const dbContent::targetReport::ReconstructorInfo& ri,
                                          const dbContent::ReconstructorTarget& target,
-                                         const ReferenceCalculatorSettings::ProcessNoise& Q) const;
+                                         const ReferenceCalculatorSettings::ProcessNoise& Q);
 
     ReferenceCalculatorSettings ref_calc_settings_;
 

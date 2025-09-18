@@ -453,68 +453,14 @@ void ReconstructorBase::TargetsContainer::clear()
 ReconstructorBase::ReconstructorBase(const std::string& class_id, 
                                      const std::string& instance_id,
                                      ReconstructorTask& task, 
-                                     std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
-                                     ReconstructorBaseSettings& base_settings,
-                                     unsigned int default_line_id)
+                                     std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
     :   Configurable (class_id, instance_id, &task)
     ,   targets_container_(this)
     ,   acc_estimator_(std::move(acc_estimator))
     ,   task_(task)
-    ,   base_settings_(base_settings)
     ,   chain_predictors_(new reconstruction::KalmanChainPredictors)
 {
     accessor_ = make_shared<dbContent::DBContentAccessor>();
-
-    // base settings
-    {
-        registerParameter("ds_line", &base_settings_.ds_line, default_line_id);
-
-        registerParameter("slice_duration_in_minutes", &base_settings_.slice_duration_in_minutes,
-                          base_settings_.slice_duration_in_minutes);
-        registerParameter("outdated_duration_in_minutes", &base_settings_.outdated_duration_in_minutes,
-                          base_settings_.outdated_duration_in_minutes);
-
-        registerParameter("delete_all_calc_reftraj", &base_settings_.delete_all_calc_reftraj,
-                          base_settings_.delete_all_calc_reftraj);
-    }
-
-    // association stuff
-    registerParameter("max_time_diff", &base_settings_.max_time_diff_, base_settings_.max_time_diff_);
-    registerParameter("max_altitude_diff", &base_settings_.max_altitude_diff_, base_settings_.max_altitude_diff_);
-    registerParameter("track_max_time_diff", &base_settings_.track_max_time_diff_, base_settings_.track_max_time_diff_);
-    registerParameter("do_track_number_disassociate_using_distance",
-                      &base_settings_.do_track_number_disassociate_using_distance_,
-                      base_settings_.do_track_number_disassociate_using_distance_);
-    registerParameter("tn_disassoc_distance_factor", &base_settings_.tn_disassoc_distance_factor_,
-                      base_settings_.tn_disassoc_distance_factor_);
-
-
-    registerParameter("target_prob_min_time_overlap", &base_settings_.target_prob_min_time_overlap_,
-                      base_settings_.target_prob_min_time_overlap_);
-    registerParameter("target_min_updates", &base_settings_.target_min_updates_, base_settings_.target_min_updates_);
-    registerParameter("target_max_positions_dubious_verified_rate",
-                      &base_settings_.target_max_positions_dubious_verified_rate_,
-                      base_settings_.target_max_positions_dubious_verified_rate_);
-    registerParameter("target_max_positions_dubious_unknown_rate",
-                      &base_settings_.target_max_positions_dubious_unknown_rate_,
-                      base_settings_.target_max_positions_dubious_unknown_rate_);
-
-    registerParameter("target_max_positions_not_ok_verified_rate",
-                      &base_settings_.target_max_positions_not_ok_verified_rate_,
-                      base_settings_.target_max_positions_not_ok_verified_rate_);
-    registerParameter("target_max_positions_not_ok_unknown_rate",
-                      &base_settings_.target_max_positions_not_ok_unknown_rate_,
-                      base_settings_.target_max_positions_not_ok_unknown_rate_);
-
-    // // target classification moved to derived since segfault
-    // registerParameter("min_aircraft_modec", &base_settings_.min_aircraft_modec_, base_settings_.min_aircraft_modec_);
-
-    // registerParameter("vehicle_acids", &base_settings_.vehicle_acids_, std::string());
-    // registerParameter("vehicle_acads", &base_settings_.vehicle_acads_, std::string());
-
-    registerParameter("use_stopped_adsb_tracking_",
-                      &base_settings_.use_stopped_adsb_tracking_,
-                      base_settings_.use_stopped_adsb_tracking_);
 
     // reference computation
     {
@@ -565,11 +511,65 @@ ReconstructorBase::ReconstructorBase(const std::string& class_id,
                           ReferenceCalculatorSettings().filter_references_max_stddev_);
         registerParameter("filter_references_max_stddev_m", &ref_calc_settings_.filter_references_max_stddev_m_,
                           ReferenceCalculatorSettings().filter_references_max_stddev_m_);
-
-        ref_calc_settings_.track_stopped_adsb = base_settings_.use_stopped_adsb_tracking_;
     }
 
     traced_assert(acc_estimator_);
+}
+
+void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings)
+{
+    // base settings
+    {
+        registerParameter("ds_line", &settings.ds_line, settings.ds_line);
+
+        registerParameter("slice_duration_in_minutes", &settings.slice_duration_in_minutes,
+                          settings.slice_duration_in_minutes);
+        registerParameter("outdated_duration_in_minutes", &settings.outdated_duration_in_minutes,
+                          settings.outdated_duration_in_minutes);
+
+        registerParameter("delete_all_calc_reftraj", &settings.delete_all_calc_reftraj,
+                          settings.delete_all_calc_reftraj);
+    }
+
+    // association stuff
+    registerParameter("max_time_diff", &settings.max_time_diff_, settings.max_time_diff_);
+    registerParameter("max_altitude_diff", &settings.max_altitude_diff_, settings.max_altitude_diff_);
+    registerParameter("track_max_time_diff", &settings.track_max_time_diff_, settings.track_max_time_diff_);
+    registerParameter("do_track_number_disassociate_using_distance",
+                      &settings.do_track_number_disassociate_using_distance_,
+                      settings.do_track_number_disassociate_using_distance_);
+    registerParameter("tn_disassoc_distance_factor", &settings.tn_disassoc_distance_factor_,
+                      settings.tn_disassoc_distance_factor_);
+
+    registerParameter("target_prob_min_time_overlap", &settings.target_prob_min_time_overlap_,
+                      settings.target_prob_min_time_overlap_);
+    registerParameter("target_min_updates", &settings.target_min_updates_, settings.target_min_updates_);
+    registerParameter("target_max_positions_dubious_verified_rate",
+                      &settings.target_max_positions_dubious_verified_rate_,
+                      settings.target_max_positions_dubious_verified_rate_);
+    registerParameter("target_max_positions_dubious_unknown_rate",
+                      &settings.target_max_positions_dubious_unknown_rate_,
+                      settings.target_max_positions_dubious_unknown_rate_);
+
+    registerParameter("target_max_positions_not_ok_verified_rate",
+                      &settings.target_max_positions_not_ok_verified_rate_,
+                      settings.target_max_positions_not_ok_verified_rate_);
+    registerParameter("target_max_positions_not_ok_unknown_rate",
+                      &settings.target_max_positions_not_ok_unknown_rate_,
+                      settings.target_max_positions_not_ok_unknown_rate_);
+
+    registerParameter("min_aircraft_modec", &settings.min_aircraft_modec_, settings.min_aircraft_modec_);
+
+    registerParameter("vehicle_acids", &settings.vehicle_acids_, {});
+    settings.setVehicleACIDs(settings.vehicle_acids_);
+    registerParameter("vehicle_acads", &settings.vehicle_acads_, {});
+    settings.setVehicleACADs(settings.vehicle_acads_);    
+
+    registerParameter("use_stopped_adsb_tracking_",
+                      &settings.use_stopped_adsb_tracking_,
+                      settings.use_stopped_adsb_tracking_);
+
+    ref_calc_settings_.track_stopped_adsb = settings.use_stopped_adsb_tracking_;
 }
 
 /**
@@ -615,12 +615,12 @@ void ReconstructorBase::resetTimeframeSettings()
 
 bool ReconstructorBase::isVehicleACID(const std::string& acid)
 {
-    return base_settings_.vehicle_acids_set_.count(acid);
+    return settings().vehicle_acids_set_.count(acid);
 }
 
 bool ReconstructorBase::isVehicleACAD(unsigned int value)
 {
-    return base_settings_.vehicle_acads_set_.count(value);
+    return settings().vehicle_acads_set_.count(value);
 }
 
 std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ReconstructorBase::timeFrame() const
@@ -654,8 +654,8 @@ void ReconstructorBase::resetTimeframe()
 void ReconstructorBase::applyTimeframeLimits()
 {
     //get time range from settings
-    boost::posix_time::ptime settings_t0 = base_settings_.data_timestamp_min;
-    boost::posix_time::ptime settings_t1 = base_settings_.data_timestamp_max;
+    boost::posix_time::ptime settings_t0 = settings().data_timestamp_min;
+    boost::posix_time::ptime settings_t1 = settings().data_timestamp_max;
 
     //both set?
     if (settings_t0.is_not_a_date_time() || settings_t1.is_not_a_date_time())
@@ -703,13 +703,13 @@ bool ReconstructorBase::hasNextTimeSlice()
     return next_slice_begin_ < timestamp_max_;
 }
 
-int ReconstructorBase::numSlices() const
+int ReconstructorBase::numSlices()
 {
     if (timestamp_min_.is_not_a_date_time() || timestamp_max_.is_not_a_date_time())
         return -1;
 
     return (int)std::ceil(Utils::Time::partialSeconds(timestamp_max_ - timestamp_min_)
-                           / Utils::Time::partialSeconds(base_settings_.sliceDuration()));
+                           / Utils::Time::partialSeconds(settings().sliceDuration()));
 }
 
 std::unique_ptr<ReconstructorBase::DataSlice> ReconstructorBase::getNextTimeSlice()
@@ -726,7 +726,7 @@ std::unique_ptr<ReconstructorBase::DataSlice> ReconstructorBase::getNextTimeSlic
 
     traced_assert(current_slice_begin_ <= timestamp_max_);
 
-    boost::posix_time::ptime current_slice_end = current_slice_begin_ + base_settings_.sliceDuration();
+    boost::posix_time::ptime current_slice_end = current_slice_begin_ + settings().sliceDuration();
 
     //TimeWindow window {current_slice_begin_, current_slice_end};
 
@@ -735,8 +735,8 @@ std::unique_ptr<ReconstructorBase::DataSlice> ReconstructorBase::getNextTimeSlic
 
     first_slice_ = current_slice_begin_ == timestamp_min_;
 
-    remove_before_time_ = current_slice_begin_ - base_settings_.outdatedDuration();
-    write_before_time_ = current_slice_end - base_settings_.outdatedDuration();
+    remove_before_time_ = current_slice_begin_ - settings().outdatedDuration();
+    write_before_time_ = current_slice_end - settings().outdatedDuration();
 
     next_slice_begin_ = current_slice_end; // for next iteration
 
@@ -1453,7 +1453,7 @@ std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createReferenc
 
         DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
 
-        unsigned int ds_id = Number::dsIdFrom(base_settings_.ds_sac, base_settings_.ds_sic);
+        unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
 
         if (!src_man.hasConfigDataSource(ds_id))
         {
@@ -1465,7 +1465,7 @@ std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createReferenc
 
         dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
 
-        src.name(base_settings_.ds_name);
+        src.name(settings().ds_name);
         src.dsType("RefTraj"); // same as dstype
 
         return std::map<std::string, std::shared_ptr<Buffer>> {{buffer->dbContentName(), buffer}};
@@ -1751,9 +1751,9 @@ void ReconstructorBase::doUnassociatedAnalysis()
 
     // slice was already switched
     vp_json[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
-        next_slice_begin_ - base_settings_.sliceDuration() - boost::posix_time::milliseconds(1));
+        next_slice_begin_ - settings().sliceDuration() - boost::posix_time::milliseconds(1));
     vp_json[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
-        Time::toString(current_slice_begin_ - base_settings_.sliceDuration());
+        Time::toString(current_slice_begin_ - settings().sliceDuration());
 
     // vp_json[ViewPoint::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
     //     String::compress(associator().unassociatedRecNums(), ',');
@@ -1824,7 +1824,7 @@ const ReconstructorBase::DataSlice& ReconstructorBase::currentSlice() const
 
 double ReconstructorBase::determineProcessNoiseVariance(const dbContent::targetReport::ReconstructorInfo& ri,
                                                         const dbContent::ReconstructorTarget& target,
-                                                        const ReferenceCalculatorSettings::ProcessNoise& Q) const
+                                                        const ReferenceCalculatorSettings::ProcessNoise& Q)
 {
     auto Q_std = determineProcessNoise(ri, target, Q);
     return Q_std * Q_std;
@@ -1832,7 +1832,7 @@ double ReconstructorBase::determineProcessNoiseVariance(const dbContent::targetR
 
 double ReconstructorBase::determineProcessNoise(const dbContent::targetReport::ReconstructorInfo& ri,
                                                 const dbContent::ReconstructorTarget& target,
-                                                const ReferenceCalculatorSettings::ProcessNoise& Q) const
+                                                const ReferenceCalculatorSettings::ProcessNoise& Q) 
 {
     //no dynamic process noise => return static noise
     if (!ref_calc_settings_.dynamic_process_noise)
@@ -1852,7 +1852,7 @@ double ReconstructorBase::determineProcessNoise(const dbContent::targetReport::R
     if (target.targetCategory() != TargetBase::Category::Unknown)
         f_air = dbContent::Target::processNoiseFactorAir(target.targetCategory());
 
-    auto alt_state = target.getAltitudeStateStruct(ri.timestamp_, Time::partialSeconds(base_settings_.max_time_diff_));
+    auto alt_state = target.getAltitudeStateStruct(ri.timestamp_, Time::partialSeconds(settings().max_time_diff_));
 
     if (alt_state.fl_unknown)
         return Q.Q_std_unknown; // use unknown value with factor 1
