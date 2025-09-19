@@ -35,7 +35,6 @@
 #include "util/timeconv.h"
 #include "viewpoint_commands.h"
 #include "global.h"
-#include "files.h"
 
 #include "json.hpp"
 

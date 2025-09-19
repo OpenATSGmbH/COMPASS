@@ -43,6 +43,7 @@
 #include <QThread>
 #include <QToolBar>
 #include <QMessageBox>
+#include <QTimer>
 
 using namespace std;
 using namespace Utils;
@@ -65,6 +66,8 @@ TargetListWidget::TargetListWidget(TargetModel& model, DBContentManager& dbcont_
     table_view_->sortByColumn(0, Qt::AscendingOrder);
     table_view_->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+table_view_->setFocusPolicy(Qt::StrongFocus);
+table_view_->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
     table_view_->horizontalHeader()->resizeSections(QHeaderView::ResizeToContents);
     table_view_->horizontalHeader()->setMaximumSectionSize(300);
     //table_view_->setIconSize(QSize(24, 24));
@@ -671,29 +674,46 @@ void TargetListWidget::evalExcludeRequirementsTargetSlot()
     evalExcludeRequirementsTarget(selectedUTNs());
 }
 
-void TargetListWidget::currentRowChanged(const QModelIndex& current, const QModelIndex& previous)
-{
-    if (!current.isValid())
-    {
-        loginf << "invalid index";
-        return;
-    }
+// void TargetListWidget::currentRowChanged(const QModelIndex& current, const QModelIndex& previous)
+// {
+//     if (!current.isValid())
+//     {
+//         loginf << "invalid index";
+//         return;
+//     }
 
-    auto const source_index = proxy_model_->mapToSource(current);
-    traced_assert(source_index.isValid());
+//     auto const source_index = proxy_model_->mapToSource(current);
+//     traced_assert(source_index.isValid());
 
-    const dbContent::Target& target = model_.getTargetOf(source_index);
+//     const dbContent::Target& target = model_.getTargetOf(source_index);
 
-    loginf << "current target " << target.utn_;
+//     loginf << "current target " << target.utn_;
 
-    dbcont_manager_.showUTN(target.utn_);
-}
+//     dbcont_manager_.showUTN(target.utn_);
+
+//     // Restore focus to table view
+//     table_view_->setFocus();
+// }
 
 void TargetListWidget::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
     std::set<unsigned int> selected_utns = selectedUTNs();
 
+    loginf << "utns " << String::compress(selected_utns,',');
+
+    // to restore focus after loading
+    connect(&dbcont_manager_, &DBContentManager::loadingDoneSignal,
+            this, &TargetListWidget::loadingDoneSlot);
+
     dbcont_manager_.showUTNs(selected_utns);
+}
+
+void TargetListWidget::loadingDoneSlot()
+{
+    disconnect(&dbcont_manager_, &DBContentManager::loadingDoneSignal, this,
+               &TargetListWidget::loadingDoneSlot);
+
+    table_view_->setFocus();
 }
 
 void TargetListWidget::showMainColumns(bool show)
@@ -785,7 +805,7 @@ std::set<unsigned int> TargetListWidget::selectedUTNs() const
         selected_indexes.insert(target.utn_);
     }
 
-    loginf << "start" << String::compress(selected_indexes, ',');
+    logdbg << "start " << String::compress(selected_indexes, ',');
 
     return selected_indexes;
 }
