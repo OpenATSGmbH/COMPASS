@@ -324,10 +324,8 @@ public:
 
     mutable Transformation trafo_;
 
-    void addTargetReport (unsigned long rec_num,
-                         bool add_to_tracker = true);
-    void addTargetReports (const ReconstructorTarget& other,
-                          bool add_to_tracker = true);
+    void addTargetReport (unsigned long rec_num);
+    void addTargetReports (const ReconstructorTarget& other);
 
     unsigned int numAssociated() const;
     unsigned long lastAssociated() const;
@@ -527,7 +525,7 @@ protected:
                              std::pair<int, int>& idxs_remove) const;
 
     TargetReportAddResult addTargetReportInternal (unsigned long rec_num,
-                                                   bool add_to_tracker,
+                                                   bool add_to_tracker, // false if internal re-add
                                                    bool reestimate);
 
     TargetReportSkipResult skipTargetReport (const dbContent::targetReport::ReconstructorInfo& tr,

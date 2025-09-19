@@ -285,23 +285,21 @@ void ReconstructorTarget::addPredictionToGlobalStats(const reconstruction::Predi
     global_stats_.num_chain_predictions_proj_changed += s.num_proj_changed;
 }
 
-void ReconstructorTarget::addTargetReport (unsigned long rec_num,
-                                           bool add_to_tracker)
+void ReconstructorTarget::addTargetReport (unsigned long rec_num)
 {
-    addTargetReportInternal(rec_num, add_to_tracker, true);
+    addTargetReportInternal(rec_num, true, true);
 }
 
-void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other,
-                                            bool add_to_tracker)
+void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
 {
     //add single tr without reestimating
     size_t num_added = 0;
     for (auto& rn_it : other.tr_timestamps_)
-        if (addTargetReportInternal(rn_it.second, add_to_tracker, false) != TargetReportAddResult::Skipped)
+        if (addTargetReportInternal(rn_it.second, true, false) != TargetReportAddResult::Skipped)
             ++num_added;
 
     //reestimate chain after adding
-    if (add_to_tracker && chain())
+    if (chain())
     {
         reconstruction::UpdateStats stats;
         bool ok = chain()->reestimate(&stats);
@@ -325,9 +323,8 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other,
         standing_adsb_target_ = other.standing_adsb_target_;
 }
 
-ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal (unsigned long rec_num,
-                                                                                         bool add_to_tracker,
-                                                                                         bool reestimate)
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(
+    unsigned long rec_num, bool add_to_tracker, bool reestimate)
 {
     bool do_debug = false;
 
@@ -529,7 +526,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     TargetReportAddResult result = TargetReportAddResult::Skipped;
 
-    if (add_to_tracker && !tr.doNotUsePosition())
+    if (add_to_tracker) //!tr.doNotUsePosition()
     {
         if (!hasTracker())
         {
