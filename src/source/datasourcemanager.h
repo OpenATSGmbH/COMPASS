@@ -30,7 +30,7 @@
 #include <memory>
 
 class COMPASS;
-class DataSourcesWidget;
+class DataSourcesToolWidget;
 class DataSourcesConfigurationDialog;
 
 class DataSourceManager : public QObject, public Configurable
@@ -122,7 +122,7 @@ class DataSourceManager : public QObject, public Configurable
 
     void resetToStartupConfiguration();
 
-    DataSourcesWidget* loadWidget();
+    DataSourcesToolWidget* loadWidget();
     void updateWidget();
 
     DataSourcesConfigurationDialog* configurationDialog();
@@ -176,7 +176,7 @@ class DataSourceManager : public QObject, public Configurable
     std::vector<std::unique_ptr<dbContent::DBDataSource>> db_data_sources_;
     std::vector<unsigned int> ds_ids_all_; // both from config and db, vector to have order
 
-    DataSourcesWidget* load_widget_{nullptr}; // deleted by qt
+    DataSourcesToolWidget* load_widget_{nullptr}; // deleted by qt
 
     std::unique_ptr<DataSourcesConfigurationDialog> config_dialog_;
 

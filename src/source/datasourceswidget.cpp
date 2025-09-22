@@ -21,7 +21,6 @@
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 
-#include "global.h"
 #include "stringconv.h"
 #include "number.h"
 #include "files.h"
@@ -438,44 +437,44 @@ DataSourcesWidget::DataSourcesWidget(DataSourceManager& ds_man)
  */
 DataSourcesWidget::~DataSourcesWidget() = default;
 
-/**
- */
-QIcon DataSourcesWidget::toolIcon() const 
-{
-    return QIcon(Utils::Files::getIconFilepath("data_sources.png").c_str());
-}
 
 /**
  */
-std::string DataSourcesWidget::toolName() const 
+void DataSourcesWidget::createUI()
 {
-    return "Data Sources";
+    QFont font_bold;
+    font_bold.setBold(true);
+
+    QVBoxLayout* main_layout = new QVBoxLayout();
+    setLayout(main_layout);
+
+    // buttons
+    QHBoxLayout* button_layout = new QHBoxLayout();
+
+    main_layout->addLayout(button_layout);
+
+    // tree widget
+    tree_widget_ = new QTreeWidget;
+    tree_widget_->setColumnCount(4);
+
+    QStringList header_labels;
+    header_labels << "Name";
+    header_labels << "Lines";
+    header_labels << "Loaded";
+    header_labels << "Count";
+
+    tree_widget_->setHeaderLabels(header_labels);
+    tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
+
+    connect(tree_widget_, &QTreeWidget::itemChanged, this, &DataSourcesWidget::itemChanged);
+
+    main_layout->addWidget(tree_widget_);
+
+    // update
+    updateContent(true);
 }
 
-/**
- */
-std::string DataSourcesWidget::toolInfo() const 
-{
-    return "Data Sources";
-}
-
-/**
- */
-std::vector<std::string> DataSourcesWidget::toolLabels() const 
-{
-    return { "Data", "Sources" };
-}
-
-/**
- */
-toolbox::ScreenRatio DataSourcesWidget::defaultScreenRatio() const 
-{
-    return ToolBoxWidget::defaultScreenRatio();
-}
-
-/**
- */
-void DataSourcesWidget::addToConfigMenu(QMenu* menu) 
+void DataSourcesWidget::addActionsToConfigMenu(QMenu* menu)
 {
     QAction* sel_dstyp_action = menu->addAction("Select All DSTypes");
     connect(sel_dstyp_action, &QAction::triggered, this, &DataSourcesWidget::selectAllDSTypes);
@@ -527,92 +526,6 @@ void DataSourcesWidget::addToConfigMenu(QMenu* menu)
 
     QAction* show_cnt_action = menu->addAction("Toggle Show Counts");
     connect(show_cnt_action, &QAction::triggered, this, &DataSourcesWidget::toogleShowCounts);
-}
-
-/**
- */
-void DataSourcesWidget::addToToolBar(QToolBar* tool_bar)
-{
-}
-
-/**
- */
-void DataSourcesWidget::loadingStarted()
-{
-    tree_widget_->setEnabled(false);
-}
-
-/**
- */
-void DataSourcesWidget::loadingDone()
-{
-    tree_widget_->setEnabled(true);
-}
-
-/**
- */
-void DataSourcesWidget::createUI()
-{
-    QFont font_bold;
-    font_bold.setBold(true);
-
-    QVBoxLayout* main_layout = new QVBoxLayout();
-    setLayout(main_layout);
-
-    // buttons
-    QHBoxLayout* button_layout = new QHBoxLayout();
-
-    main_layout->addLayout(button_layout);
-
-    // tree widget
-    tree_widget_ = new QTreeWidget;
-    tree_widget_->setColumnCount(4);
-
-    QStringList header_labels;
-    header_labels << "Name";
-    header_labels << "Lines";
-    header_labels << "Loaded";
-    header_labels << "Count";
-
-    tree_widget_->setHeaderLabels(header_labels);
-    tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
-
-    connect(tree_widget_, &QTreeWidget::itemChanged, this, &DataSourcesWidget::itemChanged);
-
-    main_layout->addWidget(tree_widget_);
-
-    QHBoxLayout* assoc_layout = new QHBoxLayout();
-
-    // time
-    QLabel* ts_label = new QLabel("Timestamps");
-    ts_label->setFont(font_bold);
-    assoc_layout->addWidget(ts_label);
-
-    assoc_layout->addWidget(new QLabel("Min"));
-
-    ts_min_label_ = new QLabel("None");
-    assoc_layout->addWidget(ts_min_label_);
-
-    assoc_layout->addWidget(new QLabel("Max"));
-
-    ts_max_label_ = new QLabel("None");
-    assoc_layout->addWidget(ts_max_label_);
-
-    assoc_layout->addStretch();
-
-    // assoc
-    QLabel* assoc_label = new QLabel("Associations");
-    assoc_label->setFont(font_bold);
-    assoc_layout->addWidget(assoc_label);
-
-    associations_label_ = new QLabel("None");
-    assoc_layout->addWidget(associations_label_);
-
-    assoc_layout->addStretch();
-    main_layout->addLayout(assoc_layout);
-
-    // update
-    updateContent(true);
 }
 
 /**
@@ -677,7 +590,7 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
     tree_widget_->blockSignals(false);
     tree_widget_->expandAll();
 
-    updateAdditionalInfo();
+    //updateAdditionalInfo();
 
     return changes;
 }
@@ -905,39 +818,66 @@ void DataSourcesWidget::updateAllContent()
     for (int i = 0; i < tree_widget_->topLevelItemCount(); ++i)
         updateContentRecursive(tree_widget_->topLevelItem(i));
 
-    updateAdditionalInfo();
+}
+
+
+
+
+
+/**
+ */
+void DataSourcesWidget::setUseDSType(const std::string& ds_type_name, bool use)
+{
+    ds_man_.dsTypeLoadingWanted(ds_type_name, use);
 }
 
 /**
  */
-void DataSourcesWidget::updateAdditionalInfo()
+bool DataSourcesWidget::getUseDSType(const std::string& ds_type_name) const
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    return ds_man_.dsTypeLoadingWanted(ds_type_name);
+}
 
-    traced_assert(ts_min_label_);
-    traced_assert(ts_max_label_);
+/**
+ */
+void DataSourcesWidget::setUseDS(unsigned int ds_id, bool use)
+{
+    ds_man_.dbDataSource(ds_id).loadingWanted(use);
+}
 
-    if (dbcont_man.hasMinMaxTimestamp())
-    {
-        ts_min_label_->setText(Utils::Time::toString(std::get<0>(dbcont_man.minMaxTimestamp()), 0).c_str());
-        ts_max_label_->setText(Utils::Time::toString(std::get<1>(dbcont_man.minMaxTimestamp()), 0).c_str());
-    }
-    else
-    {
-        ts_min_label_->setText("None");
-        ts_max_label_->setText("None");
-    }
+/**
+ */
+bool DataSourcesWidget::getUseDS(unsigned int ds_id) const
+{
+    return ds_man_.dbDataSource(ds_id).loadingWanted();
+}
 
-    traced_assert(associations_label_);
-    if (dbcont_man.hasAssociations())
-    {
-        std::string tmp = "From " + dbcont_man.associationsID();
-        associations_label_->setText(tmp.c_str());
-    }
-    else
-    {
-        associations_label_->setText("None");
-    }
+/**
+ */
+void DataSourcesWidget::setUseDSLine(unsigned int ds_id, unsigned int ds_line, bool use)
+{
+    ds_man_.dbDataSource(ds_id).lineLoadingWanted(ds_line, use);
+}
+
+/**
+ */
+bool DataSourcesWidget::getUseDSLine(unsigned int ds_id, unsigned int ds_line) const
+{
+    return ds_man_.dbDataSource(ds_id).lineLoadingWanted(ds_line);
+}
+
+/**
+ */
+void DataSourcesWidget::setShowCounts(bool show) const
+{
+    ds_man_.config().load_widget_show_counts_ = show;
+}
+
+/**
+ */
+bool DataSourcesWidget::getShowCounts() const
+{
+    return ds_man_.config().load_widget_show_counts_;
 }
 
 /**
@@ -1063,60 +1003,4 @@ void DataSourcesWidget::toogleShowCounts()
     setShowCounts(!getShowCounts());
 
     updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::setUseDSType(const std::string& ds_type_name, bool use)
-{
-    ds_man_.dsTypeLoadingWanted(ds_type_name, use);
-}
-
-/**
- */
-bool DataSourcesWidget::getUseDSType(const std::string& ds_type_name) const
-{
-    return ds_man_.dsTypeLoadingWanted(ds_type_name);
-}
-
-/**
- */
-void DataSourcesWidget::setUseDS(unsigned int ds_id, bool use)
-{
-    ds_man_.dbDataSource(ds_id).loadingWanted(use);
-}
-
-/**
- */
-bool DataSourcesWidget::getUseDS(unsigned int ds_id) const
-{
-    return ds_man_.dbDataSource(ds_id).loadingWanted();
-}
-
-/**
- */
-void DataSourcesWidget::setUseDSLine(unsigned int ds_id, unsigned int ds_line, bool use)
-{
-    ds_man_.dbDataSource(ds_id).lineLoadingWanted(ds_line, use);
-}
-
-/**
- */
-bool DataSourcesWidget::getUseDSLine(unsigned int ds_id, unsigned int ds_line) const
-{
-    return ds_man_.dbDataSource(ds_id).lineLoadingWanted(ds_line);
-}
-
-/**
- */
-void DataSourcesWidget::setShowCounts(bool show) const
-{
-    ds_man_.config().load_widget_show_counts_ = show;
-}
-
-/**
- */
-bool DataSourcesWidget::getShowCounts() const
-{
-    return ds_man_.config().load_widget_show_counts_;
 }

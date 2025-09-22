@@ -17,12 +17,12 @@
 
 
 #include "datasourcemanager.h"
-#include "datasourceswidget.h"
+#include "datasourcestoolwidget.h"
 #include "datasourcesconfigurationdialog.h"
 #include "compass.h"
 #include "dbinterface.h"
-#include "stringconv.h"
 #include "number.h"
+#include "stringconv.h"
 #include "files.h"
 #include "json.hpp"
 #include "datasource_commands.h"
@@ -152,13 +152,12 @@ const std::vector<unsigned int>& DataSourceManager::getAllDsIDs()
     return ds_ids_all_;
 }
 
-DataSourcesWidget* DataSourceManager::loadWidget()
+DataSourcesToolWidget* DataSourceManager::loadWidget()
 {
     if (!load_widget_)
     {
-        load_widget_ = new DataSourcesWidget(*this);
+        load_widget_ = new DataSourcesToolWidget(*this);
     }
-
 
     traced_assert(load_widget_);
     
