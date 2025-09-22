@@ -427,8 +427,8 @@ void DataSourceLineButton::updateContent()
 
 /**
  */
-DataSourcesWidget::DataSourcesWidget(DataSourceManager& ds_man)
-:   ds_man_(ds_man)
+DataSourcesWidget::DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man)
+:   can_show_counts_(can_show_counts), ds_man_(ds_man)
 {
     createUI();
 }
@@ -455,14 +455,18 @@ void DataSourcesWidget::createUI()
 
     // tree widget
     tree_widget_ = new QTreeWidget;
-    tree_widget_->setColumnCount(4);
 
     QStringList header_labels;
     header_labels << "Name";
     header_labels << "Lines";
-    header_labels << "Loaded";
-    header_labels << "Count";
 
+    if (can_show_counts_)
+    {
+        header_labels << "Loaded";
+        header_labels << "Count";
+    }
+
+    tree_widget_->setColumnCount(header_labels.size());
     tree_widget_->setHeaderLabels(header_labels);
     tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
 
@@ -665,7 +669,7 @@ int DataSourcesWidget::generateDataSource(DataSourceItem* item,
     int changes = item->init(ds_id) ? 1 : 0;
 
     //handle count items
-    bool show_counts = getShowCounts();
+    bool show_counts = can_show_counts_ && getShowCounts();
     if (!show_counts)
     {
         //no counts shown => remove any existing children
@@ -819,9 +823,6 @@ void DataSourcesWidget::updateAllContent()
         updateContentRecursive(tree_widget_->topLevelItem(i));
 
 }
-
-
-
 
 
 /**

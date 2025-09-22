@@ -50,7 +50,7 @@ void DataSourcesToolWidget::createUI()
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
-    ds_widget_ = new DataSourcesWidget(ds_man_);
+    ds_widget_ = new DataSourcesWidget(true, ds_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
 
     main_layout->addWidget(ds_widget_);

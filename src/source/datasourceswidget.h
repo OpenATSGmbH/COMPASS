@@ -21,6 +21,7 @@
 #include <QMenu>
 #include <QPushButton>
 #include <QTreeWidgetItem>
+#include <boost/describe/members.hpp>
 
 class DataSourceManager;
 
@@ -167,7 +168,7 @@ class DataSourcesWidget : public QWidget
     Q_OBJECT
 
 public:
-    DataSourcesWidget(DataSourceManager& ds_man);
+    DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man);
     virtual ~DataSourcesWidget();
 
     void updateContent(bool recreate_required = false);
@@ -187,11 +188,23 @@ public:
 
     static const int LineButtonSize;
 
+protected:
+    bool can_show_counts_;
+    DataSourceManager& ds_man_;
+
+    void selectAllDSTypes();
+    void deselectAllDSTypes();
+    void selectAllDataSources();
+    void deselectAllDataSources();
+    void selectDSTypeSpecificDataSources();
+    void deselectDSTypeSpecificDataSources();
+    void deselectAllLines();
+    void selectSpecificLines();
+    void toogleShowCounts();
+
 private:
     friend class DataSourcesWidgetItem;
     friend class DataSourceLineButton;
-
-    DataSourceManager& ds_man_;
 
     QTreeWidget* tree_widget_ = nullptr;
 
@@ -214,13 +227,4 @@ private:
 
     void updateAllContent();
 
-    void selectAllDSTypes();
-    void deselectAllDSTypes();
-    void selectAllDataSources();
-    void deselectAllDataSources();
-    void selectDSTypeSpecificDataSources();
-    void deselectDSTypeSpecificDataSources();
-    void deselectAllLines();
-    void selectSpecificLines();
-    void toogleShowCounts();
 };
