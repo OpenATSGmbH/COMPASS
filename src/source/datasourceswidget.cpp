@@ -454,6 +454,10 @@ void DataSourcesWidget::createUI()
     main_layout->addLayout(button_layout);
 
     // tree widget
+
+    top_layout_ = new QHBoxLayout();
+    top_layout_->setContentsMargins(0, 0, 0, 0);
+
     tree_widget_ = new QTreeWidget;
 
     QStringList header_labels;
@@ -471,8 +475,12 @@ void DataSourcesWidget::createUI()
     tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
 
     connect(tree_widget_, &QTreeWidget::itemChanged, this, &DataSourcesWidget::itemChanged);
+    connect(tree_widget_, &QTreeWidget::itemSelectionChanged, 
+            this, &DataSourcesWidget::onItemSelectionChanged);
 
-    main_layout->addWidget(tree_widget_);
+    top_layout_->addWidget(tree_widget_);
+
+    main_layout->addLayout(top_layout_);
 
     // update
     updateContent(true);
@@ -746,6 +754,32 @@ void DataSourcesWidget::updateContent(bool recreate_required)
     int changes = generateContent(recreate_required);
 
     logdbg << "update generated " << changes << " change(s)";
+}
+
+/**
+ * Handle tree widget selection changes
+ */
+void DataSourcesWidget::onItemSelectionChanged()
+{
+    QList<QTreeWidgetItem*> selected_items = tree_widget_->selectedItems();
+    if (selected_items.isEmpty())
+        return;
+    
+    // Get the first selected item
+    QTreeWidgetItem* item = selected_items.first();
+    auto ds_item = dynamic_cast<DataSourcesWidgetItem*>(item);
+    
+    if (!ds_item || !ds_item->isInit())
+        return;
+    
+    if (ds_item->type() == DataSourcesWidgetItem::Type::DataSource)
+    {
+        auto data_source_item = dynamic_cast<DataSourceItem*>(ds_item);
+        loginf << "selected data source " << data_source_item->dsID();
+        // React to data source selection
+
+        emit dataSourceSelectedSignal(data_source_item->dsID());
+    }
 }
 
 /**

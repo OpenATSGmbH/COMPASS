@@ -58,7 +58,8 @@ public slots:
     void deleteSlot();
 
 public:
-    DataSourceEditWidget(DataSourceManager& ds_man, DataSourcesConfigurationDialog& dialog);
+    DataSourceEditWidget(DataSourceManager& ds_man, std::function<void(unsigned int)> update_ds_func,
+        std::function<void(unsigned int)> delete_ds_func);
 
     void showID(unsigned int ds_id);
     void clear();
@@ -67,7 +68,8 @@ public:
 
 protected:
     DataSourceManager& ds_man_;
-    DataSourcesConfigurationDialog& dialog_;
+    std::function<void(unsigned int)> update_ds_func_;
+    std::function<void(unsigned int)> delete_ds_func_;
 
     bool has_current_ds_ {false};
     unsigned int current_ds_id_ {0};

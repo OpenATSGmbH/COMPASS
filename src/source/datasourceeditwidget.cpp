@@ -40,10 +40,11 @@ using namespace std;
 using namespace dbContent;
 using namespace Utils;
 
-DataSourceEditWidget::DataSourceEditWidget(DataSourceManager& ds_man, DataSourcesConfigurationDialog& dialog)
-    : ds_man_(ds_man), dialog_(dialog)
+DataSourceEditWidget::DataSourceEditWidget(DataSourceManager& ds_man, 
+    std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func)
+    : ds_man_(ds_man), update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func)
 {
-    setMaximumWidth(400);
+    //setMaximumWidth(400);
 
     QScrollArea* scroll_area = new QScrollArea();
     scroll_area->setWidgetResizable(true);
@@ -51,7 +52,7 @@ DataSourceEditWidget::DataSourceEditWidget(DataSourceManager& ds_man, DataSource
     QWidget* main_widget = new QWidget();
 
     QVBoxLayout* main_layout = new QVBoxLayout();
-    main_layout->setSizeConstraint(QLayout::SetMinimumSize);
+    //main_layout->setSizeConstraint(QLayout::SetMinimumSize);
 
     QGridLayout* properties_layout_ = new QGridLayout();
 
@@ -471,7 +472,7 @@ void DataSourceEditWidget::nameEditedSlot(const QString& value)
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
     ds_man_.configDataSource(current_ds_id_).name(text);
 
-    dialog_.updateDataSource(current_ds_id_);
+    update_ds_func_(current_ds_id_);
 }
 
 void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
@@ -491,7 +492,7 @@ void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
     ds_man_.configDataSource(current_ds_id_).shortName(text);
 
-    dialog_.updateDataSource(current_ds_id_);
+    update_ds_func_(current_ds_id_);
 }
 
 void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
@@ -511,7 +512,7 @@ void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
     ds_man_.configDataSource(current_ds_id_).dsType(text);
 
-    dialog_.updateDataSource(current_ds_id_);
+    update_ds_func_(current_ds_id_);
 
     updateContent();
 }
@@ -834,9 +835,7 @@ void DataSourceEditWidget::deleteSlot()
     traced_assert(has_current_ds_);
     traced_assert(!current_ds_in_db_);
 
-    dialog_.beginResetModel();
-    ds_man_.deleteConfigDataSource(current_ds_id_);
-    dialog_.endResetModel();
+    delete_ds_func_(current_ds_id_);
 
     clear();
 }

@@ -161,11 +161,20 @@ private:
     const dbContent::DBDataSource* ds_ = nullptr;
 };
 
+class QHBoxLayout;
+
 /**
  */
 class DataSourcesWidget : public QWidget
 {
     Q_OBJECT
+
+public slots:
+    // Add this slot
+    void onItemSelectionChanged();
+
+signals:
+    void dataSourceSelectedSignal(unsigned int ds_id);
 
 public:
     DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man);
@@ -192,6 +201,9 @@ protected:
     bool can_show_counts_;
     DataSourceManager& ds_man_;
 
+    QHBoxLayout* top_layout_ {nullptr};
+    QTreeWidget* tree_widget_ {nullptr};
+
     void selectAllDSTypes();
     void deselectAllDSTypes();
     void selectAllDataSources();
@@ -205,8 +217,6 @@ protected:
 private:
     friend class DataSourcesWidgetItem;
     friend class DataSourceLineButton;
-
-    QTreeWidget* tree_widget_ = nullptr;
 
     void createUI();
 

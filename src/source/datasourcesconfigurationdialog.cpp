@@ -84,7 +84,17 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
     table_view_->resizeRowsToContents();
     top_layout->addWidget(table_view_);
 
-    edit_widget_ = new DataSourceEditWidget (ds_man_, *this);
+    std::function<void(unsigned int)> update_ds_func =
+        [this] (unsigned int ds_id) { table_model_->updateDataSource(ds_id); };
+
+    std::function<void(unsigned int)> delete_ds_func = [this](unsigned int ds_id)
+    {
+        table_model_->beginModelReset();
+        ds_man_.deleteConfigDataSource(ds_id);
+        table_model_->endModelReset();
+    };
+
+    edit_widget_ = new DataSourceEditWidget (ds_man_, update_ds_func, delete_ds_func);
     top_layout->addWidget(edit_widget_);
 
     main_layout->addLayout(top_layout);
@@ -133,21 +143,6 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
     main_layout->addLayout(button_layout);
 
     setLayout(main_layout);
-}
-
-void DataSourcesConfigurationDialog::updateDataSource(unsigned int ds_id)
-{
-    table_model_->updateDataSource(ds_id);
-}
-
-void DataSourcesConfigurationDialog::beginResetModel()
-{
-    table_model_->beginModelReset();
-}
-
-void DataSourcesConfigurationDialog::endResetModel()
-{
-    table_model_->endModelReset();
 }
 
 void DataSourcesConfigurationDialog::currentRowChanged(const QModelIndex& current, const QModelIndex& previous)
@@ -204,13 +199,13 @@ void DataSourcesConfigurationDialog::newDSDoneSlot()
 
         traced_assert(!ds_man_.hasConfigDataSource(ds_id));
 
-        beginResetModel();
+        table_model_->beginModelReset();
 
         ds_man_.createConfigDataSource(ds_id);
         traced_assert(ds_man_.hasConfigDataSource(ds_id));
         ds_man_.configDataSource(ds_id).dsType(ds_type);
 
-        endResetModel();
+        table_model_->endModelReset();
 
         auto const model_index = table_model_->dataSourceIndex(ds_id);
 

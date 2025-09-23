@@ -20,6 +20,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "source/dbdatasourcewidget.h"
 #include "datasourcemanager.h"
+#include "datasourceeditwidget.h"
 #include "global.h"
 #include "stringconv.h"
 #include "number.h"
@@ -48,6 +49,28 @@ DataSourcesUseWidget::DataSourcesUseWidget(std::function<bool(const std::string&
     get_use_ds_func_(get_use_ds_func), set_use_ds_func_(set_use_ds_func),
     get_use_ds_line_func_(get_use_ds_line_func), set_use_ds_line_func_(set_use_ds_line_func)
 {
+    assert (tree_widget_);
+    tree_widget_->setMaximumWidth(400);
+
+    std::function<void(unsigned int)> update_ds_func =
+        [this] (unsigned int ds_id) { this->updateContent(false); };
+
+    std::function<void(unsigned int)> delete_ds_func = [this](unsigned int ds_id)
+    { this->updateContent(true); };
+
+    assert (top_layout_);
+    edit_widget_ = new DataSourceEditWidget (ds_man_, update_ds_func, delete_ds_func);
+    edit_widget_->setContentsMargins(0, 0, 0, 0);
+    
+    top_layout_->addWidget(edit_widget_);    
+
+    // edit_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    // top_layout_->setStretchFactor(tree_widget_, 0);
+    // top_layout_->setStretchFactor(edit_widget_, 1);
+    
+    connect(this, &DataSourcesUseWidget::dataSourceSelectedSignal, this,
+            &DataSourcesUseWidget::dataSourceSelectedSlot);
 }
 
 DataSourcesUseWidget::~DataSourcesUseWidget()
@@ -80,6 +103,14 @@ void DataSourcesUseWidget::loadDSTypeChangedSlot()
     set_use_dstype_func_(ds_type_name, load);
 
     box->setChecked(get_use_dstype_func_(ds_type_name));
+}
+
+void DataSourcesUseWidget::dataSourceSelectedSlot(unsigned int ds_id)
+{
+    loginf << " ds_id " << ds_id;
+
+    assert (edit_widget_);
+    edit_widget_->showID(ds_id);
 }
 
 void DataSourcesUseWidget::setUseDSType(const std::string& ds_type_name, bool use)
