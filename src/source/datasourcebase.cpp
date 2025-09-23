@@ -34,6 +34,7 @@ namespace dbContent
 {
 
 const std::string DataSourceBase::DetectionKey{"detection_type"};
+const std::string DataSourceBase::GroundOnlyKey{"ground_only"};
 
 const std::string DataSourceBase::PSRIRMinKey{"primary_ir_min"};
 const std::string DataSourceBase::PSRIRMaxKey{"primary_ir_max"};
@@ -54,25 +55,25 @@ std::string DataSourceBase::detectionTypeToString(DetectionType type)
 {
     switch (type)
     {
-    case DetectionType::PrimaryOnlyGround: return "PrimaryOnlyGround";
-    case DetectionType::PrimaryOnlyAir: return "PrimaryOnlyAir";
+    case DetectionType::Undefined: return "Undefined";
+    case DetectionType::PrimaryOnly: return "PrimaryOnly";
     case DetectionType::ModeAC: return "ModeAC";
     case DetectionType::ModeACCombined: return "ModeACCombined";
     case DetectionType::ModeS: return "ModeS";
     case DetectionType::ModeSCombined: return "ModeSCombined";
-    default: return "ModeS"; // fallback
+    default: return "Undefined"; // fallback
     }
 }
 
 DataSourceBase::DetectionType DataSourceBase::detectionTypeFromString(const std::string& str)
 {
-    if (str == "PrimaryOnlyGround") return DetectionType::PrimaryOnlyGround;
-    if (str == "PrimaryOnlyAir") return DetectionType::PrimaryOnlyAir;
+    if (str == "Undefined") return DetectionType::Undefined;
+    if (str == "PrimaryOnly") return DetectionType::PrimaryOnly;
     if (str == "ModeAC") return DetectionType::ModeAC;
     if (str == "ModeACCombined") return DetectionType::ModeACCombined;
     if (str == "ModeS") return DetectionType::ModeS;
     if (str == "ModeSCombined") return DetectionType::ModeSCombined;
-    return DetectionType::ModeS; // fallback
+    return DetectionType::Undefined; // fallback
 }
 
 DataSourceBase::DataSourceBase()
@@ -169,12 +170,24 @@ DataSourceBase::DetectionType DataSourceBase::detectionType() const
     {
         return detectionTypeFromString(info_[DetectionKey].get<std::string>());
     }
-    return DetectionType::ModeS;
+    return DetectionType::Undefined;
 }
 
 void DataSourceBase::detectionType(DetectionType type)
 {
     info_[DetectionKey] = detectionTypeToString(type);
+}
+
+bool DataSourceBase::groundOnly() const
+{
+    if ( info_.contains(GroundOnlyKey))
+        return info_.at(GroundOnlyKey);
+
+    return false;
+}
+void DataSourceBase::groundOnly(bool value)
+{
+    info_[GroundOnlyKey] = value;
 }
 
 bool DataSourceBase::hasUpdateInterval() const

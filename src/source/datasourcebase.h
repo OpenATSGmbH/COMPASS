@@ -40,8 +40,8 @@ class DataSourceBase
 public:
     enum class DetectionType
     {
-        PrimaryOnlyGround,
-        PrimaryOnlyAir,
+        Undefined,
+        PrimaryOnly,
         ModeAC,
         ModeACCombined,
         ModeS,
@@ -49,6 +49,7 @@ public:
     };
 
     static const std::string DetectionKey;
+    static const std::string GroundOnlyKey;
 
     static const std::string PSRIRMinKey;
     static const std::string PSRIRMaxKey;
@@ -91,6 +92,9 @@ public:
 
     DetectionType detectionType() const;
     void detectionType(DetectionType type);
+
+    bool groundOnly() const;
+    void groundOnly(bool value);
 
     bool hasUpdateInterval() const;
     void removeUpdateInterval();

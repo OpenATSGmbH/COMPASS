@@ -1030,7 +1030,7 @@ std::set<unsigned int> DataSourceManager::groundOnlyDBDataSources() const
 
     for (auto& ds_it : db_data_sources_)
     {
-        if (ds_it->detectionType() == DataSourceBase::DetectionType::PrimaryOnlyGround)
+        if (ds_it->groundOnly())
             ds_ids.insert(ds_it->id());
     }
 

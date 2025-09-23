@@ -89,7 +89,7 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
 
     //QLabel* sac_label_{nullptr};
 
-    properties_layout_->addWidget(new QLabel("SAC / SIC, DS ID"), row, 0);
+    properties_layout_->addWidget(new QLabel("SAC/SIC    (DS ID)"), row, 0);
 
     sac_sic_id_label_ = new QLabel();
     properties_layout_->addWidget(sac_sic_id_label_, row, 1);
@@ -109,8 +109,8 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
     ++row;
 
     detection_type_combo_ = new QComboBox(this);
-    detection_type_combo_->addItem("Primary Only Ground");
-    detection_type_combo_->addItem("Primary Only Air");
+    detection_type_combo_->addItem("Undefined");
+    detection_type_combo_->addItem("Primary Only");
     detection_type_combo_->addItem("Mode A/C");
     detection_type_combo_->addItem("Mode A/C Combined");
     detection_type_combo_->addItem("Mode S");
@@ -915,7 +915,7 @@ void DataSourceEditWidget::updateContent()
         dstype_combo_->setType(ds->dsType());
         dstype_combo_->setDisabled(false);
 
-        sac_sic_id_label_->setText(QString::number(ds->sac())+" / "+QString::number(ds->sic())+",\t"+QString::number(ds->id()));
+        sac_sic_id_label_->setText(QString::number(ds->sac())+"/"+QString::number(ds->sic())+"    ("+QString::number(ds->id())+")");
 
         update_interval_edit_->setDisabled(false);
         if (ds->hasUpdateInterval())
