@@ -53,7 +53,7 @@ DataSourcesUseWidget::DataSourcesUseWidget(std::function<bool(const std::string&
     tree_widget_->setMaximumWidth(400);
 
     std::function<void(unsigned int)> update_ds_func =
-        [this] (unsigned int ds_id) { this->updateContent(false); };
+        [this] (unsigned int ds_id) { this->updateContent(true); };
 
     std::function<void(unsigned int)> delete_ds_func = [this](unsigned int ds_id)
     { this->updateContent(true); };
