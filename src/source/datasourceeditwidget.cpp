@@ -571,6 +571,8 @@ void DataSourceEditWidget::detectionTypeChangedSlot(int index)
 
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
     ds_man_.configDataSource(current_ds_id_).detectionType(selected_type);
+
+    updateContent();
 }
 
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)

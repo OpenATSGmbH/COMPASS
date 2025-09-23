@@ -51,6 +51,9 @@ public:
     static const std::string DetectionKey;
     static const std::string GroundOnlyKey;
 
+    static const std::string PDKey;
+    static const std::string ClutterRateKey;
+
     static const std::string PSRIRMinKey;
     static const std::string PSRIRMaxKey;
     static const std::string SSRIRMinKey;
@@ -112,6 +115,20 @@ public:
     void altitude (double value);
     double altitude () const;
 
+    // radar stuff
+    bool isPrimaryRadar() const;
+
+    bool hasProbabilityOfDetection () const;
+    void probabilityOfDetection (double value);
+    double probabilityOfDetection () const;
+
+    bool hasClutterRate () const;
+    void clutterRate (double value);
+    double clutterRate () const;
+
+    bool hasArea() const;
+    double getArea() const; //m^2
+
     bool hasRadarRanges() const;
     void addRadarRanges();
     std::map<std::string, double> radarRanges() const;
@@ -123,6 +140,7 @@ public:
     std::map<std::string, double> radarAccuracies() const;
     void radarAccuracy (const std::string& key, const double value);
 
+    // network stuff
     bool hasNetworkLines() const;
     void addNetworkLines();
     std::map<std::string, std::shared_ptr<DataSourceLineInfo>> networkLines() const;

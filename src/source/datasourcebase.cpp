@@ -16,6 +16,7 @@
  */
 
 #include "source/datasourcebase.h"
+#include "global.h"
 #include "logger.h"
 #include "number.h"
 #include "traced_assert.h"
@@ -35,6 +36,9 @@ namespace dbContent
 
 const std::string DataSourceBase::DetectionKey{"detection_type"};
 const std::string DataSourceBase::GroundOnlyKey{"ground_only"};
+
+const std::string DataSourceBase::PDKey{"pd"};
+const std::string DataSourceBase::ClutterRateKey{"clutter_rate"};
 
 const std::string DataSourceBase::PSRIRMinKey{"primary_ir_min"};
 const std::string DataSourceBase::PSRIRMaxKey{"primary_ir_max"};
@@ -88,6 +92,9 @@ std::string DataSourceBase::dsType() const
 void DataSourceBase::dsType(const std::string& ds_type)
 {
     ds_type_ = ds_type;
+
+    if (ds_type_ != "Radar" && groundOnly())
+        groundOnly(false);
 }
 
 unsigned int DataSourceBase::sac() const
@@ -176,6 +183,9 @@ DataSourceBase::DetectionType DataSourceBase::detectionType() const
 void DataSourceBase::detectionType(DetectionType type)
 {
     info_[DetectionKey] = detectionTypeToString(type);
+
+    if (type != DetectionType::PrimaryOnly && groundOnly())
+        groundOnly(false);
 }
 
 bool DataSourceBase::groundOnly() const
@@ -269,6 +279,51 @@ double DataSourceBase::altitude () const
         return info_.at(position_key).at("altitude");
 }
 
+bool DataSourceBase::isPrimaryRadar() const
+{
+    return dsType() == "Radar" && detectionType() == DetectionType::PrimaryOnly;
+}
+
+bool DataSourceBase::hasProbabilityOfDetection () const
+{
+    return info_.count(DetectionKey);
+}
+
+void DataSourceBase::probabilityOfDetection(double value)
+{
+    info_.at(DetectionKey) = value;
+}
+double DataSourceBase::probabilityOfDetection() const
+{
+    return info_.at(DetectionKey);
+}
+
+bool DataSourceBase::hasClutterRate () const
+{
+    return info_.count(ClutterRateKey);
+}
+
+void DataSourceBase::clutterRate(double value)
+{
+    info_.at(ClutterRateKey) = value;
+}
+double DataSourceBase::clutterRate() const
+{
+    return info_.at(ClutterRateKey);
+}
+
+bool DataSourceBase::hasArea() const
+{
+    return hasRadarRanges() && radarRanges().count(PSRIRMaxKey);
+}
+double DataSourceBase::getArea() const  // m^2
+{
+    assert (hasArea());
+
+    double radius_nm = radarRanges().at(PSRIRMaxKey);
+
+    return pow(radius_nm*NM2M, 2) * M_PI;
+}
 bool DataSourceBase::hasRadarRanges() const
 {
     return info_.contains(radar_range_key);

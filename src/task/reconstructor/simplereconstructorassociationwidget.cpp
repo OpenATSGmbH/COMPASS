@@ -186,7 +186,7 @@ void SimpleReconstructorAssociationWidget::updateValues()
 
     //    QLineEdit* max_altitude_diff_tracker_edit_{nullptr};
     traced_assert(max_altitude_diff_edit_);
-    _edit_->setText(QString::number(reconstructor_.settings()._));
+    max_altitude_diff_edit_->setText(QString::number(reconstructor_.settings().max_altitude_diff_));
 
     // QCheckBox* do_track_number_disassociate_using_distance_box_ {nullptr};
     traced_assert(do_track_number_disassociate_using_distance_box_);
@@ -294,7 +294,7 @@ void SimpleReconstructorAssociationWidget::maxAltitudeDiffEditedSlot (const QStr
     double value = text.toDouble(&ok);
 
     if (ok)
-        reconstructor_.settings()._ = value;
+        reconstructor_.settings().max_altitude_diff_ = value;
     else
         logwrn << "unable to parse value '"
                << value_str << "'";
