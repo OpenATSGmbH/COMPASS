@@ -72,7 +72,7 @@ void ReconstructorTaskClassificationWidget::minAircraftModeCEditedSlot (int valu
 {
     loginf << "value '" << value << "'";
 
-    reconstructor_.settings().max_altitude_diff_ = value;
+    reconstructor_.settings().min_aircraft_modec_ = value;
 }
 
 void ReconstructorTaskClassificationWidget::vehicleACIDsChangedSlot()
