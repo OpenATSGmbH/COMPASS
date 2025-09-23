@@ -261,7 +261,8 @@ const KalmanEstimator::StepInfo& KalmanEstimator::stepInfo() const
  * Notice: no reprojection to wgs84 will be executed, the wgs84 pos of the update will be stored to the mm.
 */
 void KalmanEstimator::storeUpdate(Measurement& mm, 
-                                  const kalman::KalmanUpdate& update) const
+                                  const kalman::KalmanUpdate& update,
+                                  bool force_wgs84_computation) const
 {
     traced_assert(isInit());
 
@@ -283,6 +284,11 @@ void KalmanEstimator::storeUpdate(Measurement& mm,
         //update at least has the current projection center => unproject to lat/lon
         proj_handler_->unproject(mm.lat, mm.lon, mm.x, mm.y);
     }
+    else if (force_wgs84_computation)
+    {
+        //force reprojection to wgs84 (overhead due to center change)
+        proj_handler_->unproject(mm.lat, mm.lon, mm.x, mm.y, &update.projection_center);
+    }
     else
     {
         //no way to determine wgs84 pos (at least not in a cheap way due to needed projection center change)
@@ -295,10 +301,10 @@ void KalmanEstimator::storeUpdate(Measurement& mm,
  * Notice: no reprojection to wgs84 will be executed, the wgs84 pos of the update will be stored to the mm.
 */
 void KalmanEstimator::storeUpdate(Measurement& mm, 
-                                  const kalman::KalmanUpdateMinimal& update) const
+                                  const kalman::KalmanUpdateMinimal& update,
+                                  bool force_wgs84_computation) const
 {
     traced_assert(isInit());
-    traced_assert(update.has_wgs84_pos);
 
     kalman_interface_->storeState(mm, update.x, update.P);
 
@@ -317,6 +323,11 @@ void KalmanEstimator::storeUpdate(Measurement& mm,
         //update at least has the current projection center => unproject to lat/lon
         proj_handler_->unproject(mm.lat, mm.lon, mm.x, mm.y);
     }
+    else if (force_wgs84_computation)
+    {
+        //force reprojection to wgs84 (overhead due to center change)
+        proj_handler_->unproject(mm.lat, mm.lon, mm.x, mm.y, &update.projection_center);
+    }
     else
     {
         //no way to determine wgs84 pos (at least not in a cheap way due to needed projection center change)
@@ -329,10 +340,10 @@ void KalmanEstimator::storeUpdate(Measurement& mm,
  * Notice: no reprojection to wgs84 will be executed, the wgs84 pos of the update will be stored to the mm.
 */
 void KalmanEstimator::storeUpdate(Reference& ref, 
-                                  const kalman::KalmanUpdate& update) const
+                                  const kalman::KalmanUpdate& update,
+                                  bool force_wgs84_computation) const
 {
     traced_assert(isInit());
-    traced_assert(update.has_wgs84_pos);
 
     kalman_interface_->storeState(ref, update.state);
 
@@ -353,6 +364,11 @@ void KalmanEstimator::storeUpdate(Reference& ref,
         //update at least has the current projection center => unproject to lat/lon
         proj_handler_->unproject(ref.lat, ref.lon, ref.x, ref.y);
     }
+    else if (force_wgs84_computation)
+    {
+        //force reprojection to wgs84 (overhead due to center change)
+        proj_handler_->unproject(ref.lat, ref.lon, ref.x, ref.y, &update.projection_center);
+    }
     else
     {
         //no way to determine wgs84 pos (at least not in a cheap way due to needed projection center change)
@@ -365,10 +381,10 @@ void KalmanEstimator::storeUpdate(Reference& ref,
  * Notice: no reprojection to wgs84 will be executed, the wgs84 pos of the update will be stored to the mm.
 */
 void KalmanEstimator::storeUpdate(Reference& ref, 
-                                  const kalman::KalmanUpdateMinimal& update) const
+                                  const kalman::KalmanUpdateMinimal& update,
+                                  bool force_wgs84_computation) const
 {
     traced_assert(isInit());
-    traced_assert(update.has_wgs84_pos);
 
     kalman_interface_->storeState(ref, update.x, update.P);
 
@@ -387,6 +403,11 @@ void KalmanEstimator::storeUpdate(Reference& ref,
     {
         //update at least has the current projection center => unproject to lat/lon
         proj_handler_->unproject(ref.lat, ref.lon, ref.x, ref.y);
+    }
+    else if (force_wgs84_computation)
+    {
+        //force reprojection to wgs84 (overhead due to center change)
+        proj_handler_->unproject(ref.lat, ref.lon, ref.x, ref.y, &update.projection_center);
     }
     else
     {

@@ -33,6 +33,7 @@
 #include "report/sectioncontenttable.h"
 
 #include "kalman_chain.h"
+#include "kalman_online_tracker.h"
 #include "tbbhack.h"
 
 #include "dbcontent/variable/metavariable.h"
@@ -55,6 +56,44 @@ using namespace std;
 using namespace Utils;
 
 std::set<std::string> ReconstructorBase::TargetsContainer::unspecific_acids_;
+
+void ReconstructorBaseSettings::setVehicleACADs(const std::string& value)
+{
+    vehicle_acads_ = value;
+
+    vehicle_acads_set_.clear();
+
+    for (const auto& acad_str : String::split(vehicle_acads_, ','))
+    {
+        try {
+            unsigned int acad = String::intFromHexString(acad_str);
+            vehicle_acads_set_.insert(acad);
+        } catch (...) {
+
+            logwrn << "impossible hex value '" << acad_str << "'";
+        }
+    }
+
+    loginf << "value '" << value
+           << "' vector " << String::compress(vehicle_acads_set_, ',');
+}
+
+void ReconstructorBaseSettings::setVehicleACIDs(const std::string& value)
+{
+    vehicle_acids_ = value;
+
+    vehicle_acids_set_.clear();
+
+    for (std::string acid_str : String::split(vehicle_acids_, ','))
+    {
+        acid_str = String::trim(acid_str);
+        boost::to_upper(acid_str);
+        vehicle_acids_set_.insert(acid_str);
+    }
+
+    loginf << "value '" << value
+           << "' vector " << String::compress(vehicle_acids_set_, ',');
+}
 
 unsigned int ReconstructorBase::TargetsContainer::createNewTarget(const dbContent::targetReport::ReconstructorInfo& tr)
 {
@@ -2002,40 +2041,64 @@ void ReconstructorBase::informConfigChanged()
     emit configChanged();
 }
 
-void ReconstructorBaseSettings::setVehicleACADs(const std::string& value)
+std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfiguredChain(bool dynamic_insertions) const
 {
-    vehicle_acads_ = value;
+    std::unique_ptr<reconstruction::KalmanChain> chain;
+    chain.reset(new reconstruction::KalmanChain);
 
-    vehicle_acads_set_.clear();
+    //override some estimator settings for the chain
+    chain->settings().mode            = dynamic_insertions ? reconstruction::KalmanChain::Settings::Mode::DynamicInserts :
+                                                             reconstruction::KalmanChain::Settings::Mode::StaticAdd;
+    chain->settings().prediction_mode = reconstruction::KalmanChain::Settings::PredictionMode::Interpolate;
+    chain->settings().verbosity       = 0;
+    chain->settings().debug           = false;
 
-    for (const auto& acad_str : String::split(vehicle_acads_, ','))
-    {
-        try {
-            unsigned int acad = String::intFromHexString(acad_str);
-            vehicle_acads_set_.insert(acad);
-        } catch (...) {
+    chain->configureEstimator(referenceCalculatorSettings().chainEstimatorSettings());
+    chain->init(referenceCalculatorSettings().kalman_type_assoc);
 
-            logwrn << "impossible hex value '" << acad_str << "'";
-        }
-    }
+    auto rec_ptr = const_cast<ReconstructorBase*>(this);
 
-    loginf << "value '" << value
-           << "' vector " << String::compress(vehicle_acads_set_, ',');
+    chain->setMeasurementAssignFunc(
+        [ rec_ptr ] (reconstruction::Measurement& mm, unsigned long rec_num)
+        {
+            rec_ptr->createMeasurement(mm, rec_num);
+        });
+
+    chain->setMeasurementCheckFunc(
+        [ rec_ptr ] (unsigned long rec_num)
+        {
+            return rec_ptr->target_reports_.find(rec_num) != rec_ptr->target_reports_.end();
+        });
+
+    return chain;
 }
 
-void ReconstructorBaseSettings::setVehicleACIDs(const std::string& value)
+std::unique_ptr<reconstruction::KalmanEstimator> ReconstructorBase::createConfiguredEstimator(bool extract_wgs84_pos) const
 {
-    vehicle_acids_ = value;
+    std::unique_ptr<reconstruction::KalmanEstimator> kalman;
+    kalman.reset(new reconstruction::KalmanEstimator);
 
-    vehicle_acids_set_.clear();
+    kalman->settings() = referenceCalculatorSettings().chainEstimatorSettings();
+    kalman->settings().extract_wgs84_pos = extract_wgs84_pos;
+    kalman->settings().verbosity         = 0;
+    kalman->settings().debug             = false;
 
-    for (std::string acid_str : String::split(vehicle_acids_, ','))
-    {
-        acid_str = String::trim(acid_str);
-        boost::to_upper(acid_str);
-        vehicle_acids_set_.insert(acid_str);
-    }
+    kalman->init(referenceCalculatorSettings().kalman_type_assoc);
 
-    loginf << "value '" << value
-           << "' vector " << String::compress(vehicle_acids_set_, ',');
+    return kalman;
+}
+
+std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createConfiguredOnlineEstimator(bool extract_wgs84_pos) const
+{
+    std::unique_ptr<reconstruction::KalmanOnlineTracker> kalman;
+    kalman.reset(new reconstruction::KalmanOnlineTracker);
+
+    kalman->settings() = referenceCalculatorSettings().chainEstimatorSettings();
+    kalman->settings().extract_wgs84_pos = extract_wgs84_pos;
+    kalman->settings().verbosity         = 0;
+    kalman->settings().debug             = false;
+
+    kalman->init(referenceCalculatorSettings().kalman_type_assoc);
+
+    return kalman;
 }

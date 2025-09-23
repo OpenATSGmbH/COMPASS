@@ -290,11 +290,11 @@ void ReconstructorTarget::addTargetReport (unsigned long rec_num)
     addTargetReportInternal(rec_num, true, true);
 }
 
-void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
+void ReconstructorTarget::addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums)
 {
     //add single tr without reestimating
     size_t num_added = 0;
-    for (auto& rn_it : other.tr_timestamps_)
+    for (auto& rn_it : rec_nums)
         if (addTargetReportInternal(rn_it.second, true, false) != TargetReportAddResult::Skipped)
             ++num_added;
 
@@ -315,6 +315,11 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
         // if (!ok) // collected in stats
         //     logwrn << "chain reestimation failed";
     }
+}
+
+void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
+{
+    addTargetReports(other.tr_timestamps_);
 
     //obtain other target's standing adsb target if newer
     if (other.standing_adsb_target_ &&
@@ -2981,31 +2986,10 @@ boost::posix_time::ptime ReconstructorTarget::trackerTime(size_t idx) const
 
 void ReconstructorTarget::reinitTracker()
 {
-    chain().reset(new reconstruction::KalmanChain);
+    chain() = reconstructor_.createConfiguredChain(dynamic_insertions_);
 
-    //override some estimator settings for the chain
-    chain()->settings().mode            = dynamic_insertions_ ? reconstruction::KalmanChain::Settings::Mode::DynamicInserts :
-                                  reconstruction::KalmanChain::Settings::Mode::StaticAdd;
-    chain()->settings().prediction_mode = reconstruction::KalmanChain::Settings::PredictionMode::Interpolate;
-    chain()->settings().verbosity       = 0;
-    chain()->settings().debug           = false; //utn_ == 537;
-
-    chain()->configureEstimator(reconstructor_.referenceCalculatorSettings().chainEstimatorSettings());
-    chain()->init(reconstructor_.referenceCalculatorSettings().kalman_type_assoc);
-
-    ReconstructorBase* rec_ptr = &reconstructor_;
-
-    chain()->setMeasurementAssignFunc(
-        [ rec_ptr ] (reconstruction::Measurement& mm, unsigned long rec_num)
-        {
-            rec_ptr->createMeasurement(mm, rec_num);
-        });
-
-    chain()->setMeasurementCheckFunc(
-        [ rec_ptr ] (unsigned long rec_num)
-        {
-            return rec_ptr->target_reports_.find(rec_num) != rec_ptr->target_reports_.end();
-        });
+    chain()->settings().verbosity = 0;
+    chain()->settings().debug     = false; //utn_ == 537;
 }
 
 bool ReconstructorTarget::compareChainUpdates(const dbContent::targetReport::ReconstructorInfo& tr,
@@ -3043,8 +3027,6 @@ bool ReconstructorTarget::checkChainBeforeAdd(const dbContent::targetReport::Rec
     // ok => replace any too near chain measurements afterwards
     return true;
 }
-
-
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
                                                                                   bool reestimate,
