@@ -429,6 +429,22 @@ struct KalmanUpdateMinimal
         valid = false;
     }
 
+    std::string print()
+    {
+        std::stringstream ss;
+        ss << "x: \n" << x << "\n"
+           << "P: \n" << P << "\n"
+           //<< "t: " << Utils::Time::toString(t) << "\n"
+           << "projection center: " << projection_center.x() << " " << projection_center.y() << "\n"
+           << "lat: " << lat << "\n"
+           << "lon: " << lon << "\n"
+           << "Q_var: " << Q_var << "\n"
+           << "has wgs84: " << has_wgs84_pos << "\n"
+           << "valid: " << valid;
+
+        return ss.str();
+    }
+
     Vector                   x;                 // state vector
     Matrix                   P;                 // covariance matrix
     boost::posix_time::ptime t;                 // time of update

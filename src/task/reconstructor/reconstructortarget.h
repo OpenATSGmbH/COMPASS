@@ -325,6 +325,7 @@ public:
     mutable Transformation trafo_;
 
     void addTargetReport (unsigned long rec_num);
+    void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
     void addTargetReports (const ReconstructorTarget& other);
 
     unsigned int numAssociated() const;

@@ -127,7 +127,8 @@ protected:
                                     const ReconstructorBase::TargetReportBatch& batch);
     void associateTargetReports(std::set<unsigned int> dbcont_ids);
 
-    virtual void associateUnreliablePrimaryOnly(const boost::posix_time::ptime& ts,
+    virtual void associateUnreliablePrimaryOnly(unsigned int ds_id,
+                                                const boost::posix_time::ptime& ts,
                                                 const std::vector<unsigned long>& rec_nums,
                                                 bool debug);
 

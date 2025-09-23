@@ -35,7 +35,7 @@ public:
     bool ok() const { return this->first; }
     const std::string& error() const { return this->second; }
 
-    static Result failed(const std::string& err) { return Result(false, err); }
+    static Result failed(const std::string& err = "") { return Result(false, err); }
     static Result succeeded() { return Result(true, ""); }
 };
 

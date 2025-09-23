@@ -201,13 +201,17 @@ public:
                                           KalmanProjectionHandler* phandler = nullptr) const;
 
     void storeUpdate(Measurement& mm, 
-                     const kalman::KalmanUpdate& update) const;
+                     const kalman::KalmanUpdate& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdate(Measurement& mm, 
-                     const kalman::KalmanUpdateMinimal& update) const;
+                     const kalman::KalmanUpdateMinimal& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdate(Reference& ref, 
-                     const kalman::KalmanUpdate& update) const;
+                     const kalman::KalmanUpdate& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdate(Reference& ref, 
-                     const kalman::KalmanUpdateMinimal& update) const;
+                     const kalman::KalmanUpdateMinimal& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdates(std::vector<Reference>& refs,
                       const std::vector<kalman::KalmanUpdate>& updates,
                       std::vector<boost::optional<Eigen::Vector2d>>* speedvec_tippos_wgs84 = nullptr,

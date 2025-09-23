@@ -330,13 +330,14 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
         ReconstructorTarget::globalStats().num_po_unassoc += unreliable_primary_only_trs.size();
 
         logdbg << "associating primary onlies";
-        associateUnreliablePrimaryOnly(ts, unreliable_primary_only_trs, do_debug_rec_num);
+        associateUnreliablePrimaryOnly(batch.ds_id_, ts, unreliable_primary_only_trs, do_debug_rec_num);
     }
 
     logdbg << "done";
 }
 
-void ReconstructorAssociatorBase::associateUnreliablePrimaryOnly(const boost::posix_time::ptime& ts,
+void ReconstructorAssociatorBase::associateUnreliablePrimaryOnly(unsigned int ds_id,
+                                                                 const boost::posix_time::ptime& ts,
                                                                  const std::vector<unsigned long>& rec_nums,
                                                                  bool debug)
 {
