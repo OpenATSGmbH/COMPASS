@@ -122,13 +122,21 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
     connect(detection_type_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourceEditWidget::detectionTypeChangedSlot);
 
+    // ground_only_check_
+
+    ++row;
+    properties_layout_->addWidget(new QLabel("Ground Only (SMR)"), row, 0);
+    
+    ground_only_check_ = new QCheckBox();
+    properties_layout_->addWidget(ground_only_check_, row, 1);
+
     // position_widget_
 
     position_widget_ = new QWidget();
     position_widget_->setContentsMargins(0, 0, 0, 0);
 
     QGridLayout* position_layout = new QGridLayout();
-    //position_layout->setMargin(0);
+    position_layout->setContentsMargins(0, 0, 0, 0);
 
     position_layout->addWidget(new QLabel("Latitude"), 0, 0);
 
@@ -839,6 +847,8 @@ void DataSourceEditWidget::updateContent()
     traced_assert(short_name_edit_);
     traced_assert(dstype_combo_);
     traced_assert(sac_sic_id_label_);
+    traced_assert(detection_type_combo_);
+    traced_assert(ground_only_check_);
     traced_assert(position_widget_);
     traced_assert(add_ranges_button_);
     traced_assert(ranges_widget_);
@@ -848,42 +858,12 @@ void DataSourceEditWidget::updateContent()
 
     detection_type_combo_->blockSignals(true);
 
+    ground_only_check_->setChecked(false); // to be safe, activate only
+    ground_only_check_->setDisabled(true);
+
     if (!has_current_ds_)
     {
-        name_edit_->setText("");
-        name_edit_->setDisabled(true);
-
-        short_name_edit_->setText("");
-        short_name_edit_->setDisabled(true);
-
-        dstype_combo_->setType("");
-        dstype_combo_->setDisabled(true);
-
-        sac_sic_id_label_->setText("");
-
-        update_interval_edit_->setText("");
-        update_interval_edit_->setDisabled(true);
-
-        detection_type_combo_->setCurrentIndex(0);
-        detection_type_combo_->setDisabled(true);
-
-        position_widget_->setHidden(true);
-
-        ranges_widget_->setHidden(true);
-        add_ranges_button_->setHidden(true);
-
-        accuracies_widget_->setHidden(true);
-        add_accuracies_button_->setHidden(true);
-
-        if (show_network_lines_)
-        {
-            traced_assert(add_lines_button_);
-            add_lines_button_->setHidden(true);
-            traced_assert(net_widget_);
-            net_widget_->setHidden(true);
-        }
-
-        delete_button_->setHidden(true);
+        disableAll();
     }
     else
     {
@@ -902,7 +882,77 @@ void DataSourceEditWidget::updateContent()
         }
         traced_assert(ds);
 
-        name_edit_->setText(ds->name().c_str());
+        updateMain(ds);
+
+        // position
+        updatePosition(ds);
+
+        // ranges
+        if (ds->dsType() == "Radar")
+        {
+            updateRadar(ds);
+        }
+        else
+        {
+            ranges_widget_->setHidden(true);
+            add_ranges_button_->setHidden(true);
+
+            accuracies_widget_->setHidden(true);
+            add_accuracies_button_->setHidden(true);
+        }
+
+        // lines
+        if (show_network_lines_)
+        {
+            updateNetwork(ds);
+        }
+
+        delete_button_->setHidden(true);
+    }
+
+    detection_type_combo_->blockSignals(false);
+}
+
+void DataSourceEditWidget::disableAll()
+{
+    name_edit_->setText("");
+    name_edit_->setDisabled(true);
+
+    short_name_edit_->setText("");
+    short_name_edit_->setDisabled(true);
+
+    dstype_combo_->setType("");
+    dstype_combo_->setDisabled(true);
+
+    sac_sic_id_label_->setText("");
+
+    update_interval_edit_->setText("");
+    update_interval_edit_->setDisabled(true);
+
+    detection_type_combo_->setCurrentIndex(0);
+    detection_type_combo_->setDisabled(true);
+
+    position_widget_->setHidden(true);
+
+    ranges_widget_->setHidden(true);
+    add_ranges_button_->setHidden(true);
+
+    accuracies_widget_->setHidden(true);
+    add_accuracies_button_->setHidden(true);
+
+    if (show_network_lines_)
+    {
+        traced_assert(add_lines_button_);
+        add_lines_button_->setHidden(true);
+        traced_assert(net_widget_);
+        net_widget_->setHidden(true);
+    }
+
+    delete_button_->setHidden(true);
+}
+void DataSourceEditWidget::updateMain(dbContent::DataSourceBase* ds)
+{
+name_edit_->setText(ds->name().c_str());
         name_edit_->setDisabled(false);
 
         if (ds->hasShortName())
@@ -929,177 +979,171 @@ void DataSourceEditWidget::updateContent()
 
         loginf << "ds_type " << ds->dsType()
                << " has pos " << ds->hasPosition();
+}
 
-        // position
-        if (ds->hasPosition())
-        {
-            latitude_edit_->setText(QString::number(ds->latitude(), 'g', 12));
-            longitude_edit_->setText(QString::number(ds->longitude(), 'g', 12));
-            altitude_edit_->setText(QString::number(ds->altitude(), 'g', 12));
-        }
-        else
-        {
-            latitude_edit_->setText("0");
-            longitude_edit_->setText("0");
-            altitude_edit_->setText("0");
-        }
-
-        position_widget_->setHidden(false);
-
-        // ranges
-        if (ds->dsType() == "Radar")
-        {
-            if (ds->hasRadarRanges())
-            {
-                ranges_widget_->setHidden(false);
-                add_ranges_button_->setHidden(true);
-
-                std::map<std::string, double> ranges = ds->radarRanges();
-
-                // psr
-                if (ranges.count(DataSourceBase::PSRIRMinKey))
-                    psr_min_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRIRMinKey)));
-                else
-                    psr_min_edit_->setText("");
-
-                if (ranges.count(DataSourceBase::PSRIRMaxKey))
-                    psr_max_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRIRMaxKey)));
-                else
-                    psr_max_edit_->setText("");
-
-                // ssr
-                if (ranges.count(DataSourceBase::SSRIRMinKey))
-                    ssr_min_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRIRMinKey)));
-                else
-                    ssr_min_edit_->setText("");
-
-                if (ranges.count(DataSourceBase::SSRIRMaxKey))
-                    ssr_max_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRIRMaxKey)));
-                else
-                    ssr_max_edit_->setText("");
-
-                // mode s
-                if (ranges.count(DataSourceBase::ModeSIRMinKey))
-                    mode_s_min_edit_->setText(QString::number(ranges.at(DataSourceBase::ModeSIRMinKey)));
-                else
-                    mode_s_min_edit_->setText("");
-
-                if (ranges.count(DataSourceBase::ModeSIRMaxKey))
-                    mode_s_max_edit_->setText(QString::number(ranges.at(DataSourceBase::ModeSIRMaxKey)));
-                else
-                    mode_s_max_edit_->setText("");
-            }
-            else
-            {
-                ranges_widget_->setHidden(true);
-                add_ranges_button_->setHidden(false);
-            }
-
-            if (ds->hasRadarAccuracies())
-            {
-                accuracies_widget_->setHidden(false);
-                add_accuracies_button_->setHidden(true);
-
-                std::map<std::string, double> ranges = ds->radarAccuracies();
-
-                // psr
-                if (ranges.count(DataSourceBase::PSRAzmSDKey))
-                    acc_psr_azm_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRAzmSDKey)));
-                else
-                    acc_psr_azm_edit_->setText("");
-
-                if (ranges.count(DataSourceBase::PSRRngSDKey))
-                    acc_psr_rng_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRRngSDKey)));
-                else
-                    acc_psr_rng_edit_->setText("");
-
-                // ssr
-                if (ranges.count(DataSourceBase::SSRAzmSDKey))
-                    acc_ssr_azm_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRAzmSDKey)));
-                else
-                    acc_ssr_azm_edit_->setText("");
-
-                if (ranges.count(DataSourceBase::SSRRngSDKey))
-                    acc_ssr_rng_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRRngSDKey)));
-                else
-                    acc_ssr_rng_edit_->setText("");
-
-                // mode s
-                if (ranges.count(DataSourceBase::ModeSAzmSDKey))
-                    acc_mode_s_azm_edit_->setText(QString::number(ranges.at(DataSourceBase::ModeSAzmSDKey)));
-                else
-                    acc_mode_s_azm_edit_->setText("");
-
-                if (ranges.count(DataSourceBase::ModeSRngSDKey))
-                    acc_mode_s_rng_edit_->setText(QString::number(ranges.at(DataSourceBase::ModeSRngSDKey)));
-                else
-                    acc_mode_s_rng_edit_->setText("");
-            }
-            else
-            {
-                accuracies_widget_->setHidden(true);
-                add_accuracies_button_->setHidden(false);
-            }
-        }
-        else
-        {
-            ranges_widget_->setHidden(true);
-            add_ranges_button_->setHidden(true);
-
-            accuracies_widget_->setHidden(true);
-            add_accuracies_button_->setHidden(true);
-        }
-
-        // lines
-        if (show_network_lines_)
-        {
-            traced_assert(net_widget_);
-
-            if (ds->hasNetworkLines())
-            {
-                add_lines_button_->setHidden(true);
-                net_widget_->setHidden(false);
-
-                std::map<std::string, std::shared_ptr<DataSourceLineInfo>> lines =
-                    ds->networkLines();
-
-                for (auto& edit_it : net_edits_)  // line -> edits
-                {
-                    traced_assert(edit_it.second.size() == 4);
-
-                    if (lines.count(edit_it.first))  // exists, set
-                    {
-                        std::shared_ptr<DataSourceLineInfo> line = lines.at(edit_it.first);
-
-                        if (line->hasListenIP())
-                            edit_it.second.at(0)->setText(line->listenIP().c_str());
-                        else
-                            edit_it.second.at(0)->setText("");
-
-                        edit_it.second.at(1)->setText(line->mcastIP().c_str());
-                        edit_it.second.at(2)->setText(QString::number(line->mcastPort()));
-
-                        if (line->hasSenderIP())
-                            edit_it.second.at(3)->setText(line->senderIP().c_str());
-                        else
-                            edit_it.second.at(3)->setText("");
-                    }
-                    else  // nope, clear
-                    {
-                        for (auto edit_ptr : edit_it.second)
-                            edit_ptr->setText("");
-                    }
-                }
-            }
-            else
-            {
-                add_lines_button_->setHidden(false);
-                net_widget_->setHidden(true);
-            }
-        }
-
-        delete_button_->setHidden(true);
+void DataSourceEditWidget::updatePosition(dbContent::DataSourceBase* ds)
+{
+    if (ds->hasPosition())
+    {
+        latitude_edit_->setText(QString::number(ds->latitude(), 'g', 12));
+        longitude_edit_->setText(QString::number(ds->longitude(), 'g', 12));
+        altitude_edit_->setText(QString::number(ds->altitude(), 'g', 12));
+    }
+    else
+    {
+        latitude_edit_->setText("0");
+        longitude_edit_->setText("0");
+        altitude_edit_->setText("0");
     }
 
-    detection_type_combo_->blockSignals(false);
+    position_widget_->setHidden(false);
+}
+
+void DataSourceEditWidget::updateRadar(dbContent::DataSourceBase* ds)
+{
+    if (ds->detectionType() == DataSourceBase::DetectionType::PrimaryOnly)
+    {
+        ground_only_check_->setChecked(ds->groundOnly());
+        ground_only_check_->setDisabled(false);
+    }
+
+    if (ds->hasRadarRanges())
+    {
+        ranges_widget_->setHidden(false);
+        add_ranges_button_->setHidden(true);
+
+        std::map<std::string, double> ranges = ds->radarRanges();
+
+        // psr
+        if (ranges.count(DataSourceBase::PSRIRMinKey))
+            psr_min_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRIRMinKey)));
+        else
+            psr_min_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::PSRIRMaxKey))
+            psr_max_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRIRMaxKey)));
+        else
+            psr_max_edit_->setText("");
+
+        // ssr
+        if (ranges.count(DataSourceBase::SSRIRMinKey))
+            ssr_min_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRIRMinKey)));
+        else
+            ssr_min_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::SSRIRMaxKey))
+            ssr_max_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRIRMaxKey)));
+        else
+            ssr_max_edit_->setText("");
+
+        // mode s
+        if (ranges.count(DataSourceBase::ModeSIRMinKey))
+            mode_s_min_edit_->setText(QString::number(ranges.at(DataSourceBase::ModeSIRMinKey)));
+        else
+            mode_s_min_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::ModeSIRMaxKey))
+            mode_s_max_edit_->setText(QString::number(ranges.at(DataSourceBase::ModeSIRMaxKey)));
+        else
+            mode_s_max_edit_->setText("");
+    }
+    else
+    {
+        ranges_widget_->setHidden(true);
+        add_ranges_button_->setHidden(false);
+    }
+
+    if (ds->hasRadarAccuracies())
+    {
+        accuracies_widget_->setHidden(false);
+        add_accuracies_button_->setHidden(true);
+
+        std::map<std::string, double> ranges = ds->radarAccuracies();
+
+        // psr
+        if (ranges.count(DataSourceBase::PSRAzmSDKey))
+            acc_psr_azm_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRAzmSDKey)));
+        else
+            acc_psr_azm_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::PSRRngSDKey))
+            acc_psr_rng_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRRngSDKey)));
+        else
+            acc_psr_rng_edit_->setText("");
+
+        // ssr
+        if (ranges.count(DataSourceBase::SSRAzmSDKey))
+            acc_ssr_azm_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRAzmSDKey)));
+        else
+            acc_ssr_azm_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::SSRRngSDKey))
+            acc_ssr_rng_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRRngSDKey)));
+        else
+            acc_ssr_rng_edit_->setText("");
+
+        // mode s
+        if (ranges.count(DataSourceBase::ModeSAzmSDKey))
+            acc_mode_s_azm_edit_->setText(
+                QString::number(ranges.at(DataSourceBase::ModeSAzmSDKey)));
+        else
+            acc_mode_s_azm_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::ModeSRngSDKey))
+            acc_mode_s_rng_edit_->setText(
+                QString::number(ranges.at(DataSourceBase::ModeSRngSDKey)));
+        else
+            acc_mode_s_rng_edit_->setText("");
+    }
+    else
+    {
+        accuracies_widget_->setHidden(true);
+        add_accuracies_button_->setHidden(false);
+    }
+}
+
+void DataSourceEditWidget::updateNetwork(dbContent::DataSourceBase* ds)
+{
+    traced_assert(net_widget_);
+
+    if (ds->hasNetworkLines())
+    {
+        add_lines_button_->setHidden(true);
+        net_widget_->setHidden(false);
+
+        std::map<std::string, std::shared_ptr<DataSourceLineInfo>> lines = ds->networkLines();
+
+        for (auto& edit_it : net_edits_)  // line -> edits
+        {
+            traced_assert(edit_it.second.size() == 4);
+
+            if (lines.count(edit_it.first))  // exists, set
+            {
+                std::shared_ptr<DataSourceLineInfo> line = lines.at(edit_it.first);
+
+                if (line->hasListenIP())
+                    edit_it.second.at(0)->setText(line->listenIP().c_str());
+                else
+                    edit_it.second.at(0)->setText("");
+
+                edit_it.second.at(1)->setText(line->mcastIP().c_str());
+                edit_it.second.at(2)->setText(QString::number(line->mcastPort()));
+
+                if (line->hasSenderIP())
+                    edit_it.second.at(3)->setText(line->senderIP().c_str());
+                else
+                    edit_it.second.at(3)->setText("");
+            }
+            else  // nope, clear
+            {
+                for (auto edit_ptr : edit_it.second)
+                    edit_ptr->setText("");
+            }
+        }
+    }
+    else
+    {
+        add_lines_button_->setHidden(false);
+        net_widget_->setHidden(true);
+    }
 }

@@ -17,17 +17,24 @@
 
 #pragma once
 
+#include <qcheckbox.h>
 #include <QWidget>
 
 class DataSourceManager;
 class DataSourcesConfigurationDialog;
 class DSTypeSelectionComboBox;
 
+namespace dbContent
+{
+    class DataSourceBase;
+}
+
 class QLabel;
 class QLineEdit;
 class QPushButton;
 class QGridLayout;
 class QComboBox;
+class QCheckBox;
 
 class DataSourceEditWidget : public QWidget
 {
@@ -87,7 +94,8 @@ protected:
     // update_interval
     QLineEdit* update_interval_edit_{nullptr};
 
-    QComboBox* detection_type_combo_{nullptr}; // << Add this line
+    QComboBox* detection_type_combo_{nullptr};
+    QCheckBox* ground_only_check_{nullptr}; 
 
     // position
     QWidget* position_widget_{nullptr};
@@ -124,5 +132,11 @@ protected:
     std::map<std::string, std::vector<QLineEdit*>> net_edits_; // L1 -> edits (listen, mcastip, mcastport, sender)
 
     QPushButton* delete_button_{nullptr};
+
+    void disableAll();
+    void updateMain(dbContent::DataSourceBase* ds);
+    void updatePosition(dbContent::DataSourceBase* ds);
+    void updateRadar(dbContent::DataSourceBase* ds);
+    void updateNetwork(dbContent::DataSourceBase* ds);
 };
 
