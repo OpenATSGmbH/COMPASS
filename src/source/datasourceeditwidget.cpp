@@ -40,9 +40,10 @@ using namespace std;
 using namespace dbContent;
 using namespace Utils;
 
-DataSourceEditWidget::DataSourceEditWidget(DataSourceManager& ds_man, 
+DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceManager& ds_man, 
     std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func)
-    : ds_man_(ds_man), update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func)
+    : show_network_lines_(show_network_lines), ds_man_(ds_man),
+    update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func)
 {
     //setMaximumWidth(400);
 
@@ -88,26 +89,10 @@ DataSourceEditWidget::DataSourceEditWidget(DataSourceManager& ds_man,
 
     //QLabel* sac_label_{nullptr};
 
-    properties_layout_->addWidget(new QLabel("SAC"), row, 0);
+    properties_layout_->addWidget(new QLabel("SAC / SIC, DS ID"), row, 0);
 
-    sac_label_ = new QLabel();
-    properties_layout_->addWidget(sac_label_, row, 1);
-    row++;
-
-    //QLabel* sic_label_{nullptr};
-
-    properties_layout_->addWidget(new QLabel("SIC"), row, 0);
-
-    sic_label_ = new QLabel();
-    properties_layout_->addWidget(sic_label_, row, 1);
-    row++;
-
-    //QLabel* ds_id_label_{nullptr};
-
-    properties_layout_->addWidget(new QLabel("DS ID"), row, 0);
-
-    ds_id_label_ = new QLabel();
-    properties_layout_->addWidget(ds_id_label_, row, 1);
+    sac_sic_id_label_ = new QLabel();
+    properties_layout_->addWidget(sac_sic_id_label_, row, 1);
     row++;
 
     // update interval
@@ -324,82 +309,90 @@ DataSourceEditWidget::DataSourceEditWidget(DataSourceManager& ds_man,
 
     QFont font_bold;
     font_bold.setBold(true);
-
-    net_widget_ = new QWidget();
-    net_widget_->setContentsMargins(0, 0, 0, 0);
-
-    QVBoxLayout* net_wiget_layout = new QVBoxLayout();
-
-    QLabel* net_lines_label = new QLabel("Network Lines");
-    net_lines_label->setFont(font_bold);
-    net_wiget_layout->addWidget(net_lines_label);
-
-    QFormLayout* net_layout = new QFormLayout();
-
-    string line_str;
-
-    for (unsigned int cnt=0; cnt < 4; ++cnt)
+    
+    if (show_network_lines_)
     {
-        line_str = "L"+QString::number(cnt+1).toStdString();
+        net_widget_ = new QWidget();
+        net_widget_->setContentsMargins(0, 0, 0, 0);
 
-        QLabel* line_label = new QLabel(line_str.c_str());
-        line_label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        QVBoxLayout* net_wiget_layout = new QVBoxLayout();
 
-        QGridLayout* line_layout = new QGridLayout();
+        QLabel* net_lines_label = new QLabel("Network Lines");
+        net_lines_label->setFont(font_bold);
+        net_wiget_layout->addWidget(net_lines_label);
 
-        // listen
-        line_layout->addWidget(new QLabel("Listen IP"), 0, 0);
+        QFormLayout* net_layout = new QFormLayout();
 
-        QLineEdit* listen_edit = new QLineEdit();
-        connect(listen_edit, &QLineEdit::textEdited, this, &DataSourceEditWidget::netLineEditedSlot);
-        listen_edit->setProperty("line", line_str.c_str());
-        listen_edit->setProperty("item", "Listen IP");
-        line_layout->addWidget(listen_edit, 0, 1);
-        net_edits_[line_str].push_back(listen_edit);
+        string line_str;
 
-        // mcast
-        line_layout->addWidget(new QLabel("MCast IP"), 1, 0);
+        for (unsigned int cnt = 0; cnt < 4; ++cnt)
+        {
+            line_str = "L" + QString::number(cnt + 1).toStdString();
 
-        QLineEdit* sender_ip_edit = new QLineEdit();
-        connect(sender_ip_edit, &QLineEdit::textEdited, this, &DataSourceEditWidget::netLineEditedSlot);
-        sender_ip_edit->setProperty("line", line_str.c_str());
-        sender_ip_edit->setProperty("item", "MCast IP");
-        line_layout->addWidget(sender_ip_edit, 1, 1);
-        net_edits_[line_str].push_back(sender_ip_edit);
+            QLabel* line_label = new QLabel(line_str.c_str());
+            line_label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
-        line_layout->addWidget(new QLabel("MCast Port"), 2, 0);
+            QGridLayout* line_layout = new QGridLayout();
 
-        QLineEdit* sender_port_edit = new QLineEdit();
-        connect(sender_port_edit, &QLineEdit::textEdited, this, &DataSourceEditWidget::netLineEditedSlot);
-        sender_port_edit->setProperty("line", line_str.c_str());
-        sender_port_edit->setProperty("item", "MCast Port");
-        line_layout->addWidget(sender_port_edit, 2, 1);
-        net_edits_[line_str].push_back(sender_port_edit);
+            // listen
+            line_layout->addWidget(new QLabel("Listen IP"), 0, 0);
 
-        // sender
-        line_layout->addWidget(new QLabel("Sender IP"), 3, 0);
+            QLineEdit* listen_edit = new QLineEdit();
+            connect(listen_edit, &QLineEdit::textEdited, this,
+                    &DataSourceEditWidget::netLineEditedSlot);
+            listen_edit->setProperty("line", line_str.c_str());
+            listen_edit->setProperty("item", "Listen IP");
+            line_layout->addWidget(listen_edit, 0, 1);
+            net_edits_[line_str].push_back(listen_edit);
 
-        QLineEdit* sender_edit = new QLineEdit();
-        connect(sender_edit, &QLineEdit::textEdited, this, &DataSourceEditWidget::netLineEditedSlot);
-        sender_edit->setProperty("line", line_str.c_str());
-        sender_edit->setProperty("item", "Sender IP");
-        line_layout->addWidget(sender_edit, 3, 1);
-        net_edits_[line_str].push_back(sender_edit);
+            // mcast
+            line_layout->addWidget(new QLabel("MCast IP"), 1, 0);
 
-        net_layout->addRow(line_label, line_layout);
+            QLineEdit* sender_ip_edit = new QLineEdit();
+            connect(sender_ip_edit, &QLineEdit::textEdited, this,
+                    &DataSourceEditWidget::netLineEditedSlot);
+            sender_ip_edit->setProperty("line", line_str.c_str());
+            sender_ip_edit->setProperty("item", "MCast IP");
+            line_layout->addWidget(sender_ip_edit, 1, 1);
+            net_edits_[line_str].push_back(sender_ip_edit);
+
+            line_layout->addWidget(new QLabel("MCast Port"), 2, 0);
+
+            QLineEdit* sender_port_edit = new QLineEdit();
+            connect(sender_port_edit, &QLineEdit::textEdited, this,
+                    &DataSourceEditWidget::netLineEditedSlot);
+            sender_port_edit->setProperty("line", line_str.c_str());
+            sender_port_edit->setProperty("item", "MCast Port");
+            line_layout->addWidget(sender_port_edit, 2, 1);
+            net_edits_[line_str].push_back(sender_port_edit);
+
+            // sender
+            line_layout->addWidget(new QLabel("Sender IP"), 3, 0);
+
+            QLineEdit* sender_edit = new QLineEdit();
+            connect(sender_edit, &QLineEdit::textEdited, this,
+                    &DataSourceEditWidget::netLineEditedSlot);
+            sender_edit->setProperty("line", line_str.c_str());
+            sender_edit->setProperty("item", "Sender IP");
+            line_layout->addWidget(sender_edit, 3, 1);
+            net_edits_[line_str].push_back(sender_edit);
+
+            net_layout->addRow(line_label, line_layout);
+        }
+
+        net_wiget_layout->addLayout(net_layout);
+
+        net_widget_->setLayout(net_wiget_layout);
+
+        //net_widget_->setMinimumHeight(300);
+
+        main_layout->addWidget(net_widget_);
+
+        add_lines_button_ = new QPushButton("Add Network Lines");
+        add_lines_button_->setToolTip("Adds network lines to the data source");
+        connect(add_lines_button_, &QPushButton::clicked, this, &DataSourceEditWidget::addNetLinesSlot);
+        main_layout->addWidget(add_lines_button_);
     }
-
-    net_wiget_layout->addLayout(net_layout);
-
-    net_widget_->setLayout(net_wiget_layout);
-    //net_widget_->setMinimumHeight(300);
-
-    main_layout->addWidget(net_widget_);
-
-    add_lines_button_ = new QPushButton("Add Network Lines");
-    add_lines_button_->setToolTip("Adds network lines to the data source");
-    connect(add_lines_button_, &QPushButton::clicked, this, &DataSourceEditWidget::addNetLinesSlot);
-    main_layout->addWidget(add_lines_button_);
 
     main_layout->addStretch();
 
@@ -845,16 +838,12 @@ void DataSourceEditWidget::updateContent()
     traced_assert(name_edit_);
     traced_assert(short_name_edit_);
     traced_assert(dstype_combo_);
-    traced_assert(sac_label_);
-    traced_assert(sic_label_);
-    traced_assert(ds_id_label_);
+    traced_assert(sac_sic_id_label_);
     traced_assert(position_widget_);
     traced_assert(add_ranges_button_);
     traced_assert(ranges_widget_);
     traced_assert(accuracies_widget_);
     traced_assert(add_accuracies_button_);
-    traced_assert(add_lines_button_);
-    traced_assert(net_widget_);
     traced_assert(delete_button_);
 
     detection_type_combo_->blockSignals(true);
@@ -870,13 +859,13 @@ void DataSourceEditWidget::updateContent()
         dstype_combo_->setType("");
         dstype_combo_->setDisabled(true);
 
-        sac_label_->setText("");
-        sic_label_->setText("");
-        ds_id_label_->setText("");
+        sac_sic_id_label_->setText("");
 
         update_interval_edit_->setText("");
+        update_interval_edit_->setDisabled(true);
 
         detection_type_combo_->setCurrentIndex(0);
+        detection_type_combo_->setDisabled(true);
 
         position_widget_->setHidden(true);
 
@@ -886,8 +875,13 @@ void DataSourceEditWidget::updateContent()
         accuracies_widget_->setHidden(true);
         add_accuracies_button_->setHidden(true);
 
-        add_lines_button_->setHidden(true);
-        net_widget_->setHidden(true);
+        if (show_network_lines_)
+        {
+            traced_assert(add_lines_button_);
+            add_lines_button_->setHidden(true);
+            traced_assert(net_widget_);
+            net_widget_->setHidden(true);
+        }
 
         delete_button_->setHidden(true);
     }
@@ -921,15 +915,15 @@ void DataSourceEditWidget::updateContent()
         dstype_combo_->setType(ds->dsType());
         dstype_combo_->setDisabled(false);
 
-        sac_label_->setText(QString::number(ds->sac()));
-        sic_label_->setText(QString::number(ds->sic()));
-        ds_id_label_->setText(QString::number(ds->id()));
+        sac_sic_id_label_->setText(QString::number(ds->sac())+" / "+QString::number(ds->sic())+",\t"+QString::number(ds->id()));
 
+        update_interval_edit_->setDisabled(false);
         if (ds->hasUpdateInterval())
             update_interval_edit_->setText(QString::number(ds->updateInterval()));
         else
             update_interval_edit_->setText("");
 
+        detection_type_combo_->setDisabled(false);
         auto current_type = ds->detectionType();
         detection_type_combo_->setCurrentIndex((int) current_type);
 
@@ -1057,49 +1051,54 @@ void DataSourceEditWidget::updateContent()
         }
 
         // lines
-        if (ds->hasNetworkLines())
+        if (show_network_lines_)
         {
-            add_lines_button_->setHidden(true);
-            net_widget_->setHidden(false);
+            traced_assert(net_widget_);
 
-            std::map<std::string, std::shared_ptr<DataSourceLineInfo>> lines = ds->networkLines();
-
-            for (auto& edit_it : net_edits_) // line -> edits
+            if (ds->hasNetworkLines())
             {
-                traced_assert(edit_it.second.size() == 4);
+                add_lines_button_->setHidden(true);
+                net_widget_->setHidden(false);
 
-                if (lines.count(edit_it.first)) // exists, set
+                std::map<std::string, std::shared_ptr<DataSourceLineInfo>> lines =
+                    ds->networkLines();
+
+                for (auto& edit_it : net_edits_)  // line -> edits
                 {
-                    std::shared_ptr<DataSourceLineInfo> line = lines.at(edit_it.first);
+                    traced_assert(edit_it.second.size() == 4);
 
-                    if (line->hasListenIP())
-                        edit_it.second.at(0)->setText(line->listenIP().c_str());
-                    else
-                        edit_it.second.at(0)->setText("");
+                    if (lines.count(edit_it.first))  // exists, set
+                    {
+                        std::shared_ptr<DataSourceLineInfo> line = lines.at(edit_it.first);
 
-                    edit_it.second.at(1)->setText(line->mcastIP().c_str());
-                    edit_it.second.at(2)->setText(QString::number(line->mcastPort()));
+                        if (line->hasListenIP())
+                            edit_it.second.at(0)->setText(line->listenIP().c_str());
+                        else
+                            edit_it.second.at(0)->setText("");
 
-                    if (line->hasSenderIP())
-                        edit_it.second.at(3)->setText(line->senderIP().c_str());
-                    else
-                        edit_it.second.at(3)->setText("");
-                }
-                else // nope, clear
-                {
-                    for (auto edit_ptr : edit_it.second)
-                        edit_ptr->setText("");
+                        edit_it.second.at(1)->setText(line->mcastIP().c_str());
+                        edit_it.second.at(2)->setText(QString::number(line->mcastPort()));
+
+                        if (line->hasSenderIP())
+                            edit_it.second.at(3)->setText(line->senderIP().c_str());
+                        else
+                            edit_it.second.at(3)->setText("");
+                    }
+                    else  // nope, clear
+                    {
+                        for (auto edit_ptr : edit_it.second)
+                            edit_ptr->setText("");
+                    }
                 }
             }
-        }
-        else
-        {
-            add_lines_button_->setHidden(false);
-            net_widget_->setHidden(true);
+            else
+            {
+                add_lines_button_->setHidden(false);
+                net_widget_->setHidden(true);
+            }
         }
 
         delete_button_->setHidden(true);
-
     }
 
     detection_type_combo_->blockSignals(false);

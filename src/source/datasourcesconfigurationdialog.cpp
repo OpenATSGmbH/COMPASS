@@ -94,7 +94,7 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
         table_model_->endModelReset();
     };
 
-    edit_widget_ = new DataSourceEditWidget (ds_man_, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (true, ds_man_, update_ds_func, delete_ds_func);
     top_layout->addWidget(edit_widget_);
 
     main_layout->addLayout(top_layout);

@@ -59,7 +59,7 @@ DataSourcesUseWidget::DataSourcesUseWidget(std::function<bool(const std::string&
     { this->updateContent(true); };
 
     assert (top_layout_);
-    edit_widget_ = new DataSourceEditWidget (ds_man_, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (false, ds_man_, update_ds_func, delete_ds_func);
     edit_widget_->setContentsMargins(0, 0, 0, 0);
     
     top_layout_->addWidget(edit_widget_);    

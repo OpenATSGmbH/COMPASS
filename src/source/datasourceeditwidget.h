@@ -58,7 +58,7 @@ public slots:
     void deleteSlot();
 
 public:
-    DataSourceEditWidget(DataSourceManager& ds_man, std::function<void(unsigned int)> update_ds_func,
+    DataSourceEditWidget(bool show_network_lines, DataSourceManager& ds_man, std::function<void(unsigned int)> update_ds_func,
         std::function<void(unsigned int)> delete_ds_func);
 
     void showID(unsigned int ds_id);
@@ -67,6 +67,8 @@ public:
     void updateContent();
 
 protected:
+    bool show_network_lines_;
+
     DataSourceManager& ds_man_;
     std::function<void(unsigned int)> update_ds_func_;
     std::function<void(unsigned int)> delete_ds_func_;
@@ -80,9 +82,7 @@ protected:
 
     DSTypeSelectionComboBox* dstype_combo_{nullptr};
 
-    QLabel* sac_label_{nullptr};
-    QLabel* sic_label_{nullptr};
-    QLabel* ds_id_label_{nullptr};
+    QLabel* sac_sic_id_label_{nullptr};
 
     // update_interval
     QLineEdit* update_interval_edit_{nullptr};
