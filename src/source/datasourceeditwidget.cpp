@@ -175,7 +175,7 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
 
         psr_pd_edit_ = new QLineEdit();
         psr_pd_edit_->setValidator(new TextFieldDoubleValidator(0.001, 1, 3));
-        connect(psr_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
+        connect(psr_pd_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
         jpda_layout->addWidget(psr_pd_edit_, row_cnt, 1);
 
         ++row_cnt;
@@ -977,6 +977,8 @@ void DataSourceEditWidget::updateContent()
         }
         else
         {
+            psr_jpda_widget_->setHidden(true);
+
             ranges_widget_->setHidden(true);
             add_ranges_button_->setHidden(true);
 
@@ -1037,33 +1039,33 @@ void DataSourceEditWidget::disableAll()
 }
 void DataSourceEditWidget::updateMain(dbContent::DataSourceBase* ds)
 {
-name_edit_->setText(ds->name().c_str());
-        name_edit_->setDisabled(false);
+    name_edit_->setText(ds->name().c_str());
+    name_edit_->setDisabled(false);
 
-        if (ds->hasShortName())
-            short_name_edit_->setText(ds->shortName().c_str());
-        else
-            short_name_edit_->setText("");
+    if (ds->hasShortName())
+        short_name_edit_->setText(ds->shortName().c_str());
+    else
+        short_name_edit_->setText("");
 
-        short_name_edit_->setDisabled(false);
+    short_name_edit_->setDisabled(false);
 
-        dstype_combo_->setType(ds->dsType());
-        dstype_combo_->setDisabled(false);
+    dstype_combo_->setType(ds->dsType());
+    dstype_combo_->setDisabled(false);
 
-        sac_sic_id_label_->setText(QString::number(ds->sac())+"/"+QString::number(ds->sic())+"    ("+QString::number(ds->id())+")");
+    sac_sic_id_label_->setText(QString::number(ds->sac()) + "/" + QString::number(ds->sic()) +
+                               "    (" + QString::number(ds->id()) + ")");
 
-        update_interval_edit_->setDisabled(false);
-        if (ds->hasUpdateInterval())
-            update_interval_edit_->setText(QString::number(ds->updateInterval()));
-        else
-            update_interval_edit_->setText("");
+    update_interval_edit_->setDisabled(false);
+    if (ds->hasUpdateInterval())
+        update_interval_edit_->setText(QString::number(ds->updateInterval()));
+    else
+        update_interval_edit_->setText("");
 
-        detection_type_combo_->setDisabled(false);
-        auto current_type = ds->detectionType();
-        detection_type_combo_->setCurrentIndex((int) current_type);
+    detection_type_combo_->setDisabled(false);
+    auto current_type = ds->detectionType();
+    detection_type_combo_->setCurrentIndex((int)current_type);
 
-        loginf << "ds_type " << ds->dsType()
-               << " has pos " << ds->hasPosition();
+    loginf << "ds_type " << ds->dsType() << " has pos " << ds->hasPosition();
 }
 
 void DataSourceEditWidget::updatePosition(dbContent::DataSourceBase* ds)
