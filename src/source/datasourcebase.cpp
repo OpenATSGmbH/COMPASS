@@ -286,16 +286,16 @@ bool DataSourceBase::isPrimaryRadar() const
 
 bool DataSourceBase::hasProbabilityOfDetection () const
 {
-    return info_.count(DetectionKey);
+    return info_.count(PDKey);
 }
 
 void DataSourceBase::probabilityOfDetection(double value)
 {
-    info_.at(DetectionKey) = value;
+    info_[PDKey] = value;
 }
 double DataSourceBase::probabilityOfDetection() const
 {
-    return info_.at(DetectionKey);
+    return info_.at(PDKey);
 }
 
 bool DataSourceBase::hasClutterRate () const
@@ -305,7 +305,7 @@ bool DataSourceBase::hasClutterRate () const
 
 void DataSourceBase::clutterRate(double value)
 {
-    info_.at(ClutterRateKey) = value;
+    info_[ClutterRateKey] = value;
 }
 double DataSourceBase::clutterRate() const
 {

@@ -53,6 +53,9 @@ public slots:
     void longitudeEditedSlot(const QString& value_str);
     void altitudeEditedSlot(const QString& value_str);
 
+    void pdEditedSlot(const QString& value_str);
+    void clutterRateEditedSlot(const QString& value_str);
+
     void addRadarRangesSlot();
     void radarRangeEditedSlot(const QString& value_str);
 
@@ -102,6 +105,11 @@ protected:
     QLineEdit* latitude_edit_{nullptr};
     QLineEdit* longitude_edit_{nullptr};
     QLineEdit* altitude_edit_{nullptr};
+
+    // psr settings
+    QWidget* psr_jpda_widget_{nullptr};
+    QLineEdit* psr_pd_edit_{nullptr};
+    QLineEdit* psr_clutter_rate_edit_{nullptr};    
 
     // radar ranges
     QWidget* ranges_widget_{nullptr};

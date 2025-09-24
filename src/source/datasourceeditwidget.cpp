@@ -163,75 +163,106 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
 
     main_layout->addWidget(position_widget_);
 
+    // psr settings
+    {
+        psr_jpda_widget_ = new QWidget();
+        psr_jpda_widget_->setContentsMargins(0, 0, 0, 0);
+
+        QGridLayout* jpda_layout = new QGridLayout();
+        unsigned int row_cnt = 0;
+
+        jpda_layout->addWidget(new QLabel("JPDA PD [1]"), row_cnt, 0);
+
+        psr_pd_edit_ = new QLineEdit();
+        psr_pd_edit_->setValidator(new TextFieldDoubleValidator(0.001, 1, 3));
+        connect(psr_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
+        jpda_layout->addWidget(psr_pd_edit_, row_cnt, 1);
+
+        ++row_cnt;
+
+        jpda_layout->addWidget(new QLabel("Clutter Rate [1]"), row_cnt, 0);
+
+        psr_clutter_rate_edit_ = new QLineEdit();
+        psr_clutter_rate_edit_->setValidator(new TextFieldDoubleValidator(1, 10000, 0));
+        connect(psr_clutter_rate_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::clutterRateEditedSlot);
+        jpda_layout->addWidget(psr_clutter_rate_edit_, row_cnt, 1);
+
+        psr_jpda_widget_->setLayout(jpda_layout);
+
+        main_layout->addWidget(psr_jpda_widget_);
+    }
+
     // radar ranges
-    ranges_widget_ = new QWidget();
-    ranges_widget_->setContentsMargins(0, 0, 0, 0);
+    {
+        ranges_widget_ = new QWidget();
+        ranges_widget_->setContentsMargins(0, 0, 0, 0);
 
-    QGridLayout* ranges_layout = new QGridLayout();
-    unsigned int row_cnt = 0;
-    ranges_layout->addWidget(new QLabel("Radar Ranges [nm]"), row_cnt, 0, 1, 2);
+        QGridLayout* ranges_layout = new QGridLayout();
+        unsigned int row_cnt = 0;
+        ranges_layout->addWidget(new QLabel("Radar Ranges [nm]"), row_cnt, 0, 1, 2);
 
-    // psr
-    ++row_cnt;
-    ranges_layout->addWidget(new QLabel("PSR Minimum"), row_cnt, 0);
+        // psr
+        ++row_cnt;
+        ranges_layout->addWidget(new QLabel("PSR Minimum"), row_cnt, 0);
 
-    psr_min_edit_ = new QLineEdit();
-    psr_min_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
-    psr_min_edit_->setProperty("key", DataSourceBase::PSRIRMinKey.c_str());
-    connect(psr_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
-    ranges_layout->addWidget(psr_min_edit_, row_cnt, 1);
+        psr_min_edit_ = new QLineEdit();
+        psr_min_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+        psr_min_edit_->setProperty("key", DataSourceBase::PSRIRMinKey.c_str());
+        connect(psr_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
+        ranges_layout->addWidget(psr_min_edit_, row_cnt, 1);
 
-    ++row_cnt;
-    ranges_layout->addWidget(new QLabel("PSR Maximum"), row_cnt, 0);
+        ++row_cnt;
+        ranges_layout->addWidget(new QLabel("PSR Maximum"), row_cnt, 0);
 
-    psr_max_edit_ = new QLineEdit();
-    psr_max_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
-    psr_max_edit_->setProperty("key", DataSourceBase::PSRIRMaxKey.c_str());
-    connect(psr_max_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
-    ranges_layout->addWidget(psr_max_edit_, row_cnt, 1);
+        psr_max_edit_ = new QLineEdit();
+        psr_max_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+        psr_max_edit_->setProperty("key", DataSourceBase::PSRIRMaxKey.c_str());
+        connect(psr_max_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
+        ranges_layout->addWidget(psr_max_edit_, row_cnt, 1);
 
-    // ssr
-    ++row_cnt;
-    ranges_layout->addWidget(new QLabel("SSR Minimum"), row_cnt, 0);
+        // ssr
+        ++row_cnt;
+        ranges_layout->addWidget(new QLabel("SSR Minimum"), row_cnt, 0);
 
-    ssr_min_edit_ = new QLineEdit();
-    ssr_min_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
-    ssr_min_edit_->setProperty("key", DataSourceBase::SSRIRMinKey.c_str());
-    connect(ssr_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
-    ranges_layout->addWidget(ssr_min_edit_, row_cnt, 1);
+        ssr_min_edit_ = new QLineEdit();
+        ssr_min_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+        ssr_min_edit_->setProperty("key", DataSourceBase::SSRIRMinKey.c_str());
+        connect(ssr_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
+        ranges_layout->addWidget(ssr_min_edit_, row_cnt, 1);
 
-    ++row_cnt;
-    ranges_layout->addWidget(new QLabel("SSR Maximum"), row_cnt, 0);
+        ++row_cnt;
+        ranges_layout->addWidget(new QLabel("SSR Maximum"), row_cnt, 0);
 
-    ssr_max_edit_ = new QLineEdit();
-    ssr_max_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
-    ssr_max_edit_->setProperty("key", DataSourceBase::SSRIRMaxKey.c_str());
-    connect(ssr_max_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
-    ranges_layout->addWidget(ssr_max_edit_, row_cnt, 1);
+        ssr_max_edit_ = new QLineEdit();
+        ssr_max_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+        ssr_max_edit_->setProperty("key", DataSourceBase::SSRIRMaxKey.c_str());
+        connect(ssr_max_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
+        ranges_layout->addWidget(ssr_max_edit_, row_cnt, 1);
 
-    // mode s
-    ++row_cnt;
-    ranges_layout->addWidget(new QLabel("Mode S Minimum"), row_cnt, 0);
+        // mode s
+        ++row_cnt;
+        ranges_layout->addWidget(new QLabel("Mode S Minimum"), row_cnt, 0);
 
-    mode_s_min_edit_ = new QLineEdit();
-    mode_s_min_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
-    mode_s_min_edit_->setProperty("key", DataSourceBase::ModeSIRMinKey.c_str());
-    connect(mode_s_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
-    ranges_layout->addWidget(mode_s_min_edit_, row_cnt, 1);
+        mode_s_min_edit_ = new QLineEdit();
+        mode_s_min_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+        mode_s_min_edit_->setProperty("key", DataSourceBase::ModeSIRMinKey.c_str());
+        connect(mode_s_min_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
+        ranges_layout->addWidget(mode_s_min_edit_, row_cnt, 1);
 
-    ++row_cnt;
-    ranges_layout->addWidget(new QLabel("Mode S Maximum"), row_cnt, 0);
+        ++row_cnt;
+        ranges_layout->addWidget(new QLabel("Mode S Maximum"), row_cnt, 0);
 
-    mode_s_max_edit_ = new QLineEdit();
-    mode_s_max_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
-    mode_s_max_edit_->setProperty("key", DataSourceBase::ModeSIRMaxKey.c_str());
-    connect(mode_s_max_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
-    ranges_layout->addWidget(mode_s_max_edit_, row_cnt, 1);
+        mode_s_max_edit_ = new QLineEdit();
+        mode_s_max_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+        mode_s_max_edit_->setProperty("key", DataSourceBase::ModeSIRMaxKey.c_str());
+        connect(mode_s_max_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarRangeEditedSlot);
+        ranges_layout->addWidget(mode_s_max_edit_, row_cnt, 1);
 
-    ranges_widget_->setLayout(ranges_layout);
-    //ranges_widget_->setMinimumHeight(300);
+        ranges_widget_->setLayout(ranges_layout);
+        //ranges_widget_->setMinimumHeight(300);
 
-    main_layout->addWidget(ranges_widget_);
+        main_layout->addWidget(ranges_widget_);
+    }
 
     add_ranges_button_ = new QPushButton("Add Radar Ranges");
     add_ranges_button_->setToolTip("Adds Radar ranges information");
@@ -239,74 +270,76 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
     main_layout->addWidget(add_ranges_button_);
 
     // radar accuracies
-    accuracies_widget_ = new QWidget();
-    accuracies_widget_->setContentsMargins(0, 0, 0, 0);
+    {
+        accuracies_widget_ = new QWidget();
+        accuracies_widget_->setContentsMargins(0, 0, 0, 0);
 
-    QGridLayout* accuracies_layout = new QGridLayout();
-    row_cnt = 0;
-    accuracies_layout->addWidget(new QLabel("Radar Accuracies"), row_cnt, 0, 1, 2);
+        QGridLayout* accuracies_layout = new QGridLayout();
+        unsigned int row_cnt = 0;
+        accuracies_layout->addWidget(new QLabel("Radar Accuracies"), row_cnt, 0, 1, 2);
 
-    // psr
-    ++row_cnt;
-    accuracies_layout->addWidget(new QLabel("PSR Azimuth StdDev [deg]"), row_cnt, 0);
+        // psr
+        ++row_cnt;
+        accuracies_layout->addWidget(new QLabel("PSR Azimuth StdDev [deg]"), row_cnt, 0);
 
-    acc_psr_azm_edit_ = new QLineEdit();
-    acc_psr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
-    acc_psr_azm_edit_->setProperty("key", DataSourceBase::PSRAzmSDKey.c_str());
-    connect(acc_psr_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
-    accuracies_layout->addWidget(acc_psr_azm_edit_, row_cnt, 1);
+        acc_psr_azm_edit_ = new QLineEdit();
+        acc_psr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
+        acc_psr_azm_edit_->setProperty("key", DataSourceBase::PSRAzmSDKey.c_str());
+        connect(acc_psr_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+        accuracies_layout->addWidget(acc_psr_azm_edit_, row_cnt, 1);
 
-    ++row_cnt;
-    accuracies_layout->addWidget(new QLabel("PSR Range StdDev [m]"), row_cnt, 0);
+        ++row_cnt;
+        accuracies_layout->addWidget(new QLabel("PSR Range StdDev [m]"), row_cnt, 0);
 
-    acc_psr_rng_edit_ = new QLineEdit();
-    acc_psr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
-    acc_psr_rng_edit_->setProperty("key", DataSourceBase::PSRRngSDKey.c_str());
-    connect(acc_psr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
-    accuracies_layout->addWidget(acc_psr_rng_edit_, row_cnt, 1);
+        acc_psr_rng_edit_ = new QLineEdit();
+        acc_psr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
+        acc_psr_rng_edit_->setProperty("key", DataSourceBase::PSRRngSDKey.c_str());
+        connect(acc_psr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+        accuracies_layout->addWidget(acc_psr_rng_edit_, row_cnt, 1);
 
-    // ssr
-    ++row_cnt;
-    accuracies_layout->addWidget(new QLabel("SSR Azimuth StdDev [deg]"), row_cnt, 0);
+        // ssr
+        ++row_cnt;
+        accuracies_layout->addWidget(new QLabel("SSR Azimuth StdDev [deg]"), row_cnt, 0);
 
-    acc_ssr_azm_edit_ = new QLineEdit();
-    acc_ssr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
-    acc_ssr_azm_edit_->setProperty("key", DataSourceBase::SSRAzmSDKey.c_str());
-    connect(acc_ssr_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
-    accuracies_layout->addWidget(acc_ssr_azm_edit_, row_cnt, 1);
+        acc_ssr_azm_edit_ = new QLineEdit();
+        acc_ssr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
+        acc_ssr_azm_edit_->setProperty("key", DataSourceBase::SSRAzmSDKey.c_str());
+        connect(acc_ssr_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+        accuracies_layout->addWidget(acc_ssr_azm_edit_, row_cnt, 1);
 
-    ++row_cnt;
-    accuracies_layout->addWidget(new QLabel("SSR Range StdDev [m]"), row_cnt, 0);
+        ++row_cnt;
+        accuracies_layout->addWidget(new QLabel("SSR Range StdDev [m]"), row_cnt, 0);
 
-    acc_ssr_rng_edit_ = new QLineEdit();
-    acc_ssr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
-    acc_ssr_rng_edit_->setProperty("key", DataSourceBase::SSRRngSDKey.c_str());
-    connect(acc_ssr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
-    accuracies_layout->addWidget(acc_ssr_rng_edit_, row_cnt, 1);
+        acc_ssr_rng_edit_ = new QLineEdit();
+        acc_ssr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
+        acc_ssr_rng_edit_->setProperty("key", DataSourceBase::SSRRngSDKey.c_str());
+        connect(acc_ssr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+        accuracies_layout->addWidget(acc_ssr_rng_edit_, row_cnt, 1);
 
-    // mode s
-    ++row_cnt;
-    accuracies_layout->addWidget(new QLabel("Mode S Azimuth StdDev [deg]"), row_cnt, 0);
+        // mode s
+        ++row_cnt;
+        accuracies_layout->addWidget(new QLabel("Mode S Azimuth StdDev [deg]"), row_cnt, 0);
 
-    acc_mode_s_azm_edit_ = new QLineEdit();
-    acc_mode_s_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
-    acc_mode_s_azm_edit_->setProperty("key", DataSourceBase::ModeSAzmSDKey.c_str());
-    connect(acc_mode_s_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
-    accuracies_layout->addWidget(acc_mode_s_azm_edit_, row_cnt, 1);
+        acc_mode_s_azm_edit_ = new QLineEdit();
+        acc_mode_s_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
+        acc_mode_s_azm_edit_->setProperty("key", DataSourceBase::ModeSAzmSDKey.c_str());
+        connect(acc_mode_s_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+        accuracies_layout->addWidget(acc_mode_s_azm_edit_, row_cnt, 1);
 
-    ++row_cnt;
-    accuracies_layout->addWidget(new QLabel("Mode S Range StdDev [m]"), row_cnt, 0);
+        ++row_cnt;
+        accuracies_layout->addWidget(new QLabel("Mode S Range StdDev [m]"), row_cnt, 0);
 
-    acc_mode_s_rng_edit_ = new QLineEdit();
-    acc_mode_s_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
-    acc_mode_s_rng_edit_->setProperty("key", DataSourceBase::ModeSRngSDKey.c_str());
-    connect(acc_mode_s_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
-    accuracies_layout->addWidget(acc_mode_s_rng_edit_, row_cnt, 1);
+        acc_mode_s_rng_edit_ = new QLineEdit();
+        acc_mode_s_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
+        acc_mode_s_rng_edit_->setProperty("key", DataSourceBase::ModeSRngSDKey.c_str());
+        connect(acc_mode_s_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+        accuracies_layout->addWidget(acc_mode_s_rng_edit_, row_cnt, 1);
 
-    accuracies_widget_->setLayout(accuracies_layout);
-    //accuracies_widget_->setMinimumHeight(300);
+        accuracies_widget_->setLayout(accuracies_layout);
+        //accuracies_widget_->setMinimumHeight(300);
 
-    main_layout->addWidget(accuracies_widget_);
+        main_layout->addWidget(accuracies_widget_);
+    }
 
     add_accuracies_button_ = new QPushButton("Add Radar Accuracies");
     add_accuracies_button_->setToolTip("Adds Radar accuracy information");
@@ -636,6 +669,54 @@ void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
     ds_man_.configDataSource(current_ds_id_).longitude(value);
 }
 
+void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
+{
+    bool ok;
+
+    double value = value_str.toDouble(&ok);
+
+    if (!ok)
+    {
+        logwrn << "impossible value '" << value_str.toStdString() << "'";
+        return;
+    }
+
+    loginf << "'" << value << "'";
+
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).probabilityOfDetection(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).probabilityOfDetection(value);
+}
+
+void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
+{
+    bool ok;
+
+    double value = value_str.toDouble(&ok);
+
+    if (!ok)
+    {
+        logwrn << "impossible value '" << value_str.toStdString() << "'";
+        return;
+    }
+
+    loginf << "'" << value << "'";
+
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).clutterRate(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).clutterRate(value);
+}
+
 void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 {
     double value = value_str.toDouble();
@@ -936,6 +1017,8 @@ void DataSourceEditWidget::disableAll()
 
     position_widget_->setHidden(true);
 
+    psr_jpda_widget_->setHidden(true);
+
     ranges_widget_->setHidden(true);
     add_ranges_button_->setHidden(true);
 
@@ -1007,7 +1090,21 @@ void DataSourceEditWidget::updateRadar(dbContent::DataSourceBase* ds)
     {
         ground_only_check_->setChecked(ds->groundOnly());
         ground_only_check_->setDisabled(false);
+
+        psr_jpda_widget_->setHidden(false);
+
+        if (ds->hasProbabilityOfDetection())
+            psr_pd_edit_->setText(QString::number(ds->probabilityOfDetection()));
+        else
+            psr_pd_edit_->setText("");
+
+        if (ds->hasClutterRate())
+            psr_clutter_rate_edit_->setText(QString::number(ds->clutterRate()));
+        else
+            psr_clutter_rate_edit_->setText("");            
     }
+    else
+        psr_jpda_widget_->setHidden(true);
 
     if (ds->hasRadarRanges())
     {
