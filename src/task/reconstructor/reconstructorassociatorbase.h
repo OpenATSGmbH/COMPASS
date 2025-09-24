@@ -155,13 +155,13 @@ protected:
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1) = 0;
-    virtual boost::optional<std::tuple<double, double, double>> getPositionOffsetTargets(
+    virtual boost::optional<std::tuple<double, double>> getPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1,
         bool do_debug,
         const boost::optional<unsigned int>& thread_id,
-        reconstruction::PredictionStats* stats = nullptr) = 0;
+        reconstruction::PredictionStats* stats = nullptr) = 0; // distance, sum_std_dev
 
     virtual boost::optional<bool> checkTrackPositionOffsetAcceptable (
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,

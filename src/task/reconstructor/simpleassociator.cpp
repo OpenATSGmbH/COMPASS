@@ -194,8 +194,8 @@ bool SimpleAssociator::canGetPositionOffsetTargets(const boost::posix_time::ptim
     return ok;
 }
 
-// distance, target0 acc, target1 acc
-boost::optional<std::tuple<double, double, double>> SimpleAssociator::getPositionOffsetTargets(
+// distance, target0+target0 acc
+boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetTargets(
     const boost::posix_time::ptime& ts,
     const dbContent::ReconstructorTarget& target0,
     const dbContent::ReconstructorTarget& target1,
@@ -217,7 +217,7 @@ boost::optional<std::tuple<double, double, double>> SimpleAssociator::getPositio
                                                     target1_pos.latitude_ * DEG2RAD, target1_pos.longitude_ * DEG2RAD);
 
     // distance, target acc, tr acc
-    return std::tuple<double, double, double>(distance_m, -1, -1);
+    return std::tuple<double, double>(distance_m, -1);
 }
 
 boost::optional<bool> SimpleAssociator::checkTrackPositionOffsetAcceptable (

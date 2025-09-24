@@ -1068,7 +1068,7 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
         unsigned int pos_good_cnt {0};
         unsigned int pos_skipped_cnt {0};
 
-        double distance_m, stddev_est_target, stddev_est_other;
+        double distance_m, stddev_sum_targets;
         float pos_not_ok_rate, pos_dubious_rate;
         bool pos_not_ok_rate_acceptable, pos_dubious_rate_acceptable;
 
@@ -1096,14 +1096,14 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
                 continue;
             }
 
-            tie(distance_m, stddev_est_target, stddev_est_other) = pos_offs.value();
+            tie(distance_m, stddev_sum_targets) = pos_offs.value();
 
-            double sum_stddev_est = stddev_est_target + stddev_est_other;
+            //double sum_stddev_est = stddev_est_target + stddev_est_other;
             ReconstructorAssociatorBase::DistanceClassification score_class;
             double distance_score;
 
             std::tie(score_class, distance_score) = checkPositionOffsetScore (
-                distance_m, sum_stddev_est, secondary_verified);
+                distance_m, stddev_sum_targets, secondary_verified);
 
             // distance_score is supposed to be positve, the higher the better
 

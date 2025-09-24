@@ -48,7 +48,7 @@ private:
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1)  override;
-    virtual boost::optional<std::tuple<double, double, double>> getPositionOffsetTargets(
+    virtual boost::optional<std::tuple<double, double>> getPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1,
