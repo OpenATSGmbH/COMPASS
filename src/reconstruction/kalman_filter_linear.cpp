@@ -142,7 +142,7 @@ void KalmanFilterLinear::updateInternalMatrices_impl(double dt, double Q_var)
     traced_assert(Q_func_);
 
     F_func_(F_, dt);
-    Q_func_(Q_, dt, Q_var);
+    Q_func_(Q_, std::fabs(dt), Q_var);
 }
 
 /**

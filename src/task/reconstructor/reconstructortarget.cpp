@@ -326,6 +326,9 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
         !other.standing_adsb_target_->isOutdated() &&
         (!standing_adsb_target_ || other.standing_adsb_target_->ts_init > standing_adsb_target_->ts_init))
         standing_adsb_target_ = other.standing_adsb_target_;
+
+    if (other.tentative_origin || other.contains_tentative_origin)
+        contains_tentative_origin = true;
 }
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(

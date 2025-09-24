@@ -98,6 +98,8 @@ public:
         bool fix_predictions_interp = false;
 
         bool extract_wgs84_pos = false;
+
+        bool allow_backwards_step = false;
         
         int  verbosity = 0;
         bool debug     = false;

@@ -129,7 +129,9 @@ bool cartesianProduct(const std::vector<std::vector<T>>& input,
         std::vector<T> tuple(k);
 
         while (true) {
-            for (std::size_t i = 0; i < k; ++i) tuple[i] = input[i][idx[i]];
+            for (std::size_t i = 0; i < k; ++i) 
+                tuple[i] = input[i][idx[i]];
+            
             if (!callback(tuple))
                 return false;
 
@@ -142,7 +144,8 @@ bool cartesianProduct(const std::vector<std::vector<T>>& input,
                 }
                 idx[pos] = 0;
             }
-            if (pos == 0 && idx[0] == 0) return true;
+            if (pos == 0 && idx[0] == 0) 
+                return true;
         }
     }
 

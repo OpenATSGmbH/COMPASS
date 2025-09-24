@@ -1049,6 +1049,9 @@ void ReconstructorBase::createTargetReports()
     {
         traced_assert(dbcont_man.existsDBContent(buf_it.first));
 
+        if (buf_it.first == "CAT062")
+            continue;
+
         if (!dbcont_man.dbContent(buf_it.first).containsTargetReports())
             continue;
 
@@ -1655,6 +1658,14 @@ void ReconstructorBase::doReconstructionReporting()
         table.addRow({"jpda clutter total", stats.num_jpda_clutters, "", ""});
         table.addRow({"jpda assignment ratio", (double)stats.num_jpda_assignments / (double)stats.num_po_unassoc * 100, "", ""});
         table.addRow({"jpda assignment ratio per-batch", stats.jpda_assignment_ratio_sum / stats.num_jpda_success * 100, "", ""});
+    }
+
+    if (stats.num_tentative_created > 0)
+    {
+        table.addRow({"tentative created", stats.num_tentative_created, "", ""});
+        table.addRow({"tentative confirmed", stats.num_tentative_confirmed, "", ""});
+        table.addRow({"tentative terminated", stats.num_tentative_terminated, "", ""});
+        table.addRow({"tentative remaining", stats.num_tentative_remaining, "", ""});
     }
 
     for (const auto& batch_stats : associator().batchStatistics())

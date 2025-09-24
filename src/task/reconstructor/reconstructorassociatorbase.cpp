@@ -209,12 +209,12 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
     int utn;
     bool is_unreliable_primary_only;
 
-    auto& batch_stats = batch_stats_[ batch.ds_id_ ];
+    //auto& batch_stats = batch_stats_[ batch.ds_id_ ];
 
-    batch_stats.num_batches     += 1;
-    batch_stats.batch_size_min   = std::min(batch_stats.batch_size_min, batch.rec_nums_.size());
-    batch_stats.batch_size_max   = std::max(batch_stats.batch_size_max, batch.rec_nums_.size());
-    batch_stats.batch_size_mean += batch.rec_nums_.size();
+    //batch_stats.num_batches     += 1;
+    //batch_stats.batch_size_min   = std::min(batch_stats.batch_size_min, batch.rec_nums_.size());
+    //batch_stats.batch_size_max   = std::max(batch_stats.batch_size_max, batch.rec_nums_.size());
+    //batch_stats.batch_size_mean += batch.rec_nums_.size();
 
     std::vector<unsigned long> unreliable_primary_only_trs;
     size_t num_in_slice = 0;
@@ -310,22 +310,22 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
         }
     }
 
-    if (num_in_slice > 0)
-    {
-        batch_stats.batch_slice_size_min   = std::min(batch_stats.batch_slice_size_min, num_in_slice);
-        batch_stats.batch_slice_size_max   = std::max(batch_stats.batch_slice_size_max, num_in_slice);
-        batch_stats.batch_slice_size_mean += num_in_slice;
-        batch_stats.num_batches_slice     += 1;
-    }
+    // if (num_in_slice > 0)
+    // {
+    //     batch_stats.batch_slice_size_min   = std::min(batch_stats.batch_slice_size_min, num_in_slice);
+    //     batch_stats.batch_slice_size_max   = std::max(batch_stats.batch_slice_size_max, num_in_slice);
+    //     batch_stats.batch_slice_size_mean += num_in_slice;
+    //     batch_stats.num_batches_slice     += 1;
+    // }
 
     if (!unreliable_primary_only_trs.empty())
     {
         size_t n_po = unreliable_primary_only_trs.size();
 
-        batch_stats.batch_po_size_min   = std::min(batch_stats.batch_po_size_min, n_po);
-        batch_stats.batch_po_size_max   = std::max(batch_stats.batch_po_size_max, n_po);
-        batch_stats.batch_po_size_mean += n_po;
-        batch_stats.num_batches_po     += 1;
+        //batch_stats.batch_po_size_min   = std::min(batch_stats.batch_po_size_min, n_po);
+        //batch_stats.batch_po_size_max   = std::max(batch_stats.batch_po_size_max, n_po);
+        //batch_stats.batch_po_size_mean += n_po;
+        //batch_stats.num_batches_po     += 1;
 
         ReconstructorTarget::globalStats().num_po_unassoc += unreliable_primary_only_trs.size();
 

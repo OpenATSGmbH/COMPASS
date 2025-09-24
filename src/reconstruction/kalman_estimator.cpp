@@ -738,7 +738,7 @@ KalmanEstimator::ReinitState KalmanEstimator::needsReinit(const Measurement& mm)
     if ((settings_.reinit_check_flags & Settings::ReinitFlags::ReinitCheckTime) && settings_.max_dt > 0)
     {
         const double dt = kalman_interface_->timestep(mm);
-        if (dt > settings_.max_dt)
+        if (std::fabs(dt) > settings_.max_dt)
             return KalmanEstimator::ReinitState::ReinitTime;
     }
 
@@ -886,9 +886,9 @@ KalmanEstimator::StepResult KalmanEstimator::kalmanStepInternal(kalman::KalmanUp
 
     //check if timestep is too small
     auto tstep = kalman_interface_->timestep(mm);
-    traced_assert(tstep >= 0);
+    traced_assert(settings_.allow_backwards_step || tstep >= 0);
 
-    if (tstep < settings_.min_dt)
+    if (std::fabs(tstep) < settings_.min_dt)
     {
         if (settings_.verbosity > 0)
             logwrn << "step " << kalman_interface_->timestep(mm) << " too small (<" << settings_.min_dt << "), skipping...";

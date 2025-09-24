@@ -139,6 +139,11 @@ public:
             num_jpda_assignments      = 0;
             num_jpda_clutters         = 0;
             jpda_assignment_ratio_sum = 0.0;
+
+            num_tentative_created    = 0;
+            num_tentative_terminated = 0;
+            num_tentative_confirmed  = 0;
+            num_tentative_remaining  = 0;
         }
 
         size_t num_standing_adsb               = 0;
@@ -197,6 +202,11 @@ public:
         size_t num_jpda_assignments      = 0;
         size_t num_jpda_clutters         = 0;
         double jpda_assignment_ratio_sum = 0.0;
+
+        size_t num_tentative_created    = 0;
+        size_t num_tentative_terminated = 0;
+        size_t num_tentative_confirmed  = 0;
+        size_t num_tentative_remaining  = 0;
     };
 
     struct InterpOptions
@@ -323,6 +333,9 @@ public:
     float baro_alt_prev_;
 
     mutable Transformation trafo_;
+
+    bool tentative_origin          = false;
+    bool contains_tentative_origin = false;
 
     void addTargetReport (unsigned long rec_num);
     void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
