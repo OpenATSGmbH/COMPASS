@@ -128,6 +128,9 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
     properties_layout_->addWidget(new QLabel("Ground Only (SMR)"), row, 0);
     
     ground_only_check_ = new QCheckBox();
+    connect(ground_only_check_, &QCheckBox::clicked,
+            this, &DataSourceEditWidget::groundOnlyCheckedSlot);
+
     properties_layout_->addWidget(ground_only_check_, row, 1);
 
     // position_widget_
@@ -606,6 +609,24 @@ void DataSourceEditWidget::detectionTypeChangedSlot(int index)
     ds_man_.configDataSource(current_ds_id_).detectionType(selected_type);
 
     updateContent();
+}
+
+void DataSourceEditWidget::groundOnlyCheckedSlot()
+{
+    loginf;
+
+    traced_assert(ground_only_check_);
+
+    bool checked = ground_only_check_->checkState() == Qt::Checked;
+
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).groundOnly(checked);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).groundOnly(checked);
 }
 
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)

@@ -49,6 +49,8 @@ public slots:
 
     void detectionTypeChangedSlot(int index); // Slot to handle detection type change
 
+    void groundOnlyCheckedSlot();
+
     void latitudeEditedSlot(const QString& value_str);
     void longitudeEditedSlot(const QString& value_str);
     void altitudeEditedSlot(const QString& value_str);
