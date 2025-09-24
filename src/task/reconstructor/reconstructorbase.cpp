@@ -1049,9 +1049,6 @@ void ReconstructorBase::createTargetReports()
     {
         traced_assert(dbcont_man.existsDBContent(buf_it.first));
 
-        if (buf_it.first == "CAT062")
-            continue;
-
         if (!dbcont_man.dbContent(buf_it.first).containsTargetReports())
             continue;
 
