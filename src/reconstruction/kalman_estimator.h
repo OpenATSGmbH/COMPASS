@@ -101,8 +101,8 @@ public:
 
         bool allow_backwards_step = false;
         
-        int  verbosity = 0;
-        bool debug     = false;
+        int  verbosity   = 0;
+        bool debug       = false;
 
         reconstruction::Uncertainty default_uncert; //default uncertainties used if none are provided in the measurement
 

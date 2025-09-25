@@ -334,8 +334,8 @@ public:
 
     mutable Transformation trafo_;
 
-    bool tentative_origin          = false;
-    bool contains_tentative_origin = false;
+    boost::optional<bool> created_from_tentative;
+    boost::optional<bool> contains_tentative;
 
     void addTargetReport (unsigned long rec_num);
     void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
