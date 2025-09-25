@@ -21,7 +21,6 @@
 #include <QMenu>
 #include <QPushButton>
 #include <QTreeWidgetItem>
-#include <boost/describe/members.hpp>
 
 class DataSourceManager;
 
