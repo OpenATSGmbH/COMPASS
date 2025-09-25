@@ -349,12 +349,12 @@ boost::optional<targetReport::PositionAccuracy> TargetReportAccessor::positionAc
             //         xy_cov =  std::pow(xy_cov, 2);
             // }
         }
+        double x_stddev = meta_pos_std_dev_x_m_vec_->get(index);
+        double y_stddev = meta_pos_std_dev_y_m_vec_->get(index);
 
-        Utils::Accuracy::checkMaxCovariance(meta_pos_std_dev_x_m_vec_->get(index), meta_pos_std_dev_y_m_vec_->get(index), xy_cov);
+        Utils::Accuracy::checkMaxCovariance(x_stddev, y_stddev, xy_cov);
 
-        return targetReport::PositionAccuracy(meta_pos_std_dev_x_m_vec_->get(index),
-                                              meta_pos_std_dev_y_m_vec_->get(index),
-                                              xy_cov);
+        return targetReport::PositionAccuracy(x_stddev, y_stddev, xy_cov);
     }
 
     //not implemented for dbcontent
