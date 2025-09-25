@@ -368,6 +368,14 @@ QImage View::renderView() const
 }
 
 /**
+ */
+void View::setExporting(bool ok)
+{
+    traced_assert(widget_ && widget_->getViewDataWidget());  
+    return widget_->getViewDataWidget()->isExporting(ok);
+}
+
+/**
  * Asks the data widget if it shows any data.
  */
 bool View::hasScreenshotContent() const

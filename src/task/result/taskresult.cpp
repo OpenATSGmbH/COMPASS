@@ -819,6 +819,18 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     figure.view();
 
+    //prepare views for rendering
+    for (auto& view_it : view_man.getViews())
+    {
+        //skip table views
+        if (view_it.second->classId() == "TableView")
+            continue;
+        
+        //enable export
+        if (view_it.second->hasScreenshotContent())
+            view_it.second->setExporting(true);
+    }
+
     while (dbcont_man.loadInProgress())
         QCoreApplication::processEvents();
 
@@ -840,6 +852,9 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         //render view and collect
         auto img = view_it.second->renderData();
         renderings.emplace_back(img, view_it.second->instanceId());
+
+        //disable export
+        view_it.second->setExporting(false);
     }
 
     return renderings;
