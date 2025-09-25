@@ -343,6 +343,8 @@ private:
     EvaluationDetails recomputeDetails() const;
 
     mutable boost::optional<EvaluationDetails> details_;
+
+    bool show_overview_always_ = true;
 };
 
 }

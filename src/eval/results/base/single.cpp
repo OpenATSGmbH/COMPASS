@@ -349,7 +349,7 @@ void Single::addTargetToOverviewTable(ResultReport::Section& section,
     traced_assert(values.size() == target_table.numColumns());
 
     std::string link = getTargetRequirementSectionID();
-    std::string fig  = hasIssues() ? TargetOverviewID : "";
+    std::string fig  = show_overview_always_ ? TargetOverviewID : (hasIssues() ? TargetOverviewID : "");
 
     bool is_active = use() && resultUsable();
     target_table.addRow(values, ResultReport::SectionContentViewable(), link, fig, QVariant(), is_active ? 0u : ResultReport::CellStyleInactive);
@@ -363,8 +363,6 @@ void Single::addTargetDetailsToReport(std::shared_ptr<ResultReport::Report> repo
     auto& utn_req_section = report->getSection(getTargetRequirementSectionID());
 
     utn_section.perTargetSection(true); // mark utn section per target
-
-    
 
     //generate details overview table
     if (!utn_req_section.hasTable(TRDetailsOverviewTableName))
@@ -399,7 +397,7 @@ void Single::addTargetDetailsToReport(std::shared_ptr<ResultReport::Report> repo
     }
 
     //generate overview figure?
-    if (hasIssues())
+    if (show_overview_always_ || hasIssues())
     {
         auto& fig = utn_req_section.addFigure(TargetOverviewID, ResultReport::SectionContentViewable().setCaption("Target Errors Overview"));
 
