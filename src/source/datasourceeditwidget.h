@@ -20,6 +20,8 @@
 #include <qcheckbox.h>
 #include <QWidget>
 
+#include <functional>
+
 class DataSourceManager;
 class DataSourcesConfigurationDialog;
 class DSTypeSelectionComboBox;

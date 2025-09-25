@@ -17,9 +17,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-IF (SOURCE_BRANCH)
+if(EXISTS "/.dockerenv")
 message("  Platform: Linux (inside docker)")
-add_definitions ( -UNDEBUG -Wall -std=c++14 ) # -DQT_NO_KEYWORDS -fext-numeric-literals
+add_definitions ( -UNDEBUG -Wall -std=c++14 -fext-numeric-literals) # -DQT_NO_KEYWORDS
 ELSE()
 message("  Platform: Linux (local)")
 add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS -fext-numeric-literals
