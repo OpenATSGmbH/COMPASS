@@ -1234,15 +1234,16 @@ void SectionContentTable::copyContent()
 
     std::stringstream ss;
 
-    unsigned int num_cols = headings_.size();
+    auto proxy_headings = proxyHeadings();
+    unsigned int num_cols = proxy_headings.size();
 
     // headings
     for (unsigned int cnt=0; cnt < num_cols; ++cnt)
     {
         if (cnt == 0)
-            ss << headings_.at(cnt);
+            ss << proxy_headings.at(cnt);
         else
-            ss <<  ";" << headings_.at(cnt);
+            ss <<  ";" << proxy_headings.at(cnt);
     }
     ss << "\n";
 
@@ -1466,8 +1467,8 @@ Result SectionContentTable::toJSONDocument_impl(nlohmann::json& j,
     if (!r.ok())
         return r;
 
-    bool write_to_file = (ReportExporter::TableMaxRows    >= 0 && numRows()    > (size_t)ReportExporter::TableMaxRows   ) ||
-                         (ReportExporter::TableMaxColumns >= 0 && numColumns() > (size_t)ReportExporter::TableMaxColumns);
+    bool write_to_file = (ReportExporter::TableMaxRows    >= 0 && numProxyRows()    > (size_t)ReportExporter::TableMaxRows   ) ||
+                         (ReportExporter::TableMaxColumns >= 0 && numProxyColumns() > (size_t)ReportExporter::TableMaxColumns);
 
     auto data = exportProxyContent(export_style);
     if (!data.has_value())
@@ -1480,7 +1481,7 @@ Result SectionContentTable::toJSONDocument_impl(nlohmann::json& j,
             return res;
 
         nlohmann::json j_ext;
-        j_ext[ FieldDocColumns ] = headings_;
+        j_ext[ FieldDocColumns ] = proxyHeadings();
         j_ext[ FieldDocData    ] = data.value();
 
         std::ofstream of(res.result().path);
@@ -1755,7 +1756,9 @@ nlohmann::json SectionContentTable::exportProxyContent(unsigned int row,
 
         auto j_cell = exportProxyContent(row, col, mode, &ok);
         if (!ok)
+        {
             return nlohmann::json();
+        }
 
         j_row.push_back(j_cell);
     }
@@ -1798,6 +1801,26 @@ unsigned int SectionContentTable::numProxyRows() const
 unsigned int SectionContentTable::numProxyColumns () const
 {
     return num_columns_proxy_;
+}
+
+/**
+ */
+std::vector<std::string> SectionContentTable::proxyHeadings() const
+{
+    if (column_groups_.empty())
+        return headings();
+
+    std::vector<std::string> proxy_headings;
+    proxy_headings.reserve(numProxyColumns());
+
+    int nc = numColumns();
+    for (int i = 0; i < nc; ++i)
+        if (columnVisible(i))
+            proxy_headings.push_back(headings_[ i ]);
+
+    traced_assert(proxy_headings.size() == numProxyColumns());
+
+    return proxy_headings;
 }
 
 /***************************************************************************************************

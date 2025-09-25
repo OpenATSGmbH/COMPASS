@@ -210,6 +210,7 @@ public:
 
     unsigned int numProxyRows () const;
     unsigned int numProxyColumns () const;
+    std::vector<std::string> proxyHeadings() const;
 
     static boost::optional<QColor> cellTextColor(unsigned int style);
     static boost::optional<QColor> cellBGColor(unsigned int style);

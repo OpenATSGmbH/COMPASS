@@ -165,7 +165,7 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
 
     auto& latex_section = latex_doc_->getSection(it->second);
 
-    std::vector<std::string> headings = table.headings();
+    std::vector<std::string> headings = table.proxyHeadings();
     unsigned int num_cols = headings.size();
 
     for (unsigned int cnt=0; cnt < num_cols; ++cnt) // latexify headings
