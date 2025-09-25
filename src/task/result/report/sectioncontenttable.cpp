@@ -1755,7 +1755,9 @@ nlohmann::json SectionContentTable::exportProxyContent(unsigned int row,
 
         auto j_cell = exportProxyContent(row, col, mode, &ok);
         if (!ok)
+        {
             return nlohmann::json();
+        }
 
         j_row.push_back(j_cell);
     }
@@ -1798,6 +1800,26 @@ unsigned int SectionContentTable::numProxyRows() const
 unsigned int SectionContentTable::numProxyColumns () const
 {
     return num_columns_proxy_;
+}
+
+/**
+ */
+std::vector<std::string> SectionContentTable::proxyHeadings() const
+{
+    if (column_groups_.empty())
+        return headings();
+
+    std::vector<std::string> proxy_headings;
+    proxy_headings.reserve(numProxyColumns());
+
+    int nc = numColumns();
+    for (int i = 0; i < nc; ++i)
+        if (columnVisible(i))
+            proxy_headings.push_back(headings_[ i ]);
+
+    traced_assert(proxy_headings.size() == numProxyColumns());
+
+    return proxy_headings;
 }
 
 /***************************************************************************************************
