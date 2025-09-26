@@ -25,7 +25,7 @@ JSONParsingSchema::JSONParsingSchema(const std::string& class_id, const std::str
 {
     registerParameter("name", &name_, std::string());
 
-    assert(name_.size());
+    traced_assert(name_.size());
 
     createSubConfigurables();
 }
@@ -46,8 +46,8 @@ void JSONParsingSchema::generateSubConfigurable(const std::string& class_id,
             sub_config.hasParameterConfigValue("dbcontent_name"))  // name not set hack
             name = sub_config.getParameterConfigValue<std::string>("dbcontent_name");
 
-        assert(name.size());
-        assert(parsers_.find(name) == parsers_.end());
+        traced_assert(name.size());
+        traced_assert(parsers_.find(name) == parsers_.end());
 
         logdbg << "generating schema " << instance_id
                << " with name " << name;
@@ -70,13 +70,13 @@ void JSONParsingSchema::name(const std::string& name) { name_ = name; }
 
 JSONObjectParser& JSONParsingSchema::parser(const std::string& name)
 {
-    assert(hasObjectParser(name));
+    traced_assert(hasObjectParser(name));
     return *parsers_.at(name);
 }
 
 void JSONParsingSchema::removeParser(const std::string& name)
 {
-    assert(hasObjectParser(name));
+    traced_assert(hasObjectParser(name));
     parsers_.erase(name);
 }
 

@@ -29,7 +29,7 @@ ViewInfoWidget::ViewInfoWidget(View* view, QWidget* parent)
 :   QWidget(parent)
 ,   view_  (view  )
 {
-    assert(view_);
+    traced_assert(view_);
 
     setObjectName("infowidget");
 

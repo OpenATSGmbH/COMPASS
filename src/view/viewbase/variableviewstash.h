@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "traced_assert.h"
+
 #include <vector>
 #include <map>
 #include <cmath>
@@ -54,7 +56,7 @@ struct GroupedDataStash
 
     void updateCounts()
     {
-        assert(isValid());
+        traced_assert(isValid());
 
         size_t n  = selected_values.size(); 
         size_t nv = variable_stashes.size();
@@ -144,7 +146,7 @@ public:
     VariableViewStash(size_t num_variables)
     :   num_variables_(num_variables)
     {
-        assert(num_variables_ > 0);
+        traced_assert(num_variables_ > 0);
 
         data_ranges_.resize(num_variables_);
     }

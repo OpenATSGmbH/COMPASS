@@ -108,7 +108,7 @@ DBFilterWidget* ExcludedTimeWindowsFilter::createWidget()
 
 void ExcludedTimeWindowsFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 
@@ -121,9 +121,9 @@ void ExcludedTimeWindowsFilter::reset()
 
 void ExcludedTimeWindowsFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -134,12 +134,12 @@ void ExcludedTimeWindowsFilter::loadViewPointConditions (const nlohmann::json& f
 {
     logdbg << "filter '" << filters.dump(4) << "'";
 
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Windows"));
+    traced_assert(filter.contains("Windows"));
     time_windows_json_ = filter.at("Windows");
 
     time_windows_.setFrom(time_windows_json_);

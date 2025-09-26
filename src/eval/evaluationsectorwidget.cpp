@@ -56,9 +56,9 @@ EvaluationSectorWidget::EvaluationSectorWidget(EvaluationCalculator& calculator,
 */
 void EvaluationSectorWidget::update()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert (grid_layout_);
+    traced_assert(grid_layout_);
 
     QLayoutItem* child;
     while (!grid_layout_->isEmpty() && (child = grid_layout_->takeAt(0)) != nullptr)
@@ -118,12 +118,12 @@ void EvaluationSectorWidget::update()
 void EvaluationSectorWidget::toggleUseGroupSlot()
 {
     QCheckBox* check = static_cast<QCheckBox*> (QObject::sender());
-    assert (check);
+    traced_assert(check);
 
     string sector_layer_name = check->property("sector_layer_name").toString().toStdString();
     string requirement_group_name = check->property("requirement_group_name").toString().toStdString();
 
-    assert (calculator_.hasCurrentStandard());
+    traced_assert(calculator_.hasCurrentStandard());
 
     calculator_.useGroupInSectorLayer(sector_layer_name, requirement_group_name, check->checkState() == Qt::Checked);
 

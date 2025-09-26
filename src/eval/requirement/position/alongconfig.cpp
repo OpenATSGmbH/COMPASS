@@ -19,7 +19,7 @@
 #include "eval/requirement/position/alongconfigwidget.h"
 #include "eval/requirement/position/along.h"
 #include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "eval/requirement/base/positionbase.h"
 
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
@@ -32,7 +32,7 @@ namespace EvaluationRequirement
 PositionAlongConfig::PositionAlongConfig(
         const std::string& class_id, const std::string& instance_id,
         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+    : PositionBaseConfig(class_id, instance_id, group, standard, calculator)
 {
     registerParameter("max_abs_value", &max_abs_value_, 50.0f);
 }
@@ -45,8 +45,8 @@ PositionAlongConfig::~PositionAlongConfig()
 std::shared_ptr<Base> PositionAlongConfig::createRequirement()
 {
     shared_ptr<PositionAlong> req = make_shared<PositionAlong>(
-                name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_,
-                max_abs_value_);
+                name_, short_name_, group_.name(), prob_, prob_check_type_, ref_min_accuracy_, 
+                calculator_, max_abs_value_);
 
     return req;
 }

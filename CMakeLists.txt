@@ -7,24 +7,22 @@ cmake_minimum_required(VERSION 3.3)
 
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
-SET(CMAKE_EXPORT_COMPILE_COMMANDS, ON)
-
 project( COMPASS )
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "9")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
 message("  System: ${CMAKE_SYSTEM}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-IF (SOURCE_BRANCH)
+if(EXISTS "/.dockerenv")
 message("  Platform: Linux (inside docker)")
 add_definitions ( -UNDEBUG -Wall -std=c++14 -fext-numeric-literals) # -DQT_NO_KEYWORDS
 ELSE()
 message("  Platform: Linux (local)")
-add_definitions ( -UNDEBUG -Wall -std=c++17 -fext-numeric-literals -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS
+add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS -fext-numeric-literals
 ENDIF()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

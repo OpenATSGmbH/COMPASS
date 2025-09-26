@@ -54,7 +54,7 @@ public:
     /// @brief Returns the used data source
     TableViewDataSource* getDataSource()
     {
-        assert(data_source_);
+        traced_assert(data_source_);
         return data_source_;
     }
     TableViewDataWidget* getDataWidget();

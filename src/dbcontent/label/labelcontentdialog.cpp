@@ -71,13 +71,13 @@ nlohmann::json LabelContentDialog::labelConfig() const
 void LabelContentDialog::selectedVarChangedSlot()
 {
     VariableSelectionWidget* var_widget = dynamic_cast<VariableSelectionWidget*>(sender());
-    assert (var_widget);
+    traced_assert(var_widget);
 
     unsigned int key = var_widget->property("key").toUInt();
 
     loginf << "key " << key;
 
-    assert (label_config_.contains(dbcontent_name_));
+    traced_assert(label_config_.contains(dbcontent_name_));
     json& dbcont_def = label_config_.at(dbcontent_name_);
 
     if (var_widget->hasVariable())
@@ -100,12 +100,12 @@ void LabelContentDialog::doneClickedSlot()
 
 void LabelContentDialog::createVariableGrid()
 {
-    assert (var_grid_);
+    traced_assert(var_grid_);
 
     QFont font_bold;
     font_bold.setBold(true);
 
-    assert (label_config_.contains(dbcontent_name_));
+    traced_assert(label_config_.contains(dbcontent_name_));
     json& dbcont_def = label_config_.at(dbcontent_name_);
 
     string key;
@@ -121,7 +121,7 @@ void LabelContentDialog::createVariableGrid()
 
             if (row == 0 && col == 0) // best id
             {
-                assert (dbcont_def.contains(key));
+                traced_assert(dbcont_def.contains(key));
                 string var_name = dbcont_def.at(key);
 
                 QLabel* best_id = new QLabel(var_name.c_str());
@@ -137,7 +137,7 @@ void LabelContentDialog::createVariableGrid()
                 if (dbcont_def.contains(key))
                 {
                     string var_name = dbcont_def.at(key);
-                    assert (db_content.hasVariable(var_name));
+                    traced_assert(db_content.hasVariable(var_name));
                     dbContent::Variable& var = db_content.variable(var_name);
 
                     var_widget->selectedVariable(var);

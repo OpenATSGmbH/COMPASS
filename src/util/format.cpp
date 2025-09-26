@@ -19,7 +19,7 @@
 #include "logger.h"
 
 #include <algorithm>
-#include <cassert>
+#include "traced_assert.h"
 #include <initializer_list>
 
 
@@ -48,8 +48,8 @@ void Format::set(PropertyDataType data_type, const std::string& value)
     logdbg << "data type '" << Property::asString(data_type) << "' value '" << value
            << "'";
 
-    assert(format_options_.count(data_type) > 0);
-    assert(std::find(format_options_.at(data_type).begin(), format_options_.at(data_type).end(),
+    traced_assert(format_options_.count(data_type) > 0);
+    traced_assert(std::find(format_options_.at(data_type).begin(), format_options_.at(data_type).end(),
                      value) != format_options_.at(data_type).end());
     std::string::operator=(value);
 }

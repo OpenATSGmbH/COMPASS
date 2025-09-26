@@ -53,7 +53,6 @@ public:
                     const EvaluationTargetData* target,
                     EvaluationCalculator& calculator,
                     const EvaluationDetails& details,
-                    bool ignore, 
                     unsigned int num_extra, 
                     unsigned int num_ok, 
                     bool has_extra_test_data);

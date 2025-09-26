@@ -63,7 +63,8 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     dbcont_combo_ = new DBContentComboBox(false, true);
     dbcont_combo_->setObjectName(dbcontent_name_);
-    connect (dbcont_combo_, &DBContentComboBox::changedObject, this, &EvaluationDataSourceWidget::dbContentNameChangedSlot);
+    connect (dbcont_combo_, &DBContentComboBox::changedObject, 
+        this, &EvaluationDataSourceWidget::dbContentNameChangedSlot);
 
     dbcont_lay->addWidget(dbcont_combo_, 0, 1);
 
@@ -77,7 +78,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
     main_layout->addStretch();
 
     // line
-    assert (line_id_ <= 3);
+    traced_assert(line_id_ <= 3);
 
     QGridLayout* line_lay = new QGridLayout();
 
@@ -108,7 +109,7 @@ EvaluationDataSourceWidget::~EvaluationDataSourceWidget() = default;
 void EvaluationDataSourceWidget::updateDataSourcesSlot()
 {
     loginf << "title " << title_;
-    assert (data_source_layout_);
+    traced_assert(data_source_layout_);
 
     QLayoutItem* child;
     while (!data_source_layout_->isEmpty() && (child = data_source_layout_->takeAt(0)) != nullptr)
@@ -174,7 +175,7 @@ void EvaluationDataSourceWidget::updateCheckboxesChecked()
 
     for (auto& checkit : data_sources_checkboxes_)
     {
-        assert(data_sources.count(to_string(checkit.first)));
+        traced_assert(data_sources.count(to_string(checkit.first)));
         checkit.second->setChecked(data_sources.at(to_string(checkit.first)));
         logdbg << "ds_id " << checkit.first
                << " active " << data_sources.at(to_string(checkit.first));
@@ -185,7 +186,7 @@ void EvaluationDataSourceWidget::updateCheckboxesChecked()
  */
 void EvaluationDataSourceWidget::dbContentNameChangedSlot()
 {
-    assert (dbcont_combo_);
+    traced_assert(dbcont_combo_);
 
     dbcontent_name_ = dbcont_combo_->getObjectName();
 
@@ -202,7 +203,7 @@ void EvaluationDataSourceWidget::dbContentNameChangedSlot()
  */
 void EvaluationDataSourceWidget::toggleDataSourceSlot()
 {
-    logdbg << "start";
+    logdbg;
     QCheckBox* check = (QCheckBox*)sender();
 
     unsigned int ds_id = check->property("id").toInt();
@@ -236,8 +237,8 @@ void EvaluationDataSourceWidget::lineIDEditSlot(const QString& text)
     bool ok;
     unsigned int line_id = text.toInt(&ok);
 
-    assert (ok);
-    assert (line_id <= 4);
+    traced_assert(ok);
+    traced_assert(line_id <= 4);
     --line_id;
 
     emit lineChangedSignal(line_id);

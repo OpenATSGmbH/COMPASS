@@ -148,14 +148,14 @@ void FFTEditWidget::showFFT(const std::string& name)
 
     loginf << "name " << name << " in db " << current_fft_in_db_;
 
-    assert (ds_man_.hasConfigFFT(current_name_));
+    traced_assert(ds_man_.hasConfigFFT(current_name_));
 
     updateContent();
 }
 
 void FFTEditWidget::clear()
 {
-    loginf << "start";
+    loginf;
 
     has_current_fft_ = false;
     current_name_ = "";
@@ -167,7 +167,7 @@ void FFTEditWidget::clear()
 
 void FFTEditWidget::modeSAddressEditedSlot(const QString& value_str)
 {
-    assert (mode_s_address_edit_);
+    traced_assert(mode_s_address_edit_);
 
     if (mode_s_address_edit_->hasAcceptableInput())
     {
@@ -175,11 +175,11 @@ void FFTEditWidget::modeSAddressEditedSlot(const QString& value_str)
         {
             if (current_fft_in_db_)
             {
-                assert (ds_man_.hasDBFFT(current_name_));
+                traced_assert(ds_man_.hasDBFFT(current_name_));
                 ds_man_.dbFFT(current_name_).clearModeSAddress();
             }
 
-            assert (ds_man_.hasConfigFFT(current_name_));
+            traced_assert(ds_man_.hasConfigFFT(current_name_));
             ds_man_.configFFT(current_name_).clearModeSAddress();
         }
         else
@@ -188,18 +188,18 @@ void FFTEditWidget::modeSAddressEditedSlot(const QString& value_str)
 
             if (current_fft_in_db_)
             {
-                assert (ds_man_.hasDBFFT(current_name_));
+                traced_assert(ds_man_.hasDBFFT(current_name_));
                 ds_man_.dbFFT(current_name_).modeSAddress(value);
             }
 
-            assert (ds_man_.hasConfigFFT(current_name_));
+            traced_assert(ds_man_.hasConfigFFT(current_name_));
             ds_man_.configFFT(current_name_).modeSAddress(value);
         }
     }
 }
 void FFTEditWidget::modeAEditedSlot(const QString& value_str)
 {
-    assert (mode_3a_edit_);
+    traced_assert(mode_3a_edit_);
 
     if (mode_3a_edit_->hasAcceptableInput())
     {
@@ -207,11 +207,11 @@ void FFTEditWidget::modeAEditedSlot(const QString& value_str)
         {
             if (current_fft_in_db_)
             {
-                assert (ds_man_.hasDBFFT(current_name_));
+                traced_assert(ds_man_.hasDBFFT(current_name_));
                 ds_man_.dbFFT(current_name_).clearMode3ACode();
             }
 
-            assert (ds_man_.hasConfigFFT(current_name_));
+            traced_assert(ds_man_.hasConfigFFT(current_name_));
             ds_man_.configFFT(current_name_).clearMode3ACode();
         }
         else
@@ -220,11 +220,11 @@ void FFTEditWidget::modeAEditedSlot(const QString& value_str)
 
             if (current_fft_in_db_)
             {
-                assert (ds_man_.hasDBFFT(current_name_));
+                traced_assert(ds_man_.hasDBFFT(current_name_));
                 ds_man_.dbFFT(current_name_).mode3ACode(value);
             }
 
-            assert (ds_man_.hasConfigFFT(current_name_));
+            traced_assert(ds_man_.hasConfigFFT(current_name_));
             ds_man_.configFFT(current_name_).mode3ACode(value);
         }
     }
@@ -237,11 +237,11 @@ void FFTEditWidget::modeCEditedSlot(const QString& value_str)
 
     if (current_fft_in_db_)
     {
-        assert (ds_man_.hasDBFFT(current_name_));
+        traced_assert(ds_man_.hasDBFFT(current_name_));
         ds_man_.dbFFT(current_name_).modeCCode(value);
     }
 
-    assert (ds_man_.hasConfigFFT(current_name_));
+    traced_assert(ds_man_.hasConfigFFT(current_name_));
     ds_man_.configFFT(current_name_).modeCCode(value);
 }
 
@@ -253,11 +253,11 @@ void FFTEditWidget::latitudeEditedSlot(const QString& value_str)
 
     if (current_fft_in_db_)
     {
-        assert (ds_man_.hasDBFFT(current_name_));
+        traced_assert(ds_man_.hasDBFFT(current_name_));
         ds_man_.dbFFT(current_name_).latitude(value);
     }
 
-    assert (ds_man_.hasConfigFFT(current_name_));
+    traced_assert(ds_man_.hasConfigFFT(current_name_));
     ds_man_.configFFT(current_name_).latitude(value);
 }
 
@@ -269,11 +269,11 @@ void FFTEditWidget::longitudeEditedSlot(const QString& value_str)
 
     if (current_fft_in_db_)
     {
-        assert (ds_man_.hasDBFFT(current_name_));
+        traced_assert(ds_man_.hasDBFFT(current_name_));
         ds_man_.dbFFT(current_name_).longitude(value);
     }
 
-    assert (ds_man_.hasConfigFFT(current_name_));
+    traced_assert(ds_man_.hasConfigFFT(current_name_));
     ds_man_.configFFT(current_name_).longitude(value);
 }
 
@@ -285,20 +285,20 @@ void FFTEditWidget::altitudeEditedSlot(const QString& value_str)
 
     if (current_fft_in_db_)
     {
-        assert (ds_man_.hasDBFFT(current_name_));
+        traced_assert(ds_man_.hasDBFFT(current_name_));
         ds_man_.dbFFT(current_name_).altitude(value);
     }
 
-    assert (ds_man_.hasConfigFFT(current_name_));
+    traced_assert(ds_man_.hasConfigFFT(current_name_));
     ds_man_.configFFT(current_name_).altitude(value);
 }
 
 
 void FFTEditWidget::deleteSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (has_current_fft_);
+    traced_assert(has_current_fft_);
     //assert (!current_fft_in_db_);
 
     dialog_.beginResetModel();
@@ -310,9 +310,9 @@ void FFTEditWidget::deleteSlot()
 
 void FFTEditWidget::updateContent()
 {
-    assert (main_widget_);
-    assert (name_edit_);
-    assert (delete_button_);
+    traced_assert(main_widget_);
+    traced_assert(name_edit_);
+    traced_assert(delete_button_);
 
     if (!has_current_fft_)
     {
@@ -327,16 +327,16 @@ void FFTEditWidget::updateContent()
 
         if (current_fft_in_db_) // db && cfg
         {
-            assert (ds_man_.hasDBFFT(current_name_));
-            assert (ds_man_.hasConfigFFT(current_name_));
+            traced_assert(ds_man_.hasDBFFT(current_name_));
+            traced_assert(ds_man_.hasConfigFFT(current_name_));
             ds = dynamic_cast<FFTBase*>(&ds_man_.dbFFT(current_name_));
         }
         else
         {
-            assert (ds_man_.hasConfigFFT(current_name_));
+            traced_assert(ds_man_.hasConfigFFT(current_name_));
             ds = dynamic_cast<FFTBase*>(&ds_man_.configFFT(current_name_));
         }
-        assert (ds);
+        traced_assert(ds);
 
         name_edit_->setText(ds->name().c_str());
         name_edit_->setDisabled(false);

@@ -537,7 +537,7 @@ namespace rtcommand
             nlohmann::json info_json;
 
             auto cmd = RTCommandRegistry::instance().createCommandTemplate(cmd_name);
-            assert(cmd);
+            traced_assert(cmd);
 
             info += cmd->name().toStdString() + "\n";
             info += ReplyStringIndentation + cmd->description().toStdString() + "\n";

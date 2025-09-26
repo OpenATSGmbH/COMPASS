@@ -64,6 +64,7 @@ struct ReferenceCalculatorTargetReferences
     unsigned int utn;
 
     std::vector<reconstruction::Measurement>    measurements;
+    std::vector<reconstruction::MMContribution> measurement_contributions;
     std::vector<kalman::KalmanUpdate>           updates;
     std::vector<kalman::KalmanUpdate>           updates_smooth;
     std::vector<double>                         updates_smooth_Qvars;
@@ -163,6 +164,7 @@ private:
                                 Measurements& measurements);
     void interpolateMeasurements(Measurements& measurements, 
                                  const reconstruction::InterpOptions& options) const;
+    void addStoppedADSBMeasurements(Measurements& measurements) const;
     
     InitRecResult initReconstruction(TargetReferences& refs);
     void reconstructMeasurements(TargetReferences& refs);

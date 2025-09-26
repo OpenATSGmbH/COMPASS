@@ -16,6 +16,7 @@
 
 #include "histogramgenerator.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 /**
 */
@@ -111,7 +112,7 @@ bool HistogramGenerator::hasValidResult() const
  */
 bool HistogramGenerator::refill()
 {
-    loginf << "start";
+    loginf;
 
     if (!hasData())
         return false;
@@ -140,7 +141,7 @@ bool HistogramGenerator::refill()
  */
 void HistogramGenerator::update()
 {
-    loginf << "start";
+    loginf;
 
     if (!hasData())
         return;
@@ -162,7 +163,7 @@ void HistogramGenerator::update()
  */
 bool HistogramGenerator::select(unsigned int bin0, unsigned int bin1)
 {
-    loginf << "start";
+    loginf;
 
     if (!hasData())
         return false;
@@ -302,7 +303,7 @@ bool HistogramGenerator::finalizeResults()
     results_.buffer_nan_count  = intermediate_data_.buffer_nan_count;
     results_.buffer_null_count = intermediate_data_.buffer_null_count;
 
-    assert(subRangeActive() || results_.not_inserted_count == 0);
+    traced_assert(subRangeActive() || results_.not_inserted_count == 0);
 
     // if(!subRangeActive() && results_.not_inserted_count != 0)
     //     logerr << "subRangeActive " << subRangeActive()

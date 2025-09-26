@@ -46,7 +46,7 @@ const std::string RTCommandManager::PingName = "ping";
 RTCommandManager::RTCommandManager()
     : Configurable("RTCommandManager", "RTCommandManager0", 0, "rtcommand.json")
 {
-    loginf << "start";
+    logdbg;
 
     registerParameter("port_num", &port_num_, 27960u);
     registerParameter("db_file_list", &command_backlog_, nlohmann::json::array());
@@ -56,7 +56,7 @@ RTCommandManager::RTCommandManager()
  */
 RTCommandManager::~RTCommandManager() 
 {
-     loginf << "start"; 
+     logdbg; 
 }
 
 /**
@@ -108,8 +108,8 @@ void RTCommandManager::run()
                     auto issue_info = addCommand(cmd_str, Source::Server);
                     rtcommand::RTCommandResponse cmd_response(issue_info);
 
-                if (issue_info.issued)
-                    loginf << "added command " << cmd_str << " to queue, size " << command_queue_.size();
+                    if (issue_info.issued)
+                        loginf << "added command " << cmd_str << " to queue, size " << command_queue_.size();
 
                     server_->sendStrData(cmd_response.toJSONString());
                 }
@@ -145,7 +145,7 @@ void RTCommandManager::run()
                 current_result.wait();
 
                 std::vector<rtcommand::RTCommandResult> results = current_result.get();
-                assert(results.size() == 1);
+                traced_assert(results.size() == 1);
 
                 rtcommand::RTCommandResult cmd_result = results.at(0);
                 rtcommand::RTCommandResponse cmd_response(cmd_result);
@@ -156,23 +156,23 @@ void RTCommandManager::run()
 
                 if (source == Source::Application)
                 {
-                    std::string msg = cmd_response.errorToString();
+                    std::string msg  = cmd_response.errorToString();
                     std::string data = cmd_response.stringifiedReply();
                     emit commandProcessed(id, msg, data, cmd_response.error.hasError());
                 }
                 else if (source == Source::Shell)
                 {
-                    std::string msg = cmd_response.errorToString();
+                    std::string msg  = cmd_response.errorToString();
                     std::string data = cmd_response.stringifiedReply();
-                    emit shellCommandProcessed(QString::fromStdString(msg),
-                                               QString::fromStdString(data),
-                                               cmd_response.error.hasError());
+                    emit shellCommandProcessed(QString::fromStdString(msg), 
+                                            QString::fromStdString(data), 
+                                            cmd_response.error.hasError());
                 }
                 else if (source == Source::Server)
                 {
                     if (open_port_ && server_->hasSession())
                     {
-                        assert(server_);
+                        traced_assert(server_);
                         //@TODO: get state from command result and compile reply
                         server_->sendStrData(cmd_response.toJSONString());
                     }
@@ -186,18 +186,18 @@ void RTCommandManager::run()
     if (open_port_)
     {
         io_context.stop();
-        assert (io_context.stopped());
+        traced_assert(io_context.stopped());
 
         t.timed_join(100);
     }
 
     stopped_ = true;
-    loginf << "stopped";
+    logdbg << "stopped";
 }
 
 void RTCommandManager::startCommandProcessing()
 {
-    loginf << "start";
+    loginf;
     started_ = true;
 }
 
@@ -205,7 +205,7 @@ void RTCommandManager::startCommandProcessing()
  */
 void RTCommandManager::shutdown()
 {
-    loginf << "start";
+    loginf;
 
     stop_requested_ = true;
 
@@ -227,6 +227,8 @@ void RTCommandManager::shutdown()
     //        msleep(1000);
     //    }
 
+    msleep(100);
+
     while (!stopped_)
     {
         if (!started_)
@@ -239,10 +241,7 @@ void RTCommandManager::shutdown()
 
     started_ = false;
 
-    //    assert(!active_blocking_job_);
-    //    assert(blocking_jobs_.empty());
-
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**

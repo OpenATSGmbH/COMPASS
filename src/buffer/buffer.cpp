@@ -16,17 +16,12 @@
  */
 
 #include "buffer.h"
+#include "traced_assert.h"
 
-//#include "boost/date_time/posix_time/posix_time.hpp"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "logger.h"
 #include "nullablevector.h"
-//#include "string.h"
-//#include "stringconv.h"
-//#include "unit.h"
-//#include "unitmanager.h"
-//#include "util/timeconv.h"
 
 using namespace nlohmann;
 using namespace std;
@@ -34,7 +29,7 @@ using namespace std;
 Buffer::Buffer(PropertyList properties, const string& dbcontent_name)
     : dbcontent_name_(dbcontent_name) //, last_one_(false)
 {
-    logdbg << "start";
+    logdbg;
 
     for (unsigned int cnt = 0; cnt < properties.size(); cnt++)
         addProperty(properties.at(cnt));
@@ -80,40 +75,40 @@ bool Buffer::hasProperty(const Property& property)
             switch (property.dataType())
             {
             case PropertyDataType::BOOL:
-                assert(getArrayListMap<bool>().count(property.name()));
+                traced_assert(getArrayListMap<bool>().count(property.name()));
                 break;
             case PropertyDataType::CHAR:
-                assert(getArrayListMap<char>().count(property.name()));
+                traced_assert(getArrayListMap<char>().count(property.name()));
                 break;
             case PropertyDataType::UCHAR:
-                assert(getArrayListMap<unsigned char>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned char>().count(property.name()));
                 break;
             case PropertyDataType::INT:
-                assert(getArrayListMap<int>().count(property.name()));
+                traced_assert(getArrayListMap<int>().count(property.name()));
                 break;
             case PropertyDataType::UINT:
-                assert(getArrayListMap<unsigned int>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned int>().count(property.name()));
                 break;
             case PropertyDataType::LONGINT:
-                assert(getArrayListMap<long int>().count(property.name()));
+                traced_assert(getArrayListMap<long int>().count(property.name()));
                 break;
             case PropertyDataType::ULONGINT:
-                assert(getArrayListMap<unsigned long int>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
                 break;
             case PropertyDataType::FLOAT:
-                assert(getArrayListMap<float>().count(property.name()));
+                traced_assert(getArrayListMap<float>().count(property.name()));
                 break;
             case PropertyDataType::DOUBLE:
-                assert(getArrayListMap<double>().count(property.name()));
+                traced_assert(getArrayListMap<double>().count(property.name()));
                 break;
             case PropertyDataType::STRING:
-                assert(getArrayListMap<string>().count(property.name()));
+                traced_assert(getArrayListMap<string>().count(property.name()));
                 break;
             case PropertyDataType::JSON:
-                assert(getArrayListMap<json>().count(property.name()));
+                traced_assert(getArrayListMap<json>().count(property.name()));
                 break;
             case PropertyDataType::TIMESTAMP:
-                assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
+                traced_assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
                 break;
             default:
                 logerr << "unknown property type " << Property::asString(property.dataType());
@@ -137,7 +132,7 @@ void Buffer::addProperty(string id, PropertyDataType type)
 {
     logdbg << "id '" << id << "' type " << Property::asString(type);
 
-    assert(!id.empty());
+    traced_assert(!id.empty());
 
     if (properties_.hasProperty(id))
         throw runtime_error("Buffer: addProperty: property " + id + " already exists");
@@ -147,63 +142,63 @@ void Buffer::addProperty(string id, PropertyDataType type)
     switch (type)
     {
         case PropertyDataType::BOOL:
-            assert(getArrayListMap<bool>().count(id) == 0);
+            traced_assert(getArrayListMap<bool>().count(id) == 0);
             getArrayListMap<bool>()[id] =
                 shared_ptr<NullableVector<bool>>(new NullableVector<bool>(property, *this));
             break;
         case PropertyDataType::CHAR:
-            assert(getArrayListMap<char>().count(id) == 0);
+            traced_assert(getArrayListMap<char>().count(id) == 0);
             getArrayListMap<char>()[id] =
                 shared_ptr<NullableVector<char>>(new NullableVector<char>(property, *this));
             break;
         case PropertyDataType::UCHAR:
-            assert(getArrayListMap<unsigned char>().count(id) == 0);
+            traced_assert(getArrayListMap<unsigned char>().count(id) == 0);
             getArrayListMap<unsigned char>()[id] = shared_ptr<NullableVector<unsigned char>>(
                 new NullableVector<unsigned char>(property, *this));
             break;
         case PropertyDataType::INT:
-            assert(getArrayListMap<int>().count(id) == 0);
+            traced_assert(getArrayListMap<int>().count(id) == 0);
             getArrayListMap<int>()[id] =
                 shared_ptr<NullableVector<int>>(new NullableVector<int>(property, *this));
             break;
         case PropertyDataType::UINT:
-            assert(getArrayListMap<unsigned int>().count(id) == 0);
+            traced_assert(getArrayListMap<unsigned int>().count(id) == 0);
             getArrayListMap<unsigned int>()[id] = shared_ptr<NullableVector<unsigned int>>(
                 new NullableVector<unsigned int>(property, *this));
             break;
         case PropertyDataType::LONGINT:
-            assert(getArrayListMap<long int>().count(id) == 0);
+            traced_assert(getArrayListMap<long int>().count(id) == 0);
             getArrayListMap<long int>()[id] =
                 shared_ptr<NullableVector<long>>(new NullableVector<long>(property, *this));
             break;
         case PropertyDataType::ULONGINT:
-            assert(getArrayListMap<unsigned long int>().count(id) == 0);
+            traced_assert(getArrayListMap<unsigned long int>().count(id) == 0);
             getArrayListMap<unsigned long int>()[id] =
                 shared_ptr<NullableVector<unsigned long>>(
                     new NullableVector<unsigned long>(property, *this));
             break;
         case PropertyDataType::FLOAT:
-            assert(getArrayListMap<float>().count(id) == 0);
+            traced_assert(getArrayListMap<float>().count(id) == 0);
             getArrayListMap<float>()[id] =
                 shared_ptr<NullableVector<float>>(new NullableVector<float>(property, *this));
             break;
         case PropertyDataType::DOUBLE:
-            assert(getArrayListMap<double>().count(id) == 0);
+            traced_assert(getArrayListMap<double>().count(id) == 0);
             getArrayListMap<double>()[id] = shared_ptr<NullableVector<double>>(
                 new NullableVector<double>(property, *this));
             break;
         case PropertyDataType::STRING:
-            assert(getArrayListMap<string>().count(id) == 0);
+            traced_assert(getArrayListMap<string>().count(id) == 0);
             getArrayListMap<string>()[id] = shared_ptr<NullableVector<string>>(
                 new NullableVector<string>(property, *this));
             break;
         case PropertyDataType::JSON:
-            assert(getArrayListMap<json>().count(id) == 0);
+            traced_assert(getArrayListMap<json>().count(id) == 0);
             getArrayListMap<json>()[id] = shared_ptr<NullableVector<json>>(
                 new NullableVector<json>(property, *this));
             break;
         case PropertyDataType::TIMESTAMP:
-            assert(getArrayListMap<boost::posix_time::ptime>().count(id) == 0);
+            traced_assert(getArrayListMap<boost::posix_time::ptime>().count(id) == 0);
             getArrayListMap<boost::posix_time::ptime>()[id] = shared_ptr<NullableVector<boost::posix_time::ptime>>(
                 new NullableVector<boost::posix_time::ptime>(property, *this));
             break;
@@ -220,11 +215,11 @@ void Buffer::addProperty(string id, PropertyDataType type)
 
 void Buffer::addProperty(const Property& property)
 {
-    assert (!hasProperty(property));
+    traced_assert(!hasProperty(property));
 
     addProperty(property.name(), property.dataType());
 
-    assert (hasProperty(property));
+    traced_assert(hasProperty(property));
 }
 
 void Buffer::deleteProperty(const Property& property)
@@ -232,64 +227,64 @@ void Buffer::deleteProperty(const Property& property)
     switch (property.dataType())
     {
     case PropertyDataType::BOOL:
-        assert (has<bool>(property.name()));
+        traced_assert(has<bool>(property.name()));
         remove<bool> (property.name());
-        assert (!has<bool>(property.name()));
+        traced_assert(!has<bool>(property.name()));
         break;
     case PropertyDataType::CHAR:
-        assert (has<char>(property.name()));
+        traced_assert(has<char>(property.name()));
         remove<char> (property.name());
-        assert (!has<char>(property.name()));
+        traced_assert(!has<char>(property.name()));
         break;
     case PropertyDataType::UCHAR:
-        assert (has<unsigned char>(property.name()));
+        traced_assert(has<unsigned char>(property.name()));
         remove<unsigned char> (property.name());
-        assert (!has<unsigned char>(property.name()));
+        traced_assert(!has<unsigned char>(property.name()));
         break;
     case PropertyDataType::INT:
-        assert (has<int>(property.name()));
+        traced_assert(has<int>(property.name()));
         remove<int> (property.name());
-        assert (!has<int>(property.name()));
+        traced_assert(!has<int>(property.name()));
         break;
     case PropertyDataType::UINT:
-        assert (has<unsigned int>(property.name()));
+        traced_assert(has<unsigned int>(property.name()));
         remove<unsigned int> (property.name());
-        assert (!has<unsigned int>(property.name()));
+        traced_assert(!has<unsigned int>(property.name()));
         break;
     case PropertyDataType::LONGINT:
-        assert (has<long int>(property.name()));
+        traced_assert(has<long int>(property.name()));
         remove<long int> (property.name());
-        assert (!has<long int>(property.name()));
+        traced_assert(!has<long int>(property.name()));
         break;
     case PropertyDataType::ULONGINT:
-        assert (has<unsigned long int>(property.name()));
+        traced_assert(has<unsigned long int>(property.name()));
         remove<unsigned long int> (property.name());
-        assert (!has<unsigned long int>(property.name()));
+        traced_assert(!has<unsigned long int>(property.name()));
         break;
     case PropertyDataType::FLOAT:
-        assert (has<float>(property.name()));
+        traced_assert(has<float>(property.name()));
         remove<float> (property.name());
-        assert (!has<float>(property.name()));
+        traced_assert(!has<float>(property.name()));
         break;
     case PropertyDataType::DOUBLE:
-        assert (has<double>(property.name()));
+        traced_assert(has<double>(property.name()));
         remove<double> (property.name());
-        assert (!has<double>(property.name()));
+        traced_assert(!has<double>(property.name()));
         break;
     case PropertyDataType::STRING:
-        assert (has<string>(property.name()));
+        traced_assert(has<string>(property.name()));
         remove<string> (property.name());
-        assert (!has<string>(property.name()));
+        traced_assert(!has<string>(property.name()));
         break;
     case PropertyDataType::JSON:
-        assert (has<json>(property.name()));
+        traced_assert(has<json>(property.name()));
         remove<json> (property.name());
-        assert (!has<json>(property.name()));
+        traced_assert(!has<json>(property.name()));
         break;
     case PropertyDataType::TIMESTAMP:
-        assert (has<boost::posix_time::ptime>(property.name()));
+        traced_assert(has<boost::posix_time::ptime>(property.name()));
         remove<boost::posix_time::ptime> (property.name());
-        assert (!has<boost::posix_time::ptime>(property.name()));
+        traced_assert(!has<boost::posix_time::ptime>(property.name()));
         break;
     default:
         logerr << "unknown property type "
@@ -352,7 +347,7 @@ void Buffer::sortByProperty(const Property& property)
                     Property::asString(property.dataType()));
     }
 
-    assert (perm.size() == size_);
+    traced_assert(perm.size() == size_);
 
     for (auto& prop_it : properties_.properties())
     {
@@ -410,9 +405,8 @@ void Buffer::sortByProperty(const Property& property)
 
 void Buffer::seizeBuffer(Buffer& org_buffer)
 {
-    logdbg << "start";
-
-    logdbg << "size " << size() << " other size " << org_buffer.size();
+    logdbg << dbcontent_name_ << " size " << size() << " num prop " << properties_.size() 
+     << " other size " << org_buffer.size() << " num prop " << properties_.size() ;
 
     seizeArrayListMap<bool>(org_buffer);
     seizeArrayListMap<char>(org_buffer);
@@ -437,7 +431,9 @@ void Buffer::seizeBuffer(Buffer& org_buffer)
 
     size_ += org_buffer.size_;
 
-    logdbg << "end size " << size();
+    org_buffer.size_ = 0;
+
+    logdbg << dbcontent_name_ << " end size " << size() << " num prop " << properties_.size();
 }
 
 size_t Buffer::size() const { return size_; }
@@ -476,32 +472,32 @@ void Buffer::cutUpToIndex(size_t index) // everything up to index is removed
 {
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert (index < size_);
+        traced_assert(index < size_);
 
         for (auto& it : getArrayListMap<bool>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<double>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<string>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<json>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<boost::posix_time::ptime>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
 
         loginf << "index " << index << " data_size_ " << size_;
     }
@@ -538,29 +534,29 @@ void Buffer::cutUpToIndex(size_t index) // everything up to index is removed
         loginf << "after cut index " << index << " data_size_ " << size_;
 
         for (auto& it : getArrayListMap<bool>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<double>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<string>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<json>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<boost::posix_time::ptime>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
 
     }
 }
@@ -569,32 +565,32 @@ void Buffer::removeIndexes(const std::vector<unsigned int>& indexes_to_remove)
 {
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert (indexes_to_remove.size() <= size_);
+        traced_assert(indexes_to_remove.size() <= size_);
 
         for (auto& it : getArrayListMap<bool>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<double>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<string>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<json>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<boost::posix_time::ptime>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
 
         loginf << "indexes " << indexes_to_remove.size() << " data_size_ " << size_;
     }
@@ -663,29 +659,29 @@ void Buffer::removeIndexes(const std::vector<unsigned int>& indexes_to_remove)
         loginf << "after cut indexes " << indexes_to_remove.size() << " data_size_ " << size_;
 
         for (auto& it : getArrayListMap<bool>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned char>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned long int>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<double>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<string>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<json>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<boost::posix_time::ptime>())
-            assert (it.second->contentSize() <= size_);
+            traced_assert(it.second->contentSize() <= size_);
 
     }
 }
@@ -701,45 +697,45 @@ void Buffer::printProperties()
 bool Buffer::isNull(const Property& property, unsigned int index)
 {
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < size_);
+        traced_assert(index < size_);
 
     switch (property.dataType())
     {
         case PropertyDataType::BOOL:
-            assert(getArrayListMap<bool>().count(property.name()));
+            traced_assert(getArrayListMap<bool>().count(property.name()));
             return getArrayListMap<bool>().at(property.name())->isNull(index);
         case PropertyDataType::CHAR:
-            assert(getArrayListMap<char>().count(property.name()));
+            traced_assert(getArrayListMap<char>().count(property.name()));
             return getArrayListMap<char>().at(property.name())->isNull(index);
         case PropertyDataType::UCHAR:
-            assert(getArrayListMap<unsigned char>().count(property.name()));
+            traced_assert(getArrayListMap<unsigned char>().count(property.name()));
             return getArrayListMap<unsigned char>().at(property.name())->isNull(index);
         case PropertyDataType::INT:
-            assert(getArrayListMap<int>().count(property.name()));
+            traced_assert(getArrayListMap<int>().count(property.name()));
             return getArrayListMap<int>().at(property.name())->isNull(index);
         case PropertyDataType::UINT:
-            assert(getArrayListMap<unsigned int>().count(property.name()));
+            traced_assert(getArrayListMap<unsigned int>().count(property.name()));
             return getArrayListMap<unsigned int>().at(property.name())->isNull(index);
         case PropertyDataType::LONGINT:
-            assert(getArrayListMap<long int>().count(property.name()));
+            traced_assert(getArrayListMap<long int>().count(property.name()));
             return getArrayListMap<long int>().at(property.name())->isNull(index);
         case PropertyDataType::ULONGINT:
-            assert(getArrayListMap<unsigned long int>().count(property.name()));
+            traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
             return getArrayListMap<unsigned long int>().at(property.name())->isNull(index);
         case PropertyDataType::FLOAT:
-            assert(getArrayListMap<float>().count(property.name()));
+            traced_assert(getArrayListMap<float>().count(property.name()));
             return getArrayListMap<float>().at(property.name())->isNull(index);
         case PropertyDataType::DOUBLE:
-            assert(getArrayListMap<double>().count(property.name()));
+            traced_assert(getArrayListMap<double>().count(property.name()));
             return getArrayListMap<double>().at(property.name())->isNull(index);
         case PropertyDataType::STRING:
-            assert(getArrayListMap<string>().count(property.name()));
+            traced_assert(getArrayListMap<string>().count(property.name()));
             return getArrayListMap<string>().at(property.name())->isNull(index);
         case PropertyDataType::JSON:
-            assert(getArrayListMap<json>().count(property.name()));
+            traced_assert(getArrayListMap<json>().count(property.name()));
             return getArrayListMap<json>().at(property.name())->isNull(index);
         case PropertyDataType::TIMESTAMP:
-            assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
+            traced_assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
             return getArrayListMap<boost::posix_time::ptime>().at(property.name())->isNull(index);
         default:
             logerr << "unknown property type "
@@ -758,62 +754,62 @@ void Buffer::deleteEmptyProperties()
         switch (property.dataType())
         {
             case PropertyDataType::BOOL:
-                assert(getArrayListMap<bool>().count(property.name()));
+                traced_assert(getArrayListMap<bool>().count(property.name()));
                 if (getArrayListMap<bool>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::CHAR:
-                assert(getArrayListMap<char>().count(property.name()));
+                traced_assert(getArrayListMap<char>().count(property.name()));
                 if (getArrayListMap<char>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::UCHAR:
-                assert(getArrayListMap<unsigned char>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned char>().count(property.name()));
                 if (getArrayListMap<unsigned char>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::INT:
-                assert(getArrayListMap<int>().count(property.name()));
+                traced_assert(getArrayListMap<int>().count(property.name()));
                 if (getArrayListMap<int>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::UINT:
-                assert(getArrayListMap<unsigned int>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned int>().count(property.name()));
                 if (getArrayListMap<unsigned int>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::LONGINT:
-                assert(getArrayListMap<long int>().count(property.name()));
+                traced_assert(getArrayListMap<long int>().count(property.name()));
                 if (getArrayListMap<long int>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::ULONGINT:
-                assert(getArrayListMap<unsigned long int>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
                 if (getArrayListMap<unsigned long int>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::FLOAT:
-                assert(getArrayListMap<float>().count(property.name()));
+                traced_assert(getArrayListMap<float>().count(property.name()));
                 if (getArrayListMap<float>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::DOUBLE:
-                assert(getArrayListMap<double>().count(property.name()));
+                traced_assert(getArrayListMap<double>().count(property.name()));
                 if (getArrayListMap<double>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::STRING:
-                assert(getArrayListMap<string>().count(property.name()));
+                traced_assert(getArrayListMap<string>().count(property.name()));
                 if (getArrayListMap<string>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::JSON:
-                assert(getArrayListMap<json>().count(property.name()));
+                traced_assert(getArrayListMap<json>().count(property.name()));
                 if (getArrayListMap<json>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::TIMESTAMP:
-                assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
+                traced_assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
                 if (getArrayListMap<boost::posix_time::ptime>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
@@ -833,51 +829,51 @@ void Buffer::deleteEmptyProperties()
         switch (property.dataType())
         {
             case PropertyDataType::BOOL:
-                assert(getArrayListMap<bool>().count(property.name()));
+                traced_assert(getArrayListMap<bool>().count(property.name()));
                 remove<bool>(property.name());
                 break;
             case PropertyDataType::CHAR:
-                assert(getArrayListMap<char>().count(property.name()));
+                traced_assert(getArrayListMap<char>().count(property.name()));
                 remove<char>(property.name());
                 break;
             case PropertyDataType::UCHAR:
-                assert(getArrayListMap<unsigned char>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned char>().count(property.name()));
                 remove<unsigned char>(property.name());
                 break;
             case PropertyDataType::INT:
-                assert(getArrayListMap<int>().count(property.name()));
+                traced_assert(getArrayListMap<int>().count(property.name()));
                 remove<int>(property.name());
                 break;
             case PropertyDataType::UINT:
-                assert(getArrayListMap<unsigned int>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned int>().count(property.name()));
                 remove<unsigned int>(property.name());
                 break;
             case PropertyDataType::LONGINT:
-                assert(getArrayListMap<long int>().count(property.name()));
+                traced_assert(getArrayListMap<long int>().count(property.name()));
                 remove<long int>(property.name());
                 break;
             case PropertyDataType::ULONGINT:
-                assert(getArrayListMap<unsigned long int>().count(property.name()));
+                traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
                 remove<unsigned long int>(property.name());
                 break;
             case PropertyDataType::FLOAT:
-                assert(getArrayListMap<float>().count(property.name()));
+                traced_assert(getArrayListMap<float>().count(property.name()));
                 remove<float>(property.name());
                 break;
             case PropertyDataType::DOUBLE:
-                assert(getArrayListMap<double>().count(property.name()));
+                traced_assert(getArrayListMap<double>().count(property.name()));
                 remove<double>(property.name());
                 break;
             case PropertyDataType::STRING:
-                assert(getArrayListMap<string>().count(property.name()));
+                traced_assert(getArrayListMap<string>().count(property.name()));
                 remove<string>(property.name());
                 break;
             case PropertyDataType::JSON:
-                assert(getArrayListMap<json>().count(property.name()));
+                traced_assert(getArrayListMap<json>().count(property.name()));
                 remove<json>(property.name());
                 break;
             case PropertyDataType::TIMESTAMP:
-                assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
+                traced_assert(getArrayListMap<boost::posix_time::ptime>().count(property.name()));
                 remove<boost::posix_time::ptime>(property.name());
                 break;
             default:
@@ -897,32 +893,32 @@ void Buffer::transformVariables(dbContent::VariableSet& list, bool dbcol2dbcontv
 
     const vector<dbContent::Variable*>& variables = list.getSet();
     string variable_name;
-    string db_column_name;
+    string name_in_db;
 
     string current_var_name;
     string transformed_var_name;
 
     for (auto var_it : variables)
     {
-        logdbg << "variable " << var_it->name() << " db column " << db_column_name;
+        logdbg << "variable " << var_it->name() << " db column " << name_in_db;
 
         variable_name = var_it->name();
-        db_column_name = var_it->dbColumnName();
+        name_in_db = var_it->dbColumnOrExpression();
 
         PropertyDataType data_type = var_it->dataType();
 
         if (dbcol2dbcontvar)
         {
-            if (!properties_.hasProperty(db_column_name))
+            if (!properties_.hasProperty(name_in_db))
             {
                 //logerr << "property '" << db_column_name << "' not found";
                 continue;
             }
 
-            assert(properties_.hasProperty(db_column_name));
-            assert(properties_.get(db_column_name).dataType() == var_it->dataType());
+            traced_assert(properties_.hasProperty(name_in_db));
+            traced_assert(properties_.get(name_in_db).dataType() == var_it->dataType());
 
-            current_var_name = db_column_name;
+            current_var_name = name_in_db;
             transformed_var_name = variable_name;
         }
         else
@@ -933,11 +929,11 @@ void Buffer::transformVariables(dbContent::VariableSet& list, bool dbcol2dbcontv
                 continue;
             }
 
-            assert(properties_.hasProperty(variable_name));
-            assert(properties_.get(variable_name).dataType() == var_it->dataType());
+            traced_assert(properties_.hasProperty(variable_name));
+            traced_assert(properties_.get(variable_name).dataType() == var_it->dataType());
 
             current_var_name = variable_name;
-            transformed_var_name = db_column_name;
+            transformed_var_name = name_in_db;
         }
 
         // rename to reflect dbcont variable

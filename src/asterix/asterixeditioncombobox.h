@@ -20,6 +20,7 @@
 #include <jasterix/category.h>
 #include <jasterix/jasterix.h>
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QComboBox>
 #include <memory>
@@ -69,7 +70,7 @@ class ASTERIXEditionComboBox : public QComboBox
     void setEdition(const std::string& edition)
     {
         int index = findText(QString(edition.c_str()));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 

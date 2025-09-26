@@ -35,7 +35,7 @@
 #include "util/timeconv.h"
 #include "viewpoint.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <algorithm>
 
 using namespace std;
@@ -151,7 +151,7 @@ EvaluationRequirement::DubiousTrack* SingleDubiousTrack::req ()
 {
     EvaluationRequirement::DubiousTrack* req =
             dynamic_cast<EvaluationRequirement::DubiousTrack*>(requirement_.get());
-    assert (req);
+    traced_assert(req);
     return req;
 }
 
@@ -159,8 +159,8 @@ EvaluationRequirement::DubiousTrack* SingleDubiousTrack::req ()
 */
 boost::optional<double> SingleDubiousTrack::computeResult_impl() const
 {
-    assert (num_updates_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_tracks_ >= num_tracks_dubious_);
+    traced_assert(num_updates_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_tracks_ >= num_tracks_dubious_);
 
     p_dubious_update_.reset();
 
@@ -243,8 +243,8 @@ std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
     }
 
     return { TargetInfo("#Up [1]"                        , "Number of updates"                      , num_updates_             ),
-             TargetInfo("#PosInside [1]"                 , "Number of updates inside sector"        , num_pos_inside_          ),
              TargetInfo("#PosOutside [1]"                , "Number of updates outside sector"       , num_pos_outside_         ),
+             TargetInfo("#PosInside [1]"                 , "Number of updates inside sector"        , num_pos_inside_          ),
              TargetInfo("#DU [1]"                        , "Number of dubious updates inside sector", num_pos_inside_dubious_  ),
              TargetInfo("PDU [%]"                        , "Probability of dubious update"          , p_dubious_up_var         ),
              TargetInfo("#T [1]"                         , "Number of tracks"                       , num_tracks_              ),
@@ -269,7 +269,7 @@ std::vector<std::string> SingleDubiousTrack::detailHeaders() const
 nlohmann::json::array_t SingleDubiousTrack::detailValues(const EvaluationDetail& detail,
                                                          const EvaluationDetail* parent_detail) const
 {
-    assert(parent_detail);
+    traced_assert(parent_detail);
 
     return { Utils::Time::toString(detail.timestamp()),
              parent_detail->getValue(DetailKey::UTNOrTrackNum).toUInt(),
@@ -300,7 +300,7 @@ void SingleDubiousTrack::addAnnotationForDetail(nlohmann::json& annotations_json
                                                 TargetAnnotationType type,
                                                 bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -388,7 +388,7 @@ boost::optional<double> JoinedDubiousTrack::computeResult_impl() const
             << " num_pos_inside " << num_pos_inside_
             << " num_pos_inside_dubious " << num_pos_inside_dubious_;
 
-    assert (num_tracks_ >= num_tracks_dubious_);
+    traced_assert(num_tracks_ >= num_tracks_dubious_);
 
     p_dubious_update_.reset();
 
@@ -409,8 +409,8 @@ std::vector<Joined::SectorInfo> JoinedDubiousTrack::sectorInfos() const
 
     std::vector<Joined::SectorInfo> infos = 
         { { "#Up [1]"             , "Number of updates"                      , num_updates_                   },
-          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#PosOutside [1]"     , "Number of updates outside sector"       , num_pos_outside_               },
+          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#DU [1]"             , "Number of dubious updates inside sector", num_pos_inside_dubious_        },
           { "PDU [%]"             , "Probability of dubious update"          , p_dubious_up_var               },
           { "#T [1]"              , "Number of tracks"                       , num_tracks_                    },

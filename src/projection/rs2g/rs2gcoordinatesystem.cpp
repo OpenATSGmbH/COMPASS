@@ -343,9 +343,9 @@ void RS2GCoordinateSystem::geodesic2Geocentric(double lat_rad, double lon_rad, d
     // double ecef_y2 = (eta_s + height_m) * cos(lat_rad) * sin(lon_rad);
     // double ecef_z2 = (eta_s * (1 - EE_E2) + height_m) * sin(lat_rad);
 
-    // assert (fabs(ecef_x - ecef_x2) < 1E-10);
-    // assert (fabs(ecef_y - ecef_y2) < 1E-10);
-    // assert (fabs(ecef_z - ecef_z2) < 1E-10);
+    // traced_assert(fabs(ecef_x - ecef_x2) < 1E-10);
+    // traced_assert(fabs(ecef_y - ecef_y2) < 1E-10);
+    // traced_assert(fabs(ecef_z - ecef_z2) < 1E-10);
 }
 
 // as in R matrix

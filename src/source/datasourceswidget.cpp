@@ -21,7 +21,6 @@
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 
-#include "global.h"
 #include "stringconv.h"
 #include "number.h"
 #include "files.h"
@@ -48,15 +47,15 @@ DataSourcesWidgetItem::DataSourcesWidgetItem(DataSourcesWidget* widget,
 ,   parent_(parent) 
 ,   type_  (type  )
 {
-    assert(widget_);
+    traced_assert(widget_);
 }
 
 /**
  */
 void DataSourcesWidgetItem::setItemWidget(int column, QWidget* w)
 {
-    assert(widget_);
-    assert(widget_->tree_widget_);
+    traced_assert(widget_);
+    traced_assert(widget_->tree_widget_);
 
     widget_->tree_widget_->setItemWidget(this, column, w);
 }
@@ -102,8 +101,8 @@ bool DataSourceTypeItem::init(const std::string& ds_type)
  */
 void DataSourceTypeItem::updateContent()
 {
-    assert(is_init_);
-    assert(!ds_type_.empty());
+    traced_assert(is_init_);
+    traced_assert(!ds_type_.empty());
 
     bool has_sources = false;
 
@@ -146,7 +145,7 @@ bool DataSourceItem::init(unsigned int ds_id)
         ds_id_ = ds_id;
 
         auto& ds_man = widget_->dsManager();
-        assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         const auto& data_source = ds_man.dbDataSource(ds_id);
         ds_ = &data_source;
@@ -180,8 +179,8 @@ bool DataSourceItem::init(unsigned int ds_id)
  */
 void DataSourceItem::updateContent()
 {
-    assert(is_init_);
-    assert(has_widget_);
+    traced_assert(is_init_);
+    traced_assert(has_widget_);
 
     setCheckState(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
 
@@ -238,7 +237,7 @@ bool DataSourceCountItem::init(unsigned int ds_id,
         dbc_name_ = dbc_name;
 
         auto& ds_man = widget_->dsManager();
-        assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         const auto& data_source = ds_man.dbDataSource(ds_id);
         ds_ = &data_source;
@@ -258,12 +257,12 @@ bool DataSourceCountItem::init(unsigned int ds_id,
 */
 void DataSourceCountItem::updateContent()
 {
-    assert(is_init_);
-    assert(!dbc_name_.empty());
+    traced_assert(is_init_);
+    traced_assert(!dbc_name_.empty());
 
     auto num_inserted = ds_->numInsertedSummedLinesMap();
     auto it = num_inserted.find(dbc_name_);
-    assert(it != num_inserted.end());
+    traced_assert(it != num_inserted.end());
 
     setText(2, QString::number(ds_->numLoaded(dbc_name_)));
     setText(3, QString::number(it->second));
@@ -281,7 +280,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
 :   widget_ (widget )
 ,   line_id_(line_id)
 {
-    assert(widget_);
+    traced_assert(widget_);
 
     line_str_ = "L" + std::to_string(line_id_ + 1);
 
@@ -322,7 +321,7 @@ bool DataSourceLineButton::init(unsigned int ds_id)
         ds_id_ = ds_id;
 
         auto& ds_man = widget_->dsManager();
-        assert(ds_man.hasDBDataSource(ds_id_));
+        traced_assert(ds_man.hasDBDataSource(ds_id_));
 
         auto& ds_src = ds_man.dbDataSource(ds_id_);
         ds_ = &ds_src;
@@ -340,7 +339,7 @@ bool DataSourceLineButton::init(unsigned int ds_id)
  */
 void DataSourceLineButton::updateContent()
 {
-    assert(is_init_);
+    traced_assert(is_init_);
 
     AppMode app_mode = COMPASS::instance().appMode();
 
@@ -428,8 +427,8 @@ void DataSourceLineButton::updateContent()
 
 /**
  */
-DataSourcesWidget::DataSourcesWidget(DataSourceManager& ds_man)
-:   ds_man_(ds_man)
+DataSourcesWidget::DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man)
+:   can_show_counts_(can_show_counts), ds_man_(ds_man)
 {
     createUI();
 }
@@ -438,44 +437,56 @@ DataSourcesWidget::DataSourcesWidget(DataSourceManager& ds_man)
  */
 DataSourcesWidget::~DataSourcesWidget() = default;
 
-/**
- */
-QIcon DataSourcesWidget::toolIcon() const 
-{
-    return QIcon(Utils::Files::getIconFilepath("data_sources.png").c_str());
-}
 
 /**
  */
-std::string DataSourcesWidget::toolName() const 
+void DataSourcesWidget::createUI()
 {
-    return "Data Sources";
+    QFont font_bold;
+    font_bold.setBold(true);
+
+    QVBoxLayout* main_layout = new QVBoxLayout();
+    setLayout(main_layout);
+
+    // buttons
+    QHBoxLayout* button_layout = new QHBoxLayout();
+
+    main_layout->addLayout(button_layout);
+
+    // tree widget
+
+    top_layout_ = new QHBoxLayout();
+    top_layout_->setContentsMargins(0, 0, 0, 0);
+
+    tree_widget_ = new QTreeWidget;
+
+    QStringList header_labels;
+    header_labels << "Name";
+    header_labels << "Lines";
+
+    if (can_show_counts_)
+    {
+        header_labels << "Loaded";
+        header_labels << "Count";
+    }
+
+    tree_widget_->setColumnCount(header_labels.size());
+    tree_widget_->setHeaderLabels(header_labels);
+    tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
+
+    connect(tree_widget_, &QTreeWidget::itemChanged, this, &DataSourcesWidget::itemChanged);
+    connect(tree_widget_, &QTreeWidget::itemSelectionChanged, 
+            this, &DataSourcesWidget::onItemSelectionChanged);
+
+    top_layout_->addWidget(tree_widget_);
+
+    main_layout->addLayout(top_layout_);
+
+    // update
+    updateContent(true);
 }
 
-/**
- */
-std::string DataSourcesWidget::toolInfo() const 
-{
-    return "Data Sources";
-}
-
-/**
- */
-std::vector<std::string> DataSourcesWidget::toolLabels() const 
-{
-    return { "Data", "Sources" };
-}
-
-/**
- */
-toolbox::ScreenRatio DataSourcesWidget::defaultScreenRatio() const 
-{
-    return ToolBoxWidget::defaultScreenRatio();
-}
-
-/**
- */
-void DataSourcesWidget::addToConfigMenu(QMenu* menu) 
+void DataSourcesWidget::addActionsToConfigMenu(QMenu* menu)
 {
     QAction* sel_dstyp_action = menu->addAction("Select All DSTypes");
     connect(sel_dstyp_action, &QAction::triggered, this, &DataSourcesWidget::selectAllDSTypes);
@@ -531,92 +542,6 @@ void DataSourcesWidget::addToConfigMenu(QMenu* menu)
 
 /**
  */
-void DataSourcesWidget::addToToolBar(QToolBar* tool_bar)
-{
-}
-
-/**
- */
-void DataSourcesWidget::loadingStarted()
-{
-    tree_widget_->setEnabled(false);
-}
-
-/**
- */
-void DataSourcesWidget::loadingDone()
-{
-    tree_widget_->setEnabled(true);
-}
-
-/**
- */
-void DataSourcesWidget::createUI()
-{
-    QFont font_bold;
-    font_bold.setBold(true);
-
-    QVBoxLayout* main_layout = new QVBoxLayout();
-    setLayout(main_layout);
-
-    // buttons
-    QHBoxLayout* button_layout = new QHBoxLayout();
-
-    main_layout->addLayout(button_layout);
-
-    // tree widget
-    tree_widget_ = new QTreeWidget;
-    tree_widget_->setColumnCount(4);
-
-    QStringList header_labels;
-    header_labels << "Name";
-    header_labels << "Lines";
-    header_labels << "Loaded";
-    header_labels << "Count";
-
-    tree_widget_->setHeaderLabels(header_labels);
-    tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
-
-    connect(tree_widget_, &QTreeWidget::itemChanged, this, &DataSourcesWidget::itemChanged);
-
-    main_layout->addWidget(tree_widget_);
-
-    QHBoxLayout* assoc_layout = new QHBoxLayout();
-
-    // time
-    QLabel* ts_label = new QLabel("Timestamps");
-    ts_label->setFont(font_bold);
-    assoc_layout->addWidget(ts_label);
-
-    assoc_layout->addWidget(new QLabel("Min"));
-
-    ts_min_label_ = new QLabel("None");
-    assoc_layout->addWidget(ts_min_label_);
-
-    assoc_layout->addWidget(new QLabel("Max"));
-
-    ts_max_label_ = new QLabel("None");
-    assoc_layout->addWidget(ts_max_label_);
-
-    assoc_layout->addStretch();
-
-    // assoc
-    QLabel* assoc_label = new QLabel("Associations");
-    assoc_label->setFont(font_bold);
-    assoc_layout->addWidget(assoc_label);
-
-    associations_label_ = new QLabel("None");
-    assoc_layout->addWidget(associations_label_);
-
-    assoc_layout->addStretch();
-    main_layout->addLayout(assoc_layout);
-
-    // update
-    updateContent(true);
-}
-
-/**
- */
 void DataSourcesWidget::clear()
 {
     tree_widget_->clear();
@@ -626,7 +551,7 @@ void DataSourcesWidget::clear()
  */
 int DataSourcesWidget::generateContent(bool force_rebuild)
 {
-    logdbg << "start";
+    logdbg;
 
     tree_widget_->blockSignals(true);
 
@@ -667,7 +592,7 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
         logdbg << "type " << ds_type_name << " cnt " << cnt;
 
         auto item = dynamic_cast<DataSourceTypeItem*>(tree_widget_->topLevelItem(cnt));
-        assert(item);
+        traced_assert(item);
 
         changes += generateDataSourceType(item, ds_type_name);
 
@@ -677,7 +602,7 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
     tree_widget_->blockSignals(false);
     tree_widget_->expandAll();
 
-    updateAdditionalInfo();
+    //updateAdditionalInfo();
 
     return changes;
 }
@@ -726,7 +651,7 @@ int DataSourcesWidget::generateDataSourceType(DataSourceTypeItem* item,
         if (ds_it->dsType() == ds_type_name)
         {
             auto ds_item = dynamic_cast<DataSourceItem*>(item->child(cnt));
-            assert(ds_item);
+            traced_assert(ds_item);
 
             changes += generateDataSource(ds_item, item, *ds_it);
 
@@ -752,7 +677,7 @@ int DataSourcesWidget::generateDataSource(DataSourceItem* item,
     int changes = item->init(ds_id) ? 1 : 0;
 
     //handle count items
-    bool show_counts = getShowCounts();
+    bool show_counts = can_show_counts_ && getShowCounts();
     if (!show_counts)
     {
         //no counts shown => remove any existing children
@@ -795,7 +720,7 @@ int DataSourcesWidget::generateDataSource(DataSourceItem* item,
         for (auto& cnt_it : count_map)
         {
             auto ds_cnt_item = dynamic_cast<DataSourceCountItem*>(item->child(cnt));
-            assert(ds_cnt_item);
+            traced_assert(ds_cnt_item);
 
             changes += generateDataSourceCount(ds_cnt_item, item, data_source, cnt_it.first);
 
@@ -832,6 +757,32 @@ void DataSourcesWidget::updateContent(bool recreate_required)
 }
 
 /**
+ * Handle tree widget selection changes
+ */
+void DataSourcesWidget::onItemSelectionChanged()
+{
+    QList<QTreeWidgetItem*> selected_items = tree_widget_->selectedItems();
+    if (selected_items.isEmpty())
+        return;
+    
+    // Get the first selected item
+    QTreeWidgetItem* item = selected_items.first();
+    auto ds_item = dynamic_cast<DataSourcesWidgetItem*>(item);
+    
+    if (!ds_item || !ds_item->isInit())
+        return;
+    
+    if (ds_item->type() == DataSourcesWidgetItem::Type::DataSource)
+    {
+        auto data_source_item = dynamic_cast<DataSourceItem*>(ds_item);
+        loginf << "selected data source " << data_source_item->dsID();
+        // React to data source selection
+
+        emit dataSourceSelectedSignal(data_source_item->dsID());
+    }
+}
+
+/**
  */
 void DataSourcesWidget::itemChanged(QTreeWidgetItem *item, int column)
 {
@@ -843,7 +794,7 @@ void DataSourcesWidget::itemChanged(QTreeWidgetItem *item, int column)
     if (w_item->type() == DataSourcesWidgetItem::Type::DataSourceType)
     {   
         auto ds_type_item = dynamic_cast<DataSourceTypeItem*>(w_item);
-        assert(ds_type_item);
+        traced_assert(ds_type_item);
 
         if (column == 0)
         {
@@ -856,7 +807,7 @@ void DataSourcesWidget::itemChanged(QTreeWidgetItem *item, int column)
     else if (w_item->type() == DataSourcesWidgetItem::Type::DataSource)
     {   
         auto ds_item = dynamic_cast<DataSourceItem*>(w_item);
-        assert(ds_item);
+        traced_assert(ds_item);
 
         if (column == 0)
         {
@@ -869,7 +820,7 @@ void DataSourcesWidget::itemChanged(QTreeWidgetItem *item, int column)
     else if (w_item->type() == DataSourcesWidgetItem::Type::DataSourceCount)
     {   
         auto ds_cnt_item = dynamic_cast<DataSourceCountItem*>(w_item);
-        assert(ds_cnt_item);
+        traced_assert(ds_cnt_item);
 
         //nothing to do yet
     }
@@ -905,165 +856,8 @@ void DataSourcesWidget::updateAllContent()
     for (int i = 0; i < tree_widget_->topLevelItemCount(); ++i)
         updateContentRecursive(tree_widget_->topLevelItem(i));
 
-    updateAdditionalInfo();
 }
 
-/**
- */
-void DataSourcesWidget::updateAdditionalInfo()
-{
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
-    assert (ts_min_label_);
-    assert (ts_max_label_);
-
-    if (dbcont_man.hasMinMaxTimestamp())
-    {
-        ts_min_label_->setText(Utils::Time::toString(std::get<0>(dbcont_man.minMaxTimestamp()), 0).c_str());
-        ts_max_label_->setText(Utils::Time::toString(std::get<1>(dbcont_man.minMaxTimestamp()), 0).c_str());
-    }
-    else
-    {
-        ts_min_label_->setText("None");
-        ts_max_label_->setText("None");
-    }
-
-    assert(associations_label_);
-    if (dbcont_man.hasAssociations())
-    {
-        std::string tmp = "From " + dbcont_man.associationsID();
-        associations_label_->setText(tmp.c_str());
-    }
-    else
-    {
-        associations_label_->setText("None");
-    }
-}
-
-/**
- */
-void DataSourcesWidget::selectAllDSTypes()
-{
-    loginf << "start";
-
-    for (auto& ds_type_name : DataSourceManager::data_source_types_)
-        setUseDSType(ds_type_name, true);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::deselectAllDSTypes()
-{
-    loginf << "start";
-
-    for (auto& ds_type_name : DataSourceManager::data_source_types_)
-        setUseDSType(ds_type_name, false);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::selectAllDataSources()
-{
-    loginf << "start";
-
-    for (const auto& ds_it : ds_man_.dbDataSources())
-        setUseDS(ds_it->id(), true);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::deselectAllDataSources()
-{
-    loginf << "start";
-
-    for (const auto& ds_it : ds_man_.dbDataSources())
-        setUseDS(ds_it->id(), false);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::selectDSTypeSpecificDataSources()
-{
-    QAction* action = dynamic_cast<QAction*>(sender());
-    assert (action);
-
-    std::string ds_type = action->property("ds_type").toString().toStdString();
-
-    loginf << "ds_type '" << ds_type << "'";
-
-    for (const auto& ds_it : ds_man_.dbDataSources())
-        if (ds_it->dsType() == ds_type)
-            setUseDS(ds_it->id(), true);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::deselectDSTypeSpecificDataSources()
-{
-    QAction* action = dynamic_cast<QAction*>(sender());
-    assert (action);
-
-    std::string ds_type = action->property("ds_type").toString().toStdString();
-
-    loginf << "ds_type '" << ds_type << "'";
-
-    for (const auto& ds_it : ds_man_.dbDataSources())
-        if (ds_it->dsType() == ds_type)
-            setUseDS(ds_it->id(), false);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::deselectAllLines()
-{
-    loginf << "start";
-
-    for (const auto& ds_it : ds_man_.dbDataSources())
-        for (int line = 0; line < 4; ++line)
-            setUseDSLine(ds_it->id(), line, false);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::selectSpecificLines()
-{
-    QAction* action = dynamic_cast<QAction*>(sender());
-    assert (action);
-
-    unsigned int line_id = action->property("line_id").toUInt();
-
-    loginf << "line_id " << line_id;
-
-    for (const auto& ds_it : ds_man_.dbDataSources())
-        setUseDSLine(ds_it->id(), line_id, true);
-
-    updateContent();
-}
-
-/**
- */
-void DataSourcesWidget::toogleShowCounts()
-{
-    loginf << "start";
-
-    setShowCounts(!getShowCounts());
-
-    updateContent();
-}
 
 /**
  */
@@ -1119,4 +913,129 @@ void DataSourcesWidget::setShowCounts(bool show) const
 bool DataSourcesWidget::getShowCounts() const
 {
     return ds_man_.config().load_widget_show_counts_;
+}
+
+/**
+ */
+void DataSourcesWidget::selectAllDSTypes()
+{
+    loginf;
+
+    for (auto& ds_type_name : DataSourceManager::data_source_types_)
+        setUseDSType(ds_type_name, true);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::deselectAllDSTypes()
+{
+    loginf;
+
+    for (auto& ds_type_name : DataSourceManager::data_source_types_)
+        setUseDSType(ds_type_name, false);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::selectAllDataSources()
+{
+    loginf;
+
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        setUseDS(ds_it->id(), true);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::deselectAllDataSources()
+{
+    loginf;
+
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        setUseDS(ds_it->id(), false);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::selectDSTypeSpecificDataSources()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    traced_assert(action);
+
+    std::string ds_type = action->property("ds_type").toString().toStdString();
+
+    loginf << "ds_type '" << ds_type << "'";
+
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        if (ds_it->dsType() == ds_type)
+            setUseDS(ds_it->id(), true);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::deselectDSTypeSpecificDataSources()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    traced_assert(action);
+
+    std::string ds_type = action->property("ds_type").toString().toStdString();
+
+    loginf << "ds_type '" << ds_type << "'";
+
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        if (ds_it->dsType() == ds_type)
+            setUseDS(ds_it->id(), false);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::deselectAllLines()
+{
+    loginf;
+
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        for (int line = 0; line < 4; ++line)
+            setUseDSLine(ds_it->id(), line, false);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::selectSpecificLines()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    traced_assert(action);
+
+    unsigned int line_id = action->property("line_id").toUInt();
+
+    loginf << "line_id " << line_id;
+
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        setUseDSLine(ds_it->id(), line_id, true);
+
+    updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::toogleShowCounts()
+{
+    loginf;
+
+    setShowCounts(!getShowCounts());
+
+    updateContent();
 }

@@ -97,7 +97,7 @@ DBFilterWidget* RefTrajAccuracyFilter::createWidget()
 
 void RefTrajAccuracyFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 
@@ -108,9 +108,9 @@ void RefTrajAccuracyFilter::reset()
 
 void RefTrajAccuracyFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -119,12 +119,12 @@ void RefTrajAccuracyFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void RefTrajAccuracyFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Accuracy Minimum"));
+    traced_assert(filter.contains("Accuracy Minimum"));
     string value = filter.at("Accuracy Minimum");
     min_value_ = std::stod(value);
 

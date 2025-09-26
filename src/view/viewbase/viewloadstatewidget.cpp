@@ -37,7 +37,7 @@ ViewLoadStateWidget::ViewLoadStateWidget(ViewWidget* view_widget, QWidget* paren
 :   QWidget     (parent     )
 ,   view_widget_(view_widget)
 {
-    assert (view_widget_);
+    traced_assert(view_widget_);
 
     QVBoxLayout* layout = new QVBoxLayout;
     layout->setMargin(0);
@@ -87,7 +87,7 @@ ViewLoadStateWidget::ViewLoadStateWidget(ViewWidget* view_widget, QWidget* paren
 */
 bool ViewLoadStateWidget::viewUpdateRequired() const
 {
-    assert(view_widget_);
+    traced_assert(view_widget_);
 
     //@TODO: if the view has no data the state should actually be State::NoData, but for safety query data widget nontheless...
     return (view_widget_->getViewDataWidget()->hasData() && (state_ == State::RedrawRequired || state_ == State::ReloadRequired));
@@ -97,7 +97,7 @@ bool ViewLoadStateWidget::viewUpdateRequired() const
 */
 bool ViewLoadStateWidget::viewReloadRequired() const
 {
-    assert(view_widget_);
+    traced_assert(view_widget_);
 
     return (!view_widget_->getViewDataWidget()->hasData() || state_ == State::NoData);
 }
@@ -114,7 +114,7 @@ bool ViewLoadStateWidget::viewBusy() const
 */
 void ViewLoadStateWidget::updateData()
 {
-    assert(view_widget_);
+    traced_assert(view_widget_);
 
     //actual update mechanic implemented in the view widget for broader access to this functionality.
     //the view widget will then query the ViewLoadStateWidget for what to do.

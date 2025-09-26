@@ -47,10 +47,10 @@ VariableView::~VariableView()
  */
 VariableViewDataWidget* VariableView::getDataWidget()
 {
-    assert (widget_);
+    traced_assert(widget_);
 
     auto data_widget = dynamic_cast<VariableViewDataWidget*>(widget_->getViewDataWidget());
-    assert(data_widget);
+    traced_assert(data_widget);
 
     return data_widget;
 }
@@ -59,10 +59,10 @@ VariableViewDataWidget* VariableView::getDataWidget()
  */
 VariableViewConfigWidget* VariableView::getConfigWidget()
 {
-    assert (widget_);
+    traced_assert(widget_);
 
     auto config_wigdet = dynamic_cast<VariableViewConfigWidget*>(widget_->getViewConfigWidget());
-    assert(config_wigdet);
+    traced_assert(config_wigdet);
 
     return config_wigdet;
 }
@@ -72,7 +72,7 @@ VariableViewConfigWidget* VariableView::getConfigWidget()
 ViewVariable& VariableView::variable(int idx)
 {
     auto var = variables_.at(idx).get();
-    assert(var);
+    traced_assert(var);
 
     return *var;
 }
@@ -82,7 +82,7 @@ ViewVariable& VariableView::variable(int idx)
 const ViewVariable& VariableView::variable(int idx) const
 {
     auto var = variables_.at(idx).get();
-    assert(var);
+    traced_assert(var);
 
     return *var;
 }
@@ -108,7 +108,7 @@ ViewVariable& VariableView::addVariable(const std::string& id,
 {
     bool empty = default_dbcont.empty() || default_name.empty();
 
-    assert(!empty || allow_empty_var);
+    traced_assert(!empty || allow_empty_var);
 
     int idx = (int)variables_.size();
 
@@ -134,7 +134,7 @@ ViewVariable& VariableView::addVariable(const std::string& id,
 */
 dbContent::VariableSet VariableView::getSet(const std::string& dbcontent_name)
 {
-    logdbg << "start";
+    logdbg;
 
     dbContent::VariableSet set = getBaseSet(dbcontent_name);
 
@@ -293,7 +293,7 @@ int VariableView::currentAnnotationIdx() const
  */
 const VariableView::Annotation& VariableView::currentAnnotation() const
 {
-    assert(hasCurrentAnnotation());
+    traced_assert(hasCurrentAnnotation());
     return annotations_.at(current_annotation_group_idx_).annotations.at(current_annotation_idx_);
 }
 
@@ -332,7 +332,7 @@ void VariableView::onEvalResultsChanged()
  */
 void VariableView::unshowViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     unshowViewPoint(vp);
 
@@ -351,7 +351,7 @@ void VariableView::unshowViewPointSlot (const ViewableDataConfig* vp)
  */
 void VariableView::showViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
     showViewPoint(vp);
 

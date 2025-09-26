@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <string>
-#include <cassert>
+#include "traced_assert.h"
 
 #include "json_fwd.hpp"
 

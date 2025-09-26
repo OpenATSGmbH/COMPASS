@@ -38,8 +38,8 @@ ASTERIXTimestampCalculator::ASTERIXTimestampCalculator()
 
 void ASTERIXTimestampCalculator::setBuffers(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    assert (!buffers_.size());
-    assert (!processing_);
+    traced_assert(!buffers_.size());
+    traced_assert(!processing_);
 
     processing_ = true;
 
@@ -52,13 +52,13 @@ void ASTERIXTimestampCalculator::calculate(
                bool override_tod_active, float override_tod_offset,
                bool ignore_time_jumps, bool do_timestamp_checks)
 {
-    logdbg << "start";
+    logdbg;
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    assert (processing_);
+    traced_assert(processing_);
 
-    assert (source_name.size());
+    traced_assert(source_name.size());
 
     if (prev_source_name_ != source_name && source_name != "File ''") // new file
     {
@@ -106,8 +106,8 @@ void ASTERIXTimestampCalculator::calculate(
 
 std::map<std::string, std::shared_ptr<Buffer>> ASTERIXTimestampCalculator::buffers()
 {
-    logdbg << "start";
-    assert (processing_);
+    logdbg;
+    traced_assert(processing_);
 
     return std::move(buffers_);
 }
@@ -127,13 +127,13 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing()
     if (!buffer_size)
         return;
 
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
 
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
 
     dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
 
-    assert (tod_var.dataType() == PropertyDataType::FLOAT);
+    traced_assert(tod_var.dataType() == PropertyDataType::FLOAT);
 
     string tod_var_name = tod_var.name();
 
@@ -210,14 +210,14 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
     {
         buffer_size = buf_it.second->size();
 
-        assert (dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
         dbContent::Variable& tod_var =
             dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
 
-        assert (buf_it.second->hasProperty(tod_prop));
+        traced_assert(buf_it.second->hasProperty(tod_prop));
 
         NullableVector<float>& tod_vec = buf_it.second->get<float>(tod_var.name());
 
@@ -235,8 +235,8 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
                 while (tod_ref > tod_24h)
                     tod_ref -= tod_24h;
 
-                assert(tod_ref >= 0.0f);
-                assert(tod_ref <= tod_24h);
+                traced_assert(tod_ref >= 0.0f);
+                traced_assert(tod_ref <= tod_24h);
             }
         }
     }
@@ -273,13 +273,13 @@ void ASTERIXTimestampCalculator::doFutureTimestampsCheck()
     {
         buffer_size = buf_it.second->size();
 
-        assert (dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
         dbContent::Variable& tod_var = dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
 
-        assert (buf_it.second->hasProperty(tod_prop));
+        traced_assert(buf_it.second->hasProperty(tod_prop));
 
         NullableVector<float>& tod_vec = buf_it.second->get<float>(tod_var.name());
 
@@ -350,22 +350,22 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
         buffer_size = buf_it.second->size();
 
         // tod
-        assert (dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
         dbContent::Variable& tod_var =
             dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
-        assert (buf_it.second->hasProperty(tod_prop));
+        traced_assert(buf_it.second->hasProperty(tod_prop));
 
         NullableVector<float>& tod_vec = buf_it.second->get<float>(tod_var.name());
 
         // timestamp
-        assert (dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it.first));
         dbContent::Variable& timestamp_var =
             dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it.first);
 
         Property timestamp_prop {timestamp_var.name(), timestamp_var.dataType()};
-        assert (!buf_it.second->hasProperty(timestamp_prop));
+        traced_assert(!buf_it.second->hasProperty(timestamp_prop));
         buf_it.second->addProperty(timestamp_prop);
 
         NullableVector<boost::posix_time::ptime>& timestamp_vec =
@@ -461,10 +461,10 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
                        << String::timeStringFromDouble(tod)
                        << " ts " << Time::toString(timestamp);
 
-                assert (!timestamp.is_not_a_date_time());
+                traced_assert(!timestamp.is_not_a_date_time());
                 timestamp_vec.set(index, timestamp);
-                assert (!timestamp_vec.isNull(index));
-                assert (timestamp_vec.get(index) == timestamp);
+                traced_assert(!timestamp_vec.isNull(index));
+                traced_assert(timestamp_vec.get(index) == timestamp);
 
                 // set first and last timestamp
 
@@ -499,17 +499,17 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
 
 void ASTERIXTimestampCalculator::setProcessingDone()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert (!buffers_.size());
-    assert (processing_);
+    traced_assert(!buffers_.size());
+    traced_assert(processing_);
 
     processing_ = false;
 }
 
 void ASTERIXTimestampCalculator::reset()
 {
-    assert (!processing_);
+    traced_assert(!processing_);
 
     prev_source_name_ = "";
 
@@ -529,7 +529,7 @@ void ASTERIXTimestampCalculator::resetDateInfo()
 
 void ASTERIXTimestampCalculator::clearTimeStats()
 {
-    logdbg << "start";
+    logdbg;
 
     first_time_ = true;
     timestamp_first_ = {};

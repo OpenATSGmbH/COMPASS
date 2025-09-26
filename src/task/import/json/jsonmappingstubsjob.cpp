@@ -38,7 +38,7 @@ JSONMappingStubsJob::~JSONMappingStubsJob() {}
 
 void JSONMappingStubsJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     started_ = true;
 
@@ -53,7 +53,7 @@ void JSONMappingStubsJob::run_impl()
 
     logdbg << "mapping json";
 
-    assert(data_);
+    traced_assert(data_);
     loginf << "applying JSON function";
     JSON::applyFunctionToValues(*data_.get(), data_record_keys_, data_record_keys_.begin(),
                                 process_lambda, false);

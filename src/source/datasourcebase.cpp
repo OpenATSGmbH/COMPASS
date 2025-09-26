@@ -16,9 +16,10 @@
  */
 
 #include "source/datasourcebase.h"
+#include "global.h"
 #include "logger.h"
 #include "number.h"
-
+#include "traced_assert.h"
 
 using namespace Utils;
 using namespace std;
@@ -34,6 +35,10 @@ namespace dbContent
 {
 
 const std::string DataSourceBase::DetectionKey{"detection_type"};
+const std::string DataSourceBase::GroundOnlyKey{"ground_only"};
+
+const std::string DataSourceBase::PDKey{"pd"};
+const std::string DataSourceBase::ClutterRateKey{"clutter_rate"};
 
 const std::string DataSourceBase::PSRIRMinKey{"primary_ir_min"};
 const std::string DataSourceBase::PSRIRMaxKey{"primary_ir_max"};
@@ -54,25 +59,25 @@ std::string DataSourceBase::detectionTypeToString(DetectionType type)
 {
     switch (type)
     {
-    case DetectionType::PrimaryOnlyGround: return "PrimaryOnlyGround";
-    case DetectionType::PrimaryOnlyAir: return "PrimaryOnlyAir";
+    case DetectionType::Undefined: return "Undefined";
+    case DetectionType::PrimaryOnly: return "PrimaryOnly";
     case DetectionType::ModeAC: return "ModeAC";
     case DetectionType::ModeACCombined: return "ModeACCombined";
     case DetectionType::ModeS: return "ModeS";
     case DetectionType::ModeSCombined: return "ModeSCombined";
-    default: return "ModeS"; // fallback
+    default: return "Undefined"; // fallback
     }
 }
 
 DataSourceBase::DetectionType DataSourceBase::detectionTypeFromString(const std::string& str)
 {
-    if (str == "PrimaryOnlyGround") return DetectionType::PrimaryOnlyGround;
-    if (str == "PrimaryOnlyAir") return DetectionType::PrimaryOnlyAir;
+    if (str == "Undefined") return DetectionType::Undefined;
+    if (str == "PrimaryOnly") return DetectionType::PrimaryOnly;
     if (str == "ModeAC") return DetectionType::ModeAC;
     if (str == "ModeACCombined") return DetectionType::ModeACCombined;
     if (str == "ModeS") return DetectionType::ModeS;
     if (str == "ModeSCombined") return DetectionType::ModeSCombined;
-    return DetectionType::ModeS; // fallback
+    return DetectionType::Undefined; // fallback
 }
 
 DataSourceBase::DataSourceBase()
@@ -87,6 +92,9 @@ std::string DataSourceBase::dsType() const
 void DataSourceBase::dsType(const std::string& ds_type)
 {
     ds_type_ = ds_type;
+
+    if (ds_type_ != "Radar" && groundOnly())
+        groundOnly(false);
 }
 
 unsigned int DataSourceBase::sac() const
@@ -142,7 +150,7 @@ void DataSourceBase::shortName(const std::string& short_name)
 
 const std::string& DataSourceBase::shortName() const
 {
-    assert(has_short_name_);
+    traced_assert(has_short_name_);
     return short_name_;
 }
 
@@ -169,12 +177,27 @@ DataSourceBase::DetectionType DataSourceBase::detectionType() const
     {
         return detectionTypeFromString(info_[DetectionKey].get<std::string>());
     }
-    return DetectionType::ModeS;
+    return DetectionType::Undefined;
 }
 
 void DataSourceBase::detectionType(DetectionType type)
 {
     info_[DetectionKey] = detectionTypeToString(type);
+
+    if (type != DetectionType::PrimaryOnly && groundOnly())
+        groundOnly(false);
+}
+
+bool DataSourceBase::groundOnly() const
+{
+    if ( info_.contains(GroundOnlyKey))
+        return info_.at(GroundOnlyKey);
+
+    return false;
+}
+void DataSourceBase::groundOnly(bool value)
+{
+    info_[GroundOnlyKey] = value;
 }
 
 bool DataSourceBase::hasUpdateInterval() const
@@ -195,7 +218,7 @@ void DataSourceBase::updateInterval (float value)
 
 float DataSourceBase::updateInterval () const
 {
-    assert (hasUpdateInterval());
+    traced_assert(hasUpdateInterval());
 
     return info_.at(update_interval_key);
 }
@@ -218,7 +241,7 @@ void DataSourceBase::latitude (double value)
 }
 double DataSourceBase::latitude () const
 {
-    assert (hasPosition());
+    traced_assert(hasPosition());
 
     if (!info_.at(position_key).contains("latitude"))
         return 0.0;
@@ -233,7 +256,7 @@ void DataSourceBase::longitude (double value)
 
 double DataSourceBase::longitude () const
 {
-    assert (hasPosition());
+    traced_assert(hasPosition());
 
     if (!info_.at(position_key).contains("longitude"))
         return 0.0;
@@ -248,7 +271,7 @@ void DataSourceBase::altitude (double value)
 
 double DataSourceBase::altitude () const
 {
-    assert (hasPosition());
+    traced_assert(hasPosition());
 
     if (!info_.at(position_key).contains("altitude"))
         return 0.0;
@@ -256,6 +279,51 @@ double DataSourceBase::altitude () const
         return info_.at(position_key).at("altitude");
 }
 
+bool DataSourceBase::isPrimaryRadar() const
+{
+    return dsType() == "Radar" && detectionType() == DetectionType::PrimaryOnly;
+}
+
+bool DataSourceBase::hasProbabilityOfDetection () const
+{
+    return info_.count(PDKey);
+}
+
+void DataSourceBase::probabilityOfDetection(double value)
+{
+    info_[PDKey] = value;
+}
+double DataSourceBase::probabilityOfDetection() const
+{
+    return info_.at(PDKey);
+}
+
+bool DataSourceBase::hasClutterRate () const
+{
+    return info_.count(ClutterRateKey);
+}
+
+void DataSourceBase::clutterRate(double value)
+{
+    info_[ClutterRateKey] = value;
+}
+double DataSourceBase::clutterRate() const
+{
+    return info_.at(ClutterRateKey);
+}
+
+bool DataSourceBase::hasArea() const
+{
+    return hasRadarRanges() && radarRanges().count(PSRIRMaxKey);
+}
+double DataSourceBase::getArea() const  // m^2
+{
+    assert (hasArea());
+
+    double radius_nm = radarRanges().at(PSRIRMaxKey);
+
+    return pow(radius_nm*NM2M, 2) * M_PI;
+}
 bool DataSourceBase::hasRadarRanges() const
 {
     return info_.contains(radar_range_key);
@@ -263,13 +331,13 @@ bool DataSourceBase::hasRadarRanges() const
 
 void DataSourceBase::addRadarRanges()
 {
-    assert (!hasRadarRanges());
+    traced_assert(!hasRadarRanges());
     info_[radar_range_key] = json::object();
 }
 
 std::map<std::string, double> DataSourceBase::radarRanges() const
 {
-    assert (hasRadarRanges());
+    traced_assert(hasRadarRanges());
     return info_.at(radar_range_key).get<std::map<std::string, double>>();
 }
 
@@ -291,13 +359,13 @@ bool DataSourceBase::hasRadarAccuracies() const
 
 void DataSourceBase::addRadarAccuracies()
 {
-    assert (!hasRadarAccuracies());
+    traced_assert(!hasRadarAccuracies());
     info_[radar_accuracy_key] = json::object();
 }
 
 std::map<std::string, double> DataSourceBase::radarAccuracies() const
 {
-    assert (hasRadarAccuracies());
+    traced_assert(hasRadarAccuracies());
     return info_.at(radar_accuracy_key).get<std::map<std::string, double>>();
 }
 
@@ -315,28 +383,28 @@ bool DataSourceBase::hasNetworkLines() const
 
 void DataSourceBase::addNetworkLines()
 {
-    assert (!hasNetworkLines());
+    traced_assert(!hasNetworkLines());
     info_[network_lines_key] = json::object();
 }
 
 //std::map<std::string, std::pair<std::string, unsigned int>> DataSourceBase::networkLines() const
 //{
-//    assert (hasNetworkLines());
+//    traced_assert(hasNetworkLines());
 
 //    std::map<std::string, std::pair<std::string, unsigned int>> ret;
 //    set<string> existing_lines; // to check
 
 //    const json& network_lines = info_.at(network_lines_key);
-//    assert (network_lines.is_object());
+//    traced_assert(network_lines.is_object());
 
 //    string ip;
 //    unsigned int port;
 
 //    for (auto& line_it : network_lines.get<json::object_t>())  // iterate over array
 //    {
-//        assert (line_it.first == "L1" || line_it.first == "L2" || line_it.first == "L3" || line_it.first == "L4");
+//        traced_assert(line_it.first == "L1" || line_it.first == "L2" || line_it.first == "L3" || line_it.first == "L4");
 
-//        assert (line_it.second.is_string());
+//        traced_assert(line_it.second.is_string());
 
 //        if (line_it.second.size() == 0) // empty string
 //            continue;
@@ -369,20 +437,20 @@ bool DataSourceBase::hasNetworkLine (const std::string& key) const
 
 void DataSourceBase::createNetworkLine (const std::string& key)
 {
-    assert (!hasNetworkLine(key));
+    traced_assert(!hasNetworkLine(key));
 
     json& network_lines = info_.at(network_lines_key);
-    assert (network_lines.is_object());
+    traced_assert(network_lines.is_object());
 
     network_lines[key] = json::object();
     line_info_[key] = make_shared<DataSourceLineInfo>(key, network_lines.at(key));
 
-    assert (hasNetworkLine(key));
+    traced_assert(hasNetworkLine(key));
 }
 
 std::shared_ptr<DataSourceLineInfo> DataSourceBase::networkLine (const std::string& key)
 {
-    assert (key == "L1" || key == "L2" || key == "L3" || key == "L4");
+    traced_assert(key == "L1" || key == "L2" || key == "L3" || key == "L4");
 
     if (!hasNetworkLine(key))
         createNetworkLine(key);
@@ -395,12 +463,12 @@ void DataSourceBase::setFromJSONDeprecated (const nlohmann::json& j)
     info_.clear();
 
     //    j["dbcontent_name"] = dbcontent_name_;
-    assert(j.contains("dbcont_name"));
+    traced_assert(j.contains("dbcont_name"));
     ds_type_ = j.at("dbcont_name");
 
 
     //    j["name"] = name_;
-    assert(j.contains("name"));
+    traced_assert(j.contains("name"));
     name_ = j.at("name");
 
     //    if (has_short_name_)
@@ -415,12 +483,12 @@ void DataSourceBase::setFromJSONDeprecated (const nlohmann::json& j)
 
     //    if (has_sac_)
     //        j["sac"] = sac_;
-    assert(j.contains("sac"));
+    traced_assert(j.contains("sac"));
     sac_ = j.at("sac");
 
     //    if (has_sic_)
     //        j["sic"] = sic_;
-    assert(j.contains("sic"));
+    traced_assert(j.contains("sic"));
     sic_ = j.at("sic");
 
     //    if (has_latitude_)
@@ -483,7 +551,7 @@ void DataSourceBase::setFromJSONDeprecated (const nlohmann::json& j)
 void DataSourceBase::setFromJSON (const nlohmann::json& j)
 {
     //    "ds_type": "Radar",
-    assert(j.contains("ds_type"));
+    traced_assert(j.contains("ds_type"));
     ds_type_ = j.at("ds_type");
 
     //    "has_short_name": true,
@@ -509,15 +577,15 @@ void DataSourceBase::setFromJSON (const nlohmann::json& j)
         info_.clear();
 
     //    "name": "sdgsdf",
-    assert(j.contains("name"));
+    traced_assert(j.contains("name"));
     name_ = j.at("name");
 
     //    "sac": 50,
-    assert(j.contains("sac"));
+    traced_assert(j.contains("sac"));
     sac_ = j.at("sac");
 
     //    "sic": 0
-    assert(j.contains("sic"));
+    traced_assert(j.contains("sic"));
     sic_ = j.at("sic");
 
     if (hasNetworkLines())
@@ -562,11 +630,11 @@ void DataSourceBase::parseNetworkLineInfo()
     if (info_.count(network_lines_key))
     {
         json& network_lines = info_.at(network_lines_key);
-        assert (network_lines.is_object());
+        traced_assert(network_lines.is_object());
 
         for (auto& line_it : network_lines.get<json::object_t>())  // iterate over array
         {
-            assert (line_it.first == "L1" || line_it.first == "L2" || line_it.first == "L3" || line_it.first == "L4");
+            traced_assert(line_it.first == "L1" || line_it.first == "L2" || line_it.first == "L3" || line_it.first == "L4");
 
             line_info_[line_it.first] = make_shared<DataSourceLineInfo>(line_it.first, network_lines.at(line_it.first));
         }

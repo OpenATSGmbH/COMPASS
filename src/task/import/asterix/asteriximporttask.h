@@ -248,8 +248,6 @@ protected:
     std::string error_message_;
 
     bool insert_active_{false};
-    //boost::posix_time::ptime insert_start_time_;
-    //double total_insert_time_ms_ {0};
 
     std::set<int> added_data_sources_;
 

@@ -19,6 +19,7 @@
 #include "spline_interpolator.h"
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
+#include "reconstructortarget.h"
 #include "targetreportdefs.h"
 
 #include "kalman_estimator.h"
@@ -140,19 +141,21 @@ void ReferenceCalculator::prepareForCurrentSlice()
         }
         else 
         {
-            // target still exists, remove updates
+            // target still exists => remove updates out of join region
             auto it = std::remove_if(ref_it->second.updates.begin(),
                                      ref_it->second.updates.end(),
                                      [ & ] (const kalman::KalmanUpdate& update) { return update.t <  ThresRemove ||
                                                                                          update.t >= ThresJoin; });
             ref_it->second.updates.erase(it, ref_it->second.updates.end());
 
+            // remove smooth updates out of join region
             auto it_s = std::remove_if(ref_it->second.updates_smooth.begin(),
                                        ref_it->second.updates_smooth.end(),
                                        [ & ] (const kalman::KalmanUpdate& update) { return update.t <  ThresRemove ||
                                                                                            update.t >= ThresJoin; });
             ref_it->second.updates_smooth.erase(it_s, ref_it->second.updates_smooth.end());
 
+            // remove input infos out of join region
             auto& input_infos = ref_it->second.input_infos;
             for (auto first = input_infos.begin(), last = input_infos.end(); first != last;)
             {
@@ -161,6 +164,13 @@ void ReferenceCalculator::prepareForCurrentSlice()
                 else
                     ++first;
             }
+
+            // remove target report usage flags out of join region out of join region
+            auto it_u = std::remove_if(ref_it->second.measurement_contributions.begin(),
+                                       ref_it->second.measurement_contributions.end(),
+                                       [ & ] (const reconstruction::MMContribution& usage) { return usage.t <  ThresRemove ||
+                                                                                             usage.t >= ThresJoin; });
+            ref_it->second.measurement_contributions.erase(it_u, ref_it->second.measurement_contributions.end());
 
             ++ref_it;
         }
@@ -174,7 +184,7 @@ void ReferenceCalculator::prepareForCurrentSlice()
  */
 void ReferenceCalculator::reset()
 {
-    loginf << "start";
+    loginf;
 
     references_.clear();
     interp_options_.clear();
@@ -211,7 +221,7 @@ void ReferenceCalculator::updateInterpOptions()
  */
 bool ReferenceCalculator::computeReferences()
 {
-    loginf << "start";
+    loginf;
 
     resetDataStructs();
 
@@ -262,7 +272,7 @@ void ReferenceCalculator::generateLineMeasurements(const dbContent::Reconstructo
 
     std::vector<reconstruction::Measurement> line_measurements;
 
-    assert (reconstructor_.acc_estimator_);
+    traced_assert(reconstructor_.acc_estimator_);
 
     for (const auto& elem : target_reports)
     {
@@ -305,7 +315,7 @@ void ReferenceCalculator::addMeasurements(unsigned int utn,
 
     //final check on available source ids
     for (const auto& mm : utn_ref.measurements)
-        assert(mm.source_id.has_value());
+        traced_assert(mm.source_id.has_value());
 }
 
 /**
@@ -316,6 +326,10 @@ void ReferenceCalculator::preprocessMeasurements(unsigned int dbcontent_id,
     //interpolate if options are set for dbcontent
     if (interp_options_.count(dbcontent_id))
         interpolateMeasurements(measurements, interp_options_.at(dbcontent_id));
+
+    //track stoped adsb targets 
+    if (settings_.track_stopped_adsb && dbcontent_id == 21)
+        addStoppedADSBMeasurements(measurements);
 }
 
 namespace
@@ -327,8 +341,19 @@ bool mmSortPred(const reconstruction::Measurement& mm0,
     if (mm0.t != mm1.t)
         return mm0.t < mm1.t;
 
-    //otherwise sort by source at least
-    return mm0.source_id < mm1.source_id;
+    //otherwise sort by source id
+    if (mm0.source_id != mm1.source_id)
+        return mm0.source_id < mm1.source_id;
+
+    //time and source id are the same => must be interpolated
+    traced_assert(mm0.mm_interp && mm1.mm_interp);
+
+    //otherwise non-interpolated first
+    if (mm0.mm_interp != mm1.mm_interp)
+        return mm0.mm_interp < mm1.mm_interp;
+
+    //otherwise first interpolated first
+    return mm0.mm_interp_first > mm1.mm_interp_first;
 }
 }
 
@@ -359,6 +384,54 @@ void ReferenceCalculator::interpolateMeasurements(Measurements& measurements,
 
     for (size_t i = 0; i < ni; ++i)
         measurements[ i ] = mms_interp[ i ];
+}
+
+/**
+ */
+void ReferenceCalculator::addStoppedADSBMeasurements(Measurements& measurements) const
+{
+    size_t n = measurements.size();
+    if (n == 0)
+        return;
+
+    Measurements measurements_mod;
+    measurements_mod.reserve(n);
+
+    dbContent::ReconstructorTarget::StandingADSBTarget st;
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        const auto& mm  = measurements[ i ];
+        const auto  mm1 = i == n - 1 ? nullptr : &measurements[ i + 1 ];
+
+        measurements_mod.push_back(mm);
+
+        // not in stopped state? => just continue
+        if (!mm.stopped)
+            continue;
+
+        //updates are added up to next adsb measurement or up to slice end
+        boost::posix_time::ptime ts_next = mm1 ? mm1->t : reconstructor_.currentSlice().next_slice_begin_;
+        if (mm1)
+            ts_next = mm1->t;
+
+        auto tr = reconstructor_.getInfo(mm.source_id.value());
+        traced_assert(tr);
+
+        st.init(*tr);
+
+        auto mm_cpy = mm;
+
+        while (st.needsUpdate(ts_next))
+        {
+            mm_cpy.t = st.ts_next_update;
+            measurements_mod.push_back(mm_cpy);
+
+            st.addUpdate();
+        }
+    }
+
+    measurements = measurements_mod;
 }
 
 /**
@@ -451,7 +524,7 @@ ReferenceCalculator::InitRecResult ReferenceCalculator::initReconstruction(Targe
         refs.init_update = *refs.updates.rbegin();
 
         //first measurement of new slice must be after the last slice's last update
-        assert(refs.init_update->t <= refs.measurements[ refs.start_index.value() ].t);
+        traced_assert(refs.init_update->t <= refs.measurements[ refs.start_index.value() ].t);
     }
 
     return InitRecResult::Success;
@@ -480,7 +553,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         loginf << "    init update:   " << (refs.init_update.has_value() ? "yes" : "no");
     }
 
-    assert(refs.start_index.has_value());
+    traced_assert(refs.start_index.has_value());
 
     //if (refs.utn == 21)
     //    writeTargetData(refs, "/home/mcphatty/track_utn21.json");
@@ -503,6 +576,43 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
+    std::set<unsigned long> usage_used_recnums;
+    for (const auto& usage : refs.measurement_contributions)
+        if (usage.interpolated || usage.stopped)
+            usage_used_recnums.insert(usage.rec_num);
+
+    auto addContribution = [ & ] (const reconstruction::Measurement& mm)
+    {
+        auto t  = mm.t;
+        auto id = mm.source_id.value();
+
+        if (mm.mm_interp || mm.stopped)
+        {
+            //check if rec num has already been added (e.g. because of interpolation)
+            if (usage_used_recnums.count(id))
+                return;
+
+            //register rec num
+            usage_used_recnums.insert(id);
+
+            //get original timestamp of target report
+            auto tr_info = reconstructor_.getInfo(id);
+            traced_assert(tr_info);
+
+            t = tr_info->timestamp_;
+        }
+        
+        //add contribution
+        reconstruction::MMContribution contrib;
+        contrib.rec_num            = id;
+        contrib.t                  = t;
+        contrib.interpolated       = mm.mm_interp;
+        contrib.interpolated_first = mm.mm_interp_first;
+        contrib.stopped            = mm.stopped;
+
+        refs.measurement_contributions.emplace_back(contrib);
+    };
+
     auto collectUpdate = [ & ] (const kalman::KalmanUpdate& update, 
                                 const reconstruction::Measurement& mm,
                                 unsigned int mm_idx,
@@ -510,6 +620,9 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
     {
         refs.updates.push_back(update);
         refs.updates.back().Q_var_interp = mm.Q_var_interp;
+
+        //collect contribution of measurement resulting in valid kalman update
+        addContribution(mm);
 
         if (debug_target)
         {
@@ -528,6 +641,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             refs.updates.back().debugUpdate();
         }
     };
+
 
     auto debugMM = [ & ] (const reconstruction::Measurement& mm)
     {
@@ -568,7 +682,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
         //reinit kalman with first measurement
         estimator.kalmanInit(update, mm0);
-        assert(update.valid);
+        traced_assert(update.valid);
 
         collectUpdate(update, mm0, refs.start_index.value(), debug_mm);
 
@@ -611,7 +725,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         //check result
         if (res == reconstruction::KalmanEstimator::StepResult::Success)
         {
-            assert(update.valid);
+            traced_assert(update.valid);
 
             const auto& step_info = estimator.stepInfo();
 
@@ -632,7 +746,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         }
         else if (res == reconstruction::KalmanEstimator::StepResult::FailStepTooSmall)
         {
-            assert(!update.valid);
+            traced_assert(!update.valid);
 
             if (debug_target)
                 skipped_updates.push_back(estimator.currentPositionWGS84());
@@ -641,7 +755,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         }
         else if (res == reconstruction::KalmanEstimator::StepResult::FailKalmanError)
         {
-            assert(!update.valid);
+            traced_assert(!update.valid);
 
             if (debug_target)
                 failed_updates.push_back(estimator.currentPositionWGS84());
@@ -651,15 +765,21 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             const auto& step_info = estimator.stepInfo();
 
             if (step_info.kalman_error == kalman::KalmanError::Numeric)
+            {
                 ++refs.num_updates_failed_numeric;
+            }
             else if (step_info.kalman_error == kalman::KalmanError::InvalidState)
+            {
                 ++refs.num_updates_failed_badstate;
+            }
             else
+            {
                 ++refs.num_updates_failed_other;
+            }
         }
         else
         {
-            assert(!update.valid);
+            traced_assert(!update.valid);
 
             ++refs.num_updates_failed;
             ++refs.num_updates_failed_other;
@@ -707,10 +827,11 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                           kalman::SmoothFailStrategy::SetInvalid,
                                           debug_target ? &rts_debug_infos : nullptr);
         //assert(ok);
-        assert(updates.size() == refs.updates.size());
+        traced_assert(updates.size() == refs.updates.size());
 
         if (!ok)
         {
+            //revert to unsmoothed updates
             updates = refs.updates;
             ++refs.num_smoothing_failed;
         }
@@ -732,9 +853,13 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         for (size_t i = n_before; i < n_updates; ++i)
         {
             if (updates[ i ].valid)
+            {
                 refs.updates_smooth.push_back(updates[ i ]);
+            }
             else
+            {
                 ++refs.num_smooth_steps_failed;
+            }
         }
 
         updates = refs.updates_smooth;
@@ -827,7 +952,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
     estimator.settings() = settings_.kalmanEstimatorSettings();
 
 #if USE_EXPERIMENTAL_SOURCE == false
-    assert(settings_.kalman_type_final == kalman::KalmanType::UMKalman2D);
+    traced_assert(settings_.kalman_type_final == kalman::KalmanType::UMKalman2D);
 #endif
 
     estimator.init(settings_.kalman_type_final);
@@ -860,7 +985,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
 
     //@TODO: remove check
     for (const auto& u : updates)
-        assert(u.source_id.has_value());
+        traced_assert(u.source_id.has_value());
 
     //resample?
     if (settings_.resample_result)
@@ -913,17 +1038,24 @@ void ReferenceCalculator::updateReferences()
 {
     for (auto& ref : references_)
     {
-        assert(reconstructor_.targets_container_.targets_.count(ref.first));
+        traced_assert(reconstructor_.targets_container_.targets_.count(ref.first));
 
         auto& target = reconstructor_.targets_container_.targets_.at(ref.first);
-        //target.references_ = std::move(ref.second.references);
 
         target.references_.clear();
+        target.reference_tr_usages_.clear();
 
+        //store references to target
         for (auto& ref_it : ref.second.references)
             target.references_[ref_it.t] = ref_it;
 
         ref.second.references.clear();
+
+        std::set<unsigned long> rec_nums;
+
+        //store target report usages to target
+        for (auto& tru_it : ref.second.measurement_contributions)
+            target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it.rec_num));
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;

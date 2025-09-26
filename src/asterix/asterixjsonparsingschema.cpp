@@ -17,6 +17,7 @@
 
 #include "asterixjsonparsingschema.h"
 #include "asteriximporttask.h"
+#include "traced_assert.h"
 
 ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(const std::string& class_id, const std::string& instance_id,
                                                    ASTERIXImportTask& task)
@@ -24,7 +25,7 @@ ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(const std::string& class_id, 
 {
     registerParameter<std::string>("name", &name_, "");
 
-    assert(name_.size());
+    traced_assert(name_.size());
 
     createSubConfigurables();
 }
@@ -57,7 +58,7 @@ void ASTERIXJSONParsingSchema::generateSubConfigurable(const std::string& class_
         if (sub_config.hasParameterConfigValue("category"))
             category = sub_config.getParameterConfigValue<unsigned int>("category");
 
-        assert(parsers_.find(category) == parsers_.end());
+        traced_assert(parsers_.find(category) == parsers_.end());
 
         logdbg << "generating schema " << instance_id
                << " for cat  " << category;
@@ -77,13 +78,13 @@ void ASTERIXJSONParsingSchema::name(const std::string& name) { name_ = name; }
 
 ASTERIXJSONParser& ASTERIXJSONParsingSchema::parser(unsigned int category)
 {
-    assert(hasObjectParser(category));
+    traced_assert(hasObjectParser(category));
     return *parsers_.at(category).get();
 }
 
 void ASTERIXJSONParsingSchema::removeParser(unsigned int category)
 {
-    assert(hasObjectParser(category));
+    traced_assert(hasObjectParser(category));
     parsers_.erase(category);
 }
 

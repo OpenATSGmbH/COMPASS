@@ -35,7 +35,6 @@
 #include "util/timeconv.h"
 #include "viewpoint_commands.h"
 #include "global.h"
-#include "files.h"
 
 #include "json.hpp"
 
@@ -45,7 +44,7 @@
 #include <QApplication>
 #include <QTabWidget>
 
-#include <cassert>
+#include "traced_assert.h"
 
 #define SCAN_PRESETS
 
@@ -56,7 +55,7 @@ using namespace std;
 ViewManager::ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
     : Configurable(class_id, instance_id, compass, "views.json"), compass_(*compass)
 {
-    logdbg << "start";
+    logdbg;
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
@@ -68,11 +67,11 @@ ViewManager::ViewManager(const std::string& class_id, const std::string& instanc
 
 void ViewManager::init(QTabWidget* main_tab_widget)
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(main_tab_widget);
-    assert(!main_tab_widget_);
-    assert(!initialized_);
+    traced_assert(main_tab_widget);
+    traced_assert(!main_tab_widget_);
+    traced_assert(!initialized_);
 
     main_tab_widget_ = main_tab_widget;
 
@@ -86,7 +85,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     QApplication::restoreOverrideCursor();
 
-    assert(view_points_widget_);
+    traced_assert(view_points_widget_);
 
     FilterManager& filter_man = COMPASS::instance().filterManager();
 
@@ -119,13 +118,13 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
 void ViewManager::loadViewPoints()
 {
-    assert (view_points_widget_);
+    traced_assert(view_points_widget_);
     view_points_widget_->loadViewPoints();
 }
 
 void ViewManager::close()
 {
-    loginf << "start";
+    logdbg;
     initialized_ = false;
 
     logdbg << "deleting container widgets";
@@ -155,16 +154,16 @@ void ViewManager::close()
 
     view_points_report_gen_ = nullptr;
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 ViewManager::~ViewManager()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(!container_widgets_.size());
-    assert(!containers_.size());
-    assert(!initialized_);
+    traced_assert(!container_widgets_.size());
+    traced_assert(!containers_.size());
+    traced_assert(!initialized_);
 
     view_points_widget_ = nullptr;
 }
@@ -175,13 +174,13 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     logdbg << "class_id " << class_id << " instance_id "
            << instance_id;
 
-    assert(initialized_);
+    traced_assert(initialized_);
 
     if (class_id == "ViewContainer")
     {
         ViewContainer* container =
                 new ViewContainer(class_id, instance_id, this, this, main_tab_widget_, 0);
-        assert(containers_.count(instance_id) == 0);
+        traced_assert(containers_.count(instance_id) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(instance_id, container));
 
         unsigned int number = String::getAppendedInt(instance_id);
@@ -192,10 +191,10 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     {
         ViewContainerWidget* container_widget =
                 new ViewContainerWidget(class_id, instance_id, this);
-        assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
+        traced_assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(
                                container_widget->viewContainer().instanceId(), &container_widget->viewContainer()));
-        assert(container_widgets_.count(instance_id) == 0);
+        traced_assert(container_widgets_.count(instance_id) == 0);
         container_widgets_.insert(
                     std::pair<std::string, ViewContainerWidget*>(instance_id, container_widget));
 
@@ -205,10 +204,10 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     }
     else if (class_id == "ViewPointsReportGenerator")
     {
-        assert (!view_points_report_gen_);
+        traced_assert(!view_points_report_gen_);
 
         view_points_report_gen_.reset(new ViewPointsReportGenerator(class_id, instance_id, *this));
-        assert (view_points_report_gen_);
+        traced_assert(view_points_report_gen_);
     }
     else
         throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_id " +
@@ -232,7 +231,7 @@ void ViewManager::checkSubConfigurables()
 
 void ViewManager::enableStoredReadSets()
 {
-    loginf << "start";
+    loginf;
 
     for (const auto& cont_it : COMPASS::instance().dbContentManager())
     {
@@ -244,7 +243,7 @@ void ViewManager::enableStoredReadSets()
 }
 void ViewManager::disableStoredReadSets()
 {
-    loginf << "start";
+    loginf;
 
     use_tmp_stored_readset_ = false;
     tmp_stored_readset_.clear();
@@ -255,7 +254,7 @@ dbContent::VariableSet ViewManager::getReadSet(const std::string& dbcontent_name
     if (use_tmp_stored_readset_)
     {
         logdbg << "stored readset for '" << dbcontent_name << "'";
-        assert (tmp_stored_readset_.count(dbcontent_name));
+        traced_assert(tmp_stored_readset_.count(dbcontent_name));
         return tmp_stored_readset_.at(dbcontent_name);
     }
 
@@ -272,13 +271,13 @@ dbContent::VariableSet ViewManager::getReadSet(const std::string& dbcontent_name
 
 ViewPointsWidget* ViewManager::viewPointsWidget() const
 {
-    assert (view_points_widget_);
+    traced_assert(view_points_widget_);
     return view_points_widget_;
 }
 
 ViewPointsReportGenerator& ViewManager::viewPointsGenerator()
 {
-    assert (view_points_report_gen_);
+    traced_assert(view_points_report_gen_);
     return *view_points_report_gen_;
 }
 
@@ -298,16 +297,16 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
             db_interface.deleteAllViewPoints();
 
-        assert (json_obj.contains(ViewPoint::VP_COLLECTION_ARRAY_KEY));
+        traced_assert(json_obj.contains(ViewPoint::VP_COLLECTION_ARRAY_KEY));
         
         //add new ones
         json& view_points = json_obj.at(ViewPoint::VP_COLLECTION_ARRAY_KEY);
-        assert (view_points.size());
+        traced_assert(view_points.size());
 
         unsigned int id;
         for (auto& vp_it : view_points.get<json::array_t>())
         {
-            assert (vp_it.contains(ViewPoint::VP_ID_KEY));
+            traced_assert(vp_it.contains(ViewPoint::VP_ID_KEY));
 
             id = vp_it.at(ViewPoint::VP_ID_KEY);
 
@@ -386,7 +385,7 @@ void ViewManager::unsetCurrentViewPoint ()
 
 void ViewManager::doViewPointAfterLoad ()
 {
-    logdbg << "start";
+    logdbg;
 
     if (!current_viewable_)
     {
@@ -400,7 +399,7 @@ void ViewManager::doViewPointAfterLoad ()
         return; // already done, this is a re-load
     }
 
-    assert (view_points_widget_);
+    traced_assert(view_points_widget_);
 
     const json& data = current_viewable_->data();
 
@@ -419,7 +418,7 @@ void ViewManager::doViewPointAfterLoad ()
     }
     else
     {
-        assert (data.at(ViewPoint::VP_TIMESTAMP_KEY).is_string());
+        traced_assert(data.at(ViewPoint::VP_TIMESTAMP_KEY).is_string());
         vp_timestamp = Time::fromString(data.at(ViewPoint::VP_TIMESTAMP_KEY));
 
         loginf << "time " << Time::toString(vp_timestamp);
@@ -427,7 +426,7 @@ void ViewManager::doViewPointAfterLoad ()
 
     if (vp_contains_time_window)
     {
-        assert (data.at(ViewPoint::VP_TIME_WIN_KEY).is_number());
+        traced_assert(data.at(ViewPoint::VP_TIME_WIN_KEY).is_number());
         vp_time_window = data.at(ViewPoint::VP_TIME_WIN_KEY);
         vp_ts_min = vp_timestamp - Time::partialSeconds(vp_time_window / 2.0);
         vp_ts_max = vp_timestamp + Time::partialSeconds(vp_time_window / 2.0);
@@ -455,10 +454,10 @@ void ViewManager::doViewPointAfterLoad ()
         {
             std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-            assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
+            traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& tods = buffer->get<boost::posix_time::ptime>(ts_var.name());
 
             unsigned int buffer_size = buffer->size();
@@ -526,10 +525,10 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
         {
             std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-            assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
+            traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
 
             unsigned int buffer_size = buffer->size();
@@ -569,7 +568,7 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
 
 void ViewManager::showMainViewContainerAddView()
 {
-    assert (containers_.count("ViewContainer0"));
+    traced_assert(containers_.count("ViewContainer0"));
     containers_.at("ViewContainer0")->showAddViewMenuSlot();
 }
 
@@ -604,7 +603,7 @@ std::string ViewManager::newViewInstanceId(const std::string& class_id)
 
 std::string ViewManager::newViewName(const std::string& class_id)
 {
-    assert (view_class_list_.count(class_id));
+    traced_assert(view_class_list_.count(class_id));
     return view_class_list_.at(class_id) + " " + to_string(newViewNumber(class_id));
 }
 
@@ -622,7 +621,7 @@ bool ViewManager::isProcessingData() const
 
 void ViewManager::resetToStartupConfiguration()
 {
-    loginf << "start";
+    loginf;
 
     enableStoredReadSets();
 
@@ -676,14 +675,14 @@ bool ViewManager::isInitialized() const
 
 ViewContainerWidget* ViewManager::addNewContainerWidget()
 {
-    logdbg << "start";
+    logdbg;
     
     container_count_++;
     std::string container_widget_name = "ViewWindow" + std::to_string(container_count_);
 
     generateSubConfigurableFromConfig("ViewContainerWidget", container_widget_name);
 
-    assert(container_widgets_.count(container_widget_name) == 1);
+    traced_assert(container_widgets_.count(container_widget_name) == 1);
 
     return container_widgets_.at(container_widget_name);
 }
@@ -698,17 +697,17 @@ void ViewManager::clearDataInViews()
 
 void ViewManager::registerView(View* view)
 {
-    logdbg << "start";
-    assert(view);
-    assert(!isRegistered(view));
+    logdbg;
+    traced_assert(view);
+    traced_assert(!isRegistered(view));
     views_[view->instanceId()] = view;
 }
 
 void ViewManager::unregisterView(View* view)
 {
     logdbg << view->getName().c_str();
-    assert(view);
-    assert(isRegistered(view));
+    traced_assert(view);
+    traced_assert(isRegistered(view));
 
     std::map<std::string, View*>::iterator it;
 
@@ -718,8 +717,8 @@ void ViewManager::unregisterView(View* view)
 
 bool ViewManager::isRegistered(View* view)
 {
-    logdbg << "start";
-    assert(view);
+    logdbg;
+    traced_assert(view);
 
     std::map<std::string, View*>::iterator it;
 
@@ -793,13 +792,13 @@ void ViewManager::viewShutdown(View* view, const std::string& err)
 
 void ViewManager::selectionChangedSlot()
 {
-    loginf << "start";
+    loginf;
     emit selectionChangedSignal();
 }
 
 void ViewManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->databaseOpened();
@@ -807,7 +806,7 @@ void ViewManager::databaseOpenedSlot()
 
 void ViewManager::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     unsetCurrentViewPoint();
     clearDataInViews();
@@ -824,7 +823,7 @@ void ViewManager::loadingStartedSlot()
     //reset reload flag
     reload_needed_ = false;
 
-    loginf << "start";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();
@@ -863,7 +862,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
     if (disable_data_distribution_)
         return;
 
-    loginf << "start";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->loadingDone();

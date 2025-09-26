@@ -227,8 +227,8 @@ void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write
 nlohmann::json& ViewPointGenFeaturePointGeometry::getCoordinatesJSON(nlohmann::json& feature_json)
 {
     //check validity first
-    assert (feature_json.count(FeatureFieldNameGeom));
-    assert (feature_json[ FeatureFieldNameGeom ].count(FeatureFieldNameCoords));
+    traced_assert(feature_json.count(FeatureFieldNameGeom));
+    traced_assert(feature_json[ FeatureFieldNameGeom ].count(FeatureFieldNameCoords));
 
     return feature_json.at(FeatureFieldNameGeom).at(FeatureFieldNameCoords);
 }
@@ -802,7 +802,7 @@ void ViewPointGenAnnotation::setSymbolColor(const QColor& color)
 */
 void ViewPointGenAnnotation::addFeature(std::unique_ptr<ViewPointGenFeature>&& feat)
 {
-    assert(feat);
+    traced_assert(feat);
 
     feat_map_[ feat->name() ] = features_.size();
     features_.push_back(std::move(feat));
@@ -812,7 +812,7 @@ void ViewPointGenAnnotation::addFeature(std::unique_ptr<ViewPointGenFeature>&& f
 */
 void ViewPointGenAnnotation::addFeature(ViewPointGenFeature* feat)
 {
-    assert(feat);
+    traced_assert(feat);
 
     feat_map_[ feat->name() ] = features_.size();
     features_.emplace_back(feat);
@@ -862,7 +862,7 @@ ViewPointGenAnnotation* ViewPointGenAnnotation::addAnnotation(const std::string&
 */
 void ViewPointGenAnnotation::addAnnotation(std::unique_ptr<ViewPointGenAnnotation>&& a)
 {
-    assert(a);
+    traced_assert(a);
 
     anno_map_[ a->name() ] = annotations_.size();
     annotations_.push_back(std::move(a));
@@ -890,7 +890,7 @@ bool ViewPointGenAnnotation::hasAnnotation(const std::string& name) const
 ViewPointGenAnnotation* ViewPointGenAnnotation::annotation(const std::string& name) const
 {
     auto it = anno_map_.find(name);
-    assert(it != anno_map_.end());
+    traced_assert(it != anno_map_.end());
 
     return annotations_.at(it->second).get();
 }
@@ -951,8 +951,8 @@ void ViewPointGenAnnotation::print(std::ostream& strm, const std::string& prefix
 */
 nlohmann::json& ViewPointGenAnnotation::getFeaturesJSON(nlohmann::json& annotation_json)
 {
-    assert (annotation_json.contains(AnnotationFieldFeatures));
-    assert (annotation_json.at(AnnotationFieldFeatures).is_array());
+    traced_assert(annotation_json.contains(AnnotationFieldFeatures));
+    traced_assert(annotation_json.at(AnnotationFieldFeatures).is_array());
 
     return annotation_json.at(AnnotationFieldFeatures);
 }
@@ -963,9 +963,9 @@ nlohmann::json& ViewPointGenAnnotation::getFeatureJSON(nlohmann::json& annotatio
 {
     auto& feat_arr = ViewPointGenAnnotation::getFeaturesJSON(annotation_json);
 
-    assert (feat_arr.is_array());
-    assert (idx < feat_arr.size());
-    assert (feat_arr.at(idx).is_object());
+    traced_assert(feat_arr.is_array());
+    traced_assert(idx < feat_arr.size());
+    traced_assert(feat_arr.at(idx).is_object());
 
     return feat_arr.at(idx);
 }
@@ -974,8 +974,8 @@ nlohmann::json& ViewPointGenAnnotation::getFeatureJSON(nlohmann::json& annotatio
 */
 nlohmann::json& ViewPointGenAnnotation::getChildrenJSON(nlohmann::json& annotation_json)
 {
-    assert (annotation_json.contains(AnnotationFieldAnnotations));
-    assert (annotation_json.at(AnnotationFieldAnnotations).is_array());
+    traced_assert(annotation_json.contains(AnnotationFieldAnnotations));
+    traced_assert(annotation_json.at(AnnotationFieldAnnotations).is_array());
 
     return annotation_json.at(AnnotationFieldAnnotations);
 }
@@ -997,7 +997,7 @@ ViewPointGenAnnotation* ViewPointGenAnnotations::addAnnotation(const std::string
 */
 void ViewPointGenAnnotations::addAnnotation(std::unique_ptr<ViewPointGenAnnotation>&& a)
 {
-    assert(a);
+    traced_assert(a);
 
     anno_map_[ a->name() ] = annotations_.size();
     annotations_.push_back(std::move(a));
@@ -1025,7 +1025,7 @@ bool ViewPointGenAnnotations::hasAnnotation(const std::string& name) const
 ViewPointGenAnnotation* ViewPointGenAnnotations::annotation(const std::string& name) const
 {
     auto it = anno_map_.find(name);
-    assert(it != anno_map_.end());
+    traced_assert(it != anno_map_.end());
 
     return annotations_.at(it->second).get();
 }

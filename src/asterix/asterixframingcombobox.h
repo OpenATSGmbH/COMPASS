@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "traced_assert.h"
+
 #include <jasterix/jasterix.h>
 
 #include <QComboBox>
@@ -59,7 +61,7 @@ class ASTERIXFramingComboBox : public QComboBox
     void setFraming(const std::string& framing)
     {
         int index = findData(QVariant(QString::fromStdString(framing)));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 

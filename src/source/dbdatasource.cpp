@@ -218,7 +218,7 @@ bool DBDataSource::hasAnyNumLoaded () const // for any DBContent, line
 
 unsigned int DBDataSource::getFirstLoadedLine() // for any DBContent
 {
-    assert (hasAnyNumLoaded());
+    traced_assert(hasAnyNumLoaded());
 
     for (auto& loaded_it : num_loaded_)
     {
@@ -229,7 +229,7 @@ unsigned int DBDataSource::getFirstLoadedLine() // for any DBContent
         }
     }
 
-    assert (false); // should never happen
+    traced_assert(false); // should never happen
 }
 
 void DBDataSource::clearNumLoaded()
@@ -298,13 +298,13 @@ void DBDataSource::enableAllLines()
 
 void DBDataSource::lineLoadingWanted(unsigned int line_id, bool wanted)
 {
-    assert (line_id <= 4);
+    traced_assert(line_id <= 4);
     line_loading_wanted_[line_id] = wanted;
 }
 
 bool DBDataSource::lineLoadingWanted(unsigned int line_id) const
 {
-    assert (line_id <= 4);
+    traced_assert(line_id <= 4);
 
     if (line_loading_wanted_.count(line_id))
         return line_loading_wanted_.at(line_id);
@@ -328,7 +328,7 @@ std::set<unsigned int> DBDataSource::getLoadingWantedLines() const
 //    if (!widget_)
 //        widget_.reset(new DBDataSourceWidget(*this));
 
-//    assert (widget_);
+//    traced_assert(widget_);
 //    return widget_.get();
 //}
 
@@ -344,7 +344,7 @@ void DBDataSource::maxTimestamp(unsigned int line, boost::posix_time::ptime valu
 
 boost::posix_time::ptime DBDataSource::maxTimestamp(unsigned int line) const
 {
-    assert (hasMaxTimestamp(line));
+    traced_assert(hasMaxTimestamp(line));
     return Time::fromLong(max_line_tods_.at(line));
 }
 

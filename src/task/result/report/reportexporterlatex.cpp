@@ -165,13 +165,13 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
 
     auto& latex_section = latex_doc_->getSection(it->second);
 
-    std::vector<std::string> headings = table.headings();
+    std::vector<std::string> headings = table.proxyHeadings();
     unsigned int num_cols = headings.size();
 
     for (unsigned int cnt=0; cnt < num_cols; ++cnt) // latexify headings
         headings[ cnt ] = Utils::String::latexString(headings[ cnt ]);
 
-    assert (num_cols);
+    traced_assert(num_cols);
 
     //configure wide table settings
     bool wide_table = false;
@@ -219,7 +219,7 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
             }
 
             //create new table
-            assert (!latex_section.hasTable(table_name_cur));
+            traced_assert(!latex_section.hasTable(table_name_cur));
 
             latex_section.addTable(table_name_cur, num_cols, headings, "", false);
             current_table = &latex_section.getTable(table_name_cur);
@@ -232,14 +232,14 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
         if (!row_data.is_array() || row_data.size() != num_cols)
             return Result::failed("Content '" + table.name() + "' could not be prepared for export @row" + std::to_string(row)); 
 
-        assert (row_data.is_array());
-        assert (row_data.size() == num_cols);
+        traced_assert(row_data.is_array());
+        traced_assert(row_data.size() == num_cols);
 
         std::vector<std::string> row_strings(num_cols);
 
         for (unsigned int cnt=0; cnt < num_cols; ++cnt)
         {
-            assert(row_data.at(cnt).is_string());
+            traced_assert(row_data.at(cnt).is_string());
             row_strings[cnt] = row_data.at(cnt).get<std::string>();
 
             auto& str = row_strings[cnt];
@@ -354,7 +354,7 @@ Result ReportExporterLatex::exportText_impl(SectionContentText& text,
  */
 Result ReportExporterLatex::writePDF() const
 {
-    assert(latex_doc_);
+    traced_assert(latex_doc_);
 
     std::string command_out;
     std::string command = "cd \"" + latex_doc_->path() + "\" && pdflatex --interaction=nonstopmode \"" + latex_doc_->filename()

@@ -121,7 +121,7 @@ boost::optional<PropertyDataType> ViewVariable::dataType() const
 void ViewVariable::set(const std::string& dbcont, const std::string& name, bool notify_changes)
 {
     bool empty = dbcont.empty() && name.empty();
-    assert(!empty || settings_.allow_empty_var);
+    traced_assert(!empty || settings_.allow_empty_var);
 
     if (settings_.data_var_dbcont == dbcont && 
         settings_.data_var_name == name)
@@ -145,7 +145,7 @@ void ViewVariable::set(const std::string& dbcont, const std::string& name, bool 
 
     view_->postVariableChangedEvent(idx_);
 
-    assert (empty || hasVariable());
+    traced_assert(empty || hasVariable());
 
     if (notify_changes)
         view_->notifyRefreshNeeded();
@@ -155,9 +155,9 @@ void ViewVariable::set(const std::string& dbcont, const std::string& name, bool 
  */
 dbContent::Variable& ViewVariable::variable()
 {
-    assert (hasVariable());
-    assert (!isMetaVariable());
-    assert (COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
+    traced_assert(hasVariable());
+    traced_assert(!isMetaVariable());
+    traced_assert(COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
     return COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
 }
@@ -166,9 +166,9 @@ dbContent::Variable& ViewVariable::variable()
  */
 const dbContent::Variable& ViewVariable::variable() const
 {
-    assert (hasVariable());
-    assert (!isMetaVariable());
-    assert (COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
+    traced_assert(hasVariable());
+    traced_assert(!isMetaVariable());
+    traced_assert(COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
     return COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
 }
@@ -209,8 +209,8 @@ void ViewVariable::setVariable(dbContent::Variable& var, bool notify_changes)
 
     view_->postVariableChangedEvent(idx_);
 
-    assert (hasVariable());
-    assert (!isMetaVariable());
+    traced_assert(hasVariable());
+    traced_assert(!isMetaVariable());
 
     if (notify_changes)
         view_->notifyRefreshNeeded();
@@ -220,8 +220,8 @@ void ViewVariable::setVariable(dbContent::Variable& var, bool notify_changes)
  */
 dbContent::MetaVariable& ViewVariable::metaVariable()
 {
-    assert (hasVariable());
-    assert (isMetaVariable());
+    traced_assert(hasVariable());
+    traced_assert(isMetaVariable());
 
     return COMPASS::instance().dbContentManager().metaVariable(settings_.data_var_name);
 }
@@ -230,8 +230,8 @@ dbContent::MetaVariable& ViewVariable::metaVariable()
  */
 const dbContent::MetaVariable& ViewVariable::metaVariable() const
 {
-    assert (hasVariable());
-    assert (isMetaVariable());
+    traced_assert(hasVariable());
+    traced_assert(isMetaVariable());
 
     return COMPASS::instance().dbContentManager().metaVariable(settings_.data_var_name);
 }
@@ -272,8 +272,8 @@ void ViewVariable::setMetaVariable(dbContent::MetaVariable& var, bool notify_cha
 
     view_->postVariableChangedEvent(idx_);
 
-    assert (hasVariable());
-    assert (isMetaVariable());
+    traced_assert(hasVariable());
+    traced_assert(isMetaVariable());
 
     if (notify_changes)
         view_->notifyRefreshNeeded();
@@ -283,7 +283,7 @@ void ViewVariable::setMetaVariable(dbContent::MetaVariable& var, bool notify_cha
  */
 void ViewVariable::setEmpty(bool notify_changes)
 {
-    assert(settings_.allow_empty_var);
+    traced_assert(settings_.allow_empty_var);
 
     if (settings_.data_var_dbcont == "" && 
         settings_.data_var_name == "")
@@ -305,8 +305,8 @@ void ViewVariable::setEmpty(bool notify_changes)
 
     view_->postVariableChangedEvent(idx_);
 
-    assert(!hasVariable());
-    assert(isEmpty());
+    traced_assert(!hasVariable());
+    traced_assert(isEmpty());
 
     if (notify_changes)
         view_->notifyRefreshNeeded();
@@ -338,7 +338,7 @@ dbContent::Variable* ViewVariable::getFor(const std::string& dbcontent_name)
         var = &variable();
     }
 
-    assert(var);
+    traced_assert(var);
     
     return var;
 }
@@ -370,7 +370,7 @@ const dbContent::Variable* ViewVariable::getFor(const std::string& dbcontent_nam
         var = &variable();
     }
 
-    assert(var);
+    traced_assert(var);
     
     return var;
 }

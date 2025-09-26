@@ -41,9 +41,9 @@ TrackerTrackNumberFilterWidget::~TrackerTrackNumberFilterWidget() = default;
 
 void TrackerTrackNumberFilterWidget::update()
 {
-    loginf << "start";
+    loginf;
 
-    assert (child_layout_);
+    traced_assert(child_layout_);
 
     DBFilterWidget::update();
 
@@ -59,7 +59,7 @@ void TrackerTrackNumberFilterWidget::update()
     {
         for (auto& line_it : ds_it.second)
         {
-            assert (ds_man.hasDBDataSource(ds_it.first));
+            traced_assert(ds_man.hasDBDataSource(ds_it.first));
             ds_name = ds_man.dbDataSource(ds_it.first).name();
 
             QLineEdit* value_edit = new QLineEdit(line_it.second.c_str());
@@ -79,7 +79,7 @@ void TrackerTrackNumberFilterWidget::update()
 void TrackerTrackNumberFilterWidget::valueEditedSlot(const QString& value)
 {
     QLineEdit* value_edit = dynamic_cast<QLineEdit*> (sender());
-    assert (value_edit);
+    traced_assert(value_edit);
 
     unsigned int ds_id = value_edit->property("ds_id").toUInt();
     unsigned int line_id = value_edit->property("line_id").toUInt();

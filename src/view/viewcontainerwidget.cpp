@@ -65,7 +65,7 @@ ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
     // layout->setMargin(0);
 
     tab_widget_ = new QTabWidget();
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
     layout->addWidget(tab_widget_);
 
     // setLayout (layout);
@@ -86,9 +86,9 @@ ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
 
 ViewContainerWidget::~ViewContainerWidget()
 {
-    loginf << "start";
+    loginf;
 
-    assert(view_container_);
+    traced_assert(view_container_);
     delete view_container_;
     view_container_ = nullptr;
 
@@ -100,11 +100,11 @@ void ViewContainerWidget::generateSubConfigurable(const std::string& class_id,
 {
     if (class_id.compare("ViewContainer") == 0)
     {
-        assert(tab_widget_);
-        assert(!view_container_);
+        traced_assert(tab_widget_);
+        traced_assert(!view_container_);
         view_container_ = new ViewContainer(class_id, instance_id, this, &view_manager_,
                                             tab_widget_, String::getAppendedInt(instanceId()));
-        assert(view_container_);
+        traced_assert(view_container_);
     }
     else
         throw std::runtime_error("ViewContainerWidget: generateSubConfigurable: unknown class_id " +
@@ -116,7 +116,7 @@ void ViewContainerWidget::checkSubConfigurables()
     if (!view_container_)
     {
         generateSubConfigurable("ViewContainer", instanceId() + "ViewContainer0");
-        assert(view_container_);
+        traced_assert(view_container_);
     }
 }
 

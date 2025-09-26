@@ -67,7 +67,7 @@ GPSImportCSVTaskDialog::GPSImportCSVTaskDialog(GPSImportCSVTask& task)
 
 void GPSImportCSVTaskDialog::updateButtons()
 {
-    assert (import_button_);
+    traced_assert(import_button_);
 
     import_button_->setDisabled(!task_.canRun());
 }

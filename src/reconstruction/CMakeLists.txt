@@ -6,6 +6,7 @@ include_directories (
 target_sources(compass
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/kalman_tools.h"
         "${CMAKE_CURRENT_LIST_DIR}/measurement.h"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter.h"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter_linear.h"
@@ -21,6 +22,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.h"
         
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/kalman_tools.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter_linear.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter_um2d.cpp"

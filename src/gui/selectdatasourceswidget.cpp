@@ -63,7 +63,7 @@ SelectDataSourcesWidget::~SelectDataSourcesWidget()
 void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selection)
 {
     loginf << "ds_type_ " << ds_type_;
-    assert (data_source_layout_);
+    traced_assert(data_source_layout_);
 
     QLayoutItem* child;
     while (!data_source_layout_->isEmpty() && (child = data_source_layout_->takeAt(0)) != nullptr)
@@ -115,7 +115,7 @@ void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selecti
 
 void SelectDataSourcesWidget::toggleDataSourceSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     std::map<std::string, bool> selection;
 

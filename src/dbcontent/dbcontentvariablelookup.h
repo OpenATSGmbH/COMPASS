@@ -76,7 +76,7 @@ inline NullableVector<T>& DBContentVariableLookup::getVar(const Property& var_pr
     if (!hasVar<T>(var_property))
     {
         logerr << "property " << var_property.name() << " not present";
-        assert (hasVar<T>(var_property));
+        traced_assert(hasVar<T>(var_property));
     }
     return buffer_->get<T>(var_property.name());
 }
@@ -98,7 +98,7 @@ inline NullableVector<T>& DBContentVariableLookup::getMetaVar(const Property& me
     if (!hasMetaVar<T>(metavar_property))
     {
         logerr << "property " << metavar_property.name() << " not present";
-        assert (hasMetaVar<T>(metavar_property));
+        traced_assert(hasMetaVar<T>(metavar_property));
     }
     return buffer_->get<T>(meta_var_lookup_.at(metavar_property.name()));
 }

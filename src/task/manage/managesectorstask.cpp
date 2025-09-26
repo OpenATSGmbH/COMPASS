@@ -80,13 +80,13 @@ ManageSectorsTaskDialog* ManageSectorsTask::dialog()
                 this, &ManageSectorsTask::dialogDoneSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
 void ManageSectorsTask::dialogDoneSlot()
 {
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
     emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
@@ -146,8 +146,8 @@ void ManageSectorsTask::removeCurrentFilename()
 {
     loginf << "filename '" << current_filename_ << "'";
 
-    assert(current_filename_.size());
-    assert(hasFile(current_filename_));
+    traced_assert(current_filename_.size());
+    traced_assert(hasFile(current_filename_));
 
     if (file_list_.count(current_filename_) != 1)
         throw std::invalid_argument("ManageSectorsTask: removeCurrentFilename: name '" +
@@ -165,7 +165,7 @@ void ManageSectorsTask::removeCurrentFilename()
 
 void ManageSectorsTask::removeAllFiles ()
 {
-    loginf << "start";
+    loginf;
 
     file_list_.clear();
     current_filename_ = "";
@@ -219,7 +219,7 @@ bool ManageSectorsTask::canImportFile()
 
 void ManageSectorsTask::importFile (const std::string& layer_name, bool exclude, QColor color)
 {
-    assert (canImportFile());
+    traced_assert(canImportFile());
 
     if (!found_sectors_num_)
     {
@@ -275,7 +275,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
     for (int layer_cnt=0; layer_cnt < data_set->GetLayerCount(); ++layer_cnt) // OGRLayer*
     {
         layer = data_set->GetLayer(layer_cnt);
-        assert (layer);
+        traced_assert(layer);
 
         logdbg << "found sector name '" << layer->GetName() << "'";
         std::string sector_name = layer->GetName();
@@ -292,7 +292,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
                 continue;
             }
 
-            assert (feature);
+            traced_assert(feature);
 
             logdbg << "found feature '"
                    << feature->GetDefnRef()->GetName() << "'";
@@ -300,13 +300,13 @@ void ManageSectorsTask::parseCurrentFile (bool import)
             //std::string feature_name = feature->GetDefnRef()->GetName();
 
             OGRFeatureDefn* feature_def = layer->GetLayerDefn();
-            assert (feature_def);
+            traced_assert(feature_def);
             int field_cnt;
 
             for (field_cnt = 0; field_cnt < feature_def->GetFieldCount(); field_cnt++)
             {
                 OGRFieldDefn* field_def = feature_def->GetFieldDefn(field_cnt);
-                assert (field_def);
+                traced_assert(field_def);
 
                 switch(field_def->GetType())
                 {
@@ -359,26 +359,26 @@ void ManageSectorsTask::parseCurrentFile (bool import)
                 if(wkbFlatten(geometry->getGeometryType()) == wkbPolygon)
                 {
                     OGRPolygon* polygon = dynamic_cast<OGRPolygon*>(geometry);
-                    assert (polygon);
+                    traced_assert(polygon);
 
                     addPolygon(sector_name, *polygon, import);
                 }
                 else if (wkbFlatten(geometry->getGeometryType()) == wkbMultiPolygon)
                 {
                     OGRMultiPolygon* multi_polygon = dynamic_cast<OGRMultiPolygon*>(geometry);
-                    assert (multi_polygon);
+                    traced_assert(multi_polygon);
 
                     OGRGeometry* sub_geometry;
 
                     for (int poly_cnt=0; poly_cnt < multi_polygon->getNumGeometries(); ++poly_cnt)
                     {
                         sub_geometry = multi_polygon->getGeometryRef(poly_cnt);
-                        assert (sub_geometry);
+                        traced_assert(sub_geometry);
 
                         if (wkbFlatten(sub_geometry->getGeometryType()) == wkbPolygon)
                         {
                             OGRPolygon* sub_polygon = dynamic_cast<OGRPolygon*>(sub_geometry);
-                            assert (sub_polygon);
+                            traced_assert(sub_polygon);
 
                             addPolygon(sector_name, *sub_polygon, import);
                         }
@@ -406,7 +406,7 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
            << "' polygon '" << polygon.getGeometryName() << "'";
 
     OGRLinearRing* ring = polygon.getExteriorRing();
-    assert (ring);
+    traced_assert(ring);
 
     if (import)
     {
@@ -415,7 +415,7 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
-             assert (ring);
+             traced_assert(ring);
              addLinearRing(sector_name+to_string(COMPASS::instance().evaluationManager().getMaxSectorId()+1), *ring, import);
          }
     }
@@ -426,7 +426,7 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
-             assert (ring);
+             traced_assert(ring);
              addLinearRing(sector_name, *ring, import);
          }
     }
@@ -443,7 +443,7 @@ void ManageSectorsTask::addLinearRing (const std::string& sector_name, OGRLinear
     for (int point_cnt=0; point_cnt < ring.getNumPoints(); ++point_cnt)
     {
         ring.getPoint(point_cnt, &point);
-        assert (!point.IsEmpty());
+        traced_assert(!point.IsEmpty());
 
         logdbg << "point lat " << point.getY()
                << " lon " << point.getX() << " z " << point.getZ();
@@ -475,7 +475,7 @@ void ManageSectorsTask::addSector (const std::string& sector_name, std::vector<s
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
-    assert (!eval_man.hasSector(sector_name, layer_name_));
+    traced_assert(!eval_man.hasSector(sector_name, layer_name_));
 
     loginf << "adding layer '" << layer_name_ << "' name '" << sector_name;
     eval_man.createNewSector(sector_name, layer_name_, exclude_, color_, points);

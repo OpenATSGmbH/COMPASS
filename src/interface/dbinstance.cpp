@@ -33,7 +33,7 @@ const std::string DBInstance::InMemFilename = "In-Memory";
 DBInstance::DBInstance(DBInterface* interface)
 :   interface_(*interface)
 {
-    loginf << "start";
+    loginf;
 }
 
 /**
@@ -51,7 +51,7 @@ db::SQLConfig DBInstance::sqlConfiguration(bool verbose) const
  */
 DBInstance::~DBInstance()
 {
-    loginf << "start";
+    logdbg;
 
     close();
 }
@@ -108,7 +108,7 @@ size_t DBInstance::numConcurrentConnections() const
  */
 Result DBInstance::open(const std::string& file_name)
 {
-    assert(!file_name.empty());
+    traced_assert(!file_name.empty());
     return openInternal(file_name);
 }
 
@@ -156,7 +156,7 @@ Result DBInstance::openInternal(const std::string& file_name)
         return conn_result;
 
     default_connection_.reset(conn_result.result());
-    assert(default_connection_);
+    traced_assert(default_connection_);
 
     db_connected_ = true;
 
@@ -180,12 +180,12 @@ Result DBInstance::openInternal(const std::string& file_name)
  */
 void DBInstance::close()
 {
-    loginf << "db open " << db_open_;
+    logdbg << "db open " << db_open_;
 
     if (!dbOpen())
         return;
 
-    loginf << "";
+    logdbg << "closing";
 
     //destroy connections
     if (default_connection_)
@@ -210,7 +210,7 @@ void DBInstance::close()
  */
 Result DBInstance::reconnect(bool cleanup_db, Result* cleanup_result)
 {
-    assert(dbReady());
+    traced_assert(dbReady());
 
     // if (cleanup_result)
     //     *cleanup_result = Result::succeeded();
@@ -254,7 +254,7 @@ Result DBInstance::reconnect(bool cleanup_db, Result* cleanup_result)
  */
 Result DBInstance::exportToFile(const std::string& file_name)
 {
-    assert(dbReady());
+    traced_assert(dbReady());
 
     return exportToFile_impl(file_name);
 }
@@ -263,8 +263,8 @@ Result DBInstance::exportToFile(const std::string& file_name)
  */
 Result DBInstance::cleanupDB(const std::string& db_fn)
 {
-    assert(!dbOpen());
-    assert(!db_fn.empty());
+    traced_assert(!dbOpen());
+    traced_assert(!db_fn.empty());
 
     return cleanupDB_impl(db_fn);
 }
@@ -281,8 +281,8 @@ Result DBInstance::cleanupDB_impl(const std::string& db_fn)
  */
 DBConnection& DBInstance::defaultConnection()
 {
-    assert(dbReady());
-    assert(default_connection_);
+    traced_assert(dbReady());
+    traced_assert(default_connection_);
 
     return *default_connection_;
 }
@@ -304,7 +304,7 @@ DBConnectionWrapper DBInstance::createConnectionWrapper(DBConnection* conn,
         conn = r.result();
     }
 
-    assert(conn);
+    traced_assert(conn);
 
     return DBConnectionWrapper(this, conn, destroyer);
 }
@@ -323,8 +323,8 @@ DBInstance::ConnectionWrapperPtr DBInstance::createConnectionWrapperPtr(DBConnec
  */
 DBConnectionWrapper DBInstance::concurrentConnection(size_t tIdx)
 {
-    assert(dbReady());
-    assert(sqlConfiguration().supports_mt);
+    traced_assert(dbReady());
+    traced_assert(sqlConfiguration().supports_mt);
 
     DBConnectionWrapper wrapper; 
 
@@ -351,7 +351,7 @@ DBConnectionWrapper DBInstance::concurrentConnection(size_t tIdx)
         }
     }
 
-    assert(!wrapper.isEmpty());
+    traced_assert(!wrapper.isEmpty());
 
     return wrapper;
 }
@@ -360,18 +360,18 @@ DBConnectionWrapper DBInstance::concurrentConnection(size_t tIdx)
  */
 DBInstance::ConnectionWrapperPtr DBInstance::newCustomConnection()
 {
-    assert(dbReady());
-    assert(sqlConfiguration().supports_mt);
+    traced_assert(dbReady());
+    traced_assert(sqlConfiguration().supports_mt);
 
     auto d = [ this ] (DBConnection* conn)
     {
-        assert(conn);
+        traced_assert(conn);
         this->destroyCustomConnection(conn);
     };
 
     //create wrapper with new connection
     auto wrapper_ptr = createConnectionWrapperPtr(nullptr, false, d);
-    assert(wrapper_ptr);
+    traced_assert(wrapper_ptr);
 
     //errors?
     if (wrapper_ptr->hasError())
@@ -393,7 +393,7 @@ DBInstance::ConnectionWrapperPtr DBInstance::newCustomConnection()
  */
 void DBInstance::destroyCustomConnection(DBConnection* conn)
 {
-    assert(conn);
+    traced_assert(conn);
 
     {
         #ifdef PROTECT_CONNECTION
@@ -411,7 +411,7 @@ void DBInstance::destroyCustomConnection(DBConnection* conn)
         }
 
         //connection already destroyed? => doom
-        assert(found);
+        traced_assert(found);
     }
 }
 
@@ -447,10 +447,10 @@ void DBInstance::destroyConcurrentConnections()
  */
 ResultT<DBConnection*> DBInstance::createConnection(bool verbose)
 {
-    assert(dbOpen());
+    traced_assert(dbOpen());
 
     auto r = createConnection_impl(verbose);
-    assert(!r.ok() || r.result() != nullptr);
+    traced_assert(!r.ok() || r.result() != nullptr);
 
     return r;
 }
@@ -460,8 +460,8 @@ ResultT<DBConnection*> DBInstance::createConnection(bool verbose)
  */
 Result DBInstance::updateTableInfo()
 {
-    assert(dbReady());
-    assert(default_connection_);
+    traced_assert(dbReady());
+    traced_assert(default_connection_);
 
     auto res = default_connection_->createTableInfo();
     if (!res.ok())
@@ -476,7 +476,7 @@ Result DBInstance::updateTableInfo()
  */
 void DBInstance::printTableInfo() const
 {
-    assert(dbReady());
+    traced_assert(dbReady());
 
     for (const auto& table : tableInfo())
     {
@@ -507,8 +507,8 @@ void DBInstance::printTableInfo() const
  */
 Result DBInstance::configureDBUsingPragmas()
 {
-    assert(dbReady());
-    assert(default_connection_);
+    traced_assert(dbReady());
+    traced_assert(default_connection_);
 
     auto pragmas = sqlPragmas();
 
@@ -529,7 +529,7 @@ std::string DBInstance::dbInfo()
     if (!dbReady())
         return "db not ready";
 
-    assert(default_connection_);
+    traced_assert(default_connection_);
 
     auto info = default_connection_->dbInfo();
     if (info.empty())

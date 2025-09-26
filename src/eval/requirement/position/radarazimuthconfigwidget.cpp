@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 
 PositionRadarAzimuthConfigWidget::PositionRadarAzimuthConfigWidget(PositionRadarAzimuthConfig& cfg)
-    : BaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
@@ -59,7 +59,7 @@ void PositionRadarAzimuthConfigWidget::thresholdValueEditSlot(QString value)
 PositionRadarAzimuthConfig& PositionRadarAzimuthConfigWidget::config()
 {
     PositionRadarAzimuthConfig* config = dynamic_cast<PositionRadarAzimuthConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

@@ -30,7 +30,7 @@
 #include <memory>
 
 class COMPASS;
-class DataSourcesWidget;
+class DataSourcesToolWidget;
 class DataSourcesConfigurationDialog;
 
 class DataSourceManager : public QObject, public Configurable
@@ -66,6 +66,8 @@ class DataSourceManager : public QObject, public Configurable
     };
 
     const static std::vector<std::string> data_source_types_;
+    static dbContent::DataSourceType typeFromString(const std::string& type_str);
+    static std::string stringFromType(dbContent::DataSourceType type);
 
     DataSourceManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
     virtual ~DataSourceManager();
@@ -92,6 +94,7 @@ class DataSourceManager : public QObject, public Configurable
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& dbDataSources() const;
 
     std::set<unsigned int> groundOnlyDBDataSources() const;
+    std::map<unsigned int, dbContent::DataSourceType> dsTypes() const;
 
     void createNetworkDBDataSources();
     std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>>> getNetworkLines() const;
@@ -119,7 +122,7 @@ class DataSourceManager : public QObject, public Configurable
 
     void resetToStartupConfiguration();
 
-    DataSourcesWidget* loadWidget();
+    DataSourcesToolWidget* loadWidget();
     void updateWidget();
 
     DataSourcesConfigurationDialog* configurationDialog();
@@ -173,7 +176,7 @@ class DataSourceManager : public QObject, public Configurable
     std::vector<std::unique_ptr<dbContent::DBDataSource>> db_data_sources_;
     std::vector<unsigned int> ds_ids_all_; // both from config and db, vector to have order
 
-    DataSourcesWidget* load_widget_{nullptr}; // deleted by qt
+    DataSourcesToolWidget* load_widget_{nullptr}; // deleted by qt
 
     std::unique_ptr<DataSourcesConfigurationDialog> config_dialog_;
 

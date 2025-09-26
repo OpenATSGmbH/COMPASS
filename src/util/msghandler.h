@@ -33,67 +33,67 @@
 #define GET_STACKTRACE() (std::stringstream() << boost::stacktrace::stacktrace()).str()
 
 #define sloginf0() \
-    msghandler::MessageHandler::getStream((loginf), msghandler::Severity::Info, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((loginf.getStream()), msghandler::Severity::Info, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
 #define sloginf1(Component) \
-    msghandler::MessageHandler::getStream((loginf), msghandler::Severity::Info, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((loginf.getStream()), msghandler::Severity::Info, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
 #define sloginf(...) GET_MACRO_01(__VA_ARGS__, sloginf1, sloginf0)(__VA_ARGS__)
 
 #define slogwrn0() \
-    msghandler::MessageHandler::getStream((logwrn), msghandler::Severity::Warning, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logwrn.getStream()), msghandler::Severity::Warning, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
 #define slogwrn1(Component) \
-    msghandler::MessageHandler::getStream((logwrn), msghandler::Severity::Warning, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logwrn.getStream()), msghandler::Severity::Warning, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
 #define slogwrn(...) GET_MACRO_01(__VA_ARGS__, slogwrn1, slogwrn0)(__VA_ARGS__)
 
 #define slogerr0() \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
 #define slogerr1(Component) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
 #define slogerr2(Component, ErrCode) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", false)
 #define slogerr(...) GET_MACRO_012(__VA_ARGS__, slogerr2, slogerr1, slogerr0)(__VA_ARGS__)
 
 #define slogcrit0() \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)
 #define slogcrit1(Component) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", false)
 #define slogcrit2(Component, ErrCode) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", false)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", false)
 #define slogcrit(...) GET_MACRO_012(__VA_ARGS__, slogcrit2, slogcrit1, slogcrit0)(__VA_ARGS__)
 
 #define uloginf0() \
-    msghandler::MessageHandler::getStream((loginf), msghandler::Severity::Info, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((loginf.getStream()), msghandler::Severity::Info, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
 #define uloginf1(Component) \
-    msghandler::MessageHandler::getStream((loginf), msghandler::Severity::Info, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((loginf.getStream()), msghandler::Severity::Info, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
 #define uloginf2(Component, JSONInfo) \
-    msghandler::MessageHandler::getStream((loginf), msghandler::Severity::Info, GET_COMPONENT(Component), -1, __FILE__, __LINE__, JSONInfo, "", true)
+    msghandler::MessageHandler::getStream((loginf.getStream()), msghandler::Severity::Info, GET_COMPONENT(Component), -1, __FILE__, __LINE__, JSONInfo, "", true)
 #define uloginf(...) GET_MACRO_012(__VA_ARGS__, uloginf2, uloginf1, uloginf0)(__VA_ARGS__)
 
 #define ulogwrn0() \
-    msghandler::MessageHandler::getStream((logwrn), msghandler::Severity::Warning, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logwrn.getStream()), msghandler::Severity::Warning, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
 #define ulogwrn1(Component) \
-    msghandler::MessageHandler::getStream((logwrn), msghandler::Severity::Warning, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logwrn.getStream()), msghandler::Severity::Warning, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
 #define ulogwrn2(Component, JSONInfo) \
-    msghandler::MessageHandler::getStream((logwrn), msghandler::Severity::Warning, GET_COMPONENT(Component), -1, __FILE__, __LINE__, JSONInfo, "", true)
+    msghandler::MessageHandler::getStream((logwrn.getStream()), msghandler::Severity::Warning, GET_COMPONENT(Component), -1, __FILE__, __LINE__, JSONInfo, "", true)
 #define ulogwrn(...) GET_MACRO_012(__VA_ARGS__, ulogwrn2, ulogwrn1, ulogwrn0)(__VA_ARGS__)
 
 #define ulogerr0() \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
 #define ulogerr1(Component) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
 #define ulogerr2(Component, ErrCode) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", true)
 #define ulogerr3(Component, ErrCode, JSONInfo) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Error, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, JSONInfo, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Error, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, JSONInfo, "", true)
 #define ulogerr(...) GET_MACRO_0123(__VA_ARGS__, ulogerr3, ulogerr2, ulogerr1, ulogerr0)(__VA_ARGS__)
 
 #define ulogcrit0() \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", true)
 #define ulogcrit1(Component) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, GET_COMPONENT(Component), -1, __FILE__, __LINE__, {}, "", true)
 #define ulogcrit2(Component, ErrCode) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, {}, "", true)
 #define ulogcrit3(Component, ErrCode, JSONInfo) \
-    msghandler::MessageHandler::getStream((logerr), msghandler::Severity::Critical, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, JSONInfo, "", true)
+    msghandler::MessageHandler::getStream((logerr.getStream()), msghandler::Severity::Critical, GET_COMPONENT(Component), ErrCode, __FILE__, __LINE__, JSONInfo, "", true)
 #define ulogcrit(...) GET_MACRO_0123(__VA_ARGS__, ulogcrit3, ulogcrit2, ulogcrit1, ulogcrit0)(__VA_ARGS__)
 
 namespace msghandler

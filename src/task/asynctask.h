@@ -22,7 +22,7 @@
 #include <QObject>
 #include <QDialog>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <functional>
 
 class QProgressBar;
@@ -84,7 +84,7 @@ class AsyncTaskProgressWrapper : public QObject
 {
     Q_OBJECT
 public:
-    AsyncTaskProgressWrapper(AsyncTaskProgress* p) : progress_(p) { assert(progress_); }
+    AsyncTaskProgressWrapper(AsyncTaskProgress* p) : progress_(p) { traced_assert(progress_); }
     ~AsyncTaskProgressWrapper() = default;
 
     AsyncTaskProgress& progress() { return *progress_; }

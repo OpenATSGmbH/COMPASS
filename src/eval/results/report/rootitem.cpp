@@ -59,7 +59,7 @@ namespace EvaluationResultsReport
 
     QVariant RootItem::data(int column) const
     {
-        assert (column == 0);
+        traced_assert(column == 0);
 
         return name_.c_str();
     }
@@ -78,10 +78,10 @@ namespace EvaluationResultsReport
     {
         logdbg << "id '" << id << "'";
 
-        assert (id.size());
+        traced_assert(id.size());
 
         std::vector<std::string> parts = SectionID::subSections(id);
-        assert (parts.size());
+        traced_assert(parts.size());
 
         Section* tmp;
 
@@ -98,7 +98,7 @@ namespace EvaluationResultsReport
             }
             else // previous section
             {
-                assert (tmp);
+                traced_assert(tmp);
 
                 if (!tmp->hasSubSection(heading))
                     tmp->addSubSection(heading);
@@ -107,7 +107,7 @@ namespace EvaluationResultsReport
             }
         }
 
-        assert (tmp);
+        traced_assert(tmp);
         return *tmp;
     }
 }

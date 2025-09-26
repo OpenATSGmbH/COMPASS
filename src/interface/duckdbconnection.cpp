@@ -51,14 +51,14 @@
 DuckDBConnection::DuckDBConnection(DuckDBInstance* instance, bool verbose)
 :   DBConnection(instance, verbose)
 {
-    //loginf << "start";
+    //loginf;
 }
 
 /**
  */
 DuckDBConnection::~DuckDBConnection()
 {
-    //loginf << "start";
+    //loginf;
 
     if (connected())
         disconnect();
@@ -77,8 +77,8 @@ Result DuckDBConnection::connect_impl()
 {
     auto duck_db = duckDBInstance();
 
-    assert(duck_db->dbOpen());
-    assert(duck_db->db_);
+    traced_assert(duck_db->dbOpen());
+    traced_assert(duck_db->db_);
     
 
     //connect to db
@@ -174,7 +174,7 @@ bool DuckDBConnection::executeCmd_impl(const std::string& command,
         options.bufferProperties(*properties);
 
     auto dbresult = prepare.execute(options);
-    assert(dbresult);
+    traced_assert(dbresult);
 
     if (dbresult->hasError())
         logerr << "executing command '" << command << "' failed";
@@ -230,7 +230,7 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
         auto it = created_tables.find(table_name);
         auto tp = it->second.tableProperties();
 
-        assert(tp.has_value());
+        traced_assert(tp.has_value());
         table_props = tp.value();
 
         properties = &table_props;
@@ -243,7 +243,7 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
         //note: !in this case the buffer properties need to reflect the table properties 1:1!
         properties = &buffer_properties;
     }
-    assert(properties);
+    traced_assert(properties);
 
     //loginf << "update func...";
 
@@ -265,7 +265,7 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
 
     #define NotFoundFunc                                                                                      \
         logerr << "unknown property type " << Property::asString(dtype); \
-        assert(false);
+        traced_assert(false);
 
     auto n = buffer->size();
 
@@ -274,7 +274,7 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
     //loginf << "inserting " << n << "row(s)...";
 
     unsigned int np = properties->size();
-    assert(np == appender_column_count);
+    traced_assert(np == appender_column_count);
 
     std::vector<char> has_property(np, 0);
     for (unsigned int c = 0; c < properties->size(); ++c)
@@ -282,7 +282,7 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
 
     unsigned int r0 = idx_from.has_value() ? idx_from.value()   : 0;
     unsigned int r1 = idx_to.has_value()   ? idx_to.value() + 1 : n;
-    assert(r0 <= r1);
+    traced_assert(r0 <= r1);
 
     auto appender_ptr = appender.get();
 
@@ -316,9 +316,9 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
 
             if (!ok)
                 logerr << "appending column " << c << " failed: " << appender->lastError();
-            assert(ok);
+            traced_assert(ok);
         }
-        assert(appender->currentColumnCount() == np);
+        traced_assert(appender->currentColumnCount() == np);
         appender->endRow();
 
         //if (r % 2000 == 0)
@@ -398,7 +398,7 @@ ResultT<std::vector<std::string>> DuckDBConnection::getTableList_impl()
     command.list(list);
 
     std::shared_ptr<DBResult> result = execute(command);
-    assert(result);
+    traced_assert(result);
 
     if (result->hasError())
         return ResultT<std::vector<std::string>>::failed(result->error());

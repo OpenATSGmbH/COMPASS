@@ -258,7 +258,7 @@ std::pair<ValueComparisonResult, std::string> Base::compare (
         bool value_ok;
         bool lower_nok, upper_nok;
 
-        assert (has_ref_data); // ref times possible
+        traced_assert(has_ref_data); // ref times possible
 
         value_ok = false;
 
@@ -291,7 +291,7 @@ std::pair<ValueComparisonResult, std::string> Base::compare (
             }
             else
             {
-                assert (upper_nok);
+                traced_assert(upper_nok);
                 comment += " tst '" + to_str(*tst_value)
                            +"' ref at " + Utils::Time::toString(ref_upper)
                            + " '" + to_str(*ref_value_upper)
@@ -304,7 +304,22 @@ std::pair<ValueComparisonResult, std::string> Base::compare (
     }
     else
     {
-        return {ValueComparisonResult::Unknown_NoTstData, "No test value"};
+        std::string ref_tmp;
+
+        if (ref_value_lower)
+            ref_tmp = "'"+to_str(*ref_value_lower)+"'";
+        
+        if (ref_value_upper && ref_tmp != "'"+to_str(*ref_value_upper)+"'")
+        {
+            assert (ref_value_upper);
+            if (ref_tmp.size())
+                ref_tmp += ",";
+            
+            ref_tmp += "'"+to_str(*ref_value_upper)+"'";
+        }
+        assert (ref_tmp.size());
+
+        return {ValueComparisonResult::Unknown_NoTstData, "No test value, ref "+ref_tmp};
     }
 }
 

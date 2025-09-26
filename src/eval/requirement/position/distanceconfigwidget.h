@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfigwidget.h"
+#include "eval/requirement/base/positionbaseconfigwidget.h"
 
 class ComparisonTypeComboBox;
 
@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
     class PositionDistanceConfig;
 
-    class PositionDistanceConfigWidget : public ProbabilityBaseConfigWidget
+    class PositionDistanceConfigWidget : public PositionBaseConfigWidget
     {
         Q_OBJECT
 

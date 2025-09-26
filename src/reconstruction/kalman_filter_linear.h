@@ -63,7 +63,7 @@ public:
     void setProcessMMCrossCorrMat(const Matrix& M) { setM(M); }
 
     const boost::optional<Matrix>& getB() const { return B_; }
-    Matrix& bMat() { assert(B_.has_value()); return B_.value(); }
+    Matrix& bMat() { traced_assert(B_.has_value()); return B_.value(); }
     const Matrix& getF() const { return F_; }
     Matrix& fMat() { return F_; }
     const Matrix& getH() const { return H_; }
@@ -97,6 +97,10 @@ protected:
                             bool mt_safe,
                             const OVector& u,
                             KalmanState* state) const override final;
+    Error generateMeasurement_impl(Vector& x_pred_mm,
+                                   Matrix& P_pred_mm,
+                                   const Vector& x_pred, 
+                                   const Matrix& P_pred) const override final;
     Error update_impl(const Vector& z,
                       const Matrix& R) override final;
     bool smooth_impl(std::vector<kalman::Vector>& x_smooth,

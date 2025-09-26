@@ -18,6 +18,7 @@
 #include "fft/fftbase.h"
 #include "logger.h"
 #include "number.h"
+#include "traced_assert.h"
 
 using namespace Utils;
 using namespace std;
@@ -52,7 +53,7 @@ nlohmann::json& FFTBase::info()
 
 void FFTBase::info(const nlohmann::json& info)
 {
-    assert (info.is_object());
+    traced_assert(info.is_object());
     info_ = info;
 }
 
@@ -67,7 +68,7 @@ bool FFTBase::hasModeSAddress()
 }
 unsigned int FFTBase::modeSAddress()
 {
-    assert (hasModeSAddress());
+    traced_assert(hasModeSAddress());
     return info_.at(mode_s_address_key);
 }
 void FFTBase::modeSAddress(unsigned int value)
@@ -87,7 +88,7 @@ bool FFTBase::hasMode3ACode()
 }
 unsigned int FFTBase::mode3ACode()
 {
-    assert (hasMode3ACode());
+    traced_assert(hasMode3ACode());
     return info_.at(mode_3a_code_key);
 }
 
@@ -108,7 +109,7 @@ bool FFTBase::hasModeCCode()
 }
 float FFTBase::modeCCode()
 {
-    assert (hasModeCCode());
+    traced_assert(hasModeCCode());
     return info_.at(mode_c_code_key);
 }
 
@@ -173,11 +174,11 @@ double FFTBase::altitude () const
 
 void FFTBase::setFromJSON (const nlohmann::json& j)
 {
-    assert(j.contains("name"));
+    traced_assert(j.contains("name"));
     name_ = j.at("name");
 
-    assert(j.contains("info"));
-    assert (j.at("info").is_object());
+    traced_assert(j.contains("info"));
+    traced_assert(j.at("info").is_object());
     info_ = j.at("info");
 }
 

@@ -66,7 +66,7 @@ namespace EvaluationResultsReport
     */
     QVariant Section::data(int column) const
     {
-        assert (column == 0);
+        traced_assert(column == 0);
 
         return heading_.c_str();
     }
@@ -120,10 +120,10 @@ namespace EvaluationResultsReport
     */
     Section& Section::getSubSection (const std::string& heading)
     {
-        assert (hasSubSection(heading));
+        traced_assert(hasSubSection(heading));
 
         Section* tmp = findSubSection (heading);
-        assert (tmp);
+        traced_assert(tmp);
         return *tmp;
     }
 
@@ -133,10 +133,10 @@ namespace EvaluationResultsReport
     {
         logdbg << "heading '" << heading_ << "': adding " << heading;
 
-        assert (!hasSubSection(heading));
+        traced_assert(!hasSubSection(heading));
 
         sub_sections_.push_back(make_shared<Section>(heading, compoundHeading(), this, eval_man_));
-        assert (hasSubSection(heading));
+        traced_assert(hasSubSection(heading));
     }
 
     /**
@@ -146,7 +146,7 @@ namespace EvaluationResultsReport
         if (!content_widget_)
         {
             createContentWidget();
-            assert(content_widget_);
+            traced_assert(content_widget_);
         }
 
         return content_widget_.get();
@@ -164,7 +164,7 @@ namespace EvaluationResultsReport
     SectionContentText& Section::getText (const std::string& name)
     {
         SectionContentText* tmp = findText (name);
-        assert (tmp);
+        traced_assert(tmp);
         return *tmp;
     }
 
@@ -172,9 +172,9 @@ namespace EvaluationResultsReport
     */
     void Section::addText (const std::string& name)
     {
-        assert (!hasText(name));
+        traced_assert(!hasText(name));
         content_.push_back(make_shared<SectionContentText>(name, this, eval_man_));
-        assert (hasText(name));
+        traced_assert(hasText(name));
     }
 
     /**
@@ -189,7 +189,7 @@ namespace EvaluationResultsReport
     SectionContentTable& Section::getTable (const std::string& name)
     {
         SectionContentTable* tmp = findTable (name);
-        assert (tmp);
+        traced_assert(tmp);
         return *tmp;
     }
 
@@ -219,10 +219,10 @@ namespace EvaluationResultsReport
                             unsigned int sort_column, 
                             Qt::SortOrder order)
     {
-        assert (!hasTable(name));
+        traced_assert(!hasTable(name));
         content_.push_back(make_shared<SectionContentTable>(name, num_columns, headings, this, eval_man_,
                                                             sortable, sort_column, order));
-        assert (hasTable(name));
+        traced_assert(hasTable(name));
     }
 
     /**
@@ -237,7 +237,7 @@ namespace EvaluationResultsReport
     SectionContentFigure& Section::getFigure (const std::string& name)
     {
         SectionContentFigure* tmp = findFigure (name);
-        assert (tmp);
+        traced_assert(tmp);
         return *tmp;
     }
 
@@ -247,9 +247,9 @@ namespace EvaluationResultsReport
                              std::function<std::shared_ptr<nlohmann::json::object_t>(void)> viewable_fnc,
                              int render_delay_msec)
     {
-        assert (!hasFigure(name));
+        traced_assert(!hasFigure(name));
         content_.push_back(make_shared<SectionContentFigure>(name, caption, viewable_fnc, this, eval_man_, render_delay_msec));
-        assert (hasFigure(name));
+        traced_assert(hasFigure(name));
     }
 
     /**
@@ -327,7 +327,7 @@ namespace EvaluationResultsReport
     */
     void Section::accept(LatexVisitor& v) const
     {
-        loginf << "start";
+        loginf;
         v.visit(this);
     }
 
@@ -434,7 +434,7 @@ namespace EvaluationResultsReport
     */
     void Section::createContentWidget()
     {
-        assert (!content_widget_);
+        traced_assert(!content_widget_);
 
         content_widget_.reset(new QWidget());
 

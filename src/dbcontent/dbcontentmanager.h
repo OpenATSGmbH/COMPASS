@@ -101,10 +101,14 @@ public:
     bool usedInMetaVariable(const dbContent::Variable& variable);
     dbContent::MetaVariableConfigurationDialog* metaVariableConfigdialog();
 
-    void load(const std::string& custom_filter_clause="", bool measure_db_performance = false);
+    void load(const std::string& custom_filter_clause="", 
+              bool measure_db_performance = false,
+              const std::map<std::string, dbContent::VariableSet>* custom_read_set = nullptr);
     void loadBlocking(const std::string& custom_filter_clause="", 
                       bool measure_db_performance = false,
-                      unsigned int sleep_msecs = 1);
+                      unsigned int sleep_msecs = 1,
+                      const std::map<std::string, dbContent::VariableSet>* custom_read_set = nullptr);
+    
     void addLoadedData(std::map<std::string, std::shared_ptr<Buffer>> data);
     std::map<std::string, std::shared_ptr<Buffer>> loadedData();
     void loadingDone(DBContent& object); // to be called by dbcont when it's loading is finished

@@ -58,7 +58,7 @@ RTCommandGetData::RTCommandGetData()
 
 bool RTCommandGetData::run_impl()
 {
-    loginf << "start";
+    loginf;
 
     if (!COMPASS::instance().dbOpened())
     {
@@ -169,20 +169,20 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
     DBContent& db_content = dbcont_man.dbContent(dbcontent_name_);
 
     // ds id
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_ds_id_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, DBContent::meta_var_ds_id_));
 
     // line id
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_line_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_line_id_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, DBContent::meta_var_line_id_));
 
     // timestamp
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_timestamp_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_timestamp_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, DBContent::meta_var_timestamp_));
 
     for (auto& var_it : variables_)
     {
-        assert (db_content.hasVariable(var_it));
+        traced_assert(db_content.hasVariable(var_it));
 
         Variable& var = db_content.variable(var_it);
 

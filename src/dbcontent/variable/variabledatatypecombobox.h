@@ -77,7 +77,7 @@ class VariableDataTypeComboBox : public QComboBox
     void update()
     {
         int index = findText(QString(Property::asString(data_type_).c_str()));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 };

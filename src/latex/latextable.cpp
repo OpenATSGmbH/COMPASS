@@ -19,7 +19,7 @@
 #include "stringconv.h"
 #include "logger.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <sstream>
 
 using namespace std;
@@ -33,7 +33,7 @@ LatexTable::LatexTable(const std::string& name,
     : name_(name), num_columns_(num_columns), headings_(headings), heading_alignment_(heading_alignment),
       convert_to_latex_(convert_to_latex)
 {
-    assert (headings_.size() == num_columns_);
+    traced_assert(headings_.size() == num_columns_);
 
     if (!heading_alignment_.size())
     {
@@ -49,12 +49,12 @@ LatexTable::LatexTable(const std::string& name,
     loginf << "name " << name << " num cols " << num_columns_
            << " heading alignment '" << heading_alignment_ << "'";
 
-    assert (String::split(heading_alignment_, '|').size() == num_columns_+1);
+    traced_assert(String::split(heading_alignment_, '|').size() == num_columns_+1);
 }
 
 void LatexTable::addRow (std::vector<std::string> row)
 {
-    assert (row.size() == num_columns_);
+    traced_assert(row.size() == num_columns_);
     rows_.push_back(row);
 }
 

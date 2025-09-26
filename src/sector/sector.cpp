@@ -20,7 +20,8 @@
 #include "evaluationmanager.h"
 #include "dbcontent/target/targetposition.h"
 
-#include <cassert>
+#include "traced_assert.h"
+#include <cmath>
 
 #include <ogr_geometry.h>
 
@@ -224,6 +225,58 @@ bool SectorInsideTest::isValid() const
     return !img_.isNull();
 }
 
+SectorInsideTest::CheckResult SectorInsideTest::isInside(double x, double y, double delta) const
+{
+    traced_assert(isValid());
+
+    // First check the point itself
+    auto result = isInside(x, y);
+    
+    // If already inside, return inside
+    if (result == CheckResult::Inside)
+    {
+        loginf << "true inside";
+        return CheckResult::Inside;
+    }
+    
+    // If outside or border, check within delta distance
+    // Sample points around the original point within delta distance
+    const int num_samples = 16;
+    const double angle_step = 2.0 * M_PI / num_samples;
+    
+    for (int i = 0; i < num_samples; ++i)
+    {
+        double angle = i * angle_step;
+        double test_x = x + delta * std::cos(angle);
+        double test_y = y + delta * std::sin(angle);
+        
+        auto test_result = isInside(test_x, test_y);
+        if (test_result == CheckResult::Inside)
+        {
+            loginf << "second inside";
+            return CheckResult::Inside;
+        }
+    }
+    
+    // Also check at half delta distance
+    for (int i = 0; i < num_samples; ++i)
+    {
+        double angle = i * angle_step;
+        double test_x = x + (delta * 0.5) * std::cos(angle);
+        double test_y = y + (delta * 0.5) * std::sin(angle);
+        
+        auto test_result = isInside(test_x, test_y);
+        if (test_result == CheckResult::Inside)
+        {
+            loginf << "thirst inside";
+            return CheckResult::Inside;
+        }
+    }
+    
+    loginf << "not inside";
+    return result; // Return original result if no nearby point is inside
+}
+
 /***********************************************************************************
  * Sector
  ***********************************************************************************/
@@ -271,14 +324,14 @@ bool Sector::readJSON(const nlohmann::json& j)
     min_altitude_.reset();
     max_altitude_.reset();
     
-    assert (j.contains("id"));
-    assert (j.at("id") == id_);
+    traced_assert(j.contains("id"));
+    traced_assert(j.at("id") == id_);
 
-    assert (j.contains("name"));
-    assert (j.at("name") == name_);
+    traced_assert(j.contains("name"));
+    traced_assert(j.at("name") == name_);
 
-    assert (j.contains("layer_name"));
-    assert (j.at("layer_name") == layer_name_);
+    traced_assert(j.contains("layer_name"));
+    traced_assert(j.at("layer_name") == layer_name_);
 
     if (j.contains("min_altitude"))
         min_altitude_ = j.at("min_altitude");
@@ -291,14 +344,14 @@ bool Sector::readJSON(const nlohmann::json& j)
     else
         exclusion_sector_ = false;
 
-    assert (j.contains("points"));
+    traced_assert(j.contains("points"));
     const json& points = j.at("points");
-    assert (points.is_array());
+    traced_assert(points.is_array());
 
     for (const json& point_it : points.get<json::array_t>())
     {
-        assert (point_it.is_array());
-        assert (point_it.size() == 2);
+        traced_assert(point_it.is_array());
+        traced_assert(point_it.size() == 2);
         points_.push_back({point_it[0], point_it[1]});
     }
 
@@ -410,7 +463,7 @@ bool Sector::hasMinimumAltitude() const
 
 double Sector::minimumAltitude() const
 {
-    assert (min_altitude_.has_value());
+    traced_assert(min_altitude_.has_value());
     return min_altitude_.value();
 }
 
@@ -429,7 +482,7 @@ void Sector::setMinimumAltitude(double value)
 */
 void Sector::removeMinimumAltitude()
 {
-    loginf << "start";
+    loginf;
 
     min_altitude_.reset();
 
@@ -443,7 +496,7 @@ bool Sector::hasMaximumAltitude() const
 
 double Sector::maximumAltitude() const
 {
-    assert (max_altitude_.has_value());
+    traced_assert(max_altitude_.has_value());
     return max_altitude_.value();
 }
 
@@ -462,7 +515,7 @@ void Sector::setMaximumAltitude(double value)
 */
 void Sector::removeMaximumAltitude()
 {
-    loginf << "start";
+    loginf;
 
     max_altitude_.reset();
 
@@ -572,16 +625,65 @@ bool Sector::isInside(const dbContent::TargetPosition& pos,
     return true;
 }
 
+bool Sector::isInside(double latitude, double longitude, double delta_deg) const
+{
+    OGRPoint ogr_pos(latitude, longitude);
+    if (ogr_polygon_->Contains(&ogr_pos))
+        return true;
+
+    // If outside or border, check within delta distance
+    // Sample points around the original point within delta distance
+    const int num_samples = 16;
+    const double angle_step = 2.0 * M_PI / num_samples;
+
+    double angle, test_x, test_y;
+
+    for (int i = 0; i < num_samples; ++i)
+    {
+        angle = i * angle_step;
+        test_x = latitude + delta_deg * std::cos(angle);
+        test_y = longitude + delta_deg * std::sin(angle);
+        
+        ogr_pos = {test_x, test_y};
+
+        if (ogr_polygon_->Contains(&ogr_pos))
+            return true;
+    }
+    
+    // Also check at half delta distance
+    for (int i = 0; i < num_samples; ++i)
+    {
+        angle = i * angle_step;
+        test_x = latitude + (delta_deg * 0.5) * std::cos(angle);
+        test_y = longitude + (delta_deg * 0.5) * std::sin(angle);
+        
+        ogr_pos = {test_x, test_y};
+
+        if (ogr_polygon_->Contains(&ogr_pos))
+            return true;
+    }
+
+    // final: check distance to polygon points (for small geometry)
+
+    for (auto& point_it : points_)
+    {
+        if (sqrt(pow(point_it.first-latitude, 2)+pow(point_it.second-longitude, 2)) < delta_deg)
+            return true;
+    }
+
+    return false;
+}
+
 std::pair<double, double> Sector::getMinMaxLatitude() const
 {
-    assert(lat_min_.has_value() && lat_max_.has_value());
+    traced_assert(lat_min_.has_value() && lat_max_.has_value());
     
     return {lat_min_.value(), lat_max_.value()};
 }
 
 std::pair<double, double> Sector::getMinMaxLongitude() const
 {
-    assert(lon_min_.has_value() && lon_max_.has_value());
+    traced_assert(lon_min_.has_value() && lon_max_.has_value());
 
     return {lon_min_.value(), lon_max_.value()};
 }
@@ -617,8 +719,8 @@ void Sector::createPolygon()
 
 void Sector::createFastInsideTest() const
 {
-    assert(lat_min_.has_value() && lat_max_.has_value());
-    assert(lon_min_.has_value() && lon_max_.has_value());
+    traced_assert(lat_min_.has_value() && lat_max_.has_value());
+    traced_assert(lon_min_.has_value() && lon_max_.has_value());
 
     //create sector inside test
     inside_test_ = SectorInsideTest(points_, lat_min_.value(), lon_min_.value(), lat_max_.value(), lon_max_.value());

@@ -85,8 +85,8 @@ public:
     */
     std::unique_ptr<ViewPointGenFeature> createFeature_impl(const Base* result) const override final
     {
-        assert(isValid());
-        assert(converter_);
+        traced_assert(isValid());
+        traced_assert(converter_);
 
         loginf << "creating grid...";
 
@@ -104,7 +104,7 @@ public:
         bool grid_ok = grid.create(roi, resolution, "wgs84", true);
 
         //!shall not fail! (otherwise sector bounds might be strange)
-        assert(grid_ok);
+        traced_assert(grid_ok);
 
         loginf << "filling grid...";
 
@@ -185,7 +185,7 @@ public:
         if (generate_geoimage_)
         {
             //get render settings
-            assert(render_settings_map.count(layer->name));
+            traced_assert(render_settings_map.count(layer->name));
             const auto& rs = render_settings_map.at(layer->name);
 
             //render layer
@@ -220,7 +220,7 @@ protected:
                                const Grid2DRenderSettings& rsettings)
     {
         //@TODO: if we had an annotation feature which could hold multiple grid layers we could remove this assert...
-        assert(data_series_.empty());
+        traced_assert(data_series_.empty());
 
         GridDataSeries ds;
 

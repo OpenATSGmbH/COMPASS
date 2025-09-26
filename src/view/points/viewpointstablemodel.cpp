@@ -55,7 +55,7 @@ ViewPointsTableModel::ViewPointsTableModel(ViewManager& view_manager)
 
 void ViewPointsTableModel::loadViewPoints()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -65,7 +65,7 @@ void ViewPointsTableModel::loadViewPoints()
         for (const auto& vp_it : COMPASS::instance().dbInterface().viewPoints())
         {
             //assert (!view_points_.count(vp_it.first));
-            assert (!hasViewPoint(vp_it.first));
+            traced_assert(!hasViewPoint(vp_it.first));
 
             //view_points_.emplace_back(vp_it.first, vp_it.second, view_manager_, false);
 
@@ -85,7 +85,7 @@ void ViewPointsTableModel::loadViewPoints()
 }
 void ViewPointsTableModel::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -101,7 +101,7 @@ void ViewPointsTableModel::addViewPoints(const std::vector <nlohmann::json>& vie
 
 void ViewPointsTableModel::clearViewPoints()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -140,14 +140,14 @@ QVariant ViewPointsTableModel::data(const QModelIndex& index, int role) const
     {
         logdbg << "display role: row " << index.row() << " col " << index.column();
 
-        assert (index.row() >= 0);
-        assert ((unsigned int)index.row() < view_points_.size());
+        traced_assert(index.row() >= 0);
+        traced_assert((unsigned int)index.row() < view_points_.size());
 
         const ViewPoint& vp = view_points_.at(index.row());
 
         logdbg << "got key " << view_points_.at(index.row()).id();
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (!vp.data().contains(col_name))
@@ -172,17 +172,17 @@ QVariant ViewPointsTableModel::data(const QModelIndex& index, int role) const
     }
     case Qt::DecorationRole:
     {
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
 
         if (table_columns_.at(index.column()).toStdString() == ViewPoint::VP_STATUS_KEY)
         {
-            assert (index.row() >= 0);
-            assert ((unsigned int)index.row() < view_points_.size());
+            traced_assert(index.row() >= 0);
+            traced_assert((unsigned int)index.row() < view_points_.size());
 
             const ViewPoint& vp = view_points_.at(index.row());
 
             const json& data = vp.data().at(ViewPoint::VP_STATUS_KEY);
-            assert (data.is_string());
+            traced_assert(data.is_string());
 
             std::string status = data;
 
@@ -209,7 +209,7 @@ QVariant ViewPointsTableModel::headerData(int section, Qt::Orientation orientati
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -231,7 +231,7 @@ Qt::ItemFlags ViewPointsTableModel::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     if (table_columns_.at(index.column()).toStdString() == ViewPoint::VP_COMMENT_KEY)
         return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
@@ -252,7 +252,7 @@ bool ViewPointsTableModel::setData(const QModelIndex& index, const QVariant &val
 
         auto it = view_points_.begin()+index.row();
 
-        assert (index.column() == statusColumn() || index.column() == commentColumn());
+        traced_assert(index.column() == statusColumn() || index.column() == commentColumn());
 
         //        if (index.column() == statusColumn())
         //            view_points_.at(id).setStatus(value.toString().toStdString());
@@ -276,13 +276,13 @@ bool ViewPointsTableModel::setData(const QModelIndex& index, const QVariant &val
 
 //int ViewPointsTableModel::columnIndex (QString name)
 //{
-//    assert (table_columns_.contains(name));
+//    traced_assert(table_columns_.contains(name));
 //    return table_columns_.indexOf(name);
 //}
 
 bool ViewPointsTableModel::updateTableColumns()
 {
-    loginf << "start";
+    loginf;
 
     bool changed = false;
 
@@ -290,7 +290,7 @@ bool ViewPointsTableModel::updateTableColumns()
     {
         const nlohmann::json& data = vp_it.data();
 
-        assert (data.is_object());
+        traced_assert(data.is_object());
         for (auto& j_it : data.get<json::object_t>())
         {
             logdbg << "'" << j_it.first << "'";
@@ -314,7 +314,7 @@ bool ViewPointsTableModel::updateTableColumns()
 
 void ViewPointsTableModel::updateTypes()
 {
-    loginf << "start";
+    loginf;
 
     QStringList old_types = types_;
     types_.clear();
@@ -323,7 +323,7 @@ void ViewPointsTableModel::updateTypes()
     {
         const nlohmann::json& data = vp_it.data();
 
-        assert (data.contains(ViewPoint::VP_TYPE_KEY));
+        traced_assert(data.contains(ViewPoint::VP_TYPE_KEY));
 
         const string& type = data.at(ViewPoint::VP_TYPE_KEY);
 
@@ -342,7 +342,7 @@ void ViewPointsTableModel::updateTypes()
 
 void ViewPointsTableModel::updateStatuses()
 {
-    loginf << "start";
+    loginf;
 
     QStringList old_statuses = statuses_;
     statuses_.clear();
@@ -351,7 +351,7 @@ void ViewPointsTableModel::updateStatuses()
     {
         const nlohmann::json& data = vp_it.data();
 
-        assert (data.contains(ViewPoint::VP_STATUS_KEY));
+        traced_assert(data.contains(ViewPoint::VP_STATUS_KEY));
 
         const string& status = data.at(ViewPoint::VP_STATUS_KEY);
 
@@ -400,7 +400,7 @@ unsigned int ViewPointsTableModel::saveNewViewPoint(const nlohmann::json& data, 
 {
     unsigned int new_id = max_id_+1;
 
-    assert (!hasViewPoint(new_id));
+    traced_assert(!hasViewPoint(new_id));
 
     nlohmann::json new_data = data;
     new_data[ViewPoint::VP_ID_KEY] = new_id;
@@ -422,7 +422,7 @@ const ViewPoint& ViewPointsTableModel::saveNewViewPoint(unsigned int id, const n
 
     nlohmann::json new_data = data;
 
-    assert (new_data.is_object());
+    traced_assert(new_data.is_object());
     json::object_t& new_data_ref = new_data.get_ref<json::object_t&>();
 
     view_points_.push_back({id, new_data_ref, view_manager_, true});
@@ -434,7 +434,7 @@ const ViewPoint& ViewPointsTableModel::saveNewViewPoint(unsigned int id, const n
     //                         std::forward_as_tuple(id),   // args for key
     //                         std::forward_as_tuple(id, new_data_ref, view_manager_, true));  // args for mapped value
 
-    assert (hasViewPoint(id));
+    traced_assert(hasViewPoint(id));
 
     if (update)
     {
@@ -457,13 +457,13 @@ const ViewPoint& ViewPointsTableModel::saveNewViewPoint(unsigned int id, const n
 
 const ViewPoint& ViewPointsTableModel::viewPoint(unsigned int id)
 {
-    assert (hasViewPoint(id));
+    traced_assert(hasViewPoint(id));
     return *view_points_.get<vp_tag>().find(id);
 }
 
 //void ViewPointsTableModel::removeViewPoint(unsigned int id)
 //{
-//    assert (existsViewPoint(id));
+//    traced_assert(existsViewPoint(id));
 
 //    view_points_.erase(id);
 //    ATSDB::instance().interface().deleteViewPoint(id);
@@ -530,7 +530,7 @@ void ViewPointsTableModel::exportViewPoints (const std::string& filename)
 
 //void ViewPointsTableModel::update()
 //{
-//    loginf << "start";
+//    loginf;
 //    beginResetModel();
 //    updateTableColumns();
 //    endResetModel();
@@ -538,13 +538,13 @@ void ViewPointsTableModel::exportViewPoints (const std::string& filename)
 
 unsigned int ViewPointsTableModel::getIdOf (const QModelIndex& index)
 {
-    assert (index.isValid());
+    traced_assert(index.isValid());
     //    auto map_it = view_points_.begin();
     //    std::advance(map_it, index.row());
-    //    assert (map_it != view_points_.end());
+    //    traced_assert(map_it != view_points_.end());
 
-    assert (index.row() >= 0);
-    assert ((unsigned int)index.row() < view_points_.size());
+    traced_assert(index.row() >= 0);
+    traced_assert((unsigned int)index.row() < view_points_.size());
 
     return view_points_.at(index.row()).id();
 
@@ -553,15 +553,15 @@ unsigned int ViewPointsTableModel::getIdOf (const QModelIndex& index)
 
 void ViewPointsTableModel::setStatus (const QModelIndex& row_index, const std::string& value)
 {
-    assert (row_index.isValid());
+    traced_assert(row_index.isValid());
 
     QModelIndex status_index = index(row_index.row(), statusColumn(), QModelIndex());
-    assert (status_index.isValid());
+    traced_assert(status_index.isValid());
 
     setData(status_index, value.c_str(), Qt::EditRole);
 
     //    unsigned int id = getIdOf(index);
-    //    assert (id < view_points_.size());
+    //    traced_assert(id < view_points_.size());
     //    loginf << "id " << id << " status " << value;
     //    view_points_.at(id).data()["status"] = value;
     //    view_points_.at(id).dirty(true);

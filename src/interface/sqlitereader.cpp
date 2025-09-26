@@ -27,7 +27,7 @@
 SQLiteReader::SQLiteReader(sqlite3* connection)
 :   connection_(connection)
 {
-    assert(connection_);
+    traced_assert(connection_);
 }
 
 /**

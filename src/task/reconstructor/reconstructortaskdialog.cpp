@@ -188,7 +188,7 @@ void ReconstructorTaskDialog::showCurrentReconstructorWidget()
 
     loginf << "value " << idx;
 
-    assert(idx >= 0);
+    traced_assert(idx >= 0);
 
     reconstructor_widget_stack_->setCurrentIndex(idx);
 
@@ -197,7 +197,7 @@ void ReconstructorTaskDialog::showCurrentReconstructorWidget()
 
 void ReconstructorTaskDialog::updateButtons()
 {
-    assert (run_button_);
+    traced_assert(run_button_);
 
     run_button_->setDisabled(!task_.canRun());
 }

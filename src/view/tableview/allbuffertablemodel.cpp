@@ -45,7 +45,7 @@ void AllBufferTableModel::setChangedSlot()
 {
     beginResetModel();
     endResetModel();
-    assert(table_widget_);
+    traced_assert(table_widget_);
     table_widget_->resizeColumns();
 }
 
@@ -80,7 +80,7 @@ QVariant AllBufferTableModel::headerData(int section, Qt::Orientation orientatio
 
         col -= 2;  // for the actual properties
 
-        assert(col < data_source_.getSet()->getSize());
+        traced_assert(col < data_source_.getSet()->getSize());
         std::string variable_name = data_source_.getSet()->variableDefinition(col).second;
         return QString(variable_name.c_str());
     }
@@ -113,23 +113,23 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
 
     bool null = false;
 
-    assert(index.row() >= 0);
-    assert((unsigned int)index.row() < row_indexes_.size());
+    traced_assert(index.row() >= 0);
+    traced_assert((unsigned int)index.row() < row_indexes_.size());
     unsigned int dbcont_num = row_indexes_.at(index.row()).first;
     unsigned int buffer_index = row_indexes_.at(index.row()).second;
     unsigned int col = index.column();
 
-    assert(number_to_dbcont_.count(dbcont_num) == 1);
+    traced_assert(number_to_dbcont_.count(dbcont_num) == 1);
     const std::string& dbcontent_name = number_to_dbcont_.at(dbcont_num);
 
-    assert(buffers_.count(dbcontent_name) == 1);
+    traced_assert(buffers_.count(dbcontent_name) == 1);
     std::shared_ptr<Buffer> buffer = buffers_.at(dbcontent_name);
 
     if (role == Qt::CheckStateRole)
     {
         if (col == 0)  // selected special case
         {
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
 
             if (buffer->get<bool>(DBContent::selected_var.name()).isNull(buffer_index))
                 return Qt::Unchecked;
@@ -142,7 +142,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
     }
     else if (role == Qt::DisplayRole)
     {
-        assert(buffer);
+        traced_assert(buffer);
 
         std::string value_str;
 
@@ -155,7 +155,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             return QVariant();
         }
 
-        assert(buffer_index < buffer->size());
+        traced_assert(buffer_index < buffer->size());
 
         if (col == 0)  // selected special case
             return QVariant();
@@ -167,7 +167,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
         //        loginf << "col " << col << " set size " <<
         //        data_source_.getSet()->getSize()
         //               << " show assoc " << show_associations_;
-        assert(col < data_source_.getSet()->getSize());
+        traced_assert(col < data_source_.getSet()->getSize());
 
         std::string variable_dbcontent_name, variable_name;
 
@@ -178,7 +178,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
         // check if data & variables exist
         if (variable_dbcontent_name == META_OBJECT_NAME)
         {
-            assert(manager.existsMetaVariable(variable_name));
+            traced_assert(manager.existsMetaVariable(variable_name));
             if (!manager.metaVariable(variable_name).existsIn(dbcontent_name))  // not data if not exist
                 return QString();
         }
@@ -187,8 +187,8 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             if (dbcontent_name != variable_dbcontent_name)  // check if other dbcont
                 return QString();
 
-            assert(manager.existsDBContent(dbcontent_name));
-            assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
+            traced_assert(manager.existsDBContent(dbcontent_name));
+            traced_assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
         }
 
         dbContent::Variable& variable = (variable_dbcontent_name == META_OBJECT_NAME)
@@ -209,7 +209,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
 
             if (data_type == PropertyDataType::BOOL)
             {
-                assert(buffer->has<bool>(property_name));
+                traced_assert(buffer->has<bool>(property_name));
                 null = buffer->get<bool>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -222,7 +222,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::CHAR)
             {
-                assert(buffer->has<char>(property_name));
+                traced_assert(buffer->has<char>(property_name));
                 null = buffer->get<char>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -235,7 +235,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::UCHAR)
             {
-                assert(buffer->has<unsigned char>(property_name));
+                traced_assert(buffer->has<unsigned char>(property_name));
                 null = buffer->get<unsigned char>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -249,7 +249,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::INT)
             {
-                assert(buffer->has<int>(property_name));
+                traced_assert(buffer->has<int>(property_name));
                 null = buffer->get<int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -262,7 +262,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::UINT)
             {
-                assert(buffer->has<unsigned int>(property_name));
+                traced_assert(buffer->has<unsigned int>(property_name));
                 null = buffer->get<unsigned int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -276,7 +276,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::LONGINT)
             {
-                assert(buffer->has<long int>(property_name));
+                traced_assert(buffer->has<long int>(property_name));
                 null = buffer->get<long int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -289,7 +289,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::ULONGINT)
             {
-                assert(buffer->has<unsigned long int>(property_name));
+                traced_assert(buffer->has<unsigned long int>(property_name));
                 null = buffer->get<unsigned long int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -304,7 +304,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::FLOAT)
             {
-                assert(buffer->has<float>(property_name));
+                traced_assert(buffer->has<float>(property_name));
                 null = buffer->get<float>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -317,7 +317,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::DOUBLE)
             {
-                assert(buffer->has<double>(property_name));
+                traced_assert(buffer->has<double>(property_name));
                 null = buffer->get<double>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -330,7 +330,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::STRING)
             {
-                assert(buffer->has<std::string>(property_name));
+                traced_assert(buffer->has<std::string>(property_name));
                 null = buffer->get<std::string>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -339,7 +339,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::JSON)
             {
-                assert(buffer->has<nlohmann::json>(property_name));
+                traced_assert(buffer->has<nlohmann::json>(property_name));
                 null = buffer->get<nlohmann::json>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -348,7 +348,7 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
             }
             else if (data_type == PropertyDataType::TIMESTAMP)
             {
-                assert(buffer->has<boost::posix_time::ptime>(property_name));
+                traced_assert(buffer->has<boost::posix_time::ptime>(property_name));
                 null = buffer->get<boost::posix_time::ptime>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -376,19 +376,19 @@ bool AllBufferTableModel::setData(const QModelIndex& index, const QVariant& valu
     {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-        assert(index.row() >= 0);
-        assert((unsigned int)index.row() < row_indexes_.size());
+        traced_assert(index.row() >= 0);
+        traced_assert((unsigned int)index.row() < row_indexes_.size());
         unsigned int dbcont_num = row_indexes_.at(index.row()).first;
         unsigned int buffer_index = row_indexes_.at(index.row()).second;
 
-        assert(number_to_dbcont_.count(dbcont_num) == 1);
+        traced_assert(number_to_dbcont_.count(dbcont_num) == 1);
         std::string dbcontent_name = number_to_dbcont_.at(dbcont_num);
 
-        assert(buffers_.count(dbcontent_name) == 1);
+        traced_assert(buffers_.count(dbcontent_name) == 1);
         std::shared_ptr<Buffer> buffer = buffers_.at(dbcontent_name);
 
-        assert(buffer);
-        assert(buffer->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer);
+        traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
 
         if (value == Qt::Checked)
         {
@@ -400,7 +400,7 @@ bool AllBufferTableModel::setData(const QModelIndex& index, const QVariant& valu
             logdbg << "unchecked row index " << buffer_index;
             buffer->get<bool>(DBContent::selected_var.name()).set(buffer_index, false);
         }
-        assert(table_widget_);
+        traced_assert(table_widget_);
         table_widget_->view().emitSelectionChange();
 
         if (view_.settings().show_only_selected_)
@@ -413,7 +413,7 @@ bool AllBufferTableModel::setData(const QModelIndex& index, const QVariant& valu
 
 void AllBufferTableModel::clearData()
 {
-    logdbg << "start";
+    logdbg;
 
     beginResetModel();
 
@@ -441,7 +441,7 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
         }
     }
 
-    assert(dbcont_to_number_.size() == number_to_dbcont_.size());
+    traced_assert(dbcont_to_number_.size() == number_to_dbcont_.size());
 
     buffers_ = buffers;
 
@@ -453,7 +453,7 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
 
 void AllBufferTableModel::updateTimeIndexes()
 {
-    logdbg << "start";
+    logdbg;
 
     unsigned int buffer_index;
     std::string dbcontent_name;
@@ -474,7 +474,7 @@ void AllBufferTableModel::updateTimeIndexes()
         dbcontent_name = buf_it.first;
         num_time_none = 0;
 
-        assert(dbcont_to_number_.count(dbcontent_name) == 1);
+        traced_assert(dbcont_to_number_.count(dbcontent_name) == 1);
         dbcont_num = dbcont_to_number_.at(dbcontent_name);
 
         buffer_size = buf_it.second->size();
@@ -487,10 +487,10 @@ void AllBufferTableModel::updateTimeIndexes()
             const dbContent::Variable& ts_var =
                     dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(dbcontent_name);
 
-            assert(buf_it.second->has<boost::posix_time::ptime>(ts_var.name()));
+            traced_assert(buf_it.second->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& ts_vec = buf_it.second->get<boost::posix_time::ptime>(ts_var.name());
 
-            assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
             boost::posix_time::ptime ts;
@@ -564,14 +564,14 @@ void AllBufferTableModel::saveAsCSV(const std::string& file_name)
 
 void AllBufferTableModel::exportJobObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     emit exportDoneSignal(true);
 }
 
 void AllBufferTableModel::exportJobDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     emit exportDoneSignal(false);
 }
@@ -591,7 +591,7 @@ void AllBufferTableModel::rebuild()
 
 std::pair<int,int> AllBufferTableModel::getSelectedRows()
 {
-    loginf << "start";
+    loginf;
 
     unsigned int dbcont_num;
     unsigned int buffer_index;
@@ -604,14 +604,14 @@ std::pair<int,int> AllBufferTableModel::getSelectedRows()
         dbcont_num = row_indexes_.at(cnt).first;
         buffer_index = row_indexes_.at(cnt).second;
 
-        assert(number_to_dbcont_.count(dbcont_num) == 1);
+        traced_assert(number_to_dbcont_.count(dbcont_num) == 1);
         const std::string& dbcontent_name = number_to_dbcont_.at(dbcont_num);
 
-        assert(buffers_.count(dbcontent_name) == 1);
+        traced_assert(buffers_.count(dbcontent_name) == 1);
 
         std::shared_ptr<Buffer> buffer = buffers_.at(dbcontent_name);
 
-        assert(buffer->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
         if (buffer->get<bool>(DBContent::selected_var.name()).isNull(buffer_index))
             continue;
 

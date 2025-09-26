@@ -69,6 +69,29 @@ class ReconstructorAssociatorBase
         float avg_distance_{0};
     };
 
+    struct BatchStats
+    {
+        double batchSizeMean() const { return num_batches == 0 ? 0.0 : (double)batch_size_mean / (double)num_batches; } 
+        double batchSizeInSliceMean() const { return num_batches_slice == 0 ? 0.0 : (double)batch_slice_size_mean / (double)num_batches_slice; } 
+        double batchSizePrimaryOnlyMean() const { return num_batches_po == 0 ? 0.0 : (double)batch_po_size_mean / (double)num_batches_po; } 
+
+        size_t num_batches       = 0;
+        size_t num_batches_slice = 0;
+        size_t num_batches_po    = 0;
+
+        size_t batch_size_min  = std::numeric_limits<unsigned int>::max();
+        size_t batch_size_max  = std::numeric_limits<unsigned int>::lowest();
+        size_t batch_size_mean = 0;
+
+        size_t batch_slice_size_min  = std::numeric_limits<unsigned int>::max();
+        size_t batch_slice_size_max  = std::numeric_limits<unsigned int>::lowest();
+        size_t batch_slice_size_mean = 0;
+
+        size_t batch_po_size_min  = std::numeric_limits<unsigned int>::max();
+        size_t batch_po_size_max  = std::numeric_limits<unsigned int>::lowest();
+        size_t batch_po_size_mean = 0;
+    };
+
     virtual bool canGetPositionOffsetTR(
         const dbContent::targetReport::ReconstructorInfo& tr,
         const dbContent::ReconstructorTarget& target, bool use_max_distance=true) = 0;
@@ -79,10 +102,8 @@ class ReconstructorAssociatorBase
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) = 0;
 
-    virtual bool isTargetAccuracyAcceptable(
-        double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) = 0;
-
     const std::vector<unsigned long>& unassociatedRecNums() const;
+    const std::map<unsigned int, BatchStats>& batchStatistics() const;
 
 protected:
 
@@ -91,6 +112,7 @@ protected:
     std::map<unsigned int, std::map<unsigned int, std::pair<unsigned int, unsigned int>>> assoc_counts_;
     // ds_id -> dbcont id -> (assoc, unassoc cnt)
     std::vector<unsigned long> unassoc_rec_nums_;
+    std::vector<unsigned long> unassoc_rec_nums_no_retry_;
 
     unsigned int num_merges_ {0};
 
@@ -98,15 +120,25 @@ protected:
     boost::posix_time::time_duration time_assoc_new_utns_;
     boost::posix_time::time_duration time_retry_assoc_trs_;
 
+    std::map<unsigned int, BatchStats> batch_stats_;
+
     void associateTargetReports();
+    void associateTargetReportBatch(const boost::posix_time::ptime& ts, 
+                                    const ReconstructorBase::TargetReportBatch& batch);
     void associateTargetReports(std::set<unsigned int> dbcont_ids);
+
+    virtual void associateUnreliablePrimaryOnly(unsigned int ds_id,
+                                                const boost::posix_time::ptime& ts,
+                                                const std::vector<unsigned long>& rec_nums,
+                                                bool debug);
 
     void selfAssociateNewUTNs();
     void retryAssociateTargetReports();
     void associate(dbContent::targetReport::ReconstructorInfo& tr, int utn);
     virtual void postAssociate(dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn) {};
     //void checkACADLookup();
-    void countUnAssociated();
+    virtual void countUnAssociated();
+    void countUnAssociated(const std::vector<unsigned long>& rec_nums);
 
     int findUTNFor (dbContent::targetReport::ReconstructorInfo& tr);
 
@@ -123,13 +155,13 @@ protected:
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1) = 0;
-    virtual boost::optional<std::tuple<double, double, double>> getPositionOffsetTargets(
+    virtual boost::optional<std::tuple<double, double>> getPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1,
         bool do_debug,
         const boost::optional<unsigned int>& thread_id,
-        reconstruction::PredictionStats* stats = nullptr) = 0;
+        reconstruction::PredictionStats* stats = nullptr) = 0; // distance, sum_std_dev
 
     virtual boost::optional<bool> checkTrackPositionOffsetAcceptable (
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
@@ -145,7 +177,7 @@ protected:
         bool do_debug) = 0;
     // check passed + score (larger is better) returned
     virtual std::tuple<DistanceClassification, double> checkPositionOffsetScore
-        (double distance_m, double sum_stddev_est, bool secondary_verified, bool target_acccuracy_acceptable) = 0;
+        (double distance_m, double sum_stddev_est, bool secondary_verified) = 0;
 
     //virtual bool isTargetAverageDistanceAcceptable(double distance_score_avg, bool secondary_verified) = 0;
 

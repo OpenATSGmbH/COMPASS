@@ -29,6 +29,7 @@
 #include "mainwindow.h"
 #include "files.h"
 #include "asteriximporttask.h"
+#include "reconstructortask.h"
 #include "rtcommand_runner.h"
 #include "rtcommand_manager.h"
 #include "rtcommand.h"
@@ -56,7 +57,7 @@ const bool COMPASS::is_app_image_ = {getenv("APPDIR") != nullptr};
 COMPASS::COMPASS()
     : Configurable("COMPASS", "COMPASS0", 0, "compass.json"), log_store_(!is_app_image_)
 {
-    logdbg << "start";
+    logdbg;
 
     std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
 
@@ -106,9 +107,13 @@ COMPASS::COMPASS()
 
     registerParameter("disable_native_dialogs", &disable_native_dialogs_, disable_native_dialogs_);
 
-    assert (auto_live_running_resume_ask_time_ > 0);
-    assert (auto_live_running_resume_ask_wait_time_ > 0);
-    assert (auto_live_running_resume_ask_time_ > auto_live_running_resume_ask_wait_time_);
+
+    registerParameter("unspecific_acids", &unspecific_acids_, {"00000000","????????","        "});
+    //registerParameter("unspecific_mode_3as", &unspecific_mode_3as_, {});
+
+    traced_assert(auto_live_running_resume_ask_time_ > 0);
+    traced_assert(auto_live_running_resume_ask_wait_time_ > 0);
+    traced_assert(auto_live_running_resume_ask_time_ > auto_live_running_resume_ask_wait_time_);
 
     JobManager::instance().start();
     RTCommandManager::instance().start();
@@ -125,15 +130,15 @@ COMPASS::COMPASS()
         throw std::runtime_error(e.what());
     }
 
-    assert(db_interface_);
-    assert(dbcontent_manager_);
-    assert(ds_manager_);
-    assert(filter_manager_);
-    assert(task_manager_);
-    assert(view_manager_);
-    assert(eval_manager_);
-    assert(fft_manager_);
-    assert(license_manager_);
+    traced_assert(db_interface_);
+    traced_assert(dbcontent_manager_);
+    traced_assert(ds_manager_);
+    traced_assert(filter_manager_);
+    traced_assert(task_manager_);
+    traced_assert(view_manager_);
+    traced_assert(eval_manager_);
+    traced_assert(fft_manager_);
+    traced_assert(license_manager_);
 
     rt_cmd_runner_.reset(new rtcommand::RTCommandRunner);
 
@@ -186,6 +191,10 @@ COMPASS::COMPASS()
     QObject::connect(ds_manager_.get(), &DataSourceManager::dataSourcesChangedSignal,
                      eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot); // update if data sources changed
 
+    // sectors changed
+    connect (eval_manager_.get(), &EvaluationManager::sectorsChangedSignal, // this includes db open/close
+             &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
+
     // data exchange
     QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadingStartedSignal,
                      view_manager_.get(), &ViewManager::loadingStartedSlot);
@@ -213,7 +222,7 @@ COMPASS::COMPASS()
 
 COMPASS::~COMPASS()
 {
-    logdbg << "start";
+    logdbg;
 
     if (app_state_ != AppState::Shutdown)
     {
@@ -221,14 +230,14 @@ COMPASS::~COMPASS()
         shutdown();
     }
 
-    assert(!dbcontent_manager_);
-    assert(!db_interface_);
-    assert(!filter_manager_);
-    assert(!task_manager_);
-    assert(!view_manager_);
-    assert(!eval_manager_);
-    assert(!fft_manager_);
-    assert(!license_manager_);
+    traced_assert(!dbcontent_manager_);
+    traced_assert(!db_interface_);
+    traced_assert(!filter_manager_);
+    traced_assert(!task_manager_);
+    traced_assert(!view_manager_);
+    traced_assert(!eval_manager_);
+    traced_assert(!fft_manager_);
+    traced_assert(!license_manager_);
 
     logdbg << "end";
 }
@@ -251,57 +260,57 @@ void COMPASS::generateSubConfigurable(const std::string& class_id, const std::st
            << instance_id;
     if (class_id == "DBInterface")
     {
-        assert(!db_interface_);
+        traced_assert(!db_interface_);
         db_interface_.reset(new DBInterface(class_id, instance_id, this));
-        assert(db_interface_);
+        traced_assert(db_interface_);
     }
     else if (class_id == "DBContentManager")
     {
-        assert(!dbcontent_manager_);
+        traced_assert(!dbcontent_manager_);
         dbcontent_manager_.reset(new DBContentManager(class_id, instance_id, this));
-        assert(dbcontent_manager_);
+        traced_assert(dbcontent_manager_);
     }
     else if (class_id == "DataSourceManager")
     {
-        assert(!ds_manager_);
+        traced_assert(!ds_manager_);
         ds_manager_.reset(new DataSourceManager(class_id, instance_id, this));
-        assert(ds_manager_);
+        traced_assert(ds_manager_);
     }
     else if (class_id == "FilterManager")
     {
-        assert(!filter_manager_);
+        traced_assert(!filter_manager_);
         filter_manager_.reset(new FilterManager(class_id, instance_id, this));
-        assert(filter_manager_);
+        traced_assert(filter_manager_);
     }
     else if (class_id == "TaskManager")
     {
-        assert(!task_manager_);
+        traced_assert(!task_manager_);
         task_manager_.reset(new TaskManager(class_id, instance_id, this));
-        assert(task_manager_);
+        traced_assert(task_manager_);
     }
     else if (class_id == "ViewManager")
     {
-        assert(!view_manager_);
+        traced_assert(!view_manager_);
         view_manager_.reset(new ViewManager(class_id, instance_id, this));
-        assert(view_manager_);
+        traced_assert(view_manager_);
     }
     else if (class_id == "EvaluationManager")
     {
-        assert(!eval_manager_);
+        traced_assert(!eval_manager_);
         eval_manager_.reset(new EvaluationManager(class_id, instance_id, this));
-        assert(eval_manager_);
+        traced_assert(eval_manager_);
     }
     else if (class_id == "FFTManager")
     {
-        assert(!fft_manager_);
+        traced_assert(!fft_manager_);
         fft_manager_.reset(new FFTManager(class_id, instance_id, this));
-        assert(fft_manager_);
+        traced_assert(fft_manager_);
     }
     else if (class_id == "LicenseManager")
     {
-        assert(!license_manager_);
+        traced_assert(!license_manager_);
         license_manager_.reset(new LicenseManager(class_id, instance_id, this));
-        assert(license_manager_);
+        traced_assert(license_manager_);
     }
     else
         throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_id " + class_id);
@@ -312,47 +321,47 @@ void COMPASS::checkSubConfigurables()
     if (!license_manager_)
     {
         generateSubConfigurableFromConfig("LicenseManager", "LicenseManager0");
-        assert(license_manager_);
+        traced_assert(license_manager_);
     }
     if (!db_interface_)
     {
         generateSubConfigurableFromConfig("DBInterface", "DBInterface0");
-        assert(db_interface_);
+        traced_assert(db_interface_);
     }
     if (!dbcontent_manager_)
     {
         generateSubConfigurableFromConfig("DBContentManager", "DBContentManager0");
-        assert(dbcontent_manager_);
+        traced_assert(dbcontent_manager_);
     }
     if (!ds_manager_)
     {
         generateSubConfigurableFromConfig("DataSourceManager", "DataSourceManager0");
-        assert(dbcontent_manager_);
+        traced_assert(dbcontent_manager_);
     }
     if (!filter_manager_)
     {
         generateSubConfigurableFromConfig("FilterManager", "FilterManager0");
-        assert(filter_manager_);
+        traced_assert(filter_manager_);
     }
     if (!task_manager_)
     {
         generateSubConfigurableFromConfig("TaskManager", "TaskManager0");
-        assert(task_manager_);
+        traced_assert(task_manager_);
     }
     if (!view_manager_)
     {
         generateSubConfigurableFromConfig("ViewManager", "ViewManager0");
-        assert(view_manager_);
+        traced_assert(view_manager_);
     }
     if (!eval_manager_)
     {
         generateSubConfigurableFromConfig("EvaluationManager", "EvaluationManager0");
-        assert(eval_manager_);
+        traced_assert(eval_manager_);
     }
     if (!fft_manager_)
     {
         generateSubConfigurableFromConfig("FFTManager", "FFTManager0");
-        assert(fft_manager_);
+        traced_assert(fft_manager_);
     }
 }
 
@@ -385,7 +394,7 @@ bool COMPASS::openDBFile(const std::string& filename)
 {
     loginf << "opening file '" << filename << "'";
 
-    assert (!db_opened_);
+    traced_assert(!db_opened_);
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -405,7 +414,7 @@ bool COMPASS::openDBFile(const std::string& filename)
 
 Result COMPASS::openDBFileInternal(const std::string& filename)
 {
-    assert (db_interface_);
+    traced_assert(db_interface_);
 
     if (dbOpened())
         return Result::failed("Database already open");
@@ -418,7 +427,7 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
     try
     {
         db_interface_->openDBFile(filename, false);
-        assert (db_interface_->ready());
+        traced_assert(db_interface_->ready());
 
         db_opened_ = true;
 
@@ -438,7 +447,7 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 {
     loginf << "creating new file '" << filename << "'";
 
-    assert (!db_opened_);
+    traced_assert(!db_opened_);
 
     auto result = createNewDBFileInternal(filename);
 
@@ -458,7 +467,7 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 
 Result COMPASS::createNewDBFileInternal(const std::string& filename)
 {
-    assert (db_interface_);
+    traced_assert(db_interface_);
 
     if (dbOpened())
     {
@@ -476,7 +485,7 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
     try
     {
         db_interface_->openDBFile(filename, true);
-        assert (db_interface_->ready());
+        traced_assert(db_interface_->ready());
 
         db_opened_ = true;
 
@@ -496,7 +505,7 @@ bool COMPASS::createInMemDBFile(const std::string& future_filename)
 {
     loginf << "future filename '" << future_filename << "'";
 
-    assert (!db_opened_);
+    traced_assert(!db_opened_);
 
     auto result = createInMemDBFileInternal(future_filename);
 
@@ -508,7 +517,7 @@ bool COMPASS::createInMemDBFile(const std::string& future_filename)
 
 Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
 {
-    assert (db_interface_);
+    traced_assert(db_interface_);
 
     if (dbOpened())
         return Result::failed("Database already open");
@@ -522,7 +531,7 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
     try
     {
         db_interface_->openDBInMemory();
-        assert (db_interface_->ready());
+        traced_assert(db_interface_->ready());
 
         db_opened_ = true;
 
@@ -542,7 +551,7 @@ bool COMPASS::createNewDBFileFromMemory()
 {
     loginf << "filename '" << inmem_future_filename_ << "'";
 
-    assert (canCreateDBFileFromMemory());
+    traced_assert(canCreateDBFileFromMemory());
 
     QMessageBox* msg_box = new QMessageBox;
 
@@ -599,8 +608,8 @@ bool COMPASS::exportDBFile(const std::string& filename)
 {
     loginf << "exporting as file '" << filename << "'";
 
-    assert (db_opened_);
-    assert (!db_export_in_progress_);
+    traced_assert(db_opened_);
+    traced_assert(!db_export_in_progress_);
 
     QMessageBox* msg_box = new QMessageBox;
 
@@ -627,7 +636,7 @@ bool COMPASS::exportDBFile(const std::string& filename)
 
 Result COMPASS::exportDBFileInternal(const std::string& filename)
 {
-    assert (db_interface_);
+    traced_assert(db_interface_);
 
     if (!db_opened_)
         return Result::failed("No database opened");
@@ -656,7 +665,7 @@ bool COMPASS::closeDB()
 {
     loginf << "closing db file '" << last_db_filename_ << "'";
 
-    assert (db_opened_);
+    traced_assert(db_opened_);
 
     auto result = closeDBInternal();
 
@@ -679,7 +688,7 @@ Result COMPASS::closeDBInternal()
         dbcontent_manager_->saveTargets();
 
         db_interface_->closeDB();
-        assert (!db_interface_->ready());
+        traced_assert(!db_interface_->ready());
 
         db_opened_ = false;
         db_inmem_ = false;
@@ -696,67 +705,67 @@ Result COMPASS::closeDBInternal()
 
 DBInterface& COMPASS::dbInterface()
 {
-    assert(db_interface_);
+    traced_assert(db_interface_);
     return *db_interface_;
 }
 
 DBContentManager& COMPASS::dbContentManager()
 {
-    assert(dbcontent_manager_);
+    traced_assert(dbcontent_manager_);
     return *dbcontent_manager_;
 }
 
 DataSourceManager& COMPASS::dataSourceManager()
 {
-    assert(ds_manager_);
+    traced_assert(ds_manager_);
     return *ds_manager_;
 }
 
 FilterManager& COMPASS::filterManager()
 {
-    assert(filter_manager_);
+    traced_assert(filter_manager_);
     return *filter_manager_;
 }
 
 TaskManager& COMPASS::taskManager()
 {
-    assert(task_manager_);
+    traced_assert(task_manager_);
     return *task_manager_;
 }
 
 ViewManager& COMPASS::viewManager()
 {
-    assert(view_manager_);
+    traced_assert(view_manager_);
     return *view_manager_;
 }
 
 SimpleConfig& COMPASS::config()
 {
-    assert(simple_config_);
+    traced_assert(simple_config_);
     return *simple_config_;
 }
 
 EvaluationManager& COMPASS::evaluationManager()
 {
-    assert(eval_manager_);
+    traced_assert(eval_manager_);
     return *eval_manager_;
 }
 
 FFTManager& COMPASS::fftManager()
 {
-    assert(fft_manager_);
+    traced_assert(fft_manager_);
     return *fft_manager_;
 }
 
 LicenseManager& COMPASS::licenseManager()
 {
-    assert(license_manager_);
+    traced_assert(license_manager_);
     return *license_manager_;
 }
 
 rtcommand::RTCommandRunner& COMPASS::rtCmdRunner()
 {
-    assert(rt_cmd_runner_);
+    traced_assert(rt_cmd_runner_);
     return *rt_cmd_runner_;
 }
 
@@ -777,7 +786,7 @@ bool COMPASS::canCreateDBFileFromMemory() const
 
 void COMPASS::init()
 {
-    assert(task_manager_);
+    traced_assert(task_manager_);
     task_manager_->init();
 }
 
@@ -793,40 +802,40 @@ void COMPASS::shutdown()
 
     app_state_ = AppState::Shutdown;
 
-    assert(task_manager_);
+    traced_assert(task_manager_);
     task_manager_->shutdown();
     task_manager_ = nullptr;
 
-    assert(db_interface_);
+    traced_assert(db_interface_);
 
-    assert(ds_manager_);
+    traced_assert(ds_manager_);
     if (db_interface_->ready())
         ds_manager_->saveDBDataSources();
     ds_manager_ = nullptr;
 
-    assert(fft_manager_);
+    traced_assert(fft_manager_);
     if (db_interface_->ready())
         fft_manager_->saveDBFFTs();
     fft_manager_ = nullptr;
 
-    assert(dbcontent_manager_);
+    traced_assert(dbcontent_manager_);
     if (db_interface_->ready())
         dbcontent_manager_->saveTargets();
     dbcontent_manager_ = nullptr;
 
     JobManager::instance().shutdown();
 
-    assert(eval_manager_);
+    traced_assert(eval_manager_);
     eval_manager_->close();
     eval_manager_ = nullptr;
 
-    assert(view_manager_);
+    traced_assert(view_manager_);
     view_manager_->close();
     view_manager_ = nullptr;
 
     //osgDB::Registry::instance(true);
 
-    assert(filter_manager_);
+    traced_assert(filter_manager_);
     filter_manager_ = nullptr;
 
     if (db_interface_->ready())
@@ -834,13 +843,13 @@ void COMPASS::shutdown()
 
     db_interface_ = nullptr;
 
-    assert(license_manager_);
+    traced_assert(license_manager_);
     license_manager_ = nullptr;
 
     //shut down command manager at the end
     RTCommandManager::instance().shutdown();
 
-    loginf << "end";
+    loginf << "done. goodbye.";
 }
 
 MainWindow& COMPASS::mainWindow()
@@ -855,7 +864,7 @@ MainWindow& COMPASS::mainWindow()
                         main_window_, &MainWindow::loadingDone);
     }
 
-    assert(main_window_);
+    traced_assert(main_window_);
     return *main_window_;
 }
 
@@ -1001,7 +1010,7 @@ void COMPASS::appMode(const AppMode& app_mode)
 
             // load all data in db
             msg_box = new QMessageBox;
-            assert(msg_box);
+            traced_assert(msg_box);
             msg_box->setWindowTitle(("Switching to "+toString(app_mode_)).c_str());
             msg_box->setText("Loading data");
             msg_box->setStandardButtons(QMessageBox::NoButton);
@@ -1023,7 +1032,7 @@ void COMPASS::appMode(const AppMode& app_mode)
             // load first, switch after to add to existing cache
 
             msg_box = new QMessageBox;
-            assert(msg_box);
+            traced_assert(msg_box);
             msg_box->setWindowTitle(("Switching to "+toString(app_mode_)).c_str());
             msg_box->setText("Loading data");
             msg_box->setStandardButtons(QMessageBox::NoButton);
@@ -1044,7 +1053,7 @@ void COMPASS::appMode(const AppMode& app_mode)
                 QThread::msleep(10);
             }
 
-            assert(msg_box);
+            traced_assert(msg_box);
             msg_box->close();
             delete msg_box;
 
@@ -1073,7 +1082,7 @@ std::string COMPASS::appModeStr() const
         logerr << "unkown type " << (unsigned int) app_mode_;
     }
 
-    assert(appModes2Strings().count(app_mode_) > 0);
+    traced_assert(appModes2Strings().count(app_mode_) > 0);
     return appModes2Strings().at(app_mode_);
 }
 
@@ -1121,7 +1130,7 @@ void COMPASS::addDBFileToList(const std::string filename)
 std::string COMPASS::versionString(bool open_ats, 
                                    bool license_type) const
 {
-    assert(COMPASS::instance().config().existsId("version"));
+    traced_assert(COMPASS::instance().config().existsId("version"));
     std::string version = COMPASS::instance().config().getString("version");
 
     std::string version_str;

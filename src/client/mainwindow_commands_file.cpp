@@ -20,6 +20,7 @@
 #include "compass.h"
 #include "logger.h"
 #include "util/files.h"
+#include "traced_assert.h"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -73,7 +74,7 @@ bool RTCommandOpenDB::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->openExistingDB(filename_);
 
@@ -163,7 +164,7 @@ bool RTCommandOpenRecentDB::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->openExistingDB(fn);
 
@@ -216,7 +217,7 @@ bool RTCommandCreateDB::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->createDB(filename_);
 
@@ -261,7 +262,7 @@ bool RTCommandCloseDB::run_impl()
         return false;
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->closeDBSlot();
 
@@ -273,7 +274,7 @@ bool RTCommandCloseDB::run_impl()
 bool RTCommandQuit::run_impl()
 {
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     QTimer::singleShot(100, [main_window] () { main_window->quitSlot(); });
 

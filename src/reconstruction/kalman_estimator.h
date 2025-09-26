@@ -98,9 +98,11 @@ public:
         bool fix_predictions_interp = false;
 
         bool extract_wgs84_pos = false;
+
+        bool allow_backwards_step = false;
         
-        int  verbosity = 0;
-        bool debug     = false;
+        int  verbosity   = 0;
+        bool debug       = false;
 
         reconstruction::Uncertainty default_uncert; //default uncertainties used if none are provided in the measurement
 
@@ -153,43 +155,65 @@ public:
     StepResult kalmanStep(kalman::KalmanUpdate& update,
                           const Measurement& mm);
     
-    kalman::KalmanError kalmanPrediction(Measurement& mm,
+    kalman::KalmanError kalmanPrediction(Measurement* mm,
+                                         kalman::GeoProbState* gp_state,
+                                         kalman::GeoProbState* gp_state_mm,
                                          double dt,
                                          bool* fixed = nullptr) const;
-    kalman::KalmanError kalmanPrediction(Measurement& mm,
+    kalman::KalmanError kalmanPrediction(Measurement* mm,
+                                         kalman::GeoProbState* gp_state,
+                                         kalman::GeoProbState* gp_state_mm,
                                          const boost::posix_time::ptime& ts,
                                          bool* fixed = nullptr) const;
-    kalman::KalmanError kalmanPrediction(Measurement& mm,
+    kalman::KalmanError kalmanPrediction(Measurement* mm,
+                                         kalman::GeoProbState* gp_state,
+                                         kalman::GeoProbState* gp_state_mm,
                                          const kalman::KalmanUpdate& ref_update,
                                          const boost::posix_time::ptime& ts,
                                          bool* fixed = nullptr,
                                          bool* proj_changed = nullptr);
-    kalman::KalmanError kalmanPrediction(Measurement& mm,
+    kalman::KalmanError kalmanPrediction(Measurement* mm,
+                                         kalman::GeoProbState* gp_state,
+                                         kalman::GeoProbState* gp_state_mm,
                                          const kalman::KalmanUpdateMinimal& ref_update,
                                          const boost::posix_time::ptime& ts,
                                          bool* fixed = nullptr,
                                          bool* proj_changed = nullptr);
-    kalman::KalmanError kalmanPrediction(Measurement& mm,
+    kalman::KalmanError kalmanPrediction(Measurement* mm,
+                                         kalman::GeoProbState* gp_state,
+                                         kalman::GeoProbState* gp_state_mm,
                                          const kalman::KalmanUpdate& ref_update0,
                                          const kalman::KalmanUpdate& ref_update1,
                                          const boost::posix_time::ptime& ts,
                                          size_t* num_fixed = nullptr,
                                          size_t* num_proj_changed = nullptr);
-    kalman::KalmanError kalmanPrediction(Measurement& mm,
+    kalman::KalmanError kalmanPrediction(Measurement* mm,
+                                         kalman::GeoProbState* gp_state,
+                                         kalman::GeoProbState* gp_state_mm,
                                          const kalman::KalmanUpdateMinimal& ref_update0,
                                          const kalman::KalmanUpdateMinimal& ref_update1,
                                          const boost::posix_time::ptime& ts,
                                          size_t* num_fixed = nullptr,
                                          size_t* num_proj_changed = nullptr);
 
+    kalman::KalmanError comparePrediction(PredictionComparison& comparison,
+                                          const kalman::GeoProbState& pred_state_mm,
+                                          const Measurement& mm,
+                                          int comparison_flags,
+                                          KalmanProjectionHandler* phandler = nullptr) const;
+
     void storeUpdate(Measurement& mm, 
-                     const kalman::KalmanUpdate& update) const;
+                     const kalman::KalmanUpdate& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdate(Measurement& mm, 
-                     const kalman::KalmanUpdateMinimal& update) const;
+                     const kalman::KalmanUpdateMinimal& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdate(Reference& ref, 
-                     const kalman::KalmanUpdate& update) const;
+                     const kalman::KalmanUpdate& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdate(Reference& ref, 
-                     const kalman::KalmanUpdateMinimal& update) const;
+                     const kalman::KalmanUpdateMinimal& update,
+                     bool force_wgs84_computation = false) const;
     void storeUpdates(std::vector<Reference>& refs,
                       const std::vector<kalman::KalmanUpdate>& updates,
                       std::vector<boost::optional<Eigen::Vector2d>>* speedvec_tippos_wgs84 = nullptr,

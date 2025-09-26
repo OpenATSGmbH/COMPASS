@@ -137,7 +137,7 @@ int Section::columnCount() const
 */
 QVariant Section::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return heading_.c_str();
 }
@@ -191,10 +191,10 @@ bool Section::hasSubSection (const std::string& heading)
 */
 Section& Section::getSubSection (const std::string& heading)
 {
-    assert (hasSubSection(heading));
+    traced_assert(hasSubSection(heading));
 
     Section* tmp = findSubSection (heading);
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
@@ -204,10 +204,10 @@ void Section::addSubSection (const std::string& heading)
 {
     logdbg << "Section " << heading_ << ": addSubSection: adding " << heading;
 
-    assert (!hasSubSection(heading));
+    traced_assert(!hasSubSection(heading));
 
     sub_sections_.push_back(std::make_shared<Section>(heading, compoundHeading(), this, report_));
-    assert (hasSubSection(heading));
+    traced_assert(hasSubSection(heading));
 }
 
 /**
@@ -256,7 +256,7 @@ QWidget* Section::getContentWidget(bool preload_ondemand_contents)
     if (!content_widget_container_)
     {
         createContentWidget(preload_ondemand_contents);
-        assert(content_widget_container_);
+        traced_assert(content_widget_container_);
     }
 
     return content_widget_container_.get();
@@ -298,13 +298,13 @@ bool Section::hasText (const std::string& name)
 SectionContentText& Section::getText (const std::string& name)
 {
     auto idx = findContent(name, SectionContentType::Text);
-    assert(idx.has_value());
+    traced_assert(idx.has_value());
 
     auto c = loadOrGetContent(idx.value(), false);
-    assert(c);
+    traced_assert(c);
 
     SectionContentText* tmp = dynamic_cast<SectionContentText*>(c.get());
-    assert (tmp);
+    traced_assert(tmp);
 
     return *tmp;
 }
@@ -313,7 +313,7 @@ SectionContentText& Section::getText (const std::string& name)
 */
 SectionContentText& Section::addText(const std::string& name)
 {
-    assert (!hasText(name));
+    traced_assert(!hasText(name));
     auto id = Section::newContentID();
     content_ids_.push_back(id);
     content_names_.push_back(name);
@@ -322,7 +322,7 @@ SectionContentText& Section::addText(const std::string& name)
     
     content_.push_back(ptr);
     content_types_.push_back((int)content_.back()->contentType());
-    assert (hasText(name));
+    traced_assert(hasText(name));
 
     return *ptr;
 }
@@ -346,13 +346,13 @@ bool Section::hasTable(const std::string& name)
 SectionContentTable& Section::getTable(const std::string& name)
 {
     auto idx = findContent(name, SectionContentType::Table);
-    assert(idx.has_value());
+    traced_assert(idx.has_value());
 
     auto c = loadOrGetContent(idx.value(), false);
-    assert(c);
+    traced_assert(c);
 
     SectionContentTable* tmp = dynamic_cast<SectionContentTable*>(c.get());
-    assert (tmp);
+    traced_assert(tmp);
 
     return *tmp;
 }
@@ -380,7 +380,7 @@ SectionContentTable& Section::addTable(const std::string& name,
                                        unsigned int sort_column, 
                                        Qt::SortOrder order)
 {
-    assert (!hasTable(name));
+    traced_assert(!hasTable(name));
     auto id = Section::newContentID();
     content_ids_.push_back(id);
     content_names_.push_back(name);
@@ -397,7 +397,7 @@ SectionContentTable& Section::addTable(const std::string& name,
     content_.push_back(ptr);
 
     content_types_.push_back((int)content_.back()->contentType());
-    assert (hasTable(name));
+    traced_assert(hasTable(name));
 
     return *ptr;
 }
@@ -421,13 +421,13 @@ bool Section::hasFigure (const std::string& name)
 SectionContentFigure& Section::getFigure (const std::string& name)
 {
     auto idx = findContent(name, SectionContentType::Figure);
-    assert(idx.has_value());
+    traced_assert(idx.has_value());
 
     auto c = loadOrGetContent(idx.value(), false);
-    assert(c);
+    traced_assert(c);
 
     SectionContentFigure* tmp = dynamic_cast<SectionContentFigure*>(c.get());
-    assert (tmp);
+    traced_assert(tmp);
 
     return *tmp;
 }
@@ -437,8 +437,8 @@ SectionContentFigure& Section::getFigure (const std::string& name)
 SectionContentFigure& Section::addFigure(const std::string& name, 
                                          const SectionContentViewable& viewable)
 {
-    assert (!name.empty());
-    assert (!hasFigure(name));
+    traced_assert(!name.empty());
+    traced_assert(!hasFigure(name));
 
     unsigned int id = Section::newContentID();
     content_ids_.push_back(id);
@@ -452,7 +452,7 @@ SectionContentFigure& Section::addFigure(const std::string& name,
 
     content_.push_back(ptr);
     content_types_.push_back((int)content_.back()->contentType());
-    assert (hasFigure(name));
+    traced_assert(hasFigure(name));
 
     return *ptr;
 }
@@ -482,10 +482,10 @@ std::vector<SectionContentFigure*> Section::getFigures()
     for (auto idx : idxs)
     {
         auto c = loadOrGetContent(idx, false);
-        assert(c);
+        traced_assert(c);
 
         auto fig = dynamic_cast<SectionContentFigure*>(c.get());
-        assert(fig);
+        traced_assert(fig);
 
         figures.push_back(fig);
     }
@@ -712,7 +712,7 @@ bool Section::hasAnyContent(const std::string& name) const
 unsigned int Section::contentID(const std::string& name, SectionContentType type) const
 {
     auto idx = findContent(name, type);
-    assert(idx.has_value());
+    traced_assert(idx.has_value());
 
     return content_ids_.at(idx.value());
 }
@@ -772,7 +772,7 @@ void Section::createContentWidget(bool preload_ondemand_contents)
 {
     loginf << "creating content widget for section '" << name() << "'";
 
-    assert (!content_widget_container_);
+    traced_assert(!content_widget_container_);
 
     content_widget_container_.reset(new QWidget());
 
@@ -793,7 +793,7 @@ void Section::recreateContentUI(bool force_ui_reset,
     if (!content_widget_container_)
         return;
 
-    assert(content_widget_container_layout_);
+    traced_assert(content_widget_container_layout_);
 
     //destroy old content widget
     if (content_widget_)
@@ -894,7 +894,7 @@ std::shared_ptr<SectionContent> Section::loadOrGetContent(size_t idx,
 
     Section* s = const_cast<Section*>(this); //@TODO
     auto c = report_->loadContent(s, id, show_dialog);
-    assert(c);
+    traced_assert(c);
 
     c_ptr = c;
 
@@ -956,8 +956,8 @@ bool Section::fromJSON_impl(const nlohmann::json& j)
     content_.resize(content_ids_.size());
     hidden_content_.resize(hidden_content_ids_.size());
 
-    assert(content_ids_.size() == content_names_.size());
-    assert(content_ids_.size() == content_types_.size());
+    traced_assert(content_ids_.size() == content_names_.size());
+    traced_assert(content_ids_.size() == content_types_.size());
 
     const auto& j_subsections = j[ FieldSubSections ];
     if (!j_subsections.is_array())
@@ -1068,7 +1068,7 @@ bool Section::configure(const nlohmann::json& j)
 
         size_t idx = std::distance(content_.begin(), it);
         const auto& c = content_.at(idx);
-        assert(c);
+        traced_assert(c);
         
         //try to configure content
         if (!c->configure(config))

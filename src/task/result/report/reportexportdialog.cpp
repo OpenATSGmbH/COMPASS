@@ -86,7 +86,7 @@ void ReportExportDialog::showEvent(QShowEvent *event)
 QLabel* ReportExportDialog::configLabel(QWidget* w)
 {
     auto label = dynamic_cast<QLabel*>(config_layout_->labelForField(w));
-    assert(label);
+    traced_assert(label);
     return label;
 }
 
@@ -95,7 +95,7 @@ QLabel* ReportExportDialog::configLabel(QWidget* w)
 QLabel* ReportExportDialog::configLabel(QLayout* l)
 {
     auto label = dynamic_cast<QLabel*>(config_layout_->labelForField(l));
-    assert(label);
+    traced_assert(label);
     return label;
 }
 
@@ -155,12 +155,12 @@ void ReportExportDialog::createUI()
     base_dir_layout_->addWidget(base_dir_button_);
     base_dir_layout_->addWidget(base_dir_edit_);
 
-    config_layout_->addRow("Base Directory", base_dir_layout_);
+    config_layout_->addRow("Report Directory", base_dir_layout_);
 
-    res_dir_name_edit_ = new QLineEdit;
-    config_layout_->addRow("Report Directory", res_dir_name_edit_);
+    // res_dir_name_edit_ = new QLineEdit;
+    // config_layout_->addRow("Report Directory", res_dir_name_edit_);
 
-    connect(res_dir_name_edit_, &QLineEdit::textChanged, this, &ReportExportDialog::checkExport);
+    //connect(res_dir_name_edit_, &QLineEdit::textChanged, this, &ReportExportDialog::checkExport);
 
     report_name_edit_ = new QLineEdit;
     config_layout_->addRow("Report Name", report_name_edit_);
@@ -227,21 +227,35 @@ void ReportExportDialog::createUI()
  */
 void ReportExportDialog::configureUI(const boost::optional<std::string>& export_dir)
 {
-    auto db_fn      = COMPASS::instance().lastDbFilename();
-    auto db_dir     = export_dir.has_value() ? export_dir.value() : Utils::Files::getDirectoryFromPath(db_fn);
-    auto base_name  = boost::filesystem::path(db_fn).stem().string();
-    auto res_name   = task_result_.name();
-    auto exp_folder = reportExportMode2Folder(export_mode_);
-
-    assert(!exp_folder.empty());
-
-    auto report_dir  = Utils::Files::normalizeFilename(base_name + " " + res_name, false) +
-                       "/" + exp_folder;
-    auto report_name = Utils::Files::normalizeFilename(res_name, false) + 
-                       reportExportMode2Extension(export_mode_);
+    auto result_name   = task_result_.name();
     
-    base_dir_edit_->setText(QString::fromStdString(db_dir));
-    res_dir_name_edit_->setText(QString::fromStdString(report_dir));
+    std::string report_dir;
+    auto report_name = Utils::Files::normalizeFilename(result_name, false) + 
+                       reportExportMode2Extension(export_mode_);
+
+    //auto exp_folder = reportExportMode2Folder(export_mode_);
+    //traced_assert(!exp_folder.empty());
+
+    if (export_dir)
+        report_dir = *export_dir;
+    else
+    {
+        auto db_fn = COMPASS::instance().lastDbFilename();
+        auto db_dir = Utils::Files::getDirectoryFromPath(db_fn);
+        // auto db_dir     = export_dir.has_value() ? export_dir.value() :
+        // Utils::Files::getDirectoryFromPath(db_fn);
+        //auto base_name = boost::filesystem::path(db_fn).stem().string();
+
+        report_dir = db_dir + "/" + Utils::Files::normalizeFilename(result_name, false);
+
+        loginf << "db_fn " << db_fn << " db_dir " << db_dir
+            << " result_name " << result_name << " report_dir " << report_dir;
+    }
+    
+    loginf << "report_dir " << report_dir << " report_name " << report_name;
+
+    base_dir_edit_->setText(QString::fromStdString(report_dir));
+    //res_dir_name_edit_->setText(QString::fromStdString(report_dir));
     report_name_edit_->setText(QString::fromStdString(report_name));
 
     bool is_latex_mode = export_mode_ == ReportExportMode::Latex ||
@@ -291,8 +305,7 @@ void ReportExportDialog::writeSettings()
  */
 void ReportExportDialog::checkExport()
 {
-    bool can_export = !res_dir_name_edit_->text().isEmpty() &&
-                      !base_dir_edit_->text().isEmpty() &&
+    bool can_export = !base_dir_edit_->text().isEmpty() &&
                       !report_name_edit_->text().isEmpty();
 
     export_button_->setEnabled(can_export);
@@ -311,8 +324,7 @@ void ReportExportDialog::exportReport()
     cancel_button_->setEnabled(false);
     config_widget_->setEnabled(false);
 
-    auto dir = base_dir_edit_->text().toStdString() + "/" +
-               res_dir_name_edit_->text().toStdString();
+    auto dir = base_dir_edit_->text().toStdString() + "/";
     auto fn  = report_name_edit_->text().toStdString();
 
     QApplication::processEvents();

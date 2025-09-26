@@ -102,7 +102,7 @@ DBInterface::DBInterface(string class_id,
  */
 DBInterface::~DBInterface()
 {
-    logdbg << "start";
+    logdbg;
 
     db_instance_ = nullptr;
 
@@ -114,7 +114,7 @@ DBInterface::~DBInterface()
  */
 SQLGenerator DBInterface::sqlGenerator() const
 {
-    assert(db_instance_);
+    traced_assert(db_instance_);
     return SQLGenerator(db_instance_->sqlConfiguration());
 }
 
@@ -177,7 +177,7 @@ bool DBInterface::ready() const
  */
 void DBInterface::openDBFile(const std::string& filename, bool overwrite)
 {
-    assert(!filename.empty());
+    traced_assert(!filename.empty());
 
     bool new_file = !Files::fileExists(filename) || overwrite;
 
@@ -221,7 +221,7 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
         loginf << "opening file '" << filename_internal << "'";
 
         //connect to db
-        assert (db_instance_);
+        traced_assert(db_instance_);
 
         auto open_result = in_mem ? db_instance_->openInMemory() : db_instance_->open(filename);
 
@@ -234,22 +234,22 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
         if (created_new_db)
         {
             //create some default tables
-            assert (!existsPropertiesTable());
+            traced_assert(!existsPropertiesTable());
             createPropertiesTable();
             properties_loaded_ = true;
 
             setProperty("APP_VERSION", COMPASS::instance().config().getString("version"));
             saveProperties();
 
-            assert (!existsDataSourcesTable());
+            traced_assert(!existsDataSourcesTable());
             createDataSourcesTable();
 
-            assert (!existsSectorsTable());
+            traced_assert(!existsSectorsTable());
             createSectorsTable();
         }
         else
         {
-            assert (existsPropertiesTable());
+            traced_assert(existsPropertiesTable());
             loadProperties();
 
             //check db version against app version
@@ -268,8 +268,8 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
                 throw std::runtime_error ("Incorrect application version for database:\n "+reason);
             }
 
-            assert (existsDataSourcesTable());
-            assert (existsSectorsTable());
+            traced_assert(existsDataSourcesTable());
+            traced_assert(existsSectorsTable());
         }
 
         if (!existsTargetsTable())
@@ -300,8 +300,8 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
  */
 void DBInterface::openDBFileFromMemory(const std::string& filename)
 {
-    assert(canCreateDBFileFromMemory());
-    assert(!filename.empty());
+    traced_assert(canCreateDBFileFromMemory());
+    traced_assert(!filename.empty());
 
     try
     {
@@ -337,7 +337,7 @@ void DBInterface::openDBFileFromMemory(const std::string& filename)
  */
 void DBInterface::closeDB()
 {
-    loginf << "start";
+    loginf;
 
     if (properties_loaded_)  // false if database not opened
         saveProperties();
@@ -347,7 +347,7 @@ void DBInterface::closeDB()
         boost::mutex::scoped_lock locker(instance_mutex_);
         #endif
 
-        assert (db_instance_);
+        traced_assert(db_instance_);
         db_instance_->close();
 
         properties_loaded_ = false;
@@ -364,7 +364,7 @@ void DBInterface::closeDB()
  */
 void DBInterface::exportDBFile(const std::string& filename)
 {
-    assert (ready());
+    traced_assert(ready());
 
     Result export_result;
 
@@ -399,9 +399,9 @@ void DBInterface::exportDBFile(const std::string& filename)
  */
 bool DBInterface::cleanupDB(bool show_dialog)
 {
-    loginf << "start";
+    loginf;
 
-    assert (ready());
+    traced_assert(ready());
 
     //in-mem => nothing to do
     if (dbInMemory())
@@ -433,9 +433,9 @@ Result DBInterface::cleanupDBInternal()
 {
     loginf << "cleaning db...";
 
-    assert(ready());
-    assert(!cleanup_in_progress_);
-    assert(!dbInMemory());
+    traced_assert(ready());
+    traced_assert(!cleanup_in_progress_);
+    traced_assert(!dbInMemory());
 
     cleanup_in_progress_ = true;
 
@@ -492,7 +492,7 @@ void DBInterface::generateSubConfigurable(const string& class_id,
  */
 Result DBInterface::execute(const std::string& sql)
 {
-    assert(ready());
+    traced_assert(ready());
 
     auto res = db_instance_->defaultConnection().execute(sql);
 
@@ -510,7 +510,7 @@ Result DBInterface::execute(const std::string& sql)
  */
 std::shared_ptr<DBResult> DBInterface::execute(const DBCommand& cmd)
 {
-    assert(ready());
+    traced_assert(ready());
 
     auto res = db_instance_->defaultConnection().execute(cmd);
 
@@ -528,7 +528,7 @@ std::shared_ptr<DBResult> DBInterface::execute(const DBCommand& cmd)
  */
 void DBInterface::updateTableInfo()
 {
-    assert(ready());
+    traced_assert(ready());
 
     auto res = db_instance_->updateTableInfo();
 
@@ -543,7 +543,7 @@ void DBInterface::updateTableInfo()
  */
 const std::map<std::string, DBTableInfo>& DBInterface::tableInfo() const
 { 
-    assert(ready());
+    traced_assert(ready());
 
     //@TODO: needs protection?
     return db_instance_->tableInfo();
@@ -562,7 +562,7 @@ void DBInterface::createTable(const DBContent& object)
 {
     loginf << "obj " << object.name();
 
-    assert(ready());
+    traced_assert(ready());
 
     if (existsTable(object.dbTableName()))
     {
@@ -583,7 +583,7 @@ void DBInterface::createTable(const DBContent& object)
 
     loginf << "checking " << object.dbTableName();
 
-    assert(existsTable(object.dbTableName()));
+    traced_assert(existsTable(object.dbTableName()));
 }
 
 /**
@@ -592,7 +592,7 @@ void DBInterface::removeTable(const std::string& table_name)
 {
     loginf << "name " << table_name;
 
-    assert(ready());
+    traced_assert(ready());
 
     if (!existsTable(table_name))
     {
@@ -604,11 +604,11 @@ void DBInterface::removeTable(const std::string& table_name)
     
     loginf << "checking " << table_name;
 
-    assert(res.ok());
+    traced_assert(res.ok());
 
     updateTableInfo();
 
-    assert(!existsTable(table_name));
+    traced_assert(!existsTable(table_name));
 }
 
 /**
@@ -622,17 +622,17 @@ bool DBInterface::existsPropertiesTable()
  */
 unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
 {
-    assert (ready());
-    assert(object.existsInDB());
+    traced_assert(ready());
+    traced_assert(object.existsInDB());
 
-    assert (COMPASS::instance().dbContentManager().existsMetaVariable(DBContent::meta_var_rec_num_.name()));
-    assert (COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(COMPASS::instance().dbContentManager().existsMetaVariable(DBContent::meta_var_rec_num_.name()));
+    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_rec_num_.name()).existsIn(object.name()));
 
     Variable& rec_num_var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_rec_num_.name()).getFor(object.name());
 
-    assert (object.hasVariable(rec_num_var.name()));
+    traced_assert(object.hasVariable(rec_num_var.name()));
 
     unsigned long max_rn = 0;
 
@@ -644,7 +644,7 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
         shared_ptr<DBCommand> command = sqlGenerator().getMaxULongIntValueCommand(object.dbTableName(),
                                                                                   rec_num_var.dbColumnName());
         shared_ptr<DBResult> result = execute(*command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
@@ -654,7 +654,7 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
             return 0;
         }
 
-        assert (!buffer->get<unsigned long>(rec_num_var.dbColumnName()).isNull(0));
+        traced_assert(!buffer->get<unsigned long>(rec_num_var.dbColumnName()).isNull(0));
 
         max_rn = buffer->get<unsigned long>(rec_num_var.dbColumnName()).get(0);
     }
@@ -666,21 +666,21 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
  */
 unsigned int DBInterface::getMaxRefTrackTrackNum()
 {
-    assert(ready());
+    traced_assert(ready());
 
     DBContent& reftraj_content = COMPASS::instance().dbContentManager().dbContent("RefTraj");
 
     if(!reftraj_content.existsInDB())
         return 0;
 
-    assert (COMPASS::instance().dbContentManager().existsMetaVariable(DBContent::meta_var_track_num_.name()));
-    assert (COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(COMPASS::instance().dbContentManager().existsMetaVariable(DBContent::meta_var_track_num_.name()));
+    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_track_num_.name()).existsIn("RefTraj"));
 
     Variable& track_num_var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_track_num_.name()).getFor("RefTraj");
 
-    assert (reftraj_content.hasVariable(track_num_var.name()));
+    traced_assert(reftraj_content.hasVariable(track_num_var.name()));
 
     unsigned int max_tn = 0;
 
@@ -692,7 +692,7 @@ unsigned int DBInterface::getMaxRefTrackTrackNum()
         shared_ptr<DBCommand> command = sqlGenerator().getMaxUIntValueCommand(reftraj_content.dbTableName(),
                                                                             track_num_var.dbColumnName());
         shared_ptr<DBResult> result = execute(*command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
@@ -702,7 +702,7 @@ unsigned int DBInterface::getMaxRefTrackTrackNum()
             return 0;
         }
 
-        assert (!buffer->get<unsigned int>(track_num_var.dbColumnName()).isNull(0));
+        traced_assert(!buffer->get<unsigned int>(track_num_var.dbColumnName()).isNull(0));
 
         max_tn = buffer->get<unsigned int>(track_num_var.dbColumnName()).get(0);
     }
@@ -714,7 +714,7 @@ unsigned int DBInterface::getMaxRefTrackTrackNum()
  */
 boost::optional<unsigned long> DBInterface::getMaxReportContentID()
 {
-    assert(ready());
+    traced_assert(ready());
 
     if (!existsReportContentsTable())
         return boost::optional<unsigned long>();
@@ -729,15 +729,15 @@ boost::optional<unsigned long> DBInterface::getMaxReportContentID()
         shared_ptr<DBCommand> command = sqlGenerator().getMaxUIntValueCommand(ResultReport::SectionContent::DBTableName,
                                                                               ResultReport::SectionContent::DBColumnContentID.name());
         shared_ptr<DBResult> result = execute(*command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
-        assert(buffer->size() <= 1);
+        traced_assert(buffer->size() <= 1);
 
         if (buffer->size() == 0)
             return boost::optional<unsigned long>();
 
-        assert(!buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnContentID.name()).isNull(0));
+        traced_assert(!buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnContentID.name()).isNull(0));
 
         max_tn = buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnContentID.name()).get(0);
     }
@@ -750,7 +750,7 @@ boost::optional<unsigned long> DBInterface::getMaxReportContentID()
 //{
 //    DBContent& object = COMPASS::instance().dbContentManager().dbContent("ADSB");
 
-//    assert(object.existsInDB());
+//    traced_assert(object.existsInDB());
 
 //    boost::mutex::scoped_lock locker(connection_mutex_);
 
@@ -761,15 +761,15 @@ boost::optional<unsigned long> DBInterface::getMaxReportContentID()
 
 //    shared_ptr<DBResult> result = execute(*command);
 
-//    assert(result->containsData());
+//    traced_assert(result->containsData());
 
 //    shared_ptr<Buffer> buffer = result->buffer();
-//    assert (buffer->has<int>("TARGET_ADDR"));
-//    assert (buffer->has<int>("MOPS_VERSION"));
-//    assert (buffer->has<char>("MIN_NUCP_NIC"));
-//    assert (buffer->has<char>("MAX_NUCP_NIC"));
-//    assert (buffer->has<char>("MIN_NACP"));
-//    assert (buffer->has<char>("MAX_NACP"));
+//    traced_assert(buffer->has<int>("TARGET_ADDR"));
+//    traced_assert(buffer->has<int>("MOPS_VERSION"));
+//    traced_assert(buffer->has<char>("MIN_NUCP_NIC"));
+//    traced_assert(buffer->has<char>("MAX_NUCP_NIC"));
+//    traced_assert(buffer->has<char>("MIN_NACP"));
+//    traced_assert(buffer->has<char>("MAX_NACP"));
 
 //    NullableVector<int>& tas = buffer->get<int>("TARGET_ADDR");
 //    NullableVector<int>& mops = buffer->get<int>("MOPS_VERSION");
@@ -809,8 +809,8 @@ bool DBInterface::existsDataSourcesTable()
  */
 void DBInterface::createDataSourcesTable()
 {
-    assert(ready());
-    assert(!existsDataSourcesTable());
+    traced_assert(ready());
+    traced_assert(!existsDataSourcesTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -826,9 +826,9 @@ void DBInterface::createDataSourcesTable()
  */
 std::vector<std::unique_ptr<dbContent::DBDataSource>> DBInterface::getDataSources()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(ready());
+    traced_assert(ready());
 
     using namespace dbContent;
 
@@ -844,19 +844,19 @@ std::vector<std::unique_ptr<dbContent::DBDataSource>> DBInterface::getDataSource
         loginf << "sql '" << command->get() << "'";
 
         shared_ptr<DBResult> result = execute(*command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
         shared_ptr<Buffer> buffer = result->buffer();
 
         logdbg << "json '" << buffer->asJSON().dump(4) << "'";
 
-        assert(buffer->properties().hasProperty(DBDataSource::id_column_));
-        assert(buffer->properties().hasProperty(DBDataSource::ds_type_column_));
-        assert(buffer->properties().hasProperty(DBDataSource::sac_column_));
-        assert(buffer->properties().hasProperty(DBDataSource::sic_column_));
-        assert(buffer->properties().hasProperty(DBDataSource::name_column_));
-        assert(buffer->properties().hasProperty(DBDataSource::short_name_));
-        assert(buffer->properties().hasProperty(DBDataSource::info_column_));
-        assert(buffer->properties().hasProperty(DBDataSource::counts_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::id_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::ds_type_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::sac_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::sic_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::name_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::short_name_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::info_column_));
+        traced_assert(buffer->properties().hasProperty(DBDataSource::counts_column_));
 
         for (unsigned cnt = 0; cnt < buffer->size(); cnt++)
         {
@@ -927,7 +927,7 @@ void DBInterface::saveDataSources(const std::vector<std::unique_ptr<dbContent::D
 
     using namespace dbContent;
 
-    assert (ready());
+    traced_assert(ready());
 
     clearTableContent(DBDataSource::table_name_);
 
@@ -961,11 +961,11 @@ void DBInterface::saveDataSources(const std::vector<std::unique_ptr<dbContent::D
         ++cnt;
     }
 
-    loginf << "buffer size " << buffer->size();
+    logdbg << "buffer size " << buffer->size();
 
     insertBuffer(DBDataSource::table_name_, buffer);
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**
@@ -979,8 +979,8 @@ bool DBInterface::existsFFTsTable()
  */
 void DBInterface::createFFTsTable()
 {
-    assert(ready());
-    assert(!existsFFTsTable());
+    traced_assert(ready());
+    traced_assert(!existsFFTsTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -996,9 +996,9 @@ void DBInterface::createFFTsTable()
  */
 std::vector<std::unique_ptr<DBFFT>> DBInterface::getFFTs()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(ready());
+    traced_assert(ready());
 
     using namespace dbContent;
 
@@ -1014,13 +1014,13 @@ std::vector<std::unique_ptr<DBFFT>> DBInterface::getFFTs()
         logdbg << "sql '" << command->get() << "'";
 
         shared_ptr<DBResult> result = execute(*command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
         shared_ptr<Buffer> buffer = result->buffer();
 
         logdbg << "json '" << buffer->asJSON().dump(4) << "'";
 
-        assert(buffer->properties().hasProperty(DBFFT::name_column_));
-        assert(buffer->properties().hasProperty(DBFFT::info_column_));
+        traced_assert(buffer->properties().hasProperty(DBFFT::name_column_));
+        traced_assert(buffer->properties().hasProperty(DBFFT::info_column_));
 
         for (unsigned cnt = 0; cnt < buffer->size(); cnt++)
         {
@@ -1053,7 +1053,7 @@ void DBInterface::saveFFTs(const std::vector<std::unique_ptr<DBFFT>>& ffts)
 
     using namespace dbContent;
 
-    assert (ready());
+    traced_assert(ready());
 
     if (existsFFTsTable())
         clearTableContent(DBFFT::table_name_);
@@ -1088,8 +1088,8 @@ size_t DBInterface::count(const string& table)
 {
     logdbg << "table " << table;
 
-    assert(ready());
-    assert(existsTable(table));
+    traced_assert(ready());
+    traced_assert(existsTable(table));
 
     int tmp;
 
@@ -1110,7 +1110,7 @@ size_t DBInterface::count(const string& table)
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         tmp = result->buffer()->get<int>("count").get(0);
     }
@@ -1131,7 +1131,7 @@ void DBInterface::setProperty(const string& id, const string& value)
  */
 string DBInterface::getProperty(const string& id)
 {
-    assert(hasProperty(id));
+    traced_assert(hasProperty(id));
     return properties_.at(id);
 }
 
@@ -1139,7 +1139,7 @@ string DBInterface::getProperty(const string& id)
  */
 void DBInterface::removeProperty(const std::string& id)
 {
-    assert(hasProperty(id));
+    traced_assert(hasProperty(id));
     properties_.erase(id);
 }
 
@@ -1154,10 +1154,10 @@ bool DBInterface::hasProperty(const string& id)
  */
 void DBInterface::loadProperties()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
-    assert (!properties_loaded_);
+    traced_assert(ready());
+    traced_assert(!properties_loaded_);
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1173,25 +1173,25 @@ void DBInterface::loadProperties()
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        assert(buffer);
-        assert(buffer->has<string>("id"));
-        assert(buffer->has<string>("value"));
+        traced_assert(buffer);
+        traced_assert(buffer->has<string>("id"));
+        traced_assert(buffer->has<string>("value"));
 
         NullableVector<string>& id_vec = buffer->get<string>("id");
         NullableVector<string>& value_vec = buffer->get<string>("value");
 
         for (size_t cnt = 0; cnt < buffer->size(); ++cnt)
         {
-            assert(!id_vec.isNull(cnt));
+            traced_assert(!id_vec.isNull(cnt));
 
             if (properties_.count(id_vec.get(cnt)))
                 logerr << "property '" << id_vec.get(cnt) << "' already exists";
 
-            assert(!properties_.count(id_vec.get(cnt)));
+            traced_assert(!properties_.count(id_vec.get(cnt)));
             if (!value_vec.isNull(cnt))
                 properties_[id_vec.get(cnt)] = value_vec.get(cnt);
         }
@@ -1239,7 +1239,7 @@ void DBInterface::setContentIn(const std::string& table_name, const std::string&
  */
 void DBInterface::saveProperties()
 {
-    loginf << "start";
+    loginf << "num " << properties_.size();
 
     if (!db_instance_)
     {
@@ -1248,7 +1248,7 @@ void DBInterface::saveProperties()
     }
 
     // boost::mutex::scoped_lock locker(connection_mutex_); // done in closeConnection
-    assert (properties_loaded_);
+    traced_assert(properties_loaded_);
 
     nlohmann::json dbcolumn_content_json = dbcolumn_content_flags_;
     properties_[dbcolumn_content_property_name_] = dbcolumn_content_json.dump();
@@ -1267,16 +1267,16 @@ void DBInterface::saveProperties()
         }
     }
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**
  */
 std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
+    traced_assert(ready());
 
     std::vector<std::shared_ptr<SectorLayer>> sector_layers;
 
@@ -1296,15 +1296,15 @@ std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        assert(buffer);
-        assert(buffer->has<int>("id"));
-        assert(buffer->has<string>("name"));
-        assert(buffer->has<string>("layer_name"));
-        assert(buffer->has<string>("json"));
+        traced_assert(buffer);
+        traced_assert(buffer->has<int>("id"));
+        traced_assert(buffer->has<string>("name"));
+        traced_assert(buffer->has<string>("layer_name"));
+        traced_assert(buffer->has<string>("json"));
 
         NullableVector<int>& id_vec = buffer->get<int>("id");
         NullableVector<string>& name_vec = buffer->get<string>("name");
@@ -1318,10 +1318,10 @@ std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
 
         for (size_t cnt = 0; cnt < buffer->size(); ++cnt)
         {
-            assert(!id_vec.isNull(cnt));
-            assert(!name_vec.isNull(cnt));
-            assert(!layer_name_vec.isNull(cnt));
-            assert(!json_vec.isNull(cnt));
+            traced_assert(!id_vec.isNull(cnt));
+            traced_assert(!name_vec.isNull(cnt));
+            traced_assert(!layer_name_vec.isNull(cnt));
+            traced_assert(!json_vec.isNull(cnt));
 
             id = id_vec.get(cnt);
             name = name_vec.get(cnt);
@@ -1342,12 +1342,12 @@ std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
 
             auto eval_sector = new Sector(id, name, layer_name, true);
             bool ok = eval_sector->readJSON(json_str);
-            assert(ok);
+            traced_assert(ok);
 
             string layer_name = eval_sector->layerName();
 
             (*lay_it)->addSector(shared_ptr<Sector>(eval_sector));
-            assert ((*lay_it)->hasSector(name));
+            traced_assert((*lay_it)->hasSector(name));
 
             loginf << "loaded sector '" << name << "' in layer '"
                 << layer_name << "' num points " << (*lay_it)->sector(name)->size();
@@ -1362,7 +1362,7 @@ std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
 bool DBInterface::areColumnsNull(const std::string& table_name, 
                                  const std::vector<std::string> columns)
 {
-    assert(ready());
+    traced_assert(ready());
 
     bool cols_null = false;
 
@@ -1383,15 +1383,15 @@ bool DBInterface::areColumnsNull(const std::string& table_name,
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        assert(buffer);
-        assert(buffer->has<int>("count"));
+        traced_assert(buffer);
+        traced_assert(buffer->has<int>("count"));
 
         NullableVector<int>& count_vec = buffer->get<int>("count");
-        assert (count_vec.contentSize() == 1);
+        traced_assert(count_vec.contentSize() == 1);
 
         cols_null = count_vec.get(0) != 0;
 
@@ -1412,8 +1412,8 @@ bool DBInterface::existsViewPointsTable()
  */
 void DBInterface::createViewPointsTable()
 {
-    assert(ready());
-    assert(!existsViewPointsTable());
+    traced_assert(ready());
+    traced_assert(!existsViewPointsTable());
 
     setProperty("view_points_version", ViewPoint::VP_COLLECTION_CONTENT_VERSION);
 
@@ -1456,10 +1456,10 @@ void DBInterface::setViewPoint(const unsigned int id, const string& value)
  */
 map<unsigned int, string> DBInterface::viewPoints()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
-    assert(existsViewPointsTable());
+    traced_assert(ready());
+    traced_assert(existsViewPointsTable());
 
     map<unsigned int, string> view_points;
 
@@ -1477,21 +1477,21 @@ map<unsigned int, string> DBInterface::viewPoints()
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(result->containsData());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        assert(buffer);
-        assert(buffer->has<unsigned int>("id"));
-        assert(buffer->has<string>("json"));
+        traced_assert(buffer);
+        traced_assert(buffer->has<unsigned int>("id"));
+        traced_assert(buffer->has<string>("json"));
       
         NullableVector<unsigned int>& id_vec = buffer->get<unsigned int>("id");
         NullableVector<string>& json_vec = buffer->get<string>("json");
 
         for (size_t cnt = 0; cnt < buffer->size(); ++cnt)
         {
-            assert(!id_vec.isNull(cnt));
-            assert(!view_points.count(id_vec.get(cnt)));
+            traced_assert(!id_vec.isNull(cnt));
+            traced_assert(!view_points.count(id_vec.get(cnt)));
             if (!json_vec.isNull(cnt))
                 view_points[id_vec.get(cnt)] = json_vec.get(cnt);
         }
@@ -1506,7 +1506,7 @@ map<unsigned int, string> DBInterface::viewPoints()
  */
 void DBInterface::deleteViewPoint(const unsigned int id)
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1536,10 +1536,10 @@ bool DBInterface::existsSectorsTable()
  */
 void DBInterface::createSectorsTable()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
-    assert(!existsSectorsTable());
+    traced_assert(ready());
+    traced_assert(!existsSectorsTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1575,7 +1575,7 @@ void DBInterface::saveSector(shared_ptr<Sector> sector)
         return;
     }
 
-    assert(ready());
+    traced_assert(ready());
 
     if (!existsSectorsTable())
         createSectorsTable();
@@ -1597,7 +1597,7 @@ void DBInterface::saveSector(shared_ptr<Sector> sector)
  */
 void DBInterface::deleteSector(shared_ptr<Sector> sector)
 {
-    assert(ready());
+    traced_assert(ready());
 
     unsigned int sector_id = sector->id();
 
@@ -1629,10 +1629,10 @@ bool DBInterface::existsTargetsTable()
  */
 void DBInterface::createTargetsTable()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
-    assert(!existsTargetsTable());
+    traced_assert(ready());
+    traced_assert(!existsTargetsTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1659,9 +1659,9 @@ void DBInterface::clearTargetsTable()
  */
 std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
+    traced_assert(ready());
 
     std::vector<std::unique_ptr<dbContent::Target>> targets;
 
@@ -1679,14 +1679,14 @@ std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(!result->hasError());
-        assert(result->containsData());
+        traced_assert(!result->hasError());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        assert(buffer);
-        assert(buffer->has<unsigned int>("utn"));
-        assert(buffer->has<string>("json"));
+        traced_assert(buffer);
+        traced_assert(buffer->has<unsigned int>("utn"));
+        traced_assert(buffer->has<string>("json"));
 
         NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int>("utn");
         NullableVector<string>& json_vec = buffer->get<string>("json");
@@ -1698,13 +1698,13 @@ std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
 
         for (size_t cnt = 0; cnt < buffer->size(); ++cnt)
         {
-            assert(!utn_vec.isNull(cnt));
-            assert(!json_vec.isNull(cnt));
+            traced_assert(!utn_vec.isNull(cnt));
+            traced_assert(!json_vec.isNull(cnt));
 
             utn = utn_vec.get(cnt);
             json_str = json_vec.get(cnt);
 
-            assert (!existing_utns.count(utn));
+            traced_assert(!existing_utns.count(utn));
             existing_utns.insert(utn);
 
             //shared_ptr<dbContent::Target> target = make_shared<dbContent::Target>(utn, nlohmann::json::parse(json_str));
@@ -1723,9 +1723,9 @@ std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
  */
 void DBInterface::saveTargets(const std::map<unsigned int, nlohmann::json>& targets_info)
 {
-    loginf << "start";
+    logdbg;
 
-    assert(ready());
+    traced_assert(ready());
 
     clearTargetsTable();
 
@@ -1747,7 +1747,7 @@ void DBInterface::saveTargets(const std::map<unsigned int, nlohmann::json>& targ
         insertBuffer(TABLE_NAME_TARGETS, buffer);
     }
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /**
@@ -1756,7 +1756,7 @@ void DBInterface::updateTargets(const std::map<unsigned int, nlohmann::json>& ta
 {
     loginf << "updating " << targets_info.size() << " utn(s)";
 
-    assert(ready());
+    traced_assert(ready());
 
     if (targets_info.size() > TableBulkUpdateMinRows)
     {
@@ -1802,10 +1802,10 @@ bool DBInterface::existsTaskLogTable()
 }
 void DBInterface::createTaskLogTable()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
-    assert(!existsTaskLogTable());
+    traced_assert(ready());
+    traced_assert(!existsTaskLogTable());
 
     {
 #ifdef PROTECT_INSTANCE
@@ -1822,10 +1822,10 @@ void DBInterface::createTaskLogTable()
 }
 std::vector<nlohmann::json> DBInterface::loadTaskLogInfo()
 {
-    loginf << "start";
+    loginf;
 
-    assert(ready());
-    assert(existsTaskLogTable());
+    traced_assert(ready());
+    traced_assert(existsTaskLogTable());
 
     std::vector<nlohmann::json> info;
 
@@ -1843,14 +1843,14 @@ std::vector<nlohmann::json> DBInterface::loadTaskLogInfo()
         command.list(list);
 
         shared_ptr<DBResult> result = execute(command);
-        assert(!result->hasError());
-        assert(result->containsData());
+        traced_assert(!result->hasError());
+        traced_assert(result->containsData());
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        assert(buffer);
-        assert(buffer->has<unsigned int>("msg_id"));
-        assert(buffer->has<string>("json"));
+        traced_assert(buffer);
+        traced_assert(buffer->has<unsigned int>("msg_id"));
+        traced_assert(buffer->has<string>("json"));
 
         NullableVector<unsigned int>& msg_id_vec = buffer->get<unsigned int>("msg_id");
         NullableVector<string>& json_vec = buffer->get<string>("json");
@@ -1862,13 +1862,13 @@ std::vector<nlohmann::json> DBInterface::loadTaskLogInfo()
 
         for (size_t cnt = 0; cnt < buffer->size(); ++cnt)
         {
-            assert(!msg_id_vec.isNull(cnt));
-            assert(!json_vec.isNull(cnt));
+            traced_assert(!msg_id_vec.isNull(cnt));
+            traced_assert(!json_vec.isNull(cnt));
 
             msg_id = msg_id_vec.get(cnt);
             json_str = json_vec.get(cnt);
 
-            assert (!existing_msg_ids.count(msg_id));
+            traced_assert(!existing_msg_ids.count(msg_id));
             existing_msg_ids.insert(msg_id);
 
             info.emplace_back(nlohmann::json::parse(json_str));
@@ -1880,8 +1880,8 @@ std::vector<nlohmann::json> DBInterface::loadTaskLogInfo()
 
 void DBInterface::saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& info)
 {
-    assert (ready());
-    assert(existsTaskLogTable());
+    traced_assert(ready());
+    traced_assert(existsTaskLogTable());
 
     {
         //storing all targets at once via a buffer is faster
@@ -1901,7 +1901,7 @@ void DBInterface::saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& inf
  */
 void DBInterface::clearAssociations(const DBContent& dbcontent)
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1933,8 +1933,8 @@ bool DBInterface::existsReportContentsTable() const
  */
 void DBInterface::createTaskResultsTable()
 {
-    assert(ready());
-    assert(!existsTaskResultsTable());
+    traced_assert(ready());
+    traced_assert(!existsTaskResultsTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1950,8 +1950,8 @@ void DBInterface::createTaskResultsTable()
  */
 void DBInterface::createReportContentsTable()
 {
-    assert(ready());
-    assert(!existsReportContentsTable());
+    traced_assert(ready());
+    traced_assert(!existsReportContentsTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -1967,7 +1967,7 @@ void DBInterface::createReportContentsTable()
  */
 Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_needed)
 {
-    assert(ready());
+    traced_assert(ready());
 
     try
     {
@@ -2045,7 +2045,7 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
                     current_row   = 0;
                 }
 
-                assert(buffer);
+                traced_assert(buffer);
 
                 //!this might trigger recomputations from temporarily generated data,
                 //which is immediately thrown away afterwards!
@@ -2178,7 +2178,7 @@ Result DBInterface::updateResultHeader(const TaskResult& result)
 {
     loginf << "updating header of result '" << result.name() << "'";
 
-    assert(ready());
+    traced_assert(ready());
 
     try
     {
@@ -2216,7 +2216,7 @@ Result DBInterface::updateResultContent(const TaskResult& result)
 {
     loginf << "updating content of result '" << result.name() << "'";
 
-    assert(ready());
+    traced_assert(ready());
 
     try
     {
@@ -2252,7 +2252,7 @@ Result DBInterface::updateResultContent(const TaskResult& result)
  */
 ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
 {
-    assert(ready());
+    traced_assert(ready());
 
     std::vector<std::shared_ptr<TaskResult>> results;
 
@@ -2340,7 +2340,7 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
 ResultT<std::shared_ptr<ResultReport::SectionContent>> DBInterface::loadContent(ResultReport::Section* section, 
                                                                                 unsigned int content_id)
 {
-    assert(ready());
+    traced_assert(ready());
 
     std::shared_ptr<ResultReport::SectionContent> content;
 
@@ -2429,17 +2429,17 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
                                       std::shared_ptr<Buffer> buffer)
 {
     // create record numbers & and store new max rec num
-    assert (dbcontent.hasVariable(DBContent::meta_var_rec_num_.name()));
+    traced_assert(dbcontent.hasVariable(DBContent::meta_var_rec_num_.name()));
 
     Variable& rec_num_var = dbcontent.variable(DBContent::meta_var_rec_num_.name());
-    assert (rec_num_var.dataType() == PropertyDataType::ULONGINT);
+    traced_assert(rec_num_var.dataType() == PropertyDataType::ULONGINT);
 
     string rec_num_col_str = rec_num_var.dbColumnName();
-    assert (!buffer->has<unsigned long>(rec_num_col_str));
+    traced_assert(!buffer->has<unsigned long>(rec_num_col_str));
 
     buffer->addProperty(rec_num_col_str, PropertyDataType::ULONGINT);
 
-    assert (COMPASS::instance().dbContentManager().hasMaxRecordNumberWODBContentID());
+    traced_assert(COMPASS::instance().dbContentManager().hasMaxRecordNumberWODBContentID());
     unsigned long max_rec_num = COMPASS::instance().dbContentManager().maxRecordNumberWODBContentID();
 
     NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(rec_num_col_str);
@@ -2462,8 +2462,8 @@ void DBInterface::insertDBContent(DBContent& dbcontent, std::shared_ptr<Buffer> 
 {
     logdbg << "dbcont " << dbcontent.name() << " buffer size " << buffer->size();
 
-    assert(ready());
-    assert(buffer);
+    traced_assert(ready());
+    traced_assert(buffer);
 
     // create table if required
     if (!existsTable(dbcontent.dbTableName()))
@@ -2480,8 +2480,8 @@ void DBInterface::insertBuffer(const string& table_name,
 {
     logdbg << "table name " << table_name << " buffer size " << buffer->size();
 
-    assert(ready());
-    assert(buffer);
+    traced_assert(ready());
+    traced_assert(buffer);
 
     if (!existsTable(table_name))
     {
@@ -2511,7 +2511,7 @@ void DBInterface::insertBuffer(const string& table_name,
  */
 void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Buffer>>& buffers)
 {
-    assert(ready());
+    traced_assert(ready());
 
     bool db_supports_mt = db_instance_->sqlConfiguration().supports_mt;
     bool exec_mt        = insert_mt_ && db_supports_mt && buffers.size() > 1;
@@ -2561,7 +2561,7 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
     size_t idx = 0;
     for (auto& it : buffers)
     {
-        assert(it.second);
+        traced_assert(it.second);
 
         auto& dbcontent = dbc_manager.dbContent(it.first);
 
@@ -2584,7 +2584,7 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
                 size_t idx_start = idx;
                 size_t idx_end   = std::min(idx_start + chunk_size, n);
 
-                assert(idx_start < idx_end);
+                traced_assert(idx_start < idx_end);
 
                 insert_jobs.push_back(Job(idx++, dbcontent.dbTableName(), it.second, idx_start, idx_end - 1));
             }
@@ -2604,7 +2604,7 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
         for (unsigned int i = 0; i < n; ++i)
         {
             mt_connections[ i ] = db_instance_->concurrentConnection(i);
-            assert(!mt_connections[ i ].isEmpty());
+            traced_assert(!mt_connections[ i ].isEmpty());
 
             if (mt_connections[ i ].hasError())
             {
@@ -2658,8 +2658,8 @@ void DBInterface::updateBuffer(const std::string& table_name,
 {
     logdbg << "table " << table_name << " buffer size " << buffer->size() << " key " << key_col;
 
-    assert(ready());
-    assert(buffer);
+    traced_assert(ready());
+    traced_assert(buffer);
 
     if (!existsTable(table_name))
     {
@@ -2694,13 +2694,13 @@ void DBInterface::prepareRead(const DBContent& dbcontent,
 {
     logdbg << "dbcont_name " << dbcontent.name();
 
-    assert(ready());
-    assert(dbcontent.existsInDB());
+    traced_assert(ready());
+    traced_assert(dbcontent.existsInDB());
 
     shared_ptr<DBCommand> read = sqlGenerator().getSelectCommand(
         dbcontent, read_list, custom_filter_clause, use_order, order_variable);
 
-    logdbg << "sql '" << read->get() << "'";
+    loginf << "sql '" << read->get() << "'";
 
     Result res;
 
@@ -2714,8 +2714,8 @@ void DBInterface::prepareRead(const DBContent& dbcontent,
     
     if (!res.ok())
     {
-        logerr << "preparing read for dbcontent '" << dbcontent.name() << "' failed: " << res.error();
-        throw runtime_error("DBInterface: prepareRead: preparing read for dbcontent '" + dbcontent.name() + "' failed: " + res.error());
+        logerr << "preparing read for dbcontent '" << dbcontent.name() << "' command '" << read->get() << "' failed: " << res.error();
+        throw runtime_error("DBInterface: prepareRead: preparing read for dbcontent '" + dbcontent.name() + "' command '" + read->get() + "'failed: " + res.error());
     }
 }
 
@@ -2724,7 +2724,7 @@ void DBInterface::prepareRead(const DBContent& dbcontent,
 std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk(const DBContent& dbcontbject)
 {
     // locked by prepareRead
-    assert(ready());
+    traced_assert(ready());
 
     shared_ptr<DBResult> result;
     bool last_one = false;
@@ -2759,7 +2759,7 @@ std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk(const DBCont
 
     buffer->dbContentName(dbcontbject.name());
 
-    assert(buffer);
+    traced_assert(buffer);
 
     return {buffer, last_one};
 }
@@ -2768,7 +2768,7 @@ std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk(const DBCont
  */
 void DBInterface::finalizeReadStatement(const DBContent& dbcontbject)
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2784,7 +2784,7 @@ void DBInterface::finalizeReadStatement(const DBContent& dbcontbject)
 void DBInterface::deleteBefore(const DBContent& dbcontent, 
                                boost::posix_time::ptime before_timestamp)
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2800,7 +2800,7 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
  */
 void DBInterface::deleteAll(const DBContent& dbcontent)
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2820,7 +2820,7 @@ void DBInterface::deleteContent(const DBContent& dbcontent,
 {
     loginf << "dbcontent " << dbcontent.name() << " sac/sic " << sac << "/" << sic;
 
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2839,7 +2839,7 @@ void DBInterface::deleteContent(const DBContent& dbcontent, unsigned int sac, un
 {
     loginf << "dbcontent " << dbcontent.name() << " sac/sic " << sac << "/" << sic << " line " << line_id;
 
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2856,7 +2856,7 @@ void DBInterface::deleteContent(const DBContent& dbcontent, unsigned int sac, un
  */
 void DBInterface::clearTableContent(const string& table_name)
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2906,8 +2906,8 @@ ResultT<std::shared_ptr<Buffer>> DBInterface::select(const std::string& table_na
  */
 void DBInterface::createPropertiesTable()
 {
-    assert(ready());
-    assert(!existsPropertiesTable());
+    traced_assert(ready());
+    traced_assert(!existsPropertiesTable());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2923,7 +2923,7 @@ void DBInterface::createPropertiesTable()
  */
 void DBInterface::startPerformanceMetrics() const
 {
-    assert(ready());
+    traced_assert(ready());
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2938,7 +2938,7 @@ void DBInterface::startPerformanceMetrics() const
  */
 db::PerformanceMetrics DBInterface::stopPerformanceMetrics() const
 {
-    assert(ready());
+    traced_assert(ready());
 
     db::PerformanceMetrics pm;
 

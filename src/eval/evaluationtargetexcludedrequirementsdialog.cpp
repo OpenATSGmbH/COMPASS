@@ -18,6 +18,7 @@
 #include "evaluationtargetexcludedrequirementsdialog.h"
 #include "stringconv.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -140,6 +141,6 @@ std::set<std::string> EvaluationTargetExcludedRequirementsDialog::selectedRequir
 
 std::string EvaluationTargetExcludedRequirementsDialog::comment() const
 {
-    assert (comment_edit_);
+    traced_assert(comment_edit_);
     return comment_edit_->text().toStdString();
 }

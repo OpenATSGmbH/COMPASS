@@ -70,7 +70,7 @@ CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTAS
 
 void CreateARTASAssociationsTaskDialog::updateButtons()
 {
-    assert (run_button_);
+    traced_assert(run_button_);
 
     auto err = task_.checkError();
 

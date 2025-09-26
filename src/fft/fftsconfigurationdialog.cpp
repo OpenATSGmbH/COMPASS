@@ -152,7 +152,7 @@ void FFTsConfigurationDialog::endResetModel()
 
 void FFTsConfigurationDialog::currentRowChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-    assert (edit_widget_);
+    traced_assert(edit_widget_);
 
     if (!current.isValid())
     {
@@ -164,7 +164,7 @@ void FFTsConfigurationDialog::currentRowChanged(const QModelIndex& current, cons
     }
 
     auto const source_index = proxy_model_->mapToSource(current);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     string name = table_model_->getNameOf(source_index);
 
@@ -175,7 +175,7 @@ void FFTsConfigurationDialog::currentRowChanged(const QModelIndex& current, cons
 
 void FFTsConfigurationDialog::newFFTClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     bool ok;
     QString text =
@@ -211,13 +211,13 @@ void FFTsConfigurationDialog::newFFTClickedSlot()
         QModelIndexList items = table_model_->match(
                     table_model_->index(0, 0), Qt::DisplayRole, name.c_str(),
                     -1, Qt::MatchExactly);
-        assert (items.size() == 1);
+        traced_assert(items.size() == 1);
 
         QModelIndex tmp = items.at(0);
-        assert (tmp.isValid());
+        traced_assert(tmp.isValid());
 
         auto const target_index = proxy_model_->mapFromSource(tmp);
-        assert (target_index.isValid());
+        traced_assert(target_index.isValid());
 
         table_view_->selectionModel()->setCurrentIndex(target_index,
                                                        QItemSelectionModel::Select | QItemSelectionModel::Rows);
@@ -228,7 +228,7 @@ void FFTsConfigurationDialog::newFFTClickedSlot()
 
 void FFTsConfigurationDialog::importClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import FFTs",
@@ -270,7 +270,7 @@ void FFTsConfigurationDialog::deleteAllClickedSlot()
 
 void FFTsConfigurationDialog::exportClickedSlot()
 {
-    loginf << "start";
+    loginf;
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export FFTs as JSON",

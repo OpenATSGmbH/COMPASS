@@ -26,7 +26,7 @@
 #include <QApplication>
 
 #include <future>
-#include <cassert>
+#include "traced_assert.h"
 
 /************************************************************************************
  * AsyncTask
@@ -232,7 +232,7 @@ AsyncTaskDialog::AsyncTaskDialog(AsyncTask* task,
 ,   task_      (task      )
 ,   auto_close_(auto_close)
 {
-    assert(task);
+    traced_assert(task);
 
     setWindowTitle(task_->title());
     setMinimumWidth(500);

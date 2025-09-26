@@ -19,6 +19,7 @@
 
 #include "json.hpp"
 #include "geotiff_defs.h"
+#include "traced_assert.h"
 
 #include <string>
 #include <vector>
@@ -52,7 +53,7 @@ struct RasterReference
              const std::vector<double>& geo_transform,
              bool srs_str_is_wkt = false)
     {
-        assert(geo_transform.size() == 6);
+        traced_assert(geo_transform.size() == 6);
 
         srs = srs_str;
 

@@ -30,7 +30,7 @@
 DuckDBReader::DuckDBReader(duckdb_connection connection)
 :   connection_(connection)
 {
-    assert(connection_);
+    traced_assert(connection_);
 }
 
 /**
@@ -68,8 +68,8 @@ bool DuckDBReader::init_impl()
 
     auto nr = result_->numRows();
     auto nc = result_->numColumns();
-    assert(nr.has_value());
-    assert(nc.has_value());
+    traced_assert(nr.has_value());
+    traced_assert(nc.has_value());
 
     result_rows_ = nr.value();
     result_cols_ = nc.value();
@@ -134,7 +134,7 @@ std::shared_ptr<DBResult> DuckDBReader::readChunk_impl()
     cur_idx_ += b->size();
 
     has_more = res.result();
-    assert(has_more || cur_idx_ == result_rows_);
+    traced_assert(has_more || cur_idx_ == result_rows_);
 #endif
 
     result->hasMore(has_more);

@@ -136,25 +136,25 @@ ADSBQualityFilterWidget::~ADSBQualityFilterWidget()
 
 void ADSBQualityFilterWidget::toggleUseV0Slot()
 {
-    assert (use_v0_check_);
+    traced_assert(use_v0_check_);
     filter_.useV0(use_v0_check_->checkState() == Qt::Checked);
 }
 
 void ADSBQualityFilterWidget::toggleUseV1Slot()
 {
-    assert (use_v1_check_);
+    traced_assert(use_v1_check_);
     filter_.useV1(use_v1_check_->checkState() == Qt::Checked);
 }
 
 void ADSBQualityFilterWidget::toggleUseV2Slot()
 {
-    assert (use_v2_check_);
+    traced_assert(use_v2_check_);
     filter_.useV2(use_v2_check_->checkState() == Qt::Checked);
 }
 
 void ADSBQualityFilterWidget::toggleUseMinNUCPSlot()
 {
-    assert (use_min_nucp_check_);
+    traced_assert(use_min_nucp_check_);
     filter_.useMinNUCP(use_min_nucp_check_->checkState() == Qt::Checked);
 }
 
@@ -173,7 +173,7 @@ void ADSBQualityFilterWidget::minNUCPEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMinNICSlot()
 {
-    assert (use_min_nic_check_);
+    traced_assert(use_min_nic_check_);
     filter_.useMinNIC(use_min_nic_check_->checkState() == Qt::Checked);
 }
 
@@ -192,7 +192,7 @@ void ADSBQualityFilterWidget::minNICEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMinNACpSlot()
 {
-    assert (use_min_nacp_check_);
+    traced_assert(use_min_nacp_check_);
     filter_.useMinNACp(use_min_nacp_check_->checkState() == Qt::Checked);
 }
 
@@ -211,7 +211,7 @@ void ADSBQualityFilterWidget::minNACPEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMinSILv1Slot()
 {
-    assert (use_min_sil_v1_check_);
+    traced_assert(use_min_sil_v1_check_);
     filter_.useMinSILv1(use_min_sil_v1_check_->checkState() == Qt::Checked);
 }
 
@@ -231,7 +231,7 @@ void ADSBQualityFilterWidget::minSILv1PEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMinSILv2Slot()
 {
-    assert (use_min_sil_v2_check_);
+    traced_assert(use_min_sil_v2_check_);
     filter_.useMinSILv2(use_min_sil_v2_check_->checkState() == Qt::Checked);
 }
 
@@ -250,7 +250,7 @@ void ADSBQualityFilterWidget::minSILv2PEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMaxNUCPSlot()
 {
-    assert (use_max_nucp_check_);
+    traced_assert(use_max_nucp_check_);
     filter_.useMaxNUCP(use_max_nucp_check_->checkState() == Qt::Checked);
 }
 
@@ -269,7 +269,7 @@ void ADSBQualityFilterWidget::maxNUCPEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMaxNICSlot()
 {
-    assert (use_max_nic_check_);
+    traced_assert(use_max_nic_check_);
     filter_.useMaxNIC(use_max_nic_check_->checkState() == Qt::Checked);
 }
 
@@ -288,7 +288,7 @@ void ADSBQualityFilterWidget::maxNICEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMaxNACpSlot()
 {
-    assert (use_max_nacp_check_);
+    traced_assert(use_max_nacp_check_);
     filter_.useMaxNACp(use_max_nacp_check_->checkState() == Qt::Checked);
 }
 
@@ -307,7 +307,7 @@ void ADSBQualityFilterWidget::maxNACPEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMaxSILv1Slot()
 {
-    assert (use_max_sil_v1_check_);
+    traced_assert(use_max_sil_v1_check_);
     filter_.useMaxSILv1(use_max_sil_v1_check_->checkState() == Qt::Checked);
 }
 
@@ -327,7 +327,7 @@ void ADSBQualityFilterWidget::maxSILv1PEditedSlot (const QString& text)
 
 void ADSBQualityFilterWidget::toggleUseMaxSILv2Slot()
 {
-    assert (use_max_sil_v2_check_);
+    traced_assert(use_max_sil_v2_check_);
     filter_.useMaxSILv2(use_max_sil_v2_check_->checkState() == Qt::Checked);
 }
 
@@ -350,63 +350,63 @@ void ADSBQualityFilterWidget::update()
 {
     DBFilterWidget::update();
 
-    assert (use_v0_check_);
+    traced_assert(use_v0_check_);
     use_v0_check_->setChecked(filter_.useV0());
 
-    assert (use_min_nucp_check_);
+    traced_assert(use_min_nucp_check_);
     use_min_nucp_check_->setChecked(filter_.useMinNUCP());
-    assert (min_nucp_edit_);
+    traced_assert(min_nucp_edit_);
     min_nucp_edit_->setText(QString::number(filter_.minNUCP()));
 
-    assert (use_v1_check_);
+    traced_assert(use_v1_check_);
     use_v1_check_->setChecked(filter_.useV1());
-    assert (use_v2_check_);
+    traced_assert(use_v2_check_);
     use_v2_check_->setChecked(filter_.useV2());
 
-    assert (use_min_nic_check_);
+    traced_assert(use_min_nic_check_);
     use_min_nic_check_->setChecked(filter_.useMinNIC());
-    assert (min_nic_edit_);
+    traced_assert(min_nic_edit_);
     min_nic_edit_->setText(QString::number(filter_.minNIC()));
 
-    assert (use_min_nacp_check_);
+    traced_assert(use_min_nacp_check_);
     use_min_nacp_check_->setChecked(filter_.useMinNACp());
-    assert (min_nacp_edit_);
+    traced_assert(min_nacp_edit_);
     min_nacp_edit_->setText(QString::number(filter_.minNACp()));
 
-    assert (use_min_sil_v1_check_);
+    traced_assert(use_min_sil_v1_check_);
     use_min_sil_v1_check_->setChecked(filter_.useMinSILv1());
-    assert (min_sil_v1_edit_);
+    traced_assert(min_sil_v1_edit_);
     min_sil_v1_edit_->setText(QString::number(filter_.minSILv1()));
 
-    assert (use_min_sil_v2_check_);
+    traced_assert(use_min_sil_v2_check_);
     use_min_sil_v2_check_->setChecked(filter_.useMinSILv2());
-    assert (min_sil_v2_edit_);
+    traced_assert(min_sil_v2_edit_);
     min_sil_v2_edit_->setText(QString::number(filter_.minSILv2()));
 
     //
-    assert (use_max_nucp_check_);
+    traced_assert(use_max_nucp_check_);
     use_max_nucp_check_->setChecked(filter_.useMaxNUCP());
-    assert (max_nucp_edit_);
+    traced_assert(max_nucp_edit_);
     max_nucp_edit_->setText(QString::number(filter_.maxNUCP()));
 
-    assert (use_max_nic_check_);
+    traced_assert(use_max_nic_check_);
     use_max_nic_check_->setChecked(filter_.useMaxNIC());
-    assert (max_nic_edit_);
+    traced_assert(max_nic_edit_);
     max_nic_edit_->setText(QString::number(filter_.maxNIC()));
 
-    assert (use_max_nacp_check_);
+    traced_assert(use_max_nacp_check_);
     use_max_nacp_check_->setChecked(filter_.useMaxNACp());
-    assert (max_nacp_edit_);
+    traced_assert(max_nacp_edit_);
     max_nacp_edit_->setText(QString::number(filter_.maxNACp()));
 
-    assert (use_max_sil_v1_check_);
+    traced_assert(use_max_sil_v1_check_);
     use_max_sil_v1_check_->setChecked(filter_.useMaxSILv1());
-    assert (max_sil_v1_edit_);
+    traced_assert(max_sil_v1_edit_);
     max_sil_v1_edit_->setText(QString::number(filter_.maxSILv1()));
 
-    assert (use_max_sil_v2_check_);
+    traced_assert(use_max_sil_v2_check_);
     use_max_sil_v2_check_->setChecked(filter_.useMaxSILv2());
-    assert (max_sil_v2_edit_);
+    traced_assert(max_sil_v2_edit_);
     max_sil_v2_edit_->setText(QString::number(filter_.maxSILv2()));
 }
 

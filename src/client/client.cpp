@@ -34,7 +34,7 @@
 #include "json.hpp"
 #include "util/tbbhack.h"
 
-#include "compass_assert.h"
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -134,6 +134,8 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     cout << "COMPASSClient: qt platform in use " << QGuiApplication::platformName().toStdString() << endl;
 
     po::options_description desc("Allowed options");
+    po::options_description hidden_options("Hidden options");
+
     desc.add_options()("help", "produce help message")
         ("reset,r", po::bool_switch(&config_and_data_copy_wanted_) ,"reset user configuration and data")
         ("override_cfg_path", po::value<std::string>(&override_cfg_path_),
@@ -172,17 +174,15 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
          "ignore future timestamps during ASTERIX network import'")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
-         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'")
+         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
          "sets ASTERIX decoder config using JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
          " (including one pair of single quotes)")
         ("import_asterix_parameters", po::value<std::string>(&import_asterix_parameters_),
          "ASTERIX import parameters as JSON string, e.g. ''{\"filter_modec_active\": true,\"filter_modec_max\": 50000.0,\"filter_modec_min\": -10000.0}'' (including one pair of single quotes)")
-
+        
         ("import_json", po::value<std::string>(&import_json_filename_),
          "imports JSON file with given filename, e.g. '/data/file1.json'")
-        //            ("json_schema", po::value<std::string>(&import_json_schema),
-        //             "JSON file import schema, e.g. 'jASTERIX', 'OpenSkyNetwork', 'ADSBExchange', 'SDDL'")
         ("import_gps_trail", po::value<std::string>(&import_gps_trail_filename_),
          "imports gps trail NMEA with given filename, e.g. '/data/file2.txt'")
         ("import_gps_parameters", po::value<std::string>(&import_gps_parameters_),
@@ -201,12 +201,24 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("evaluation_parameters", po::value<std::string>(&evaluation_parameters_),
          "evaluation parameters as JSON string, e.g. ''{\"current_standard\": \"test\", \"dbcontent_name_ref\": \"CAT062\", \"dbcontent_name_tst\": \"CAT020\"}'' (including one pair of single quotes)")
         ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "run evaluation filter before evaluation")
-        ("export_eval_report", po::value<std::string>(&export_eval_report_filename_),
-         "export evaluation report after start with given filename, e.g. '/data/eval_db2/report.tex")
-        ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
+        
+        ("export_report", po::value<std::string>(&export_report_name_), "report name to export, e.g. 'EUROCAE ED-87E Evaluation', PDF per default")
+        ("export_report_directory", po::value<std::string>(&export_report_directory_), "export directory, e.g. '/data/report2/'")
+        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'JSON','Latex','PDF'")
+        
+         ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
         ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
         ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
-        ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps");
+        ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
+        ;
+
+    // add hidden options
+    hidden_options.add_options()
+        ("assert", po::bool_switch(&do_assert_), "")
+        ("throw", po::bool_switch(&do_throw_), "")
+        ("numerical_crash", po::bool_switch(&do_numerical_crash_), "")
+        ("segfault", po::bool_switch(&do_segfault_), "")
+        ;
 
     // Print full command line for debugging
     cout << "COMPASSClient: command line: ";
@@ -218,8 +230,11 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
     try
     {
+        po::options_description all_options;
+        all_options.add(desc).add(hidden_options);
+
         po::variables_map vm;
-        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::store(po::parse_command_line(argc, argv, all_options), vm);
         po::notify(vm);
 
         if (vm.count("help"))
@@ -239,6 +254,25 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
     // check if more than 1 ASTERIX import operations are defined
     unsigned int import_count = 0;
+
+    if (do_assert_)
+        traced_assert(!do_assert_);
+
+    if (do_throw_)
+        throw std::runtime_error("error of interest");
+
+    if (do_numerical_crash_)
+    {
+        int crash = 0/0;  // Integer division by zero
+        double crash2 = std::sqrt(-1.0);  // NaN
+        double crash3 = std::log(0.0);    // -Infinity
+    }
+
+    if (do_segfault_)
+    {
+        int* ptr = nullptr;
+        *ptr = 42;  // Classic segfault
+    }
 
     if (import_asterix_network_) import_count++;
     if (!import_asterix_filename_.empty()) import_count++;
@@ -455,8 +489,6 @@ bool Client::run ()
 
             if (asterix_framing.size() && asterix_framing != "none")
                 cmd += " --framing " + asterix_framing;
-            else
-                cmd += " --framing none";
 
             if (import_asterix_file_line_.size())
                 cmd += " --line " + import_asterix_file_line_;
@@ -479,10 +511,8 @@ bool Client::run ()
         {
             string cmd = "import_asterix_files '" + import_asterix_filenames_ + "'";
 
-            if (asterix_framing.size() && asterix_framing != "none")
+            if (asterix_framing.size())
                 cmd += " --framing " + asterix_framing;
-            else
-                cmd += " --framing none";
 
             if (import_asterix_file_line_.size())
                 cmd += " --line " + import_asterix_file_line_;
@@ -600,8 +630,17 @@ bool Client::run ()
             rt_man.addCommandFromConsole(cmd);
         }
 
-        if (export_eval_report_filename_.size())
-            rt_man.addCommandFromConsole("export_eval_report " + export_eval_report_filename_);
+        if (export_report_name_.size())
+        {
+            string cmd = "export_report --report '"+export_report_name_+"'";
+
+            if (export_report_directory_.size())
+                cmd += " --dir "+export_report_directory_;
+
+            cmd += " --mode "+export_report_mode_; // default value PDF always set
+
+            rt_man.addCommandFromConsole(cmd);
+        }
 
         if (quit_)
             rt_man.addCommandFromConsole("quit");
@@ -622,7 +661,7 @@ bool Client::run ()
 
 Client::~Client()
 {
-    loginf << "start";
+    logdbg;
 }
 
 bool Client::notify(QObject* receiver, QEvent* event)
@@ -634,17 +673,17 @@ bool Client::notify(QObject* receiver, QEvent* event)
     catch (exception& e)
     {
         std::string msg = "Unhandled exception '" + std::string(e.what()) + "'";
-        compass_assert_msg(false, msg.c_str());
+        traced_assert_msg(false, msg.c_str());
 
-        // assert (false);
+        // traced_assert(false);
         //QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", QString(e.what()));
     }
     catch (...)
     {
         std::string msg = "Unhandled exception";
-        compass_assert_msg(false, msg.c_str());
+        traced_assert_msg(false, msg.c_str());
 
-        // assert (false);
+        // traced_assert(false);
         //QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", "Unknown exception");
     }
     return false;
@@ -669,7 +708,7 @@ void Client::checkAndSetupConfig()
         {
             cout << "COMPASSClient: assuming fuse environment in '" << appdir << "'" << endl;
             assert(appdir);
-            assert (Files::directoryExists(appdir));
+            assert(Files::directoryExists(appdir));
 
             system_install_path_ = string(appdir) + "/compass/";
 
@@ -735,16 +774,16 @@ void Client::checkAndSetupConfig()
             try {
                 json json_config = json::parse(import_asterix_parameters_);
 
-                assert (ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
                     "COMPASS", "COMPASS0"));
                 Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
                     "COMPASS", "COMPASS0");
 
-                assert (compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
+                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
                 Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
                     "TaskManager", "TaskManager0");
 
-                assert (task_man_config.hasSubConfiguration("ASTERIXImportTask", "ASTERIXImportTask0"));
+                traced_assert(task_man_config.hasSubConfiguration("ASTERIXImportTask", "ASTERIXImportTask0"));
                 Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
                     "ASTERIXImportTask", "ASTERIXImportTask0");
 
@@ -765,16 +804,16 @@ void Client::checkAndSetupConfig()
             try {
                 json json_config = json::parse(import_gps_parameters_);
 
-                assert (ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
                     "COMPASS", "COMPASS0"));
                 Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
                     "COMPASS", "COMPASS0");
 
-                assert (compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
+                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
                 Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
                     "TaskManager", "TaskManager0");
 
-                assert (task_man_config.hasSubConfiguration("GPSTrailImportTask", "GPSTrailImportTask0"));
+                traced_assert(task_man_config.hasSubConfiguration("GPSTrailImportTask", "GPSTrailImportTask0"));
                 Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
                     "GPSTrailImportTask", "GPSTrailImportTask0");
 
@@ -795,16 +834,16 @@ void Client::checkAndSetupConfig()
             try {
                 json json_config = json::parse(evaluation_parameters_);
 
-                assert (ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
                     "COMPASS", "COMPASS0"));
                 Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
                     "COMPASS", "COMPASS0");
 
-                assert (compass_config.hasSubConfiguration("EvaluationManager", "EvaluationManager0"));
+                traced_assert(compass_config.hasSubConfiguration("EvaluationManager", "EvaluationManager0"));
                 Configuration& eval_man_config = compass_config.getOrCreateSubConfiguration(
                     "EvaluationManager", "EvaluationManager0");
 
-                assert (eval_man_config.hasSubConfiguration("EvaluationCalculator", "EvaluationCalculator0"));
+                traced_assert(eval_man_config.hasSubConfiguration("EvaluationCalculator", "EvaluationCalculator0"));
                 Configuration& eval_calc_config = eval_man_config.getOrCreateSubConfiguration(
                     "EvaluationCalculator", "EvaluationCalculator0");
 
@@ -821,7 +860,7 @@ void Client::checkAndSetupConfig()
     {
         logerr << "caught exception '" << ex.what() << "'";
         //logerr.flush();
-        // assert (false);
+        // traced_assert(false);
 
         quit_requested_ = true;
         return;
@@ -830,7 +869,7 @@ void Client::checkAndSetupConfig()
     {
         logerr << "caught exception";
         //logerr.flush();
-        // assert (false);
+        // traced_assert(false);
 
         quit_requested_ = true;
         return;
@@ -894,7 +933,7 @@ void Client::checkNeededActions()
         if (String::compareVersions(VERSION, config_version) != 0)
             cerr << "COMPASSClient: app version '" << VERSION << "' config version " << config_version << "'" << endl;
 
-        assert (String::compareVersions(VERSION, config_version) == 0);  // must be same
+        assert(String::compareVersions(VERSION, config_version) == 0);  // must be same
         return; // nothing to do
     }
     else
@@ -964,7 +1003,7 @@ void Client::copyConfigurationAndData()
         cout << "COMPASSClient: creating GDAL cache directory '" << OSGEARTH_CACHE_SUBDIRECTORY
              << "'";
         Files::createMissingDirectories(OSGEARTH_CACHE_SUBDIRECTORY);
-        assert (Files::directoryExists(OSGEARTH_CACHE_SUBDIRECTORY));
+        assert(Files::directoryExists(OSGEARTH_CACHE_SUBDIRECTORY));
     }
 
     cout << "COMPASSClient: copying files from system installation from '" << system_install_path_

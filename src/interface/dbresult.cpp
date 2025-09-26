@@ -36,7 +36,7 @@ std::string DBResult::printResult() const
 
     #define NotFoundFunc                                                                        \
         logerr << "unknown property type " << Property::asString(dtype); \
-        assert(false);
+        traced_assert(false);
 
     size_t n  = buffer_->size();
     size_t np = buffer_->properties().size();

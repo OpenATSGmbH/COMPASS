@@ -70,7 +70,7 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, bo
 
         if (dbcontent_name == "CAT062")
         {
-            assert (COMPASS::instance().dbContentManager().canGetVariable(
+            traced_assert(COMPASS::instance().dbContentManager().canGetVariable(
                         dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
             cs_fpl_var = &COMPASS::instance().dbContentManager().getVariable(
@@ -131,7 +131,7 @@ void ACIDFilter::generateSubConfigurable(const std::string& class_id, const std:
 
 void ACIDFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* ACIDFilter::createWidget()
@@ -147,9 +147,9 @@ void ACIDFilter::reset()
 
 void ACIDFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -158,12 +158,12 @@ void ACIDFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void ACIDFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Aircraft Identification Values"));
+    traced_assert(filter.contains("Aircraft Identification Values"));
     values_str_ = filter.at("Aircraft Identification Values");
 
     if (widget())
@@ -198,7 +198,7 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
     dbContent::Variable& acid_var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_acid_.name()).getFor(dbcontent_name);
 
-    assert (buffer->has<string> (acid_var.name()));
+    traced_assert(buffer->has<string> (acid_var.name()));
 
     NullableVector<string>& acid_vec = buffer->get<string> (acid_var.name());
 
@@ -207,13 +207,13 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
 
     if (dbcontent_name == "CAT062")
     {
-        assert (COMPASS::instance().dbContentManager().canGetVariable(
+        traced_assert(COMPASS::instance().dbContentManager().canGetVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
         cs_fpl_var = &COMPASS::instance().dbContentManager().getVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
-        assert (buffer->has<string> (cs_fpl_var->name()));
+        traced_assert(buffer->has<string> (cs_fpl_var->name()));
 
         cs_fpl_vec = &buffer->get<string> (cs_fpl_var->name());
     }

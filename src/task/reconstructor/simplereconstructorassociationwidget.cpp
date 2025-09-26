@@ -164,45 +164,45 @@ void SimpleReconstructorAssociationWidget::updateValues()
 {
     // tracker
     //    QLineEdit* max_time_diff_tracker_edit_{nullptr};
-    assert (max_time_diff_edit_);
+    traced_assert(max_time_diff_edit_);
     max_time_diff_edit_->setText(QString::number(reconstructor_.settings().max_time_diff_));
 
-    assert (max_time_diff_tracker_edit_);
+    traced_assert(max_time_diff_tracker_edit_);
     max_time_diff_tracker_edit_->setValue(reconstructor_.settings().track_max_time_diff_);
 
     //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
-    assert (max_distance_notok_edit_);
+    traced_assert(max_distance_notok_edit_);
     max_distance_notok_edit_->setText(QString::number(reconstructor_.settings().max_distance_notok_));
 
     //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
-    assert (max_distance_dubious_edit_);
+    traced_assert(max_distance_dubious_edit_);
     max_distance_dubious_edit_->setText(QString::number(
         reconstructor_.settings().max_distance_dubious_));
 
     //    QLineEdit* max_distance_acceptable_tracker_edit_{nullptr};
-    assert (max_distance_acceptable_edit_);
+    traced_assert(max_distance_acceptable_edit_);
     max_distance_acceptable_edit_->setText(
         QString::number(reconstructor_.settings().max_distance_acceptable_));
 
     //    QLineEdit* max_altitude_diff_tracker_edit_{nullptr};
-    assert (max_altitude_diff_edit_);
+    traced_assert(max_altitude_diff_edit_);
     max_altitude_diff_edit_->setText(QString::number(reconstructor_.settings().max_altitude_diff_));
 
     // QCheckBox* do_track_number_disassociate_using_distance_box_ {nullptr};
-    assert (do_track_number_disassociate_using_distance_box_);
+    traced_assert(do_track_number_disassociate_using_distance_box_);
     do_track_number_disassociate_using_distance_box_->setChecked(
         reconstructor_.settings().do_track_number_disassociate_using_distance_);
 
     // QSpinBox* tn_disassoc_distance_factor_edit_{nullptr};
-    assert (tn_disassoc_distance_factor_edit_);
+    traced_assert(tn_disassoc_distance_factor_edit_);
     tn_disassoc_distance_factor_edit_->setValue(reconstructor_.settings().tn_disassoc_distance_factor_);
 
     //    QLineEdit* min_updates_tracker_edit_{nullptr};
-    assert (min_updates_edit_);
+    traced_assert(min_updates_edit_);
     min_updates_edit_->setText(QString::number(reconstructor_.settings().target_min_updates_));
 
     //    QLineEdit* prob_min_time_overlap_tracker_edit_{nullptr};
-    assert (prob_min_time_overlap_edit_);
+    traced_assert(prob_min_time_overlap_edit_);
     prob_min_time_overlap_edit_->setText(
         QString::number(reconstructor_.settings().target_prob_min_time_overlap_));
 

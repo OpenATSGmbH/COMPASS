@@ -44,7 +44,7 @@ ASTERIXNetworkDecoder::ASTERIXNetworkDecoder(ASTERIXImportSource& source,
 :   ASTERIXDecoderBase(source, settings)
 ,   receive_semaphore_((unsigned int)0)
 {
-    assert(source.isNetworkType());
+    traced_assert(source.isNetworkType());
 
     ds_lines_ = COMPASS::instance().dataSourceManager().getNetworkLines();
 
@@ -99,7 +99,7 @@ void ASTERIXNetworkDecoder::start_impl()
         for (auto& line_it : ds_it.second)
         {
             line = String::getAppendedInt(line_it.first);
-            assert (line >= 1 && line <= 4);
+            traced_assert(line >= 1 && line <= 4);
             line--; // technical counting starts at 0
 
             loginf << "setting up ds_id " << ds_it.first
@@ -149,9 +149,9 @@ void ASTERIXNetworkDecoder::start_impl()
                 {
                     line_id = size_it.first;
 
-                    assert (receive_buffers_.count(line_id));
+                    traced_assert(receive_buffers_.count(line_id));
 
-                    assert (receive_buffer_sizes_.at(line_id) <= MaxAllReceiveSize);
+                    traced_assert(receive_buffer_sizes_.at(line_id) <= MaxAllReceiveSize);
 
                     if (!receive_buffers_copy_.count(line_id))
                         receive_buffers_copy_[line_id].reset(new boost::array<char, MaxAllReceiveSize>());
@@ -173,7 +173,7 @@ void ASTERIXNetworkDecoder::start_impl()
                 {
                     line_id = size_it.first;
 
-                    assert (receive_buffers_copy_.count(line_id));
+                    traced_assert(receive_buffers_copy_.count(line_id));
 
                     auto callback = [this, line_id](std::unique_ptr<nlohmann::json> data, size_t num_frames,
                             size_t num_records, size_t numErrors) {
@@ -199,7 +199,7 @@ void ASTERIXNetworkDecoder::start_impl()
     loginf << "shutting down iocontext";
 
     io_context.stop();
-    assert (io_context.stopped());
+    traced_assert(io_context.stopped());
 
     t.timed_join(100);
 
@@ -238,7 +238,7 @@ void ASTERIXNetworkDecoder::storeReceivedData(unsigned int line,
     if (!receive_buffers_.count(line))
         receive_buffers_[line].reset(new boost::array<char, MaxAllReceiveSize>());
 
-    assert (receive_buffers_[line]);
+    traced_assert(receive_buffers_[line]);
 
     for (unsigned int cnt=0; cnt < length; ++cnt)
         receive_buffers_[line]->at(receive_buffer_sizes_[line]+cnt) = data[cnt];

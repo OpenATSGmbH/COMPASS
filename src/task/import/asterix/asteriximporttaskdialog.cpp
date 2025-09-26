@@ -82,13 +82,13 @@ void ASTERIXImportTaskDialog::updateSourcesInfo()
 {
     updateTitle();
 
-    assert (task_widget_);
+    traced_assert(task_widget_);
     task_widget_->updateSourcesGrid();
 }
 
 void ASTERIXImportTaskDialog::updateButtons()
 {
-    assert (import_button_);
+    traced_assert(import_button_);
 
     import_button_->setDisabled(!task_.canRun());
 }

@@ -47,7 +47,7 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()
     {
-        assert(set_);
+        traced_assert(set_);
         return set_;
     }
 

@@ -18,6 +18,7 @@
 #include "async.h"
 #include "stringconv.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <future>
 
@@ -52,9 +53,9 @@ bool waitDialogAsync(const std::function<bool()>& task,
                      const std::string& task_name,
                      const std::string& wait_msg)
 {
-    assert(task);
-    assert(done_cb);
-    assert(steps > 0);
+    traced_assert(task);
+    traced_assert(done_cb);
+    traced_assert(steps > 0);
 
     boost::posix_time::ptime start_time;
     boost::posix_time::ptime elapsed_time;
@@ -119,7 +120,7 @@ bool waitDialogAsync(const std::function<bool()>& task,
 
         int done = done_cb();
 
-        assert (done <= steps);
+        traced_assert(done <= steps);
 
         if (done && done != last_done)
         {
@@ -179,7 +180,7 @@ bool waitDialogAsync(const std::function<bool()>& task,
                      const std::string& task_name,
                      const std::string& wait_msg)
 {
-    assert(task);
+    traced_assert(task);
 
     bool done = false;
 
@@ -212,8 +213,8 @@ bool waitDialogAsyncArray(const std::function<bool(int)>& task,
                           const std::string& task_name,
                           const std::string& wait_msg)
 {
-    assert(task);
-    assert(steps > 0);
+    traced_assert(task);
+    traced_assert(steps > 0);
 
     std::vector<bool> done_flags(steps, false);
 

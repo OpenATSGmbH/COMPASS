@@ -49,7 +49,7 @@ void RefTrajAccuracyFilterWidget::update()
 {
     DBFilterWidget::update();
 
-    assert (min_value_edit_);
+    traced_assert(min_value_edit_);
 
     const QString r0 = QString::number(filter_.minValue(), 'f', Precision);
 
@@ -67,7 +67,7 @@ void RefTrajAccuracyFilterWidget::minValueEditedSlot(const QString& value)
     bool ok;
 
     float value_float = value.toFloat(&ok);
-    assert (ok);
+    traced_assert(ok);
 
     loginf << "'" << value_float << "'";
 

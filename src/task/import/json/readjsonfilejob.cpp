@@ -16,6 +16,7 @@
  */
 
 #include "readjsonfilejob.h"
+#include "traced_assert.h"
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -46,18 +47,18 @@ ReadJSONFileJob::~ReadJSONFileJob()
 
 void ReadJSONFileJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
     started_ = true;
 
-    assert(!done_);
-    assert(!file_read_done_);
-    assert(!objects_.size());
-    assert(!bytes_read_tmp_);
+    traced_assert(!done_);
+    traced_assert(!file_read_done_);
+    traced_assert(!objects_.size());
+    traced_assert(!bytes_read_tmp_);
 
     if (!init_performed_)
     {
         performInit();
-        assert(init_performed_);
+        traced_assert(init_performed_);
     }
 
     while (!file_read_done_)  //&& objects_.size() < num_objects_
@@ -87,7 +88,7 @@ void ReadJSONFileJob::run_impl()
 
 void ReadJSONFileJob::performInit()
 {
-    assert(!init_performed_);
+    traced_assert(!init_performed_);
 
     if (archive_)
     {
@@ -242,8 +243,8 @@ void ReadJSONFileJob::readFilePart()
 
             if (entry_done_)  // will read next entry
             {
-                assert(open_count_ == 0);  // nothing left open
-                assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
+                traced_assert(open_count_ == 0);  // nothing left open
+                traced_assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
                 loginf << "entry done";
                 return;
             }
@@ -251,8 +252,8 @@ void ReadJSONFileJob::readFilePart()
 
         loginf << "archive done";
 
-        assert(open_count_ == 0);  // nothing left open
-        assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
+        traced_assert(open_count_ == 0);  // nothing left open
+        traced_assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
 
         file_read_done_ = true;
     }
@@ -296,8 +297,8 @@ void ReadJSONFileJob::readFilePart()
         loginf << "parsed " << objects_.size() << " done "
                << file_read_done_;
 
-        assert(open_count_ == 0);  // nothing left open
-        assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
+        traced_assert(open_count_ == 0);  // nothing left open
+        traced_assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
     }
 
     loginf << "emitting signal";
@@ -311,8 +312,8 @@ void ReadJSONFileJob::unpause() { pause_ = false; }
 
 // void ReadJSONFileJob::resetDone ()
 //{
-//    assert (!file_read_done_);
-//    assert (!objects_.size());
+//    traced_assert(!file_read_done_);
+//    traced_assert(!objects_.size());
 //    done_ = false; // yet another part
 //    bytes_read_tmp_ = 0;
 //}

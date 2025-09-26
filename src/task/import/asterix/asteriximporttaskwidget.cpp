@@ -65,7 +65,7 @@ ASTERIXImportTaskWidget::ASTERIXImportTaskWidget(ASTERIXImportTask& task, QWidge
 
 void ASTERIXImportTaskWidget::addMainTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -155,7 +155,7 @@ void ASTERIXImportTaskWidget::addMainTab()
 
 void ASTERIXImportTaskWidget::addDecoderTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     config_widget_ = new ASTERIXConfigWidget(task_, this);
     tab_widget_->addTab(config_widget_, "Decoder");
@@ -163,7 +163,7 @@ void ASTERIXImportTaskWidget::addDecoderTab()
 
 void ASTERIXImportTaskWidget::addOverrideTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     override_widget_ = new ASTERIXOverrideWidget(task_, this);
     tab_widget_->addTab(override_widget_, "Override/Filter");
@@ -256,18 +256,18 @@ void ASTERIXImportTaskWidget::addParserSlot()
 }
 void ASTERIXImportTaskWidget::removeObjectParserSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert(object_parser_box_);
+    traced_assert(object_parser_box_);
 
     if (object_parser_box_->currentIndex() >= 0)
     {
         unsigned int cat = object_parser_box_->currentText().toUInt();
 
-        assert(task_.schema() != nullptr);
+        traced_assert(task_.schema() != nullptr);
         std::shared_ptr<ASTERIXJSONParsingSchema> current = task_.schema();
 
-        assert(current->hasObjectParser(cat));
+        traced_assert(current->hasObjectParser(cat));
         current->removeParser(cat);
 
         updateParserBox();
@@ -280,7 +280,7 @@ void ASTERIXImportTaskWidget::selectedObjectParserSlot(const QString& text)
     loginf << "text '" << text.toStdString()
            << "'";
 
-    assert(object_parser_widget_);
+    traced_assert(object_parser_widget_);
 
     if (!text.size())
     {
@@ -294,13 +294,13 @@ void ASTERIXImportTaskWidget::selectedObjectParserSlot(const QString& text)
         return;
     }
 
-    assert(text.size());
+    traced_assert(text.size());
 
-    assert(object_parser_box_);
+    traced_assert(object_parser_box_);
     unsigned int cat = text.toUInt();
 
-    assert(task_.schema() != nullptr);
-    assert(task_.schema()->hasObjectParser(cat));
+    traced_assert(task_.schema() != nullptr);
+    traced_assert(task_.schema()->hasObjectParser(cat));
 
     auto id = text.toStdString();
 
@@ -322,9 +322,9 @@ void ASTERIXImportTaskWidget::fileLineIDEditSlot(const QString& text)
 
     unsigned int line_id = text.toUInt(&ok);
 
-    assert (ok);
+    traced_assert(ok);
 
-    assert (line_id > 0 && line_id <= 4);
+    traced_assert(line_id > 0 && line_id <= 4);
 
     loginf << "value '" << text.toStdString()
            << "' line id " << line_id;
@@ -343,9 +343,9 @@ void ASTERIXImportTaskWidget::dateChangedSlot(QDate date)
 
 void ASTERIXImportTaskWidget::updateParserBox()
 {
-    loginf << "start";
+    loginf;
 
-    assert(object_parser_box_);
+    traced_assert(object_parser_box_);
     object_parser_box_->clear();
 
     if (task_.schema() != nullptr)
@@ -360,15 +360,15 @@ void ASTERIXImportTaskWidget::updateParserBox()
 void ASTERIXImportTaskWidget::resetDateChangedSlot()
 {
     QCheckBox* box = dynamic_cast<QCheckBox*>(sender());
-    assert(box);
+    traced_assert(box);
 
     task_.settings().reset_date_between_files_ = box->checkState() == Qt::Checked;
 }
 
 void ASTERIXImportTaskWidget::ignoreTimeJumpsCheckedSlot()
 {
-    loginf << "start";
-    assert(ignore_timejumps_check_);
+    loginf;
+    traced_assert(ignore_timejumps_check_);
 
     task_.settings().ignore_time_jumps_ = ignore_timejumps_check_->checkState() == Qt::Checked;
 }
@@ -376,7 +376,7 @@ void ASTERIXImportTaskWidget::ignoreTimeJumpsCheckedSlot()
 void ASTERIXImportTaskWidget::debugChangedSlot()
 {
     QCheckBox* box = dynamic_cast<QCheckBox*>(sender());
-    assert(box);
+    traced_assert(box);
 
     task_.settings().debug_jasterix_ = box->checkState() == Qt::Checked;
 }

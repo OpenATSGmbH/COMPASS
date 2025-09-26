@@ -171,39 +171,39 @@ ReconstructorMainWidget::~ReconstructorMainWidget() = default;
 */
 void ReconstructorMainWidget::updateValues()
 {
-    loginf << "start";
+    loginf;
 
     const auto& settings = reconstructor_.settings();
 
-    assert(ds_name_edit_);
+    traced_assert(ds_name_edit_);
     ds_name_edit_->setText(QString::fromStdString(settings.ds_name));
 
-    assert(ds_sac_box_);
+    traced_assert(ds_sac_box_);
     ds_sac_box_->setValue(settings.ds_sac);
 
-    assert(ds_sic_box_);
+    traced_assert(ds_sic_box_);
     ds_sic_box_->setValue(settings.ds_sic);
 
-    assert (ds_line_combo_);
+    traced_assert(ds_line_combo_);
     int line_idx = ds_line_combo_->findData(QVariant(settings.ds_line));
-    assert(line_idx >= 0);
+    traced_assert(line_idx >= 0);
     ds_line_combo_->setCurrentIndex(line_idx);
 
-    assert (ds_time_begin_box_);
+    traced_assert(ds_time_begin_box_);
     ds_time_begin_box_->setValue<boost::posix_time::ptime>(settings.data_timestamp_min);
 
-    assert (ds_time_end_box_);
+    traced_assert(ds_time_end_box_);
     ds_time_end_box_->setValue<boost::posix_time::ptime>(settings.data_timestamp_max);
 
-    assert (slice_length_box_);
+    traced_assert(slice_length_box_);
     slice_length_box_->setValue(settings.slice_duration_in_minutes);
 
-    assert (slice_overlap_box_);
+    traced_assert(slice_overlap_box_);
     slice_overlap_box_->setValue(settings.outdated_duration_in_minutes);
 
-    assert(delete_refs_box_);
+    traced_assert(delete_refs_box_);
     delete_refs_box_->setChecked(settings.delete_all_calc_reftraj);
 
-    assert(skip_reference_data_writing_box_);
+    traced_assert(skip_reference_data_writing_box_);
     skip_reference_data_writing_box_->setChecked(reconstructor_.task().skipReferenceDataWriting());
 }

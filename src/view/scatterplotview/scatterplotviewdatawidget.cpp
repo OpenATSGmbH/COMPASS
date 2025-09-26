@@ -65,10 +65,10 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
 :   VariableViewStashDataWidget(view_widget, view_widget->getView(), true, parent, f)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     data_source_ = view_->getDataSource();
-    assert(data_source_);
+    traced_assert(data_source_);
 
     main_layout_ = new QHBoxLayout();
     main_layout_->setMargin(0);
@@ -88,7 +88,7 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
 */
 ScatterPlotViewDataWidget::~ScatterPlotViewDataWidget()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
@@ -136,7 +136,7 @@ void ScatterPlotViewDataWidget::resetVariableDisplay()
 */
 ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay() 
 {
-    loginf << "start";
+    loginf;
 
     auto draw_state = updateChart();
 
@@ -268,7 +268,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 */
 bool ScatterPlotViewDataWidget::updateFromAnnotations()
 {
-    loginf << "start";
+    loginf;
 
     bounds_ = {};
 
@@ -333,7 +333,7 @@ ScatterPlotViewDataTool ScatterPlotViewDataWidget::selectedTool() const
 */
 QPixmap ScatterPlotViewDataWidget::renderPixmap()
 {
-    assert (chart_view_);
+    traced_assert(chart_view_);
     return chart_view_->grab();
     //QPixmap p (chart_view_->size());
     //chart_view_->render(&p);
@@ -361,7 +361,7 @@ boost::optional<QRectF> ScatterPlotViewDataWidget::getViewBounds() const
 */
 void ScatterPlotViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2) // TODO
 {
-    loginf << "start";
+    loginf;
 
     if (chart_view_ && chart_view_->chart())
     {
@@ -402,11 +402,11 @@ void ScatterPlotViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2) /
 */
 void ScatterPlotViewDataWidget::invertSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -425,11 +425,11 @@ void ScatterPlotViewDataWidget::invertSelectionSlot()
 */
 void ScatterPlotViewDataWidget::clearSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -444,7 +444,7 @@ void ScatterPlotViewDataWidget::clearSelectionSlot()
 */
 void ScatterPlotViewDataWidget::setAxisRange(QAbstractAxis* axis, double vmin, double vmax)
 {
-    assert(axis);
+    traced_assert(axis);
 
     //handle datetime axis
     auto axis_dt = dynamic_cast<QDateTimeAxis*>(axis);
@@ -472,7 +472,7 @@ void ScatterPlotViewDataWidget::setAxisRange(QAbstractAxis* axis, double vmin, d
 */
 boost::optional<std::pair<double, double>> ScatterPlotViewDataWidget::getAxisRange(QtCharts::QAbstractAxis* axis) const
 {
-    assert(axis);
+    traced_assert(axis);
 
     //handle datetime axis
     if (auto axis_dt = dynamic_cast<QDateTimeAxis*>(axis))
@@ -502,7 +502,7 @@ ScatterSeriesModel& ScatterPlotViewDataWidget::dataModel()
 */
 void ScatterPlotViewDataWidget::resetZoomSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (chart_view_ && chart_view_->chart())
     {
@@ -600,9 +600,9 @@ void ScatterPlotViewDataWidget::updateChartSlot()
 */
 ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert (main_layout_);
+    traced_assert(main_layout_);
 
     chart_view_.reset(nullptr);
 
@@ -634,7 +634,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
         if (!scat_series)
             continue;
 
-        assert (scat_series);
+        traced_assert(scat_series);
 
         connect (scat_series, &QScatterSeries::pressed,
                  chart_view_.get(), &ScatterPlotViewChartView::seriesPressedSlot);
@@ -732,7 +732,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
                                  Qt::Alignment alignment)
         {
             QAbstractAxis* axis = is_date_time ? genDateTimeAxis(title, axis_id) : genValueAxis(title);
-            assert (axis);
+            traced_assert(axis);
 
             chart->addAxis(axis, alignment);
 
@@ -750,8 +750,8 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
 
         createAxis(1, y_axis_name_, y_axis_is_datetime_, Qt::AlignLeft);
 
-        assert (chart->axes(Qt::Horizontal).size() == 1);
-        assert (chart->axes(Qt::Vertical).size() == 1);
+        traced_assert(chart->axes(Qt::Horizontal).size() == 1);
+        traced_assert(chart->axes(Qt::Vertical).size() == 1);
     };
 
     if (has_data)
@@ -846,7 +846,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
 
                 if (use_connection_lines)
                 {
-                    assert (chart_line_series);
+                    traced_assert(chart_line_series);
                     chart_line_series->append(x, y);
                 }
             }
@@ -856,7 +856,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
 
             if (use_connection_lines)
             {
-                assert (chart_line_series);
+                traced_assert(chart_line_series);
                 chart->addSeries(chart_line_series);
 
                 //chart->legend()->markers(chart_line_series)[0]->setVisible(false); // remove line marker in legend

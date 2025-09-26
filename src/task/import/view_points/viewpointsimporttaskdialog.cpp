@@ -68,13 +68,13 @@ ViewPointsImportTaskDialog::ViewPointsImportTaskDialog(ViewPointsImportTask& tas
 
 void ViewPointsImportTaskDialog::updateText ()
 {
-    assert (task_widget_);
+    traced_assert(task_widget_);
     task_widget_->updateText();
 }
 
 void ViewPointsImportTaskDialog::updateButtons()
 {
-    assert (import_button_);
+    traced_assert(import_button_);
 
     import_button_->setDisabled(!task_.canRun());
 }

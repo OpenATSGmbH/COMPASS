@@ -191,7 +191,7 @@ void FilterManagerWidget::loadingDone()
  */
 QCheckBox *FilterManagerWidget::filtersCheckBox() const
 {
-    assert (filters_check_);
+    traced_assert(filters_check_);
     return filters_check_;
 }
 
@@ -199,7 +199,7 @@ QCheckBox *FilterManagerWidget::filtersCheckBox() const
  */
 void FilterManagerWidget::toggleUseFilters()
 {
-    assert(filters_check_);
+    traced_assert(filters_check_);
 
     bool checked = filters_check_->checkState() == Qt::Checked;
     logdbg << "setting use limit to " << checked;
@@ -212,7 +212,7 @@ void FilterManagerWidget::toggleUseFilters()
  */
 void FilterManagerWidget::updateUseFilters ()
 {
-    assert (filters_check_);
+    traced_assert(filters_check_);
     filters_check_->setChecked(filter_manager_.useFilters());
 
     emit iconChangedSignal();
@@ -222,8 +222,8 @@ void FilterManagerWidget::updateUseFilters ()
  */
 void FilterManagerWidget::addFilter()
 {
-    loginf << "start";
-    assert(!filter_generator_widget_);
+    loginf;
+    traced_assert(!filter_generator_widget_);
 
     filter_generator_widget_.reset(new FilterGeneratorWidget());
     connect(filter_generator_widget_.get(), SIGNAL(filterWidgetAction(bool)),
@@ -236,7 +236,7 @@ void FilterManagerWidget::filterWidgetActionSlot(bool generated)
 {
     loginf << "generated " << generated;
 
-    assert(filter_generator_widget_);
+    traced_assert(filter_generator_widget_);
     filter_generator_widget_ = nullptr;
 
     updateFilters();
@@ -246,7 +246,7 @@ void FilterManagerWidget::filterWidgetActionSlot(bool generated)
  */
 void FilterManagerWidget::updateFilters()
 {
-    loginf << "start";
+    loginf;
 
     QLayoutItem* child;
     while (!ds_filter_layout_->isEmpty() && (child = ds_filter_layout_->takeAt(0)))

@@ -50,18 +50,19 @@ public:
 
     virtual void enableDebugging(bool ok);
 
+    //modifies internal state
     Error predict(double dt,
                   double Q_var,
                   const OVector& u = OVector());
     Error update(const Vector& z,
                  const OMatrix& R = OMatrix());
-
     Error predictAndUpdate(double dt,
                            double Q_var,
                            const Vector& z,
                            const OMatrix& R = OMatrix(),
                            const OVector& u = OVector());
 
+    //keeps internal state as is
     Error predictState(Vector& x, 
                        Matrix& P,
                        double dt,
@@ -70,6 +71,10 @@ public:
                        const OVector& u = OVector(),
                        KalmanState* state = nullptr,
                        const boost::optional<double>& Q_var = boost::optional<double>()) const;
+    Error generateMeasurement(Vector& x_pred_mm,
+                              Matrix& P_pred_mm,
+                              const Vector& x_pred, 
+                              const Matrix& P_pred) const;
 
     bool smooth(std::vector<kalman::Vector>& x_smooth,
                 std::vector<kalman::Matrix>& P_smooth,
@@ -158,9 +163,12 @@ public:
     static Matrix continuousWhiteNoise(size_t dim, double dt = 1.0, double spectral_density = 1.0, size_t block_size = 1);
     static void continuousWhiteNoise(Matrix& Q_noise, size_t dim, double dt = 1.0, double spectral_density = 1.0, size_t block_size = 1);
 
+    static bool invertMatrix(Matrix& Pinv, const Matrix& P);
     static boost::optional<double> likelihood(const Vector& x, const Matrix& P, bool check_eps);
     static boost::optional<double> logLikelihood(const Vector& x, const Matrix& P, bool check_eps);
-
+    static boost::optional<double> mahalanobis(const Vector& dx, const Matrix& P, bool P_is_inv);
+    static boost::optional<double> mahalanobisSqr(const Vector& dx, const Matrix& P, bool P_is_inv);
+    
 protected:
 #if USE_EXPERIMENTAL_SOURCE
     friend class KalmanFilterIMM;
@@ -187,6 +195,10 @@ protected:
                                     bool mt_safe,
                                     const OVector& u,
                                     KalmanState* state) const = 0;
+    virtual Error generateMeasurement_impl(Vector& x_pred_mm,
+                                           Matrix& P_pred_mm,
+                                           const Vector& x_pred, 
+                                           const Matrix& P_pred) const;
     virtual Error update_impl(const Vector& z,
                               const Matrix& R) = 0;
     virtual bool smooth_impl(std::vector<Vector>& x_smooth,

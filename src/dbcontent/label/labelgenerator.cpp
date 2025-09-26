@@ -71,7 +71,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
     }
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
-    assert (buffer_index < buffer->size());
+    traced_assert(buffer_index < buffer->size());
 
     using namespace dbContent;
 
@@ -85,11 +85,11 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
 
     if (dbcontent_name == "CAT062")
     {
-        assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
         acid_fpl_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
-        assert (buffer->has<string> (acid_fpl_var->name()));
+        traced_assert(buffer->has<string> (acid_fpl_var->name()));
     }
 
     Variable* acad_var {nullptr};
@@ -203,7 +203,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
     DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
-    assert (buffer_index < buffer->size());
+    traced_assert(buffer_index < buffer->size());
 
     using namespace dbContent;
 
@@ -232,11 +232,11 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
 
         if (dbcontent_name == "CAT062")
         {
-            assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
             acid_fpl_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
-            assert (buffer->has<string> (acid_fpl_var->name()));
+            traced_assert(buffer->has<string> (acid_fpl_var->name()));
         }
 
         Variable* acad_var {nullptr};
@@ -436,7 +436,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
 
             if (data_type == PropertyDataType::BOOL)
             {
-                assert(buffer->has<bool>(property_name));
+                traced_assert(buffer->has<bool>(property_name));
                 null = buffer->get<bool>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -449,7 +449,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::CHAR)
             {
-                assert(buffer->has<char>(property_name));
+                traced_assert(buffer->has<char>(property_name));
                 null = buffer->get<char>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -462,7 +462,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::UCHAR)
             {
-                assert(buffer->has<unsigned char>(property_name));
+                traced_assert(buffer->has<unsigned char>(property_name));
                 null = buffer->get<unsigned char>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -476,7 +476,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::INT)
             {
-                assert(buffer->has<int>(property_name));
+                traced_assert(buffer->has<int>(property_name));
                 null = buffer->get<int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -489,7 +489,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::UINT)
             {
-                assert(buffer->has<unsigned int>(property_name));
+                traced_assert(buffer->has<unsigned int>(property_name));
                 null = buffer->get<unsigned int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -503,7 +503,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::LONGINT)
             {
-                assert(buffer->has<long int>(property_name));
+                traced_assert(buffer->has<long int>(property_name));
                 null = buffer->get<long int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -516,7 +516,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::ULONGINT)
             {
-                assert(buffer->has<unsigned long int>(property_name));
+                traced_assert(buffer->has<unsigned long int>(property_name));
                 null = buffer->get<unsigned long int>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -531,7 +531,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::FLOAT)
             {
-                assert(buffer->has<float>(property_name));
+                traced_assert(buffer->has<float>(property_name));
                 null = buffer->get<float>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -544,7 +544,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::DOUBLE)
             {
-                assert(buffer->has<double>(property_name));
+                traced_assert(buffer->has<double>(property_name));
                 null = buffer->get<double>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -557,7 +557,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::STRING)
             {
-                assert(buffer->has<std::string>(property_name));
+                traced_assert(buffer->has<std::string>(property_name));
                 null = buffer->get<std::string>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -566,7 +566,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::JSON)
             {
-                assert(buffer->has<nlohmann::json>(property_name));
+                traced_assert(buffer->has<nlohmann::json>(property_name));
                 null = buffer->get<nlohmann::json>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -575,7 +575,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::TIMESTAMP)
             {
-                assert(buffer->has<boost::posix_time::ptime>(property_name));
+                traced_assert(buffer->has<boost::posix_time::ptime>(property_name));
                 null = buffer->get<boost::posix_time::ptime>(property_name).isNull(buffer_index);
                 if (!null)
                 {
@@ -592,7 +592,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
         }
     }
 
-    assert (tmp.size() % 3 == 0);
+    traced_assert(tmp.size() % 3 == 0);
 
     return tmp;
 }
@@ -746,22 +746,22 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
     // check line
     {
-        assert (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_line_id_));
+        traced_assert(dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_line_id_));
         dbContent::Variable& line_var = dbcont_manager_.metaGetVariable(
                     dbcont_name, DBContent::meta_var_line_id_);
-        assert (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_ds_id_));
+        traced_assert(dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_ds_id_));
         dbContent::Variable& ds_id_var = dbcont_manager_.metaGetVariable(
                     dbcont_name, DBContent::meta_var_ds_id_);
 
 
-        assert (buffer->has<unsigned int> (line_var.name()));
-        assert (buffer->has<unsigned int> (ds_id_var.name()));
+        traced_assert(buffer->has<unsigned int> (line_var.name()));
+        traced_assert(buffer->has<unsigned int> (ds_id_var.name()));
 
         NullableVector<unsigned int>& line_vec = buffer->get<unsigned int> (line_var.name());
-        assert (!line_vec.isNull(index));
+        traced_assert(!line_vec.isNull(index));
 
         NullableVector<unsigned int>& ds_id_vec = buffer->get<unsigned int> (ds_id_var.name());
-        assert (!ds_id_vec.isNull(index));
+        traced_assert(!ds_id_vec.isNull(index));
 
         if (!labelWanted(ds_id_vec.get(index)))
             return false;
@@ -777,7 +777,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
         dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_m3a_);
 
-        assert (buffer->has<unsigned int> (var.name()));
+        traced_assert(buffer->has<unsigned int> (var.name()));
 
         NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
 
@@ -797,7 +797,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
         dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_mc_);
 
-        assert (buffer->has<float> (var.name()));
+        traced_assert(buffer->has<float> (var.name()));
 
         NullableVector<float>& data_vec = buffer->get<float> (var.name());
 
@@ -823,7 +823,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
         dbContent::Variable& acid_var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acid_);
 
-        assert (buffer->has<string> (acid_var.name()));
+        traced_assert(buffer->has<string> (acid_var.name()));
 
         NullableVector<string>& acid_vec = buffer->get<string> (acid_var.name());
 
@@ -832,11 +832,11 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
         if (dbcont_name == "CAT062")
         {
-            assert (dbcont_manager_.canGetVariable(dbcont_name, DBContent::var_cat062_callsign_fpl_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcont_name, DBContent::var_cat062_callsign_fpl_));
 
             cs_fpl_var = &dbcont_manager_.getVariable(dbcont_name, DBContent::var_cat062_callsign_fpl_);
 
-            assert (buffer->has<string> (cs_fpl_var->name()));
+            traced_assert(buffer->has<string> (cs_fpl_var->name()));
             cs_fpl_vec = &buffer->get<string> (cs_fpl_var->name());
         }
 
@@ -891,7 +891,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
         dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acad_);
 
-        assert (buffer->has<unsigned int> (var.name()));
+        traced_assert(buffer->has<unsigned int> (var.name()));
 
         NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
 
@@ -910,7 +910,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
         if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_m3a_))
         {
             dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_m3a_);
-            assert (buffer->has<unsigned int> (var.name()));
+            traced_assert(buffer->has<unsigned int> (var.name()));
             m3a_vec = &buffer->get<unsigned int> (var.name());
         }
 
@@ -918,7 +918,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
         if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_mc_))
         {
             dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_mc_);
-            assert (buffer->has<float> (var.name()));
+            traced_assert(buffer->has<float> (var.name()));
             mc_vec = &buffer->get<float> (var.name());
         }
 
@@ -926,7 +926,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
         if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_acad_))
         {
             dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acad_);
-            assert (buffer->has<unsigned int> (var.name()));
+            traced_assert(buffer->has<unsigned int> (var.name()));
             ta_vec = &buffer->get<unsigned int> (var.name());
         }
 
@@ -934,7 +934,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
         if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_acid_))
         {
             dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acid_);
-            assert (buffer->has<string> (var.name()));
+            traced_assert(buffer->has<string> (var.name()));
             ti_vec = &buffer->get<string> (var.name());
         }
 
@@ -942,7 +942,7 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
         if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_detection_type_))
         {
             dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_detection_type_);
-            assert (buffer->has<unsigned char> (var.name()));
+            traced_assert(buffer->has<unsigned char> (var.name()));
             type_vec = &buffer->get<unsigned char> (var.name());
         }
 
@@ -1170,13 +1170,13 @@ LabelDirection LabelGenerator::labelDirection (unsigned int ds_id)
     if (config_.label_directions_.contains(key))
     {
         unsigned int direction = config_.label_directions_.at(key);
-        assert (direction <= 3);
+        traced_assert(direction <= 3);
         return LabelDirection(direction);
     }
     else
     {
         unsigned int direction = Number::randomNumber(0, 3.99);
-        assert (direction <= 3);
+        traced_assert(direction <= 3);
         config_.label_directions_[key] = direction;
         return LabelDirection(direction);
     }
@@ -1207,7 +1207,7 @@ void LabelGenerator::labelDirection (unsigned int ds_id, LabelDirection directio
 
 void LabelGenerator::editLabelContents(const std::string& dbcontent_name)
 {
-    assert (!label_edit_dialog_);
+    traced_assert(!label_edit_dialog_);
 
     label_edit_dialog_.reset(new LabelContentDialog(dbcontent_name, *this));
 
@@ -1224,13 +1224,13 @@ unsigned int LabelGenerator::labelLine (unsigned int ds_id) // returns 0...3
     if (config_.label_lines_.contains(key))
     {
         unsigned int line = config_.label_lines_.at(key);
-        assert (line <= 3);
+        traced_assert(line <= 3);
         return line;
     }
     else
     {
         DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
 
@@ -1246,7 +1246,7 @@ unsigned int LabelGenerator::labelLine (unsigned int ds_id) // returns 0...3
 
 void LabelGenerator::labelLine (unsigned int ds_id, unsigned int line)
 {
-    assert (line <= 3);
+    traced_assert(line <= 3);
     string key = to_string(ds_id);
 
     if (config_.label_lines_[key] != line)
@@ -1258,7 +1258,7 @@ void LabelGenerator::labelLine (unsigned int ds_id, unsigned int line)
 // updates lines to be label according to available lines with loaded data
 void LabelGenerator::updateAvailableLabelLines()
 {
-    logdbg << "start";
+    logdbg;
 
     unsigned int ds_id;
     unsigned int line_id;
@@ -1306,14 +1306,14 @@ void LabelGenerator::updateAvailableLabelLines()
 
 void LabelGenerator::editLabelContentsDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     auto cfg_new = label_edit_dialog_->labelConfig();
 
     if (config_.label_config_ != cfg_new)
         emit labelConfigChanged();
 
-    assert (label_edit_dialog_);
+    traced_assert(label_edit_dialog_);
     config_.label_config_ = cfg_new;
 
     label_edit_dialog_->close();
@@ -1327,7 +1327,7 @@ nlohmann::json LabelGenerator::labelConfig() const
 
 void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
-    assert (config_.label_config_.contains(dbcontent_name));
+    traced_assert(config_.label_config_.contains(dbcontent_name));
 
     json& dbcont_def = config_.label_config_.at(dbcontent_name);
 
@@ -1390,7 +1390,7 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
     if (dbcontent_name == "CAT062")
     {
         {
-            assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_baro_alt_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_baro_alt_));
 
             Variable& var = dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_baro_alt_);
 
@@ -1399,7 +1399,7 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
         }
 
         {
-            assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
             Variable& var = dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_);
 
             if (!read_set.hasVariable(var))
@@ -1407,7 +1407,7 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
         }
 
         {
-            assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
             Variable& var = dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
             if (!read_set.hasVariable(var))
@@ -1591,8 +1591,8 @@ bool LabelGenerator::updateTAValuesFromStr(const std::string& values)
 
 std::string LabelGenerator::getVariableName(const std::string& dbcontent_name, unsigned int key)
 {
-    assert (key != 0);
-    assert (config_.label_config_.contains(dbcontent_name));
+    traced_assert(key != 0);
+    traced_assert(config_.label_config_.contains(dbcontent_name));
 
     json& dbcont_def = config_.label_config_.at(dbcontent_name);
 
@@ -1607,8 +1607,8 @@ std::string LabelGenerator::getVariableName(const std::string& dbcontent_name, u
 std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, unsigned int key,
                                              std::shared_ptr<Buffer>& buffer, unsigned int index, bool long_val)
 {
-    assert (key != 0);
-    assert (config_.label_config_.contains(dbcontent_name));
+    traced_assert(key != 0);
+    traced_assert(config_.label_config_.contains(dbcontent_name));
 
     json& dbcont_def = config_.label_config_.at(dbcontent_name);
 
@@ -1618,7 +1618,7 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
     string varname = dbcont_def.at(to_string(key));
 
     DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
-    assert (db_content.hasVariable(varname));
+    traced_assert(db_content.hasVariable(varname));
     Variable& var = db_content.variable(varname);
 
     PropertyDataType data_type = var.dataType();
@@ -1862,7 +1862,7 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
             if (values.isNull(index))
                 return "";
 
-            assert (var.representation() == Variable::Representation::STANDARD); // only 1 representation
+            traced_assert(var.representation() == Variable::Representation::STANDARD); // only 1 representation
             //value = values.getAsString(index);
 
             if (long_val)
@@ -1887,8 +1887,8 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
 
 std::string LabelGenerator::getVariableUnit(const std::string& dbcontent_name, unsigned int key)
 {
-    assert (key != 0);
-    assert (config_.label_config_.contains(dbcontent_name));
+    traced_assert(key != 0);
+    traced_assert(config_.label_config_.contains(dbcontent_name));
 
     json& dbcont_def = config_.label_config_.at(dbcontent_name);
 
@@ -1899,7 +1899,7 @@ std::string LabelGenerator::getVariableUnit(const std::string& dbcontent_name, u
 
     DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
 
-    assert (db_content.hasVariable(varname));
+    traced_assert(db_content.hasVariable(varname));
 
     return db_content.variable(varname).dimensionUnitStr();
 }
@@ -1973,14 +1973,14 @@ std::string LabelGenerator::getModeCText (const std::string& dbcontent_name,
 
     if (dbcontent_name == "CAT062")
     {
-        assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_baro_alt_));
-        assert (dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
+        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_baro_alt_));
+        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
 
         cat062_baro_alt_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_baro_alt_);
         cat062_fl_meas_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_);
 
-        assert (buffer->has<float> (cat062_baro_alt_var->name()));
-        assert (buffer->has<float> (cat062_fl_meas_var->name()));
+        traced_assert(buffer->has<float> (cat062_baro_alt_var->name()));
+        traced_assert(buffer->has<float> (cat062_fl_meas_var->name()));
     }
 
     if (buffer->has<float>(mc_var.name()) &&

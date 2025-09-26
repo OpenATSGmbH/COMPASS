@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "traced_assert.h"
 #include "json.hpp"
 
 #include "logger.h"
@@ -146,7 +147,7 @@ public:
     {
         if (!emitter_specs_.count(toString(ecat)))
             logerr << "TargetBase:: checkEmitterSpecs: unknown ecat " << (unsigned int) ecat;
-        assert (emitter_specs_.count(toString(ecat)));
+        traced_assert(emitter_specs_.count(toString(ecat)));
         return true;
     }
 
@@ -154,38 +155,38 @@ public:
     static double getAvgSize(Category ecat) {
 
         //loginf << (unsigned int) ecat << " str " << toString(ecat);
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("avg_size_m"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("avg_size_m"));
         return emitter_specs_.at(toString(ecat)).at("avg_size_m");
     }
 
     static double getMaxSpeedKnots(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("max_speed_knots"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("max_speed_knots"));
         return emitter_specs_.at(toString(ecat)).at("max_speed_knots");
     }
 
     static double getMaxAccel(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("max_accel_mps2"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("max_accel_mps2"));
         return emitter_specs_.at(toString(ecat)).at("max_accel_mps2");
     }
 
     static bool isGroundOnly(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("ground_only"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("ground_only"));
         return emitter_specs_.at(toString(ecat)).at("ground_only");
     }
 
     static double processNoiseFactorGround(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("process_noise_factor_ground"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("process_noise_factor_ground"));
         return emitter_specs_.at(toString(ecat)).at("process_noise_factor_ground");
     }
 
     static double processNoiseFactorAir(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("process_noise_factor_air"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("process_noise_factor_air"));
         return emitter_specs_.at(toString(ecat)).at("process_noise_factor_air");
     }
 

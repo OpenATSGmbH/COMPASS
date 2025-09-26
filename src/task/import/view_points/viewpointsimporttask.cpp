@@ -75,16 +75,16 @@ ViewPointsImportTaskDialog* ViewPointsImportTask::dialog()
                 this, &ViewPointsImportTask::dialogCancelSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 
 }
 
 void ViewPointsImportTask::dialogImportSlot()
 {
-    assert (canRun());
+    traced_assert(canRun());
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
     run();
@@ -92,7 +92,7 @@ void ViewPointsImportTask::dialogImportSlot()
 
 void ViewPointsImportTask::dialogCancelSlot()
 {
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 }
 
@@ -152,7 +152,7 @@ void ViewPointsImportTask::parseCurrentFile ()
 
 void ViewPointsImportTask::checkParsedData ()
 {
-    loginf << "start";
+    loginf;
 
     std::string err;
     if (!ViewPoint::isValidJSON(current_data_, current_filename_, &err, true))
@@ -171,9 +171,9 @@ bool ViewPointsImportTask::canRun()
 
 void ViewPointsImportTask::run()
 {
-    loginf << "start";
+    loginf;
 
-    assert (canImport()); // checked file content, version etc
+    traced_assert(canImport()); // checked file content, version etc
     done_ = false;
     stopped_ = false;
 
@@ -239,7 +239,7 @@ void ViewPointsImportTask::run()
 
                     filename = dir+"/"+file;
 
-                    assert (Files::fileExists(filename));
+                    traced_assert(Files::fileExists(filename));
                 }
 
                 ASTERIXImportTask& task = task_manager_.asterixImporterTask();
@@ -249,7 +249,7 @@ void ViewPointsImportTask::run()
                 // line
                 if (ds_it.contains("line_id"))
                 {
-                    assert (ds_it.at("line_id").is_number_unsigned());
+                    traced_assert(ds_it.at("line_id").is_number_unsigned());
                     line_id = ds_it.at("line_id");
 
                     task.settings().file_line_id_ = line_id;
@@ -260,7 +260,7 @@ void ViewPointsImportTask::run()
 
                 if (ds_it.contains("time_offset"))
                 {
-                    assert (ds_it.at("time_offset").is_number());
+                    traced_assert(ds_it.at("time_offset").is_number());
 
                     float tod_offset = ds_it.at("time_offset");
 
@@ -276,7 +276,7 @@ void ViewPointsImportTask::run()
 
                 if (ds_it.contains("date"))
                 {
-                    assert (ds_it.at("date").is_string());
+                    traced_assert(ds_it.at("date").is_string());
                     string date_str = ds_it.at("date");
 
                     loginf << "date " << date_str;
@@ -288,7 +288,7 @@ void ViewPointsImportTask::run()
 
                 task.source().setSourceType(ASTERIXImportSource::SourceType::FileASTERIX, {filename}); //line_id);
 
-                assert(task.canRun());
+                traced_assert(task.canRun());
                 task.allowUserInteractions(false);
 
                 //widget->runCurrentTaskSlot();
@@ -317,7 +317,7 @@ void ViewPointsImportTask::run()
 
     emit doneSignal();
 
-    loginf << "start";
+    loginf;
 }
 void ViewPointsImportTask::stop()
 {

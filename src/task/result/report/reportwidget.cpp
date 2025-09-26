@@ -139,7 +139,7 @@ void ReportWidget::clear()
 
 void ReportWidget::expand()
 {
-    loginf << "start";
+    loginf;
 
     tree_view_->expandToDepth(3);
 }
@@ -158,7 +158,7 @@ void ReportWidget::selectId (const std::string& id,
         return;
     }
 
-    assert (tree_view_);
+    traced_assert(tree_view_);
     tree_view_->selectionModel()->clear();
 
     expandAllParents(index);
@@ -199,7 +199,7 @@ void ReportWidget::triggerItem (const QModelIndex& index,
                                 bool preload_ondemand_contents)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     id_history_.push_back(item->id());
 
@@ -213,7 +213,7 @@ void ReportWidget::triggerItem (const QModelIndex& index,
     else if (dynamic_cast<ResultReport::Section*>(item))
     {
         ResultReport::Section* section = dynamic_cast<ResultReport::Section*>(item);
-        assert (section);
+        traced_assert(section);
 
         loginf << "section " << section->name();
         showResultWidget(section, preload_ondemand_contents);
@@ -257,7 +257,7 @@ void ReportWidget::contextMenuSlot(const QPoint& pos)
 void ReportWidget::showFigure(const QModelIndex& index)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     loginf << "name " << item->name() << " id " << item->id();
 
@@ -268,7 +268,7 @@ void ReportWidget::showFigure(const QModelIndex& index)
     else if (dynamic_cast<ResultReport::Section*>(item))
     {
         ResultReport::Section* section = dynamic_cast<ResultReport::Section*>(item);
-        assert (section);
+        traced_assert(section);
 
         loginf << "section " << section->name();
 
@@ -282,9 +282,9 @@ void ReportWidget::showFigure(const QModelIndex& index)
 
 void ReportWidget::stepBackSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (id_history_.size() > 1);
+    traced_assert(id_history_.size() > 1);
 
     id_history_.pop_back(); // remove last entry
     reshowLastId(); // show last id
@@ -296,7 +296,7 @@ void ReportWidget::stepBackSlot()
 void ReportWidget::showResultWidget(Section* section, 
                                     bool preload_ondemand_contents)
 {
-    assert(results_widget_);
+    traced_assert(results_widget_);
 
     current_section_ = section;
 
@@ -333,7 +333,7 @@ void ReportWidget::expandAllParents (QModelIndex index)
 
 void ReportWidget::updateBackButton ()
 {
-    assert (back_button_);
+    traced_assert(back_button_);
 
     back_button_->setEnabled(id_history_.size() > 1);
 }

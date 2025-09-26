@@ -73,7 +73,7 @@ bool FeatureDefinitionScatterSeries::isValid() const
  */
 std::unique_ptr<ViewPointGenFeature> FeatureDefinitionScatterSeries::createFeature_impl(const Base* result) const
 {
-    assert(isValid());
+    traced_assert(isValid());
 
     ScatterSeriesCollection collection;
 
@@ -88,7 +88,7 @@ std::unique_ptr<ViewPointGenFeature> FeatureDefinitionScatterSeries::createFeatu
         auto values_x = data_series_x.getOptionalValues(result);
         auto values_y = data_series_y.getOptionalValues(result);
 
-        assert(values_x.size() == values_y.size());
+        traced_assert(values_x.size() == values_y.size());
 
         size_t n = values_x.size();
 
@@ -145,7 +145,7 @@ bool FeatureDefinitionCustomScatterSeries::isValid() const
  */
 std::unique_ptr<ViewPointGenFeature> FeatureDefinitionCustomScatterSeries::createFeature_impl(const Base* result) const
 {
-    assert(isValid());
+    traced_assert(isValid());
 
     ScatterSeriesCollection collection;
 
@@ -201,7 +201,7 @@ bool FeatureDefinitionTimedScatterSeries::isValid() const
  */
 std::unique_ptr<ViewPointGenFeature> FeatureDefinitionTimedScatterSeries::createFeature_impl(const Base* result) const
 {
-    assert(isValid());
+    traced_assert(isValid());
 
     ScatterSeriesCollection collection;
 

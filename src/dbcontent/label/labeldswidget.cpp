@@ -76,7 +76,7 @@ void LabelDSWidget::forceUpdateList()
 
 void LabelDSWidget::updateListSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -88,7 +88,7 @@ void LabelDSWidget::updateListSlot()
     if (old_sources_ == current_sources)
         return;
 
-    assert(ds_grid_);
+    traced_assert(ds_grid_);
 
     QLayoutItem* child;
     while (!ds_grid_->isEmpty() && (child = ds_grid_->takeAt(0)) != nullptr)
@@ -156,7 +156,7 @@ void LabelDSWidget::updateListSlot()
 void LabelDSWidget::sourceClickedSlot()
 {
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
-    assert(widget);
+    traced_assert(widget);
 
     QVariant ds_id_var = widget->property("ds_id");
     unsigned int ds_id = ds_id_var.value<unsigned int>();
@@ -172,7 +172,7 @@ void LabelDSWidget::sourceClickedSlot()
 void LabelDSWidget::changeLineSlot()
 {
     QPushButton* widget = static_cast<QPushButton*>(sender());
-    assert(widget);
+    traced_assert(widget);
 
     QVariant ds_id_var = widget->property("ds_id");
     unsigned int ds_id = ds_id_var.value<unsigned int>();
@@ -180,7 +180,7 @@ void LabelDSWidget::changeLineSlot()
     loginf << "ds_id " << ds_id;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
-    assert (ds_man.hasDBDataSource(ds_id));
+    traced_assert(ds_man.hasDBDataSource(ds_id));
 
     dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
 
@@ -203,7 +203,7 @@ void LabelDSWidget::changeLineSlot()
 void LabelDSWidget::changeDirectionSlot()
 {
     QPushButton* widget = static_cast<QPushButton*>(sender());
-    assert(widget);
+    traced_assert(widget);
 
     QVariant ds_id_var = widget->property("ds_id");
     unsigned int ds_id = ds_id_var.value<unsigned int>();
@@ -258,14 +258,14 @@ void LabelDSWidget::selectDirectionSlot()
 
     QVariant dir_var = sender()->property("direction");
     unsigned int dir = dir_var.value<unsigned int>();
-    assert (dir <= 3);
+    traced_assert(dir <= 3);
 
     loginf << "ds_id " << ds_id << " dir " << dir;
 
     LabelDirection direction = LabelDirection(dir);
     label_generator_.labelDirection(ds_id, direction);
 
-    assert (direction_buttons_.count(ds_id));
+    traced_assert(direction_buttons_.count(ds_id));
     direction_buttons_.at(ds_id)->setIcon(iconForDirection(direction));
 }
 
@@ -276,13 +276,13 @@ void LabelDSWidget::selectLineSlot()
 
     QVariant line_var = sender()->property("line");
     unsigned int line = line_var.value<unsigned int>();
-    assert (line <= 3);
+    traced_assert(line <= 3);
 
     loginf << "ds_id " << ds_id << " line " << line;
 
     label_generator_.labelLine(ds_id, line);
 
-    assert (line_buttons_.count(ds_id));
+    traced_assert(line_buttons_.count(ds_id));
     line_buttons_.at(ds_id)->setText(String::lineStrFrom(line).c_str());
 }
 

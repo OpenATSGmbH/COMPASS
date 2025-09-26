@@ -21,6 +21,7 @@
 #include "dbcontent/target/targetposition.h"
 #include "json.hpp"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <fstream>
 
@@ -294,7 +295,7 @@ AirSpace::AboveCheckResult AirSpace::isAbove(const SectorLayer* layer,
                                              bool has_ground_bit,
                                              bool ground_bit_set)
 {
-    assert(layer);
+    traced_assert(layer);
 
     //check bounds of layer
     auto lat_min_max = layer->getMinMaxLatitude();

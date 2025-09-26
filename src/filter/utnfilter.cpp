@@ -125,7 +125,7 @@ void UTNFilter::generateSubConfigurable(const std::string& class_id,
 
 void UTNFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 
 }
 
@@ -143,9 +143,9 @@ void UTNFilter::reset()
 
 void UTNFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -154,12 +154,12 @@ void UTNFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void UTNFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("utns"));
+    traced_assert(filter.contains("utns"));
     utns_str_ = filter.at("utns");
 
     updateUTNSFromStr(utns_str_);

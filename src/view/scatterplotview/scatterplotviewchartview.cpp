@@ -37,7 +37,7 @@ ScatterPlotViewChartView::ScatterPlotViewChartView (ScatterPlotViewDataWidget* d
 :   ChartView   (chart, ChartView::SelectionStyle::RubberBand, parent)
 ,   data_widget_(data_widget)
 {
-    assert (data_widget_);
+    traced_assert(data_widget_);
 }
 
 /**

@@ -18,7 +18,7 @@
 #include "config.h"
 #include "files.h"
 #include "logger.h"
-//#include "stringconv.h"
+#include "traced_assert.h"
 
 #include <stdlib.h>
 
@@ -35,7 +35,7 @@ SimpleConfig::SimpleConfig(const std::string& config_filename) : config_filename
     try
     {
         loadFile();
-        assert(opened_);
+        traced_assert(opened_);
     }
     catch (exception& e)
     {
@@ -48,7 +48,7 @@ SimpleConfig::~SimpleConfig() { opened_ = false; }
 
 void SimpleConfig::loadFile()
 {
-    assert(!opened_);
+    traced_assert(!opened_);
 
     std::string config_path = HOME_CONF_DIRECTORY + config_filename_;
 
@@ -147,6 +147,6 @@ std::string SimpleConfig::getString(const std::string& id)
 
 bool SimpleConfig::existsId(const std::string& id)
 {
-    assert(id.size() > 0);
+    traced_assert(id.size() > 0);
     return config_.contains(id);
 }

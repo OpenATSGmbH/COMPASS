@@ -63,8 +63,8 @@ const std::string ViewPoint::VP_ANNOTATION_KEY {"annotations"};
 ViewPoint::ViewPoint(unsigned int id, const nlohmann::json::object_t& data, ViewManager& view_manager, bool needs_save)
     : ViewableDataConfig(data), id_(id), view_manager_(view_manager)
 {
-    assert (data_.contains(ViewPoint::VP_ID_KEY));
-    assert (data_.at(ViewPoint::VP_ID_KEY) == id_);
+    traced_assert(data_.contains(ViewPoint::VP_ID_KEY));
+    traced_assert(data_.at(ViewPoint::VP_ID_KEY) == id_);
 
     if (!data_.contains(ViewPoint::VP_STATUS_KEY))
     {
@@ -80,8 +80,8 @@ ViewPoint::ViewPoint(unsigned int id, const nlohmann::json::object_t& data, View
 ViewPoint::ViewPoint(unsigned int id, const std::string& json_str, ViewManager& view_manager, bool needs_save)
     : ViewableDataConfig(json_str), id_(id), view_manager_(view_manager)
 {
-    assert (data_.contains(ViewPoint::VP_ID_KEY));
-    assert (data_.at(ViewPoint::VP_ID_KEY) == id_);
+    traced_assert(data_.contains(ViewPoint::VP_ID_KEY));
+    traced_assert(data_.at(ViewPoint::VP_ID_KEY) == id_);
 
     if (!data_.contains(ViewPoint::VP_STATUS_KEY))
     {
@@ -114,7 +114,7 @@ void ViewPoint::print() const
 
 void ViewPoint::accept(LatexVisitor& v) const
 {
-    logdbg << "start";
+    logdbg;
     v.visit(this);
 }
 

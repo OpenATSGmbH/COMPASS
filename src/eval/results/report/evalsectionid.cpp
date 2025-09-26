@@ -162,7 +162,7 @@ std::string EvalSectionID::resultID(const EvaluationRequirementResult::Base& res
 */
 std::string EvalSectionID::targetResultID(unsigned int utn, const EvaluationRequirementResult::Base& result)
 {
-    assert(result.requirement());
+    traced_assert(result.requirement());
     return targetID(utn) + Sep + requirementGroupResultID(result);
 }
 
@@ -177,7 +177,7 @@ std::string EvalSectionID::targetResultID(unsigned int utn, const Evaluation::Re
 */
 std::string EvalSectionID::requirementResultID(const EvaluationRequirementResult::Base& result)
 {
-    assert(result.requirement());
+    traced_assert(result.requirement());
     return SectionSectors + Sep + 
            requirementGroupSectorID(*result.requirement(), result.sectorLayer()) + Sep + 
            resultID(result) + Sep + 
@@ -188,7 +188,7 @@ std::string EvalSectionID::requirementResultID(const EvaluationRequirementResult
 */
 std::string EvalSectionID::requirementResultSumID(const EvaluationRequirementResult::Base& result)
 {
-    assert(result.requirement());
+    traced_assert(result.requirement());
     return SectionSectors + Sep + 
            requirementGroupSectorID(*result.requirement(), result.sectorLayer()) + Sep + 
            sumID(result) + Sep + 

@@ -17,21 +17,22 @@
 
 #include "propertylist.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 PropertyList::PropertyList()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 PropertyList::PropertyList(const std::vector<Property>& properties)
 :   properties_(properties)
 {
-    logdbg << "start";
+    logdbg;
 }
 
 PropertyList::~PropertyList()
 {
-    logdbg << "start";
+    logdbg;
     clear();
     logdbg << "end";
 }
@@ -55,9 +56,9 @@ void PropertyList::addPropertyList(const PropertyList& org)
 
 void PropertyList::addProperty(std::string id, PropertyDataType type)
 {
-    logdbg << "start";
+    logdbg;
     logdbg << "id '" << id << "' type " << Property::asString(type);
-    assert(!id.empty());
+    traced_assert(!id.empty());
 
     if (hasProperty(id))
     {
@@ -71,7 +72,7 @@ void PropertyList::addProperty(std::string id, PropertyDataType type)
 
 void PropertyList::addProperty(Property& property)
 {
-    logdbg << "start";
+    logdbg;
 
     if (hasProperty(property.name()))
     {
@@ -85,7 +86,7 @@ void PropertyList::addProperty(Property& property)
 
 void PropertyList::addProperty(const Property& property)
 {
-    logdbg << "start";
+    logdbg;
 
     if (hasProperty(property.name()))
     {
@@ -99,14 +100,14 @@ void PropertyList::addProperty(const Property& property)
 
 const Property& PropertyList::at(unsigned int index) const
 {
-    assert(index < properties_.size());
+    traced_assert(index < properties_.size());
     return properties_.at(index);
 }
 
 void PropertyList::removeProperty(const std::string& id)
 {
-    logdbg << "start";
-    assert(hasProperty(id));
+    logdbg;
+    traced_assert(hasProperty(id));
 
     std::vector<Property>::iterator it;
 
@@ -120,13 +121,13 @@ void PropertyList::removeProperty(const std::string& id)
         }
     }
     logerr << "property " << id << " could not be removed";
-    assert(false);
+    traced_assert(false);
 }
 
 const Property& PropertyList::get(const std::string& id) const
 {
-    logdbg << "start";
-    assert(hasProperty(id));
+    logdbg;
+    traced_assert(hasProperty(id));
 
     std::vector<Property>::const_iterator it;
 
@@ -143,7 +144,7 @@ const Property& PropertyList::get(const std::string& id) const
 
 unsigned int PropertyList::getPropertyIndex(const std::string& id) const
 {
-    logdbg << "start";
+    logdbg;
     if (!hasProperty(id))
         throw std::runtime_error("PropertyList: getPropertyIndex: property " + id +
                                  " does not exists");
@@ -162,7 +163,7 @@ unsigned int PropertyList::getPropertyIndex(const std::string& id) const
 
 bool PropertyList::hasProperty(const std::string& id) const
 {
-    logdbg << "start";
+    logdbg;
 
     for (auto& it : properties_)
     {
@@ -175,7 +176,7 @@ bool PropertyList::hasProperty(const std::string& id) const
 
 bool PropertyList::hasProperty(const Property& prop) const
 {
-    logdbg << "start";
+    logdbg;
 
     for (auto& it : properties_)
     {
@@ -188,7 +189,7 @@ bool PropertyList::hasProperty(const Property& prop) const
 
 void PropertyList::clear()
 {
-    logdbg << "start";
+    logdbg;
     properties_.clear();
     logdbg << "end";
 }

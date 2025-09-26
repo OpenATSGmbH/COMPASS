@@ -26,7 +26,7 @@
 
 #include <memory>
 #include <string>
-#include <cassert>
+#include "traced_assert.h"
 #include <stdexcept>
 
 #include <json.hpp>
@@ -76,14 +76,14 @@ private:
     template <typename T>
     T read(idx_t col, idx_t row)
     {
-        assert(result_valid_);
+        traced_assert(result_valid_);
         throw std::runtime_error("DuckDBResult: read: not implemented for type");
     }
 
     template <typename T>
     T readVector(void* v, idx_t row)
     {
-        assert(result_valid_);
+        traced_assert(result_valid_);
         throw std::runtime_error("DuckDBResult: readVector: not implemented for type");
     }
 
@@ -99,7 +99,7 @@ private:
 template<>                                                           \
 inline DType DuckDBExecResult::read(idx_t col, idx_t row)            \
 {                                                                    \
-    assert(result_valid_);                                           \
+    traced_assert(result_valid_);                                           \
     return duckdb_value_ ## DuckDBDTypeName(&result_, col, row);     \
 }
 
@@ -116,14 +116,14 @@ StandardRead(double, double)
 template<>
 inline std::string DuckDBExecResult::read(idx_t col, idx_t row)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     return std::string(duckdb_value_varchar(&result_, col, row));
 }
 
 template<>
 inline nlohmann::json DuckDBExecResult::read(idx_t col, idx_t row)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     auto str = read<std::string>(col, row);
     return nlohmann::json::parse(str);
 }
@@ -131,7 +131,7 @@ inline nlohmann::json DuckDBExecResult::read(idx_t col, idx_t row)
 template<>
 inline boost::posix_time::ptime DuckDBExecResult::read(idx_t col, idx_t row)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     long ts = read<long>(col, row);
     return Utils::Time::fromLong(ts);
 }
@@ -140,7 +140,7 @@ inline boost::posix_time::ptime DuckDBExecResult::read(idx_t col, idx_t row)
 template<>                                                           \
 inline DType DuckDBExecResult::readVector(void* v, idx_t row)        \
 {                                                                    \
-    assert(result_valid_);                                           \
+    traced_assert(result_valid_);                                           \
     return ((DType*)v)[ row ];                                       \
 }
 
@@ -157,7 +157,7 @@ StandardReadVector(double)
 template<>
 inline std::string DuckDBExecResult::readVector(void* v, idx_t row)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     duckdb_string_t str = ((duckdb_string_t*)v)[ row ];
     if (duckdb_string_is_inlined(str)) 
         return std::string((char*)str.value.inlined.inlined, str.value.inlined.length);
@@ -168,7 +168,7 @@ inline std::string DuckDBExecResult::readVector(void* v, idx_t row)
 template<>
 inline nlohmann::json DuckDBExecResult::readVector(void* v, idx_t row)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     auto str = readVector<std::string>(v, row);
     return nlohmann::json::parse(str);
 }
@@ -176,7 +176,7 @@ inline nlohmann::json DuckDBExecResult::readVector(void* v, idx_t row)
 template<>
 inline boost::posix_time::ptime DuckDBExecResult::readVector(void* v, idx_t row)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     long ts = readVector<long>(v, row);
     return Utils::Time::fromLong(ts);
 }

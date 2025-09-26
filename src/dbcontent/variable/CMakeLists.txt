@@ -6,7 +6,6 @@ include_directories (
 target_sources(compass
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/variable.h"
-        "${CMAKE_CURRENT_LIST_DIR}/variabledefinition.h"
         "${CMAKE_CURRENT_LIST_DIR}/variablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/variableset.h"
         "${CMAKE_CURRENT_LIST_DIR}/variableorderedset.h"

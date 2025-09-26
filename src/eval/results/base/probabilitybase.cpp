@@ -29,10 +29,10 @@ namespace common
     */
     EvaluationRequirement::ProbabilityBase& castRequirement(const std::shared_ptr<EvaluationRequirement::Base>& base_req)
     {
-        assert (base_req);
+        traced_assert(base_req);
 
         EvaluationRequirement::ProbabilityBase* req_ptr = dynamic_cast<EvaluationRequirement::ProbabilityBase*>(base_req.get());
-        assert (req_ptr);
+        traced_assert(req_ptr);
 
         return *req_ptr;
     }
@@ -43,6 +43,29 @@ namespace common
     {
         return 1.0 - prob;
     }
+}
+
+/****************************************************************************************
+ * SingleProbabilityBase
+ ****************************************************************************************/
+
+/**
+*/
+nlohmann::json ProbabilityBase::formatProbability(double prob)
+{
+    //return Utils::String::percentToString(std::round(prob * 10000.0) / 100.0, 2).c_str();
+
+    return Number::round(100.0 * prob, 2);
+}
+
+/**
+*/
+nlohmann::json ProbabilityBase::formatProbabilityOptional(const boost::optional<double>& prob)
+{
+    if (!prob.has_value())
+        return nlohmann::json();
+
+    return SingleProbabilityBase::formatProbability(prob.value());
 }
 
 /****************************************************************************************
@@ -96,21 +119,9 @@ double SingleProbabilityBase::invertProb(double prob) const
 
 /**
 */
-nlohmann::json SingleProbabilityBase::formatProbability(double prob)
+nlohmann::json SingleProbabilityBase::resultValue(double value) const
 {
-    //return Utils::String::percentToString(std::round(prob * 10000.0) / 100.0, 2).c_str();
-
-    return Number::round(100.0 * prob, 2);
-}
-
-/**
-*/
-nlohmann::json SingleProbabilityBase::formatProbabilityOptional(const boost::optional<double>& prob)
-{
-    if (!prob.has_value())
-        return nlohmann::json();
-
-    return SingleProbabilityBase::formatProbability(prob.value());
+    return formatProbability(value);
 }
 
 /****************************************************************************************
@@ -157,6 +168,13 @@ boost::optional<double> JoinedProbabilityBase::computeResult() const
 double JoinedProbabilityBase::invertProb(double prob) const
 {
     return common::invertProbability(prob);
+}
+
+/**
+*/
+nlohmann::json JoinedProbabilityBase::resultValue(double value) const
+{
+    return formatProbability(value);
 }
 
 }

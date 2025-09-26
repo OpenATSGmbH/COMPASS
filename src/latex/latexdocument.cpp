@@ -226,9 +226,9 @@ std::string LatexDocument::toString()
 
 LatexSection& LatexDocument::getSection (const std::string& id)
 {
-    assert (id.size());
+    traced_assert(id.size());
     std::vector<std::string> parts = String::split(id, ':');
-    assert (parts.size());
+    traced_assert(parts.size());
 
     loginf << "id '"+id+"' parts " << parts.size();
 
@@ -249,7 +249,7 @@ LatexSection& LatexDocument::getSection (const std::string& id)
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 tmp->addSubSection(heading);
@@ -258,7 +258,7 @@ LatexSection& LatexDocument::getSection (const std::string& id)
         }
     }
 
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
@@ -270,15 +270,15 @@ bool LatexDocument::hasSubSection (const std::string& heading)
 LatexSection& LatexDocument::getSubSection (const std::string& heading)
 {
     LatexSection* tmp = findSubSection (heading);
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
 void LatexDocument::addSubSection (const std::string& heading)
 {
-    assert (!hasSubSection(heading));
+    traced_assert(!hasSubSection(heading));
     sub_content_.push_back(unique_ptr<LatexSection>(new LatexSection(LatexSectionLevel::SECTION, heading)));
-    assert (hasSubSection(heading));
+    traced_assert(hasSubSection(heading));
 }
 
 std::string LatexDocument::path() const

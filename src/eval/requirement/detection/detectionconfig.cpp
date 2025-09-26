@@ -53,6 +53,8 @@ DetectionConfig::DetectionConfig(
     registerParameter("miss_tolerance", &miss_tolerance_s_, 0.01f);
 
     registerParameter("hold_for_any_target", &hold_for_any_target_, false);
+
+    registerParameter("ignore_primary_only", &ignore_primary_only_, false);
 }
 
 DetectionConfig::~DetectionConfig()
@@ -64,7 +66,7 @@ std::shared_ptr<Base> DetectionConfig::createRequirement()
     shared_ptr<Detection> req = make_shared<Detection>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_, update_interval_s_,
                 use_min_gap_length_, min_gap_length_s_, use_max_gap_length_, max_gap_length_s_, invert_prob_,
-                use_miss_tolerance_, miss_tolerance_s_, hold_for_any_target_);
+                use_miss_tolerance_, miss_tolerance_s_, hold_for_any_target_, ignore_primary_only_);
 
     return req;
 }
@@ -149,6 +151,16 @@ void DetectionConfig::maxGapLength(float value)
     max_gap_length_s_ = value;
 }
 
+void DetectionConfig::ignorePrimaryOnly(bool value)
+{
+    ignore_primary_only_ = value;
+}
+
+bool DetectionConfig::ignorePrimaryOnly() const
+{
+    return ignore_primary_only_;;
+}
+
 BaseConfigWidget* DetectionConfig::createWidget()
 {
     return new DetectionConfigWidget(*this);
@@ -188,6 +200,11 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 
     table.addRow({"Hold for any Target", "Must hold for any target (every single targets)",
                   String::boolToString(hold_for_any_target_)});
+
+    table.addRow({"Ignore Primary Only",
+                  "Requirement result is ignored if target is primary only (has no"
+                  " secondary attributes)",
+                  String::boolToString(ignore_primary_only_)});                  
 }
 
 bool DetectionConfig::holdForAnyTarget() const

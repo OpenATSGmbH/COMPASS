@@ -82,7 +82,7 @@ class DBDataSourceComboBox : public QComboBox
     void setDSName(const std::string& ds_name)
     {
         int index = findText(QString(ds_name.c_str()));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 

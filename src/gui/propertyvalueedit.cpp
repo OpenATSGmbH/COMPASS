@@ -125,7 +125,7 @@ void PropertyValueEdit::checkValidity()
     if (!show_error && edit_connected_)
     {
         auto v_other = edit_connected_->valueAsDouble();
-        assert(v_other.has_value());
+        traced_assert(v_other.has_value());
 
         if (( edit_connected_is_min_ && v_other.value() >= v.value()) ||
             (!edit_connected_is_min_ && v_other.value() <= v.value()))

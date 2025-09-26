@@ -184,20 +184,20 @@ void VariableOrderedSetWidget::triggerSlot(QAction* action)
 
     if (obj_name == META_OBJECT_NAME)
     {
-        assert(manager.existsMetaVariable(var_name));
+        traced_assert(manager.existsMetaVariable(var_name));
         set_.add(manager.metaVariable(var_name));
     }
     else
     {
-        assert(manager.existsDBContent(obj_name));
-        assert(manager.dbContent(obj_name).hasVariable(var_name));
+        traced_assert(manager.existsDBContent(obj_name));
+        traced_assert(manager.dbContent(obj_name).hasVariable(var_name));
         set_.add(manager.dbContent(obj_name).variable(var_name));
     }
 }
 
 void VariableOrderedSetWidget::removeSlot()
 {
-    assert(list_widget_);
+    traced_assert(list_widget_);
     int index = list_widget_->currentRow();
 
     loginf << "index " << index;
@@ -211,7 +211,7 @@ void VariableOrderedSetWidget::removeSlot()
 
 void VariableOrderedSetWidget::moveUpSlot()
 {
-    assert(list_widget_);
+    traced_assert(list_widget_);
     int index = list_widget_->currentRow();
     loginf << "index " << index;
 
@@ -226,7 +226,7 @@ void VariableOrderedSetWidget::moveUpSlot()
 
 void VariableOrderedSetWidget::moveDownSlot()
 {
-    assert(list_widget_);
+    traced_assert(list_widget_);
     int index = list_widget_->currentRow();
     loginf << "index " << index;
 
@@ -241,9 +241,9 @@ void VariableOrderedSetWidget::moveDownSlot()
 
 void VariableOrderedSetWidget::updateVariableListSlot()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(list_widget_);
+    traced_assert(list_widget_);
 
     list_widget_->clear();
 
@@ -257,13 +257,13 @@ void VariableOrderedSetWidget::updateVariableListSlot()
     {
         if (def_it.first == META_OBJECT_NAME)
         {
-            assert(manager.existsMetaVariable(def_it.second));
+            traced_assert(manager.existsMetaVariable(def_it.second));
             tooltip = manager.metaVariable(def_it.second).info();
         }
         else
         {
-            assert(manager.existsDBContent(def_it.first));
-            assert(manager.dbContent(def_it.first).hasVariable(def_it.second));
+            traced_assert(manager.existsDBContent(def_it.first));
+            traced_assert(manager.dbContent(def_it.first).hasVariable(def_it.second));
             tooltip = manager.dbContent(def_it.first).variable(def_it.second).info();
         }
 

@@ -1,5 +1,5 @@
 {
-    "version":"0.9.0",
+    "version":"0.9.1",
     "log_properties_file":"log4cpp.properties",
     "log_filename":"log.txt",
     "main_configuration_file":"client.json",

@@ -62,7 +62,7 @@ void GeoProjection::addCoordinateSystem(unsigned int id, double latitude_deg, do
 
 ProjectionCoordinateSystemBase& GeoProjection::coordinateSystem(unsigned int id)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     return *coordinate_systems_.at(id).get();
 }
@@ -77,7 +77,7 @@ bool GeoProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sla
                                  bool has_baro_altitude, double baro_altitude_ft,
                                  double& latitude_deg, double& longitude_deg)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     double x_pos_m, y_pos_m;
     bool ret = coordinate_systems_.at(id)->polarSlantToCartesian(
@@ -98,7 +98,7 @@ bool GeoProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sla
 bool GeoProjection::wgs842PolarHorizontal(unsigned int id, double latitude_deg, double longitude_deg,
                                           double& azimuth_deg, double& ground_range_m)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     return coordinate_systems_.at(id)->wgs842PolarHorizontal(latitude_deg, longitude_deg,
                                                              azimuth_deg, ground_range_m);

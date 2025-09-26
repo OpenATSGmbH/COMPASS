@@ -129,7 +129,7 @@ void DataSourceCreateDialog::doneClickedSlot()
 
 void DataSourceCreateDialog::checkInput()
 {
-    assert (done_button_);
+    traced_assert(done_button_);
 
     if (!ds_type_.size())
     {

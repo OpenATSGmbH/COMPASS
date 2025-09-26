@@ -124,6 +124,8 @@ class ReconstructorBaseSettings
 
     float no_value_acc_fallback_ {10000};
 
+    bool use_stopped_adsb_tracking_ {true};
+
     void setVehicleACIDs(const std::string& value);
     void setVehicleACADs(const std::string& value);
 };
@@ -172,7 +174,7 @@ public:
         static std::set<std::string> unspecific_acids_;
 
         TargetsContainer(ReconstructorBase* reconstructor)
-            :reconstructor_(reconstructor) { assert(reconstructor_); }
+            :reconstructor_(reconstructor) { traced_assert(reconstructor_); }
 
         ReconstructorBase* reconstructor_;
 
@@ -214,14 +216,25 @@ public:
         void clear();
     };
 
+    struct TargetReportBatch
+    {
+        TargetReportBatch(unsigned int ds_id, unsigned int line_id, 
+            boost::posix_time::ptime batch_time, std::vector<unsigned long> rec_nums)
+        : ds_id_(ds_id), line_id_(line_id), batch_time_(batch_time), rec_nums_(rec_nums)
+        {}
+
+        unsigned int ds_id_{0};
+        unsigned int line_id_{0};
+        boost::posix_time::ptime batch_time_;
+        std::vector<unsigned long> rec_nums_;
+    };
+
     typedef std::map<std::string, std::shared_ptr<Buffer>> Buffers;
 
     ReconstructorBase(const std::string& class_id, 
                       const std::string& instance_id,
                       ReconstructorTask& task, 
-                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
-                      ReconstructorBaseSettings& base_settings,
-                      unsigned int default_line_id = 0);
+                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator);
     virtual ~ReconstructorBase();
 
     const boost::posix_time::ptime& timestampMin() const { return timestamp_min_; }
@@ -230,7 +243,7 @@ public:
     bool hasNextTimeSlice();
     std::unique_ptr<ReconstructorBase::DataSlice> getNextTimeSlice();
 
-    int numSlices() const;
+    int numSlices();
 
     void processSlice();
     ReconstructorBase::DataSlice& currentSlice();
@@ -242,7 +255,7 @@ public:
 
     virtual void reset();
 
-    virtual ReconstructorBaseSettings& settings() { return base_settings_; };
+    virtual ReconstructorBaseSettings& settings()=0;
 
     ReferenceCalculatorSettings& referenceCalculatorSettings() { return ref_calc_settings_; }
     const ReferenceCalculatorSettings& referenceCalculatorSettings() const { return ref_calc_settings_; }
@@ -280,7 +293,8 @@ public:
     // all sources sorted by time, ts -> record_num
     std::map<unsigned int, std::map<unsigned int, std::map<unsigned int, std::vector<unsigned long>>>> tr_ds_;
     // dbcontent id -> ds_id -> line id -> record_num, sorted by ts
-
+    std::multimap<boost::posix_time::ptime, TargetReportBatch> tr_batches_;
+    
     TargetsContainer targets_container_;
 
     std::unique_ptr<AccuracyEstimatorBase> acc_estimator_;
@@ -312,6 +326,10 @@ public:
     bool isVehicleACID(const std::string& acid);
     bool isVehicleACAD(unsigned int value);
 
+    std::unique_ptr<reconstruction::KalmanChain> createConfiguredChain(bool dynamic_insertions) const;
+    std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredEstimator(bool extract_wgs84_pos) const;
+    std::unique_ptr<reconstruction::KalmanOnlineTracker> createConfiguredOnlineEstimator(bool extract_wgs84_pos) const;
+
 signals:
     void configChanged(); 
 
@@ -322,7 +340,7 @@ protected:
 
     std::shared_ptr<dbContent::DBContentAccessor> accessor_;
 
-    ReconstructorBaseSettings& base_settings_;
+    //ReconstructorBaseSettings& base_settings_;
 
     bool cancelled_ {false};
 
@@ -332,6 +350,8 @@ protected:
     unsigned int num_target_reports_associated_ {0};
     unsigned int num_target_reports_unassociated_ {0};
 
+    void registerBaseSettings(ReconstructorBaseSettings& settings);
+
     void removeOldBufferData(); // remove all data before current_slice_begin_
     virtual void processSlice_impl() = 0;
 
@@ -339,6 +359,7 @@ protected:
 
     void clearOldTargetReports();
     void createTargetReports();
+    void createTargetReportBatches();
     void removeTargetReportsLaterOrEqualThan(const boost::posix_time::ptime& ts); // for slice recalc
 
     std::map<unsigned int, std::map<unsigned long, unsigned int>> createAssociations();
@@ -360,10 +381,10 @@ private:
 
     double determineProcessNoise(const dbContent::targetReport::ReconstructorInfo& ri,
                                  const dbContent::ReconstructorTarget& target,
-                                 const ReferenceCalculatorSettings::ProcessNoise& Q) const;
+                                 const ReferenceCalculatorSettings::ProcessNoise& Q);
     double determineProcessNoiseVariance(const dbContent::targetReport::ReconstructorInfo& ri,
                                          const dbContent::ReconstructorTarget& target,
-                                         const ReferenceCalculatorSettings::ProcessNoise& Q) const;
+                                         const ReferenceCalculatorSettings::ProcessNoise& Q);
 
     ReferenceCalculatorSettings ref_calc_settings_;
 
@@ -379,5 +400,5 @@ private:
     bool processing_ {false};
     bool init_       {false};
 
-    std::unique_ptr<reconstruction::KalmanChainPredictors> chain_predictors_; // relic, not used noew
+    std::unique_ptr<reconstruction::KalmanChainPredictors> chain_predictors_; // relic, not used now
 };

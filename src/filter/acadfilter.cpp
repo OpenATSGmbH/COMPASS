@@ -100,7 +100,7 @@ void ACADFilter::generateSubConfigurable(const std::string& class_id, const std:
 
 void ACADFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* ACADFilter::createWidget()
@@ -117,9 +117,9 @@ void ACADFilter::reset()
 
 void ACADFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -128,12 +128,12 @@ void ACADFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void ACADFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Aircraft Address Values"));
+    traced_assert(filter.contains("Aircraft Address Values"));
     values_str_ = filter.at("Aircraft Address Values");
 
     updateValuesFromStr(values_str_);
@@ -170,7 +170,7 @@ std::vector<unsigned int> ACADFilter::filterBuffer(const std::string& dbcontent_
     dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_acad_.name()).getFor(dbcontent_name);
 
-    assert (buffer->has<unsigned int> (var.name()));
+    traced_assert(buffer->has<unsigned int> (var.name()));
 
     NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
 

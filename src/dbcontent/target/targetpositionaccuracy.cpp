@@ -96,7 +96,7 @@ boost::optional<TargetPositionAccuracy> getRadarPositionAccuracy(
     boost::optional<TargetPositionAccuracy> ret;
 
     // TODO, not yet implemented
-    assert (false);
+    traced_assert(false);
 
     return ret;
 }
@@ -129,7 +129,7 @@ boost::optional<TargetPositionAccuracy> getADSBPositionAccuracy(
 
     if (mops_version == 0)
     {
-        assert (!nucp_nic_vec.isNull(index));
+        traced_assert(!nucp_nic_vec.isNull(index));
 
         nuc_p = nucp_nic_vec.get(index);
 
@@ -141,7 +141,7 @@ boost::optional<TargetPositionAccuracy> getADSBPositionAccuracy(
     }
     else if (mops_version == 1 || mops_version == 2)
     {
-        assert (!nac_p_vec.isNull(index));
+        traced_assert(!nac_p_vec.isNull(index));
 
         nac_p = nac_p_vec.get(index);
 

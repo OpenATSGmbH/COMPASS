@@ -39,10 +39,10 @@ OGRCoordinateSystem::OGRCoordinateSystem(unsigned int id, double latitude_deg, d
     local_.SetStereographic(latitude_deg, longitude_deg_, scale, 0.0, 0.0);
 
     ogr_geo2cart_.reset(OGRCreateCoordinateTransformation(&wgs84_, &local_));
-    assert(ogr_geo2cart_);
+    traced_assert(ogr_geo2cart_);
 
     ogr_cart2geo_.reset(OGRCreateCoordinateTransformation(&local_, &wgs84_));
-    assert(ogr_cart2geo_);
+    traced_assert(ogr_cart2geo_);
 }
 
 OGRCoordinateSystem::~OGRCoordinateSystem() {}
@@ -59,12 +59,12 @@ bool OGRCoordinateSystem::polarSlantToCartesian(double azimuth_rad, double slant
         double x_pos_non_sr_cor, y_pos_non_sr_cor;
         bool ret = polarHorizontalToCartesian(azimuth_rad, slant_range_m, x_pos_non_sr_cor,
                                               y_pos_non_sr_cor);
-        assert(ret);
+        traced_assert(ret);
 
         // wgs84 without slant range correction
         double lat_non_sr_cor, lon_non_sr_cor;
         ret = cartesian2WGS84(x_pos_non_sr_cor, y_pos_non_sr_cor, lat_non_sr_cor, lon_non_sr_cor);
-        assert(ret);
+        traced_assert(ret);
 
         h_e_t = getRadiusAt(lat_non_sr_cor * DEG2RAD);
     }

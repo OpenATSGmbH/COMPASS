@@ -35,10 +35,10 @@ ASTERIXDecoderBase::ASTERIXDecoderBase(ASTERIXImportSource& source,
 :   source_(source)
 {
     task_ = &COMPASS::instance().taskManager().asterixImporterTask();
-    assert(task_);
+    traced_assert(task_);
 
     settings_ = settings ? settings : &task_->settings();
-    assert(settings_);
+    traced_assert(settings_);
 }
 
 /**
@@ -140,10 +140,10 @@ void ASTERIXDecoderBase::logError(const std::string& err)
 */
 void ASTERIXDecoderBase::start(ASTERIXDecodeJob* job)
 {
-    assert (!running_);
+    traced_assert(!running_);
 
     //need a job
-    assert(job);
+    traced_assert(job);
     job_ = job;
 
     //remember start time

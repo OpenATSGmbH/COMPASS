@@ -17,10 +17,10 @@
 
 #include "eval/requirement/speed/speed.h"
 #include "eval/results/speed/speed.h"
-//#include "evaluationdata.h"
+#include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-//#include "util/stringconv.h"
+
 #include "util/timeconv.h"
 #include "sectorlayer.h"
 
@@ -80,7 +80,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " threshold_value " << threshold_value_ << " threshold_value_check_type " << threshold_value_check_type_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -269,13 +269,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
     //               << " num_pos_ok " << num_pos_ok << " num_pos_nok " << num_pos_nok
     //               << " num_speeds " << num_speeds;
 
-    assert (num_no_ref <= num_pos);
+    traced_assert(num_no_ref <= num_pos);
 
     if (num_pos - num_no_ref != num_pos_inside + num_pos_outside)
         logwrn << "'" << name_ << "': utn " << target_data.utn_
                << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
                << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside;
-    assert (num_pos - num_no_ref == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos - num_no_ref == num_pos_inside + num_pos_outside);
 
 
     if (num_speeds != num_comp_failed + num_comp_passed)
@@ -283,7 +283,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                << " num_speeds " << num_speeds << " num_comp_failed " <<  num_comp_failed
                << " num_comp_passed " << num_comp_passed;
 
-    assert (num_speeds == num_comp_failed + num_comp_passed);
+    traced_assert(num_speeds == num_comp_failed + num_comp_passed);
 
     return make_shared<EvaluationRequirementResult::SingleSpeed>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,

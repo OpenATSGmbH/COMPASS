@@ -59,7 +59,7 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 :   VariableViewStashDataWidget(view_widget, view_widget->getView(), false, parent, f)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     main_layout_ = new QHBoxLayout();
     main_layout_->setMargin(0);
@@ -83,7 +83,7 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 */
 GridViewDataWidget::~GridViewDataWidget()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
@@ -159,7 +159,7 @@ ViewDataWidget::DrawState GridViewDataWidget::updateVariableDisplay()
 */
 void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 {
-    loginf << "start";
+    loginf;
 
     const auto& data_ranges = getStash().dataRanges();
 
@@ -182,10 +182,10 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
         loginf << "bounds empty, skipping...";
         return;
     }
-    assert(bounds->isValid());
+    traced_assert(bounds->isValid());
 
     auto z_bounds = getZVariableBounds(false);
-    assert(z_bounds.has_value());
+    traced_assert(z_bounds.has_value());
 
     const auto& settings = view_->settings();
 
@@ -199,7 +199,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     if (!ok)
         logerr << "creation of grid failed: " << err;
 
-    assert(ok);
+    traced_assert(ok);
 
     loginf << "created grid of " << grid_->numCellsX() << "x" << grid_->numCellsY();
 
@@ -211,7 +211,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
         const auto& y_values = dbc_values.second.variable_stashes[ 1 ].values;
         const auto& z_values = dbc_values.second.variable_stashes[ 2 ].values;
 
-        assert(x_values.size() == y_values.size() &&
+        traced_assert(x_values.size() == y_values.size() &&
                y_values.size() == z_values.size());
 
         loginf << "dbcontent " << dbc_values.first
@@ -256,7 +256,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
         grid_value_min_ = range->first;
         grid_value_max_ = range->second;
 
-        assert(grid_value_min_.value() <= grid_value_max_.value());
+        traced_assert(grid_value_min_.value() <= grid_value_max_.value());
     }
 
     loginf << "done, generated " << grid_layers_.numLayers() << " layers";
@@ -266,7 +266,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 */
 bool GridViewDataWidget::updateFromAnnotations()
 {
-    loginf << "start";
+    loginf;
 
     if (!view_->hasCurrentAnnotation())
         return false;
@@ -310,7 +310,7 @@ bool GridViewDataWidget::updateFromAnnotations()
         grid_value_min_ = range->first;
         grid_value_max_ = range->second;
 
-        assert(grid_value_min_.value() <= grid_value_max_.value());
+        traced_assert(grid_value_min_.value() <= grid_value_max_.value());
     }
 
     loginf << "done, generated " << grid_layers_.numLayers() << " layers";
@@ -361,7 +361,7 @@ GridViewDataTool GridViewDataWidget::selectedTool() const
 */
 QPixmap GridViewDataWidget::renderPixmap()
 {
-    assert (grid_chart_);
+    traced_assert(grid_chart_);
     return grid_chart_->grab();
 }
 
@@ -383,7 +383,7 @@ boost::optional<std::pair<double, double>> GridViewDataWidget::getZVariableBound
 */
 void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
 {
-    loginf << "start";
+    loginf;
 
     if (grid_chart_ && grid_chart_->chart())
     {
@@ -413,11 +413,11 @@ void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
 */
 void GridViewDataWidget::invertSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -436,11 +436,11 @@ void GridViewDataWidget::invertSelectionSlot()
 */
 void GridViewDataWidget::clearSelectionSlot()
 {
-    loginf << "start";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -454,7 +454,7 @@ void GridViewDataWidget::clearSelectionSlot()
 */
 void GridViewDataWidget::resetZoomSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (grid_chart_)
         grid_chart_->resetZoom();
@@ -633,13 +633,13 @@ ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* char
         //config x axis
         loginf << "title x ' "
                << view_->variable(0).description() << "'";
-        assert (chart->axes(Qt::Horizontal).size() == 1);
+        traced_assert(chart->axes(Qt::Horizontal).size() == 1);
         chart->axes(Qt::Horizontal).at(0)->setTitleText(x_axis_name_.c_str());
 
         //config y axis
         loginf << "title y ' "
                << view_->variable(1).description() << "'";
-        assert (chart->axes(Qt::Vertical).size() == 1);
+        traced_assert(chart->axes(Qt::Vertical).size() == 1);
         chart->axes(Qt::Vertical).at(0)->setTitleText(y_axis_name_.c_str());
     };
 
@@ -736,6 +736,6 @@ boost::optional<std::pair<QImage, RasterReference>> GridViewDataWidget::currentG
 */
 const ColorLegend& GridViewDataWidget::currentLegend() const
 {
-    assert(legend_);
+    traced_assert(legend_);
     return legend_->currentLegend();
 }

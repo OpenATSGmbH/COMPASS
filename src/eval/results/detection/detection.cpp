@@ -34,7 +34,7 @@
 #include "stringconv.h"
 #include "viewpoint.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -113,11 +113,11 @@ boost::optional<double> SingleDetection::computeResult_impl() const
 
     logdbg << "utn " << utn_ << " missed_uis " << missed_uis_ << " sum_uis " << sum_uis_;
 
-    assert (missed_uis_ <= sum_uis_);
+    traced_assert(missed_uis_ <= sum_uis_);
 
     std::shared_ptr<EvaluationRequirement::Detection> req =
             std::static_pointer_cast<EvaluationRequirement::Detection>(requirement_);
-    assert (req);
+    traced_assert(req);
 
     return (1.0 - ((double)missed_uis_/(double)(sum_uis_)));
 }
@@ -148,7 +148,7 @@ nlohmann::json::array_t SingleDetection::targetTableValuesCustom() const
 std::vector<Single::TargetInfo> SingleDetection::targetInfos() const
 {
     std::shared_ptr<EvaluationRequirement::Detection> req = std::static_pointer_cast<EvaluationRequirement::Detection>(requirement_);
-    assert (req);
+    traced_assert(req);
 
     std::vector<TargetInfo> infos = { TargetInfo("#EUIs [1]", "Expected Update Intervals", sum_uis_   ),
                                       TargetInfo("#MUIs [1]", "Missed Update Intervals"  , missed_uis_) };
@@ -196,7 +196,7 @@ void SingleDetection::addAnnotationForDetail(nlohmann::json& annotations_json,
                                              TargetAnnotationType type,
                                              bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     auto anno_type = is_ok ? AnnotationArrayType::TypeOk : AnnotationArrayType::TypeError;
 
@@ -255,6 +255,8 @@ void JoinedDetection::accumulateSingleResult(const std::shared_ptr<Single>& sing
 {
     std::shared_ptr<SingleDetection> single = std::static_pointer_cast<SingleDetection>(single_result);
 
+    assert (single->resultUsable());
+
     missed_uis_ += single->missedUIs();
     sum_uis_    += single->sumUIs();
 }
@@ -267,7 +269,7 @@ boost::optional<double> JoinedDetection::computeResult_impl() const
             << " missed_uis " << missed_uis_
             << " sum_uis " << sum_uis_;
 
-    assert (missed_uis_ <= sum_uis_);
+    traced_assert(missed_uis_ <= sum_uis_);
 
     if (sum_uis_ == 0)
         return {};

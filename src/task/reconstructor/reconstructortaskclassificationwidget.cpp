@@ -72,16 +72,16 @@ void ReconstructorTaskClassificationWidget::minAircraftModeCEditedSlot (int valu
 {
     loginf << "value '" << value << "'";
 
-    reconstructor_.settings().max_altitude_diff_ = value;
+    reconstructor_.settings().min_aircraft_modec_ = value;
 }
 
 void ReconstructorTaskClassificationWidget::vehicleACIDsChangedSlot()
 {
-    assert (vehicle_acids_edit_);
+    traced_assert(vehicle_acids_edit_);
     reconstructor_.settings().setVehicleACIDs(vehicle_acids_edit_->document()->toPlainText().toStdString());
 }
 void ReconstructorTaskClassificationWidget::vehicleACADsChangedSlot()
 {
-    assert (vehicle_acads_edit_);
+    traced_assert(vehicle_acads_edit_);
     reconstructor_.settings().setVehicleACADs(vehicle_acads_edit_->document()->toPlainText().toStdString());
 }

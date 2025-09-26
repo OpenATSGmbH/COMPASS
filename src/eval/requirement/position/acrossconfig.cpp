@@ -19,7 +19,7 @@
 #include "eval/requirement/position/acrossconfigwidget.h"
 #include "eval/requirement/position/across.h"
 #include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "eval/requirement/base/positionbase.h"
 
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
@@ -32,7 +32,7 @@ namespace EvaluationRequirement
 PositionAcrossConfig::PositionAcrossConfig(
         const std::string& class_id, const std::string& instance_id,
         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+    : PositionBaseConfig(class_id, instance_id, group, standard, calculator)
 {
     registerParameter("max_abs_value", &max_abs_value_, 50.0f);
 }
@@ -44,7 +44,8 @@ PositionAcrossConfig::~PositionAcrossConfig()
 std::shared_ptr<Base> PositionAcrossConfig::createRequirement()
 {
     shared_ptr<PositionAcross> req = make_shared<PositionAcross>(
-                name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_, max_abs_value_);
+                name_, short_name_, group_.name(), prob_, prob_check_type_, ref_min_accuracy_, 
+                calculator_, max_abs_value_);
 
     return req;
 }
@@ -77,5 +78,7 @@ void PositionAcrossConfig::addToReport (std::shared_ptr<ResultReport::Report> re
     table.addRow({"Maximum Absolute Value [m]",
                   "Maximum absolute across-track position difference between the test and the reference",
                   roundf(prob_ * 10000.0) / 100.0});
+
+    PositionBaseConfig::addToReport(report);
 }
 }

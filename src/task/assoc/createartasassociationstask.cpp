@@ -86,7 +86,7 @@ CreateARTASAssociationsTaskDialog* CreateARTASAssociationsTask::dialog()
                 this, &CreateARTASAssociationsTask::dialogCancelSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
@@ -162,7 +162,7 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
     if (!has_needed_cat_62_vars)
         logerr << "needed CAT062 vars not available";
 
-    assert(has_needed_cat_62_vars);
+    traced_assert(has_needed_cat_62_vars);
 
     bool has_needed_metavars = dbcontent_man.existsMetaVariable(DBContent::meta_var_rec_num_.name()) &&
                                dbcontent_man.existsMetaVariable(DBContent::meta_var_ds_id_.name()) &&
@@ -174,7 +174,7 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
     if (!has_needed_metavars)
         logerr << "needed metavars not available";
 
-    assert(has_needed_metavars);
+    traced_assert(has_needed_metavars);
 
     loginf << "no error";
 
@@ -188,7 +188,7 @@ bool CreateARTASAssociationsTask::canRun()
 
 void CreateARTASAssociationsTask::run()
 {
-    assert(canRun());
+    traced_assert(canRun());
 
     loginf << "started";
 
@@ -198,7 +198,7 @@ void CreateARTASAssociationsTask::run()
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    assert(!status_dialog_);
+    traced_assert(!status_dialog_);
     status_dialog_.reset(new CreateARTASAssociationsStatusDialog(*this));
     connect(status_dialog_.get(), &CreateARTASAssociationsStatusDialog::closeSignal, this,
             &CreateARTASAssociationsTask::closeStatusDialogSlot);
@@ -223,7 +223,7 @@ void CreateARTASAssociationsTask::run()
         if (!dbcont_it.second->hasData())
             continue;
 
-        if (dbcont_it.second->isStatusContent() ||
+        if (dbcont_it.second->containsStatusContent() ||
             dbcont_it.second->isReferenceContent()) // not covered by ARTAS
             continue;
 
@@ -249,7 +249,7 @@ void CreateARTASAssociationsTask::run()
                 }
             }
 
-            assert(ds_found);
+            traced_assert(ds_found);
             std::string custom_filter_clause {
                 dbcontent_man.metaGetVariable(dbcont_it.first, DBContent::meta_var_ds_id_).dbColumnName()
                         + " in (" + std::to_string(current_ds_id) + ") AND " +
@@ -279,13 +279,13 @@ void CreateARTASAssociationsTask::loadedDataDataSlot(
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert(status_dialog_);
+    traced_assert(status_dialog_);
 
     dbcont_loading_done_ = true;
 
-    assert(!create_job_);
+    traced_assert(!create_job_);
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
@@ -318,29 +318,29 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
 void CreateARTASAssociationsTask::dialogRunSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
-    assert (canRun());
+    traced_assert(canRun());
     run ();
 }
 
 void CreateARTASAssociationsTask::dialogCancelSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 }
 
 
 void CreateARTASAssociationsTask::createDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (create_job_);
+    traced_assert(create_job_);
 
     create_job_done_ = true;
 
@@ -413,7 +413,7 @@ void CreateARTASAssociationsTask::currentDataSourceLineID(unsigned int line_id)
 
 float CreateARTASAssociationsTask::endTrackTime() const
 {
-    assert (settings_.end_track_time_);
+    traced_assert(settings_.end_track_time_);
     return settings_.end_track_time_;
 }
 
@@ -571,14 +571,14 @@ VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcont
 
 void CreateARTASAssociationsTask::associationStatusSlot(QString status)
 {
-    assert(status_dialog_);
+    traced_assert(status_dialog_);
     status_dialog_->setAssociationStatus(status.toStdString());
 }
 
 void CreateARTASAssociationsTask::saveAssociationsQuestionSlot(QString question_str)
 {
-    assert (status_dialog_);
-    assert(create_job_);
+    traced_assert(status_dialog_);
+    traced_assert(create_job_);
 
     status_dialog_->setAssociationCounts(create_job_->associationCounts());
     status_dialog_->setFoundHashes(create_job_->foundHashes());
@@ -599,7 +599,7 @@ void CreateARTASAssociationsTask::saveAssociationsQuestionSlot(QString question_
 
 void CreateARTASAssociationsTask::closeStatusDialogSlot()
 {
-    assert(status_dialog_);
+    traced_assert(status_dialog_);
     status_dialog_->close();
     status_dialog_ = nullptr;
 }

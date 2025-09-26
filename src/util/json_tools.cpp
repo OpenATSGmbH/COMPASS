@@ -16,6 +16,7 @@
  */
 
 #include "json_tools.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -64,7 +65,7 @@ bool canFindKey(const nlohmann::json& j, const std::vector<std::string>& keys)
 
 const nlohmann::json& findKey(const nlohmann::json& j, const std::vector<std::string>& keys)
 {
-    assert(keys.size());
+    traced_assert(keys.size());
     std::vector<std::string>::const_iterator last_key = keys.end() - 1;
 
     const nlohmann::json* val_ptr = &j;
@@ -95,7 +96,7 @@ const nlohmann::json& findParentKey(const nlohmann::json& j, const std::vector<s
 {
     const nlohmann::json* val_ptr = &j;
 
-    assert(keys.size() > 1);
+    traced_assert(keys.size() > 1);
     std::vector<std::string>::const_iterator second_to_last_key = keys.end() - 2;
 
     for (auto sub_it = keys.begin(); sub_it != keys.end(); ++sub_it)
@@ -118,7 +119,7 @@ const nlohmann::json& findParentKey(const nlohmann::json& j, const std::vector<s
             throw std::runtime_error("Utils: JSON: findParentKey: key '" + *sub_it + "' not found");
     }
 
-    assert(val_ptr);
+    traced_assert(val_ptr);
     return *val_ptr;
 }
 
@@ -141,7 +142,7 @@ void applyFunctionToValues(nlohmann::json& j, const std::vector<std::string>& ke
 
     if (j.contains(*current_key_it))
     {
-        // loginf << "start";
+        // loginf;
         nlohmann::json& value = j.at(*current_key_it);
 
         if (value.is_object())

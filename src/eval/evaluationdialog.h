@@ -23,7 +23,7 @@
 
 class EvaluationCalculator;
 class EvaluationMainTabWidget;
-class EvaluationFilterTabWidget;
+//class EvaluationFilterTabWidget;
 class EvaluationStandardTabWidget;
 class EvaluationReportTabWidget;
 
@@ -40,13 +40,13 @@ public:
 
     void updateButtons();
 
-    void updateFilterWidget();
+    //void updateFilterWidget();
 
 protected:
     EvaluationCalculator& calculator_;
 
     std::unique_ptr<EvaluationMainTabWidget> main_tab_widget_;
-    std::unique_ptr<EvaluationFilterTabWidget> filter_widget_;
+    //std::unique_ptr<EvaluationFilterTabWidget> filter_widget_;
     std::unique_ptr<EvaluationStandardTabWidget> std_tab_widget_;
     std::unique_ptr<EvaluationReportTabWidget> report_tab_widget_;
 

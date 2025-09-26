@@ -17,6 +17,7 @@
 #include "histogramviewchartview.h"
 #include "histogramviewdatawidget.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QRubberBand>
@@ -37,7 +38,7 @@ HistogramViewChartView::HistogramViewChartView(HistogramViewDataWidget* data_wid
 {
     setSelectionAxes(SelectionAxes::X);
 
-    assert (data_widget_);
+    traced_assert(data_widget_);
 }
 
 /**

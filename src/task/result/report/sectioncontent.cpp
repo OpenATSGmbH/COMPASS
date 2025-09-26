@@ -25,7 +25,7 @@
 
 #include "files.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -58,10 +58,10 @@ SectionContent::SectionContent(ContentType type,
 ,   content_type_  (type                )
 ,   content_id_    (id                  )
 {
-    assert(parent_section);
+    traced_assert(parent_section);
 
     report_ = parent_section->report();
-    assert(report_);
+    traced_assert(report_);
 }
 
 /**
@@ -71,10 +71,10 @@ SectionContent::SectionContent(ContentType type,
 :   ReportItem     (parent_section)
 ,   content_type_  (type          )
 {
-    assert(parent_section);
+    traced_assert(parent_section);
 
     report_ = parent_section->report();
-    assert(report_);
+    traced_assert(report_);
 }
 
 /**
@@ -281,13 +281,13 @@ bool SectionContent::loadOnDemand()
     loading_ = true;
 
     //if the task result is locked we should never give an opportunity to load on demand content
-    assert(!isLocked());
+    traced_assert(!isLocked());
 
     loginf << "loading on-demand data for content '" << name() << "' of type '" << contentTypeAsString() << "'";
 
-    assert(isOnDemand());
-    assert(!isComplete());
-    assert(report_);
+    traced_assert(isOnDemand());
+    traced_assert(!isComplete());
+    traced_assert(report_);
 
     bool ok = report_->result().loadOnDemandContent(this);
 

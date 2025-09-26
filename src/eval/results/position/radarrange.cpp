@@ -16,12 +16,15 @@
  */
 
 #include "eval/results/position/radarrange.h"
+#include "stringconv.h"
 
 #include "logger.h"
 
 #include <Eigen/Dense>
 
-#include <cassert>
+#include "traced_assert.h"
+
+using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
@@ -43,16 +46,17 @@ SinglePositionRadarRange::SinglePositionRadarRange(const std::string& result_id,
                                                    unsigned int num_no_ref,
                                                    unsigned int num_pos_outside,
                                                    unsigned int num_pos_inside,
+                                                   unsigned int num_ref_inaccurate,
                                                    unsigned int num_comp_passed,
                                                    unsigned int num_comp_failed,
                                                    const std::vector<double>& range_values_ref,
                                                    const std::vector<double>& range_values_tst)
 :   SinglePositionValueBase("SinglePositionRadarRange", result_id, requirement, sector_layer, utn, target, calculator, details,
-                            num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_comp_passed, num_comp_failed)
+                            num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_ref_inaccurate, num_comp_passed, num_comp_failed)
 ,   range_values_ref_(range_values_ref)
 ,   range_values_tst_(range_values_tst)
 {
-    assert (range_values_ref_.size() == range_values_tst_.size());
+    traced_assert(range_values_ref_.size() == range_values_tst_.size());
 
     updateResult();
 }
@@ -92,8 +96,10 @@ std::vector<Single::TargetInfo> SinglePositionRadarRange::targetInfos() const
     std::vector<Single::TargetInfo> infos = 
         { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
           { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-          { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
           { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+          { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+          { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+          { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
           { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
           { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
           { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 
@@ -116,7 +122,7 @@ std::vector<Single::TargetInfo> SinglePositionRadarRange::targetInfos() const
 */
 std::vector<std::string> SinglePositionRadarRange::detailHeaders() const
 {
-    return { "ToD", "NoRef", "PosInside", "Range", "CP", "#CF", "#CP", "Comment" };
+    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Range", "CP", "#CF", "#CP", "Comment" };
 }
 
 /**
@@ -129,6 +135,7 @@ nlohmann::json::array_t SinglePositionRadarRange::detailValues(const EvaluationD
     return { Utils::Time::toString(detail.timestamp()),
             !has_ref_pos,
              detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
+             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
              detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
@@ -149,7 +156,7 @@ boost::optional<double> SinglePositionRadarRange::computeFinalResultValue() cons
     // linear regression
     size_t num_distances = accumulator_.numValues();
 
-    assert (num_distances == range_values_ref_.size());
+    traced_assert(num_distances == range_values_ref_.size());
 
     Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(num_distances, 2);
     Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(num_distances, 1);
@@ -192,8 +199,10 @@ std::vector<Joined::SectorInfo> JoinedPositionRadarRange::sectorInfos() const
     std::vector<Joined::SectorInfo> infos = 
         { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
           { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-          { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
           { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+          { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+          { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+          { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
           { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
           { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
           { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 
@@ -230,7 +239,7 @@ boost::optional<double> JoinedPositionRadarRange::computeFinalResultValue() cons
     for (const auto& single_result : single_results)
     {
         const SinglePositionRadarRange* single_radar_range = dynamic_cast<const SinglePositionRadarRange*>(single_result.get());
-        assert(single_radar_range);
+        traced_assert(single_radar_range);
 
         const auto& values_ref = single_radar_range->rangeValuesRef();
         const auto& values_tst = single_radar_range->rangeValuesTst();
@@ -241,7 +250,7 @@ boost::optional<double> JoinedPositionRadarRange::computeFinalResultValue() cons
 
     unsigned int num_distances = accumulator_.numValues();
 
-    assert (num_distances == range_values_ref.size() && range_values_ref.size() == range_values_tst.size());
+    traced_assert(num_distances == range_values_ref.size() && range_values_ref.size() == range_values_tst.size());
 
     Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(num_distances, 2);
     Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(num_distances, 1);

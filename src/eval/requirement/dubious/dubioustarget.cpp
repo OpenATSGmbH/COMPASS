@@ -164,7 +164,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
         {
             detail.tod_end = timestamp;
 
-            assert (detail.tod_end >= detail.tod_begin);
+            traced_assert(detail.tod_end >= detail.tod_begin);
 
             detail.duration = detail.tod_end - detail.tod_begin;
             detail.pos_last = tst_pos;
@@ -271,7 +271,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
                             update.position(0).latitude_, update.position(0).longitude_);
                 distance = sqrt(pow(x_pos, 2) + pow(y_pos, 2));
                 t_diff = Time::partialSeconds(update.timestamp() - last_update->timestamp());
-                assert (t_diff >= 0);
+                traced_assert(t_diff >= 0);
 
                 if (t_diff > 0)
                 {
@@ -289,7 +289,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
 
         if (has_last_tod)
         {
-            assert (update.timestamp() >= last_timestamp);
+            traced_assert(update.timestamp() >= last_timestamp);
             time_diff = Time::partialSeconds(update.timestamp() - last_timestamp);
 
             if (!do_not_evaluate_target && time_diff >= minimum_comparison_time_

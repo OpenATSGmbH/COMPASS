@@ -34,12 +34,12 @@ namespace EvaluationRequirement
 IntervalBaseConfigWidget::IntervalBaseConfigWidget(IntervalBaseConfig& cfg)
 :   ProbabilityBaseConfigWidget(cfg)
 {
-    assert (form_layout_);
+    traced_assert(form_layout_);
 
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of code detection or miss (inverted probability)");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     uint32_t config_flags = config().configFlags();
 
@@ -132,7 +132,7 @@ IntervalBaseConfigWidget::IntervalBaseConfigWidget(IntervalBaseConfig& cfg)
 IntervalBaseConfig& IntervalBaseConfigWidget::config()
 {
     IntervalBaseConfig* config = dynamic_cast<IntervalBaseConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
@@ -170,7 +170,7 @@ void IntervalBaseConfigWidget::updateIntervalEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleUseMinGapLengthSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (use_min_gap_length_check_)
     {
@@ -195,7 +195,7 @@ void IntervalBaseConfigWidget::minGapLengthEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleUseMaxGapLengthSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (use_max_gap_length_check_)
     {
@@ -220,7 +220,7 @@ void IntervalBaseConfigWidget::maxGapLengthEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleUseMissToleranceSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (use_miss_tolerance_check_)
     {
@@ -245,7 +245,7 @@ void IntervalBaseConfigWidget::missToleranceEditSlot(QString value)
 */
 void IntervalBaseConfigWidget::toggleHoldForAnyTargetSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (hold_for_any_target_check_)
     {

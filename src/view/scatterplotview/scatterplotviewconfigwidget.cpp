@@ -47,7 +47,7 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     auto layout = configLayout();
 
@@ -96,9 +96,9 @@ ScatterPlotViewConfigWidget::~ScatterPlotViewConfigWidget() = default;
 */
 void ScatterPlotViewConfigWidget::useConnectionLinesSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_connection_lines_);
+    traced_assert(use_connection_lines_);
     view_->useConnectionLines(use_connection_lines_->checkState() == Qt::Checked);
 }
 
@@ -106,7 +106,7 @@ void ScatterPlotViewConfigWidget::useConnectionLinesSlot()
 */
 void ScatterPlotViewConfigWidget::updateToVisibilitySlot()
 {
-    assert (layer_view_);
+    traced_assert(layer_view_);
     layer_view_->expandToDepth(3);
     layer_view_->header()->resizeSection(0 /*column index*/, 300 /*width*/);
 }
@@ -122,7 +122,7 @@ void ScatterPlotViewConfigWidget::deselectAllSlot()
 */
 void ScatterPlotViewConfigWidget::onDisplayChange_impl()
 {
-    assert (use_connection_lines_);
+    traced_assert(use_connection_lines_);
     use_connection_lines_->setChecked(view_->useConnectionLines());
 }
 
@@ -147,9 +147,9 @@ void ScatterPlotViewConfigWidget::configChanged_impl()
 
 //void ScatterPlotViewConfigWidget::exportSlot()
 //{
-//    logdbg << "start";
+//    logdbg;
 //    //assert(overwrite_check_);
-//    assert(export_button_);
+//    traced_assert(export_button_);
 
 //    export_button_->setDisabled(true);
 //    //emit exportSignal(overwrite_check_->checkState() == Qt::Checked);
@@ -157,7 +157,7 @@ void ScatterPlotViewConfigWidget::configChanged_impl()
 
 //void ScatterPlotViewConfigWidget::exportDoneSlot(bool cancelled)
 //{
-//    assert(export_button_);
+//    traced_assert(export_button_);
 
 //    export_button_->setDisabled(false);
 

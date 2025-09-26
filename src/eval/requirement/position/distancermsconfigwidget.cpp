@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 
 PositionDistanceRMSConfigWidget::PositionDistanceRMSConfigWidget(PositionDistanceRMSConfig& cfg)
-    : BaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
@@ -59,7 +59,7 @@ void PositionDistanceRMSConfigWidget::thresholdValueEditSlot(QString value)
 PositionDistanceRMSConfig& PositionDistanceRMSConfigWidget::config()
 {
     PositionDistanceRMSConfig* config = dynamic_cast<PositionDistanceRMSConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

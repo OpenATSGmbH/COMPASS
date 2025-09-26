@@ -15,8 +15,7 @@
  */
 
 #include "scatterseries.h"
-
-//#include "timeconv.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -218,7 +217,7 @@ void ScatterSeriesCollection::addDataSeries(const ScatterSeries& scatter_series,
     series.color          = color;
     series.marker_size    = marker_size;
 
-    assert (!data_series_.count(name));
+    traced_assert(!data_series_.count(name));
     data_series_[name] = series;
 }
 
@@ -353,7 +352,7 @@ bool ScatterSeriesCollection::fromJSON(const nlohmann::json& data)
         if (js.contains(TagMarkerSize))
             dseries.marker_size = js[ TagMarkerSize ];
 
-        assert (!data_series_.count(dseries.name));
+        traced_assert(!data_series_.count(dseries.name));
         data_series_[dseries.name] = dseries;
     }
 

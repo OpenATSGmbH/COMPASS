@@ -16,7 +16,7 @@
  */
 
 #include "eval/requirement/extra/track.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/extra/track.h"
 
 #include "evaluationmanager.h"
@@ -83,7 +83,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraTrack::evaluate (
            << " min_duration " << min_duration_ << " min_num_updates " << min_num_updates_
            << " ignore_primary_only " << ignore_primary_only_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -265,22 +265,37 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraTrack::evaluate (
     }
 
     bool ignore = false;
+    string ignore_comment;
 
     if (num_extra && num_extra < min_num_updates_)
+    {
         ignore = true;
+        ignore_comment = "Minimum number of updates: "+to_string(num_extra)+" < "+to_string(min_num_updates_);
+    }
 
     if (!ignore && has_tod && (tod_max-tod_min) < min_duration_)
+    {
         ignore = true;
+        ignore_comment = "Minimum duration: "+Time::toString(tod_max-tod_min,1)+" < "+Time::toString(min_duration_,1);
+    }
 
     if (!ignore && ignore_primary_only_ && target_data.isPrimaryOnly())
+    {
         ignore = true;
+        ignore_comment = "Ignore primary-only";
+    }
 
-    assert (num_pos == num_pos_inside + num_pos_outside);
-    assert (num_pos_inside == num_no_track_num + num_extra + num_ok);
+    traced_assert(num_pos == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos_inside == num_no_track_num + num_extra + num_ok);
 
-    return make_shared<EvaluationRequirementResult::SingleExtraTrack>(
+    auto ret = make_shared<EvaluationRequirementResult::SingleExtraTrack>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, ignore, num_pos_inside, num_extra, num_ok);
+                calculator_, details, num_pos_inside, num_extra, num_ok);
+
+    if (ignore)                
+        ret->setIgnoreResult(ignore_comment);                
+
+    return ret;
 }
 
 }

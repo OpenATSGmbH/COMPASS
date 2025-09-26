@@ -53,14 +53,14 @@ QVariant FFTTableModel::data(const QModelIndex& index, int role) const
     {
         logdbg << "display role: row " << index.row() << " col " << index.column();
 
-        assert (index.row() >= 0);
-        assert (index.row() < static_cast<int>(fft_man_.getAllFFTNames().size()));
+        traced_assert(index.row() >= 0);
+        traced_assert(index.row() < static_cast<int>(fft_man_.getAllFFTNames().size()));
 
         string fft_name = fft_man_.getAllFFTNames().at(index.row());
 
         logdbg << "got fft_name " << fft_name;
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (fft_man_.hasDBFFT(fft_name))
@@ -74,7 +74,7 @@ QVariant FFTTableModel::data(const QModelIndex& index, int role) const
         }
         else // cfg only
         {
-            assert (fft_man_.hasConfigFFT(fft_name));
+            traced_assert(fft_man_.hasConfigFFT(fft_name));
 
             ConfigurationFFT& fft = fft_man_.configFFT(fft_name);
 
@@ -86,14 +86,14 @@ QVariant FFTTableModel::data(const QModelIndex& index, int role) const
     }
     case Qt::DecorationRole:
     {
-        assert (index.row() >= 0);
-        assert (index.row() < static_cast<int>(fft_man_.getAllFFTNames().size()));
+        traced_assert(index.row() >= 0);
+        traced_assert(index.row() < static_cast<int>(fft_man_.getAllFFTNames().size()));
 
         string fft_name = fft_man_.getAllFFTNames().at(index.row());
 
         logdbg << "got fft_name " << fft_name;
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (col_name != "In DB" && col_name != "In Cfg")
@@ -118,7 +118,7 @@ QVariant FFTTableModel::headerData(int section, Qt::Orientation orientation, int
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -140,17 +140,17 @@ Qt::ItemFlags FFTTableModel::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     return QAbstractItemModel::flags(index);
 }
 
 std::string FFTTableModel::getNameOf (const QModelIndex& index)
 {
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
-    assert (index.row() >= 0);
-    assert (index.row() < static_cast<int>(fft_man_.getAllFFTNames().size()));
+    traced_assert(index.row() >= 0);
+    traced_assert(index.row() < static_cast<int>(fft_man_.getAllFFTNames().size()));
 
     return fft_man_.getAllFFTNames().at(index.row());
 }
@@ -162,7 +162,7 @@ QModelIndex FFTTableModel::fftIndex(const std::string& fft_name)
     auto fft_names = fft_man_.getAllFFTNames();
 
     auto itr = std::find(fft_names.begin(), fft_names.end(), fft_name);
-    assert (itr != fft_names.end());
+    traced_assert(itr != fft_names.end());
 
     unsigned int row = std::distance(fft_names.begin(), itr);
 
@@ -176,7 +176,7 @@ void FFTTableModel::updateFFT(const std::string& fft_name)
     auto fft_names = fft_man_.getAllFFTNames();
 
     auto itr = std::find(fft_names.begin(), fft_names.end(), fft_name);
-    assert (itr != fft_names.end());
+    traced_assert(itr != fft_names.end());
 
     unsigned int row = std::distance(fft_names.begin(), itr);
 

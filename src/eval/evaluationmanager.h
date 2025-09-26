@@ -56,7 +56,6 @@ class EvaluationManager : public QObject, public Configurable
 
 signals:
     void sectorsChangedSignal();         // sectors changed (due to manual editing, loading, etc.)
-    //void sectorsEditedSignal();          // sector edit dialog closed
     void standardsChangedSignal();       // emitted if standard was added or deleted
     void currentStandardChangedSignal(); // emitted if current standard was changed
     void evaluationDoneSignal();         // evaluation ended
@@ -155,8 +154,6 @@ protected:
                   bool blocking);
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
-    //COMPASS& compass() { return compass_; }
-
 private:
     void loadSectors();
     void clearSectors();
@@ -165,7 +162,6 @@ private:
     void configureLoadFilters(const EvaluationCalculator& calculator);
     void loadingDone();
 
-    //COMPASS& compass_;
     DBContentManager& dbcontent_man_;
 
     bool sectors_loaded_ {false};
@@ -179,7 +175,6 @@ private:
 
     std::unique_ptr<EvaluationTargetFilter> target_filter_;
     std::unique_ptr<EvaluationCalculator> calculator_; // sub-configurable
-    //EvaluationResultsReport::PDFGenerator pdf_gen_;
 
     std::unique_ptr<ViewableDataConfig>            viewable_data_cfg_;
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;

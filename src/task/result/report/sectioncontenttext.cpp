@@ -25,7 +25,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
-#include <cassert>
+#include "traced_assert.h"
 
 namespace ResultReport
 {
@@ -67,7 +67,7 @@ std::string SectionContentText::resourceExtension() const
 void SectionContentText::addContentUI(QVBoxLayout* layout, 
                                       bool force_ui_reset)
 {
-    assert (layout);
+    traced_assert(layout);
 
     if (isLocked())
     {

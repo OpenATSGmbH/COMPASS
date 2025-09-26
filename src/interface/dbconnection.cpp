@@ -49,9 +49,9 @@ DBConnection::DBConnection(DBInstance* instance, bool verbose)
 ,   verbose_  (verbose   )
 {
     if (verbose_)
-        loginf << "start";
+        loginf;
 
-    assert(instance_);
+    traced_assert(instance_);
 }
 
 /**
@@ -59,9 +59,9 @@ DBConnection::DBConnection(DBInstance* instance, bool verbose)
 DBConnection::~DBConnection()
 {
     if (verbose_)
-        loginf << "start";
+        logdbg;
 
-    assert(!connected());
+    traced_assert(!connected());
 }
 
 /**
@@ -87,7 +87,7 @@ std::string DBConnection::status() const
  */
 Result DBConnection::connect()
 {
-    assert(instance_->dbOpen());
+    traced_assert(instance_->dbOpen());
 
     if (verbose_)
         loginf << "connecting to instance '" << instance_->dbFilename() << "'...";
@@ -114,13 +114,13 @@ Result DBConnection::connect()
 void DBConnection::disconnect()
 {
     if (verbose_)
-        loginf << "connected " << connected_;
+        logdbg << "connected " << connected_;
 
     if (!connected_)
         return;
 
     if (verbose_)
-        loginf << "";
+        logdbg << "";
 
     //close any active reader
     stopRead();
@@ -141,7 +141,7 @@ Result DBConnection::execute(const std::string& sql)
     if (verbose_)
         logdbg << "sql statement execute: '" << sql << "'";
 
-    assert(connected());
+    traced_assert(connected());
 
     return executeSQL_impl(sql, nullptr, false);
 }
@@ -154,7 +154,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const std::string& sql, bool fet
     if (verbose_)
         logdbg << "sql statement execute: '" << sql << "'";
 
-    assert(connected());
+    traced_assert(connected());
 
     std::shared_ptr<DBResult> result(new DBResult());
 
@@ -177,7 +177,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const DBCommand& command)
     if (verbose_)
         logdbg << "executing single command";
 
-    assert(connected());
+    traced_assert(connected());
 
     bool fetch_buffer = command.expectsResult();
 
@@ -201,7 +201,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const DBCommandList& command_lis
     if (verbose_)
         logdbg << "executing " << command_list.getNumCommands() << " command(s)";
 
-    assert(connected());
+    traced_assert(connected());
 
     std::shared_ptr<DBResult> dbresult(new DBResult());
 
@@ -263,8 +263,8 @@ Result DBConnection::createTable(const std::string& table_name,
                                  const std::vector<db::Index>& indices,
                                  bool table_must_not_exist)
 {
-    assert(connected());
-    assert(instance_);
+    traced_assert(connected());
+    traced_assert(instance_);
 
     const auto& table_info = instance_->tableInfo();
 
@@ -289,13 +289,13 @@ Result DBConnection::createTableInternal(const std::string& table_name,
                                          const std::vector<db::Index>& indices,
                                          bool verbose)
 {
-    assert(connected());
+    traced_assert(connected());
 
     //get sql statement
     std::string sql = SQLGenerator(sqlConfiguration(verbose)).getCreateTableStatement(table_name, column_infos, indices);
 
     auto result = execute(sql, false);
-    assert(result);
+    traced_assert(result);
 
     if (result->hasError())
     {
@@ -333,8 +333,8 @@ Result DBConnection::insertBuffer(const std::string& table_name,
                                   const boost::optional<size_t>& idx_to,
                                   PropertyList* table_properties)
 {
-    assert(connected());
-    assert(buffer);
+    traced_assert(connected());
+    traced_assert(buffer);
 
     if (buffer->size() == 0)
         return Result::succeeded();
@@ -369,8 +369,8 @@ Result DBConnection::updateBuffer(const std::string& table_name,
                                   const boost::optional<size_t>& idx_from, 
                                   const boost::optional<size_t>& idx_to)
 {
-    assert(connected());
-    assert(buffer);
+    traced_assert(connected());
+    traced_assert(buffer);
 
     if (buffer->size() == 0)
         return Result::succeeded();
@@ -383,7 +383,7 @@ Result DBConnection::updateBuffer(const std::string& table_name,
 
     size_t idx0 = idx_from.has_value() ? idx_from.value()   : 0;
     size_t idx1 = idx_to.has_value()   ? idx_to.value() + 1 : buffer->size();
-    assert(idx1 >= idx0);
+    traced_assert(idx1 >= idx0);
 
     auto res = updateBuffer_impl(table_name, buffer, key_column, idx_from, idx_to);
 
@@ -415,7 +415,7 @@ Result DBConnection::insertBuffer_impl(const std::string& table_name,
     //loginf << "executing statement:\n" << sql;
 
     auto stmnt = prepareStatement(sql, true);
-    assert(stmnt);
+    traced_assert(stmnt);
 
     if (!stmnt->valid())
         return Result::failed("Could not prepare insert statement: " + stmnt->lastError());
@@ -442,7 +442,7 @@ Result DBConnection::updateBuffer_impl(const std::string& table_name,
     auto sql = SQLGenerator(sqlConfiguration()).getCreateDBUpdateStringBind(buffer, key_column, table_name);
 
     auto stmnt = prepareStatement(sql, true);
-    assert(stmnt);
+    traced_assert(stmnt);
 
     if (!stmnt->valid())
         return Result::failed("Could not prepare update statement" + stmnt->lastError());
@@ -462,7 +462,7 @@ Result DBConnection::updateBuffer_impl(const std::string& table_name,
  */
 ResultT<std::vector<std::string>> DBConnection::getTableList()
 {
-    assert(connected());
+    traced_assert(connected());
 
     auto res = getTableList_impl();
 
@@ -477,7 +477,7 @@ ResultT<std::vector<std::string>> DBConnection::getTableList()
  */
 ResultT<DBTableInfo> DBConnection::getColumnList(const std::string& table)
 {
-    assert(connected());
+    traced_assert(connected());
 
     auto res = getColumnList_impl(table);
 
@@ -510,7 +510,7 @@ ResultT<DBTableInfo> DBConnection::getColumnList_impl(const std::string& table)
     command.list(list);
 
     std::shared_ptr<DBResult> result = execute(command);
-    assert(result);
+    traced_assert(result);
 
     if (result->hasError())
         return ResultT<DBTableInfo>::failed(result->error());
@@ -522,13 +522,13 @@ ResultT<DBTableInfo> DBConnection::getColumnList_impl(const std::string& table)
 
     for (unsigned int cnt = 0; cnt < buffer->size(); cnt++)
     {
-        assert(buffer->has<std::string>("type"));
+        traced_assert(buffer->has<std::string>("type"));
 
         std::string data_type = buffer->get<std::string>("type").get(cnt);
 
-        assert(buffer->has<std::string>("name"));
-        assert(buffer->has<bool>("pk"));
-        assert(buffer->has<bool>("notnull"));
+        traced_assert(buffer->has<std::string>("name"));
+        traced_assert(buffer->has<bool>("pk"));
+        traced_assert(buffer->has<bool>("notnull"));
 
         table_info.addColumn(buffer->get<std::string>("name").get(cnt), 
                              data_type,
@@ -546,8 +546,8 @@ Result DBConnection::startRead(const std::shared_ptr<DBCommand>& select_cmd,
                                size_t offset, 
                                size_t chunk_size)
 {
-    assert(connected());
-    assert(select_cmd && QString::fromStdString(select_cmd->get()).startsWith("SELECT ") && select_cmd->expectsResult());
+    traced_assert(connected());
+    traced_assert(select_cmd && QString::fromStdString(select_cmd->get()).startsWith("SELECT ") && select_cmd->expectsResult());
 
     active_reader_ = createReader(select_cmd, offset, chunk_size);
     return Result(active_reader_->isReady(), active_reader_->lastError());
@@ -557,7 +557,7 @@ Result DBConnection::startRead(const std::shared_ptr<DBCommand>& select_cmd,
  */
 std::shared_ptr<DBResult> DBConnection::readChunk()
 {
-    assert(connected());
+    traced_assert(connected());
 
     std::shared_ptr<DBResult> result;
 
@@ -581,7 +581,7 @@ std::shared_ptr<DBResult> DBConnection::readChunk()
     }
 
     result = active_reader_->readChunk();
-    assert(result);
+    traced_assert(result);
 
     if (perf_metrics_.has_value())
     {
@@ -594,7 +594,7 @@ std::shared_ptr<DBResult> DBConnection::readChunk()
     if (result->hasError())
         return result;
 
-    assert(result->buffer() && result->containsData());
+    traced_assert(result->buffer() && result->containsData());
 
     if (verbose_)
         logdbg << "read " << result->buffer()->size()
@@ -655,7 +655,7 @@ bool DBConnection::hasActivePerformanceMetrics() const
  */
 ResultT<DBConnection::TableInfo> DBConnection::createTableInfo()
 {
-    assert(connected());
+    traced_assert(connected());
 
     TableInfo table_info;
 
@@ -663,7 +663,7 @@ ResultT<DBConnection::TableInfo> DBConnection::createTableInfo()
     if (!list_res.ok())
         return list_res;
     
-    assert(list_res.hasResult());
+    traced_assert(list_res.hasResult());
 
     for (const auto& tname : list_res.result())
     {
@@ -671,7 +671,7 @@ ResultT<DBConnection::TableInfo> DBConnection::createTableInfo()
         if (!table_res.ok())
             return table_res;
 
-        assert(table_res.hasResult());
+        traced_assert(table_res.hasResult());
 
         table_info[ tname ] = table_res.result();
     }

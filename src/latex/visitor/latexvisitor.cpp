@@ -87,19 +87,19 @@ LatexVisitor::LatexVisitor(LatexDocument& report,
  */
 void LatexVisitor::visit(const ViewPoint* e)
 {
-    assert (e);
+    traced_assert(e);
 
     loginf << "ViewPoint id " << e->id(); 
 
     const nlohmann::json& j_data = e->data();
 
-    assert (j_data.contains(ViewPoint::VP_NAME_KEY));
+    traced_assert(j_data.contains(ViewPoint::VP_NAME_KEY));
     string name = String::latexString(j_data.at(ViewPoint::VP_NAME_KEY));
 
-    assert (j_data.contains(ViewPoint::VP_TYPE_KEY));
+    traced_assert(j_data.contains(ViewPoint::VP_TYPE_KEY));
     string type = String::latexString(j_data.at(ViewPoint::VP_TYPE_KEY));
 
-    assert (j_data.contains(ViewPoint::VP_STATUS_KEY));
+    traced_assert(j_data.contains(ViewPoint::VP_STATUS_KEY));
     string status = j_data.at(ViewPoint::VP_STATUS_KEY);
 
     string comment;
@@ -174,7 +174,7 @@ void LatexVisitor::visit(const ViewPoint* e)
  */
 void LatexVisitor::visit(TableView* e)
 {
-    assert (e);
+    traced_assert(e);
 
     loginf << "TableView " << e->instanceId();
 
@@ -182,7 +182,7 @@ void LatexVisitor::visit(TableView* e)
         return;
 
     AllBufferTableWidget* allbuf = e->getDataWidget()->getAllBufferTableWidget();
-    assert (allbuf);
+    traced_assert(allbuf);
 
     std::vector<std::vector<std::string>> data = allbuf->getSelectedText();
 
@@ -223,7 +223,7 @@ void LatexVisitor::visit(TableView* e)
  */
 void LatexVisitor::visit(HistogramView* e)
 {
-    assert (e);
+    traced_assert(e);
 
     loginf << "HistogramView " << e->instanceId();
 
@@ -245,7 +245,7 @@ void LatexVisitor::visit(HistogramView* e)
     e->showInTabWidget();
 
     HistogramViewDataWidget* data_widget = e->getDataWidget();
-    assert (data_widget);
+    traced_assert(data_widget);
 
     loginf << "start" << e->instanceId() 
            << " has visible content: " << data_widget->hasVisibleContent()
@@ -262,7 +262,7 @@ void LatexVisitor::visit(HistogramView* e)
     QImage screenshot = pmap.toImage();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceId()+".jpg";
-    assert (!screenshot.isNull());
+    traced_assert(!screenshot.isNull());
 
     loginf << "saving screenshot as '" << image_path << "'";
     bool ret = Files::createMissingDirectories(Files::getDirectoryFromPath(image_path));
@@ -272,7 +272,7 @@ void LatexVisitor::visit(HistogramView* e)
                             +image_path+"'");
 
     ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
-    assert (ret);
+    traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
 
@@ -286,7 +286,7 @@ void LatexVisitor::visit(HistogramView* e)
  */
 void LatexVisitor::visit(GeographicView* e)
 {
-    assert (e);
+    traced_assert(e);
     loginf << "GeographicView " << e->instanceId();
 
     std::string screenshot_path = report_.path()+"/screenshots";
@@ -307,7 +307,7 @@ void LatexVisitor::visit(GeographicView* e)
     e->showInTabWidget();
 
     GeographicViewDataWidget* data_widget = e->getDataWidget();
-    assert (data_widget);
+    traced_assert(data_widget);
 
     loginf << "start" << e->instanceId() 
            << " has screenshot content: " << data_widget->hasScreenshotContent()
@@ -339,7 +339,7 @@ void LatexVisitor::visit(GeographicView* e)
     QImage screenshot = data_widget->osgViewerWidget()->grabFrameBuffer();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceId()+".jpg";
-    assert (!screenshot.isNull());
+    traced_assert(!screenshot.isNull());
 
     loginf << "saving screenshot as '" << image_path << "'";
     bool ret = Files::createMissingDirectories(Files::getDirectoryFromPath(image_path));
@@ -349,7 +349,7 @@ void LatexVisitor::visit(GeographicView* e)
                             +image_path+"'");
 
     ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
-    assert (ret);
+    traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
 
@@ -363,11 +363,11 @@ void LatexVisitor::visit(GeographicView* e)
         data_widget->removeDataMarker();
 
         std::string overview_image_path = screenshot_path+"/"+image_prefix_+"_overview_"+e->instanceId()+".jpg";
-        assert (!overview_screenshot.isNull());
+        traced_assert(!overview_screenshot.isNull());
 
         loginf << "saving overview screenshot as '" << overview_image_path << "'";
         ret = overview_screenshot.save(overview_image_path.c_str(), "JPG"); // , 50
-        assert (ret);
+        traced_assert(ret);
 
         sec.addImage(overview_image_path, e->instanceId()+" Overview");
     }
@@ -382,7 +382,7 @@ void LatexVisitor::visit(GeographicView* e)
  */
 void LatexVisitor::visit(ScatterPlotView* e)
 {
-    assert (e);
+    traced_assert(e);
 
     loginf << "ScatterPlotView " << e->instanceId();
 
@@ -404,7 +404,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
     e->showInTabWidget();
 
     ScatterPlotViewDataWidget* data_widget = e->getDataWidget();
-    assert (data_widget);
+    traced_assert(data_widget);
 
     loginf << "start" << e->instanceId() 
            << " has visible content: " << data_widget->hasVisibleContent()
@@ -421,7 +421,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
     QImage screenshot = pmap.toImage();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceId()+".jpg";
-    assert (!screenshot.isNull());
+    traced_assert(!screenshot.isNull());
 
     loginf << "saving screenshot as '" << image_path << "'";
     bool ret = Files::createMissingDirectories(Files::getDirectoryFromPath(image_path));
@@ -431,7 +431,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
                             +image_path+"'");
 
     ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
-    assert (ret);
+    traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
 
@@ -443,7 +443,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
  */
 void LatexVisitor::visit(GridView* e)
 {
-    assert (e);
+    traced_assert(e);
 
     loginf << "GridView " << e->instanceId();
 
@@ -465,7 +465,7 @@ void LatexVisitor::visit(GridView* e)
     e->showInTabWidget();
 
     GridViewDataWidget* data_widget = e->getDataWidget();
-    assert (data_widget);
+    traced_assert(data_widget);
 
     loginf << "start" << e->instanceId() 
            << " has visible content: " << data_widget->hasVisibleContent()
@@ -480,7 +480,7 @@ void LatexVisitor::visit(GridView* e)
     auto screenshot = data_widget->renderData();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceId()+".jpg";
-    assert (!screenshot.isNull());
+    traced_assert(!screenshot.isNull());
 
     loginf << "saving screenshot as '" << image_path << "'";
     bool ret = Files::createMissingDirectories(Files::getDirectoryFromPath(image_path));
@@ -490,7 +490,7 @@ void LatexVisitor::visit(GridView* e)
                             +image_path+"'");
 
     ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
-    assert (ret);
+    traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
 

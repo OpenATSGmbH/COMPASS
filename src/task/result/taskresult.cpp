@@ -189,7 +189,7 @@ nlohmann::json TaskResultHeader::toJSON() const
  */
 bool TaskResultHeader::fromJSON(const nlohmann::json& j)
 {
-    loginf << "HEADER:\n" << j.dump(4);
+    logdbg << "header:\n" << j.dump(4);
 
     if (!j.is_object() ||
         !j.contains(TaskResult::FieldMetaData)             ||
@@ -287,7 +287,7 @@ TaskResultHeader TaskResult::header() const
  */
 const std::shared_ptr<ResultReport::Report>& TaskResult::report() const
 {
-    assert (report_);
+    traced_assert(report_);
     return report_;
 }
 
@@ -295,7 +295,7 @@ const std::shared_ptr<ResultReport::Report>& TaskResult::report() const
  */
 std::shared_ptr<ResultReport::Report>& TaskResult::report()
 {
-    assert (report_);
+    traced_assert(report_);
     return report_;
 }
 
@@ -353,8 +353,8 @@ void TaskResult::informUpdate(UpdateState state,
     if (update_state_ == UpdateState::ContentUpdateNeeded)
     {
         //add content info
-        assert(!cid.content_section_id.empty());
-        assert(!cid.content_name.empty());
+        traced_assert(!cid.content_section_id.empty());
+        traced_assert(!cid.content_name.empty());
 
         update_contents_.push_back(cid);
     }
@@ -516,9 +516,9 @@ Result TaskResult::updateContent(const ContentID& c)
     //update content
     auto content_id = section.contentID(c.content_name, c.content_type);
     auto content    = section.retrieveContent(content_id);
-    assert(content);
-    assert(content->isOnDemand());
-    assert(content->isComplete());
+    traced_assert(content);
+    traced_assert(content->isOnDemand());
+    traced_assert(content->isComplete());
 
     if (!content->forceReload())
         return Result::failed("Could not update content '" + c.content_name + "' in section '" + c.content_section_id + "'");
@@ -636,14 +636,14 @@ bool TaskResult::loadOnDemandContent(ResultReport::SectionContent* content) cons
     if (content->contentType() == ResultReport::SectionContent::ContentType::Figure)
     {
         auto c = dynamic_cast<ResultReport::SectionContentFigure*>(content);
-        assert(c);
+        traced_assert(c);
 
         return loadOnDemandFigure_impl(c);
     }
     else if (content->contentType() == ResultReport::SectionContent::ContentType::Table)
     {
         auto c = dynamic_cast<ResultReport::SectionContentTable*>(content);
-        assert(c);
+        traced_assert(c);
 
         return loadOnDemandTable_impl(c);
     }
@@ -674,7 +674,7 @@ bool TaskResult::customContextMenu(QMenu& menu,
                                    ResultReport::SectionContentTable* table, 
                                    unsigned int row)
 {
-    assert (table);
+    traced_assert(table);
 
     if (table->isLocked())
         return false;
@@ -689,7 +689,7 @@ bool TaskResult::customContextMenu(QMenu& menu,
 bool TaskResult::customMenu(QMenu& menu,
                             ResultReport::SectionContent* content)
 {
-    assert (content);
+    traced_assert(content);
 
     if (content->isLocked())
         return false;
@@ -705,7 +705,7 @@ void TaskResult::postprocessTable(ResultReport::SectionContentTable* table)
     if (table->isLocked())
         return;
 
-    assert (table);
+    traced_assert(table);
     postprocessTable_impl(table);
 }
 
@@ -715,7 +715,7 @@ bool TaskResult::hasCustomTooltip(const ResultReport::SectionContentTable* table
                                   unsigned int row,
                                   unsigned int col) const
 {
-    assert (table);
+    traced_assert(table);
 
     if (table->isLocked())
         return false;
@@ -729,8 +729,8 @@ std::string TaskResult::customTooltip(const ResultReport::SectionContentTable* t
                                       unsigned int row,
                                       unsigned int col) const
 {
-    assert (table);
-    assert (!table->isLocked());
+    traced_assert(table);
+    traced_assert(!table->isLocked());
     return customTooltip_impl(table, row, col);
 }
 
@@ -819,6 +819,18 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     figure.view();
 
+    //prepare views for rendering
+    for (auto& view_it : view_man.getViews())
+    {
+        //skip table views
+        if (view_it.second->classId() == "TableView")
+            continue;
+        
+        //enable export
+        if (view_it.second->hasScreenshotContent())
+            view_it.second->setExporting(true);
+    }
+
     while (dbcont_man.loadInProgress())
         QCoreApplication::processEvents();
 
@@ -840,6 +852,9 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         //render view and collect
         auto img = view_it.second->renderData();
         renderings.emplace_back(img, view_it.second->instanceId());
+
+        //disable export
+        view_it.second->setExporting(false);
     }
 
     return renderings;

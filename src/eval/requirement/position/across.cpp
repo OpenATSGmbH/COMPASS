@@ -17,6 +17,7 @@
 
 #include "eval/requirement/position/across.h"
 #include "eval/results/position/across.h"
+#include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 #include "util/timeconv.h"
@@ -33,9 +34,9 @@ namespace EvaluationRequirement
 {
 
 PositionAcross::PositionAcross(const std::string& name, const std::string& short_name, const std::string& group_name,
-                               double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
-                               float max_abs_value)
-    : ProbabilityBase(name, short_name, group_name, prob, prob_check_type, false, calculator),
+                               double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy,
+                               EvaluationCalculator& calculator, float max_abs_value)
+    : PositionBase(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator),
       max_abs_value_(max_abs_value)
 {
 }
@@ -52,7 +53,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " max_abs_value " << max_abs_value_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -60,6 +61,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     unsigned int num_no_ref {0};
     unsigned int num_pos_outside {0};
     unsigned int num_pos_inside {0};
+    unsigned int num_ref_inaccurate {0};
     unsigned int num_pos_calc_errors {0};
     unsigned int num_value_ok {0};
     unsigned int num_value_nok {0};
@@ -78,9 +80,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     double d_across;
 
     bool is_inside;
-    //pair<dbContent::TargetPosition, bool> ret_pos;
     boost::optional<dbContent::TargetPosition> ref_pos;
-    //pair<dbContent::TargetVelocity, bool> ret_spd;
     boost::optional<dbContent::TargetVelocity> ref_spd;
 
     bool along_ok;
@@ -173,7 +173,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
         }
 
 //        ref_spd = ret_spd.first;
-//        assert (ret_pos.second); // must be set of ref pos exists
+//        traced_assert(ret_pos.second); // must be set of ref pos exists
 
         is_inside = target_data.isTimeStampNotExcluded(timestamp)
                     && target_data.mappedRefPosInside(sector_layer, tst_id);
@@ -192,11 +192,27 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
         }
         ++num_pos_inside;
 
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+
+        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
+        {
+            if (!skip_no_data_details)
+                addDetail(timestamp, tst_pos,
+                            ref_pos, // ref_pos
+                            is_inside, {}, along_ok, // pos_inside, value, value_ok
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_value_ok, num_value_nok,
+                            "Inaccurate reference position");
+
+            ++num_ref_inaccurate;
+            continue;            
+        }
+
         bool   transform_ok;
         double distance, angle;
 
         std::tie(transform_ok, distance, angle) = ogr_geo2cart.distanceAngleCart(ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
-        assert(transform_ok);
+        traced_assert(transform_ok);
 
         angle = ref_spd->track_angle_ - angle;
 
@@ -225,7 +241,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
         }
 
         d_across = distance * sin(angle);
-        assert (!std::isnan(d_across) && !std::isinf(d_across));
+        traced_assert(!std::isnan(d_across) && !std::isinf(d_across));
 
         ++num_distances;
 
@@ -255,7 +271,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
     //               << " num_pos_ok " << num_pos_ok << " num_pos_nok " << num_pos_nok
     //               << " num_distances " << num_distances;
 
-    assert (num_no_ref <= num_pos);
+    traced_assert(num_no_ref <= num_pos);
 
     if (num_pos - num_no_ref != num_pos_inside + num_pos_outside)
         loginf << "'" << name_ << "': utn " << target_data.utn_
@@ -264,15 +280,16 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAcross::evaluate (
                << " num_pos_calc_errors " << num_pos_calc_errors
                << " num_distances " << num_distances;
 
-    assert (num_pos - num_no_ref == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos - num_no_ref == num_pos_inside + num_pos_outside);
 
-    assert (num_distances == num_value_ok + num_value_nok);
+    traced_assert(num_distances == num_value_ok + num_value_nok);
 
     //assert (details.size() == num_pos);
 
     return std::make_shared<EvaluationRequirementResult::SinglePositionAcross>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_value_ok, num_value_nok);
+                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate, 
+                num_value_ok, num_value_nok);
 }
 
 }

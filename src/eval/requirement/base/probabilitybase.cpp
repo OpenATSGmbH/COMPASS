@@ -58,7 +58,7 @@ bool ProbabilityBase::invertProb() const
 // {
 //     const double thres = threshold();
 
-//     assert (thres <= 1);
+//     traced_assert(thres <= 1);
 
 //     float        tmp      = 1;
 //     unsigned int decimals = 1;

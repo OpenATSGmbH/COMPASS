@@ -18,6 +18,7 @@
 #include "task/result/report/sectionid.h"
 
 #include "stringconv.h"
+#include "traced_assert.h"
 
 #include <QString>
 #include <boost/algorithm/string/replace.hpp>
@@ -48,7 +49,7 @@ std::string SectionID::sectionID(const std::vector<std::string>& sub_sections)
 */
 std::string SectionID::sectionID(const std::string& section0, const std::string& section1)
 {
-    assert(!section0.empty() && !section1.empty());
+    traced_assert(!section0.empty() && !section1.empty());
 
     return (section0 + Sep + section1);
 }
@@ -89,7 +90,7 @@ std::string SectionID::sectionIDWithoutResults(const std::string& section_id)
     const std::string ResultsHeader = SectionResults + Sep;
 
     //valid?
-    assert (section_id.rfind(ResultsHeader, 0) == 0);
+    traced_assert(section_id.rfind(ResultsHeader, 0) == 0);
 
     //chop result header
     std::string ret = section_id;

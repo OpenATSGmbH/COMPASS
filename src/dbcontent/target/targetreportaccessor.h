@@ -115,8 +115,8 @@ private:
     template <typename T>
     T getNotOptional(const NullableVector<T>* vec, unsigned int index) const
     {
-        assert (vec);
-        assert (!vec->isNull(index));
+        traced_assert(vec);
+        traced_assert(!vec->isNull(index));
         return vec->get(index);
     }
 

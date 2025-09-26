@@ -25,7 +25,7 @@
 UnitSelectionWidget::UnitSelectionWidget(std::string& dimension, std::string& unit)
     : QPushButton(), dimension_(&dimension), unit_(&unit)
 {
-    logdbg << "start";
+    logdbg;
 
     pointers_set_ = true;
 
@@ -106,16 +106,16 @@ void UnitSelectionWidget::clear()
 
 void UnitSelectionWidget::showMenuSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     menu_.exec(QCursor::pos());
 }
 
 void UnitSelectionWidget::triggerSlot(QAction* action)
 {
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     QVariantMap vmap = action->data().toMap();
     std::string dimension, unit;

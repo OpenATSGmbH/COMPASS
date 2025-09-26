@@ -37,22 +37,22 @@ DBContentDeleteDBJob::~DBContentDeleteDBJob() {}
 
 void DBContentDeleteDBJob::setBeforeTimestamp(boost::posix_time::ptime before_timestamp)
 {
-    assert (!use_specific_dbcontent_);
+    traced_assert(!use_specific_dbcontent_);
     use_before_timestamp_ = true;
     before_timestamp_ = before_timestamp;
 }
 
 void DBContentDeleteDBJob::setSpecificDBContent(const std::string& specific_dbcontent)
 {
-    assert (!use_before_timestamp_);
+    traced_assert(!use_before_timestamp_);
     use_specific_dbcontent_ = true;
     specific_dbcontent_ = specific_dbcontent;
 }
 
 void DBContentDeleteDBJob::setSpecificSacSic(unsigned int sac, unsigned int sic)
 {
-    assert (!use_before_timestamp_);
-    assert (use_specific_dbcontent_);
+    traced_assert(!use_before_timestamp_);
+    traced_assert(use_specific_dbcontent_);
 
     use_specific_sac_sic_ = true;
     specific_sac_ = sac;
@@ -61,9 +61,9 @@ void DBContentDeleteDBJob::setSpecificSacSic(unsigned int sac, unsigned int sic)
 
 void DBContentDeleteDBJob::setSpecificLineId(unsigned int line_id)
 {
-    assert (!use_before_timestamp_);
-    assert (use_specific_dbcontent_);
-    assert (use_specific_sac_sic_);
+    traced_assert(!use_before_timestamp_);
+    traced_assert(use_specific_dbcontent_);
+    traced_assert(use_specific_sac_sic_);
 
     use_specific_line_id_ = true;
     specific_line_id_ = line_id;
@@ -76,7 +76,7 @@ void DBContentDeleteDBJob::cleanupDB(bool cleanup_db)
 
 void DBContentDeleteDBJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
     started_ = true;
 
     if (obsolete_)
@@ -114,8 +114,8 @@ void DBContentDeleteDBJob::run_impl()
         {
             loginf << "deleting dbcontent for " << specific_dbcontent_
                    << " for specific sac/sic + line";
-            assert (dbcont_man.existsDBContent(specific_dbcontent_));
-            assert (use_specific_sac_sic_);
+            traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
+            traced_assert(use_specific_sac_sic_);
 
             db_interface_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
                                         specific_sac_, specific_sic_, specific_line_id_);
@@ -124,7 +124,7 @@ void DBContentDeleteDBJob::run_impl()
         {
             loginf << "deleting dbcontent for " << specific_dbcontent_
                    << " for specific sac/sic";
-            assert (dbcont_man.existsDBContent(specific_dbcontent_));
+            traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
 
             db_interface_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
                                         specific_sac_, specific_sic_);
@@ -132,12 +132,12 @@ void DBContentDeleteDBJob::run_impl()
         else // all
         {
             loginf << "deleting all dbcontent for " << specific_dbcontent_;
-            assert (dbcont_man.existsDBContent(specific_dbcontent_));
+            traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
             db_interface_.deleteAll(dbcont_man.dbContent(specific_dbcontent_));
         }
     }
     else
-        assert (false);
+        traced_assert(false);
 
     //cleanup db after delete?
     if (cleanup_db_)

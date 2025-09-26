@@ -162,18 +162,18 @@ FilterEditWidget::FilterEditWidget(DBFilter* filter, QWidget* parent)
 
 FilterEditWidget::~FilterEditWidget() 
 {
-     logdbg << "start"; 
+     logdbg; 
 }
 
 void FilterEditWidget::addCondition()
 {
-    assert(filter_);
-    assert(filter_name_);
-    assert(condition_variable_widget_);
-    assert(condition_combo_);
-    assert(condition_absolute_);
-    assert(condition_value_);
-    assert(condition_reset_combo_);
+    traced_assert(filter_);
+    traced_assert(filter_name_);
+    traced_assert(condition_variable_widget_);
+    traced_assert(condition_combo_);
+    traced_assert(condition_absolute_);
+    traced_assert(condition_value_);
+    traced_assert(condition_reset_combo_);
 
     std::string filter_name = filter_name_->text().toStdString();
     std::string operator_str = condition_combo_->currentText().toStdString();
@@ -209,8 +209,8 @@ void FilterEditWidget::addCondition()
 void FilterEditWidget::deleteCondition()
 {
     QPushButton* button = (QPushButton*)sender();
-    assert(conditions_delete_buttons_.find(button) != conditions_delete_buttons_.end());
-    assert(filter_);
+    traced_assert(conditions_delete_buttons_.find(button) != conditions_delete_buttons_.end());
+    traced_assert(filter_);
     filter_->deleteCondition(conditions_delete_buttons_[button]);
     filter_->widget()->updateChildWidget();
 
@@ -219,8 +219,8 @@ void FilterEditWidget::deleteCondition()
 
 void FilterEditWidget::updateConditionsGrid()
 {
-    assert(filter_);
-    assert(conditions_grid_);
+    traced_assert(filter_);
+    traced_assert(conditions_grid_);
 
     QLayoutItem* child;
     while (!conditions_grid_->isEmpty() && (child = conditions_grid_->takeAt(0)) != nullptr)
@@ -331,14 +331,14 @@ void FilterEditWidget::updateConditionsGrid()
 
 void FilterEditWidget::changedName()
 {
-    assert(filter_name_);
+    traced_assert(filter_name_);
     filter_->setName(filter_name_->text().toStdString());
 }
 
 void FilterEditWidget::changedConditionVariable()
 {
 //    DBContVariableSelectionWidget* source = (DBContVariableSelectionWidget*)sender();
-//    assert(conditions_variable_selects_.find(source) != conditions_variable_selects_.end());
+//    traced_assert(conditions_variable_selects_.find(source) != conditions_variable_selects_.end());
 //    conditions_variable_selects_[source]->setVariable(&source->selectedVariable());
 
     TODO_ASSERT
@@ -347,20 +347,20 @@ void FilterEditWidget::changedConditionVariable()
 void FilterEditWidget::changedABS()
 {
     QCheckBox* source = (QCheckBox*)sender();
-    assert(conditions_abs_checkboxes_.find(source) != conditions_abs_checkboxes_.end());
+    traced_assert(conditions_abs_checkboxes_.find(source) != conditions_abs_checkboxes_.end());
     conditions_abs_checkboxes_[source]->setAbsoluteValue(source->checkState() == Qt::Checked);
 }
 
 void FilterEditWidget::changedOperator()
 {
     FilterConditionOperatorComboBox* source = (FilterConditionOperatorComboBox*)sender();
-    assert(conditions_operator_combos_.find(source) != conditions_operator_combos_.end());
+    traced_assert(conditions_operator_combos_.find(source) != conditions_operator_combos_.end());
     conditions_operator_combos_[source]->setOperator(source->currentText().toStdString());
 }
 
 void FilterEditWidget::changedResetValue()
 {
     FilterConditionResetValueComboBox* source = (FilterConditionResetValueComboBox*)sender();
-    assert(conditions_reset_value_combos_.find(source) != conditions_reset_value_combos_.end());
+    traced_assert(conditions_reset_value_combos_.find(source) != conditions_reset_value_combos_.end());
     conditions_reset_value_combos_[source]->setResetValue(source->currentText().toStdString());
 }

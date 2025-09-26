@@ -120,9 +120,9 @@ ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()
 
 void ViewPointsReportGenerator::run ()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->setRunning(true);
 
     try
@@ -154,9 +154,9 @@ void ViewPointsReportGenerator::run ()
         start_time = boost::posix_time::microsec_clock::local_time();
 
         ViewPointsWidget* vp_widget = view_manager_.viewPointsWidget();
-        assert (vp_widget);
+        traced_assert(vp_widget);
         ViewPointsTableModel* table_model = vp_widget->tableModel();
-        assert (table_model);
+        traced_assert(table_model);
 
         std::vector<unsigned int> vp_ids;
 
@@ -187,7 +187,7 @@ void ViewPointsReportGenerator::run ()
                 break;
             }
 
-            assert (table_model->hasViewPoint(vp_id));
+            traced_assert(table_model->hasViewPoint(vp_id));
             const ViewPoint& view_point = table_model->viewPoint(vp_id);
 
             loginf << "setting vp " << vp_id;
@@ -378,7 +378,7 @@ void ViewPointsReportGenerator::run ()
 
 void ViewPointsReportGenerator::cancel ()
 {
-    loginf << "start";
+    loginf;
 
     cancel_ = true;
 

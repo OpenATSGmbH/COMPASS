@@ -28,7 +28,7 @@
 #include <QColorDialog>
 #include <QApplication>
 
-#include <cassert>
+#include "traced_assert.h"
 
 ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
                                        QWidget* parent, Qt::WindowFlags f)
@@ -101,13 +101,13 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
 
 std::string ImportSectorDialog::layerName()
 {
-    assert (layer_name_edit_edit_);
+    traced_assert(layer_name_edit_edit_);
     return layer_name_edit_edit_->text().toStdString();
 }
 
 bool ImportSectorDialog::exclude ()
 {
-    assert (exclude_check_);
+    traced_assert(exclude_check_);
     return exclude_check_->checkState() == Qt::Checked;
 }
 
@@ -126,7 +126,7 @@ void ImportSectorDialog::colorSlot()
         loginf << "color " << color.name().toStdString();
         color_ = color;
 
-        assert (color_button_);
+        traced_assert(color_button_);
 
         QPalette pal = color_button_->palette();
         pal.setColor(QPalette::Button, color_);

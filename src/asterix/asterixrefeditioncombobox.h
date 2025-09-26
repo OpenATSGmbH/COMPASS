@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "traced_assert.h"
+
 #include <jasterix/jasterix.h>
 #include <jasterix/refedition.h>
 
@@ -72,7 +74,7 @@ class ASTERIXREFEditionComboBox : public QComboBox
     void setREFEdition(const std::string& ref_ed_str)
     {
         int index = findText(QString(ref_ed_str.c_str()));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 

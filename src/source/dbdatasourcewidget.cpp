@@ -64,7 +64,7 @@ DBDataSourceWidget::DBDataSourceWidget(
 
 void DBDataSourceWidget::setLoadChecked (bool value)
 {
-    assert (load_check_);
+    traced_assert(load_check_);
     load_check_->setChecked(value);
 }
 
@@ -162,9 +162,9 @@ void DBDataSourceWidget::recreateWidgets()
         {
             ds_content_name = cnt_it.first;
 
-            assert (!content_labels_.count(ds_content_name));
-            assert (!loaded_cnt_labels_.count(ds_content_name));
-            assert (!total_cnt_labels_.count(ds_content_name));
+            traced_assert(!content_labels_.count(ds_content_name));
+            traced_assert(!loaded_cnt_labels_.count(ds_content_name));
+            traced_assert(!total_cnt_labels_.count(ds_content_name));
 
             content_labels_[ds_content_name] = new QLabel(ds_content_name.c_str());
             content_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -250,11 +250,11 @@ QWidget* DBDataSourceWidget::createLinesWidget()
 
 void DBDataSourceWidget::updateWidgets()
 {
-    logdbg << "start";
+    logdbg;
 
     bool show_counts = show_counts_func_();
 
-    assert (load_check_);
+    traced_assert(load_check_);
     load_check_->setText(src_.name().c_str());
     load_check_->setChecked(get_use_ds_func_());
 
@@ -284,7 +284,7 @@ void DBDataSourceWidget::updateWidgets()
         {
             line_str = "L"+to_string(line_cnt+1);
 
-            assert (line_buttons_.count(line_str));
+            traced_assert(line_buttons_.count(line_str));
             button = line_buttons_.at(line_str);
 
             hidden = !net_lines.count(src_.id())
@@ -369,7 +369,7 @@ void DBDataSourceWidget::updateWidgets()
         {
             line_str = "L"+to_string(line_cnt+1);
 
-            assert (line_buttons_.count(line_str));
+            traced_assert(line_buttons_.count(line_str));
 
             line_buttons_.at(line_str)->setChecked(get_use_ds_line_func_(line_cnt));
             line_buttons_.at(line_str)->setHidden(!inserted_lines.count(line_cnt)); // hide if no data
@@ -385,9 +385,9 @@ void DBDataSourceWidget::updateWidgets()
 
             // content label
 
-            assert (content_labels_.count(ds_content_name));
-            assert (loaded_cnt_labels_.count(ds_content_name));
-            assert (total_cnt_labels_.count(ds_content_name));
+            traced_assert(content_labels_.count(ds_content_name));
+            traced_assert(loaded_cnt_labels_.count(ds_content_name));
+            traced_assert(total_cnt_labels_.count(ds_content_name));
 
             loaded_cnt_labels_[ds_content_name]->setText(QString::number(src_.numLoaded(ds_content_name)));
             total_cnt_labels_[ds_content_name]->setText(QString::number(cnt_it.second));
@@ -397,7 +397,7 @@ void DBDataSourceWidget::updateWidgets()
 
 void DBDataSourceWidget::loadingChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     set_use_ds_func_(!get_use_ds_func_());
 
@@ -408,7 +408,7 @@ void DBDataSourceWidget::loadingChangedSlot()
 void DBDataSourceWidget::lineButtonClickedSlot()
 {
     QPushButton* sender = dynamic_cast<QPushButton*>(QObject::sender());
-    assert (sender);
+    traced_assert(sender);
 
     unsigned int line_id = sender->property("Line ID").toUInt();
 

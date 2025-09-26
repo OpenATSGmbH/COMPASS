@@ -46,7 +46,7 @@ ProjectionManager::ProjectionManager()
     : Configurable("ProjectionManager", "ProjectionManager0", 0, "projection.json"),
     mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
 {
-    loginf << "start";
+    loginf;
 
     registerParameter("current_projection_name", &current_projection_name_, RS2G_NAME);
 
@@ -55,15 +55,15 @@ ProjectionManager::ProjectionManager()
     if (!hasCurrentProjection())
         current_projection_name_ = RS2G_NAME;
 
-    assert(hasCurrentProjection());
+    traced_assert(hasCurrentProjection());
 
     loginf << "loading EGM96 map";
 
     std::string file_path = HOME_DATA_DIRECTORY + "geoid";
-    assert (Files::fileExists(file_path+"/egm96-5.pgm"));
+    traced_assert(Files::fileExists(file_path+"/egm96-5.pgm"));
 
     // geoid_.reset(new GeographicLib::Geoid ("egm96-5", file_path));
-    // assert (geoid_);
+    // traced_assert(geoid_);
 
     // Initialize GDAL
     GDALAllRegister();
@@ -73,17 +73,17 @@ ProjectionManager::ProjectionManager()
 
     // Open the dataset
     dataset_ = (GDALDataset*)GDALOpen(filename.c_str(), GA_ReadOnly);
-    assert (dataset_);
+    traced_assert(dataset_);
 
     // Check if the dataset has georeferencing information
     double geo_transform[6];
-    assert (dataset_->GetGeoTransform(geo_transform) == CE_None);
+    traced_assert(dataset_->GetGeoTransform(geo_transform) == CE_None);
 
     // Convert geospatial coordinates to pixel coordinates
-    assert (GDALInvGeoTransform(geo_transform, egm96_band_inv_geo_transform_));
+    traced_assert(GDALInvGeoTransform(geo_transform, egm96_band_inv_geo_transform_));
 
     egm96_band_ = dataset_->GetRasterBand(1);
-    assert(egm96_band_);
+    traced_assert(egm96_band_);
 
     egm96_band_width_ = egm96_band_->GetXSize();
     egm96_band_height_ = egm96_band_->GetYSize();
@@ -109,7 +109,7 @@ void ProjectionManager::generateSubConfigurable(const string& class_id,
     {
         string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<string>("name");
 
-        assert(!projections_.count(name));
+        traced_assert(!projections_.count(name));
 
         projections_[name].reset(new RS2GProjection(class_id, instance_id, *this));
     }
@@ -117,7 +117,7 @@ void ProjectionManager::generateSubConfigurable(const string& class_id,
     {
         // string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<string>("name");
 
-        // assert(!projections_.count(name));
+        // traced_assert(!projections_.count(name));
 
         // projections_[name].reset(new OGRProjection(class_id, instance_id, *this));
     }
@@ -125,7 +125,7 @@ void ProjectionManager::generateSubConfigurable(const string& class_id,
     {
         // string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<string>("name");
 
-        // assert(!projections_.count(name));
+        // traced_assert(!projections_.count(name));
 
         // projections_[name].reset(new GeoProjection(class_id, instance_id, *this));
     }
@@ -203,17 +203,17 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     boost::optional<unsigned int> mode_a_code;
     boost::optional<float> mode_c_code;
 
-    assert (dbcontent_name == "CAT001" || dbcontent_name == "CAT010" || dbcontent_name == "CAT048");
+    traced_assert(dbcontent_name == "CAT001" || dbcontent_name == "CAT010" || dbcontent_name == "CAT048");
 
     unsigned int buffer_size = buffer->size();
-    assert(buffer_size);
+    traced_assert(buffer_size);
 
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_altitude_));
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_altitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
     datasource_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name();
     range_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::var_radar_range_).name();
@@ -222,10 +222,10 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
     longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
 
-    assert (buffer->has<unsigned int>(datasource_var_name));
-    assert (buffer->has<double>(range_var_name));
-    assert (buffer->has<double>(azimuth_var_name));
-    assert (buffer->has<float>(altitude_var_name));
+    traced_assert(buffer->has<unsigned int>(datasource_var_name));
+    traced_assert(buffer->has<double>(range_var_name));
+    traced_assert(buffer->has<double>(azimuth_var_name));
+    traced_assert(buffer->has<float>(altitude_var_name));
 
     if (!buffer->has<double>(latitude_var_name))
         buffer->addProperty(latitude_var_name, PropertyDataType::DOUBLE);
@@ -244,7 +244,7 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
     {
         acad_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_).name();
-        assert (buffer->has<unsigned int>(acad_var_name));
+        traced_assert(buffer->has<unsigned int>(acad_var_name));
 
         acad_vec = &buffer->get<unsigned int>(acad_var_name);
     }
@@ -253,16 +253,16 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
     {
         mode_a_code_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_).name();
-        assert (buffer->has<unsigned int>(mode_a_code_var_name));
+        traced_assert(buffer->has<unsigned int>(mode_a_code_var_name));
 
         mode_a_code_vec = &buffer->get<unsigned int>(mode_a_code_var_name);
     }
 
     // set up projections
-    assert(hasCurrentProjection());
+    traced_assert(hasCurrentProjection());
 
     Projection& projection = currentProjection();
-    assert (projection.coordinateSystemsAdded()); // done in asteriximporttask or radarplotposcalctask
+    traced_assert(projection.coordinateSystemsAdded()); // done in asteriximporttask or radarplotposcalctask
 
     for (auto ds_id_it : datasource_vec.distinctValues())
     {
@@ -432,16 +432,16 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
     unsigned int transformation_errors {0};
 
-    assert (dbcontent_name == "CAT010" || dbcontent_name == "CAT020" || dbcontent_name == "CAT062");
+    traced_assert(dbcontent_name == "CAT010" || dbcontent_name == "CAT020" || dbcontent_name == "CAT062");
 
     unsigned int buffer_size = buffer->size();
-    assert(buffer_size);
+    traced_assert(buffer_size);
 
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_x_));
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_y_));
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_x_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_y_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
     datasource_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name();
     x_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::meta_var_x_).name();
@@ -449,23 +449,23 @@ unsigned int ProjectionManager::doXYPositionCalculations (
     latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
     longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
 
-    assert (buffer->has<unsigned int>(datasource_var_name));
+    traced_assert(buffer->has<unsigned int>(datasource_var_name));
 
     if (!buffer->has<double>(x_var_name) || !buffer->has<double>(y_var_name))
         return buffer->size();
 
-    assert (buffer->has<double>(latitude_var_name));
-    assert (buffer->has<double>(longitude_var_name));
+    traced_assert(buffer->has<double>(latitude_var_name));
+    traced_assert(buffer->has<double>(longitude_var_name));
 
     NullableVector<unsigned int>& datasource_vec = buffer->get<unsigned int>(datasource_var_name);
     NullableVector<double>& x_vec = buffer->get<double>(x_var_name);
     NullableVector<double>& y_vec = buffer->get<double>(y_var_name);
 
     // set up projections
-    assert(hasCurrentProjection());
+    traced_assert(hasCurrentProjection());
 
     Projection& projection = currentProjection();
-    assert (projection.coordinateSystemsAdded()); // done in asteriximporttask or radarplotposcalctask
+    traced_assert(projection.coordinateSystemsAdded()); // done in asteriximporttask or radarplotposcalctask
 
     for (unsigned int cnt = 0; cnt < buffer_size; cnt++)
     {
@@ -480,13 +480,13 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
         if (!target_latitudes_vec.isNull(cnt) && !target_longitudes_vec.isNull(cnt))
         {
-            loginf << "position already set";
+            logdbg << "position already set";
             continue;
         }
 
         if (x_vec.isNull(cnt) || y_vec.isNull(cnt))
         {
-            loginf << "position null";
+            logdbg << "position null";
             continue;
         }
 
@@ -536,7 +536,7 @@ bool ProjectionManager::hasProjection(const string& name) { return projections_.
 
 Projection& ProjectionManager::projection(const string& name)
 {
-    assert (hasProjection(name));
+    traced_assert(hasProjection(name));
     return *projections_.at(name);
 }
 
@@ -572,8 +572,8 @@ unsigned int ProjectionManager::doRadarPlotPositionCalculations (
 
         shared_ptr<Buffer> buffer = buf_it.second;
 
-        assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-        assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
         latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
         longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
@@ -615,8 +615,8 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
         shared_ptr<Buffer> buffer = buf_it.second;
 
-        assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-        assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
         latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
         longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
@@ -660,7 +660,7 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
     {
         dbcontent_name = buf_it.first;
 
-        assert (dbcontent_name == "CAT001" || dbcontent_name == "CAT010" || dbcontent_name == "CAT048");
+        traced_assert(dbcontent_name == "CAT001" || dbcontent_name == "CAT010" || dbcontent_name == "CAT048");
 
         shared_ptr<Buffer> read_buffer = buf_it.second;
         unsigned int read_size = read_buffer->size();
@@ -685,7 +685,7 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
 
         NullableVector<unsigned long>& update_rec_num_vec = update_buffer->get<unsigned long> (rec_num_var_name);
 
-        assert (read_rec_num_vec.isNeverNull());
+        traced_assert(read_rec_num_vec.isNeverNull());
 
         for (unsigned int cnt = 0; cnt < read_size; cnt++)
             update_rec_num_vec.set(cnt, read_rec_num_vec.get(cnt));
@@ -707,7 +707,7 @@ ProjectionManagerWidget* ProjectionManager::widget()
     {
         widget_.reset(new ProjectionManagerWidget(*this));
     }
-    assert(widget_);
+    traced_assert(widget_);
     return widget_.get();
 }
 
@@ -718,7 +718,7 @@ void ProjectionManager::deleteWidget()
 
 double ProjectionManager::geoidHeightM (double latitude_deg, double longitude_deg)
 {
-    assert (egm96_band_);
+    traced_assert(egm96_band_);
 
     double pixel_x, pixel_y;
     GDALApplyGeoTransform(egm96_band_inv_geo_transform_, longitude_deg, latitude_deg, &pixel_x, &pixel_y);
@@ -729,7 +729,7 @@ double ProjectionManager::geoidHeightM (double latitude_deg, double longitude_de
     double offset_x = pixel_x - x;
     double offset_y = pixel_y - y;
 
-    assert (!(x < 0 || x >= egm96_band_width_ - 1 || y < 0 || y >= egm96_band_height_ - 1));
+    traced_assert(!(x < 0 || x >= egm96_band_width_ - 1 || y < 0 || y >= egm96_band_height_ - 1));
 
     // Read the four surrounding pixels
     float values[4];
@@ -738,7 +738,7 @@ double ProjectionManager::geoidHeightM (double latitude_deg, double longitude_de
 
     for (int i = 0; i < 4; ++i)
     {
-        assert (egm96_band_->RasterIO(GF_Read, px[i], py[i], 1, 1, &values[i], 1, 1, GDT_Float32, 0, 0) == CE_None);
+        traced_assert(egm96_band_->RasterIO(GF_Read, px[i], py[i], 1, 1, &values[i], 1, 1, GDT_Float32, 0, 0) == CE_None);
     }
 
     // Perform bilinear interpolation
@@ -843,8 +843,8 @@ REDO_LABEL:
                 //            << " lon_diff " << String::doubleToStringPrecision(lon_diff, 7);
                 //            //<< " wgs_alt_diff " << String::doubleToStringPrecision(wgs_alt_diff, 1);
 
-                // assert (lat_diff < 1E-6);
-                // assert (lon_diff < 1E-6);
+                // traced_assert(lat_diff < 1E-6);
+                // traced_assert(lon_diff < 1E-6);
 
                 double calc_azimuth_rad, calc_slant_range_m, calc_ground_range_m, calc_radar_alt_m;
 
@@ -870,9 +870,9 @@ REDO_LABEL:
                     goto REDO_LABEL;
                 }
 
-                assert (calc_azimuth_diff < 1E-3);
-                assert (calc_slant_range_diff < 1E-2);
-                assert (calc_ground_range_diff < 1E-2);
+                traced_assert(calc_azimuth_diff < 1E-3);
+                traced_assert(calc_slant_range_diff < 1E-2);
+                traced_assert(calc_ground_range_diff < 1E-2);
             }
         }
 

@@ -17,7 +17,6 @@
 
 #include "eval/requirement/position/distanceconfigwidget.h"
 #include "eval/requirement/position/distanceconfig.h"
-//#include "textfielddoublevalidator.h"
 #include "eval/requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
@@ -30,12 +29,12 @@ namespace EvaluationRequirement
 {
 
 PositionDistanceConfigWidget::PositionDistanceConfigWidget(PositionDistanceConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of correct/false position");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
 //    Probability [1]: Probability of correct position
 //    • Probability Check Type: ≥
@@ -86,7 +85,7 @@ void PositionDistanceConfigWidget::thresholdValueEditSlot(QString value)
 
 void PositionDistanceConfigWidget::changedThresholdValueCheckTypeSlot()
 {
-    assert (threshold_value_check_type_box_);
+    traced_assert(threshold_value_check_type_box_);
     loginf << "value "
            << threshold_value_check_type_box_->getType();
     config().thresholdValueCheckType(threshold_value_check_type_box_->getType());
@@ -94,16 +93,16 @@ void PositionDistanceConfigWidget::changedThresholdValueCheckTypeSlot()
 
 void PositionDistanceConfigWidget::toggleFailedValuesOfInterestSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (failed_values_of_interest_check_);
+    traced_assert(failed_values_of_interest_check_);
     config().failedValuesOfInterest(failed_values_of_interest_check_->checkState() == Qt::Checked);
 }
 
 PositionDistanceConfig& PositionDistanceConfigWidget::config()
 {
     PositionDistanceConfig* config = dynamic_cast<PositionDistanceConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

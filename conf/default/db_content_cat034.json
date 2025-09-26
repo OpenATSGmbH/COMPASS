@@ -11,6 +11,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "message_type",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 000.Message Type\n\n1 North Marker message\n2 Sector crossing message\n3 Geographical filtering message\n4 Jamming Strobe message",
                     "dimension": "",
                     "is_key": false,
@@ -24,6 +26,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_ovl_xmt",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.OVL XMT\n\nTransmission Subsystem Overload Status\n0 Default, no overload\n1 Overload in transmission subsystem",
                     "dimension": "",
                     "is_key": false,
@@ -37,6 +41,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_rdpc",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.RDPC\n\nRadar Data Processor Chain Selection Status\n0 RDPC-1 selected\n1 RDPC-2 selected",
                     "dimension": "",
                     "is_key": false,
@@ -50,6 +56,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_rdpr",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.RDPR\n\nEvent to signal a reset/restart of the selected Radar Data Processor Chain, i.e. expect a new assignment of track numbers\n0 Default situation\n1 Reset of RDPC",
                     "dimension": "",
                     "is_key": false,
@@ -63,6 +71,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_tsv",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.TSV\n\nTime Source Validity\n0 valid\n1 invalid",
                     "dimension": "",
                     "is_key": false,
@@ -76,6 +86,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "mds_ch_a_b",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.CH-A/B\n\nChannel A/B selection status for surveillance\n0 No channel selected\n1 Channel A only selected\n2 Channel B only selected\n3 Illegal combination",
                     "dimension": "",
                     "is_key": false,
@@ -89,6 +101,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_ant",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.ANT\n\nSelected antenna\n0 antenna 1\n1 antenna 2",
                     "dimension": "",
                     "is_key": false,
@@ -102,6 +116,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_dlf",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.DLF\n\nChannel A/B selection status for Data Link Function\n0 Channel A in use\n1 Channel B in use",
                     "dimension": "",
                     "is_key": false,
@@ -115,6 +131,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_msc",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.MSC\n\nMonitoring System Connected Status:\n0 Monitoring system connected\n1 Monitoring system disconnected",
                     "dimension": "",
                     "is_key": false,
@@ -128,6 +146,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_ovl_dlf",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.OVL DLF\n\nOverload in Data Link Function\n0 No overload\n1 Overload",
                     "dimension": "",
                     "is_key": false,
@@ -141,6 +161,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_ovl_scf",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.OVL SCF\n\nOverload in Surveillance Co-ordination Function\n0 No overload\n1 Overload",
                     "dimension": "",
                     "is_key": false,
@@ -154,6 +176,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sac",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 010.SAC\n\nSystem Area Code",
                     "dimension": "",
                     "is_key": false,
@@ -167,6 +191,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_ovl_sur",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.OVL SUR\n\nOverload condition\n0 No overload\n1 Overload",
                     "dimension": "",
                     "is_key": false,
@@ -180,6 +206,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_scf",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.MDS.SCF\n\nChannel A/B selection status for Surveillance Co-ordination Function\n0 Channel A in use\n1 Channel B in use",
                     "dimension": "",
                     "is_key": false,
@@ -193,6 +221,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "psr_ant",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.PSR.ANT\n\nSelected antenna\n0 antenna 1\n1 antenna 2",
                     "dimension": "",
                     "is_key": false,
@@ -206,6 +236,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "psr_ch_a_b",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.PSR.CH-A/B\n\nChannel A/B selection status\n0 No channel selected\n1 Channel A only selected\n2 Channel B only selected\n3 Diversity mode;Channel A and B selected",
                     "dimension": "",
                     "is_key": false,
@@ -219,6 +251,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "psr_msc",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.PSR.MSC\n\nMonitoring System Connected Status:\n0 Monitoring system connected\n1 Monitoring system disconnected",
                     "dimension": "",
                     "is_key": false,
@@ -232,6 +266,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "psr_ovl",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.PSR.OVL\n\nOverload condition\n0 No overload\n1 Overload",
                     "dimension": "",
                     "is_key": false,
@@ -245,6 +281,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "ssr_ant",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.SSR.ANT\n\nSelected antenna\n0 antenna 1\n1 antenna 2",
                     "dimension": "",
                     "is_key": false,
@@ -258,6 +296,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "ssr_ch_a_b",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.SSR.CH-A/B\n\nChannel A/B selection status\n0 No channel selected\n1 Channel A only selected\n2 Channel B only selected\n3 Diversity mode;Channel A and B selected",
                     "dimension": "",
                     "is_key": false,
@@ -271,6 +311,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "ssr_msc",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.SSR.MSC\n\nMonitoring System Connected Status:\n0 Monitoring system connected\n1 Monitoring system disconnected",
                     "dimension": "",
                     "is_key": false,
@@ -284,6 +326,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "ssr_ovl",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.SSR.OVL\n\nOverload condition\n0 No overload\n1 Overload",
                     "dimension": "",
                     "is_key": false,
@@ -297,6 +341,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sic",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 010.SIC\n\nSystem Identification Code",
                     "dimension": "",
                     "is_key": false,
@@ -310,6 +356,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "common_red_rdp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.COM.RED-RDP\n\nReduction Steps in use for an overload of the RDP\n0 No reduction active\n1 Reduction step 1 active\n2 Reduction step 2 active\n3 Reduction step 3 active\n4 Reduction step 4 active\n5 Reduction step 5 active\n6 Reduction step 6 active\n7 Reduction step 7 active",
                     "dimension": "",
                     "is_key": false,
@@ -323,6 +371,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "common_red_xmt",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.COM.RED-XMT\n\nReduction Steps in use for an overload of the Transmission subsystemn0 No reduction active\n1 Reduction step 1 active\n2 Reduction step 2 active\n3 Reduction step 3 active\n4 Reduction step 4 active\n5 Reduction step 5 active\n6 Reduction step 6 active\n7 Reduction step 7 active",
                     "dimension": "",
                     "is_key": false,
@@ -336,6 +386,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "psr_pol",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.PSR.POL\n\nPolarization in use by PSR\n0 Linear polarization\n1 Circular polarization",
                     "dimension": "",
                     "is_key": false,
@@ -349,6 +401,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "psr_red_rad",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.PSR.RED-RAD\n\nReduction Steps in use as result of an overload within the PSR subsystem\n0 No reduction active\n1 Reduction step 1 active\n2 Reduction step 2 active\n3 Reduction step 3 active\n4 Reduction step 4 active\n5 Reduction step 5 active\n6 Reduction step 6 active\n7 Reduction step 7 active",
                     "dimension": "",
                     "is_key": false,
@@ -362,6 +416,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "psr_stc",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.PSR.STC\n\nSensitivity Time Control Map in use\n0 STC Map-1\n1 STC Map-2\n2 STC Map-3\n3 STC Map-4",
                     "dimension": "",
                     "is_key": false,
@@ -375,6 +431,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "ssr_red_rad",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.SSR.RED-RAD\n\nReduction Steps in use as result of an overload within the SSR subsystem\n0 No reduction active\n1 Reduction step 1 active\n2 Reduction step 2 active\n3 Reduction step 3 active\n4 Reduction step 4 active\n5 Reduction step 5 active\n6 Reduction step 6 active\n7 Reduction step 7 active",
                     "dimension": "",
                     "is_key": false,
@@ -388,6 +446,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "mds_clu",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.MDS.CLU\n\nCluster State\n0 Autonomous\n1 Not autonomous",
                     "dimension": "",
                     "is_key": false,
@@ -401,6 +461,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "mds_red_rad",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.MDS.RED-RAD\n\nReduction Steps in use as result of an overload within the Mode S subsystem\n0 No reduction active\n1 Reduction step 1 active\n2 Reduction step 2 active\n3 Reduction step 3 active\n4 Reduction step 4 active\n5 Reduction step 5 active\n6 Reduction step 6 active\n7 Reduction step 7 active",
                     "dimension": "",
                     "is_key": false,
@@ -414,6 +476,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "message_count_counter",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.plot_count_values.COUNTER\n\n11-bit counter value",
                     "dimension": "",
                     "is_key": false,
@@ -427,6 +491,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "message_count_type",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.plot_count_values.TYP\n\nType of message counter, encoded as follows\n0 No detection (number of misses)\n1 Single PSR target reports\n2 Single SSR target reports (Non-Mode S)\n3 SSR+PSR target reports (Non-Mode S)\n4 Single All-Call target reports (Mode S)\n5 Single Roll-Call target reports (Mode S)\n6 All-Call + PSR (Mode S) target reports\n7 Roll-Call + PSR (Mode S) target reports\n8 Filter for Weather data\n9 Filter for Jamming Strobe\n10 Filter for PSR data\n11 Filter for SSR/Mode S data\n12 Filter for SSR/Mode S+PSR data\n13 Filter for Enhanced Surveillance data\n14 Filter for PSR+Enhanced Surveillance\n15 Filter for PSR+Enhanced Surveillance + SSR/Mode S data not in Area of Prime Interest\n16 Filter for PSR+Enhanced Surveillance + all SSR/Mode S data",
                     "dimension": "",
                     "is_key": false,
@@ -440,6 +506,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "sector_number",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 020.Sector Number",
                     "dimension": "Angle",
                     "is_key": false,
@@ -453,6 +521,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "azimuth_error",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.AZIMUTH ERROR\n\nAveraged difference in range and in azimuth for the primary target\nposition with respect to the SSR target position as calculated by the\nradar station.",
                     "dimension": "Angle",
                     "is_key": false,
@@ -466,6 +536,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "range_error",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.RANGE ERROR\n\nAveraged difference in range and in azimuth for the primary target\nposition with respect to the SSR target position as calculated by the\nradar station.",
                     "dimension": "Length",
                     "is_key": false,
@@ -479,6 +551,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "rho_end",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.RHO-END",
                     "dimension": "Length",
                     "is_key": false,
@@ -492,6 +566,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "rho_start",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.RHO-START",
                     "dimension": "Length",
                     "is_key": false,
@@ -505,6 +581,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "theta_end",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.THETA-END",
                     "dimension": "Angle",
                     "is_key": false,
@@ -518,6 +596,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "theta_start",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.THETA-START",
                     "dimension": "Angle",
                     "is_key": false,
@@ -531,6 +611,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "data_filter_type",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 110.TYP\n\n0 invalid value\n1 Filter for Weather data\n2 Filter for Jamming Strobe\n3 Filter for PSR data\n4 Filter for SSR/Mode S data\n5 Filter for SSR/Mode S + PSR data\n6 Enhanced Surveillance data\n7 Filter for PSR+Enhanced Surveillance data\n8 Filter for PSR+Enhanced Surveillance + SSR/Mode S data not in Area of Prime Interest\n9 Filter for PSR+Enhanced Surveillance + all SSR/Mode S data",
                     "dimension": "",
                     "is_key": false,
@@ -544,6 +626,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "data_source_height",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 120.Height of Data Source\n\nSigned Height of the Data Source, expressed in meters above WGS 84 reference ellipsoid.",
                     "dimension": "",
                     "is_key": false,
@@ -557,6 +641,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "data_source_latitude",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 120.Latitude\n\nLatitude in WGS 84 expressed in two’s complement\nRange: -90<= latitude<= 90degrees",
                     "dimension": "",
                     "is_key": false,
@@ -570,6 +656,8 @@
                 "parameters": {
                     "data_type_str": "DOUBLE",
                     "db_column_name": "data_source_longitude",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 120.Longitude\n\nLongitude in WGS 84 expressed in two’s complement\nRange: -180 < = longitude<180 degrees",
                     "dimension": "",
                     "is_key": false,
@@ -583,6 +671,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "time_of_day",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 030.Time of Day",
                     "dimension": "Time",
                     "is_key": false,
@@ -596,6 +686,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "antenna_rotation_speed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 041.Antenna Rotation Speed",
                     "dimension": "Time",
                     "is_key": false,
@@ -609,6 +701,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_msc",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.MSC\n\nMonitoring System Connected Status\n0 Monitoring system connected\n1 Monitoring system disconnected",
                     "dimension": "",
                     "is_key": false,
@@ -622,6 +716,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_nogo",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.NOGO\n\nOperational Release Status of the System\n0 System is released for operational use\n1 Operational use of System is inhibited, i.e. the data shall be discarded by an operational SDPS",
                     "dimension": "",
                     "is_key": false,
@@ -635,6 +731,8 @@
                 "parameters": {
                     "data_type_str": "BOOL",
                     "db_column_name": "common_ovl_rdp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.COM.OVL RDP\n\nRadar Data Processor Overload Indicator\n0 Default, no overload\n1 Overload in RDP",
                     "dimension": "",
                     "is_key": false,
@@ -648,6 +746,8 @@
                 "parameters": {
                     "data_type_str": "TIMESTAMP",
                     "db_column_name": "timestamp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Epoch timestamp based on Time of Day",
                     "dimension": "",
                     "is_key": false,
@@ -661,6 +761,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "ds_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From ds_id\n\nData Source ID",
                     "dimension": "",
                     "is_key": false,
@@ -674,6 +776,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "line_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "COMMUNICATION LINE ID determines the origin of the record",
                     "dimension": "",
                     "is_key": false,
@@ -687,6 +791,8 @@
                 "parameters": {
                     "data_type_str": "ULONGINT",
                     "db_column_name": "record_number",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Unique record id starting with 0 on every new recording",
                     "dimension": "",
                     "is_key": true,

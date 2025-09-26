@@ -97,7 +97,7 @@ unsigned int Single::utn() const
 */
 const EvaluationTargetData* Single::target() const
 {
-    assert (target_);
+    traced_assert(target_);
     return target_;
 }
 
@@ -107,7 +107,7 @@ void Single::setInterestFactor(double factor, bool reset_in_target)
 {
     interest_factor_ = factor;
 
-    assert (target_);
+    traced_assert(target_);
 
     Evaluation::RequirementSumResultID id;
     id.fromResult(*this);
@@ -119,7 +119,9 @@ void Single::setInterestFactor(double factor, bool reset_in_target)
 */
 void Single::updateUseFromTarget()
 {
-    use_ = (resultUsable() && target_->use() && !target_->excludedRequirements().count(requirement_->name()));
+    use_ = (resultUsable() 
+            && target_->use() 
+            && !target_->excludedRequirements().count(requirement_->name()));
 }
 
 /**
@@ -176,7 +178,7 @@ std::string Single::sumSectionName() const
         else if (target()->isModeACOnly())
             tmp = "Mode A/C";
         else
-            assert (target()->isPrimaryOnly());
+            traced_assert(target()->isPrimaryOnly());
 
         return tmp + " " + EvalSectionID::SectionSum;
     }
@@ -234,15 +236,15 @@ Single::TemporaryDetails Single::temporaryDetails() const
 */
 Single::EvaluationDetails Single::recomputeDetails() const
 {
-    assert(requirement_);
-    assert(calculator_.data().hasTargetData(utn_));
+    traced_assert(requirement_);
+    traced_assert(calculator_.data().hasTargetData(utn_));
 
     logdbg << "recomputing target details for requirement '" << requirement_->name() << "' UTN " << utn_ << "...";
 
     const auto& data = calculator_.data().targetData(utn_);
 
     auto result = requirement_->evaluate(data, requirement_, sector_layer_);
-    assert(result);
+    traced_assert(result);
 
     logdbg << "target details recomputed!";
 
@@ -266,7 +268,7 @@ const EvaluationDetail& Single::getDetail(const EvaluationDetails& details,
 */
 const Single::EvaluationDetails& Single::getDetails() const
 {
-    assert(hasStoredDetails());
+    traced_assert(hasStoredDetails());
 
     return details_.value();
 }
@@ -344,12 +346,13 @@ void Single::addTargetToOverviewTable(ResultReport::Section& section,
     auto& target_table = section.getTable(table_name);
 
     auto values = targetTableValues();
-    assert(values.size() == target_table.numColumns());
+    traced_assert(values.size() == target_table.numColumns());
 
     std::string link = getTargetRequirementSectionID();
-    std::string fig  = hasIssues() ? TargetOverviewID : "";
+    std::string fig  = show_overview_always_ ? TargetOverviewID : (hasIssues() ? TargetOverviewID : "");
 
-    target_table.addRow(values, ResultReport::SectionContentViewable(), link, fig);
+    bool is_active = use() && resultUsable();
+    target_table.addRow(values, ResultReport::SectionContentViewable(), link, fig, QVariant(), is_active ? 0u : ResultReport::CellStyleInactive);
 }
 
 /**
@@ -360,8 +363,6 @@ void Single::addTargetDetailsToReport(std::shared_ptr<ResultReport::Report> repo
     auto& utn_req_section = report->getSection(getTargetRequirementSectionID());
 
     utn_section.perTargetSection(true); // mark utn section per target
-
-    
 
     //generate details overview table
     if (!utn_req_section.hasTable(TRDetailsOverviewTableName))
@@ -396,7 +397,7 @@ void Single::addTargetDetailsToReport(std::shared_ptr<ResultReport::Report> repo
     }
 
     //generate overview figure?
-    if (hasIssues())
+    if (show_overview_always_ || hasIssues())
     {
         auto& fig = utn_req_section.addFigure(TargetOverviewID, ResultReport::SectionContentViewable().setCaption("Target Errors Overview"));
 
@@ -455,7 +456,7 @@ bool Single::addDetailsToTable(ResultReport::SectionContentTable& table)
     {
         auto values = detailValues(detail, parent_detail);
 
-        assert(values.size() == table.numColumns());
+        traced_assert(values.size() == table.numColumns());
 
         table.addRow(values, ResultReport::SectionContentViewable().setOnDemand(), "", "", QPoint(didx0, didx1));
     };
@@ -507,7 +508,7 @@ bool Single::addHighlightToViewable(ResultReport::SectionContentViewable& viewab
 */
 std::vector<std::string> Single::targetTableHeadersCommon() const
 {
-    return { "UTN", "Begin", "End", "ACIDs", "ACADs", "M3/A", "MC Min", "MC Max" };
+    return { "UTN", "Begin", "End", "ACIDs", "ACADs", "M3/A" }; // , "MC Min", "MC Max"
 }
 
 /**
@@ -539,8 +540,28 @@ std::vector<std::string> Single::targetTableHeaders(unsigned int* sort_column) c
     //set sort column
     if (sort_column)
     {
-        const int sort_column_custom = targetTableCustomSortColumn();
-        *sort_column = (sort_column_custom >= 0 ? (unsigned int)sort_column_custom : result_value_idx);
+        std::string sort_column_custom_name = targetTableCustomSortColumn();
+
+        if (sort_column_custom_name.size())
+        {
+            int index = -1;
+            for (size_t i = 0; i < headers.size(); ++i)
+            {
+                if (headers[i] == sort_column_custom_name)
+                {
+                    index = static_cast<int>(i);
+                    break;
+                }
+            }
+            // index is -1 if not found, otherwise contains the index
+            if (index >= 0)
+                *sort_column = (unsigned int)index;
+            else
+            {
+                logerr << "undefined header '" << sort_column_custom_name;
+                *sort_column = result_value_idx;
+            }
+        }
     }
 
     return headers;
@@ -563,9 +584,9 @@ nlohmann::json::array_t Single::targetTableValuesCommon() const
              target_->timeEndStr(),
              target_->acidsStr(), 
              target_->acadsStr(),
-             target_->modeACodesStr(), 
-             target_->modeCMinStr(), 
-             target_->modeCMaxStr() };
+             target_->modeACodesStr() };
+            //  target_->modeCMinStr(), 
+            //  target_->modeCMaxStr() 
 }
 
 /**
@@ -655,7 +676,7 @@ bool Single::hasReference (const ResultReport::SectionContentTable& table,
 std::string Single::reference(const ResultReport::SectionContentTable& table, 
                               const QVariant& annotation) const
 {
-    assert (hasReference(table, annotation));
+    traced_assert(hasReference(table, annotation));
     return EvalSectionID::createForTargetResult(utn_, *this);
 }
 
@@ -702,7 +723,7 @@ bool Single::viewableDataReady() const
 std::shared_ptr<nlohmann::json::object_t> Single::viewableData(const ResultReport::SectionContentTable& table, 
                                                                const QVariant& annotation) const
 {
-    assert (hasViewableData(table, annotation));
+    traced_assert(hasViewableData(table, annotation));
 
     auto temp_details = temporaryDetails();
 
@@ -715,7 +736,7 @@ std::shared_ptr<nlohmann::json::object_t> Single::viewableData(const ResultRepor
     {
         //obtain detail key from annotation
         auto detail_key = detailIndex(annotation);
-        assert(detail_key.has_value());
+        traced_assert(detail_key.has_value());
 
         //return target detail viewable
         return createViewable(AnnotationOptions().highlight(detail_key.value()));
@@ -769,7 +790,7 @@ nlohmann::json& Single::getOrCreateAnnotation(nlohmann::json& annotations_json,
                                               AnnotationArrayType type, 
                                               bool overview) const
 {
-    assert (annotations_json.is_array());
+    traced_assert(annotations_json.is_array());
 
     string anno_name = annotation_type_names_.at(type);
 
@@ -795,7 +816,7 @@ nlohmann::json& Single::getOrCreateAnnotation(nlohmann::json& annotations_json,
             logdbg << "start: index " << cnt <<" '" << annotations_json.at(cnt).at("name") << "'";
 
         annotations_json.insert(annotations_json.begin() + position, json::object()); // errors
-        assert (position < annotations_json.size());
+        traced_assert(position < annotations_json.size());
 
         nlohmann::json& annotation_json = annotations_json.at(position);
 
@@ -896,7 +917,7 @@ nlohmann::json& Single::getOrCreateAnnotation(nlohmann::json& annotations_json,
         if (anno_type == (int)type)
         {
             auto& j = annotations_json.at(insert_idx);
-            assert(j.at(FieldName) == anno_name);
+            traced_assert(j.at(FieldName) == anno_name);
             return j;
         }
 
@@ -916,7 +937,7 @@ nlohmann::json& Single::getOrCreateAnnotation(nlohmann::json& annotations_json,
                      style.line_width);
     
     auto& j = annotations_json.at(insert_idx);
-    assert(j.at(FieldName) == anno_name);
+    traced_assert(j.at(FieldName) == anno_name);
     
     return j;
 }
@@ -953,7 +974,7 @@ void Single::addAnnotationDistance(nlohmann::json& annotations_json,
                                    bool add_line,
                                    bool add_ref) const
 {
-    assert(detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     addAnnotationPos(annotations_json, detail.position(0), type);
 
@@ -988,7 +1009,7 @@ boost::optional<Base::DetailIndex> Single::detailIndex(const QVariant& annotatio
 void Single::iterateDetails(const DetailFunc& func,
                             const DetailSkipFunc& skip_func) const
 {
-    assert (details_.has_value());
+    traced_assert(details_.has_value());
 
     iterateDetails(details_.value(), func, skip_func);
 }
@@ -999,7 +1020,7 @@ void Single::iterateDetails(const EvaluationDetails& details,
                             const DetailFunc& func,
                             const DetailSkipFunc& skip_func) const
 {
-    assert(func);
+    traced_assert(func);
 
     auto nesting_mode = detailNestingMode();
 
@@ -1030,7 +1051,7 @@ void Single::iterateDetails(const EvaluationDetails& details,
     }
     else if (nesting_mode == DetailNestingMode::SingleNested)
     {
-        assert(details0.size() == 1);
+        traced_assert(details0.size() == 1);
 
         if (details0[ 0 ].hasDetails())
         {
@@ -1054,8 +1075,8 @@ std::unique_ptr<nlohmann::json::object_t> Single::createBaseViewable() const
 */
 Base::ViewableInfo Single::createViewableInfo(const AnnotationOptions& options) const
 {
-    assert(options.valid());
-    assert(details_.has_value());
+    traced_assert(options.valid());
+    traced_assert(details_.has_value());
 
     Base::ViewableInfo info;
     info.viewable_type = options.viewable_type;
@@ -1079,7 +1100,7 @@ Base::ViewableInfo Single::createViewableInfo(const AnnotationOptions& options) 
                            int evt_pos_idx, 
                            int evt_ref_pos_idx)
         {
-            assert(detail.numPositions() >= 1);
+            traced_assert(detail.numPositions() >= 1);
 
             bounds |= detail.bounds(BoundsEps);
         };
@@ -1093,7 +1114,7 @@ Base::ViewableInfo Single::createViewableInfo(const AnnotationOptions& options) 
         //highlight single detail
         const auto& d = getDetail(details_.value(), options.detail_index.value());
 
-        assert(d.numPositions() >= 1);
+        traced_assert(d.numPositions() >= 1);
 
         info.bounds    = d.bounds(BoundsEps);
         info.timestamp = d.timestamp();
@@ -1101,7 +1122,7 @@ Base::ViewableInfo Single::createViewableInfo(const AnnotationOptions& options) 
     else
     {
         bool valid_viewable_type = false;
-        assert(valid_viewable_type);
+        traced_assert(valid_viewable_type);
     }
 
     return info;
@@ -1112,7 +1133,7 @@ Base::ViewableInfo Single::createViewableInfo(const AnnotationOptions& options) 
 void Single::createSumOverviewAnnotations(nlohmann::json& annotations_json,
                                           bool add_ok_details_to_overview) const
 {
-    assert(details_.has_value());
+    traced_assert(details_.has_value());
     createTargetAnnotations(details_.value(), annotations_json, TargetAnnotationType::SumOverview, {}, add_ok_details_to_overview);
 }
 
@@ -1168,7 +1189,7 @@ void Single::createTargetAnnotations(const EvaluationDetails& details,
     }
     else if (type == TargetAnnotationType::Highlight)
     {
-        assert(detail_index.has_value());
+        traced_assert(detail_index.has_value());
 
         //add target overview annotations?
         if (addOverviewAnnotationsToDetail())
@@ -1197,8 +1218,8 @@ void Single::createTargetAnnotations(const EvaluationDetails& details,
 void Single::createAnnotations(nlohmann::json& annotations_json, 
                                const AnnotationOptions& options) const
 {
-    assert (options.valid());
-    assert (details_.has_value());
+    traced_assert(options.valid());
+    traced_assert(details_.has_value());
 
     if (options.viewable_type == ViewableType::Overview)
     {

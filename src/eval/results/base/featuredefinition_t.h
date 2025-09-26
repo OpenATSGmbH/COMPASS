@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "traced_assert.h"
 #include "eval/results/base/result_t.h"
 
 #include <string>
@@ -42,7 +43,7 @@ struct FeatureDefinitionDataSeries
     */
     std::vector<T> getValues(const Base* base) const
     {
-        assert(isValid());
+        traced_assert(isValid());
         return EvaluationResultTemplates(base).getValues<T>(series_value_source);
     }
 
@@ -51,7 +52,7 @@ struct FeatureDefinitionDataSeries
     */
     std::vector<boost::optional<T>> getOptionalValues(const Base* base) const
     {
-        assert(isValid());
+        traced_assert(isValid());
         return EvaluationResultTemplates(base).getOptionalValues<T>(series_value_source);
     }
 
@@ -60,7 +61,7 @@ struct FeatureDefinitionDataSeries
     */
     std::vector<TimedValue<T>> getTimedValues(const Base* base) const
     {
-        assert(isValid());
+        traced_assert(isValid());
         return EvaluationResultTemplates(base).getTimedValues<T>(series_value_source);
     }
 
@@ -69,7 +70,7 @@ struct FeatureDefinitionDataSeries
     */
     std::vector<MSecTimedValue<T>> getMSecTimedValues(const Base* base) const
     {
-        assert(isValid());
+        traced_assert(isValid());
         return EvaluationResultTemplates(base).getMSecTimedValues<T>(series_value_source);
     }
 

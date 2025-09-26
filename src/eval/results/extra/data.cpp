@@ -34,7 +34,7 @@
 #include "util/timeconv.h"
 #include "viewpoint.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -87,7 +87,6 @@ SingleExtraData::SingleExtraData(const std::string& result_id,
                                  const EvaluationTargetData* target,
                                  EvaluationCalculator& calculator,
                                  const EvaluationDetails& details,
-                                 bool ignore,
                                  unsigned int num_extra,
                                  unsigned int num_ok,
                                  bool has_extra_test_data)
@@ -95,9 +94,6 @@ SingleExtraData::SingleExtraData(const std::string& result_id,
 ,   SingleProbabilityBase("SingleExtraData", result_id, requirement, sector_layer, utn, target, calculator, details)
 ,   has_extra_test_data_(has_extra_test_data)
 {
-    if (ignore)
-        setIgnored();
-
     updateResult();
 }
 
@@ -149,7 +145,7 @@ std::vector<std::string> SingleExtraData::targetTableHeadersCustom() const
 */
 nlohmann::json::array_t SingleExtraData::targetTableValuesCustom() const
 {
-    return { target_->numTstUpdates(), isIgnored(), num_extra_ + num_ok_, num_ok_, num_extra_ };
+    return { target_->numTstUpdates(), ignoreResult(), num_extra_ + num_ok_, num_ok_, num_extra_ };
 }
 
 /**
@@ -158,7 +154,7 @@ std::vector<Single::TargetInfo> SingleExtraData::targetInfos() const
 {
     return { TargetInfo("#Ref [1]", "Number of reference updates"   , target_->numRefUpdates()),
              TargetInfo("#Tst [1]", "Number of test updates"        , target_->numTstUpdates()),
-             TargetInfo("Ign."    , "Ignore target"                 , isIgnored()             ),
+             TargetInfo("Ign."    , "Ignore target"                 , ignoreResult()          ),
              TargetInfo("#Check." , "Number of checked test updates", num_extra_ + num_ok_    ),
              TargetInfo("#OK."    , "Number of OK test updates"     , num_ok_                 ),
              TargetInfo("#Extra"  , "Number of extra test updates"  , num_extra_              ) };
@@ -188,7 +184,7 @@ nlohmann::json::array_t SingleExtraData::detailValues(const EvaluationDetail& de
 bool SingleExtraData::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_extra = detail.getValueAs<bool>(DetailKey::Extra);
-    assert(is_extra.has_value());
+    traced_assert(is_extra.has_value());
 
     return !is_extra.value();
 }
@@ -200,7 +196,7 @@ void SingleExtraData::addAnnotationForDetail(nlohmann::json& annotations_json,
                                              TargetAnnotationType type,
                                              bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {

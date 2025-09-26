@@ -75,7 +75,7 @@ public:
         TemporaryDetails(const Single* single) 
         :   single_(single) 
         { 
-            assert(single_); 
+            traced_assert(single_); 
 
             //recompute details if not available
             if (!single_->details_.has_value())
@@ -250,7 +250,7 @@ protected:
     /// derive to obtain custom target table row values (size must match targetTableHeadersDerived())
     virtual nlohmann::json::array_t targetTableValuesCustom() const = 0;
     /// derive to obtain a custom sort column for the target table (!index relative to custom values!)
-    virtual int targetTableCustomSortColumn() const { return -1; }
+    virtual std::string targetTableCustomSortColumn() const { return ""; }
     /// derive to obtain a custom sort order for the target table
     virtual Qt::SortOrder targetTableSortOrder() const;
     /// derive to obtain items for the target details overview table
@@ -343,6 +343,8 @@ private:
     EvaluationDetails recomputeDetails() const;
 
     mutable boost::optional<EvaluationDetails> details_;
+
+    bool show_overview_always_ = true;
 };
 
 }

@@ -34,7 +34,7 @@
 #include "util/timeconv.h"
 #include "viewpoint.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -167,9 +167,9 @@ std::shared_ptr<Joined> SingleGeneric::createEmptyJoined(const std::string& resu
 */
 EvaluationRequirement::GenericBase& SingleGeneric::genericRequirement() const
 {
-    assert (requirement_);
+    traced_assert(requirement_);
     EvaluationRequirement::GenericBase* req_ptr = dynamic_cast<EvaluationRequirement::GenericBase*>(requirement_.get());
-    assert (req_ptr);
+    traced_assert(req_ptr);
 
     return *req_ptr;
 }
@@ -178,8 +178,8 @@ EvaluationRequirement::GenericBase& SingleGeneric::genericRequirement() const
 */
 boost::optional<double> SingleGeneric::computeResult_impl() const
 {
-    assert (num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_pos_inside_ == num_no_ref_val_ + num_unknown_ + num_correct_+num_false_);
+    traced_assert(num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_pos_inside_ == num_no_ref_val_ + num_unknown_ + num_correct_+num_false_);
 
     unsigned int num_total = num_correct_ + num_false_;
 
@@ -227,8 +227,8 @@ std::vector<Single::TargetInfo> SingleGeneric::targetInfos() const
           { "#NoRef [1]"     , "Number of updates w/o reference position or " + valname, no_ref           },
           { "#NoRefPos [1]"  , "Number of updates w/o reference position "             , num_no_ref_pos_  },
           { "#NoRef [1]"     , "Number of updates w/o reference " + valname            , num_no_ref_val_  },
-          { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_  },
           { "#PosOutside [1]", "Number of updates outside sector"                      , num_pos_outside_ }, 
+          { "#PosInside [1]" , "Number of updates inside sector"                       , num_pos_inside_  },
           { "#Unknown [1]"   , "Number of updates unknown " + valname                  , num_unknown_     },
           { "#Correct [1]"   , "Number of updates with correct " + valname             , num_correct_     }, 
           { "#False [1]"     , "Number of updates with incorrect " + valname           , num_false_       } };
@@ -266,7 +266,7 @@ nlohmann::json::array_t SingleGeneric::detailValues(const EvaluationDetail& deta
 bool SingleGeneric::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_not_ok = detail.getValueAs<bool>(DetailKey::IsNotOk);
-    assert(is_not_ok.has_value());
+    traced_assert(is_not_ok.has_value());
 
     return !is_not_ok.value();
 }
@@ -278,7 +278,7 @@ void SingleGeneric::addAnnotationForDetail(nlohmann::json& annotations_json,
                                            TargetAnnotationType type,
                                            bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -309,10 +309,10 @@ JoinedGeneric::JoinedGeneric(const std::string& result_type,
 */
 EvaluationRequirement::GenericBase& JoinedGeneric::genericRequirement() const
 {
-    assert (requirement_);
+    traced_assert(requirement_);
 
     EvaluationRequirement::GenericBase* req_ptr = dynamic_cast<EvaluationRequirement::GenericBase*>(requirement_.get());
-    assert (req_ptr);
+    traced_assert(req_ptr);
 
     return *req_ptr;
 }
@@ -373,8 +373,8 @@ boost::optional<double> JoinedGeneric::computeResult_impl() const
             << " num_correct " << num_correct_
             << " num_false " << num_false_;
 
-    assert (num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_pos_inside_ == num_no_ref_val_+num_unknown_+num_correct_+num_false_);
+    traced_assert(num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_pos_inside_ == num_no_ref_val_+num_unknown_+num_correct_+num_false_);
 
     unsigned int total = num_correct_ + num_false_;
 
@@ -398,8 +398,8 @@ std::vector<Joined::SectorInfo> JoinedGeneric::sectorInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or "+name, no_ref           }, 
              { "#NoRefPos [1]"  , "Number of updates w/o reference position"         , num_no_ref_pos_  }, 
              { "#NoRef [1]"     , "Number of updates w/o reference " + name          , num_no_ref_val_  }, 
-             { "#PosInside [1]" , "Number of updates inside sector"                  , num_pos_inside_  }, 
              { "#PosOutside [1]", "Number of updates outside sector"                 , num_pos_outside_ },
+             { "#PosInside [1]" , "Number of updates inside sector"                  , num_pos_inside_  }, 
              { "#Unknown [1]"   , "Number of updates unknown " + name                , num_unknown_     },
              { "#Correct [1]"   , "Number of updates with correct " + name           , num_correct_     }, 
              { "#False [1]"     , "Number of updates with incorrect " + name         , num_false_       } };

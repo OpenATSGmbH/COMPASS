@@ -188,7 +188,7 @@ void ADSBQualityFilter::generateSubConfigurable(const std::string& class_id,
 
 void ADSBQualityFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* ADSBQualityFilter::createWidget()
@@ -223,9 +223,9 @@ void ADSBQualityFilter::reset()
 
 void ADSBQualityFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -266,73 +266,73 @@ void ADSBQualityFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void ADSBQualityFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("use_v0"));
+    traced_assert(filter.contains("use_v0"));
     use_v0_ = filter.at("use_v0");
 
-    assert (filter.contains("use_v1"));
+    traced_assert(filter.contains("use_v1"));
     use_v1_ = filter.at("use_v1");
 
-    assert (filter.contains("use_v2"));
+    traced_assert(filter.contains("use_v2"));
     use_v2_= filter.at("use_v2");
 
     // nucp
-    assert (filter.contains("use_min_nucp"));
+    traced_assert(filter.contains("use_min_nucp"));
     use_min_nucp_ = filter.at("use_min_nucp");
-    assert (filter.contains("min_nucp"));
+    traced_assert(filter.contains("min_nucp"));
     min_nucp_ = filter.at("min_nucp");
 
-    assert (filter.contains("use_max_nucp"));
+    traced_assert(filter.contains("use_max_nucp"));
     use_max_nucp_ = filter.at("use_max_nucp");
-    assert (filter.contains("max_nucp"));
+    traced_assert(filter.contains("max_nucp"));
     max_nucp_ = filter.at("max_nucp");
 
     // nic
-    assert (filter.contains("use_min_nic"));
+    traced_assert(filter.contains("use_min_nic"));
     use_min_nic_ = filter.at("use_min_nic");
-    assert (filter.contains("min_nic"));
+    traced_assert(filter.contains("min_nic"));
     min_nic_ = filter.at("min_nic");
 
-    assert (filter.contains("use_max_nic"));
+    traced_assert(filter.contains("use_max_nic"));
     use_max_nic_ = filter.at("use_max_nic");
-    assert (filter.contains("max_nic"));
+    traced_assert(filter.contains("max_nic"));
     max_nic_ = filter.at("max_nic");
 
     // nacp
-    assert (filter.contains("use_min_nacp"));
+    traced_assert(filter.contains("use_min_nacp"));
     use_min_nacp_ = filter.at("use_min_nacp");
-    assert (filter.contains("min_nacp"));
+    traced_assert(filter.contains("min_nacp"));
     min_nacp_ = filter.at("min_nacp");
 
-    assert (filter.contains("use_max_nacp"));
+    traced_assert(filter.contains("use_max_nacp"));
     use_max_nacp_ = filter.at("use_max_nacp");
-    assert (filter.contains("max_nacp"));
+    traced_assert(filter.contains("max_nacp"));
     max_nacp_ = filter.at("max_nacp");
 
     // sil v1
-    assert (filter.contains("use_min_sil_v1"));
+    traced_assert(filter.contains("use_min_sil_v1"));
     use_min_sil_v1_ = filter.at("use_min_sil_v1");
-    assert (filter.contains("min_sil_v1"));
+    traced_assert(filter.contains("min_sil_v1"));
     min_sil_v1_ = filter.at("min_sil_v1");
 
-    assert (filter.contains("use_max_sil_v1"));
+    traced_assert(filter.contains("use_max_sil_v1"));
     use_max_sil_v1_ = filter.at("use_max_sil_v1");
-    assert (filter.contains("max_sil_v1"));
+    traced_assert(filter.contains("max_sil_v1"));
     max_sil_v1_ = filter.at("max_sil_v1");
 
     // sil v2
-    assert (filter.contains("use_min_sil_v2"));
+    traced_assert(filter.contains("use_min_sil_v2"));
     use_min_sil_v2_ = filter.at("use_min_sil_v2");
-    assert (filter.contains("min_sil_v2"));
+    traced_assert(filter.contains("min_sil_v2"));
     min_sil_v2_ = filter.at("min_sil_v2");
 
-    assert (filter.contains("use_max_sil_v2"));
+    traced_assert(filter.contains("use_max_sil_v2"));
     use_max_sil_v2_ = filter.at("use_max_sil_v2");
-    assert (filter.contains("max_sil_v2"));
+    traced_assert(filter.contains("max_sil_v2"));
     max_sil_v2_ = filter.at("max_sil_v2");
 
 

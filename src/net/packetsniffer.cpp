@@ -20,7 +20,7 @@
 #include "files.h"
 
 #include <iostream>
-#include <cassert>
+#include "traced_assert.h"
 #include <sstream>
 
 #include <pcap.h>
@@ -323,16 +323,16 @@ std::string PacketSniffer::signatureToString(const Signature& signature)
 PacketSniffer::Signature PacketSniffer::signatureFromString(const std::string& str)
 {
     auto parts = QString::fromStdString(str).split(QString::fromStdString(SignatureStringSeparator));
-    assert(parts.count() == 2&& !parts[ 0 ].isEmpty() && !parts[ 1 ].isEmpty());
+    traced_assert(parts.count() == 2&& !parts[ 0 ].isEmpty() && !parts[ 1 ].isEmpty());
 
     auto splitIPPort = [ & ] (const QString& ip_port_str)
     {
         auto ip_port = ip_port_str.split(QString::fromStdString(SignatureIPPortSeparator));
-        assert(ip_port.count() == 2 && !ip_port[ 0 ].isEmpty() && !ip_port[ 1 ].isEmpty());
+        traced_assert(ip_port.count() == 2 && !ip_port[ 0 ].isEmpty() && !ip_port[ 1 ].isEmpty());
 
         bool ok = false;
         unsigned int port = ip_port[ 1 ].toUInt(&ok);
-        assert(ok);
+        traced_assert(ok);
 
         return std::make_pair(ip_port[ 0 ].toStdString(), port);
     };
@@ -413,7 +413,7 @@ namespace
         //ugly cast ahead
         SnifferConfig* config = (SnifferConfig*)userData;
 
-        assert(config->sniffer);
+        traced_assert(config->sniffer);
 
         //digest packet
         config->sniffer->digestPCAPPacket(pkthdr, packet, config->link_layer_type, config->read_config, config->chunk_ended);

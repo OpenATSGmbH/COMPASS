@@ -65,7 +65,7 @@ GPSTrailImportTaskWidget::GPSTrailImportTaskWidget(GPSTrailImportTask& task, QWi
 
 void GPSTrailImportTaskWidget::addMainTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -213,7 +213,7 @@ GPSTrailImportTaskWidget::~GPSTrailImportTaskWidget() {}
 
 void GPSTrailImportTaskWidget::selectFile(const std::string& filename)
 {
-    assert(file_label_);
+    traced_assert(file_label_);
     file_label_->setText(task_.importFilename().c_str());
 
     updateText();
@@ -221,7 +221,7 @@ void GPSTrailImportTaskWidget::selectFile(const std::string& filename)
 
 void GPSTrailImportTaskWidget::sacEditedSlot(const QString& value)
 {
-    assert (sac_edit_);
+    traced_assert(sac_edit_);
 
     TextFieldDoubleValidator::displayValidityAsColor(sac_edit_);
 
@@ -231,7 +231,7 @@ void GPSTrailImportTaskWidget::sacEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::sicEditedSlot(const QString& value)
 {
-    assert (sic_edit_);
+    traced_assert(sic_edit_);
 
     TextFieldDoubleValidator::displayValidityAsColor(sic_edit_);
 
@@ -241,21 +241,21 @@ void GPSTrailImportTaskWidget::sicEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::nameEditedSlot(const QString& value)
 {
-    assert (name_edit_);
+    traced_assert(name_edit_);
     task_.dsName(name_edit_->text().toStdString());
 }
 
 void GPSTrailImportTaskWidget::useTodOffsetCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_tod_offset_check_);
+    traced_assert(use_tod_offset_check_);
     task_.useTodOffset(use_tod_offset_check_->checkState() == Qt::Checked);
 }
 
 void GPSTrailImportTaskWidget::todOffsetEditedSlot(const QString& value)
 {
-    assert (tod_offset_edit_);
+    traced_assert(tod_offset_edit_);
 
     TextFieldDoubleValidator::displayValidityAsColor(tod_offset_edit_);
 
@@ -268,9 +268,9 @@ void GPSTrailImportTaskWidget::todOffsetEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::overrideDateCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_override_date_check_);
+    traced_assert(use_override_date_check_);
     task_.useOverrideDate(use_override_date_check_->checkState() == Qt::Checked);
 }
 
@@ -285,9 +285,9 @@ void GPSTrailImportTaskWidget::overrideDateChangedSlot(QDate date)
 
 void GPSTrailImportTaskWidget::mode3ACheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (set_mode_3a_code_check_);
+    traced_assert(set_mode_3a_code_check_);
     task_.setMode3aCode(set_mode_3a_code_check_->checkState() == Qt::Checked);
 }
 
@@ -295,7 +295,7 @@ void GPSTrailImportTaskWidget::mode3AEditedSlot(const QString& value)
 {
     loginf << "value " << value.toStdString();
 
-    assert (mode_3a_code_edit_);
+    traced_assert(mode_3a_code_edit_);
 
     if (mode_3a_code_edit_->hasAcceptableInput())
         task_.mode3aCode(String::intFromOctalString(value.toStdString()));
@@ -303,9 +303,9 @@ void GPSTrailImportTaskWidget::mode3AEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::targetAddressCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (set_target_address_check_);
+    traced_assert(set_target_address_check_);
     task_.setTargetAddress(set_target_address_check_->checkState() == Qt::Checked);
 }
 
@@ -313,7 +313,7 @@ void GPSTrailImportTaskWidget::targetAddressEditedSlot(const QString& value)
 {
     loginf << "value " << value.toStdString();
 
-    assert (target_address_edit_);
+    traced_assert(target_address_edit_);
 
     if (target_address_edit_->hasAcceptableInput())
         task_.targetAddress(String::intFromHexString(value.toStdString()));
@@ -321,9 +321,9 @@ void GPSTrailImportTaskWidget::targetAddressEditedSlot(const QString& value)
 
 void GPSTrailImportTaskWidget::callsignCheckedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (set_callsign_check_);
+    traced_assert(set_callsign_check_);
     task_.setCallsign(set_callsign_check_->checkState() == Qt::Checked);
 }
 
@@ -346,31 +346,31 @@ void GPSTrailImportTaskWidget::lineIDEditSlot(const QString& text)
 
     unsigned int line_id = text.toUInt(&ok);
 
-    assert (ok);
+    traced_assert(ok);
 
-    assert (line_id > 0 && line_id <= 4);
+    traced_assert(line_id > 0 && line_id <= 4);
 
     task_.lineID(line_id-1);
 }
 
 void GPSTrailImportTaskWidget::updateConfig ()
 {
-    assert (sac_edit_);
+    traced_assert(sac_edit_);
     sac_edit_->setText(QString::number(task_.dsSAC()));
 
-    assert (sic_edit_);
+    traced_assert(sic_edit_);
     sic_edit_->setText(QString::number(task_.dsSIC()));
 
-    assert (name_edit_);
+    traced_assert(name_edit_);
     name_edit_->setText(task_.dsName().c_str());
 
-    assert (use_tod_offset_check_);
+    traced_assert(use_tod_offset_check_);
     use_tod_offset_check_->setChecked(task_.useTodOffset());
 
-    assert (tod_offset_edit_);
+    traced_assert(tod_offset_edit_);
     tod_offset_edit_->setText(String::doubleToStringPrecision(task_.todOffset(), 3).c_str());
 
-    assert (use_override_date_check_);
+    traced_assert(use_override_date_check_);
     use_override_date_check_->setChecked(task_.useOverrideDate());
 
     QDate date = QDate::fromString(boost::gregorian::to_iso_extended_string(task_.overrideDate()).c_str(), "yyyy-MM-dd");
@@ -378,20 +378,20 @@ void GPSTrailImportTaskWidget::updateConfig ()
 
     override_date_edit_->setDate(date);
 
-    assert (set_mode_3a_code_check_);
+    traced_assert(set_mode_3a_code_check_);
     set_mode_3a_code_check_->setChecked(task_.setMode3aCode());
 
-    assert (mode_3a_code_edit_);
+    traced_assert(mode_3a_code_edit_);
     mode_3a_code_edit_->setText(String::octStringFromInt(task_.mode3aCode()).c_str());
 
-    assert (set_target_address_check_);
+    traced_assert(set_target_address_check_);
     set_target_address_check_->setChecked(task_.setTargetAddress());
-    assert (target_address_edit_);
+    traced_assert(target_address_edit_);
     target_address_edit_->setText(String::hexStringFromInt(task_.targetAddress()).c_str());
 
-    assert (set_callsign_check_);
+    traced_assert(set_callsign_check_);
     set_callsign_check_->setChecked(task_.setCallsign());
-    assert (callsign_edit_);
+    traced_assert(callsign_edit_);
     callsign_edit_->setText(task_.callsign().c_str());
 }
 
@@ -399,23 +399,23 @@ void GPSTrailImportTaskWidget::expertModeChangedSlot() {}
 
 //void GPSTrailImportTaskWidget::runStarted()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    //test_button_->setDisabled(true);
 //}
 
 //void GPSTrailImportTaskWidget::runDone()
 //{
-//    loginf << "start";
+//    loginf;
 
 //    //test_button_->setDisabled(false);
 //}
 
 void GPSTrailImportTaskWidget::updateText ()
 {
-    loginf << "start";
+    loginf;
 
-    assert (text_edit_);
+    traced_assert(text_edit_);
 
     stringstream ss;
 
@@ -438,7 +438,7 @@ void GPSTrailImportTaskWidget::updateText ()
     //    {
     //        const nlohmann::json& data = task_.currentData();
 
-    //        assert (data.contains("view_point_context"));
+    //        traced_assert(data.contains("view_point_context"));
 
     //        context_edit_->setText(data.at("view_point_context").dump(4).c_str());
 

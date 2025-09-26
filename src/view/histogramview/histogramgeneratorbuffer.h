@@ -142,7 +142,7 @@ protected:
      */
     virtual bool refill_impl() override final
     {
-        logdbg << "start";
+        logdbg;
 
         //reinit intermediate data
 
@@ -199,7 +199,7 @@ protected:
         unsigned int data_size = data.contentSize();
 
         //selected vector?
-        assert (buffer.has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
 
         unsigned int select_cnt = 0;
@@ -284,7 +284,7 @@ private:
      */
     void initIntermediateData()
     {
-        logdbg << "start";
+        logdbg;
 
         //reset existing histogram bins
         for (auto& elem : histograms_)
@@ -407,7 +407,7 @@ private:
         NullableVector<T>& data = buffer.get<T>(current_var_name);
         unsigned int data_size = data.contentSize();
 
-        assert (buffer.has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
 
         auto& histogram = histograms_[ db_content ];

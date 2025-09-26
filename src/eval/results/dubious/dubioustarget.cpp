@@ -34,7 +34,7 @@
 #include "util/timeconv.h"
 #include "viewpoint.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <algorithm>
 
 using namespace std;
@@ -64,15 +64,15 @@ SingleDubiousTarget::SingleDubiousTarget(const std::string& result_id,
 :   SingleDubiousBase("SingleDubiousTarget", result_id, requirement, sector_layer, utn, target, 
                       calculator, details, num_updates, num_pos_outside, num_pos_inside, num_pos_inside_dubious)
 {
-    assert (details.size() >= 1);
+    traced_assert(details.size() >= 1);
 
     updateResult();
 
     auto is_dubious = details[ 0 ].getValueAs<bool>(SingleDubiousTarget::DetailKey::IsDubious);
-    assert(is_dubious.has_value());
+    traced_assert(is_dubious.has_value());
 
     auto duration = details[ 0 ].getValueAs<boost::posix_time::time_duration>(SingleDubiousTarget::DetailKey::Duration);
-    assert(duration.has_value());
+    traced_assert(duration.has_value());
 
     is_dubious_      = is_dubious.value();
     duration_        = duration.value();
@@ -92,7 +92,7 @@ EvaluationRequirement::DubiousTarget* SingleDubiousTarget::req ()
 {
     EvaluationRequirement::DubiousTarget* req =
             dynamic_cast<EvaluationRequirement::DubiousTarget*>(requirement_.get());
-    assert (req);
+    traced_assert(req);
     return req;
 }
 
@@ -100,9 +100,9 @@ EvaluationRequirement::DubiousTarget* SingleDubiousTarget::req ()
 */
 boost::optional<double> SingleDubiousTarget::computeResult_impl() const
 {
-    assert (num_updates_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_updates_ == num_pos_inside_ + num_pos_outside_);
     //assert (values_.size() == num_comp_failed_ + num_comp_passed_);
-    assert (numStoredDetails() == 1);
+    traced_assert(numStoredDetails() == 1);
 
     p_dubious_update_.reset();
 
@@ -154,8 +154,8 @@ std::vector<Single::TargetInfo> SingleDubiousTarget::targetInfos() const
     auto p_dubious_update_var = SingleProbabilityBase::formatProbabilityOptional(p_dubious_update_);
 
     return { TargetInfo("#Up [1]"        , "Number of updates"                      , num_updates_              ),
-             TargetInfo("#PosInside [1]" , "Number of updates inside sector"        , num_pos_inside_           ),
              TargetInfo("#PosOutside [1]", "Number of updates outside sector"       , num_pos_outside_          ),
+             TargetInfo("#PosInside [1]" , "Number of updates inside sector"        , num_pos_inside_           ),
              TargetInfo("#DU [1]"        , "Number of dubious updates inside sector", num_pos_inside_dubious_   ),
              TargetInfo("PDU [%]"        , "Probability of dubious update"          , p_dubious_update_var      ),
              TargetInfo("Duration [s]"   , "Duration"                               , duration_var              ) };
@@ -173,7 +173,7 @@ std::vector<std::string> SingleDubiousTarget::detailHeaders() const
 nlohmann::json::array_t SingleDubiousTarget::detailValues(const EvaluationDetail& detail,
                                                           const EvaluationDetail* parent_detail) const
 {
-    assert(parent_detail);
+    traced_assert(parent_detail);
 
     const std::string dub_string = dubiousReasonsString(parent_detail->comments());
 
@@ -206,7 +206,7 @@ void SingleDubiousTarget::addAnnotationForDetail(nlohmann::json& annotations_jso
                                                  TargetAnnotationType type,
                                                  bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -301,8 +301,8 @@ boost::optional<double> JoinedDubiousTarget::computeResult_impl() const
             << " num_pos_inside " << num_pos_inside_
             << " num_pos_inside_dubious " << num_pos_inside_dubious_;
 
-    assert (num_updates_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_utns_ >= num_utns_dubious_);
+    traced_assert(num_updates_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_utns_ >= num_utns_dubious_);
 
     p_dubious_update_.reset();
 
@@ -323,8 +323,8 @@ std::vector<Joined::SectorInfo> JoinedDubiousTarget::sectorInfos() const
 
     std::vector<Joined::SectorInfo> infos = 
         { { "#Up [1]"             , "Number of updates"                      , num_updates_                   },
-          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#PosOutside [1]"     , "Number of updates outside sector"       , num_pos_outside_               },
+          { "#PosInside [1]"      , "Number of updates inside sector"        , num_pos_inside_                },
           { "#DU [1]"             , "Number of dubious updates inside sector", num_pos_inside_dubious_        },
           { "PDU [%]"             , "Probability of dubious update"          , p_dubious_update_var           },
           { "#T [1]"              , "Number of targets"                      , num_utns_                      },

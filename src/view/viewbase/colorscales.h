@@ -18,6 +18,7 @@
 #pragma once
 
 #include "colormap_defs.h"
+#include "traced_assert.h"
 
 #include <cmath>
 #include <vector>
@@ -2504,7 +2505,7 @@ namespace colorscale
         if (offs0 == 0 && offs1 == 0)
             return interpColor<N>(t, arr);
 
-        assert(N > offs0 + offs1);
+        traced_assert(N > offs0 + offs1);
 
         const std::size_t n = N - offs0 - offs1;
 

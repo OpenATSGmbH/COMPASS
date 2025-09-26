@@ -44,30 +44,30 @@ ASTERIXDecodeJob::ASTERIXDecodeJob(ASTERIXImportTask& task,
     decoder_     (task.decoder()),
     post_process_(post_process)
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(decoder_);
+    traced_assert(decoder_);
 }
 
 /**
 */
 ASTERIXDecodeJob::~ASTERIXDecodeJob()
 {
-    loginf << "start";
-    assert (done_);
+    loginf;
+    traced_assert(done_);
 }
 
 /**
 */
 void ASTERIXDecodeJob::run_impl()
 {
-    loginf << "start";
+    loginf;
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
     started_    = true;
     done_       = false;
 
-    assert (decoder_);
+    traced_assert(decoder_);
     decoder_->start(this);
 
     if (!obsolete_)
@@ -78,7 +78,7 @@ void ASTERIXDecodeJob::run_impl()
         while (!extracted_data_.empty())
             QThread::msleep(1);
 
-        assert(extracted_data_.size() == 0);
+        traced_assert(extracted_data_.size() == 0);
     }
 
     done_ = true;
@@ -90,11 +90,11 @@ void ASTERIXDecodeJob::run_impl()
 */
 void ASTERIXDecodeJob::setObsolete()
 {
-    logdbg << "start";
+    logdbg;
 
     Job::setObsolete();
 
-    assert (decoder_);
+    traced_assert(decoder_);
     decoder_->stop();
 }
 
@@ -127,8 +127,8 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
         return;
     }
 
-    assert(data);
-    assert(data->is_object());
+    traced_assert(data);
+    traced_assert(data->is_object());
 
     num_frames_  = num_frames;
     num_records_ = num_records;
@@ -152,8 +152,8 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
 
     if (settings_.current_file_framing_ == "")
     {
-        assert(data->contains("data_blocks"));
-        assert(data->at("data_blocks").is_array());
+        traced_assert(data->contains("data_blocks"));
+        traced_assert(data->at("data_blocks").is_array());
 
         std::vector<std::string> keys{"content", "records"};
 
@@ -167,8 +167,8 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
 
             category = data_block.at("category");
 
-            assert (data_block.contains("content"));
-            assert(data_block.at("content").is_object());
+            traced_assert(data_block.contains("content"));
+            traced_assert(data_block.at("content").is_object());
 
             if (category == 1)
                 checkCAT001SacSics(data_block);
@@ -180,8 +180,8 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
     }
     else
     {
-        assert(data->contains("frames"));
-        assert(data->at("frames").is_array());
+        traced_assert(data->contains("frames"));
+        traced_assert(data->at("frames").is_array());
 
         std::vector<std::string> keys{"content", "records"};
 
@@ -190,12 +190,12 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
             if (!frame.contains("content"))  // frame with errors
                 continue;
 
-            assert(frame.at("content").is_object());
+            traced_assert(frame.at("content").is_object());
 
             if (!frame.at("content").contains("data_blocks"))  // frame with errors
                 continue;
 
-            assert(frame.at("content").at("data_blocks").is_array());
+            traced_assert(frame.at("content").at("data_blocks").is_array());
 
             for (json& data_block : frame.at("content").at("data_blocks"))
             {
@@ -284,8 +284,8 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
     };
 
     //assert (settings_.current_file_framing_ == ""); irrelephant
-    assert(data->contains("data_blocks"));
-    assert(data->at("data_blocks").is_array());
+    traced_assert(data->contains("data_blocks"));
+    traced_assert(data->at("data_blocks").is_array());
 
     std::vector<std::string> keys{"content", "records"};
 
@@ -299,8 +299,8 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
 
         category = data_block.at("category");
 
-        assert (data_block.contains("content"));
-        assert(data_block.at("content").is_object());
+        traced_assert(data_block.contains("content"));
+        traced_assert(data_block.at("content").is_object());
 
         if (category == 1)
             checkCAT001SacSics(data_block);
@@ -376,7 +376,7 @@ bool ASTERIXDecodeJob::hasStatusInfo()
 */
 std::string ASTERIXDecodeJob::statusInfoString()
 {
-    assert (hasStatusInfo());
+    traced_assert(hasStatusInfo());
     return decoder_->statusInfoString();
 }
 
@@ -384,13 +384,13 @@ std::string ASTERIXDecodeJob::statusInfoString()
 */
 float ASTERIXDecodeJob::statusInfoProgress() // percent
 {
-    assert (hasStatusInfo());
+    traced_assert(hasStatusInfo());
     return decoder_->statusInfoProgress();
 }
 
 std::string ASTERIXDecodeJob::currentDataSourceName()
 {
-    assert (decoder_);
+    traced_assert(decoder_);
     return decoder_->currentDataSourceName();
 }
 

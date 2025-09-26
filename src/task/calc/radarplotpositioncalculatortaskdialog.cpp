@@ -64,7 +64,7 @@ RadarPlotPositionCalculatorTaskDialog::RadarPlotPositionCalculatorTaskDialog(Rad
 
 RadarPlotPositionCalculatorTaskDialog::~RadarPlotPositionCalculatorTaskDialog()
 {
-    loginf << "start";
+    loginf;
     widget_ = nullptr;
 }
 

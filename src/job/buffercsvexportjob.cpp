@@ -35,14 +35,14 @@ BufferCSVExportJob::BufferCSVExportJob(std::shared_ptr<Buffer> buffer,
       only_selected_(only_selected),
       use_presentation_(use_presentation)
 {
-    assert(file_name_.size());
+    traced_assert(file_name_.size());
 }
 
 BufferCSVExportJob::~BufferCSVExportJob() {}
 
 void BufferCSVExportJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
     started_ = true;
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
@@ -74,14 +74,14 @@ void BufferCSVExportJob::run_impl()
         }
         output_file << ss.str() << "\n";
 
-        assert(buffer_->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer_->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buffer_->get<bool>(DBContent::selected_var.name());
 
         //assert(buffer_->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
         //NullableVector<unsigned long>& rec_num_vec = buffer_->get<unsigned long>(DBContent::meta_var_rec_num_.name());
 
         std::string dbcontent_name = buffer_->dbContentName();
-        assert(dbcontent_name.size());
+        traced_assert(dbcontent_name.size());
 
         for (; row < buffer_size; ++row)
         {

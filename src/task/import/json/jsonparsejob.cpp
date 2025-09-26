@@ -20,6 +20,7 @@
 #include "json.hpp"
 #include "asterixpostprocess.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace nlohmann;
 using namespace Utils;
@@ -38,12 +39,12 @@ void JSONParseJob::run_impl()
     loginf << "start with " << objects_.size() << " objects schema '" << current_schema_ << "'";
 
     started_ = true;
-    assert(!json_objects_);
+    traced_assert(!json_objects_);
     json_objects_.reset(new json());
 
     if (current_schema_ == "jASTERIX")
     {
-        assert (objects_.size() == 1);
+        traced_assert(objects_.size() == 1);
 
         unsigned int category{0};
 
@@ -59,7 +60,7 @@ void JSONParseJob::run_impl()
             {
                 logdbg << "data blocks found";
 
-                assert(json_objects_->at("data_blocks").is_array());
+                traced_assert(json_objects_->at("data_blocks").is_array());
 
                 std::vector<std::string> keys{"content", "records"};
 
@@ -84,8 +85,8 @@ void JSONParseJob::run_impl()
             {
                 logdbg << "no data blocks found, framed";
 
-                assert(json_objects_->contains("frames"));
-                assert(json_objects_->at("frames").is_array());
+                traced_assert(json_objects_->contains("frames"));
+                traced_assert(json_objects_->at("frames").is_array());
 
                 std::vector<std::string> keys{"content", "records"};
 
@@ -94,12 +95,12 @@ void JSONParseJob::run_impl()
                     if (!frame.contains("content"))  // frame with errors
                         continue;
 
-                    assert(frame.at("content").is_object());
+                    traced_assert(frame.at("content").is_object());
 
                     if (!frame.at("content").contains("data_blocks"))  // frame with errors
                         continue;
 
-                    assert(frame.at("content").at("data_blocks").is_array());
+                    traced_assert(frame.at("content").at("data_blocks").is_array());
 
                     for (json& data_block : frame.at("content").at("data_blocks"))
                     {

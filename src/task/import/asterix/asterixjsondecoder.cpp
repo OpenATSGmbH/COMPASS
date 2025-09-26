@@ -118,8 +118,8 @@ public:
 
         loginf << "parsed " << objects.size() << " object(s)";
 
-        assert(open_count_ == 0);  // nothing left open
-        assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
+        traced_assert(open_count_ == 0);  // nothing left open
+        traced_assert(tmp_stream_.str().size() == 0 || tmp_stream_.str() == "\n");
 
         return !objects.empty();
     }
@@ -233,7 +233,7 @@ std::unique_ptr<nlohmann::json> ASTERIXJSONDecoder::parseObjects(const std::vect
 
     if (is_jasterix)
     {
-        assert (objects.size() == 1);
+        traced_assert(objects.size() == 1);
 
         //@TODO: in case of jASTERIX json we actually read the whole file,
         //maybe we could split this in chunks?
@@ -244,7 +244,7 @@ std::unique_ptr<nlohmann::json> ASTERIXJSONDecoder::parseObjects(const std::vect
             {
                 logdbg << "data blocks found";
 
-                assert(data->at("data_blocks").is_array());
+                traced_assert(data->at("data_blocks").is_array());
 
                 std::vector<std::string> keys{"content", "records"};
 
@@ -262,8 +262,8 @@ std::unique_ptr<nlohmann::json> ASTERIXJSONDecoder::parseObjects(const std::vect
             {
                 logdbg << "no data blocks found, framed";
 
-                assert(has_frames);
-                assert(data->at("frames").is_array());
+                traced_assert(has_frames);
+                traced_assert(data->at("frames").is_array());
 
                 std::vector<std::string> keys{"content", "records"};
 
@@ -272,12 +272,12 @@ std::unique_ptr<nlohmann::json> ASTERIXJSONDecoder::parseObjects(const std::vect
                     if (!frame.contains("content"))  // frame with errors
                         continue;
 
-                    assert(frame.at("content").is_object());
+                    traced_assert(frame.at("content").is_object());
 
                     if (!frame.at("content").contains("data_blocks"))  // frame with errors
                         continue;
 
-                    assert(frame.at("content").at("data_blocks").is_array());
+                    traced_assert(frame.at("content").at("data_blocks").is_array());
 
                     for (json& data_block : frame.at("content").at("data_blocks"))
                     {
@@ -346,7 +346,7 @@ bool ASTERIXJSONDecoder::checkFile(ASTERIXImportFileInfo& file_info, std::string
 
     //get reader
     auto reader = readerForFile(file_info, MaxJSONObjects);
-    assert(reader);
+    traced_assert(reader);
 
     //open file in reader
     if (!reader->open(file_info.filename))
@@ -384,12 +384,12 @@ void ASTERIXJSONDecoder::processFile(ASTERIXImportFileInfo& file_info)
 {
     //get reader
     auto reader = readerForFile(file_info, MaxJSONObjects);
-    assert(reader);
+    traced_assert(reader);
 
     //open file in reader
     bool could_open_for_read = reader->open(file_info.filename);
-    assert(could_open_for_read);
-    assert(reader->valid());
+    traced_assert(could_open_for_read);
+    traced_assert(reader->valid());
 
     //read objects from file
     std::vector<std::string> objects;

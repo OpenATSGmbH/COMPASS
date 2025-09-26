@@ -51,7 +51,7 @@ ViewDataWidget::ViewDataWidget(ViewWidget* view_widget, QWidget* parent, Qt::Win
 :   QWidget     (parent, f)
 ,   view_widget_(view_widget)
 {
-    assert(view_widget_);
+    traced_assert(view_widget_);
 
     setObjectName("datawidget");
 
@@ -211,7 +211,7 @@ void ViewDataWidget::endTool()
  */
 void ViewDataWidget::loadingStarted()
 {
-    loginf << "start";
+    loginf;
 
     //clear and update display
     clearData();
@@ -226,7 +226,7 @@ void ViewDataWidget::loadingStarted()
  */
 void ViewDataWidget::loadingDone()
 {
-    loginf << "start";
+    loginf;
 
     //invoke derived
     loadingDone_impl();
@@ -248,7 +248,7 @@ void ViewDataWidget::loadingDone_impl()
  */
 void ViewDataWidget::updateData(const BufferData& data, bool requires_reset)
 {
-    logdbg << "start";
+    logdbg;
 
     //store new data
     data_ = data;
@@ -263,7 +263,7 @@ void ViewDataWidget::updateData(const BufferData& data, bool requires_reset)
  */
 void ViewDataWidget::clearData()
 {
-    logdbg << "start";
+    logdbg;
 
     data_       = {};
     draw_state_ = DrawState::NotDrawn;

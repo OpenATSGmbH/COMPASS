@@ -139,7 +139,7 @@ void PrimaryOnlyFilter::generateSubConfigurable(const std::string& class_id, con
 
 void PrimaryOnlyFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* PrimaryOnlyFilter::createWidget()
@@ -156,9 +156,9 @@ void PrimaryOnlyFilter::reset()
 
 void PrimaryOnlyFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
 //    json& filter = filters.at(name_);
 
@@ -167,12 +167,12 @@ void PrimaryOnlyFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void PrimaryOnlyFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
 //    const json& filter = filters.at(name_);
 
-//    assert (filter.contains("Aircraft Address Values"));
+//    traced_assert(filter.contains("Aircraft Address Values"));
 //    values_str_ = filter.at("Aircraft Address Values");
 
 //    updateValuesFromStr(values_str_);
@@ -196,7 +196,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
     {
         dbContent::Variable& var = cont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
-        assert (buffer->has<unsigned int> (var.name()));
+        traced_assert(buffer->has<unsigned int> (var.name()));
         m3a_vec = &buffer->get<unsigned int> (var.name());
     }
 
@@ -204,7 +204,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
     {
         dbContent::Variable& var = cont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_);
-        assert (buffer->has<float> (var.name()));
+        traced_assert(buffer->has<float> (var.name()));
         mc_vec = &buffer->get<float> (var.name());
     }
 
@@ -212,7 +212,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
     {
         dbContent::Variable& var = cont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_);
-        assert (buffer->has<unsigned int> (var.name()));
+        traced_assert(buffer->has<unsigned int> (var.name()));
         ta_vec = &buffer->get<unsigned int> (var.name());
     }
 
@@ -220,7 +220,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
     {
         dbContent::Variable& var = cont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_);
-        assert (buffer->has<string> (var.name()));
+        traced_assert(buffer->has<string> (var.name()));
         ti_vec = &buffer->get<string> (var.name());
     }
 
@@ -228,7 +228,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_detection_type_))
     {
         dbContent::Variable& var = cont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_detection_type_);
-        assert (buffer->has<unsigned char> (var.name()));
+        traced_assert(buffer->has<unsigned char> (var.name()));
         type_vec = &buffer->get<unsigned char> (var.name());
     }
 

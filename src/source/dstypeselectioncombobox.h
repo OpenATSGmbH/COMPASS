@@ -18,7 +18,6 @@
 #pragma once
 
 #include "datasourcemanager.h"
-//#include "global.h"
 #include "logger.h"
 
 #include <QComboBox>
@@ -64,7 +63,7 @@ public:
     std::string type()
     {
         if (ds_type_.size())
-            assert (std::find(DataSourceManager::data_source_types_.begin(),
+            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
                               DataSourceManager::data_source_types_.end(), ds_type_)
                     != DataSourceManager::data_source_types_.end());
 
@@ -76,7 +75,7 @@ public:
         ds_type_ = type;
 
         if (ds_type_.size())
-            assert (std::find(DataSourceManager::data_source_types_.begin(),
+            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
                               DataSourceManager::data_source_types_.end(), ds_type_)
                     != DataSourceManager::data_source_types_.end());
 
@@ -92,7 +91,7 @@ protected:
         doing_update_ = true;
 
         if (ds_type_.size())
-            assert (std::find(DataSourceManager::data_source_types_.begin(),
+            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
                               DataSourceManager::data_source_types_.end(), ds_type_)
                     != DataSourceManager::data_source_types_.end());
 

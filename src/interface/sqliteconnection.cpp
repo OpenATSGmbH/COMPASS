@@ -45,7 +45,7 @@ SQLiteConnection::SQLiteConnection(SQLiteInstance* instance,
 :   DBConnection(instance, verbose)
 ,   db_handle_  (db_handle)
 {
-    assert(db_handle);
+    traced_assert(db_handle);
 }
 
 /**
@@ -132,7 +132,7 @@ ResultT<std::vector<std::string>> SQLiteConnection::getTableList_impl()
     if (!result->buffer() || !result->containsData())
         return ResultT<std::vector<std::string>>::failed("Table list could not be retrieved");
 
-    assert(result->containsData());
+    traced_assert(result->containsData());
     std::shared_ptr<Buffer> buffer = result->buffer();
 
     unsigned int size = buffer->size();

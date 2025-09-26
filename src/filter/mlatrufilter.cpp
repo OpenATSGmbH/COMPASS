@@ -56,11 +56,11 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        assert (dbcontent_name == "CAT020");
+        traced_assert(dbcontent_name == "CAT020");
 
         DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
-        assert (dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_));
+        traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_));
         std::string dbcol_name =
             dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_).dbColumnName();
 
@@ -121,7 +121,7 @@ void MLATRUFilter::generateSubConfigurable(const std::string& class_id,
 
 void MLATRUFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 
 }
 
@@ -139,9 +139,9 @@ void MLATRUFilter::reset()
 
 void MLATRUFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -150,12 +150,12 @@ void MLATRUFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("rus"));
+    traced_assert(filter.contains("rus"));
     rus_str_ = filter.at("rus");
 
     updateRUsFromStr(rus_str_);

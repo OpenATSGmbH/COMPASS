@@ -43,7 +43,7 @@ DBFFT* ConfigurationFFT::getAsNewDBFFT()
 
     if (!info_.is_null())
     {
-        assert (info_.is_object());
+        traced_assert(info_.is_object());
         new_fft->info(info_);
     }
 

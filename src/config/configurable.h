@@ -17,8 +17,7 @@
 
 #pragma once
 
-//#include <tinyxml2.h>
-#include <assert.h>
+#include "traced_assert.h"
 
 #include "configuration.h"
 #include "rtcommand_defs.h"
@@ -187,14 +186,14 @@ protected:
     /// @brief Returns configuration for this class (const version)
     const Configuration& getConfiguration() const
     {
-        assert(configuration_);
+        traced_assert(configuration_);
         return *configuration_;
     }
 
     /// @brief Returns the parent configurable for this class (const version)
     const Configurable& getParent() const
     {
-        assert(parent_);
+        traced_assert(parent_);
         return *parent_;
     }
 
@@ -217,14 +216,14 @@ private:
     /// @brief Returns configuration for this class
     Configuration& configuration()
     {
-        assert(configuration_);
+        traced_assert(configuration_);
         return *configuration_;
     }
 
     /// @brief Returns the parent configurable for this class
     Configurable& parent()
     {
-        assert(parent_);
+        traced_assert(parent_);
         return *parent_;
     }
 

@@ -388,7 +388,7 @@ void Grid2D::indices(std::vector<std::pair<size_t, size_t>>& indices, const QRec
     auto err2 = index(x11, y11, roi.right(), roi.bottom(), true);
     auto err3 = index(x01, y01, roi.left() , roi.bottom(), true);
 
-    assert(err0 == IndexError::NoError &&
+    traced_assert(err0 == IndexError::NoError &&
            err1 == IndexError::NoError &&
            err2 == IndexError::NoError &&
            err3 == IndexError::NoError);
@@ -398,8 +398,8 @@ void Grid2D::indices(std::vector<std::pair<size_t, size_t>>& indices, const QRec
     size_t x1 = std::max(x00, std::max(x10, std::max(x11, x01)));
     size_t y1 = std::max(y00, std::max(y10, std::max(y11, y01)));
 
-    assert(x0 <= x1);
-    assert(y0 <= y1);
+    traced_assert(x0 <= x1);
+    traced_assert(y0 <= y1);
 
     indices.reserve((x1 - x0 + 1) * (y1 - y0 + 1));
 
@@ -412,7 +412,7 @@ void Grid2D::indices(std::vector<std::pair<size_t, size_t>>& indices, const QRec
 */
 Grid2D::IndexError Grid2D::checkAdd(size_t& idx_x, size_t& idx_y, double x, double y, double v)
 {
-    assert(valid());
+    traced_assert(valid());
 
     auto err = index(idx_x, idx_y, x, y);
 
@@ -562,7 +562,7 @@ size_t Grid2D::addPoly(const std::function<void(double&, double&, size_t)>& pos_
                        double v, 
                        int subsampling)
 {
-    assert(pos_getter);
+    traced_assert(pos_getter);
 
     std::set<std::pair<size_t, size_t>> visited;
     double x0, y0, x1, y1;
@@ -668,7 +668,7 @@ const Eigen::MatrixXi& Grid2D::getFlags() const
 std::unique_ptr<Grid2DLayer> Grid2D::createLayer(const std::string& layer_name,
                                                  grid2d::ValueType vtype) const
 {
-    assert(!layer_name.empty());
+    traced_assert(!layer_name.empty());
 
     std::unique_ptr<Grid2DLayer> layer(new Grid2DLayer);
     layer->name  = layer_name;

@@ -68,7 +68,7 @@ RadarPlotPositionCalculatorTaskDialog* RadarPlotPositionCalculatorTask::dialog()
 
     dialog_->updateCanRun();
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
@@ -105,9 +105,9 @@ bool RadarPlotPositionCalculatorTask::canRun()
 
 void RadarPlotPositionCalculatorTask::run()
 {
-    loginf << "start";
+    loginf;
 
-    assert(canRun());
+    traced_assert(canRun());
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
@@ -117,7 +117,7 @@ void RadarPlotPositionCalculatorTask::run()
     // set up projections
     ProjectionManager& proj_man = ProjectionManager::instance();
 
-    assert(proj_man.hasCurrentProjection());
+    traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
     projection.clearCoordinateSystems(); // to rebuild from data sources
     projection.addAllCoordinateSystems();
@@ -140,7 +140,7 @@ void RadarPlotPositionCalculatorTask::run()
 
     std::string msg = "Loading object data";
     msg_box_ = new QMessageBox;
-    assert(msg_box_);
+    traced_assert(msg_box_);
     msg_box_->setWindowTitle("Calculating Radar Plot Positions");
     msg_box_->setText(msg.c_str());
     msg_box_->setStandardButtons(QMessageBox::NoButton);
@@ -196,7 +196,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     for (auto& buf_it : update_buffers)
         buffers_size += buf_it.second->size();
 
-    assert(msg_box_);
+    traced_assert(msg_box_);
     delete msg_box_;
 
     COMPASS::instance().logInfo("Radar Plot Position Calculation")
@@ -232,7 +232,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     {
         std::string msg;
         msg_box_ = new QMessageBox;
-        assert(msg_box_);
+        traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg = "Writing object data";
         msg_box_->setText(msg.c_str());
@@ -257,14 +257,14 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 
 void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
 {
-    loginf << "start";
+    loginf;
 
     disconnect(&db_content, &DBContent::updateDoneSignal,
                this, &RadarPlotPositionCalculatorTask::updateDoneSlot);
 
-    assert (data_.count(db_content.name()));
+    traced_assert(data_.count(db_content.name()));
 
-    assert (!dbcontent_done_.count(db_content.name()));
+    traced_assert(!dbcontent_done_.count(db_content.name()));
     dbcontent_done_.insert(db_content.name());
 
     if (dbcontent_done_.size() == data_.size())
@@ -274,7 +274,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         dialog_ = nullptr;
         data_.clear();
 
-        assert(msg_box_);
+        traced_assert(msg_box_);
         msg_box_->close();
         delete msg_box_;
         msg_box_ = nullptr;
@@ -289,7 +289,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         QApplication::restoreOverrideCursor();
 
         msg_box_ = new QMessageBox;
-        assert(msg_box_);
+        traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg_box_->setText("Writing of object data done.");
         msg_box_->setStandardButtons(QMessageBox::Ok);
@@ -312,7 +312,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
 
 void RadarPlotPositionCalculatorTask::dialogCloseSlot()
 {
-    assert (dialog_);
+    traced_assert(dialog_);
 
     bool run_wanted = dialog_->runWanted();
 
@@ -332,22 +332,22 @@ dbContent::VariableSet RadarPlotPositionCalculatorTask::getReadSetFor(const std:
 
     VariableSet read_set;
 
-    assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
 
-    assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
 
-    assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
 
-    assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
+    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
     read_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_radar_range_));
 
-    assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
+    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
     read_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_radar_azimuth_));
 
-    assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
 
     // optionals

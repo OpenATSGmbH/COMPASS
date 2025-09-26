@@ -137,7 +137,7 @@ GPSTrailImportTaskDialog* GPSTrailImportTask::dialog()
                 this, &GPSTrailImportTask::dialogCancelSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
@@ -624,8 +624,8 @@ void GPSTrailImportTask::run()
 {
     loginf << "filename '" << current_filename_ << " fixes " << gps_fixes_.size();
 
-    assert (gps_fixes_.size());
-    assert (!buffer_);
+    traced_assert(gps_fixes_.size());
+    traced_assert(!buffer_);
 
     COMPASS::instance().logInfo("GPS Trail NMEA Import") << "started";
 
@@ -638,26 +638,26 @@ void GPSTrailImportTask::run()
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
     string dbcontent_name = "RefTraj";
-    assert (dbcontent_man.existsDBContent(dbcontent_name));
+    traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
 
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_));
 
     loginf << "getting variables";
 
@@ -742,7 +742,7 @@ void GPSTrailImportTask::run()
 
     unsigned int ds_id = Number::dsIdFrom(settings_.ds_sac, settings_.ds_sic);
 
-    assert (dbcontent_man.hasMaxRefTrajTrackNum());
+    traced_assert(dbcontent_man.hasMaxRefTrajTrackNum());
     unsigned int track_num = dbcontent_man.maxRefTrajTrackNum();
 
     loginf << "max reftraj track num " << track_num;
@@ -756,7 +756,7 @@ void GPSTrailImportTask::run()
             loginf << "creating data source";
 
             src_man.createConfigDataSource(ds_id);
-            assert (src_man.hasConfigDataSource(ds_id));
+            traced_assert(src_man.hasConfigDataSource(ds_id));
         }
 
         dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
@@ -798,8 +798,8 @@ void GPSTrailImportTask::run()
         while (tod > tod_24h)
             tod -= tod_24h;
 
-        assert(tod >= 0.0f);
-        assert(tod <= tod_24h);
+        traced_assert(tod >= 0.0f);
+        traced_assert(tod <= tod_24h);
 
         // timestamp
 
@@ -861,7 +861,7 @@ void GPSTrailImportTask::run()
         {
             unsigned int prev_cnt = cnt - 1;
 
-            assert (!ts_vec.isNull(cnt) && !ts_vec.isNull(prev_cnt));
+            traced_assert(!ts_vec.isNull(cnt) && !ts_vec.isNull(prev_cnt));
 
             d_t = Time::partialSeconds(ts_vec.get(cnt) - ts_vec.get(cnt - 1));
 
@@ -931,7 +931,7 @@ void GPSTrailImportTask::run()
 */
 void GPSTrailImportTask::insertDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     buffer_ = nullptr;
 
@@ -967,9 +967,9 @@ void GPSTrailImportTask::insertDoneSlot()
 */
 void GPSTrailImportTask::dialogImportSlot()
 {
-    assert (canRun());
+    traced_assert(canRun());
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
     run();
@@ -979,7 +979,7 @@ void GPSTrailImportTask::dialogImportSlot()
 */
 void GPSTrailImportTask::dialogCancelSlot()
 {
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 }
 
@@ -992,5 +992,5 @@ void GPSTrailImportTask::onConfigurationChanged(const std::vector<std::string>& 
 
 //void GPSTrailImportTask::checkParsedData ()
 //{
-//    loginf << "start";
+//    loginf;
 //}

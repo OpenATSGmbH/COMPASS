@@ -55,6 +55,8 @@ public:
     virtual bool isInside(const dbContent::TargetPosition& pos,
                           bool has_ground_bit, 
                           bool ground_bit_set) const;
+    bool isInside(double latitude, double longitude, double delta_deg) const;
+    // ignores exclude sectors
 
     bool hasExclusionSector() const;
 

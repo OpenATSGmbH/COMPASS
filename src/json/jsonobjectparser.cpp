@@ -48,18 +48,18 @@ JSONObjectParser::JSONObjectParser(const std::string& class_id, const std::strin
     registerParameter("override_data_source", &override_data_source_, false);
     registerParameter("data_source_variable_name", &data_source_variable_name_, std::string());
 
-    assert(db_content_name_.size());
+    traced_assert(db_content_name_.size());
 
     if (!name_.size())
         name_ = db_content_name_;
 
-    assert(name_.size());
+    traced_assert(name_.size());
 
     createSubConfigurables();
 
     json_values_vector_ = String::split(json_value_, ',');
 
-    assert (!override_data_source_); // TODO reimplement
+    traced_assert(!override_data_source_); // TODO reimplement
 }
 
 void JSONObjectParser::generateSubConfigurable(const std::string& class_id,
@@ -75,7 +75,7 @@ void JSONObjectParser::generateSubConfigurable(const std::string& class_id,
 
 DBContent& JSONObjectParser::dbContent() const
 {
-    assert(dbcontent_);
+    traced_assert(dbcontent_);
     return *dbcontent_;
 }
 
@@ -109,7 +109,7 @@ void JSONObjectParser::JSONContainerKey(const std::string& key)
 
 void JSONObjectParser::initialize()
 {
-    assert(!dbcontent_);
+    traced_assert(!dbcontent_);
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -119,7 +119,7 @@ void JSONObjectParser::initialize()
     else
         dbcontent_ = &dbcont_man.dbContent(db_content_name_);
 
-    assert(dbcontent_);
+    traced_assert(dbcontent_);
 
     if (!initialized_)
     {
@@ -127,7 +127,7 @@ void JSONObjectParser::initialize()
         {
             if (! mapping->active())
             {
-                assert(! mapping->mandatory());
+                traced_assert(! mapping->mandatory());
                 continue;
             }
 
@@ -137,12 +137,12 @@ void JSONObjectParser::initialize()
             var_list_.add( mapping->variable());
         }
 
-        assert (!override_data_source_); // TODO reimplement
+        traced_assert(!override_data_source_); // TODO reimplement
 
         if (override_data_source_)
         {
-            assert(data_source_variable_name_.size());
-            assert(dbcontent_->hasVariable(data_source_variable_name_));
+            traced_assert(data_source_variable_name_.size());
+            traced_assert(dbcontent_->hasVariable(data_source_variable_name_));
 
             list_.addProperty(data_source_variable_name_, PropertyDataType::INT);
             var_list_.add(dbcontent_->variable(data_source_variable_name_));
@@ -156,15 +156,15 @@ void JSONObjectParser::initialize()
 
 std::shared_ptr<Buffer> JSONObjectParser::getNewBuffer() const
 {
-    assert(initialized_);
-    assert(dbcontent_);
+    traced_assert(initialized_);
+    traced_assert(dbcontent_);
     return std::make_shared<Buffer>(list_, dbcontent_->name());
 }
 
 void JSONObjectParser::appendVariablesToBuffer(Buffer& buffer) const
 {
-    assert(initialized_);
-    assert(dbcontent_);
+    traced_assert(initialized_);
+    traced_assert(dbcontent_);
 
     for (auto& p_it : list_.properties())
     {
@@ -177,7 +177,7 @@ void JSONObjectParser::appendVariablesToBuffer(Buffer& buffer) const
 
 bool JSONObjectParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
 {
-    assert(initialized_);
+    traced_assert(initialized_);
 
     size_t row_cnt = buffer.size();
     size_t skipped_cnt = 0;
@@ -191,7 +191,7 @@ bool JSONObjectParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
         if (j.contains(json_container_key_))
         {
             json& ac_list = j.at(json_container_key_);
-            assert(ac_list.is_array());
+            traced_assert(ac_list.is_array());
 
             // loginf << "found target report array in '" << json_container_key_  << "', parsing";
 
@@ -200,7 +200,7 @@ bool JSONObjectParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
                 // logdbg << "new target report";
 
                 json& tr = tr_it.value();
-                assert(tr.is_object());
+                traced_assert(tr.is_object());
 
                 parsed = parseTargetReport(tr, buffer, row_cnt);
 
@@ -219,7 +219,7 @@ bool JSONObjectParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
     else
     {
         logdbg << "found single target report";
-        assert(j.is_object());
+        traced_assert(j.is_object());
 
         parsed_any = parseTargetReport(j, buffer, row_cnt);
     }
@@ -229,14 +229,14 @@ bool JSONObjectParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
 
 void JSONObjectParser::createMappingStubs(nlohmann::json& j)
 {
-    assert(initialized_);
+    traced_assert(initialized_);
 
     if (json_container_key_.size())
     {
         if (j.contains(json_container_key_))
         {
             json& ac_list = j.at(json_container_key_);
-            assert(ac_list.is_array());
+            traced_assert(ac_list.is_array());
 
             // loginf << "found target report array in '" << json_container_key_  << "', parsing";
 
@@ -245,7 +245,7 @@ void JSONObjectParser::createMappingStubs(nlohmann::json& j)
                 // logdbg << "new target report";
 
                 json& tr = tr_it.value();
-                assert(tr.is_object());
+                traced_assert(tr.is_object());
 
                 createMappingsFromTargetReport(tr);
             }
@@ -257,7 +257,7 @@ void JSONObjectParser::createMappingStubs(nlohmann::json& j)
     else
     {
         logdbg << "found single target report";
-        assert(j.is_object());
+        traced_assert(j.is_object());
 
         createMappingsFromTargetReport(j);
     }
@@ -300,7 +300,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
     {
         if (!map_it->active())
         {
-            assert(!map_it->mandatory());
+            traced_assert(!map_it->mandatory());
             continue;
         }
 
@@ -318,7 +318,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "bool " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<bool>(current_var_name));
+                traced_assert(buffer.has<bool>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<bool>(current_var_name), row_cnt);
 
@@ -328,7 +328,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "char " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<char>(current_var_name));
+                traced_assert(buffer.has<char>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<char>(current_var_name), row_cnt);
 
@@ -338,7 +338,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "uchar " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<unsigned char>(current_var_name));
+                traced_assert(buffer.has<unsigned char>(current_var_name));
                 mandatory_missing = map_it->findAndSetValue(
                             tr, buffer.get<unsigned char>(current_var_name), row_cnt);
 
@@ -348,7 +348,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "int " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<int>(current_var_name));
+                traced_assert(buffer.has<int>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<int>(current_var_name), row_cnt);
 
@@ -358,7 +358,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "uint " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<unsigned int>(current_var_name));
+                traced_assert(buffer.has<unsigned int>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<unsigned int>(current_var_name), row_cnt);
 
@@ -368,7 +368,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "long " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<long int>(current_var_name));
+                traced_assert(buffer.has<long int>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<long int>(current_var_name), row_cnt);
 
@@ -378,7 +378,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "ulong " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<unsigned long>(current_var_name));
+                traced_assert(buffer.has<unsigned long>(current_var_name));
                 mandatory_missing = map_it->findAndSetValue(
                             tr, buffer.get<unsigned long>(current_var_name), row_cnt);
 
@@ -388,7 +388,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "float " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<float>(current_var_name));
+                traced_assert(buffer.has<float>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<float>(current_var_name), row_cnt);
 
@@ -398,7 +398,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "double " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<double>(current_var_name));
+                traced_assert(buffer.has<double>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<double>(current_var_name), row_cnt);
 
@@ -408,7 +408,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "string " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<std::string>(current_var_name));
+                traced_assert(buffer.has<std::string>(current_var_name));
 
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<std::string>(current_var_name), row_cnt);
@@ -419,7 +419,7 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "json " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<nlohmann::json>(current_var_name));
+                traced_assert(buffer.has<nlohmann::json>(current_var_name));
 
 //                mandatory_missing =
 //                        map_it->findAndSetValue(tr, buffer.get<nlohmann::json>(current_var_name), row_cnt);
@@ -580,7 +580,7 @@ bool JSONObjectParser::hasMapping(unsigned int index) const
 }
 void JSONObjectParser::removeMapping(unsigned int index)
 {
-    assert(hasMapping(index));
+    traced_assert(hasMapping(index));
 
     unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index);
 
@@ -612,7 +612,7 @@ void JSONObjectParser::overrideDataSource(bool override)
 {
     loginf << "start" << override;
 
-    assert (!override); // TODO reimplement
+    traced_assert(!override); // TODO reimplement
     override_data_source_ = override;
 }
 
@@ -630,7 +630,7 @@ JSONObjectParserWidget* JSONObjectParser::widget()
     if (!widget_)
     {
         widget_.reset(new JSONObjectParserWidget(*this));
-        assert(widget_);
+        traced_assert(widget_);
     }
 
     return widget_.get();  // needed for qt integration, not pretty

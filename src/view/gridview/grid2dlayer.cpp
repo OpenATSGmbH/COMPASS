@@ -235,7 +235,7 @@ void Grid2DLayers::addLayer(const std::string& name,
 */
 void Grid2DLayers::addLayer(LayerPtr&& layer)
 {
-    assert(layer);
+    traced_assert(layer);
 
     size_t idx = layers_.size();
 
@@ -262,7 +262,7 @@ const Grid2DLayers::Layers& Grid2DLayers::layers() const
 const Grid2DLayer& Grid2DLayers::layer(size_t idx) const
 {
     const auto& l = layers_.at(idx);
-    assert(l);
+    traced_assert(l);
 
     return *l;
 }
@@ -271,13 +271,13 @@ const Grid2DLayer& Grid2DLayers::layer(size_t idx) const
 */
 const Grid2DLayer& Grid2DLayers::layer(const std::string& name) const
 {
-    assert(layer_map_.count(name));
+    traced_assert(layer_map_.count(name));
     
     const auto& indices = layer_map_.at(name);
-    assert(!indices.empty());
+    traced_assert(!indices.empty());
 
     const auto& l = layers_.at(indices[ 0 ]);
-    assert(l);
+    traced_assert(l);
 
     return *l;
 }
@@ -286,7 +286,7 @@ const Grid2DLayer& Grid2DLayers::layer(const std::string& name) const
 */
 std::vector<const Grid2DLayer*> Grid2DLayers::layers(const std::string& name) const
 {
-    assert(layer_map_.count(name));
+    traced_assert(layer_map_.count(name));
     
     const auto& indices = layer_map_.at(name);
 

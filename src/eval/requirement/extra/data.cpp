@@ -16,7 +16,7 @@
  */
 
 #include "eval/requirement/extra/data.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/extra/data.h"
 
 #include "evaluationmanager.h"
@@ -81,8 +81,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
            << " min_duration " << min_duration_ << " min_num_updates " << min_num_updates_
            << " ignore_primary_only " << ignore_primary_only_ << " prob " << threshold();
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
-    bool ignore = false;
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     // create ref time periods, irrespective of inside
     TimePeriodCollection ref_periods;
@@ -166,14 +165,26 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
         }
     }
 
+    bool ignore = false;
+    string ignore_comment;
+
     if (num_extra && num_extra < min_num_updates_)
+    {
         ignore = true;
+        ignore_comment = "Minimum number of updates: "+to_string(num_extra)+" < "+to_string(min_num_updates_);
+    }
 
     if (!ignore && has_tod && (tod_max-tod_min) < min_duration_)
+    {
         ignore = true;
+        ignore_comment = "Minimum duration: "+Time::toString(tod_max-tod_min,1)+" < "+Time::toString(min_duration_,1);
+    }
 
     if (!ignore && ignore_primary_only_ && target_data.isPrimaryOnly())
+    {
         ignore = true;
+        ignore_comment = "Ignore primary-only";
+    }
 
     bool has_extra_test_data = num_extra;
 
@@ -181,9 +192,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
 //        loginf << "'" << name_ << "': utn " << target_data.utn_
 //               << " not ignored tdo, ref " << num_ref_inside << " num_ok " << num_ok << " num_extra " << num_extra;
 
-    return make_shared<EvaluationRequirementResult::SingleExtraData>(
+    auto ret = make_shared<EvaluationRequirementResult::SingleExtraData>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, ignore, num_extra, num_ok, has_extra_test_data);
+                calculator_, details, num_extra, num_ok, has_extra_test_data);
+    
+    if (ignore)                
+        ret->setIgnoreResult(ignore_comment);
+
+    return ret;
 }
 
 }

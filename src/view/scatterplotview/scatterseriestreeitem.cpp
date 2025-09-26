@@ -21,7 +21,7 @@
 
 #include <QApplication>
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -52,7 +52,7 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-    assert(item);
+    traced_assert(item);
 
     QRect r = option.rect;  // getting the rect of the cell
     int x, y, w, h;
@@ -138,7 +138,7 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
         h = fm.height();  // button height
 
         ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-        assert(item);
+        traced_assert(item);
 
         if (item->canHide())
         {
@@ -194,7 +194,7 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 {
     logdbg << item->name();
 
-    assert (!child_items_.count(item->name()));
+    traced_assert(!child_items_.count(item->name()));
 
     child_items_[item->name()].reset(item);
 }
@@ -203,7 +203,7 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // {
 //     logdbg << item->name();
 //     auto it = std::find(child_items_.begin(), child_items_.end(), item);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it != child_items_.end())
 //         child_items_.erase(it);
@@ -218,7 +218,7 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // void ScatterSeriesTreeItem::moveChildUp(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it != child_items_.begin())
 //         std::iter_swap(it, it - 1);
@@ -226,7 +226,7 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // void ScatterSeriesTreeItem::moveChildDown(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it + 1 != child_items_.end())
 //         std::iter_swap(it, it + 1);
@@ -234,14 +234,14 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // void ScatterSeriesTreeItem::moveChildToBegin(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     std::rotate(child_items_.begin(), it, it + 1);
 // }
 // void ScatterSeriesTreeItem::moveChildToEnd(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it == child_items_.end() - 1)
 //         return;
@@ -251,23 +251,23 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 
 // void ScatterSeriesTreeItem::moveUp()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 //     parent_item_->moveChildUp(this);
 // }
 // void ScatterSeriesTreeItem::moveDown()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 //     parent_item_->moveChildDown(this);
 // }
 // void ScatterSeriesTreeItem::moveToBegin()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 
 //     parent_item_->moveChildToBegin(this);
 // }
 // void ScatterSeriesTreeItem::moveToEnd()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 //     parent_item_->moveChildToEnd(this);
 // }
 
@@ -286,7 +286,7 @@ unsigned int ScatterSeriesTreeItem::getIndexOf(ScatterSeriesTreeItem* child)
                            [child](const std::pair<const std::string, std::unique_ptr<ScatterSeriesTreeItem>>& x)
                            { return x.second.get() == child;});
 
-    assert(it != child_items_.end());
+    traced_assert(it != child_items_.end());
 
     return distance(child_items_.begin(), it);
 }
@@ -298,11 +298,11 @@ void ScatterSeriesTreeItem::clear()
 
 ScatterSeriesTreeItem* ScatterSeriesTreeItem::child(int row)
 {
-    assert(row >= 0);
-    assert((unsigned int)row < child_items_.size());
+    traced_assert(row >= 0);
+    traced_assert((unsigned int)row < child_items_.size());
 
     auto it = std::next(child_items_.begin(), row);
-    assert (it != child_items_.end());
+    traced_assert(it != child_items_.end());
 
     logdbg  << "child: " << it->second->name();
     return it->second.get();
@@ -331,7 +331,7 @@ QVariant ScatterSeriesTreeItem::data(int column) const
             return QVariant();
     }
     else
-        assert(false);
+        traced_assert(false);
 }
 
 QVariant ScatterSeriesTreeItem::icon() const

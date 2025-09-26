@@ -21,6 +21,7 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QSplitter>
 #include <QSettings>
@@ -97,15 +98,15 @@ ASTERIXJSONParserWidget::~ASTERIXJSONParserWidget()
 
 void ASTERIXJSONParserWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }
 
 void ASTERIXJSONParserWidget::selectModelRow (unsigned int row)
 {
-    assert (table_view_);
-    assert (proxy_model_);
+    traced_assert(table_view_);
+    traced_assert(proxy_model_);
 
     auto const proxy_index = proxy_model_->mapFromSource(parser_.index(row, 0));
 
@@ -122,13 +123,13 @@ void ASTERIXJSONParserWidget::currentRowChanged(const QModelIndex& current, cons
     }
 
     auto const source_index = proxy_model_->mapToSource(current);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     unsigned int index = source_index.row();
 
     loginf << "current index " << index;
 
-    assert (detail_widget_);
+    traced_assert(detail_widget_);
     detail_widget_->currentIndexChangedSlot(index);
 }
 
@@ -176,10 +177,10 @@ void ASTERIXJSONParserWidget::keyPressEvent(QKeyEvent* event)
         for (unsigned int row_cnt=0; row_cnt < num_rows; ++row_cnt)
         {
             QModelIndex proxy_index = proxy_model_->index(row_cnt, 0);
-            assert (proxy_index.isValid());
+            traced_assert(proxy_index.isValid());
 
             QModelIndex model_index = proxy_model_->mapToSource(proxy_index); // row in model
-            assert (model_index.isValid());
+            traced_assert(model_index.isValid());
 
             model_row = model_index.row();
             ASTERIXJSONParser::EntryType entry_type = parser_.entryType(model_row);

@@ -156,7 +156,7 @@ void CreateARTASAssociationsStatusDialog::markStartTime()
 
 void CreateARTASAssociationsStatusDialog::setDone()
 {
-    assert(ok_button_);
+    traced_assert(ok_button_);
 
     updateTime();
     updateDBContentAssociatedGrid();
@@ -170,7 +170,7 @@ void CreateARTASAssociationsStatusDialog::setAssociationStatus(const std::string
 {
     status_ = status;
 
-    assert(association_status_label_);
+    traced_assert(association_status_label_);
     association_status_label_->setText(status_.c_str());
 
     updateTime();
@@ -188,7 +188,7 @@ void CreateARTASAssociationsStatusDialog::setDubiousAssociations(const size_t& d
 {
     dubious_associations_ = dubious_associations;
 
-    assert(dubious_label_);
+    traced_assert(dubious_label_);
     dubious_label_->setText(QString::number(dubious_associations_));
     ;
 }
@@ -198,7 +198,7 @@ void CreateARTASAssociationsStatusDialog::setMissingHashesAtBeginning(
 {
     missing_hashes_at_beginning_ = missing_hashes_at_beginning;
 
-    assert(missing_hashes_at_beginning_label_);
+    traced_assert(missing_hashes_at_beginning_label_);
     missing_hashes_at_beginning_label_->setText(QString::number(missing_hashes_at_beginning_));
     ;
 }
@@ -207,7 +207,7 @@ void CreateARTASAssociationsStatusDialog::setMissingHashes(const size_t& missing
 {
     missing_hashes_ = missing_hashes;
 
-    assert(missing_hashes_label_);
+    traced_assert(missing_hashes_label_);
     missing_hashes_label_->setText(QString::number(missing_hashes_));
 }
 
@@ -215,7 +215,7 @@ void CreateARTASAssociationsStatusDialog::setFoundHashes(const size_t& found_has
 {
     found_hashes_ = found_hashes;
 
-    assert(found_hashes_label_);
+    traced_assert(found_hashes_label_);
     found_hashes_label_->setText(QString::number(found_hashes_));
 }
 
@@ -223,13 +223,13 @@ void CreateARTASAssociationsStatusDialog::setFoundDuplicates(const size_t& found
 {
     found_duplicates_ = found_duplicates;
 
-    assert(found_duplicates_label_);
+    traced_assert(found_duplicates_label_);
     found_duplicates_label_->setText(QString::number(found_duplicates_));
 }
 
 void CreateARTASAssociationsStatusDialog::updateTime()
 {
-    assert(time_label_);
+    traced_assert(time_label_);
 
     stop_time_ = boost::posix_time::microsec_clock::local_time();
     time_diff_ = stop_time_ - start_time_;
@@ -241,7 +241,7 @@ void CreateARTASAssociationsStatusDialog::updateTime()
 
 void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
 {
-    assert(dbcont_associated_grid_);
+    traced_assert(dbcont_associated_grid_);
 
     // loginf << "rowcount " <<
     // cat_counters_grid_->rowCount();
@@ -276,7 +276,7 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
 
     for (auto& dbcont_it : COMPASS::instance().dbContentManager())
     {
-        if (dbcont_it.second->isStatusContent() ||
+        if (dbcont_it.second->containsStatusContent() ||
             dbcont_it.second->isReferenceContent())
             continue;
 
@@ -319,22 +319,22 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
 
         QLabel* dbcont_label =
             dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 0)->widget());
-        assert(dbcont_label);
+        traced_assert(dbcont_label);
         dbcont_label->setText(dbcont_it.first.c_str());
 
         QLabel* count_label =
             dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 1)->widget());
-        assert(count_label);
+        traced_assert(count_label);
         count_label->setText(QString::number(total_cnt));
 
         QLabel* associated_label =
             dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 2)->widget());
-        assert(associated_label);
+        traced_assert(associated_label);
         associated_label->setText(QString::number(assoc_cnt));
 
         QLabel* percent_label =
             dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 3)->widget());
-        assert(percent_label);
+        traced_assert(percent_label);
 
         if (total_cnt)
             percent_label->setText((String::percentToString(assoc_perc) + "%").c_str());

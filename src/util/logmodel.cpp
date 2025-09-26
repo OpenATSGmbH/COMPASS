@@ -54,28 +54,28 @@ const PropertyList LogStore::LogEntry::DBPropertyList = PropertyList({ LogStore:
 LogStore::LogEntry::LogEntry(const nlohmann::json& info)
     : msg_id_(info.at(LOGENTRY_MSG_ID_KEY))
 {
-    assert (info.contains(LOGENTRY_ACCEPTED_KEY));
+    traced_assert(info.contains(LOGENTRY_ACCEPTED_KEY));
     accepted_ = info.at(LOGENTRY_ACCEPTED_KEY);
 
-    assert (info.contains(LOGENTRY_TIMESTAMP_KEY));
+    traced_assert(info.contains(LOGENTRY_TIMESTAMP_KEY));
     timestamp_ = info.at(LOGENTRY_TIMESTAMP_KEY);
 
-    assert (info.contains(LOGENTRY_TYPE_STR_KEY));
+    traced_assert(info.contains(LOGENTRY_TYPE_STR_KEY));
     type_ = logStreamTypeFromStr(info.at(LOGENTRY_TYPE_STR_KEY));
 
-    assert (info.contains(LOGENTRY_COMPONENT_KEY));
+    traced_assert(info.contains(LOGENTRY_COMPONENT_KEY));
     component_ = info.at(LOGENTRY_COMPONENT_KEY);
 
-    assert (info.contains(LOGENTRY_MESSAGE_KEY));
+    traced_assert(info.contains(LOGENTRY_MESSAGE_KEY));
     message_ = info.at(LOGENTRY_MESSAGE_KEY);
 
     if (info.contains(LOGENTRY_ERROR_CODE_KEY))
         error_code_ = info.at(LOGENTRY_ERROR_CODE_KEY);
 
-    assert (info.contains(LOGENTRY_JSON_KEY));
+    traced_assert(info.contains(LOGENTRY_JSON_KEY));
     json_ = info.at(LOGENTRY_JSON_KEY);
 
-    assert (info.contains(LOGENTRY_MESSAGE_COUNT_KEY));
+    traced_assert(info.contains(LOGENTRY_MESSAGE_COUNT_KEY));
     message_count_ = info.at(LOGENTRY_MESSAGE_COUNT_KEY);
 }
 
@@ -173,8 +173,8 @@ QVariant LogStore::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    assert (index.row() >= 0);
-    assert ((unsigned int)index.row() < log_entries_.size());
+    traced_assert(index.row() >= 0);
+    traced_assert((unsigned int)index.row() < log_entries_.size());
 
     const LogEntry& entry = log_entries_.at(index.row());
 
@@ -245,7 +245,7 @@ QVariant LogStore::data(const QModelIndex& index, int role) const
     {
         logdbg << "display role: row " << index.row() << " col " << index.column();
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (col_name == "")
@@ -307,16 +307,16 @@ QVariant LogStore::data(const QModelIndex& index, int role) const
     // {
     //     if (index.column() == 0)
     //     {
-    //         assert (index.row() >= 0);
-    //         assert (index.row() < target_data_.size());
+    //         traced_assert(index.row() >= 0);
+    //         traced_assert(index.row() < target_data_.size());
 
     //         const Target& target = target_data_.at(index.row());
     //         return target.utn_;
     //     }
     //     else if (index.column() == 2) // comment
     //     {
-    //         assert (index.row() >= 0);
-    //         assert (index.row() < target_data_.size());
+    //         traced_assert(index.row() >= 0);
+    //         traced_assert(index.row() < target_data_.size());
 
     //         const Target& target = target_data_.at(index.row());
     //         return ("comment_"+to_string(target.utn_)).c_str();
@@ -336,8 +336,8 @@ bool LogStore::setData(const QModelIndex &index, const QVariant& value, int role
 
     // if (role == Qt::CheckStateRole && index.column() == 0)
     // {
-    //     assert (index.row() >= 0);
-    //     assert (index.row() < target_data_.size());
+    //     traced_assert(index.row() >= 0);
+    //     traced_assert(index.row() < target_data_.size());
 
     //     auto it = target_data_.begin()+index.row();
 
@@ -356,8 +356,8 @@ bool LogStore::setData(const QModelIndex &index, const QVariant& value, int role
     // }
     // else if (role == Qt::EditRole && index.column() == 2) // comment
     // {
-    //     assert (index.row() >= 0);
-    //     assert (index.row() < target_data_.size());
+    //     traced_assert(index.row() >= 0);
+    //     traced_assert(index.row() < target_data_.size());
 
     //     auto it = target_data_.begin()+index.row();
 
@@ -380,7 +380,7 @@ QVariant LogStore::headerData(int section, Qt::Orientation orientation, int role
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -412,7 +412,7 @@ Qt::ItemFlags LogStore::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     // if (index.column() == 0) // Use
     // {
@@ -439,7 +439,7 @@ std::string LogStore::LogEntry::logStreamTypeStr (LogStreamType type)
     case LogStreamType::Error:
         return "Error";
     default:
-        assert (false);
+        traced_assert(false);
     }
 
 }
@@ -453,12 +453,12 @@ LogStreamType LogStore::LogEntry::logStreamTypeFromStr (const std::string& type_
     if (type_str == "Error")
         return LogStreamType::Error;
     else
-        assert (false);
+        traced_assert(false);
 }
 
 void LogStore::clearMessages()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -469,7 +469,7 @@ void LogStore::clearMessages()
 }
 void LogStore::loadMessagesFromDB()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 

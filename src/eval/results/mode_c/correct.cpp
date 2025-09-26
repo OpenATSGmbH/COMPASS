@@ -75,7 +75,7 @@ std::shared_ptr<Joined> SingleModeCCorrect::createEmptyJoined(const std::string&
 std::vector<Single::TargetInfo> SingleModeCCorrect::additionalTargetInfos() const
 {
     std::shared_ptr<EvaluationRequirement::ModeCCorrect> req = std::static_pointer_cast<EvaluationRequirement::ModeCCorrect>(requirement_);
-    assert (req);
+    traced_assert(req);
 
     return { {"Max Dist. [ft]", "Maximum offset", formatValue(req->maxDistanceFt()) } };
 }

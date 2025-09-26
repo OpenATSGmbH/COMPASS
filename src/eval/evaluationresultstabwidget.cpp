@@ -103,7 +103,7 @@ EvaluationResultsTabWidget::~EvaluationResultsTabWidget() = default;
 
 void EvaluationResultsTabWidget::expand()
 {
-    loginf << "start";
+    loginf;
 
     tree_view_->expandToDepth(3);
 }
@@ -141,7 +141,7 @@ void EvaluationResultsTabWidget::selectId (const std::string& id,
     //     return;
     // }
 
-    // assert (tree_view_);
+    // traced_assert(tree_view_);
     // tree_view_->selectionModel()->clear();
 
     // expandAllParents(index);
@@ -168,7 +168,7 @@ void EvaluationResultsTabWidget::reshowLastId ()
 void EvaluationResultsTabWidget::itemClickedSlot(const QModelIndex& index)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     id_history_.push_back(item->id());
 
@@ -182,7 +182,7 @@ void EvaluationResultsTabWidget::itemClickedSlot(const QModelIndex& index)
     else if (dynamic_cast<EvaluationResultsReport::Section*>(item))
     {
         EvaluationResultsReport::Section* section = dynamic_cast<EvaluationResultsReport::Section*>(item);
-        assert (section);
+        traced_assert(section);
 
         loginf << "section " << section->name();
         showResultWidget(section->getContentWidget());
@@ -194,7 +194,7 @@ void EvaluationResultsTabWidget::itemClickedSlot(const QModelIndex& index)
 void EvaluationResultsTabWidget::showFigure(const QModelIndex& index)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     loginf << "name " << item->name() << " id " << item->id();
 
@@ -205,7 +205,7 @@ void EvaluationResultsTabWidget::showFigure(const QModelIndex& index)
     else if (dynamic_cast<EvaluationResultsReport::Section*>(item))
     {
         EvaluationResultsReport::Section* section = dynamic_cast<EvaluationResultsReport::Section*>(item);
-        assert (section);
+        traced_assert(section);
 
         loginf << "section " << section->name();
         
@@ -217,9 +217,9 @@ void EvaluationResultsTabWidget::showFigure(const QModelIndex& index)
 
 void EvaluationResultsTabWidget::stepBackSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (id_history_.size() > 1);
+    traced_assert(id_history_.size() > 1);
 
     id_history_.pop_back(); // remove last entry
     reshowLastId(); // show last id
@@ -229,7 +229,7 @@ void EvaluationResultsTabWidget::stepBackSlot()
 
 void EvaluationResultsTabWidget::showResultWidget(QWidget* widget)
 {
-    assert(results_widget_);
+    traced_assert(results_widget_);
 
     if (!widget)
     {
@@ -261,7 +261,7 @@ void EvaluationResultsTabWidget::expandAllParents (QModelIndex index)
 
 void EvaluationResultsTabWidget::updateBackButton ()
 {
-    assert (back_button_);
+    traced_assert(back_button_);
 
     back_button_->setEnabled(id_history_.size() > 1);
 }

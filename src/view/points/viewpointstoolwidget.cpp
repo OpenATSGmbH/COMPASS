@@ -20,6 +20,7 @@
 
 #include "files.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QColorDialog>
@@ -34,7 +35,7 @@ using namespace Utils;
 ViewPointsToolWidget::ViewPointsToolWidget(ViewPointsWidget* vp_widget, QWidget* parent)
 : QWidget(parent), vp_widget_(vp_widget)
 {
-    assert (vp_widget_);
+    traced_assert(vp_widget_);
 
     setMaximumHeight(40);
 
@@ -213,7 +214,7 @@ void ViewPointsToolWidget::showStatusesMenu ()
 void ViewPointsToolWidget::typeFilteredSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     loginf << "start" << action->text().toStdString();
 
@@ -230,7 +231,7 @@ void ViewPointsToolWidget::typeFilteredSlot ()
 void ViewPointsToolWidget::statusFilteredSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     loginf << "start" << action->text().toStdString();
 
@@ -282,7 +283,7 @@ void ViewPointsToolWidget::showColumnsMenu()
 void ViewPointsToolWidget::columnFilteredSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     loginf << "start" << action->text().toStdString();
 

@@ -17,6 +17,7 @@
 
 #include "datasourcecompoundcoverage.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace std;
 
@@ -43,7 +44,7 @@ void DataSourceCompoundCoverage::addRangeCircle (unsigned int ds_id, double cent
 
 bool DataSourceCompoundCoverage::isInside (double pos_lat, double pos_long) const
 {
-    assert (is_finalized_);
+    traced_assert(is_finalized_);
 
     // if no info, true
     if (!range_circles_cs_.size())
@@ -80,7 +81,7 @@ bool DataSourceCompoundCoverage::isInside (double pos_lat, double pos_long) cons
 
 void DataSourceCompoundCoverage::finalize()
 {
-    assert (!is_finalized_);
+    traced_assert(!is_finalized_);
 
     for (auto& rng_circ : range_circles_)
     {
@@ -96,7 +97,7 @@ void DataSourceCompoundCoverage::finalize()
 
 bool DataSourceCompoundCoverage::hasCircles() const
 {
-    assert (is_finalized_);
+    traced_assert(is_finalized_);
 
     return range_circles_cs_.size();
 }

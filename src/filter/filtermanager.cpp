@@ -47,7 +47,7 @@ FilterManager::FilterManager(const std::string& class_id, const std::string& ins
                              COMPASS* compass)
     : Configurable(class_id, instance_id, compass, "filter.json")
 {
-    logdbg << "start";
+    logdbg;
 
     registerParameter("use_filters", &use_filters_, false);
     registerParameter("db_id", &db_id_, std::string());
@@ -256,7 +256,7 @@ void FilterManager::checkSubConfigurables()
 
 std::string FilterManager::getSQLCondition(const std::string& dbcontent_name)
 {
-    assert(COMPASS::instance().dbContentManager().dbContent(dbcontent_name).loadable());
+    traced_assert(COMPASS::instance().dbContentManager().dbContent(dbcontent_name).loadable());
 
     std::stringstream ss;
 
@@ -288,7 +288,7 @@ unsigned int FilterManager::getNumFilters() { return filters_.size(); }
 
 DBFilter* FilterManager::getFilter(unsigned int index)
 {
-    assert(index < filters_.size());
+    traced_assert(index < filters_.size());
 
     return filters_.at(index).get();
 }
@@ -306,7 +306,7 @@ DBFilter* FilterManager::getFilter (const std::string& name)
     auto it = find_if(filters_.begin(), filters_.end(), [name] (const unique_ptr<DBFilter>& f)
     { return f->getName() == name; } );
 
-    assert (it != filters_.end());
+    traced_assert(it != filters_.end());
 
     return it->get();
 }
@@ -336,14 +336,14 @@ void FilterManager::reset()
 
 void FilterManager::unshowViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
-    assert (vp);
+    loginf;
+    traced_assert(vp);
 }
 
 void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
-    assert (vp);
+    loginf;
+    traced_assert(vp);
 
     const json& data = vp->data();
 
@@ -370,7 +370,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     if (data.contains(ViewPoint::VP_SELECTED_RECNUMS_KEY))
     {
         auto& selected = data.at(ViewPoint::VP_SELECTED_RECNUMS_KEY);
-        assert (selected.is_array());
+        traced_assert(selected.is_array());
         std::vector<unsigned long> vec = selected.get<std::vector<unsigned long>>();
 
         COMPASS::instance().dbContentManager().storeSelectedRecNums(vec);
@@ -407,7 +407,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         logdbg << "filter data '" << filters.dump(4) << "'";
 
-        assert (filters.is_object());
+        traced_assert(filters.is_object());
 
         for (auto& fil_it : filters.get<json::object_t>())
         {
@@ -433,7 +433,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
 void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
-    loginf << "start";
+    loginf;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -467,24 +467,24 @@ FilterManagerWidget* FilterManager::widget()
         connect(this, &FilterManager::changedFiltersSignal, widget_, &FilterManagerWidget::updateFilters);
     }
 
-    assert(widget_);
+    traced_assert(widget_);
     return widget_;
 }
 
 void FilterManager::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
         widget_->setDisabled(false);
 
-    assert (hasFilter("Timestamp"));
+    traced_assert(hasFilter("Timestamp"));
     getFilter("Timestamp")->reset();
 }
 
 void FilterManager::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
         widget_->setDisabled(true);
@@ -492,19 +492,19 @@ void FilterManager::databaseClosedSlot()
 
 void FilterManager::dataSourcesChangedSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (hasFilter("Tracker Track Number"))
     {
         TrackerTrackNumberFilter* filter = dynamic_cast<TrackerTrackNumberFilter*>(getFilter("Tracker Track Number"));
-        assert (filter);
+        traced_assert(filter);
         filter->updateDataSourcesSlot();
     }
 }
 
 void FilterManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
-    loginf << "start";
+    loginf;
 
     for (auto& fil_it : filters_)
         fil_it->updateToAppMode(app_mode_current);
@@ -512,7 +512,7 @@ void FilterManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mo
 
 //void FilterManager::startedSlot()
 //{
-//    loginf << "start";
+//    loginf;
 //    createSubConfigurables();
 
 //    std::string tmpstr = COMPASS::instance().interface().connection().identifier();
@@ -540,7 +540,7 @@ void FilterManager::disableAllFilters ()
 
 void FilterManager::filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>& data)
 {
-    loginf << "start";
+    loginf;
 
     vector<unsigned int> indexes_to_remove;
 
@@ -559,7 +559,7 @@ void FilterManager::filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>
 
 void FilterManager::resetToStartupConfiguration()
 {
-    loginf << "start";
+    loginf;
 
     disableAllFilters();
 

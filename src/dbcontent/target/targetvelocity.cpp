@@ -52,7 +52,10 @@ boost::optional<TargetVelocityAccuracy> getVelocityAccuracy(
     else if (dbcontent_name == "CAT062")
         return getVelocityAccuracyTracker(accessor, dbcontent_name, index);
     else
-        assert (false); // not implemented yet
+    {
+        traced_assert(false); // not implemented yet
+        return {};
+    }
 
 }
 

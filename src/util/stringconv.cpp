@@ -18,6 +18,7 @@
 #include "stringconv.h"
 #include "logger.h"
 #include "util/timeconv.h"
+#include "traced_assert.h"
 #include "json.hpp"
 
 #include <openssl/sha.h>
@@ -77,6 +78,18 @@ std::string percentToString(double number, unsigned int precision)
     std::ostringstream out;
 
     out << std::fixed << std::setprecision(precision) << number;
+
+    return out.str();
+}
+
+std::string percentToStringProtected(double x, double y, unsigned int precision)
+{
+    if (y == 0)
+        return "";
+
+    std::ostringstream out;
+    
+    out << std::fixed << std::setprecision(precision) << x / y;
 
     return out.str();
 }
@@ -223,15 +236,15 @@ int getAppendedInt(std::string text)
 
 unsigned int lineFromStr(const std::string& line_str)
 {
-    assert (line_str.size());
+    traced_assert(line_str.size());
     unsigned int line = line_str.back() - '0';
-    assert (line >= 1 && line <= 4);
+    traced_assert(line >= 1 && line <= 4);
     return line-1;
 }
 
 std::string lineStrFrom(unsigned int line)
 {
-    assert (line >= 0 && line <= 3);
+    traced_assert(line >= 0 && line <= 3);
     return "L" + std::to_string(line + 1);
 }
 
@@ -252,9 +265,9 @@ int getLeadingInt(std::string text)
 double doubleFromLatitudeString(std::string& latitude_str)
 {
     unsigned int len = latitude_str.size();
-    assert(len == 12);
+    traced_assert(len == 12);
     char last_char = latitude_str.at(len - 1);
-    assert(last_char == 'N' || last_char == 'S');
+    traced_assert(last_char == 'N' || last_char == 'S');
 
     double x = 0.0;
 
@@ -271,9 +284,9 @@ double doubleFromLatitudeString(std::string& latitude_str)
 double doubleFromLongitudeString(std::string& longitude_str)
 {
     unsigned int len = longitude_str.size();
-    assert(len == 13);
+    traced_assert(len == 13);
     char last_char = longitude_str.at(len - 1);
-    assert(last_char == 'E' || last_char == 'W');
+    traced_assert(last_char == 'E' || last_char == 'W');
 
     double x = 0.0;
 
@@ -401,7 +414,7 @@ int compareVersions(const std::string& v1_str, const std::string& v2_str)
     std::vector<std::string> v1_parts = split(v1_str, '.');
     std::vector<std::string> v2_parts = split(v2_str, '.');
 
-    assert(v1_parts.size() == v2_parts.size());
+    traced_assert(v1_parts.size() == v2_parts.size());
 
     int v1_part;
     int v2_part;
@@ -455,7 +468,7 @@ std::string ipFromString(const std::string& name)
     // string like "224.9.2.252:15040"
 
     std::vector<std::string> parts = split(name, ':');
-    assert (parts.size() == 2);
+    traced_assert(parts.size() == 2);
     return parts.at(0);
 }
 
@@ -464,7 +477,7 @@ unsigned int portFromString(const std::string& name)
     // string like "224.9.2.252:15040"
 
     std::vector<std::string> parts = split(name, ':');
-    assert (parts.size() == 2);
+    traced_assert(parts.size() == 2);
     return stoi(parts.at(1));
 }
 

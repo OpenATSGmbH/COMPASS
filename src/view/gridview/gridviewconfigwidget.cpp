@@ -67,7 +67,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     auto config_layout = configLayout();
 
@@ -194,7 +194,7 @@ GridViewConfigWidget::~GridViewConfigWidget() = default;
 */
 void GridViewConfigWidget::attachExportMenu()
 {
-    assert(export_button_);
+    traced_assert(export_button_);
 
     //attach export menu
     QMenu* menu = new QMenu(export_button_);
@@ -263,10 +263,10 @@ void GridViewConfigWidget::loadingDone()
 */
 void GridViewConfigWidget::updateExport()
 {
-    assert(view_);
+    traced_assert(view_);
 
     auto const_view = dynamic_cast<const GridView*>(view_);
-    assert(const_view);
+    traced_assert(const_view);
 
     //no valid grid no export
     if (!const_view->isInit() || !const_view->getDataWidget()->hasValidGrid())
@@ -292,7 +292,7 @@ void GridViewConfigWidget::updateExport()
         auto var_sel_x = variableSelection(0);
         auto var_sel_y = variableSelection(1);
 
-        assert(var_sel_x && var_sel_y);
+        traced_assert(var_sel_x && var_sel_y);
 
         auto& dbc_man = COMPASS::instance().dbContentManager();
 
@@ -463,10 +463,10 @@ void GridViewConfigWidget::updateUIFromSource()
 */
 void GridViewConfigWidget::checkRanges()
 {
-    assert(view_);
+    traced_assert(view_);
 
     auto const_view = dynamic_cast<const GridView*>(view_);
-    assert(const_view);
+    traced_assert(const_view);
 
     range_info_label_->setText("");
 
@@ -590,8 +590,8 @@ void GridViewConfigWidget::exportToGeographicView()
     if (!export_config.has_value())
         return;
 
-    assert(export_config->view);
-    assert(!export_config->item_name.empty());
+    traced_assert(export_config->view);
+    traced_assert(!export_config->item_name.empty());
 
     ViewPointGenAnnotation anno(export_config->item_name);
 

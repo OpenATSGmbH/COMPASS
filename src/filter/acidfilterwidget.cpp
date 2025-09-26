@@ -43,7 +43,7 @@ void ACIDFilterWidget::update()
 {
     DBFilterWidget::update();
 
-    assert (value_edit_);
+    traced_assert(value_edit_);
 
     value_edit_->setText(filter_.valuesString().c_str());
 }

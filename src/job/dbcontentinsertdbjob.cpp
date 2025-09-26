@@ -44,7 +44,7 @@ DBContentInsertDBJob::DBContentInsertDBJob(DBInterface& db_interface,
 ,   emit_change_   (emit_change)
 {
     for (const auto& b : buffers)
-        assert(b.second && b.second->size() > 0);
+        traced_assert(b.second && b.second->size() > 0);
 }
 
 /**
@@ -55,7 +55,7 @@ DBContentInsertDBJob::~DBContentInsertDBJob() = default;
  */
 void DBContentInsertDBJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     started_ = true;
 

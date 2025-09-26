@@ -87,8 +87,8 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                                           const std::vector<Evaluation::RequirementResultID>& requirements,
                                           bool update_report)
 {
-    assert (calculator_.dataLoaded());
-    assert (calculator_.sectorsLoaded());
+    traced_assert(calculator_.dataLoaded());
+    traced_assert(calculator_.sectorsLoaded());
 
     const auto& eval_settings = calculator_.settings();
     auto&       data          = calculator_.data();
@@ -152,8 +152,8 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
         if (!dbcont_man.existsTarget(target_data_it.utn_))
             logerr << "unknown utn " << target_data_it.utn_;
 
-        assert (dbcont_man.existsTarget(target_data_it.utn_));
-        assert (data.hasTargetData(target_data_it.utn_));
+        traced_assert(dbcont_man.existsTarget(target_data_it.utn_));
+        traced_assert(data.hasTargetData(target_data_it.utn_));
 
         //utn list is provided => skip utns not in list
         if (!utn_set.empty() && !utn_set.count(target_data_it.utn_))
@@ -245,7 +245,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                     try
                     {
                         unsigned int num_utns = used_utns.size();
-                        assert (done_flags.size() == num_utns);
+                        traced_assert(done_flags.size() == num_utns);
 
                         if (single_thread)
                         {
@@ -266,7 +266,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                         }
 
                         for(unsigned int utn_cnt=0; utn_cnt < num_utns; ++utn_cnt)
-                            assert (results[utn_cnt]);
+                            traced_assert(results[utn_cnt]);
 
                         task_done = true;
                     }
@@ -369,7 +369,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                         else if (result_it->target()->isModeACOnly())
                             subresult_str = "Mode A/C";
                         else
-                            assert (result_it->target()->isPrimaryOnly());
+                            traced_assert(result_it->target()->isPrimaryOnly());
 
                         if (!extra_results_sums.count(subresult_str+" Sum"))
                             extra_results_sums[subresult_str+" Sum"] =
@@ -383,7 +383,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 {
                     loginf << "adding result '" << result_sum->reqGrpId()
                            << "' id '" << result_sum->resultId() << "'";
-                    assert (!results_[result_sum->reqGrpId()].count(result_sum->resultId()));
+                    traced_assert(!results_[result_sum->reqGrpId()].count(result_sum->resultId()));
 
                     //update now => here we still have all details for the joined viewable
                     result_sum->updateToChanges(true);
@@ -398,7 +398,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                            << mops_res_it.second->reqGrpId()
                            << "' id '" << mops_res_it.second->resultId() << "'";
 
-                    assert (!results_[mops_res_it.second->reqGrpId()].count(mops_res_it.second->resultId()));
+                    traced_assert(!results_[mops_res_it.second->reqGrpId()].count(mops_res_it.second->resultId()));
 
                     //update now => here we still have all details for the joined viewable
                     mops_res_it.second->updateToChanges(true);
@@ -411,7 +411,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 for (auto& result_it : results)
                     result_it->purgeStoredDetails();
 
-                assert (eval_cnt <= num_req_evals);
+                traced_assert(eval_cnt <= num_req_evals);
                 eval_cnt = results_vec_.size();
             }
         }
@@ -458,7 +458,7 @@ void EvaluationResultsGenerator::clear()
  */
 void EvaluationResultsGenerator::generateResultsReportGUI()
 {
-    loginf << "start";
+    loginf;
 
     boost::posix_time::ptime loading_start_time;
     boost::posix_time::ptime loading_stop_time;
@@ -481,7 +481,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     auto& report = task_manager.currentReport();
 
     EvaluationTaskResult* eval_result = dynamic_cast<EvaluationTaskResult*>(result.get());
-    assert(eval_result);
+    traced_assert(eval_result);
 
     //store eval config
     nlohmann::json config;
@@ -502,7 +502,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     gen_table.addRow({"Application Version", "Application Version", VERSION});
     gen_table.addRow({"DB", "Database Name", COMPASS::instance().lastDbFilename()});
 
-    assert (calculator_.hasCurrentStandard());
+    traced_assert(calculator_.hasCurrentStandard());
     gen_table.addRow({"Standard", "Standard name", calculator_.currentStandardName()});
 
     // add used sensors
@@ -545,7 +545,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     unsigned int cnt = 0;
     for (auto& result_it : results_vec_)
     {
-        if (result_it->isSingle() && result_it->use())
+        if (result_it->isSingle())
         {
             if (cnt % 100 == 0)
                 QCoreApplication::processEvents();
@@ -618,7 +618,7 @@ void EvaluationResultsGenerator::updateToChanges(bool reset_viewable,
             shared_ptr<EvaluationRequirementResult::Single> result =
                 static_pointer_cast<EvaluationRequirementResult::Single>(result_it);
 
-            assert (result);
+            traced_assert(result);
             result->updateUseFromTarget();
         }
     }
@@ -631,7 +631,7 @@ void EvaluationResultsGenerator::updateToChanges(bool reset_viewable,
             shared_ptr<EvaluationRequirementResult::Joined> result =
                 static_pointer_cast<EvaluationRequirementResult::Joined>(result_it);
 
-            assert (result);
+            traced_assert(result);
             result->updateToChanges(reset_viewable);
         }
     }
@@ -660,6 +660,6 @@ void EvaluationResultsGenerator::addTargetSection(const std::shared_ptr<ResultRe
 void EvaluationResultsGenerator::addNonResultsContent (const std::shared_ptr<ResultReport::Report>& report)
 {
     // standard
-    assert (calculator_.hasCurrentStandard());
+    traced_assert(calculator_.hasCurrentStandard());
     calculator_.currentStandard().addToReport(report);
 }

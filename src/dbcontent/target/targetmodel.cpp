@@ -85,8 +85,8 @@ QVariant TargetModel::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    assert (index.row() >= 0);
-    assert (static_cast<size_t>(index.row()) < target_data_.size());
+    traced_assert(index.row() >= 0);
+    traced_assert(static_cast<size_t>(index.row()) < target_data_.size());
 
     const Target& target = target_data_.at(index.row());
 
@@ -108,9 +108,9 @@ QVariant TargetModel::data(const QModelIndex& index, int role) const
         {
             logdbg << "display role: row " << index.row() << " col " << index.column();
 
-            assert (index.column() < table_columns_.size());
+            traced_assert(index.column() < table_columns_.size());
             int col = index.column();
-            assert (col >= 0);
+            traced_assert(col >= 0);
 
             return getCellContent(target, (Columns) col);
         }
@@ -212,8 +212,8 @@ bool TargetModel::setData(const QModelIndex &index, const QVariant& value, int r
 
     if (role == Qt::EditRole && index.column() == ColComment) // comment
     {
-        assert (index.row() >= 0);
-        assert (static_cast<size_t>(index.row()) < target_data_.size());
+        traced_assert(index.row() >= 0);
+        traced_assert(static_cast<size_t>(index.row()) < target_data_.size());
 
         auto it = target_data_.begin() + index.row();
 
@@ -233,7 +233,7 @@ QVariant TargetModel::headerData(int section, Qt::Orientation orientation, int r
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -275,7 +275,7 @@ Qt::ItemFlags TargetModel::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     if (index.column() == ColComment) // comment
         return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
@@ -349,10 +349,10 @@ QVariant TargetModel::getCellContent(const Target& target, Columns col) const
  */
 const dbContent::Target& TargetModel::getTargetOf (const QModelIndex& index)
 {
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
-    assert (index.row() >= 0);
-    assert (static_cast<size_t>(index.row()) < target_data_.size());
+    traced_assert(index.row() >= 0);
+    traced_assert(static_cast<size_t>(index.row()) < target_data_.size());
 
     const dbContent::Target& target = target_data_.at(index.row());
 
@@ -365,7 +365,7 @@ void TargetModel::setEvalUseTarget (unsigned int utn, bool value)
 {
     loginf << "utn " << utn << " value " << value;
 
-    assert (existsTarget(utn));
+    traced_assert(existsTarget(utn));
 
     // search if checkbox can be found
     // QModelIndexList items = match(
@@ -375,7 +375,7 @@ void TargetModel::setEvalUseTarget (unsigned int utn, bool value)
     //             1, // look *
     //             Qt::MatchExactly); // look *
 
-    // assert (items.size() == 1);
+    // traced_assert(items.size() == 1);
 
     // setData(items.at(0), {value ? Qt::Checked: Qt::Unchecked}, Qt::CheckStateRole);
 
@@ -419,7 +419,7 @@ void TargetModel::setTargetComment (unsigned int utn, std::string comment)
 {
     loginf << "utn " << utn << " comment '" << comment << "'";
 
-    assert (existsTarget(utn));
+    traced_assert(existsTarget(utn));
 
     // search if comment can be found can be found, check in COLUMN 2!
     // QModelIndexList items = match(
@@ -431,7 +431,7 @@ void TargetModel::setTargetComment (unsigned int utn, std::string comment)
 
     //  loginf << "size " << items.size();
 
-    // assert (items.size() == 1);
+    // traced_assert(items.size() == 1);
     // setData(items.at(0), comment.c_str(), Qt::EditRole);
 
     target(utn).comment(comment);
@@ -457,7 +457,7 @@ void TargetModel::setTargetComment (std::set<unsigned int> utns, std::string com
  */
 void TargetModel::clearAllTargetComments ()
 {
-    loginf << "start";
+    loginf;
 
     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
         target_data_.modify(target_it, [](Target& p) { p.comment(""); });
@@ -494,7 +494,7 @@ void TargetModel::clearEvalExcludeTimeWindows(std::set<unsigned int> utns)
 
 void TargetModel::clearAllEvalExcludeTimeWindows()
 {
-    loginf << "start";
+    loginf;
 
     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
         target_data_.modify(target_it, [](Target& p) { p.clearEvalExcludedTimeWindows(); });
@@ -529,7 +529,7 @@ void TargetModel::clearEvalExcludeRequirements(std::set<unsigned int> utns)
 
 void TargetModel::clearAllEvalExcludeRequirements()
 {
-    loginf << "start";
+    loginf;
 
     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
         target_data_.modify(target_it, [](Target& p) { p.clearEvalExcludedRequirements(); });
@@ -544,7 +544,7 @@ void TargetModel::clearAllEvalExcludeRequirements()
  */
 void TargetModel::setUseByFilter ()
 {
-    loginf << "start";
+    loginf;
 
     COMPASS::instance().evaluationManager().targetFilter().setUse(target_data_);
 
@@ -587,7 +587,7 @@ void TargetModel::createNewTargets(const std::map<unsigned int, dbContent::Recon
 {
     beginResetModel();
 
-    assert (!target_data_.size());
+    traced_assert(!target_data_.size());
 
     unsigned int utn = 0;
 
@@ -598,7 +598,7 @@ void TargetModel::createNewTargets(const std::map<unsigned int, dbContent::Recon
 
         target_data_.push_back({utn, nlohmann::json::object()});
 
-        assert (existsTarget(utn));
+        traced_assert(existsTarget(utn));
 
         dbContent::Target& tgt = target(utn);
 
@@ -636,6 +636,11 @@ void TargetModel::createNewTargets(const std::map<unsigned int, dbContent::Recon
         tgt.adsbCount(tgt_it.second.adsb_count_);
         tgt.adsbMOPSCount(tgt_it.second.adsb_mops_count_);
 
+        if (tgt_it.second.created_from_tentative.has_value() && tgt_it.second.created_from_tentative.value())
+            tgt.comment("Created from tentative");
+        else if (tgt_it.second.contains_tentative.has_value() && tgt_it.second.contains_tentative.value())
+            tgt.comment("Contains tentative");
+
         //++utn;
     }
 
@@ -648,7 +653,7 @@ dbContent::Target& TargetModel::target(unsigned int utn)
 {
     auto tr_tag_it = target_data_.get<target_tag>().find(utn);
 
-    assert (tr_tag_it != target_data_.get<target_tag>().end());
+    traced_assert(tr_tag_it != target_data_.get<target_tag>().end());
 
     return const_cast<dbContent::Target&> (*tr_tag_it); // ok since key utn_ can not be modified, still const
 }
@@ -659,7 +664,7 @@ const dbContent::Target& TargetModel::target(unsigned int utn) const
 {
     auto tr_tag_it = target_data_.get<target_tag>().find(utn);
 
-    assert (tr_tag_it != target_data_.get<target_tag>().end());
+    traced_assert(tr_tag_it != target_data_.get<target_tag>().end());
 
     return const_cast<const dbContent::Target&> (*tr_tag_it);
 }
@@ -776,7 +781,7 @@ nlohmann::json TargetModel::utnsAsJSON() const
  */
 void TargetModel::loadFromDB()
 {
-    loginf << "start";
+    loginf;
 
     beginResetModel();
 
@@ -786,7 +791,7 @@ void TargetModel::loadFromDB()
     }
 
     for (auto& target : target_data_)
-        assert (existsTarget(target.utn_));
+        traced_assert(existsTarget(target.utn_));
 
     endResetModel();
 
@@ -815,7 +820,7 @@ void TargetModel::updateToDB(unsigned int utn)
 
     auto tr_tag_it = target_data_.get<target_tag>().find(utn);
 
-    assert (tr_tag_it != target_data_.get<target_tag>().end());
+    traced_assert(tr_tag_it != target_data_.get<target_tag>().end());
 
     std::map<unsigned int, nlohmann::json> targets_info;
 

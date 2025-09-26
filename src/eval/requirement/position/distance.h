@@ -17,19 +17,19 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "eval/requirement/base/positionbase.h"
 
 namespace EvaluationRequirement
 {
 
 /**
 */
-class PositionDistance : public ProbabilityBase
+class PositionDistance : public PositionBase
 {
 public:
     PositionDistance(
             const std::string& name, const std::string& short_name, const std::string& group_name,
-            double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
+            double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
             float threshold_value, COMPARISON_TYPE threshold_value_check_type,
             bool failed_values_of_interest);
 

@@ -59,7 +59,7 @@ ReportExporter::ReportExporter(const ReportExport* report_export,
 ,   export_resource_dir_(export_resource_dir)
 ,   interaction_mode_   (interaction_mode   )
 {
-    assert(report_export_);
+    traced_assert(report_export_);
 }
 
 /**
@@ -135,12 +135,14 @@ ResultT<nlohmann::json> ReportExporter::exportReport(TaskResult& result,
             return Result::failed("Filename not provided");
         if (exportCreatesResources() && export_resource_dir_.empty())
             return Result::failed("Resource directory not provided");
-        if (exportCreatesResources() && Utils::Files::directoryExists(export_resource_dir_))
-        {
-            Utils::Files::deleteFolder(export_resource_dir_);
-            if (Utils::Files::directoryExists(export_resource_dir_))
-                return Result::failed("Existing report resources could not be removed");
-        }
+
+        // do not delete, user error
+        // if (exportCreatesResources() && Utils::Files::directoryExists(export_resource_dir_))
+        // {
+        //     Utils::Files::deleteFolder(export_resource_dir_);
+        //     if (Utils::Files::directoryExists(export_resource_dir_))
+        //         return Result::failed("Existing report resources could not be removed");
+        // }
         if (exportCreatesResources() && !Utils::Files::createMissingDirectories(export_resource_dir_))
             return Result::failed("Resource directory could not be created");
 
@@ -176,7 +178,7 @@ ResultT<nlohmann::json> ReportExporter::exportReport(TaskResult& result,
         if (!section_ptr->exportEnabled(exportMode()))
             return Result::failed("Parent section '" + section_ptr->name() + "' is disabled for export");
 
-        assert(section_ptr);
+        traced_assert(section_ptr);
 
         //pre-compute total number of exported sections
         auto func = [ this ] (const Section& s)
@@ -227,7 +229,7 @@ ResultT<nlohmann::json> ReportExporter::exportReport_impl(TaskResult& result,
                                                           Section* section,
                                                           const boost::optional<unsigned int>& content_id)
 {
-    assert(section);
+    traced_assert(section);
 
     auto res = initExport(result);
     if (!res.ok())

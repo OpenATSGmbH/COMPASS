@@ -16,13 +16,11 @@
  */
 
 #include "udpreceiver.h"
-//#include "util/files.h"
+#include "traced_assert.h"
 #include "logger.h"
-//#include "stringconv.h"
 
 #include <boost/bind.hpp>
 
-//using namespace Utils;
 using namespace std;
 
 UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::string& sender_ip, unsigned int port,
@@ -48,7 +46,7 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
         return;
     }
 
-    assert (max_read_size_ > 1024);
+    traced_assert(max_read_size_ > 1024);
     data_ = new char[max_read_size_];
 
     //    boost::asio::ip::address listen_addr = boost::asio::ip::address::from_string(address_listen, ec);

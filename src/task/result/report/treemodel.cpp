@@ -35,7 +35,7 @@ void TreeModel::setReport(const std::shared_ptr<Report>& report)
 {
     beginResetModel();
 
-    assert (report);
+    traced_assert(report);
     report_ = report;
 
     endResetModel();
@@ -71,7 +71,7 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
         return QVariant();
 
     TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     if (role == Qt::DisplayRole)
         return item->data(index.column());

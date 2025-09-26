@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "eval/requirement/base/positionbaseconfig.h"
 
 class Group;
 class EvaluationStandard;
@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionAlongConfig : public ProbabilityBaseConfig
+class PositionAlongConfig : public PositionBaseConfig
 {
 public:
     PositionAlongConfig(const std::string& class_id, const std::string& instance_id,

@@ -90,7 +90,7 @@ EvaluationDataWidget::EvaluationDataWidget(EvaluationData& eval_data,
 
 void EvaluationDataWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }
@@ -220,21 +220,21 @@ namespace
 
 void EvaluationDataWidget::customContextMenuSlot(const QPoint& p)
 {
-    logdbg << "start";
+    logdbg;
 
-    assert (table_view_);
+    traced_assert(table_view_);
 
     QModelIndex index = table_view_->indexAt(p);
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     const EvaluationTargetData& target = eval_data_.getTargetOf(source_index);
 
     unsigned int utn = target.utn_;
     loginf << "row " << index.row() << " utn " << utn;
-    assert (calculator_.data().hasTargetData(utn));
+    traced_assert(calculator_.data().hasTargetData(utn));
 
     QMenu menu;
 
@@ -292,7 +292,7 @@ void EvaluationDataWidget::jumpToRequirement(const std::string& req_id, unsigned
 void EvaluationDataWidget::showFullUTNSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
@@ -304,7 +304,7 @@ void EvaluationDataWidget::showFullUTNSlot ()
 void EvaluationDataWidget::showSurroundingDataSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
@@ -327,7 +327,7 @@ void EvaluationDataWidget::itemClicked(const QModelIndex& index)
     }
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     const EvaluationTargetData& target = eval_data_.getTargetOf(source_index);
 

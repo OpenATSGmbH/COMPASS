@@ -102,7 +102,7 @@ void Mode3AFilter::generateSubConfigurable(const std::string& class_id, const st
 
 void Mode3AFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 DBFilterWidget* Mode3AFilter::createWidget()
@@ -119,9 +119,9 @@ void Mode3AFilter::reset()
 
 void Mode3AFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -130,12 +130,12 @@ void Mode3AFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void Mode3AFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Mode 3/A Codes Values"));
+    traced_assert(filter.contains("Mode 3/A Codes Values"));
     values_str_ = filter.at("Mode 3/A Codes Values");
 
     updateValuesFromStr(values_str_);
@@ -176,7 +176,7 @@ std::vector<unsigned int> Mode3AFilter::filterBuffer(const std::string& dbconten
     dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_m3a_.name()).getFor(dbcontent_name);
 
-    assert (buffer->has<unsigned int> (var.name()));
+    traced_assert(buffer->has<unsigned int> (var.name()));
 
     NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
 

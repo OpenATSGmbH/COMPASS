@@ -77,7 +77,7 @@ void EvaluationTaskResult::setTargets(const TargetMap& targets)
  */
 void EvaluationTaskResult::injectCalculator(EvaluationCalculator* calculator)
 {
-    assert(calculator);
+    traced_assert(calculator);
     calculator_.reset(calculator);
 }
 
@@ -207,10 +207,10 @@ namespace helpers
      */
     std::pair<unsigned int, Evaluation::RequirementResultID> singleResultContentProperties(const ResultReport::SectionContent* content)
     {
-        assert(content);
+        traced_assert(content);
 
         auto info = EvaluationRequirementResult::Single::singleContentProperties(*content);
-        assert(info.has_value());
+        traced_assert(info.has_value());
 
         return std::make_pair(info->first, info->second);
     }
@@ -219,10 +219,10 @@ namespace helpers
      */
     Evaluation::RequirementResultID joinedResultContentProperties(const ResultReport::SectionContent* content)
     {
-        assert(content);
+        traced_assert(content);
 
         auto info = EvaluationRequirementResult::Joined::joinedContentProperties(*content);
-        assert(info.has_value());
+        traced_assert(info.has_value());
 
         return info.value();
     }
@@ -282,10 +282,10 @@ namespace helpers
      */
     unsigned int utnFromTable(const ResultReport::SectionContentTable* table, unsigned int row)
     {
-        assert(table);
-        assert(table->hasColumn("UTN"));
+        traced_assert(table);
+        traced_assert(table->hasColumn("UTN"));
         const auto& d = table->getData(row, "UTN");
-        assert (d.is_number_unsigned());
+        traced_assert(d.is_number_unsigned());
 
         unsigned int utn = d;
 
@@ -413,7 +413,7 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
         else if (content.name() == EvaluationData::TargetsTableName)
         {
             const ResultReport::SectionContentTable* table = dynamic_cast<const ResultReport::SectionContentTable*>(&content);
-            assert(table);
+            traced_assert(table);
 
             //obtain utn
             auto utn = helpers::utnFromTable(table, row);
@@ -436,7 +436,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
                                                   ResultReport::SectionContentTable* table, 
                                                   unsigned int row)
 {
-    logdbg << "start";
+    logdbg;
 
     if (table->name() == EvaluationRequirementResult::Single::TRDetailsTableName)
     {
@@ -520,7 +520,7 @@ bool EvaluationTaskResult::customMenu_impl(QMenu& menu,
         if (content->name() == EvaluationData::TargetsTableName)
         {
             const ResultReport::SectionContentTable* table = dynamic_cast<const ResultReport::SectionContentTable*>(content);
-            assert(table);
+            traced_assert(table);
 
             createInterestMenu(menu);
 
@@ -674,7 +674,7 @@ bool EvaluationTaskResult::interestFactorEnabled(const Evaluation::RequirementSu
  */
 void EvaluationTaskResult::setInterestFactorEnabled(const Evaluation::RequirementSumResultID& id, bool ok)
 {
-    assert(calculator_);
+    traced_assert(calculator_);
 
     interest_factor_enabled_.at(id.req_name) = ok;
 
@@ -685,7 +685,7 @@ void EvaluationTaskResult::setInterestFactorEnabled(const Evaluation::Requiremen
  */
 void EvaluationTaskResult::setInterestFactorEnabled(const std::string& req_name, bool ok)
 {
-    assert(calculator_);
+    traced_assert(calculator_);
 
     interest_factor_enabled_.at(req_name) = ok;
 
@@ -708,7 +708,7 @@ EvaluationTarget::InterestMap EvaluationTaskResult::activeInterestFactors(unsign
 {
     EvaluationTarget::InterestMap interest_factors;
 
-    assert(targets_.count(utn));
+    traced_assert(targets_.count(utn));
 
     const auto& target = targets_.at(utn);
 

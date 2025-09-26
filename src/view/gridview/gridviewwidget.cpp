@@ -85,7 +85,7 @@ GridViewWidget::~GridViewWidget() = default;
 GridView* GridViewWidget::getView() 
 { 
     auto view = dynamic_cast<GridView*>(ViewWidget::getView());
-    assert(view);
+    traced_assert(view);
     return view;
 }
 
@@ -94,7 +94,7 @@ GridView* GridViewWidget::getView()
 GridViewDataWidget* GridViewWidget::getViewDataWidget()
 {
     auto w = dynamic_cast<GridViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -103,7 +103,7 @@ GridViewDataWidget* GridViewWidget::getViewDataWidget()
 const GridViewDataWidget* GridViewWidget::getViewDataWidget() const
 {
     auto w = dynamic_cast<const GridViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -112,7 +112,7 @@ const GridViewDataWidget* GridViewWidget::getViewDataWidget() const
 GridViewConfigWidget* GridViewWidget::getViewConfigWidget()
 {
     auto w = dynamic_cast<GridViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -121,6 +121,6 @@ GridViewConfigWidget* GridViewWidget::getViewConfigWidget()
 const GridViewConfigWidget* GridViewWidget::getViewConfigWidget() const
 {
     auto w = dynamic_cast<const GridViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }

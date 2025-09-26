@@ -64,7 +64,7 @@ void DBFilter::setActive(bool active)
     //    if (active_ && !active)
     //        FilterManager::getInstance().setChanged();
 
-    assert(!unusable_);
+    traced_assert(!unusable_);
 
     active_ = active;
 
@@ -78,7 +78,7 @@ bool DBFilter::getActive() { return active_ && !disabled_; }
 
 bool DBFilter::getChanged()
 {
-    assert(!unusable_);
+    traced_assert(!unusable_);
 
     bool ret = changed_;
 
@@ -92,7 +92,7 @@ bool DBFilter::getChanged()
 
 void DBFilter::setChanged(bool changed)
 {
-    assert(!unusable_);
+    traced_assert(!unusable_);
 
     changed_ = changed;
 
@@ -106,14 +106,14 @@ void DBFilter::setChanged(bool changed)
 bool DBFilter::getVisible() { return visible_; }
 void DBFilter::setVisible(bool visible)
 {
-    assert(!unusable_);
+    traced_assert(!unusable_);
 
     visible_ = visible;
 }
 
 void DBFilter::setName(const std::string& name)
 {
-    assert(!unusable_);
+    traced_assert(!unusable_);
 
     name_ = name;
 
@@ -143,7 +143,7 @@ bool DBFilter::filters(const std::string& dbcont_name)
 //  returns empty string.
 std::string DBFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    assert(!unusable_);
+    traced_assert(!unusable_);
 
     std::stringstream ss;
 
@@ -227,7 +227,7 @@ void DBFilter::deleteCondition(DBFilterCondition* condition)
 {
     std::vector<DBFilterCondition*>::iterator it =
         find(conditions_.begin(), conditions_.end(), condition);
-    assert(it != conditions_.end());
+    traced_assert(it != conditions_.end());
     conditions_.erase(it);
     delete condition;
 }
@@ -237,29 +237,29 @@ DBFilterWidget* DBFilter::widget()
     if (!widget_)
         widget_.reset(createWidget());
 
-    assert(widget_);
+    traced_assert(widget_);
     return widget_.get();
 }
 
 void DBFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
     for (auto cond_it : conditions_)
     {
-        assert (!filter.contains(cond_it->instanceId()));
+        traced_assert(!filter.contains(cond_it->instanceId()));
         filter[cond_it->instanceId()] = cond_it->getValue();
     }
 }
 
 void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (filters.is_object());
-    assert (filters.contains(name_));
+    traced_assert(filters.is_object());
+    traced_assert(filters.contains(name_));
     const nlohmann::json& filter = filters.at(name_);
-    assert (filter.is_object());
+    traced_assert(filter.is_object());
 
     // clear previous conditions
     for (auto cond_it : conditions_)
@@ -271,7 +271,7 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
         logdbg << "cond_name '"
                << cond_name << "' value '" << cond_it.second.dump() << "'";
 
-        assert (cond_it.second.is_string());
+        traced_assert(cond_it.second.is_string());
         std::string value = cond_it.second;
 
         auto it = find_if(conditions_.begin(), conditions_.end(),
@@ -304,7 +304,7 @@ bool DBFilter::activeInLiveMode()
 
 std::vector<unsigned int> DBFilter::filterBuffer(const std::string& dbcontent_name, std::shared_ptr<Buffer> buffer)
 {
-    assert (activeInLiveMode()); // re-implement in sub-class
+    traced_assert(activeInLiveMode()); // re-implement in sub-class
     return std::vector<unsigned int>();
 }
 

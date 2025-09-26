@@ -195,9 +195,9 @@ void DubiousTargetConfigWidget::maxCompTimeEditSlot(QString value)
 
 void DubiousTargetConfigWidget::toggleMarkPrimaryOnlySlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (mark_primary_only_check_);
+    traced_assert(mark_primary_only_check_);
     config().markPrimaryOnly(mark_primary_only_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -205,9 +205,9 @@ void DubiousTargetConfigWidget::toggleMarkPrimaryOnlySlot()
 
 void DubiousTargetConfigWidget::toggleUseMinUpdatesSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_min_updates_check_);
+    traced_assert(use_min_updates_check_);
     config().useMinUpdates(use_min_updates_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -228,9 +228,9 @@ void DubiousTargetConfigWidget::minUpdatesEditSlot(QString value)
 
 void DubiousTargetConfigWidget::toggleUseMinDurationSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_min_duration_check_);
+    traced_assert(use_min_duration_check_);
     config().useMinDuration(use_min_duration_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -251,9 +251,9 @@ void DubiousTargetConfigWidget::minDurationEditSlot(QString value)
 
 void DubiousTargetConfigWidget::toggleUseMaxGroundspeedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_max_groundspeed_check_);
+    traced_assert(use_max_groundspeed_check_);
     config().useMaxGroundspeed(use_max_groundspeed_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -274,9 +274,9 @@ void DubiousTargetConfigWidget::maxGroundspeedEditSlot(QString value)
 
 void DubiousTargetConfigWidget::toggleUseMaxAccelerationSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_max_acceleration_check_);
+    traced_assert(use_max_acceleration_check_);
     config().useMaxAcceleration(use_max_acceleration_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -297,9 +297,9 @@ void DubiousTargetConfigWidget::maxAccelerationEditSlot(QString value)
 
 void DubiousTargetConfigWidget::toggleUseMaxTurnrateSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_max_turnrate_check_);
+    traced_assert(use_max_turnrate_check_);
     config().useMaxTurnrate(use_max_turnrate_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -320,9 +320,9 @@ void DubiousTargetConfigWidget::maxTurnrateEditSlot(QString value)
 
 void DubiousTargetConfigWidget::toggleUseMaxROCDSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (use_max_rocd_check_);
+    traced_assert(use_max_rocd_check_);
     config().useMaxROCD(use_max_rocd_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -358,29 +358,29 @@ void DubiousTargetConfigWidget::dubiousProbEditSlot(QString value)
 DubiousTargetConfig& DubiousTargetConfigWidget::config()
 {
     DubiousTargetConfig* config = dynamic_cast<DubiousTargetConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
 
 void DubiousTargetConfigWidget::updateActive()
 {
-    assert (min_updates_edit_);
+    traced_assert(min_updates_edit_);
     min_updates_edit_->setEnabled(config().useMinUpdates());
 
-    assert (min_duration_edit_);
+    traced_assert(min_duration_edit_);
     min_duration_edit_->setEnabled(config().useMinDuration());
 
-    assert (max_groundspeed_kts_edit_);
+    traced_assert(max_groundspeed_kts_edit_);
     max_groundspeed_kts_edit_->setEnabled(config().useMaxGroundspeed());
 
-    assert (max_acceleration_edit_);
+    traced_assert(max_acceleration_edit_);
     max_acceleration_edit_->setEnabled(config().useMaxAcceleration());
 
-    assert (max_turnrate_edit_);
+    traced_assert(max_turnrate_edit_);
     max_turnrate_edit_->setEnabled(config().useMaxTurnrate());
 
-    assert (max_rocd_edit_);
+    traced_assert(max_rocd_edit_);
     max_rocd_edit_->setEnabled(config().useMaxROCD());
 }
 

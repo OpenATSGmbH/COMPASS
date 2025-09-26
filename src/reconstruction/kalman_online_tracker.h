@@ -53,7 +53,9 @@ public:
 
     bool canPredict(const boost::posix_time::ptime& ts,
                     const boost::posix_time::time_duration& max_time_diff = boost::posix_time::seconds(10)) const;
-    kalman::KalmanError predict(Measurement& mm_predicted,
+    kalman::KalmanError predict(Measurement* mm,
+                                kalman::GeoProbState* gp_state,
+                                kalman::GeoProbState* gp_state_mm,
                                 const boost::posix_time::ptime& ts,
                                 bool* fixed = nullptr) const;
 
@@ -61,6 +63,7 @@ public:
 
     KalmanEstimator::Settings& settings();
     const boost::optional<kalman::KalmanUpdate>& currentState() const;
+    boost::optional<reconstruction::Measurement> currentMeasurement() const;
     const boost::posix_time::ptime& currentTime() const;
     const KalmanEstimator::StepInfo& stepInfo() const;
     const KalmanEstimator& estimator() const;

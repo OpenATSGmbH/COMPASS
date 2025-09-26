@@ -75,7 +75,7 @@ void ManageSectorsTaskWidget::expertModeChangedSlot() {}
 
 void ManageSectorsTaskWidget::addImportTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -192,9 +192,9 @@ void ManageSectorsTaskWidget::addManageTab()
 
 void ManageSectorsTaskWidget::updateSectorTableSlot()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(sector_table_);
+    traced_assert(sector_table_);
 
     sector_table_->blockSignals(true);
 
@@ -211,7 +211,7 @@ void ManageSectorsTaskWidget::updateSectorTableSlot()
         return;
     }
 
-    assert (eval_man.sectorsLoaded());
+    traced_assert(eval_man.sectorsLoaded());
     vector<std::shared_ptr<SectorLayer>>& sector_layers = eval_man.sectorsLayers();
 
     unsigned int num_layers=0;
@@ -376,15 +376,15 @@ void ManageSectorsTaskWidget::addFile(const std::string& filename)
 
 void ManageSectorsTaskWidget::selectFile(const std::string& filename)
 {
-    assert(task_.hasFile(filename));
+    traced_assert(task_.hasFile(filename));
     task_.currentFilename(filename);
 
     QList<QListWidgetItem*> items = file_list_->findItems(filename.c_str(), Qt::MatchExactly);
-    assert (items.size() > 0);
+    traced_assert(items.size() > 0);
 
     for (auto item_it : items)
     {
-        assert (item_it);
+        traced_assert(item_it);
         file_list_->setCurrentItem(item_it);
     }
 
@@ -393,9 +393,9 @@ void ManageSectorsTaskWidget::selectFile(const std::string& filename)
 
 void ManageSectorsTaskWidget::updateParseMessage ()
 {
-    loginf << "start";
+    loginf;
 
-    assert (parse_msg_edit_);
+    traced_assert(parse_msg_edit_);
     parse_msg_edit_->setText(task_.parseMessage().c_str());
 
     import_button_->setEnabled(task_.canImportFile());
@@ -403,7 +403,7 @@ void ManageSectorsTaskWidget::updateParseMessage ()
 
 void ManageSectorsTaskWidget::deleteFileSlot()
 {
-    loginf << "start";
+    loginf;
 
     if (!file_list_->currentItem() || !task_.currentFilename().size())
     {
@@ -413,32 +413,32 @@ void ManageSectorsTaskWidget::deleteFileSlot()
         return;
     }
 
-    assert(task_.currentFilename().size());
-    assert(task_.hasFile(task_.currentFilename()));
+    traced_assert(task_.currentFilename().size());
+    traced_assert(task_.hasFile(task_.currentFilename()));
     task_.removeCurrentFilename();
 }
 
 void ManageSectorsTaskWidget::deleteAllFilesSlot()
 {
-    loginf << "start";
+    loginf;
     task_.removeAllFiles();
 }
 
 void ManageSectorsTaskWidget::selectedFileSlot()
 {
-    assert(file_list_->currentItem());
+    traced_assert(file_list_->currentItem());
 
     QString filename = file_list_->currentItem()->text();
 
     loginf << "filename '" << filename.toStdString();
 
-    assert(task_.hasFile(filename.toStdString()));
+    traced_assert(task_.hasFile(filename.toStdString()));
     task_.currentFilename(filename.toStdString());
 }
 
 void ManageSectorsTaskWidget::updateFileListSlot()
 {
-    assert(file_list_);
+    traced_assert(file_list_);
 
     file_list_->clear();
 
@@ -459,7 +459,7 @@ void ManageSectorsTaskWidget::updateFileListSlot()
 
 void ManageSectorsTaskWidget::importSlot()
 {
-    loginf << "start";
+    loginf;
 
 
     string filename = task_.currentFilename();
@@ -477,7 +477,7 @@ void ManageSectorsTaskWidget::importSlot()
         loginf << "accepted, layer name '" << dialog.layerName()
                << "' exclude " << dialog.exclude();
 
-        assert (task_.canImportFile());
+        traced_assert(task_.canImportFile());
         task_.importFile(dialog.layerName(), dialog.exclude(), dialog.color());
 
         updateSectorTableSlot();
@@ -488,17 +488,17 @@ void ManageSectorsTaskWidget::importSlot()
 
 void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
 {
-    loginf << "start";
+    loginf;
 
-    assert(item);
-    assert(sector_table_);
+    traced_assert(item);
+    traced_assert(sector_table_);
 
     bool ok;
     unsigned int sector_id = item->data(Qt::UserRole).toUInt(&ok);
-    assert(ok);
+    traced_assert(ok);
     int col = sector_table_->currentColumn();
 
-    assert (col < table_columns_.size());
+    traced_assert(col < table_columns_.size());
     std::string col_name = table_columns_.at(col).toStdString();
 
     std::string text = item->text().toStdString();
@@ -508,7 +508,7 @@ void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
-    assert (eval_man.hasSector(sector_id));
+    traced_assert(eval_man.hasSector(sector_id));
 
     std::shared_ptr<Sector> sector = eval_man.sector(sector_id);
 
@@ -569,26 +569,26 @@ void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
         }
     }
     else
-        assert(false);  // impossible
+        traced_assert(false);  // impossible
 
     updateSectorTableSlot();
 }
 
 void ManageSectorsTaskWidget::changeSectorColorSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* button = dynamic_cast<QPushButton*>(sender());
-    assert (button);
+    traced_assert(button);
 
     QVariant sector_id_var = button->property("sector_id");
-    assert (sector_id_var.isValid());
+    traced_assert(sector_id_var.isValid());
 
     unsigned int sector_id = sector_id_var.toUInt();
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
-    assert (eval_man.hasSector(sector_id));
+    traced_assert(eval_man.hasSector(sector_id));
 
     std::shared_ptr<Sector> sector = eval_man.sector(sector_id);
 
@@ -607,19 +607,19 @@ void ManageSectorsTaskWidget::changeSectorColorSlot()
 
 void ManageSectorsTaskWidget::deleteSectorSlot()
 {
-    loginf << "start";
+    loginf;
 
     QPushButton* button = dynamic_cast<QPushButton*>(sender());
-    assert (button);
+    traced_assert(button);
 
     QVariant sector_id_var = button->property("sector_id");
-    assert (sector_id_var.isValid());
+    traced_assert(sector_id_var.isValid());
 
     unsigned int sector_id = sector_id_var.toUInt();
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
-    assert (eval_man.hasSector(sector_id));
+    traced_assert(eval_man.hasSector(sector_id));
 
     std::shared_ptr<Sector> sector = eval_man.sector(sector_id);
 
@@ -630,7 +630,7 @@ void ManageSectorsTaskWidget::deleteSectorSlot()
 
 void ManageSectorsTaskWidget::exportSectorsSlot ()
 {
-    loginf << "start";
+    loginf;
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
@@ -657,7 +657,7 @@ void ManageSectorsTaskWidget::exportSectorsSlot ()
 
 void ManageSectorsTaskWidget::clearSectorsSlot ()
 {
-    loginf << "start";
+    loginf;
 
     COMPASS::instance().evaluationManager().deleteAllSectors();
 
@@ -666,7 +666,7 @@ void ManageSectorsTaskWidget::clearSectorsSlot ()
 
 void ManageSectorsTaskWidget::importSectorsSlot ()
 {
-    loginf << "start";
+    loginf;
 
     QString filename =
         QFileDialog::getOpenFileName(nullptr, "Import Sectors from JSON",
@@ -684,7 +684,7 @@ void ManageSectorsTaskWidget::importSectorsJSON (const std::string& filename)
 {
     loginf << "filename '" << filename << "'";
 
-    assert (Files::fileExists(filename));
+    traced_assert(Files::fileExists(filename));
 
     COMPASS::instance().evaluationManager().importSectors(filename);
 
@@ -693,7 +693,7 @@ void ManageSectorsTaskWidget::importSectorsJSON (const std::string& filename)
 
 void ManageSectorsTaskWidget::importAirSpaceSectorsSlot()
 {
-    loginf << "start";
+    loginf;
 
     QString filename =
         QFileDialog::getOpenFileName(nullptr, "Import Air Space Sectors from JSON",
@@ -709,7 +709,7 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsJSON(const std::string& filen
 {
     loginf << "filename '" << filename << "'";
 
-    assert (Files::fileExists(filename));
+    traced_assert(Files::fileExists(filename));
 
     auto max_sector_id = COMPASS::instance().evaluationManager().getMaxSectorId();
 

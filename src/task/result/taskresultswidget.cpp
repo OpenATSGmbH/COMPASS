@@ -66,7 +66,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
                 if (!text.size()) // happens on clear
                     return;
 
-                assert (task_man_.hasResult(text.toStdString()));
+                traced_assert(task_man_.hasResult(text.toStdString()));
                 setReport(text.toStdString());
             });
 
@@ -182,7 +182,7 @@ void TaskResultsWidget::setReport(const std::string name)
 
     report_combo_->setDisabled(false);
 
-    assert (task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
     auto result = task_man_.result(name);
     auto report = result->report();
 
@@ -211,7 +211,7 @@ void TaskResultsWidget::updateResultsSlot()
  */
 void TaskResultsWidget::updateResults(const std::string& selected_result)
 {
-    loginf << "start";
+    loginf;
 
     report_combo_->blockSignals(true);
     report_combo_->clear();
@@ -269,7 +269,7 @@ void TaskResultsWidget::updateResultUI(const std::string& name)
         return;
 
     auto result = task_man_.result(name);
-    assert(result);
+    traced_assert(result);
 
     bool update_needed = result->updateNeeded();
     bool locked        = result->isLocked();
@@ -322,7 +322,7 @@ void TaskResultsWidget::removeCurrentResult()
     int new_index = idx < n - 1 ? idx + 1 : (idx > 0 ? idx - 1 : -1);
 
     auto name = report_combo_->currentText().toStdString();
-    assert(task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
 
     QString msg = "Do you really want to remove report '" + QString::fromStdString(name) + "'?";
     auto answer = QMessageBox::question(this, "Remove Report", msg, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No);
@@ -347,7 +347,7 @@ void TaskResultsWidget::removeCurrentResult()
 void TaskResultsWidget::exportCurrentResult(ResultReport::ReportExportMode mode)
 {
     auto name = report_combo_->currentText().toStdString();
-    assert(task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
 
     task_man_.exportResult(name, mode);
 }
@@ -357,7 +357,7 @@ void TaskResultsWidget::exportCurrentResult(ResultReport::ReportExportMode mode)
 void TaskResultsWidget::refreshCurrentResult()
 {
     auto name = report_combo_->currentText().toStdString();
-    assert(task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
 
     auto res = task_man_.result(name)->update(true);
     if (!res.ok())

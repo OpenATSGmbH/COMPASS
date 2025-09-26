@@ -93,7 +93,7 @@ GridView::GridView(const std::string& class_id,
 */
 GridView::~GridView()
 {
-    loginf << "start";
+    loginf;
 
     if (widget_)
     {
@@ -144,7 +144,7 @@ void GridView::checkSubConfigurables()
 */
 GridViewDataWidget* GridView::getDataWidget()
 {
-    assert (widget_);
+    traced_assert(widget_);
     return widget_->getViewDataWidget();
 }
 
@@ -152,7 +152,7 @@ GridViewDataWidget* GridView::getDataWidget()
 */
 const GridViewDataWidget* GridView::getDataWidget() const
 {
-    assert (widget_);
+    traced_assert(widget_);
     return widget_->getViewDataWidget();
 }
 
@@ -174,8 +174,8 @@ void GridView::accept(LatexVisitor& v)
 */
 void GridView::updateSelection()
 {
-    loginf << "start";
-    assert(widget_);
+    loginf;
+    traced_assert(widget_);
 
     widget_->getViewDataWidget()->redrawData(true);
 }

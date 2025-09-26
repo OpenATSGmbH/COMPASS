@@ -33,10 +33,10 @@ namespace EvaluationRequirement
 ModeCFalseConfigWidget::ModeCFalseConfigWidget(ModeCFalseConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of false Mode C code");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // max diff
     max_diff_edit_ = new QLineEdit(QString::number(config().maxDifference()));
@@ -64,7 +64,7 @@ void ModeCFalseConfigWidget::maxDiffEditSlot(QString value)
 ModeCFalseConfig& ModeCFalseConfigWidget::config()
 {
     ModeCFalseConfig* config = dynamic_cast<ModeCFalseConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

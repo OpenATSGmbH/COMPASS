@@ -165,7 +165,7 @@ void JSONDataMapping::check()
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
     {
         logerr << "'" << db_content_name_ << "' does not exist";
-        assert (false);
+        traced_assert(false);
     }
 
     DBContent& dbcontent = dbcont_man.dbContent(db_content_name_);
@@ -181,8 +181,8 @@ void JSONDataMapping::check()
 
 dbContent::Variable& JSONDataMapping::variable() const
 {
-    assert(initialized_);
-    assert(variable_);
+    traced_assert(initialized_);
+    traced_assert(variable_);
     return *variable_;
 }
 
@@ -260,7 +260,7 @@ void JSONDataMapping::jsonKey(const std::string& json_key)
 //    if (!widget_)
 //    {
 //        widget_.reset(new JSONDataMappingWidget (*this));
-//        assert (widget_);
+//        traced_assert(widget_);
 //    }
 
 //    return widget_.get(); // needed for qt integration, not pretty
@@ -283,7 +283,7 @@ void JSONDataMapping::initialize()
 {
     logdbg2 << "start";
 
-    assert(!initialized_);
+    traced_assert(!initialized_);
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -484,8 +484,8 @@ size_t row_cnt, bool debug) const;
 bool JSONDataMapping::findAndSetValues(const json& j, NullableVector<json>& array_list,
                      size_t row_cnt, bool debug) const
 {
-    assert (!in_array_);
-    assert (!append_value_);
+    traced_assert(!in_array_);
+    traced_assert(!append_value_);
 
     std::vector<json> values = findKeys(j);
 
@@ -502,7 +502,7 @@ bool JSONDataMapping::findAndSetValues(const json& j, NullableVector<json>& arra
         {
 //            for (const json& val_ptr : val_ptrs)
 //            {
-//                assert (val_ptr);
+//                traced_assert(val_ptr);
 //                loginf << "row_cnt " << row_cnt
 //                       << " key " << json_key_ << " value '" << val_ptr.dump() << "'";
 
@@ -583,7 +583,7 @@ const std::vector<json>JSONDataMapping::findKeys(const json& j) const
 void JSONDataMapping::addKeys(const json& j, std::vector<json>& rets ,
                                     unsigned int key_cnt) const
 {
-    assert (key_cnt < sub_keys_.size());
+    traced_assert(key_cnt < sub_keys_.size());
 
     if (j.contains(sub_keys_.at(key_cnt)))
     {
@@ -614,7 +614,7 @@ void JSONDataMapping::addKeys(const json& j, std::vector<json>& rets ,
             else
             {
                 //loginf << "unkown value type '" << value.dump() << "'";
-                assert (false); // not gonna happen
+                traced_assert(false); // not gonna happen
             }
         }
     }
@@ -660,7 +660,7 @@ template <typename T>
 void JSONDataMapping::setValue(const json* val_ptr, NullableVector<T>& array_list,
                                size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     logdbg2 << "key " << json_key_ << " json " << val_ptr->type_name()
            << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
@@ -690,7 +690,7 @@ template <typename T>
 void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<T>& array_list,
                                   size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     logdbg2 << "key " << json_key_ << " json " << val_ptr->type_name()
            << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
@@ -719,7 +719,7 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<T>& array_
 void JSONDataMapping::setValue(const json* val_ptr, NullableVector<bool>& array_list,
                                size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
         loginf << "key " << json_key_ << " json " << val_ptr->type_name()
@@ -755,7 +755,7 @@ void JSONDataMapping::setValue(const json* val_ptr, NullableVector<bool>& array_
 void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<bool>& array_list,
                                   size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
         loginf << "key " << json_key_ << " json " << val_ptr->type_name()
@@ -766,7 +766,7 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<bool>& arr
     if (val_ptr->is_number())
     {
         unsigned int tmp = *val_ptr;
-        assert(tmp == 0 || tmp == 1);
+        traced_assert(tmp == 0 || tmp == 1);
         tmp_bool = static_cast<bool>(tmp);
     }
     else
@@ -784,7 +784,7 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<bool>& arr
 void JSONDataMapping::setValue(const json* val_ptr, NullableVector<char>& array_list,
                                size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
         loginf << "key " << json_key_ << " json " << val_ptr->type_name()
@@ -803,7 +803,7 @@ void JSONDataMapping::setValue(const json* val_ptr, NullableVector<char>& array_
 void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<char>& array_list,
                                   size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
         loginf << "key " << json_key_ << " json " << val_ptr->type_name()
@@ -865,7 +865,7 @@ size_t row_cnt, bool debug) const;
 void JSONDataMapping::setValue(const json* val_ptr,
                                NullableVector<std::string>& array_list, size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
         loginf << "key " << json_key_ << " json " << val_ptr->type_name()
@@ -885,7 +885,7 @@ void JSONDataMapping::setValue(const json* val_ptr,
 void JSONDataMapping::appendValue(const json* val_ptr,
                                   NullableVector<std::string>& array_list, size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
         loginf << "key " << json_key_ << " json " << val_ptr->type_name()
@@ -908,7 +908,7 @@ void JSONDataMapping::pushBackValue(const nlohmann::json& val_ref, NullableVecto
         loginf << "key " << json_key_ << " json " << val_ref.type_name()
                << " '" << val_ref.dump() << "' format '" << json_value_format_ << "'";
 
-    assert (json_value_format_ == "");
+    traced_assert(json_value_format_ == "");
 
     if (array_list.isNull(row_cnt))
     {

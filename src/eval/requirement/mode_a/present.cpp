@@ -16,7 +16,7 @@
  */
 
 #include "eval/requirement/mode_a/present.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/mode_a/present.h"
 
 #include "evaluationmanager.h"
@@ -45,7 +45,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
 {
     logdbg << "'" << name_ << "': utn " << target_data.utn_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -233,8 +233,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
            << " num_no_ref_id " << num_no_ref_id << " num_present_id " << num_present_id
            << " num_missing_id " << num_missing_id;
 
-    assert (num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
-    assert (num_pos_inside == num_no_ref_id+num_present_id+num_missing_id);
+    traced_assert(num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos_inside == num_no_ref_id+num_present_id+num_missing_id);
 
     //assert (details.size() == tst_data.size());
 

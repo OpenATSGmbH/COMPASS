@@ -45,7 +45,7 @@ DBContentWidget::DBContentWidget(DBContent* object, QWidget* parent,
                                Qt::WindowFlags f)
     : QWidget(parent, f), object_(object)
 {
-    assert(object_);
+    traced_assert(object_);
 
     setMinimumSize(QSize(1500, 800));
 
@@ -176,21 +176,21 @@ DBContentWidget::~DBContentWidget() {}
 
 void DBContentWidget::editNameSlot()
 {
-    assert(name_edit_);
-    assert(object_);
+    traced_assert(name_edit_);
+    traced_assert(object_);
 
     std::string text = name_edit_->text().toStdString();
-    assert(text.size() > 0);
+    traced_assert(text.size() > 0);
     object_->name(text);
     emit changedDBContSignal();
 }
 void DBContentWidget::editInfoSlot()
 {
-    assert(info_edit_);
-    assert(object_);
+    traced_assert(info_edit_);
+    traced_assert(object_);
 
     std::string text = info_edit_->text().toStdString();
-    assert(text.size() > 0);
+    traced_assert(text.size() > 0);
     object_->info(text);
     emit changedDBContSignal();
 }
@@ -198,13 +198,13 @@ void DBContentWidget::editInfoSlot()
 void DBContentWidget::editDBContentVariableNameSlot()
 {
     QLineEdit* edit = static_cast<QLineEdit*>(sender());
-    assert(edit);
+    traced_assert(edit);
 
     std::string new_name = edit->text().toStdString();
 
     Variable* variable = edit->property("variable").value<Variable*>();
-    assert(variable);
-    assert(object_->hasVariable(variable->name()));
+    traced_assert(variable);
+    traced_assert(object_->hasVariable(variable->name()));
 
     if (new_name.size() == 0 || object_->hasVariable(new_name))
     {
@@ -222,28 +222,28 @@ void DBContentWidget::editDBContentVariableNameSlot()
 void DBContentWidget::editDBContentVariableDescriptionSlot()
 {
     QLineEdit* edit = static_cast<QLineEdit*>(sender());
-    assert(edit);
+    traced_assert(edit);
 
     Variable* variable = edit->property("variable").value<Variable*>();
-    assert(variable);
+    traced_assert(variable);
 
     variable->description(edit->text().toStdString());
 }
 
 void DBContentWidget::editDBContentVariableDBColumnSlot(const QString& text)
 {
-    assert (false); // TODO
+    traced_assert(false); // TODO
 }
 
 void DBContentWidget::deleteDBContVarSlot()
 {
     QPushButton* button = static_cast<QPushButton*>(sender());
-    assert(button);
+    traced_assert(button);
 
     QVariant data = button->property("variable");
 
     Variable* variable = data.value<Variable*>();
-    assert(variable);
+    traced_assert(variable);
     object_->deleteVariable(variable->name());
 
     updateDBContVarsGridSlot();
@@ -251,8 +251,8 @@ void DBContentWidget::deleteDBContVarSlot()
 
 void DBContentWidget::updateDataSourcesGridSlot()
 {
-    assert(object_);
-    assert(ds_grid_);
+    traced_assert(object_);
+    traced_assert(ds_grid_);
 
     QLayoutItem* child;
     while (!ds_grid_->isEmpty() && (child = ds_grid_->takeAt(0)) != nullptr)
@@ -283,8 +283,8 @@ void DBContentWidget::updateDataSourcesGridSlot()
 
 void DBContentWidget::updateDBContVarsGridSlot()
 {
-    assert(object_);
-    assert(dbcontvars_grid_);
+    traced_assert(object_);
+    traced_assert(dbcontvars_grid_);
 
     QLayoutItem* child;
     while (!dbcontvars_grid_->isEmpty() && (child = dbcontvars_grid_->takeAt(0)) != nullptr)

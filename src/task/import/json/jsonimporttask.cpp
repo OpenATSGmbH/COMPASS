@@ -78,7 +78,7 @@ void JSONImportTask::generateSubConfigurable(const std::string& class_id,
     {
         std::string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<std::string>("name");
 
-        assert(schemas_.find(name) == schemas_.end());
+        traced_assert(schemas_.find(name) == schemas_.end());
 
         logdbg << "generating schema " << instance_id
                << " with name " << name;
@@ -106,7 +106,7 @@ JSONImportTaskDialog* JSONImportTask::dialog()
                 this, &JSONImportTask::dialogCancelSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
@@ -147,22 +147,22 @@ bool JSONImportTask::hasJSONSchema() const
 
 std::shared_ptr<JSONParsingSchema> JSONImportTask::currentJSONSchema()
 {
-    assert(hasCurrentSchema());
-    assert (hasJSONSchema());
+    traced_assert(hasCurrentSchema());
+    traced_assert(hasJSONSchema());
 
-    assert (current_schema_name_ != "jASTERIX");
+    traced_assert(current_schema_name_ != "jASTERIX");
 
     return schemas_.at(current_schema_name_);
 }
 
 void JSONImportTask::removeCurrentSchema()
 {
-    assert(hasCurrentSchema());
+    traced_assert(hasCurrentSchema());
 
-    assert (current_schema_name_ != "jASTERIX");
+    traced_assert(current_schema_name_ != "jASTERIX");
 
     schemas_.erase(current_schema_name_);
-    assert(!hasCurrentSchema());
+    traced_assert(!hasCurrentSchema());
 
     current_schema_name_ = "";
 
@@ -256,7 +256,7 @@ void JSONImportTask::run()
 
     COMPASS::instance().logInfo("JSON Import") << "started";
 
-    assert(canImportFile());
+    traced_assert(canImportFile());
 
     objects_read_ = 0;
     objects_parsed_ = 0;
@@ -270,7 +270,7 @@ void JSONImportTask::run()
 
     all_done_ = false;
 
-    assert (hasCurrentSchema());
+    traced_assert(hasCurrentSchema());
 
     if (hasJSONSchema()) // native json schema
     {
@@ -308,23 +308,23 @@ void JSONImportTask::run()
 
 void JSONImportTask::dialogImportSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
-    assert (canRun());
+    traced_assert(canRun());
     run();
 }
 
 void JSONImportTask::dialogTestImportSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
-    assert (canRun());
+    traced_assert(canRun());
     test_ = true;
 
     run();
@@ -332,17 +332,17 @@ void JSONImportTask::dialogTestImportSlot()
 }
 void JSONImportTask::dialogCancelSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 }
 
 void JSONImportTask::addReadJSONSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert(read_json_job_);
+    traced_assert(read_json_job_);
 
     loginf << "moving objects";
 
@@ -370,7 +370,7 @@ void JSONImportTask::addReadJSONSlot()
     }
 
     // start parse job
-    assert (!json_parse_job_);
+    traced_assert(!json_parse_job_);
 
     loginf << "starting parse job";
     json_parse_job_ =
@@ -389,7 +389,7 @@ void JSONImportTask::addReadJSONSlot()
 
 void JSONImportTask::readJSONFileDoneSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     read_status_percent_ = 100.0;
     read_json_job_ = nullptr;
@@ -402,14 +402,14 @@ void JSONImportTask::readJSONFileDoneSlot()
 
 void JSONImportTask::readJSONFileObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 void JSONImportTask::parseJSONDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (json_parse_job_);
+    traced_assert(json_parse_job_);
 
     objects_parsed_ += json_parse_job_->objectsParsed();
     objects_parse_errors_ += json_parse_job_->parseErrors();
@@ -417,7 +417,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
     json_parse_job_ = nullptr;
 
-    assert (hasCurrentSchema());
+    traced_assert(hasCurrentSchema());
 
     std::vector<std::string> keys;
 
@@ -433,7 +433,7 @@ void JSONImportTask::parseJSONDoneSlot()
         }
         else // not framed
         {
-            assert (json_objects->contains("data_blocks"));
+            traced_assert(json_objects->contains("data_blocks"));
             keys = {"data_blocks", "content", "records"};
         }
 
@@ -445,19 +445,19 @@ void JSONImportTask::parseJSONDoneSlot()
     }
     else // native json schema
     {
-        assert(json_objects->contains("data")); // always written in data array
+        traced_assert(json_objects->contains("data")); // always written in data array
         keys = {"data"};
 
         size_t count = json_objects->at("data").size();
         logdbg << "start" << count << " parsed objects";
 
-        assert (hasJSONSchema());
+        traced_assert(hasJSONSchema());
 
         json_map_job = std::make_shared<JSONMappingJob>(
                     std::move(json_objects), keys, file_line_id_, currentJSONSchema()->parsers());
     }
 
-    assert (json_map_job);
+    traced_assert(json_map_job);
 
     //loginf << "UGA3";
 
@@ -485,15 +485,15 @@ void JSONImportTask::parseJSONDoneSlot()
 
 void JSONImportTask::parseJSONObsoleteSlot()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 void JSONImportTask::mapJSONDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     JSONMappingJob* map_job = dynamic_cast<JSONMappingJob*>(QObject::sender());
-    assert(map_job);
+    traced_assert(map_job);
 
     loginf << "skipped " << map_job->numNotMapped()
            << " all skipped " << objects_not_mapped_;
@@ -531,7 +531,7 @@ void JSONImportTask::mapJSONDoneSlot()
 
     // date_
 
-    assert (!ts_calculator_.processing());
+    traced_assert(!ts_calculator_.processing());
     ts_calculator_.setBuffers(std::move(job_buffers));
 
     ts_calculator_.calculate(import_filename_,
@@ -563,7 +563,7 @@ void JSONImportTask::mapJSONDoneSlot()
 
 void JSONImportTask::mapJSONObsoleteSlot()
 {
-     logdbg << "start"; 
+     logdbg; 
 }
 
 
@@ -581,12 +581,12 @@ void JSONImportTask::postprocessDoneSlot()
     }
 
     ASTERIXPostprocessJob* post_job = dynamic_cast<ASTERIXPostprocessJob*>(QObject::sender());
-    assert(post_job);
+    traced_assert(post_job);
 
     std::map<std::string, std::shared_ptr<Buffer>> job_buffers {post_job->buffers()};
 
-    assert (postprocess_jobs_.size());
-    assert (postprocess_jobs_.begin()->get() == post_job);
+    traced_assert(postprocess_jobs_.size());
+    traced_assert(postprocess_jobs_.begin()->get() == post_job);
     post_job = nullptr;
     postprocess_jobs_.erase(postprocess_jobs_.begin()); // remove
 
@@ -600,7 +600,7 @@ void JSONImportTask::postprocessDoneSlot()
 //        if (!insert_active_)
 //        {
 //            logdbg << "inserting, thread " << QThread::currentThreadId();
-//            assert (!COMPASS::instance().dbContentManager().insertInProgress());
+//            traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
 //            insertData();
 //        }
 //    }
@@ -609,10 +609,10 @@ void JSONImportTask::postprocessDoneSlot()
 void JSONImportTask::postprocessObsoleteSlot()
 {
     ASTERIXPostprocessJob* post_job = dynamic_cast<ASTERIXPostprocessJob*>(QObject::sender());
-    assert(post_job);
+    traced_assert(post_job);
 
-    assert (postprocess_jobs_.size());
-    assert (postprocess_jobs_.begin()->get() == post_job);
+    traced_assert(postprocess_jobs_.size());
+    traced_assert(postprocess_jobs_.begin()->get() == post_job);
     post_job = nullptr;
     postprocess_jobs_.erase(postprocess_jobs_.begin()); // remove
 }
@@ -664,7 +664,7 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
     // checkAllDone();
 
 
-//    assert (hasCurrentSchema());
+//    traced_assert(hasCurrentSchema());
 //    shared_ptr<JSONParsingSchema> current_schema = currentJSONSchema();
 //    //assert(schemas_.count(current_schema_));
 
@@ -680,14 +680,14 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 //            //DBContent& dbcontent = parser_it.second->dbContent();
 
 //            std::string data_source_var_name = parser_it.second->dataSourceVariableName();
-//            assert(data_source_var_name.size());
+//            traced_assert(data_source_var_name.size());
 //            //assert(dbcontent.currentDataSourceDefinition().localKey() == data_source_var_name);
 
 //            const dbContent::VariableSet& set = parser_it.second->variableList();
 
 //            if (dbcont_variable_sets_.count(dbcontent_name))  // add variables
 //            {
-//                assert(std::get<0>(dbcont_variable_sets_.at(dbcontent_name)) == data_source_var_name);
+//                traced_assert(std::get<0>(dbcont_variable_sets_.at(dbcontent_name)) == data_source_var_name);
 //                std::get<1>(dbcont_variable_sets_.at(dbcontent_name)).add(set);
 //            }
 //            else  // create it
@@ -724,13 +724,13 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 //            continue;
 //        }
 
-//        assert(dbcont_variable_sets_.count(dbcontent_name));
+//        traced_assert(dbcont_variable_sets_.count(dbcontent_name));
 
 //        loginf << "insert dbcont " << dbcontent_name << " size " << buffer->size()
 //               << " num prop " << buffer->properties().size();
 //        //buffer->properties().print();
 
-//        assert(dbcont_manager.existsDBContent(dbcontent_name));
+//        traced_assert(dbcont_manager.existsDBContent(dbcontent_name));
 //        DBContent& dbcontent = dbcont_manager.dbContent(dbcontent_name);
 
 //        ++insert_active_;
@@ -762,10 +762,10 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 ////                datasources_existing.insert(ds_it->first);
 
 //        // getting key list and distinct values
-//        assert(buffer->properties().hasProperty(data_source_var_name));
-//        assert(buffer->properties().get(data_source_var_name).dataType() == PropertyDataType::INT);
+//        traced_assert(buffer->properties().hasProperty(data_source_var_name));
+//        traced_assert(buffer->properties().get(data_source_var_name).dataType() == PropertyDataType::INT);
 
-//        assert(buffer->has<int>(data_source_var_name));
+//        traced_assert(buffer->has<int>(data_source_var_name));
 //        NullableVector<int>& data_source_key_list = buffer->get<int>(data_source_var_name);
 //        std::set<int> data_source_keys = data_source_key_list.distinctValues();
 
@@ -790,7 +790,7 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 //                    logdbg << "found new ds " << key_val
 //                           << " for sac/sic";
 
-//                    assert(!sac_list.isNull(cnt) && !sic_list.isNull(cnt));
+//                    traced_assert(!sac_list.isNull(cnt) && !sic_list.isNull(cnt));
 //                    sac_sics[key_val] = std::pair<unsigned char, unsigned char>(sac_list.get(cnt),
 //                                                                                sic_list.get(cnt));
 
@@ -852,7 +852,7 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 
 void JSONImportTask::checkAllDone()
 {
-    logdbg << "start";
+    logdbg;
 
     loginf << "all done " << all_done_ << " read "
            << (read_json_job_ == nullptr) << " parse jobs " << (json_parse_job_ == nullptr)
@@ -903,7 +903,7 @@ void JSONImportTask::checkAllDone()
 
 void JSONImportTask::updateMsgBox()
 {
-    logdbg << "start";
+    logdbg;
 
     if (all_done_ && !allow_user_interactions_)
     {
@@ -928,7 +928,7 @@ void JSONImportTask::updateMsgBox()
         else
             msg_box_->setWindowTitle("Import JSON Data Status");
 
-        assert(msg_box_);
+        traced_assert(msg_box_);
     }
 
     std::string msg;
@@ -1044,7 +1044,7 @@ bool JSONImportTask::maxLoadReached()
 
 void JSONImportTask::insertDoneSlot()
 {
-    loginf << "start";
+    loginf;
     --insert_active_;
 
     bool test = test_; // test_ cleared by checkAllDone

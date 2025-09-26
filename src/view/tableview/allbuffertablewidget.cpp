@@ -66,15 +66,15 @@ int AllBufferTableWidget::rowCount() const
 
 void AllBufferTableWidget::clear()
 {
-    assert(model_);
+    traced_assert(model_);
 
     model_->clearData();
 }
 
 void AllBufferTableWidget::show(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    assert(table_);
-    assert(model_);
+    traced_assert(table_);
+    traced_assert(model_);
 
     model_->setData(buffers);
     table_->resizeColumnsToContents();
@@ -82,7 +82,7 @@ void AllBufferTableWidget::show(std::map<std::string, std::shared_ptr<Buffer>> b
 
 void AllBufferTableWidget::exportSlot()
 {
-    loginf << "start";
+    loginf;
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -106,7 +106,7 @@ void AllBufferTableWidget::exportSlot()
             filename += ".csv";
 
         loginf << "export filename " << filename.toStdString();
-        assert(model_);
+        traced_assert(model_);
         model_->saveAsCSV(filename.toStdString());
     }
     else
@@ -119,53 +119,53 @@ void AllBufferTableWidget::exportDoneSlot(bool cancelled) { emit exportDoneSigna
 
 void AllBufferTableWidget::updateToSettingsChange()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(model_);
+    traced_assert(model_);
     model_->rebuild();
-    assert(table_);
+    traced_assert(table_);
     table_->resizeColumnsToContents();
 }
 
 void AllBufferTableWidget::resetModel()
 {
-    assert(model_);
+    traced_assert(model_);
     model_->reset();
 }
 
 void AllBufferTableWidget::updateToSelection()
 {
-    assert(model_);
+    traced_assert(model_);
     model_->rebuild();
-    assert(table_);
+    traced_assert(table_);
     table_->resizeColumnsToContents();
 }
 
 void AllBufferTableWidget::resizeColumns()
 {
-    assert(table_);
+    traced_assert(table_);
     table_->resizeColumnsToContents();
 }
 
 void AllBufferTableWidget::selectSelectedRows()
 {
-    loginf << "start";
+    loginf;
 
-    assert(table_);
-    assert(model_);
+    traced_assert(table_);
+    traced_assert(model_);
     std::pair<int,int> rows = model_->getSelectedRows();
 
     if (rows.first >= 0 && rows.second >= 0)
     {
         loginf << "rows " << rows.first << " to " << rows.second;
 
-        assert (rows.first <= rows.second);
+        traced_assert(rows.first <= rows.second);
 
         QModelIndex first = model_->index(rows.first, 0, QModelIndex());
-        assert (first.isValid());
+        traced_assert(first.isValid());
 
         QModelIndex last = model_->index(rows.second, 0, QModelIndex());
-        assert (last.isValid());
+        traced_assert(last.isValid());
 
         table_->selectionModel()->select(QItemSelection(first, last),
                                          QItemSelectionModel::Select | QItemSelectionModel::Rows);
@@ -184,7 +184,7 @@ void AllBufferTableWidget::keyPressEvent(QKeyEvent* event)
 {
     loginf << "got keypressed";
 
-    assert(table_);
+    traced_assert(table_);
 
     if (event->modifiers() & Qt::ControlModifier)
     {
@@ -347,8 +347,8 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText (unsigned in
     int rows = model->rowCount();
     int cols = model->columnCount();
 
-    assert (rows >= 0);
-    assert (cols >= 0);
+    traced_assert(rows >= 0);
+    traced_assert(cols >= 0);
 
     bool max_rows_hit = false;
 

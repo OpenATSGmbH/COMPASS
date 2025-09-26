@@ -51,20 +51,20 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
     {
         logdbg << "display role: row " << index.row() << " col " << index.column();
 
-        assert (index.row() >= 0);
-        assert ((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+        traced_assert(index.row() >= 0);
+        traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
 
         unsigned int ds_id = ds_man_.getAllDsIDs().at(index.row());
 
         logdbg << "got ds_id " << ds_id;
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (ds_man_.hasDBDataSource(ds_id))
         {
             dbContent::DBDataSource& ds = ds_man_.dbDataSource(ds_id);
-            assert (ds_man_.hasConfigDataSource(ds_id));
+            traced_assert(ds_man_.hasConfigDataSource(ds_id));
 
             if (col_name == "Name")
                 return ds.name().c_str();
@@ -86,7 +86,7 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
         }
         else // cfg only
         {
-            assert (ds_man_.hasConfigDataSource(ds_id));
+            traced_assert(ds_man_.hasConfigDataSource(ds_id));
 
             dbContent::ConfigurationDataSource& ds = ds_man_.configDataSource(ds_id);
 
@@ -111,14 +111,14 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
     }
     case Qt::DecorationRole:
     {
-        assert (index.row() >= 0);
-        assert ((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+        traced_assert(index.row() >= 0);
+        traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
 
         unsigned int ds_id = ds_man_.getAllDsIDs().at(index.row());
 
         logdbg << "got ds_id " << ds_id;
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (col_name != "In DB" && col_name != "In Cfg")
@@ -143,7 +143,7 @@ QVariant DataSourceTableModel::headerData(int section, Qt::Orientation orientati
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -165,7 +165,7 @@ Qt::ItemFlags DataSourceTableModel::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     //    if (table_columns_.at(index.column()) == "comment")
     //        return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
@@ -176,10 +176,10 @@ Qt::ItemFlags DataSourceTableModel::flags(const QModelIndex &index) const
 
 unsigned int DataSourceTableModel::getIdOf (const QModelIndex& index)
 {
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
-    assert (index.row() >= 0);
-    assert ((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+    traced_assert(index.row() >= 0);
+    traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
 
     return ds_man_.getAllDsIDs().at(index.row());
 }
@@ -191,7 +191,7 @@ QModelIndex DataSourceTableModel::dataSourceIndex(unsigned int ds_id)
     auto ds_ids = ds_man_.getAllDsIDs();
 
     auto itr = std::find(ds_ids.begin(), ds_ids.end(), ds_id);
-    assert (itr != ds_ids.end());
+    traced_assert(itr != ds_ids.end());
 
     unsigned int row = std::distance(ds_ids.begin(), itr);
 
@@ -205,7 +205,7 @@ void DataSourceTableModel::updateDataSource(unsigned int ds_id)
     auto ds_ids = ds_man_.getAllDsIDs();
 
     auto itr = std::find(ds_ids.begin(), ds_ids.end(), ds_id);
-    assert (itr != ds_ids.end());
+    traced_assert(itr != ds_ids.end());
 
     unsigned int row = std::distance(ds_ids.begin(), itr);
 

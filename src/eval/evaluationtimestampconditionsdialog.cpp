@@ -93,7 +93,7 @@ EvaluationTimestampConditionsDialog::~EvaluationTimestampConditionsDialog()
 
 bool EvaluationTimestampConditionsDialog::somethingChangedFlag() const
 {
-    assert (tw_widget_);
+    traced_assert(tw_widget_);
     return something_changed_flag_ || tw_widget_->somethingChangedFlag();
 }
 
@@ -102,15 +102,15 @@ void EvaluationTimestampConditionsDialog::updateValues()
     update_active_ = true;
 
     // time filter
-    assert (use_time_check_);
+    traced_assert(use_time_check_);
     use_time_check_->setChecked(eval_man_.useTimestampFilter());
 
-    assert (time_begin_edit_);
+    traced_assert(time_begin_edit_);
     //time_begin_edit_->setText(String::timeStringFromDouble(eval_man_.loadTimestampBegin()).c_str());
     time_begin_edit_->setDateTime(QDateTime::fromString(Time::toString(eval_man_.loadTimestampBegin()).c_str(),
                                                         Time::QT_DATETIME_FORMAT.c_str()));
 
-    assert (time_end_edit_);
+    traced_assert(time_end_edit_);
     //time_end_edit_->setText(String::timeStringFromDouble(eval_man_.loadTimestampEnd()).c_str());
     time_end_edit_->setDateTime(QDateTime::fromString(Time::toString(eval_man_.loadTimestampEnd()).c_str(),
                                                       Time::QT_DATETIME_FORMAT.c_str()));
@@ -123,7 +123,7 @@ void EvaluationTimestampConditionsDialog::updateValues()
  */
 void EvaluationTimestampConditionsDialog::toggleUseTimeSlot()
 {
-    assert (use_time_check_);
+    traced_assert(use_time_check_);
     eval_man_.useTimestampFilter(use_time_check_->checkState() == Qt::Checked);
 
     something_changed_flag_ = true;

@@ -20,7 +20,7 @@
 #include "job.h"
 
 #include <list>
-#include <cassert>
+#include "traced_assert.h"
 
 class Buffer;
 class DBContent;
@@ -46,7 +46,7 @@ class UpdateBufferDBJob : public Job
 
     std::shared_ptr<Buffer> buffer()
     {
-        assert(buffer_);
+        traced_assert(buffer_);
         return buffer_;
     }
 

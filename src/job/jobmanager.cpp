@@ -140,7 +140,7 @@ unsigned int JobManagerBase::numJobs() const
  */
 void JobManagerBase::run()
 {
-    logdbg << "start";
+    logdbg;
 
     //boost::posix_time::ptime log_time_ = boost::posix_time::microsec_clock::local_time();
 
@@ -187,9 +187,9 @@ void JobManagerBase::run()
 //        }
     }
 
-    assert(!hasBlockingJobs());
-    assert(!hasNonBlockingJobs());
-    assert(!hasDBJobs());
+    traced_assert(!hasBlockingJobs());
+    traced_assert(!hasNonBlockingJobs());
+    traced_assert(!hasDBJobs());
 
     stopped_ = true;
 
@@ -200,17 +200,17 @@ void JobManagerBase::run()
  */
 void JobManagerBase::shutdown()
 {
-    loginf << "setting jobs obsolete";
+    logdbg << "setting jobs obsolete";
 
     stop_requested_ = true;
 
     setJobsObsolete();
 
-    loginf << "waiting on jobs to quit";
+    logdbg << "waiting on jobs to quit";
 
     while (hasAnyJobs())
     {
-        loginf << "waiting on jobs to finish: db " << hasDBJobs()
+        logdbg << "waiting on jobs to finish: db " << hasDBJobs()
                << " blocking " << hasBlockingJobs() << " non-locking " << hasNonBlockingJobs();
 
         msleep(1000);
@@ -218,13 +218,13 @@ void JobManagerBase::shutdown()
 
     while (!stopped_)
     {
-        loginf << "waiting on run stop";
+        logdbg << "waiting on run stop";
         msleep(1000);
     }
 
-    assert(numJobs() == 0);
+    traced_assert(numJobs() == 0);
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 /*************************************************************************************
@@ -235,8 +235,8 @@ void JobManagerBase::shutdown()
  */
 void JobManagerAsync::AsyncJob::exec()
 {
-    assert (job_);
-    assert (!is_running_);
+    traced_assert(job_);
+    traced_assert(!is_running_);
 
     future_ = std::async(std::launch::async, [ this ] 
     { 
@@ -251,7 +251,7 @@ void JobManagerAsync::AsyncJob::exec()
  */
 bool JobManagerAsync::AsyncJob::done() const
 {
-    assert (job_);
+    traced_assert(job_);
     return job_->done(); //future_.valid()
 }
 
@@ -381,7 +381,7 @@ void JobManagerAsync::handleBlockingJobs(bool debug)
         {
             loginf << "running blocking job";
 
-            assert(!active_blocking_job_->is_running_ && !active_blocking_job_->job_->started());
+            traced_assert(!active_blocking_job_->is_running_ && !active_blocking_job_->job_->started());
             active_blocking_job_->exec();
 
             //changed_ = true;
@@ -414,7 +414,7 @@ void JobManagerAsync::handleNonBlockingJobs(bool debug)
     //             break;  // active not done, quit loop
     //     }
 
-    //     assert(!active_non_blocking_job_);
+    //     traced_assert(!active_non_blocking_job_);
 
     //     if (!non_blocking_jobs_.empty())
     //     {
@@ -528,8 +528,8 @@ void JobManagerAsync::setJobsObsolete()
  */
 void JobManagerThreadPool::AsyncJob::exec()
 {
-    assert (job_);
-    assert (!is_running_);
+    traced_assert(job_);
+    traced_assert(!is_running_);
 
     QThreadPool::globalInstance()->start(job_.get());
 
@@ -540,8 +540,8 @@ void JobManagerThreadPool::AsyncJob::exec()
  */
 bool JobManagerThreadPool::AsyncJob::tryExec()
 {
-    assert (job_);
-    assert (!is_running_);
+    traced_assert(job_);
+    traced_assert(!is_running_);
 
     bool ok = QThreadPool::globalInstance()->tryStart(job_.get());
 
@@ -554,7 +554,7 @@ bool JobManagerThreadPool::AsyncJob::tryExec()
  */
 bool JobManagerThreadPool::AsyncJob::done() const
 {
-    assert (job_);
+    traced_assert(job_);
     return is_running_ && job_->done(); //future_.valid()
 }
 
@@ -701,7 +701,7 @@ void JobManagerThreadPool::handleBlockingJobs(bool debug)
     {
         if (blocking_jobs_.try_pop(active_blocking_job_))
         {
-            assert(!active_blocking_job_->job_->started());
+            traced_assert(!active_blocking_job_->job_->started());
             active_blocking_job_->exec();
 
             //changed_ = true;
@@ -798,7 +798,7 @@ void JobManagerThreadPool::handleNonBlockingJobs(bool debug)
             }
         }
 
-        assert(!active_non_blocking_job_);
+        traced_assert(!active_non_blocking_job_);
 
         if (!non_blocking_jobs_.empty())
         {
@@ -893,12 +893,12 @@ void JobManagerThreadPool::setJobsObsolete()
 JobManager::JobManager()
 :   Configurable("JobManager", "JobManager0", 0, "threads.json")
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
  */
 JobManager::~JobManager() 
 { 
-    logdbg << "start"; 
+    logdbg; 
 }

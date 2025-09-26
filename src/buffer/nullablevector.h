@@ -57,15 +57,15 @@ public:
         logdbg2 << property_.name() << ": index " << index;
         if (BUFFER_PEDANTIC_CHECKING)
         {
-            assert(data_.size() <= buffer_.size_);
-            assert(null_flags_.size() <= buffer_.size_);
-            assert(index < data_.size());
+            traced_assert(data_.size() <= buffer_.size_);
+            traced_assert(null_flags_.size() <= buffer_.size_);
+            traced_assert(index < data_.size());
         }
 
         if (isNull(index))
         {
             logerr << property_.name() << ": getRef: index " << index << " is null";
-            assert (false);
+            traced_assert(false);
         }
 
         return data_.at(index);
@@ -175,15 +175,15 @@ const T NullableVector<T>::get(unsigned int index) const
     logdbg2 << property_.name() << ": index " << index;
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
-        assert(index < data_.size());
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(index < data_.size());
     }
 
     if (isNull(index))
     {
         logerr << property_.name() << ": get: index " << index << " is null";
-        assert (false);
+        traced_assert(false);
     }
 
     return data_.at(index);
@@ -204,8 +204,8 @@ void NullableVector<T>::set(unsigned int index, T value)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= data_.size())  // allocate new stuff, fill all new with not null
@@ -217,7 +217,7 @@ void NullableVector<T>::set(unsigned int index, T value)
     }
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < data_.size());
+        traced_assert(index < data_.size());
 
     data_.at(index) = value;
     unsetNull(index);
@@ -269,7 +269,7 @@ void NullableVector<T>::setFromFormat(unsigned int index, const std::string& for
     else
     {
         logerr << "unknown format '" << format << "'";
-        assert(false);
+        traced_assert(false);
     }
 
     if (debug)
@@ -299,8 +299,8 @@ void NullableVector<T>::append(unsigned int index, T value)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= data_.size())  // allocate new stuff, fill all new with not null
@@ -312,7 +312,7 @@ void NullableVector<T>::append(unsigned int index, T value)
     }
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < data_.size());
+        traced_assert(index < data_.size());
 
     data_.at(index) += value;
     unsetNull(index);
@@ -350,7 +350,7 @@ void NullableVector<T>::appendFromFormat(unsigned int index, const std::string& 
     else
     {
         logerr << "unknown format '" << format << "'";
-        assert(false);
+        traced_assert(false);
     }
 
     append(index, value);
@@ -363,15 +363,15 @@ void NullableVector<T>::setNull(unsigned int index)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= null_flags_.size())  // null flags to small
         resizeNullTo(index + 1);
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < null_flags_.size());
+        traced_assert(index < null_flags_.size());
 
     null_flags_.at(index) = true;
 }
@@ -394,9 +394,9 @@ bool NullableVector<T>::isNull(unsigned int index) const
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
-        assert(index < buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(index < buffer_.size_);
     }
 
     if (index < null_flags_.size())  // if stored, return value
@@ -418,8 +418,8 @@ void NullableVector<T>::resizeDataTo(unsigned int size)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(data_.size() < size);  // only to be called if needed
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(data_.size() < size);  // only to be called if needed
     }
 
     data_.resize(size, T());
@@ -435,8 +435,8 @@ void NullableVector<T>::resizeNullTo(unsigned int size)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert (size >= null_flags_.size());
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(size >= null_flags_.size());
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (data_.size() > null_flags_.size())  // data was set w/o null, adjust & fill with set values
@@ -449,7 +449,7 @@ void NullableVector<T>::resizeNullTo(unsigned int size)
         buffer_.size_ = null_flags_.size();
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(null_flags_.size() >= size); // could be larger since increase to data.size()
+        traced_assert(null_flags_.size() >= size); // could be larger since increase to data.size()
 }
 
 template <class T>
@@ -459,8 +459,8 @@ void NullableVector<T>::addData(NullableVector<T>& other)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (!other.data_.size() &&
@@ -736,15 +736,15 @@ std::map<boost::optional<T>, std::vector<unsigned int>> NullableVector<T>::disti
 
     std::map<boost::optional<T>, std::vector<unsigned int>> values;
 
-    assert(from_index <= to_index);
+    traced_assert(from_index <= to_index);
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(from_index <= to_index);
-        assert(from_index < buffer_.size_);
-        assert(to_index < buffer_.size_);
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(from_index <= to_index);
+        traced_assert(from_index < buffer_.size_);
+        traced_assert(to_index < buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (from_index + 1 > data_.size())  // no data
@@ -753,7 +753,7 @@ std::map<boost::optional<T>, std::vector<unsigned int>> NullableVector<T>::disti
     for (unsigned int index = from_index; index <= to_index; ++index)
     {
         if (BUFFER_PEDANTIC_CHECKING)
-            assert(index < data_.size());
+            traced_assert(index < data_.size());
 
         if (isNull(index))
             values[{}].push_back(index);
@@ -776,14 +776,14 @@ std::map<boost::optional<T>, std::vector<unsigned int>> NullableVector<T>::disti
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     for (auto index : indexes)
     {
         if (BUFFER_PEDANTIC_CHECKING)
-            assert(index < data_.size());
+            traced_assert(index < data_.size());
 
         if (isNull(index))
             values[{}].push_back(index);
@@ -805,8 +805,8 @@ std::map<T, unsigned int> NullableVector<T>::uniqueValuesWithIndexes()
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     for (unsigned int index = 0; index < data_.size(); ++index)
@@ -814,9 +814,9 @@ std::map<T, unsigned int> NullableVector<T>::uniqueValuesWithIndexes()
         if (!isNull(index))  // not for null
         {
             if (BUFFER_PEDANTIC_CHECKING)
-                assert(index < data_.size());
+                traced_assert(index < data_.size());
 
-            assert (!value_indexes.count(data_.at(index)));
+            traced_assert(!value_indexes.count(data_.at(index)));
             value_indexes[data_.at(index)] = index;
         }
     }
@@ -835,8 +835,8 @@ std::map<T, unsigned int> NullableVector<T>::uniqueValuesWithIndexes(const std::
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     for (unsigned int index = 0; index < data_.size(); ++index)
@@ -844,9 +844,9 @@ std::map<T, unsigned int> NullableVector<T>::uniqueValuesWithIndexes(const std::
         if (!isNull(index) && values.count(data_.at(index)))  // not for null
         {
             if (BUFFER_PEDANTIC_CHECKING)
-                assert(index < data_.size());
+                traced_assert(index < data_.size());
 
-            assert (!value_indexes.count(data_.at(index)));
+            traced_assert(!value_indexes.count(data_.at(index)));
             value_indexes[data_.at(index)] = index;
         }
     }
@@ -870,7 +870,7 @@ void NullableVector<T>::convertToStandardFormat(const std::string& from_format)
     {
         logerr << "unknown format '" << from_format
                << "'";
-        assert(false);
+        traced_assert(false);
     }
 
     unsigned int data_size = data_.size();
@@ -903,7 +903,7 @@ void NullableVector<T>::convertToStandardFormat(const std::string& from_format)
     //        else
     //        {
     //            logerr << "unknown format '" <<
-    //            from_format << "'"; assert (false);
+    //            from_format << "'"; traced_assert(false);
     //        }
     //    }
 }
@@ -921,8 +921,8 @@ void NullableVector<T>::cutToSize(unsigned int size)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     while (null_flags_.size() > size)
@@ -1027,7 +1027,7 @@ void NullableVector<T>::removeIndexes(const std::vector<unsigned int>& indexes_t
         }
 
         //chop remaining unneeded space
-        assert (data_rm_cnt <= data_.size());
+        traced_assert(data_rm_cnt <= data_.size());
         data_.resize(data_.size() - data_rm_cnt);
     }
 
@@ -1069,7 +1069,7 @@ void NullableVector<T>::removeIndexes(const std::vector<unsigned int>& indexes_t
             null_idx_old++;
         }
 
-        assert (null_rm_cnt <= null_flags_.size());
+        traced_assert(null_rm_cnt <= null_flags_.size());
         null_flags_.resize(null_flags_.size() - null_rm_cnt);
     }
 }
@@ -1116,8 +1116,8 @@ void NullableVector<T>::swapData (unsigned int index1, unsigned int index2)
         return;
     else if (!index1_null && !index2_null)
     {
-        assert (index1 < data_.size());
-        assert (index2 < data_.size());
+        traced_assert(index1 < data_.size());
+        traced_assert(index2 < data_.size());
 
         T val = get(index1);
         set(index1, get(index2));
@@ -1125,14 +1125,14 @@ void NullableVector<T>::swapData (unsigned int index1, unsigned int index2)
     }
     else if (index1_null && !index2_null)
     {
-        assert (index2 < data_.size());
+        traced_assert(index2 < data_.size());
 
         set(index1, get(index2));
         setNull(index2);
     }
     else if (!index1_null && index2_null)
     {
-        assert (index1 < data_.size());
+        traced_assert(index1 < data_.size());
 
         set(index2, get(index1));
         setNull(index1);
@@ -1151,7 +1151,7 @@ std::vector<unsigned int> NullableVector<T>::sortPermutation()
     if (data_.size() < buffer_.size())
         resizeDataTo(buffer_.size());
 
-    assert (data_.size() == buffer_.size());
+    traced_assert(data_.size() == buffer_.size());
     std::vector<unsigned int> p (data_.size());
 
     std::iota(p.begin(), p.end(), 0);
@@ -1187,21 +1187,21 @@ void NullableVector<T>::sortByPermutation(const std::vector<unsigned int>& perm)
         if (done.at(i))
             continue;
 
-        assert (i < done.size());
+        traced_assert(i < done.size());
         done.at(i) = true;
         unsigned int prev_j = i;
 
-        assert (i < perm.size());
+        traced_assert(i < perm.size());
         unsigned int j = perm.at(i);
         while (i != j)
         {
             //std::swap(data_[prev_j], data_[j]);
             swapData(prev_j, j);
 
-            assert (j < done.size());
+            traced_assert(j < done.size());
             done.at(j) = true;
             prev_j = j;
-            assert (j < perm.size());
+            traced_assert(j < perm.size());
             j = perm.at(j);
         }
     }
@@ -1259,10 +1259,10 @@ void NullableVector<T>::unsetNull(unsigned int index)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
-        assert(index < buffer_.size_);
-        assert(index < data_.size());
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(index < buffer_.size_);
+        traced_assert(index < data_.size());
     }
 
     if (index < null_flags_.size())  // if was already set

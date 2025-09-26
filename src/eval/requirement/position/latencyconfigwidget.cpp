@@ -31,12 +31,12 @@ namespace EvaluationRequirement
 {
 
 PositionLatencyConfigWidget::PositionLatencyConfigWidget(PositionLatencyConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of acceptable position latency");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // max dist
     max_abs_value_edit_ = new QLineEdit(String::timeStringFromDouble(config().maxAbsValue()).c_str());
@@ -65,7 +65,7 @@ void PositionLatencyConfigWidget::maxAbsValueEditSlot(QString value)
 PositionLatencyConfig& PositionLatencyConfigWidget::config()
 {
     PositionLatencyConfig* config = dynamic_cast<PositionLatencyConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

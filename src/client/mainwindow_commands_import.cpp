@@ -91,7 +91,7 @@ bool RTCommandImportViewPointsFile::run_impl()
     vp_import_task.allowUserInteractions(false);
 
     vp_import_task.run();
-    assert (vp_import_task.done());
+    traced_assert(vp_import_task.done());
 
     // if shitty
     //setResultMessage("VP error case 3");
@@ -122,7 +122,7 @@ namespace helpers
     void addImportErrorFiles(nlohmann::json& j,
                              ASTERIXImportTask& import_task)
     {
-        assert (import_task.source().isFileType());
+        traced_assert(import_task.source().isFileType());
 
         auto err_files = nlohmann::json::array();
 
@@ -254,7 +254,7 @@ bool RTCommandImportASTERIXFile::run_impl()
             bool ok {true};
 
             double time_offset = String::timeFromString(time_offset_str_, &ok);
-            assert (ok); // was checked in valid
+            traced_assert(ok); // was checked in valid
 
             import_task.settings().override_tod_active_ = true;
             import_task.settings().override_tod_offset_ = time_offset;
@@ -269,8 +269,8 @@ bool RTCommandImportASTERIXFile::run_impl()
         return false;
     }
 
-    assert (filename_.size());
-    assert (Files::fileExists(filename_));
+    traced_assert(filename_.size());
+    traced_assert(Files::fileExists(filename_));
 
     import_task.source().setSourceType(ASTERIXImportSource::SourceType::FileASTERIX, {filename_});//, file_line);
 
@@ -453,7 +453,7 @@ bool RTCommandImportASTERIXFiles::run_impl()
             bool ok {true};
 
             double time_offset = String::timeFromString(time_offset_str_, &ok);
-            assert (ok); // was checked in valid
+            traced_assert(ok); // was checked in valid
 
             import_task.settings().override_tod_active_ = true;
             import_task.settings().override_tod_offset_ = time_offset;
@@ -468,13 +468,13 @@ bool RTCommandImportASTERIXFiles::run_impl()
         return false;
     }
 
-    assert (filenames_.size());
+    traced_assert(filenames_.size());
 
     for (const auto& filename : split_filenames_)
     {
         loginf << "file '" << filename << "'";
 
-        assert (Files::fileExists(filename));
+        traced_assert(Files::fileExists(filename));
     }
 
     import_task.source().setSourceType(ASTERIXImportSource::SourceType::FileASTERIX, split_filenames_);//, file_line);
@@ -642,7 +642,7 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
             bool ok {true};
 
             double time_offset = String::timeFromString(time_offset_str_, &ok);
-            assert (ok); // was checked in valid
+            traced_assert(ok); // was checked in valid
 
             import_task.settings().override_tod_active_ = true;
             import_task.settings().override_tod_offset_ = time_offset;
@@ -657,8 +657,8 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
         return false;
     }
 
-    assert (filename_.size());
-    assert (Files::fileExists(filename_));
+    traced_assert(filename_.size());
+    traced_assert(Files::fileExists(filename_));
 
     import_task.source().setSourceType(ASTERIXImportSource::SourceType::FilePCAP, {filename_});//, file_line);
 
@@ -811,7 +811,7 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
             bool ok {true};
 
             double time_offset = String::timeFromString(time_offset_str_, &ok);
-            assert (ok); // was checked in valid
+            traced_assert(ok); // was checked in valid
 
             import_task.settings().override_tod_active_ = true;
             import_task.settings().override_tod_offset_ = time_offset;
@@ -826,13 +826,13 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
         return false;
     }
 
-    assert (filenames_.size());
+    traced_assert(filenames_.size());
 
     for (const auto& filename : split_filenames_)
     {
         loginf << "file '" << filename << "'";
 
-        assert (Files::fileExists(filename));
+        traced_assert(Files::fileExists(filename));
     }
 
     import_task.source().setSourceType(ASTERIXImportSource::SourceType::FilePCAP, split_filenames_);//, file_line);
@@ -953,7 +953,7 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
             bool ok {true};
 
             double time_offset = String::timeFromString(time_offset_str_, &ok);
-            assert (ok); // was checked in valid
+            traced_assert(ok); // was checked in valid
 
             import_task.settings().override_tod_active_ = true;
             import_task.settings().override_tod_offset_ = time_offset;
@@ -1044,7 +1044,7 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
     import_task.allowUserInteractions(false);
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->liveStopSlot();
 

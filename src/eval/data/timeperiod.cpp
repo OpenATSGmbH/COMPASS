@@ -33,7 +33,7 @@ TimePeriod::TimePeriod (boost::posix_time::ptime begin,
                         Type type)
     : begin_(begin), end_(end), type_(type)
 {
-    assert (end_ >= begin_);
+    traced_assert(end_ >= begin_);
 }
 
 /**
@@ -47,7 +47,7 @@ bool TimePeriod::isInside (boost::posix_time::ptime time) const
 */
 bool TimePeriod::isCloseToEnd (boost::posix_time::ptime time, boost::posix_time::time_duration max_time_d) const
 {
-    assert (time >= end_);
+    traced_assert(time >= end_);
     return (time-end_).abs() <= max_time_d;
 }
 
@@ -55,7 +55,7 @@ bool TimePeriod::isCloseToEnd (boost::posix_time::ptime time, boost::posix_time:
 */
 void TimePeriod::extend (boost::posix_time::ptime time)
 {
-    assert (time >= end_);
+    traced_assert(time >= end_);
     end_ = time;
 }
 
@@ -96,8 +96,8 @@ std::string TimePeriod::str() const
 void TimePeriod::addUpdate(const TimePeriodUpdate& update)
 {
     //check time range and order
-    assert(update.data_id.timestamp() >= begin_ && update.data_id.timestamp() <= end_);
-    assert(updates_.empty() || update.data_id.timestamp() >= updates_.back().data_id.timestamp());
+    traced_assert(update.data_id.timestamp() >= begin_ && update.data_id.timestamp() <= end_);
+    traced_assert(updates_.empty() || update.data_id.timestamp() >= updates_.back().data_id.timestamp());
 
     updates_.push_back(update);
 }
@@ -129,7 +129,7 @@ void TimePeriodCollection::clear()
 void TimePeriodCollection::add (TimePeriod&& period)
 {
     if (periods_.size())
-        assert (periods_.rbegin()->end() <= period.begin());
+        traced_assert(periods_.rbegin()->end() <= period.begin());
 
     periods_.push_back(period);
 }
@@ -264,7 +264,7 @@ TimePeriodCollection::TimePeriodIterator TimePeriodCollection::end()
 */
 boost::posix_time::ptime TimePeriodCollection::totalBegin() const
 {
-    assert (periods_.size());
+    traced_assert(periods_.size());
     return periods_.at(0).begin();
 }
 
@@ -272,7 +272,7 @@ boost::posix_time::ptime TimePeriodCollection::totalBegin() const
 */
 boost::posix_time::ptime TimePeriodCollection::totalEnd() const
 {
-    assert (periods_.size());
+    traced_assert(periods_.size());
     return periods_.rbegin()->end();
 }
 
@@ -280,7 +280,7 @@ boost::posix_time::ptime TimePeriodCollection::totalEnd() const
 */
 TimePeriod& TimePeriodCollection::period (unsigned int index)
 {
-    assert (index < periods_.size());
+    traced_assert(index < periods_.size());
     return periods_.at(index);
 }
 
@@ -288,7 +288,7 @@ TimePeriod& TimePeriodCollection::period (unsigned int index)
 */
 const TimePeriod& TimePeriodCollection::period (unsigned int index) const
 {
-    assert (index < periods_.size());
+    traced_assert(index < periods_.size());
     return periods_.at(index);
 }
 
@@ -296,7 +296,7 @@ const TimePeriod& TimePeriodCollection::period (unsigned int index) const
 */
 TimePeriod& TimePeriodCollection::lastPeriod()
 {
-    assert (periods_.size());
+    traced_assert(periods_.size());
     return *periods_.rbegin();
 }
 

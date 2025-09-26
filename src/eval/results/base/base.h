@@ -122,7 +122,10 @@ public:
     bool resultUsable() const;
     bool hasFailed() const;
     bool hasIssues() const;
-    bool isIgnored() const;
+    
+    void setIgnoreResult(const std::string& comment);
+    bool ignoreResult() const;
+    const std::string& ignoreResultComment() const;
 
     const SectorLayer& sectorLayer() const { return sector_layer_; } 
 
@@ -237,8 +240,6 @@ protected:
         boost::posix_time::ptime timestamp;     // viewable timestamp (e.g. for single occurrences)
     };
 
-    void setIgnored();
-
     double formatValue(double v, int precision = 2) const;
     std::string conditionResultString() const;
 
@@ -286,7 +287,9 @@ protected:
 
 private:
     boost::optional<double> result_;
-    bool                    ignore_ = false;
+
+    bool ignore_result_ {false};
+    std::string ignore_result_comment_;
 };
 
 }

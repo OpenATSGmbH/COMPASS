@@ -35,7 +35,7 @@
 ViewManagerWidget::ViewManagerWidget(ViewManager& view_manager)
     : view_manager_(view_manager), layout_(nullptr), cont_layout_(nullptr), add_button_(nullptr)
 {
-    logdbg << "start";
+    logdbg;
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -71,13 +71,13 @@ ViewManagerWidget::~ViewManagerWidget() {}
 
 void ViewManagerWidget::databaseBusy()
 {
-    assert(add_button_);
+    traced_assert(add_button_);
     add_button_->setDisabled(true);
 }
 
 void ViewManagerWidget::databaseIdle()
 {
-    assert(add_button_);
+    traced_assert(add_button_);
     add_button_->setDisabled(false);
 }
 
@@ -131,7 +131,7 @@ void ViewManagerWidget::databaseIdle()
     //            name = cont_widgets_[ i ]->name();
     //            QAction* action = submenu->addAction( name, this, SLOT(addTemplateSlot()) );
 
-    //            assert (add_template_actions_.find (action) == add_template_actions_.end());
+    //            traced_assert(add_template_actions_.find (action) == add_template_actions_.end());
     //            add_template_actions_ [action] = std::pair <std::string, int> (it->first.c_str(),
     //            i);
     //          }
@@ -144,7 +144,7 @@ void ViewManagerWidget::databaseIdle()
 //void ViewManagerWidget::addViewNewWindowSlot()
 //{
 //    QAction* action = dynamic_cast<QAction*>(QObject::sender());
-//    assert(action);
+//    traced_assert(action);
 //    QString class_name = action->data().toString();
 //    ViewContainerWidget* container_widget = view_manager_.addNewContainerWidget();
 //    container_widget->viewContainer().addView(class_name.toStdString());
@@ -155,14 +155,14 @@ void ViewManagerWidget::databaseIdle()
 //void ViewManagerWidget::addViewSlot()
 //{
 //    QAction* action = dynamic_cast<QAction*>(QObject::sender());
-//    assert(action);
+//    traced_assert(action);
 //    QStringList list = action->data().toStringList();
-//    assert(list.size() == 2);
+//    traced_assert(list.size() == 2);
 //    QString class_name = list.at(0);
 //    QString number_str = list.at(1);
 //    bool ok;
 //    unsigned int containter_id = number_str.toUInt(&ok);
-//    assert(ok);
+//    traced_assert(ok);
 
 //    loginf << "class " << class_name.toStdString();
 
@@ -173,7 +173,7 @@ void ViewManagerWidget::databaseIdle()
 
 void ViewManagerWidget::update()
 {
-    loginf << "start";
+    loginf;
 
 //    cont_widgets_.clear();
 
@@ -199,7 +199,7 @@ void ViewManagerWidget::update()
 //{
 //    QAction *action = (QAction*) sender();
 
-//    assert (add_template_actions_.find (action) != add_template_actions_.end());
+//    traced_assert(add_template_actions_.find (action) != add_template_actions_.end());
 //    std::pair <std::string, int> data = add_template_actions_ [action];
 
 //    loginf << "start" << data.first << " in window " <<

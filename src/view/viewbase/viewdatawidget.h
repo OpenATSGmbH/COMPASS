@@ -74,6 +74,9 @@ public:
     bool isDrawn() const;
     bool isContentDrawn() const;
 
+    virtual void isExporting(bool ok) { is_exporting_ = ok; }
+    bool isExporting() const { return is_exporting_; }
+
     virtual bool hasScreenshotContent() const;
 
     unsigned int loadedDataCount();
@@ -151,6 +154,8 @@ private:
 
     BufferData data_;
     DrawState  draw_state_ = DrawState::NotDrawn;
+
+    bool is_exporting_ = false;
 
     std::map<std::string, QColor> dbc_colors_;
 

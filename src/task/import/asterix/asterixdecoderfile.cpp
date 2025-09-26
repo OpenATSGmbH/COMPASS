@@ -35,7 +35,7 @@ ASTERIXDecoderFile::ASTERIXDecoderFile(ASTERIXImportSource::SourceType source_ty
 :   ASTERIXDecoderBase(source, settings)
 ,   source_type_      (source_type)
 {
-    assert(source_.isFileType() && source_.sourceType() == fileSourceType());
+    traced_assert(source_.isFileType() && source_.sourceType() == fileSourceType());
 }
 
 /**
@@ -81,7 +81,7 @@ bool ASTERIXDecoderFile::atEnd() const
 */
 void ASTERIXDecoderFile::processCurrentFile()
 {
-    assert(!atEnd());
+    traced_assert(!atEnd());
 
     auto& current_file = source_.file_infos_.at(current_file_idx_);
 

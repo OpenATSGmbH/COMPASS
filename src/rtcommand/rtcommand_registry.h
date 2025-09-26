@@ -53,7 +53,7 @@ public:
      */
     bool registerCommand(const QString& name, const QString& description, CreatorFunc func)
     {
-        std::cout << "Registering command '" << name.toStdString() << "'" << std::endl;
+        //std::cout << "Registering command '" << name.toStdString() << "'" << std::endl;
 
         bool inserted = creators_.insert(std::make_pair(name, func)).second;
 

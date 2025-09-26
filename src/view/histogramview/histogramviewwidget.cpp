@@ -77,7 +77,7 @@ HistogramViewWidget::~HistogramViewWidget() = default;
 HistogramViewDataWidget* HistogramViewWidget::getViewDataWidget()
 {
     auto w = dynamic_cast<HistogramViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -86,7 +86,7 @@ HistogramViewDataWidget* HistogramViewWidget::getViewDataWidget()
 const HistogramViewDataWidget* HistogramViewWidget::getViewDataWidget() const
 {
     auto w =  dynamic_cast<const HistogramViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -95,7 +95,7 @@ const HistogramViewDataWidget* HistogramViewWidget::getViewDataWidget() const
 HistogramViewConfigWidget* HistogramViewWidget::getViewConfigWidget()
 {
     auto w =  dynamic_cast<HistogramViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -104,7 +104,7 @@ HistogramViewConfigWidget* HistogramViewWidget::getViewConfigWidget()
 const HistogramViewConfigWidget* HistogramViewWidget::getViewConfigWidget() const
 {
     auto w =  dynamic_cast<const HistogramViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -113,6 +113,6 @@ const HistogramViewConfigWidget* HistogramViewWidget::getViewConfigWidget() cons
 HistogramView* HistogramViewWidget::getView() 
 { 
     auto view = dynamic_cast<HistogramView*>(ViewWidget::getView()); 
-    assert(view);
+    traced_assert(view);
     return view;
 }

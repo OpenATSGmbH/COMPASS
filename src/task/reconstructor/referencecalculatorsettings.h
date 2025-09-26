@@ -120,6 +120,9 @@ struct ReferenceCalculatorSettings
     bool   smooth_rts   = true;
     double smooth_scale = 1.0;
 
+    //stopped adsb tracking related
+    bool track_stopped_adsb = true;
+
     //result resampling related
     bool                            resample_result     = true;
     ProcessNoise                    resample_Q_std      = ProcessNoise(3.0, 2.0, 5.0, 3.0); // (static, ground, air, unknown)

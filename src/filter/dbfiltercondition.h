@@ -18,7 +18,7 @@
 #pragma once
 
 #include <QObject>
-#include <cassert>
+#include "traced_assert.h"
 
 #include "configurable.h"
 
@@ -56,12 +56,12 @@ public:
 
     QLabel* getLabel()
     {
-        assert(label_);
+        traced_assert(label_);
         return label_;
     }
     QLineEdit* getEdit()
     {
-        assert(edit_);
+        traced_assert(edit_);
         return edit_;
     }
 

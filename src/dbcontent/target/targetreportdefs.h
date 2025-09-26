@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "datasourcebase.h"
+
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/optional.hpp>
 
@@ -212,6 +214,7 @@ struct BaseInfo
     unsigned long record_num_ {0};
     unsigned int dbcont_id_ {0};
     unsigned int ds_id_ {0};
+    dbContent::DataSourceType ds_type_{DataSourceType::Other};
     unsigned int line_id_ {0};
     boost::posix_time::ptime timestamp_;
 
@@ -253,6 +256,8 @@ struct ReconstructorInfo : public BaseInfo
     boost::optional<unsigned int> mops_;
     boost::optional<unsigned int> ecat_;
 
+    static const double GroundSpeedMin;
+
     boost::optional<targetReport::Position>& position();
     const boost::optional<targetReport::Position>& position() const;
 
@@ -261,11 +266,12 @@ struct ReconstructorInfo : public BaseInfo
     bool isModeSDetection() const;
     bool isModeACDetection() const;
     bool isPrimaryOnlyDetection() const;
+    bool isUnreliablePrimaryOnlyDetection() const;
 
     bool isOnGround() const; // false if unknown
+    bool isMoving() const;   // true if unknown
 
     bool doNotUsePosition() const;
-
 };
 
 // tmp list

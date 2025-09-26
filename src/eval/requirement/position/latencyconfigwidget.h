@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfigwidget.h"
+#include "eval/requirement/base/positionbaseconfigwidget.h"
 
 class QLineEdit;
 class QCheckBox;
@@ -28,7 +28,7 @@ namespace EvaluationRequirement
 {
 class PositionLatencyConfig;
 
-class PositionLatencyConfigWidget : public ProbabilityBaseConfigWidget
+class PositionLatencyConfigWidget : public PositionBaseConfigWidget
 {
     Q_OBJECT
 

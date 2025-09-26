@@ -20,8 +20,8 @@
 #include "configurable.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
-#include "dbcontent/variable/variabledefinition.h"
-//#include "stringconv.h"
+
+#include "json.hpp"
 
 namespace dbContent
 {
@@ -43,11 +43,8 @@ public:
     const std::string& dataTypeString() const;
     Variable::Representation representation();
 
-    /// @brief Return if variable exist in DBContent
     bool existsIn(const std::string& dbcontent_name);
-    /// @brief Returns variable existing in DBContent
     Variable& getFor(const std::string& dbcontent_name);
-    /// @brief Return variable identifier in DBContent
     std::string getNameFor(const std::string& dbcontent_name);
     void set(Variable& var);
 
@@ -74,13 +71,13 @@ public:
     void unlock();
     void lock();
 
-    void removeOutdatedVariables();
-
     bool hasDBContent() const;
 
 protected:
     std::string name_;
     std::string description_;
+
+    nlohmann::json dbcont_variables_; // dbcont name -> var name
 
     DBContentManager& object_manager_;
 
@@ -88,7 +85,6 @@ protected:
 
     bool locked_{false};
 
-    std::map<std::string, VariableDefinition*> definitions_; // dbcont name -> def
     std::map<std::string, Variable&> variables_; // dbcont name -> var
 
     virtual void checkSubConfigurables();

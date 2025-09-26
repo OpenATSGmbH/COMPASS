@@ -69,7 +69,7 @@ GPSTrailImportTaskDialog::GPSTrailImportTaskDialog(GPSTrailImportTask& task)
 
 void GPSTrailImportTaskDialog::updateButtons()
 {
-    assert (import_button_);
+    traced_assert(import_button_);
 
     import_button_->setDisabled(!task_.canRun());
 }

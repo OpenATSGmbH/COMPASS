@@ -61,7 +61,7 @@ void RS2GProjection::addCoordinateSystem(unsigned int id, double latitude_deg, d
 
 ProjectionCoordinateSystemBase& RS2GProjection::coordinateSystem(unsigned int id)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     return *coordinate_systems_.at(id).get();
 }
@@ -80,7 +80,7 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
     if (!hasCoordinateSystem(id))
         logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
         loginf << "azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
@@ -120,7 +120,7 @@ bool RS2GProjection::localXYToWGS84(unsigned int id, double x_m, double y_m,
     if (!hasCoordinateSystem(id))
         logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     bool ret {false};
 
@@ -152,7 +152,7 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
     if (!hasCoordinateSystem(id))
         logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
         loginf << "azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
@@ -193,7 +193,7 @@ bool RS2GProjection::polarToWGS84(
     if (!hasCoordinateSystem(id))
         logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
         loginf << "azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
@@ -234,7 +234,7 @@ bool RS2GProjection::wgs842PolarHorizontal(unsigned int id,
     if (!hasCoordinateSystem(id))
         logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
         loginf << "latitude_deg " << latitude_deg

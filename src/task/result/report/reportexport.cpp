@@ -117,7 +117,7 @@ std::unique_ptr<ReportExporter> ReportExport::createExporter(ReportExportMode mo
  */
 void ReportExport::updateProgress(ReportExporter* exporter)
 {
-    assert(exporter);
+    traced_assert(exporter);
 
     //loginf << "num exported: " << exporter->numSectionsExported() << ", num total: " << exporter->numSectionsTotal();
 

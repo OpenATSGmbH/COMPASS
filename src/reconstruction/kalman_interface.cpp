@@ -35,7 +35,7 @@ KalmanInterface::KalmanInterface() = default;
 KalmanInterface::KalmanInterface(kalman::KalmanFilter* kalman_filter)
 :   kalman_filter_(kalman_filter)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 }
 
 /**
@@ -46,7 +46,7 @@ KalmanInterface::~KalmanInterface() = default;
 */
 void KalmanInterface::setKalmanFilter(kalman::KalmanFilter* kalman_filter)
 {
-    assert(kalman_filter);
+    traced_assert(kalman_filter);
     kalman_filter_.reset(kalman_filter);
 }
 
@@ -89,7 +89,7 @@ void KalmanInterface::kalmanInit(kalman::KalmanState& init_state,
                                  const reconstruction::Uncertainty& default_uncert,
                                  double Q_var)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 
     ts_ = mm.t;
     
@@ -121,7 +121,7 @@ void KalmanInterface::kalmanInit(kalman::KalmanState& init_state,
 void KalmanInterface::kalmanInit(const kalman::KalmanState& init_state,
                                  const boost::posix_time::ptime& ts)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 
     ts_ = ts;
     
@@ -135,7 +135,7 @@ void KalmanInterface::kalmanInit(const kalman::Vector& x,
                                  const boost::posix_time::ptime& ts,
                                  double Q_var)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 
     ts_ = ts;
     
@@ -149,7 +149,7 @@ kalman::KalmanError KalmanInterface::kalmanStep(kalman::KalmanState& new_state,
                                                 const reconstruction::Uncertainty& default_uncert, 
                                                 double Q_var)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 
     const double dt = timestep(mm);
 
@@ -191,11 +191,13 @@ kalman::KalmanError KalmanInterface::kalmanPrediction(kalman::Vector& x,
                                                       bool* fixed,
                                                       const boost::optional<double>& Q_var) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 
     auto err = kalman_filter_->predictState(x, P, dt, fix_estimate, fixed, {}, nullptr, Q_var);
+    if (err != kalman::KalmanError::NoError)
+            return err;
 
-    return err;
+    return kalman::KalmanError::NoError;
 }
 
 /**
@@ -213,6 +215,72 @@ kalman::KalmanError KalmanInterface::kalmanPrediction(kalman::Vector& x,
 
 /**
 */
+kalman::KalmanError KalmanInterface::kalmanPredictionMM(kalman::ProbState& pred_mm,
+                                                        const kalman::Vector& x_pred,
+                                                        const kalman::Matrix& P_pred) const
+{
+    traced_assert(kalman_filter_);
+
+    auto err = kalman_filter_->generateMeasurement(pred_mm.x, pred_mm.P, x_pred, P_pred);
+    if (err != kalman::KalmanError::NoError)
+        return err;
+
+    return kalman::KalmanError::NoError;
+}
+
+/**
+*/
+kalman::KalmanError KalmanInterface::comparePrediction(PredictionComparison& comparison,
+                                                       const kalman::ProbState& pred_mm,
+                                                       const Measurement& mm,
+                                                       const reconstruction::Uncertainty& default_uncert,
+                                                       int comparison_flags) const
+{
+    //get measurement vector from mm
+    kalman::Vector z;
+    measurementVecZ(z, mm);
+
+    //get measurement uncert mat
+    kalman::Matrix R;
+    measurementUncertMatR(R, mm, default_uncert);
+
+    //residual
+    const auto y = z - pred_mm.x;
+
+    //add measurement uncertainty
+    const kalman::Matrix S = pred_mm.P + R;
+
+    const bool CheckEps = true;
+
+    bool has_num_error = false;
+
+    if (comparison_flags & PredictionCompareFlags::PredCompLikelihood)
+    {
+        comparison.likelihood = kalman::KalmanFilter::likelihood(y, S, CheckEps);
+        if (!comparison.likelihood.has_value())
+            has_num_error = true;
+    }
+    if (comparison_flags & PredictionCompareFlags::PredCompLogLikelihood)
+    {
+        comparison.log_likelihood = kalman::KalmanFilter::logLikelihood(y, S, CheckEps);
+        if (!comparison.log_likelihood.has_value())
+            has_num_error = true;
+    }
+    if (comparison_flags & PredictionCompareFlags::PredCompMahalanobis)
+    {
+        comparison.mahalanobis = kalman::KalmanFilter::mahalanobis(y, S, false);
+        if (!comparison.mahalanobis.has_value())
+            has_num_error = true;
+    }
+
+    if (has_num_error || !comparison.valid())
+        return kalman::KalmanError::Numeric;
+    
+    return kalman::KalmanError::NoError;
+}
+
+/**
+*/
 bool KalmanInterface::smoothUpdates(std::vector<kalman::KalmanUpdate>& updates,
                                     size_t idx0,
                                     size_t idx1,
@@ -221,8 +289,8 @@ bool KalmanInterface::smoothUpdates(std::vector<kalman::KalmanUpdate>& updates,
                                     kalman::SmoothFailStrategy fail_strategy,
                                     std::vector<kalman::RTSDebugInfo>* debug_infos) const
 {
-    assert(kalman_filter_);
-    assert(idx1 >= idx0);
+    traced_assert(kalman_filter_);
+    traced_assert(idx1 >= idx0);
 
     size_t n = idx1 - idx0 + 1;
 
@@ -293,7 +361,7 @@ kalman::KalmanError KalmanInterface::interpStep(kalman::KalmanState& state_inter
                                                 bool* fixed,
                                                 const boost::optional<double>& Q_var) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
 
     //backup current state
     auto state_backup = kalman_filter_->state();
@@ -320,7 +388,7 @@ kalman::KalmanError KalmanInterface::interpStep(kalman::KalmanState& state_inter
 */
 bool KalmanInterface::checkKalmanStateNumerical(const kalman::KalmanState& state) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     return kalman_filter_->checkState(state.x, state.P);
 }
 
@@ -328,7 +396,7 @@ bool KalmanInterface::checkKalmanStateNumerical(const kalman::KalmanState& state
 */
 bool KalmanInterface::validateState(const kalman::KalmanState& state) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     return kalman_filter_->validateState(state);
 }
 
@@ -340,7 +408,7 @@ void KalmanInterface::storeState(Measurement& mm,
 {
     if (submodel_idx >= 0)
     {
-        assert(state.imm_state);
+        traced_assert(state.imm_state);
         const auto& state_model = state.imm_state->filter_states.at(submodel_idx);
         storeState(mm, state_model.x, state_model.P, submodel_idx);
     }
@@ -357,9 +425,9 @@ void KalmanInterface::storeState(Measurement& mm,
                                  const kalman::Matrix& P,
                                  int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     filter->xPos(mm.x, mm.y, x);
 
@@ -388,7 +456,7 @@ Measurement KalmanInterface::currentStateAsMeasurement() const
 */
 kalman::KalmanState KalmanInterface::currentState() const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     return kalman_filter_->state();
 }
 
@@ -396,7 +464,7 @@ kalman::KalmanState KalmanInterface::currentState() const
 */
 void KalmanInterface::stateVecX(const kalman::Vector& x)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman_filter_->setX(x);
 }
 
@@ -404,7 +472,7 @@ void KalmanInterface::stateVecX(const kalman::Vector& x)
 */
 void KalmanInterface::stateVecX(const kalman::KalmanState& state)
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman_filter_->setX(state);
 }
 
@@ -412,9 +480,9 @@ void KalmanInterface::stateVecX(const kalman::KalmanState& state)
 */
 void KalmanInterface::xPos(double& x, double& y, int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     filter->xPos(x, y);
 }
@@ -423,9 +491,9 @@ void KalmanInterface::xPos(double& x, double& y, int submodel_idx) const
 */
 void KalmanInterface::xPos(double& x, double& y, const kalman::Vector& x_vec, int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     filter->xPos(x, y, x_vec);
 }
@@ -434,9 +502,9 @@ void KalmanInterface::xPos(double& x, double& y, const kalman::Vector& x_vec, in
 */
 void KalmanInterface::xPos(kalman::Vector& x_vec, double x, double y, int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     filter->xPos(x_vec, x, y);
 }
@@ -445,9 +513,9 @@ void KalmanInterface::xPos(kalman::Vector& x_vec, double x, double y, int submod
 */
 double KalmanInterface::xVar(const kalman::Matrix& P, int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     return filter->xVar(P);
 }
@@ -456,9 +524,9 @@ double KalmanInterface::xVar(const kalman::Matrix& P, int submodel_idx) const
 */
 double KalmanInterface::yVar(const kalman::Matrix& P, int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     return filter->yVar(P);
 }
@@ -467,9 +535,9 @@ double KalmanInterface::yVar(const kalman::Matrix& P, int submodel_idx) const
 */
 double KalmanInterface::xyCov(const kalman::Matrix& P, int submodel_idx) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman::KalmanFilter* filter = submodel_idx >= 0 ? kalman_filter_->subModel(submodel_idx) : kalman_filter_.get();
-    assert(filter);
+    traced_assert(filter);
 
     return filter->xyCov(P);
 }
@@ -479,7 +547,7 @@ double KalmanInterface::xyCov(const kalman::Matrix& P, int submodel_idx) const
 std::string KalmanInterface::asString(int flags, 
                                       const std::string& prefix) const
 {
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     return kalman_filter_->asString(flags, prefix);
 }
 
@@ -487,7 +555,7 @@ std::string KalmanInterface::asString(int flags,
 */
 void KalmanInterface::enableDebugging(bool ok) 
 { 
-    assert(kalman_filter_);
+    traced_assert(kalman_filter_);
     kalman_filter_->enableDebugging(ok);
 }
 

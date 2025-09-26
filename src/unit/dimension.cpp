@@ -40,7 +40,7 @@ void Dimension::generateSubConfigurable(const std::string& class_id, const std::
     if (class_id == "Unit")
     {
         Unit* unit = new Unit(class_id, instance_id, *this);
-        assert(units_.find(unit->instanceId()) == units_.end());
+        traced_assert(units_.find(unit->instanceId()) == units_.end());
         units_.insert(std::pair<std::string, Unit*>(unit->instanceId(), unit));
     }
     else
@@ -65,8 +65,8 @@ double Dimension::getFactor(const std::string& unit_source,
     logdbg << "unit src '" << unit_source << "' dst '" << unit_destination
            << "'";
 
-    assert(units_.find(unit_source) != units_.end());
-    assert(units_.find(unit_destination) != units_.end());
+    traced_assert(units_.find(unit_source) != units_.end());
+    traced_assert(units_.find(unit_destination) != units_.end());
     double factor = 1.0;
 
     factor /= units_.at(unit_source)->factor();
@@ -75,8 +75,8 @@ double Dimension::getFactor(const std::string& unit_source,
     logdbg << "src factor " << units_.at(unit_source)->factor()
            << " dest factor " << units_.at(unit_destination)->factor() << " result " << factor;
 
-    assert(factor != 0);
-    assert(!std::isinf(factor));
+    traced_assert(factor != 0);
+    traced_assert(!std::isinf(factor));
 
     return factor;
 }

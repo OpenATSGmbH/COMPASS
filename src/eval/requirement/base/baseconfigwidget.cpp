@@ -39,7 +39,7 @@ BaseConfigWidget::BaseConfigWidget(BaseConfig& cfg)
 
     form_layout_ = new QFormLayout();
 
-    assert (Group::requirement_type_mapping_.count(config_.classId()));
+    traced_assert(Group::requirement_type_mapping_.count(config_.classId()));
     form_layout_->addRow("Requirement Type",
                          new QLabel(Group::requirement_type_mapping_.at(config_.classId()).c_str()));
 
@@ -80,7 +80,7 @@ BaseConfigWidget::~BaseConfigWidget()
 void BaseConfigWidget::changedNameSlot()
 {
     QLineEdit* edit = dynamic_cast<QLineEdit*>(sender());
-    assert (edit);
+    traced_assert(edit);
 
     string value_str = edit->text().toStdString();
 
@@ -97,7 +97,7 @@ void BaseConfigWidget::changedNameSlot()
 void BaseConfigWidget::changedShortNameSlot()
 {
     QLineEdit* edit = dynamic_cast<QLineEdit*>(sender());
-    assert (edit);
+    traced_assert(edit);
 
     string value_str = edit->text().toStdString();
 
@@ -112,7 +112,7 @@ void BaseConfigWidget::changedShortNameSlot()
 void BaseConfigWidget::changedCommentSlot()
 {
     QPlainTextEdit* edit = dynamic_cast<QPlainTextEdit*>(sender());
-    assert (edit);
+    traced_assert(edit);
 
     string value_str = edit->toPlainText().toStdString();
 

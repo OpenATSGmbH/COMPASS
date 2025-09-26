@@ -64,7 +64,7 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int sec
     std::unique_ptr<nlohmann::json> analysis_info;
     analysis_info = has_framing ? jasterix->analyzeFile(file_info.filename, settings().current_file_framing_, DecodeCheckRecordLimit) :
                                   jasterix->analyzeFile(file_info.filename, DecodeCheckRecordLimit);
-    assert(analysis_info);
+    traced_assert(analysis_info);
 
     auto& file_error = file_info.error;
 
@@ -123,24 +123,24 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         if (settings().current_file_framing_ == "")
         {
-            assert(data->contains("data_blocks"));
-            assert(data->at("data_blocks").is_array());
+            traced_assert(data->contains("data_blocks"));
+            traced_assert(data->at("data_blocks").is_array());
 
             if (data->at("data_blocks").size())
             {
                 json& data_block = data->at("data_blocks").back();
 
-                assert(data_block.contains("content"));
-                assert(data_block.at("content").is_object());
-                assert(data_block.at("content").contains("index"));
+                traced_assert(data_block.contains("content"));
+                traced_assert(data_block.at("content").is_object());
+                traced_assert(data_block.at("content").contains("index"));
 
                 setFileBytesRead(data_block.at("content").at("index"));
             }
         }
         else
         {
-            assert(data->contains("frames"));
-            assert(data->at("frames").is_array());
+            traced_assert(data->contains("frames"));
+            traced_assert(data->at("frames").is_array());
 
             if (data->at("frames").size())
             {
@@ -148,8 +148,8 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
                 if (frame.contains("content"))
                 {
-                    assert(frame.at("content").is_object());
-                    assert (frame.at("content").contains("index"));
+                    traced_assert(frame.at("content").is_object());
+                    traced_assert(frame.at("content").contains("index"));
 
                     setFileBytesRead(frame.at("content").at("index"));
                 }

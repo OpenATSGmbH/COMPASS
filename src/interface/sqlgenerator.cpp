@@ -69,6 +69,10 @@ string SQLGenerator::getCreateTableStatement(const DBContent& object)
     for (auto& var_it : object.variables())
     {
         const auto& v = var_it.second;
+
+        if (!v->dbColumnName().size()) // if only db expression
+            continue;
+
         column_infos.push_back(DBTableColumnInfo(v->dbColumnName(), v->dataType(), v->isKey()));
     }
 
@@ -133,7 +137,7 @@ std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
         ss << "\"" << cinfo.name() << "\"";
 
         //should always be true (as the column info was most likely feed with a property data type)
-        assert(cinfo.hasDBType());
+        traced_assert(cinfo.hasDBType());
 
         data_type = cinfo.dbType();
 
@@ -171,7 +175,7 @@ std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
 {
     std::stringstream ss;
 
-    assert(properties.size());
+    traced_assert(properties.size());
 
     ss << "CREATE TABLE " << table_name << "(";
 
@@ -480,7 +484,7 @@ shared_ptr<DBCommand> SQLGenerator::getTableSelectMinMaxNormalStatement(const DB
     stringstream ss;
 
     shared_ptr<DBCommand> command(new DBCommand());
-    assert(command);
+    traced_assert(command);
 
     PropertyList command_list;
 
@@ -519,7 +523,7 @@ shared_ptr<DBCommand> SQLGenerator::getTableSelectMinMaxNormalStatement(const DB
 std::string SQLGenerator::replaceStatement(const std::string& table, 
                                            const std::vector<std::string>& values) const
 {
-    assert(values.size() >= 2);
+    traced_assert(values.size() >= 2);
 
     size_t n = values.size();
 
@@ -554,7 +558,7 @@ std::string SQLGenerator::getInsertTargetStatement(unsigned int utn, const std::
 string SQLGenerator::getInsertPropertyStatement(const string& id,
                                                 const string& value)
 {
-    assert(id.size() < 255);
+    traced_assert(id.size() < 255);
 
     // REPLACE into table (id, name, age) values(1, "A", 19)
     return replaceStatement(TABLE_NAME_PROPERTIES, { id, value });
@@ -792,8 +796,8 @@ std::string SQLGenerator::getTableReportContentsCreateStatement()
 string SQLGenerator::getInsertDBUpdateStringBind(shared_ptr<Buffer> buffer,
                                                  string tablename)
 {
-    assert(buffer);
-    assert(tablename.size() > 0);
+    traced_assert(buffer);
+    traced_assert(tablename.size() > 0);
 
     const vector<Property>& properties = buffer->properties().properties();
 
@@ -834,15 +838,15 @@ string SQLGenerator::getCreateDBUpdateStringBind(shared_ptr<Buffer> buffer,
                                                  const string& key_col_name,
                                                  string table_name)
 {
-    assert(buffer);
-    assert(table_name.size() > 0);
+    traced_assert(buffer);
+    traced_assert(table_name.size() > 0);
 
     const vector<Property>& properties = buffer->properties().properties();
 
     // UPDATE table_name SET col1=val1,col2=value2 WHERE somecol=someval;
 
     unsigned int size = properties.size();
-    assert (size);
+    traced_assert(size);
 
     logdbg << "creating db string";
     stringstream ss;  // create a stringstream
@@ -900,11 +904,11 @@ std::string SQLGenerator::getUpdateTableFromTableStatement(const std::string& ta
                                                            const std::string& key_col)
 {
     //@TODO: maybe allow more variants of this command in the future and assert a little less
-    assert(!table_name_src.empty());
-    assert(!table_name_dst.empty());
-    assert(table_name_src != table_name_dst);
-    assert(!col_names.empty());
-    assert(!key_col.empty());
+    traced_assert(!table_name_src.empty());
+    traced_assert(!table_name_dst.empty());
+    traced_assert(table_name_src != table_name_dst);
+    traced_assert(!col_names.empty());
+    traced_assert(!key_col.empty());
 
     stringstream ss;
     ss << "UPDATE " + table_name_dst + " SET ";
@@ -958,14 +962,14 @@ shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const DBContent& object,
                                                      Variable* order_variable)
 {
     logdbg << "dbcont " << object.name() << " read list size " << read_list.getSize();
-    assert(read_list.getSize() != 0);
+    traced_assert(read_list.getSize() != 0);
 
     //collect needed properties
     PropertyList property_list;
     for (auto var_it : read_list.getSet())
     {
         Variable* variable = var_it;
-        property_list.addProperty(variable->dbColumnName(), variable->dataType());
+        property_list.addProperty(variable->dbColumnOrExpression(), variable->dataType());
     }
 
     return getSelectCommand(object.dbTableName(), 
@@ -985,7 +989,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
 {
     logdbg << "table " << table_name << " num properties " << properties.size();
 
-    assert(properties.size() != 0);
+    traced_assert(properties.size() != 0);
 
     shared_ptr<DBCommand> command = make_shared<DBCommand>(DBCommand());
 
@@ -1000,7 +1004,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
         if (!first)
             ss << ", ";
 
-        ss << table_name << "." << p.name();
+        ss << p.name();
 
         first = false;
     }
@@ -1019,7 +1023,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
 
     if (use_order)
     {
-        assert(!order_variable.empty());
+        traced_assert(!order_variable.empty());
 
         ss << " ORDER BY " << order_variable;
 
@@ -1042,7 +1046,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
 //{
 //        logdbg << "meta table " << meta_table.name()
 //               << " db columns size " << columns.size();
-//        assert(columns.size() != 0);
+//        traced_assert(columns.size() != 0);
 
 //        shared_ptr<DBCommand> command = make_shared<DBCommand>(DBCommand());
 
@@ -1095,7 +1099,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
 //        //    GROUP BY news.id
 //        ss << main_table_name;
 
-//        assert(used_tables.size() > 0);
+//        traced_assert(used_tables.size() > 0);
 //        vector<string>::iterator it;
 //        for (it = used_tables.begin(); it != used_tables.end(); it++)
 //        {
@@ -1119,7 +1123,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
 //string SQLGenerator::subTablesWhereClause(const DBTable& table,
 //                                               const vector<string>& used_tables)
 //{
-//    assert (false); // TODO
+//    traced_assert(false); // TODO
 //    stringstream ss;
 
 //    bool first = true;
@@ -1144,7 +1148,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
 //string SQLGenerator::subTableKeyClause(const DBTable& table,
 //                                            const string& sub_table_name)
 //{
-//    assert (false); // TODO
+//    traced_assert(false); // TODO
 //    if (meta_table.subTableDefinitions().count(sub_table_name) == 0)
 //        throw range_error("SQLGenerator: getSubTableKeyClause: sub_table_name " +
 //                               sub_table_name + " not found");

@@ -58,13 +58,13 @@ void NullableVector<bool>::setFromFormat(unsigned int index, const std::string& 
         else
         {
             logerr << "unknown bool value '" << value_str << "'";
-            assert(false);
+            traced_assert(false);
         }
     }
     else
     {
         logerr << "unknown format '" << format << "'";
-        assert(false);
+        traced_assert(false);
     }
 
     if (debug)
@@ -82,8 +82,8 @@ void NullableVector<bool>::append(unsigned int index, bool value)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= data_.size())  // allocate new stuff, fill all new with not null
@@ -95,7 +95,7 @@ void NullableVector<bool>::append(unsigned int index, bool value)
     }
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < data_.size());
+        traced_assert(index < data_.size());
 
     data_.at(index) = data_.at(index) || value;
 
@@ -112,8 +112,8 @@ void NullableVector<std::string>::append(unsigned int index, std::string value)
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= data_.size())  // allocate new stuff, fill all new with not null
@@ -125,7 +125,7 @@ void NullableVector<std::string>::append(unsigned int index, std::string value)
     }
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < data_.size());
+        traced_assert(index < data_.size());
 
     if (data_.at(index).size())
         data_.at(index) += ";" + value;

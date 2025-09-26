@@ -17,6 +17,7 @@
 
 #include "property.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <boost/assign/list_of.hpp>
 
@@ -152,7 +153,7 @@ const std::string& Property::asString(PropertyDataType type)
         logerr << "unkown type " << (unsigned int) type;
     }
 
-    assert(dataTypes2Strings().count(type) > 0);
+    traced_assert(dataTypes2Strings().count(type) > 0);
     return dataTypes2Strings().at(type);
 }
 
@@ -166,7 +167,7 @@ PropertyDataType Property::asDataType(const std::string& type)
         logerr << "unkown type " << type;
     }
 
-    assert(strings2DataTypes().count(type) > 0);
+    traced_assert(strings2DataTypes().count(type) > 0);
     return strings2DataTypes().at(type);
 }
 
@@ -178,7 +179,7 @@ const std::string& Property::asDBString(PropertyDataType type, bool precise_type
         logerr << "unkown type " << (unsigned int)type;
     }
 
-    assert(dbDataTypes2Strings(precise_type).count(type) > 0);
+    traced_assert(dbDataTypes2Strings(precise_type).count(type) > 0);
     return dbDataTypes2Strings(precise_type).at(type);
 }
 
@@ -192,6 +193,6 @@ PropertyDataType Property::asDBDataType(const std::string& db_type)
         logerr << "unkown type " << db_type;
     }
 
-    assert(strings2DBDataTypes().count(db_type) > 0);
+    traced_assert(strings2DBDataTypes().count(db_type) > 0);
     return strings2DBDataTypes().at(db_type);
 }

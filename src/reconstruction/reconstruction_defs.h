@@ -75,9 +75,13 @@ struct Reference : public Measurement
 struct MeasurementInterp : public Measurement
 {
     MeasurementInterp() = default;
-    MeasurementInterp(const Measurement& mm, bool is_interp, bool is_corrected) : Measurement(mm), corrected(is_corrected) 
+    MeasurementInterp(const Measurement& mm, 
+                      bool is_interp,
+                      bool is_interp_first, 
+                      bool is_corrected) : Measurement(mm), corrected(is_corrected) 
     {
-        mm_interp = is_interp;
+        mm_interp       = is_interp;
+        mm_interp_first = is_interp_first;
     }
 
     bool corrected = false; //interpolation failed, so the measurement was interpolated linearly
@@ -120,6 +124,12 @@ struct UpdateStats
         num_proj_changed = 0;
     };
 
+    //general counts
+    size_t num_standing_adsb               = 0;
+    size_t num_standing_adsb_updates_min   = std::numeric_limits<size_t>::max();
+    size_t num_standing_adsb_updates_max   = 0;
+    size_t num_standing_adsb_updates_total = 0;
+
     //preemptive insertion check
     size_t num_checked            = 0;
     size_t num_skipped_preemptive = 0;
@@ -151,6 +161,50 @@ struct PredictionStats
     size_t num_fixed           = 0;
 
     size_t num_proj_changed = 0;
+};
+
+/**
+ */
+enum PredictionCompareFlags
+{
+    PredCompLikelihood    = 1 << 0,  // compute the likelihood of the prediction to the provided reference measurement
+    PredCompLogLikelihood = 1 << 1,  // compute the log-likelihood of the prediction to the provided reference measurement
+    PredCompMahalanobis   = 1 << 2   // compute the mahalanobis distance of the prediction to the provided reference measurement
+};
+
+/**
+ * Values comparing a predicted kalman state to a reference measurement.
+ */
+struct PredictionComparison
+{
+    bool valid() const
+    {
+        if (likelihood.has_value() && !std::isfinite(likelihood.value()))
+            return false;
+        if (log_likelihood.has_value() && !std::isfinite(log_likelihood.value()))
+            return false;
+        if (mahalanobis.has_value() && !std::isfinite(mahalanobis.value()))
+            return false;
+        
+        return true;
+    }
+
+    boost::optional<double> likelihood;
+    boost::optional<double> log_likelihood;
+    boost::optional<double> mahalanobis;
+};
+
+/**
+ * Reconstruction contribution entry for a measurement
+ */
+struct MMContribution
+{
+    unsigned long            rec_num;
+    boost::posix_time::ptime t;
+
+    bool interpolated       = false;
+    bool interpolated_first = false;
+    bool stopped            = false;
 };
 
 } // namespace reconstruction

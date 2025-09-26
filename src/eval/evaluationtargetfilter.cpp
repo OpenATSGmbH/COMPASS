@@ -108,14 +108,14 @@ void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)
             {
                 for (auto& r_ma_p : remove_mode_as)
                 {
-                    assert (r_ma_p.first >= 0);
+                    traced_assert(r_ma_p.first >= 0);
                     if (r_ma_p.second == -1) // single
                     {
                         tmp_match |= (t_ma == static_cast<unsigned int>(r_ma_p.first));
                     }
                     else // pair
                     {
-                        assert (r_ma_p.second >= 0);
+                        traced_assert(r_ma_p.second >= 0);
                         tmp_match |= ((t_ma >= static_cast<unsigned int>(r_ma_p.first) 
                         && t_ma <= static_cast<unsigned int>(r_ma_p.second)));
                     }

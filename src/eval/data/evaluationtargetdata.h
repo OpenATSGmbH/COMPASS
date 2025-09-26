@@ -114,13 +114,6 @@ public:
     const dbContent::TargetReport::Chain& refChain() const;
     const dbContent::TargetReport::Chain& tstChain() const;
 
-//    bool canCheckTstMultipleSources() const;
-//    bool hasTstMultipleSources() const;
-
-//    bool canCheckTrackLUDSID() const;
-//    bool hasSingleLUDSID() const;
-//    unsigned int singleTrackLUDSID() const;
-
     double latitudeMin() const;
     double latitudeMax() const;
     double longitudeMin() const;
@@ -132,11 +125,6 @@ public:
     bool hasMOPSVersion() const;
     std::set<unsigned int> mopsVersions() const;
     std::string mopsVersionStr() const;
-
-//    bool hasNucpNic() const;
-//    std::string nucpNicStr() const;
-//    bool hasNacp() const;
-//    std::string nacpStr() const;
 
     // ref
     bool hasMappedRefData(const dbContent::TargetReport::Chain::DataID& tst_id,
@@ -151,6 +139,10 @@ public:
     boost::optional<dbContent::TargetPosition> mappedRefPos(
             const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
         bool debug=false) const;
+    boost::optional<double> mappedRefMinAcc(
+            const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
+        bool debug=false) const;
+
     // bool ok
     boost::optional<dbContent::TargetVelocity> mappedRefSpeed(
             const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max) const;
@@ -265,10 +257,6 @@ protected:
     mutable bool has_adsb_info_ {false};
     mutable bool has_mops_versions_ {false};
     mutable std::set<unsigned int> mops_versions_;
-    //    mutable bool has_nucp_nic_ {false};
-    //    mutable unsigned int min_nucp_nic_, max_nucp_nic_;
-    //    mutable bool has_nacp {false};
-    //    mutable unsigned int min_nacp_, max_nacp_;
 
     mutable bool use_in_eval_;
     mutable Utils::TimeWindowCollection excluded_time_windows_;

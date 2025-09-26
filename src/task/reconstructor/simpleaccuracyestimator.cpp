@@ -29,7 +29,7 @@ SimpleAccuracyEstimator::SimpleAccuracyEstimator()
 void SimpleAccuracyEstimator::validate (
     dbContent::targetReport::ReconstructorInfo& tr)
 {
-    assert (reconstructor_);
+    traced_assert(reconstructor_);
 
     boost::optional<unsigned char> mops_version = reconstructor_->accessor(tr).mopsVersion(tr.buffer_index_);
 

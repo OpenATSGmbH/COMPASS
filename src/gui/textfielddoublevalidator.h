@@ -87,7 +87,7 @@ class TextFieldDoubleValidator : public QDoubleValidator
 
     static void displayValidityAsColor(QLineEdit* line_edit)
     {
-        assert(line_edit);
+        traced_assert(line_edit);
 
         if (line_edit->hasAcceptableInput())
             line_edit->setStyleSheet("");

@@ -32,17 +32,17 @@ namespace EvaluationRequirement
 GenericIntegerConfigWidget::GenericIntegerConfigWidget(GenericIntegerConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 }
 
 
 GenericIntegerConfig& GenericIntegerConfigWidget::config()
 {
     GenericIntegerConfig* config = dynamic_cast<GenericIntegerConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
@@ -53,10 +53,10 @@ GenericIntegerConfig& GenericIntegerConfigWidget::config()
 GenericDoubleConfigWidget::GenericDoubleConfigWidget(GenericDoubleConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     threshold_value_edit_ = new QLineEdit(QString::number(config().threshold()));
     threshold_value_edit_->setValidator(new QDoubleValidator(0.0, 1000.0, 4, this));
@@ -71,7 +71,7 @@ GenericDoubleConfigWidget::GenericDoubleConfigWidget(GenericDoubleConfig& cfg)
 GenericDoubleConfig& GenericDoubleConfigWidget::config()
 {
     GenericDoubleConfig* config = dynamic_cast<GenericDoubleConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

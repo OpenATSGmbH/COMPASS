@@ -275,7 +275,7 @@ void KalmanFilter::invertState(Vector& x_inv, const Vector& x) const
 */
 void KalmanFilter::invertState(Vector& x) const
 {
-    assert(invert_state_func_);
+    traced_assert(invert_state_func_);
     invert_state_func_(x);
 }
 
@@ -489,6 +489,27 @@ KalmanFilter::Error KalmanFilter::predictState(Vector& x,
 
 /**
 */
+KalmanFilter::Error KalmanFilter::generateMeasurement(Vector& x_pred_mm,
+                                                      Matrix& P_pred_mm,
+                                                      const Vector& x_pred, 
+                                                      const Matrix& P_pred) const
+{
+    return generateMeasurement_impl(x_pred_mm, P_pred_mm, x_pred, P_pred);
+}
+
+/**
+*/
+KalmanFilter::Error KalmanFilter::generateMeasurement_impl(Vector& x_pred_mm,
+                                                           Matrix& P_pred_mm,
+                                                           const Vector& x_pred, 
+                                                           const Matrix& P_pred) const
+{
+    throw std::runtime_error("KalmanFilter: generateMeasurement_impl: not implemented");
+    return Error::Unknown;
+}
+
+/**
+*/
 bool KalmanFilter::smooth(std::vector<kalman::Vector>& x_smooth,
                           std::vector<kalman::Matrix>& P_smooth,
                           const std::vector<KalmanState>& states,
@@ -648,6 +669,18 @@ Matrix KalmanFilter::continuousWhiteNoise(size_t dim,
 
 /**
 */
+bool KalmanFilter::invertMatrix(Matrix& Pinv, const Matrix& P)
+{
+    if (!Eigen::FullPivLU<Eigen::MatrixXd>(P).isInvertible())
+        return false;
+
+    Pinv = P.inverse();
+
+    return true;
+}
+
+/**
+*/
 boost::optional<double> KalmanFilter::likelihood(const Vector& x, const Matrix& P, bool check_eps)
 {
     GaussianPDF pdf(P);
@@ -660,6 +693,39 @@ boost::optional<double> KalmanFilter::logLikelihood(const Vector& x, const Matri
 {
     GaussianPDF pdf(P);
     return pdf.logLikelihood(x, check_eps);
+}
+
+namespace helpers
+{
+    double mahalanobisSqrPInv(const Vector& dx, const Matrix& P_inv)
+    {
+        return double(dx.transpose() * P_inv * dx);
+    }
+}
+
+/**
+*/
+boost::optional<double> KalmanFilter::mahalanobis(const Vector& dx, const Matrix& P, bool P_is_inv)
+{
+    auto d_sqr = KalmanFilter::mahalanobisSqr(dx, P, P_is_inv);
+    if (!d_sqr.has_value())
+        return {};
+
+    return std::sqrt(d_sqr.value());
+}
+
+/**
+*/
+boost::optional<double> KalmanFilter::mahalanobisSqr(const Vector& dx, const Matrix& P, bool P_is_inv)
+{
+    if (P_is_inv)
+        return helpers::mahalanobisSqrPInv(dx, P);
+    
+    Matrix P_inv;
+    if (!KalmanFilter::invertMatrix(P_inv, P))
+        return {};
+    
+    return helpers::mahalanobisSqrPInv(dx, P_inv);
 }
 
 /**
@@ -693,7 +759,7 @@ boost::optional<double> KalmanFilter::mahalanobis() const
     if (mahalanobis_.has_value())
         return mahalanobis_;
 
-    mahalanobis_ = std::sqrt(double(y_.transpose() * SI_ * y_));
+    mahalanobis_ = KalmanFilter::mahalanobis(y_, SI_, true);
 
     return mahalanobis_;
 }
@@ -710,7 +776,7 @@ void KalmanFilter::xPos(double& x, double& y) const
 void KalmanFilter::xPos(double& x, double& y, const kalman::Vector& x_vec) const
 {
     bool implemented = false;
-    assert(implemented);
+    traced_assert(implemented);
 }
 
 /**
@@ -718,7 +784,7 @@ void KalmanFilter::xPos(double& x, double& y, const kalman::Vector& x_vec) const
 void KalmanFilter::xPos(kalman::Vector& x_vec, double x, double y) const
 {
     bool implemented = false;
-    assert(implemented);
+    traced_assert(implemented);
 }
 
 /**
@@ -726,7 +792,7 @@ void KalmanFilter::xPos(kalman::Vector& x_vec, double x, double y) const
 double KalmanFilter::xVar(const kalman::Matrix& P) const
 {
     bool implemented = false;
-    assert(implemented);
+    traced_assert(implemented);
 
     return 0.0;
 }
@@ -736,7 +802,7 @@ double KalmanFilter::xVar(const kalman::Matrix& P) const
 double KalmanFilter::yVar(const kalman::Matrix& P) const
 {
     bool implemented = false;
-    assert(implemented);
+    traced_assert(implemented);
 
     return 0.0;
 }
@@ -746,7 +812,7 @@ double KalmanFilter::yVar(const kalman::Matrix& P) const
 double KalmanFilter::xyCov(const kalman::Matrix& P) const
 {
     bool implemented = false;
-    assert(implemented);
+    traced_assert(implemented);
 
     return 0.0;
 }

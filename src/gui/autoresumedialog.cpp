@@ -22,7 +22,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include <cassert>
+#include "traced_assert.h"
 
 AutoResumeDialog::AutoResumeDialog(unsigned int resume_time_s, QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent, f)
@@ -72,7 +72,7 @@ void AutoResumeDialog::stayClickedSlot()
 
 void AutoResumeDialog::timerSlot()
 {
-    assert (resume_button_);
+    traced_assert(resume_button_);
 
     time_remaining_ -= 1;
 

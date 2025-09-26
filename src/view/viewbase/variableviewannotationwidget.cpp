@@ -29,7 +29,7 @@ VariableViewAnnotationWidget::VariableViewAnnotationWidget(const VariableView* v
 :   QWidget(parent)
 ,   view_  (view  )
 {
-    assert(view_);
+    traced_assert(view_);
 
     createUI();
     updateContent();

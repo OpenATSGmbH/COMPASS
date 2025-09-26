@@ -165,7 +165,7 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
 
     for (auto& dbcont_it : COMPASS::instance().dbContentManager())
     {
-        if (dbcont_it.second->isStatusContent())
+        if (dbcont_it.second->containsStatusContent())
             continue;
 
         QCheckBox* tmp = new QCheckBox();
@@ -207,7 +207,7 @@ void EvaluationTargetFilterDialog::removeShortTargetsSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeSTMinUpdatesEditedSlot()
 {
-    assert (remove_st_min_updates_edit_);
+    traced_assert(remove_st_min_updates_edit_);
     QString text = remove_st_min_updates_edit_->text();
 
     bool ok;
@@ -222,7 +222,7 @@ void EvaluationTargetFilterDialog::removeSTMinUpdatesEditedSlot()
 
 void EvaluationTargetFilterDialog::removeSTMinDurationEditedSlot()
 {
-    assert (remove_st_min_duration_edit_);
+    traced_assert(remove_st_min_duration_edit_);
     QString text = remove_st_min_duration_edit_->text();
 
     bool ok;
@@ -257,7 +257,7 @@ void EvaluationTargetFilterDialog::removeModeABlackListSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeModeAValuesSlot()
 {
-    assert (remove_mode_a_edit_);
+    traced_assert(remove_mode_a_edit_);
     target_filter_.filterModeACodeValues(remove_mode_a_edit_->document()->toPlainText().toStdString());
 }
 
@@ -268,7 +268,7 @@ void EvaluationTargetFilterDialog::removeModeCSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeModeCMinValueSlot()
 {
-    assert (remove_mode_c_min_edit_);
+    traced_assert(remove_mode_c_min_edit_);
     target_filter_.removeModeCMinValue(remove_mode_c_min_edit_->document()->toPlainText().toFloat());
 }
 
@@ -284,7 +284,7 @@ void EvaluationTargetFilterDialog::removeTABlackListSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeTAValuesSlot()
 {
-    assert (remove_ta_edit_);
+    traced_assert(remove_ta_edit_);
     target_filter_.filterTargetAddressValues(remove_ta_edit_->document()->toPlainText().toStdString());
 }
 
@@ -296,10 +296,10 @@ void EvaluationTargetFilterDialog::removeDBContentsSlot(bool checked)
 void EvaluationTargetFilterDialog::removeSpecificDBContentsSlot(bool checked)
 {
     QCheckBox* tmp = dynamic_cast<QCheckBox*>(sender());
-    assert (tmp);
+    traced_assert(tmp);
 
     QVariant data = tmp->property("dbcontent_name");
-    assert (data.isValid());
+    traced_assert(data.isValid());
 
     string dbcontent_name = data.toString().toStdString();
 

@@ -16,6 +16,7 @@
  */
 
 #include "evaluationtargetexcludedtimewindowsdialog.h"
+#include "traced_assert.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -89,6 +90,6 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
 
 std::string EvaluationTargetExcludedTimeWindowsDialog::comment() const
 {
-    assert (comment_edit_);
+    traced_assert(comment_edit_);
     return comment_edit_->text().toStdString();
 }

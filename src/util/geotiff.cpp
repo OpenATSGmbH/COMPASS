@@ -23,7 +23,7 @@
 #include "logger.h"
 #include "files.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QImage>
 
@@ -492,7 +492,7 @@ bool GeoTIFF::subsampleRaw(RawRasterData& raw_data_subsampled,
             {
                 for (x_block = 0, idx_block = line_idx_block; x_block < subsampling; ++x_block, ++idx_block)
                 {
-                    assert(idx_block < n_out);
+                    traced_assert(idx_block < n_out);
                     r_out[ idx_block ] = r;
                     g_out[ idx_block ] = g;
                     b_out[ idx_block ] = b;

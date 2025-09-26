@@ -44,7 +44,7 @@ VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
 :   TabStyleViewConfigWidget(view_widget, parent)
 ,   var_view_(view)
 {
-    assert(var_view_);
+    traced_assert(var_view_);
 
     auto addVariableUI = [ & ] (QVBoxLayout* layout, QVBoxLayout* switch_layout, int idx)
     {
@@ -203,7 +203,7 @@ void VariableViewConfigWidget::selectedVariableChangedSlot(int idx)
     loginf << "idx = " << idx;
 
     auto selection = var_selection_widgets_.at(idx);
-    assert(selection);
+    traced_assert(selection);
 
     var_view_->variable(idx).setVariable(*selection, true);
 
@@ -235,7 +235,7 @@ void VariableViewConfigWidget::updateSelectedVariables()
 void VariableViewConfigWidget::updateSelectedVariables(size_t idx)
 {
     auto selection = var_selection_widgets_.at(idx);
-    assert(selection);
+    traced_assert(selection);
 
     var_view_->variable(idx).updateWidget(*selection);
 
@@ -296,7 +296,7 @@ void VariableViewConfigWidget::updateConfig()
     show_variables_box_->setChecked(!show_annotations);
     show_variables_box_->blockSignals(false);
 
-    assert(annotation_widget_);
+    traced_assert(annotation_widget_);
     annotation_widget_->updateContent();
 
     show_annotations_box_->setEnabled(has_annotations);

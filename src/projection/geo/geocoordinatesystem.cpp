@@ -81,10 +81,10 @@ bool GeoCoordinateSystem::wgs842Cartesian(double latitude_deg, double longitude_
     double z;
 
 
-    assert (proj_);
+    traced_assert(proj_);
     proj_->Forward(latitude_deg, longitude_deg, 0.0, x_pos, y_pos, z);
 
-    assert (proj_wo_alt_);
+    traced_assert(proj_wo_alt_);
     proj_wo_alt_->Forward(latitude_deg, longitude_deg, 0.0, x_pos, y_pos, z);
 
     return true;
@@ -97,7 +97,7 @@ bool GeoCoordinateSystem::cartesian2WGS84(double x_pos, double y_pos, double& la
 
     double h_back;
 
-    assert (proj_wo_alt_);
+    traced_assert(proj_wo_alt_);
 
     proj_wo_alt_->Reverse(x_pos, y_pos, 0.0, latitude, longitude, h_back);
 
@@ -107,7 +107,7 @@ bool GeoCoordinateSystem::cartesian2WGS84(double x_pos, double y_pos, double& la
 bool GeoCoordinateSystem::wgs842PolarHorizontal(
     double latitude_deg, double longitude_deg, double& azimuth_deg, double& ground_range_m)
 {
-    assert (proj_wo_alt_);
+    traced_assert(proj_wo_alt_);
 
     // Compute ENU coordinates of the target relative to the radar
     double north, east, up;

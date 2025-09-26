@@ -23,6 +23,7 @@
 #include "stringconv.h"
 #include "files.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -55,7 +56,7 @@ ToolBox::~ToolBox() = default;
  */
 void ToolBox::setMainContent(QWidget* content)
 {
-    assert(!main_content_widget_);
+    traced_assert(!main_content_widget_);
 
     main_content_widget_ = content;
     main_content_widget_->setParent(main_widget_);
@@ -245,7 +246,7 @@ void ToolBox::updateToolBar()
  */
 void ToolBox::addTool(ToolBoxWidget* tool)
 {
-    assert(tool);
+    traced_assert(tool);
 
     auto icon   = tool->toolIcon();
     auto name   = tool->toolName();
@@ -317,8 +318,8 @@ void ToolBox::disableTools(std::set<unsigned int> indexes)
  */
 void ToolBox::selectTool(size_t idx)
 {
-    assert(idx >= 0);
-    assert(idx < numTools());
+    traced_assert(idx >= 0);
+    traced_assert(idx < numTools());
 
     //deactivate any active tool
     toolActivated(-1);
@@ -351,7 +352,7 @@ bool ToolBox::selectTool(const std::string& name)
  */
 void ToolBox::toolActivated(int idx)
 {
-    assert(idx < (int)tools_.size());
+    traced_assert(idx < (int)tools_.size());
 
     if (idx < 0 && active_tool_idx_ >= 0)
         idx = active_tool_idx_;
@@ -365,7 +366,7 @@ void ToolBox::toolActivated(int idx)
     }
     else
     {
-        assert(idx >= 0);
+        traced_assert(idx >= 0);
 
         const auto& tool = tools_.at(idx);
 

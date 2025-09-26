@@ -126,7 +126,7 @@ ResultT<DBConnection*> DuckDBInstance::createConnection_impl(bool verbose)
 Result DuckDBInstance::cleanupDB_impl(const std::string& db_fn)
 {
     //this method should only be called if there is no active connection
-    assert(!dbOpen());
+    traced_assert(!dbOpen());
 
     // std::string dir      = boost::filesystem::path(db_fn).parent_path().string();
     // std::string basename = boost::filesystem::path(db_fn).stem().string();

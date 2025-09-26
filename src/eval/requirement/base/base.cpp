@@ -33,7 +33,19 @@ namespace EvaluationRequirement
 std::function<boost::optional<std::string>(const dbContent::TargetReport::Chain&,
                                            const dbContent::TargetReport::Chain::DataID&)> Base::getACID =
     [] (const dbContent::TargetReport::Chain& chain,
-       const dbContent::TargetReport::Chain::DataID& id) { return chain.acid(id); };
+       const dbContent::TargetReport::Chain::DataID& id) { 
+        auto tmp_opt = chain.acid(id);
+
+        if (tmp_opt) // rempve emptry strings with spaces only
+        {
+            std::string tmp = String::trim(*tmp_opt);
+
+            if (tmp.size())
+                return boost::optional<std::string>(tmp);
+        }
+
+        return boost::optional<std::string>();
+    };
 
 std::function<bool(const std::string&, const std::string&)> Base::cmpACID =
     [] (const std::string& val1, const std::string& val2) { return val1 == val2; };
@@ -109,7 +121,7 @@ std::function<std::string(const unsigned char&)> Base::printMomTransAcc =
         else if (val == 3)
             return "Undetermined";
 
-        assert (false);
+        traced_assert(false);
     };
 
 std::function<std::string(const unsigned char&)> Base::printMomLongAcc =
@@ -124,7 +136,7 @@ std::function<std::string(const unsigned char&)> Base::printMomLongAcc =
         else if (val == 3)
             return "Undetermined";
 
-        assert (false);
+        traced_assert(false);
     };
 
 std::function<std::string(const unsigned char&)> Base::printMomVertRate =
@@ -139,7 +151,7 @@ std::function<std::string(const unsigned char&)> Base::printMomVertRate =
         else if (val == 3)
             return "Undetermined";
 
-        assert (false);
+        traced_assert(false);
     };
 
 // rocd

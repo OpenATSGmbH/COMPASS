@@ -18,6 +18,7 @@
 #include "scatterseriesmodel.h"
 #include "scatterseriestreeitem.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace std;
 
@@ -127,7 +128,7 @@ QModelIndex ScatterSeriesModel::parent(const QModelIndex& index) const
         return QModelIndex();
 
     ScatterSeriesTreeItem* child_item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-    assert(child_item);
+    traced_assert(child_item);
     ScatterSeriesTreeItem* parent_item = child_item->parentItem();
 
     if (parent_item == root_item_.get())
@@ -138,7 +139,7 @@ QModelIndex ScatterSeriesModel::parent(const QModelIndex& index) const
         logerr << "null parent in " << child_item->name();
     }
 
-    assert(parent_item);
+    traced_assert(parent_item);
     logdbg << "returning create index";
     return createIndex(parent_item->row(), 0, parent_item);
 }
@@ -187,7 +188,7 @@ void ScatterSeriesModel::updateFrom (ScatterSeriesCollection& collection)
 
 void ScatterSeriesModel::deselectAll()
 {
-    assert (root_item_);
+    traced_assert(root_item_);
     root_item_->hideAll();
     root_item_->hide(false);
 }

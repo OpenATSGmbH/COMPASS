@@ -30,7 +30,7 @@ std::shared_ptr<Buffer> DBExecResult::toBuffer(const std::string& dbcontent_name
     
     if (!property_list.has_value())
         logerr << "property list could not be retrieved from result";
-    assert(property_list.has_value());
+    traced_assert(property_list.has_value());
 
     return toBuffer(property_list.value(), dbcontent_name, offset, max_entries);
 }

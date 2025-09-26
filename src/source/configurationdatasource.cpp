@@ -39,7 +39,7 @@ ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, co
     registerParameter("sac", &sac_, 0u);
     registerParameter("sic", &sic_, 0u);
 
-    assert (ds_type_.size());
+    traced_assert(ds_type_.size());
 
     if (find(DataSourceManager::data_source_types_.begin(),
              DataSourceManager::data_source_types_.end(), ds_type_)
@@ -49,7 +49,7 @@ ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, co
                << "' wrong";
     }
 
-    assert (find(DataSourceManager::data_source_types_.begin(),
+    traced_assert(find(DataSourceManager::data_source_types_.begin(),
                  DataSourceManager::data_source_types_.end(), ds_type_)
             != DataSourceManager::data_source_types_.end());
 
@@ -59,7 +59,7 @@ ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, co
 
     registerParameter("info", &info_, {});
 
-    assert (name_.size());
+    traced_assert(name_.size());
 
     if (has_short_name_ && !short_name_.size())
         has_short_name_ = false;
@@ -78,16 +78,16 @@ void ConfigurationDataSource::setFromJSON(const json& j)
 {
     logdbg << "'" << j.dump(4) << "'";
 
-    assert(j.contains("ds_type"));
+    traced_assert(j.contains("ds_type"));
 
     ds_type_ = j["ds_type"];
 
-    assert(j.contains("sac"));
-    assert(j.contains("sic"));
+    traced_assert(j.contains("sac"));
+    traced_assert(j.contains("sic"));
     sac_ = j["sac"];
     sic_ = j["sic"];
 
-    assert(j.contains("name"));
+    traced_assert(j.contains("name"));
     name_ = j["name"];
 
     if (j.contains("short_name"))

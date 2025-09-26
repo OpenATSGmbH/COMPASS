@@ -35,10 +35,12 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
                                          const std::string& instance_id,
                                          ReconstructorTask& task, 
                                          std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
-    : ReconstructorBase(class_id, instance_id, task, std::move(acc_estimator), settings_, 0)
+    : ReconstructorBase(class_id, instance_id, task, std::move(acc_estimator))
     , associatior_   (*this)
     , ref_calculator_(*this)
 {
+    registerBaseSettings(settings_);
+
     registerParameter("max_distance_notok", &settings_.max_distance_notok_, 5*NM2M); // kb 5nm
     registerParameter("max_distance_dubious", &settings_.max_distance_dubious_, 2*NM2M);
     registerParameter("max_distance_acceptable", &settings_.max_distance_acceptable_, 1*NM2M);
@@ -54,19 +56,13 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
     registerParameter("no_value_acc_fallback", &settings_.no_value_acc_fallback_, settings_.no_value_acc_fallback_);
 
 
-    // target classification
-    registerParameter("min_aircraft_modec", &base_settings_.min_aircraft_modec_, base_settings_.min_aircraft_modec_);
-
-    registerParameter("vehicle_acids", &base_settings_.vehicle_acids_, {});
-    base_settings_.setVehicleACIDs(base_settings_.vehicle_acids_);
-    registerParameter("vehicle_acads", &base_settings_.vehicle_acads_, {});
-    base_settings_.setVehicleACADs(base_settings_.vehicle_acads_);
-
     // reconstruction settings (check base for other settings)
     registerParameter("ref_rec_type", (int*)&referenceCalculatorSettings().kalman_type_assoc,
                       (int)kalman::KalmanType::UMKalman2D);
     registerParameter("ref_rec_type_final", (int*)&referenceCalculatorSettings().kalman_type_final,
                       (int)kalman::KalmanType::UMKalman2D);
+
+    
 }
 
 SimpleReconstructor::~SimpleReconstructor() {}
@@ -83,15 +79,15 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
             // ds id
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
 
             // line id
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
 
             // timestamp
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
 
             // aircraft address
@@ -111,40 +107,49 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
         read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_));
 
             // mode 3a
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
 
             // mode c
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
 
     if (dbcontent_name == "CAT062")
     {
-        assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
         read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
     }
 
             // latitude
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
 
             // longitude
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
             // assoc
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
 
             // rec num, must be last for update process
-    assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
     read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
 
             // adsb mops
     if (dbcontent_name == "CAT021")
     {
-        assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
         read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
+    }
+
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
+
+    if (dbcontent_name == "CAT065")
+    {
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
     }
 
     read_set.add(dbContent::TargetReportAccessor::getReadSetFor(dbcontent_name));
@@ -154,7 +159,7 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
 
 void SimpleReconstructor::reset()
 {
-    loginf << "start";
+    loginf;
 
 //    target_reports_.clear(); // done in base
 //    tr_timestamps_.clear();
@@ -215,6 +220,11 @@ void SimpleReconstructor::processSlice_impl()
         return;
 
     createTargetReports();
+
+    if (cancelled_)
+        return;
+
+    createTargetReportBatches();
 
     if (cancelled_)
         return;

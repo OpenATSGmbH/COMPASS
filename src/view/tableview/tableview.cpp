@@ -78,7 +78,7 @@ bool TableView::init_impl()
 {
     createSubConfigurables();
 
-    assert(data_source_);
+    traced_assert(data_source_);
 
     connect(widget_->getViewConfigWidget(), &TableViewConfigWidget::exportSignal,
             widget_->getViewDataWidget(), &TableViewDataWidget::exportDataSlot);
@@ -104,7 +104,7 @@ void TableView::generateSubConfigurable(const std::string& class_id,
            << instance_id;
     if (class_id == SubConfigDataSource)
     {
-        assert(!data_source_);
+        traced_assert(!data_source_);
         data_source_ = new TableViewDataSource(class_id, instance_id, this);
 
         //notify view that it needs to reload
@@ -139,13 +139,13 @@ void TableView::checkSubConfigurables()
 
 TableViewDataWidget* TableView::getDataWidget()
 {
-    assert (widget_);
+    traced_assert(widget_);
     return widget_->getViewDataWidget();
 }
 
 dbContent::VariableSet TableView::getSet(const std::string& dbcontent_name)
 {
-    assert(data_source_);
+    traced_assert(data_source_);
 
     return data_source_->getSet()->getFor(dbcontent_name);
 }
@@ -207,8 +207,8 @@ void TableView::accept(LatexVisitor& v)
 
 void TableView::updateSelection()
 {
-    loginf << "start";
-    assert(widget_);
+    loginf;
+    traced_assert(widget_);
 
     if (settings_.show_only_selected_)
         widget_->getViewDataWidget()->updateToSelection();
@@ -218,21 +218,21 @@ void TableView::updateSelection()
 
 void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
-    assert (vp);
-    assert (data_source_);
+    traced_assert(vp);
+    traced_assert(data_source_);
     data_source_->unshowViewPoint(vp);
 }
 
 void TableView::showViewPointSlot (const ViewableDataConfig* vp)
 {
-    loginf << "start";
+    loginf;
 
-    assert (vp);
-    assert (data_source_);
+    traced_assert(vp);
+    traced_assert(data_source_);
     data_source_->showViewPoint(vp);
-    assert (widget_);
+    traced_assert(widget_);
 }
 
 void TableView::onConfigurationChanged_impl(const std::vector<std::string>& changed_params)

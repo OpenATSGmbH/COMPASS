@@ -42,7 +42,7 @@ namespace EvaluationResultsReport
             return QVariant();
 
         TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-        assert (item);
+        traced_assert(item);
 
         if (role == Qt::DisplayRole)
             return item->data(index.column());
@@ -143,7 +143,7 @@ namespace EvaluationResultsReport
 
     void TreeModel::clear()
     {
-        loginf << "start";
+        loginf;
 
         root_item_ = make_shared<RootItem>(eval_man_);
     }

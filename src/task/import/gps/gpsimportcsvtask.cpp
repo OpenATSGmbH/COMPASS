@@ -110,7 +110,7 @@ GPSImportCSVTaskDialog* GPSImportCSVTask::dialog()
                 this, &GPSImportCSVTask::dialogCancelSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
@@ -328,7 +328,7 @@ void GPSImportCSVTask::parseCurrentFile ()
 
         //        "GPSTime","Latitude","Longitude","MSL"
         if (line_cnt == 0)
-            assert (line.find("\"GPSTime\",\"Latitude\",\"Longitude\",\"MSL\"") != std::string::npos);
+            traced_assert(line.find("\"GPSTime\",\"Latitude\",\"Longitude\",\"MSL\"") != std::string::npos);
         else
         {
             //        02/16/23 09:24:24.000,41.242547397,-8.674719837,67.207
@@ -453,31 +453,31 @@ void GPSImportCSVTask::run()
 {
     loginf << "filename '" << current_filename_ << " fixes " << gps_positions_.size();
 
-    assert (gps_positions_.size());
-    assert (!buffer_);
+    traced_assert(gps_positions_.size());
+    traced_assert(!buffer_);
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
     string dbcontent_name = "RefTraj";
-    assert (dbcontent_man.existsDBContent(dbcontent_name));
+    traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
 
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    assert (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
 
     loginf << "getting variables";
 
@@ -553,7 +553,7 @@ void GPSImportCSVTask::run()
     unsigned int cnt = 0;
     unsigned int ds_id = Number::dsIdFrom(ds_sac_, ds_sic_);
 
-    assert (dbcontent_man.hasMaxRefTrajTrackNum());
+    traced_assert(dbcontent_man.hasMaxRefTrajTrackNum());
     unsigned int track_num = dbcontent_man.maxRefTrajTrackNum();
 
     loginf << "max reftraj track num " << track_num;
@@ -565,7 +565,7 @@ void GPSImportCSVTask::run()
         if (!src_man.hasDBDataSource(ds_id))
             src_man.addNewDataSource(ds_id);
 
-        assert (src_man.hasDBDataSource(ds_id));
+        traced_assert(src_man.hasDBDataSource(ds_id));
 
         dbContent::DBDataSource& src = src_man.dbDataSource(ds_id);
 
@@ -594,8 +594,8 @@ void GPSImportCSVTask::run()
         while (tod > tod_24h)
             tod -= tod_24h;
 
-        assert(tod >= 0.0f);
-        assert(tod <= tod_24h);
+        traced_assert(tod >= 0.0f);
+        traced_assert(tod <= tod_24h);
 
         sac_vec.set(cnt, ds_sac_);
         sic_vec.set(cnt, ds_sic_);
@@ -644,7 +644,7 @@ void GPSImportCSVTask::run()
 
 void GPSImportCSVTask::insertDoneSlot()
 {
-    loginf << "start";
+    loginf;
 
     buffer_ = nullptr;
 
@@ -675,9 +675,9 @@ void GPSImportCSVTask::insertDoneSlot()
 
 void GPSImportCSVTask::dialogImportSlot()
 {
-    assert (canRun());
+    traced_assert(canRun());
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
     run();
@@ -685,11 +685,11 @@ void GPSImportCSVTask::dialogImportSlot()
 
 void GPSImportCSVTask::dialogCancelSlot()
 {
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 }
 
 //void GPSImportCSVTask::checkParsedData ()
 //{
-//    loginf << "start";
+//    loginf;
 //}

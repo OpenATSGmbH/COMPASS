@@ -143,8 +143,8 @@ SingleFalseBase::SingleFalseBase(const std::string& result_type,
 */
 boost::optional<double> SingleFalseBase::computeResult_impl() const
 {
-    assert (num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_pos_inside_ == num_no_ref_val_ + num_unknown_ + num_correct_ + num_false_);
+    traced_assert(num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_pos_inside_ == num_no_ref_val_ + num_unknown_ + num_correct_ + num_false_);
 
     unsigned int num_total = num_correct_ + num_false_;
 
@@ -185,8 +185,8 @@ std::vector<Single::TargetInfo> SingleFalseBase::targetInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or " + name, num_no_ref_pos_ + num_no_ref_val_}, 
              { "#NoRefPos [1]"  , "Number of updates w/o reference position "          , num_no_ref_pos_                  }, 
              { "#NoRef [1]"     , "Number of updates w/o reference " + name            , num_no_ref_val_                  }, 
-             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                  }, 
              { "#PosOutside [1]", "Number of updates outside sector"                   , num_pos_outside_                 }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                  }, 
              { "#Unknown [1]"   , "Number of updates unknown " + name                  , num_unknown_                     }, 
              { "#Correct [1]"   , "Number of updates with correct " + name             , num_correct_                     }, 
              { "#False [1]"     , "Number of updates with false " + name               , num_false_                       } };
@@ -222,7 +222,7 @@ nlohmann::json::array_t SingleFalseBase::detailValues(const EvaluationDetail& de
 bool SingleFalseBase::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_not_ok = detail.getValueAs<bool>(DetailKey::IsNotOk);
-    assert(is_not_ok.has_value());
+    traced_assert(is_not_ok.has_value());
 
     return !is_not_ok.value();
 }
@@ -234,7 +234,7 @@ void SingleFalseBase::addAnnotationForDetail(nlohmann::json& annotations_json,
                                              TargetAnnotationType type,
                                              bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -319,8 +319,8 @@ boost::optional<double> JoinedFalseBase::computeResult_impl() const
             << " num_correct " << num_correct_
             << " num_false " << num_false_;
 
-    assert (num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_pos_inside_ == num_no_ref_val_+num_unknown_+num_correct_+num_false_);
+    traced_assert(num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_pos_inside_ == num_no_ref_val_+num_unknown_+num_correct_+num_false_);
 
     unsigned int total = num_correct_ + num_false_;
 
@@ -340,8 +340,8 @@ std::vector<Joined::SectorInfo> JoinedFalseBase::sectorInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or " + name, num_no_ref_pos_+num_no_ref_val_ },
              { "#NoRefPos [1]"  , "Number of updates w/o reference position "          , num_no_ref_pos_                 }, 
              { "#NoRef [1]"     , "Number of updates w/o reference " + name            , num_no_ref_val_                 }, 
-             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                 }, 
              { "#PosOutside [1]", "Number of updates outside sector"                   , num_pos_outside_                }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                    , num_pos_inside_                 }, 
              { "#Unknown [1]"   , "Number of updates unknown " + name                  , num_unknown_                    }, 
              { "#Correct [1]"   , "Number of updates with correct " + name             , num_correct_                    }, 
              { "#False [1]"     , "Number of updates with false " + name               , num_false_                      } };

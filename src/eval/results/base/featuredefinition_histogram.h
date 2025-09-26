@@ -81,7 +81,7 @@ public:
     */
     std::unique_ptr<ViewPointGenFeature> createFeature_impl(const Base* result) const override final
     {
-        assert(isValid());
+        traced_assert(isValid());
 
         RawHistogramCollection hcollection;
 
@@ -164,7 +164,7 @@ public:
     */
     std::unique_ptr<ViewPointGenFeature> createFeature_impl(const Base* result) const override final
     {
-        assert(isValid());
+        traced_assert(isValid());
 
         RawHistogramCollection hcollection;
 

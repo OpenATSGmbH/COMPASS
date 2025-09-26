@@ -32,7 +32,7 @@ VariableViewDataWidget::VariableViewDataWidget(ViewWidget* view_widget,
 :   ViewDataWidget(view_widget, parent, f)
 ,   variable_view_(view)
 {
-    assert(variable_view_);
+    traced_assert(variable_view_);
 
     //init states
     resetVariableStates();
@@ -42,14 +42,14 @@ VariableViewDataWidget::VariableViewDataWidget(ViewWidget* view_widget,
 */
 VariableViewDataWidget::~VariableViewDataWidget()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
 */
 void VariableViewDataWidget::clearData_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //reset everything
     resetVariableStates();
@@ -80,7 +80,7 @@ void VariableViewDataWidget::clearIntermediateRedrawData_impl()
 */
 void VariableViewDataWidget::loadingStarted_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //nothing to do yet
 
@@ -91,7 +91,7 @@ void VariableViewDataWidget::loadingStarted_impl()
 */
 void VariableViewDataWidget::updateData_impl(bool requires_reset)
 {
-    logdbg << "start";
+    logdbg;
 
     //react on data update
     updateDataEvent(requires_reset);
@@ -103,7 +103,7 @@ void VariableViewDataWidget::updateData_impl(bool requires_reset)
 */
 void VariableViewDataWidget::loadingDone_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //redraw already triggered by post load trigger? => return
     if (postLoadTrigger())
@@ -155,7 +155,7 @@ ViewDataWidget::DrawState VariableViewDataWidget::redrawData_impl(bool recompute
 */
 void VariableViewDataWidget::liveReload_impl()
 {
-    logdbg << "start";
+    logdbg;
 
     //@TODO: implement live reload for variable based views
 
@@ -197,9 +197,9 @@ namespace
         ,   view_var_     (view_var     )
         ,   var_          (var          )
         {
-            assert(buffer_);
-            assert(view_var_);
-            assert(var_);
+            traced_assert(buffer_);
+            traced_assert(view_var_);
+            traced_assert(var_);
         }
         ~CanUpdateFunc() = default;
 
@@ -246,7 +246,7 @@ bool VariableViewDataWidget::canUpdate(int var_idx, const std::string& dbcontent
     }
 
     Buffer* buffer = viewData().at(dbcontent_name).get();
-    assert(buffer);
+    traced_assert(buffer);
 
     //allow empty variables if configured correctly
     if (variable.settings().allow_empty_var && variable.isEmpty())
@@ -266,7 +266,7 @@ bool VariableViewDataWidget::canUpdate(int var_idx, const std::string& dbcontent
     bool ok = property_templates::invokeFunctor(data_type, func);
 
     // !var should be in buffer if no reload is required!
-    assert(func.varInBuffer() || variable_view_->reloadNeeded());
+    traced_assert(func.varInBuffer() || variable_view_->reloadNeeded());
 
     if (!func.varInBuffer())
         variable_states_.at(var_idx) = VariableState::MissingFromBuffer;
@@ -354,13 +354,13 @@ bool VariableViewDataWidget::variableIsDateTime(int var_idx) const
  */
 void VariableViewDataWidget::updateFromVariables()
 {
-    logdbg << "start";
+    logdbg;
 
     for (const auto& buf_it : viewData())
     {
         const auto& dbcontent_name = buf_it.first;
         std::shared_ptr<Buffer> buffer = buf_it.second;
-        assert(buffer);
+        traced_assert(buffer);
 
         bool can_update = canUpdate(dbcontent_name);
 

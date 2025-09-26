@@ -32,10 +32,10 @@ namespace EvaluationRequirement
     IdentificationCorrectConfigWidget::IdentificationCorrectConfigWidget(IdentificationCorrectConfig& cfg)
         : ProbabilityBaseConfigWidget(cfg)
     {
-        assert (prob_edit_);
+        traced_assert(prob_edit_);
         prob_edit_->setToolTip("Probability of correct identification");
 
-        assert (check_type_box_);
+        traced_assert(check_type_box_);
 
         // correctness of all
         require_correctness_of_all_check_ = new QCheckBox ();
@@ -77,35 +77,35 @@ namespace EvaluationRequirement
 
     void IdentificationCorrectConfigWidget::toggleRequireCorrectnessOfAllSlot()
     {
-        loginf << "start";
+        loginf;
 
-        assert (require_correctness_of_all_check_);
+        traced_assert(require_correctness_of_all_check_);
         config().requireCorrectnessOfAll(require_correctness_of_all_check_->checkState() == Qt::Checked);
 
     }
 
     void IdentificationCorrectConfigWidget::toggleUseModeASlot()
     {
-        loginf << "start";
+        loginf;
 
-        assert (use_mode_a_check_);
+        traced_assert(use_mode_a_check_);
         config().useModeA(use_mode_a_check_->checkState() == Qt::Checked);
     }
 
     void IdentificationCorrectConfigWidget::toggleUseMsTaSlot()
     {
-        loginf << "start";
+        loginf;
 
-        assert (use_ms_ta_check_);
+        traced_assert(use_ms_ta_check_);
         config().useMsTa(use_ms_ta_check_->checkState() == Qt::Checked);
 
     }
 
     void IdentificationCorrectConfigWidget::toggleUseMsTiSlot()
     {
-        loginf << "start";
+        loginf;
 
-        assert (use_ms_ti_check_);
+        traced_assert(use_ms_ti_check_);
         config().useMsTi(use_ms_ti_check_->checkState() == Qt::Checked);
 
     }
@@ -113,7 +113,7 @@ namespace EvaluationRequirement
     IdentificationCorrectConfig& IdentificationCorrectConfigWidget::config()
     {
         IdentificationCorrectConfig* config = dynamic_cast<IdentificationCorrectConfig*>(&config_);
-        assert (config);
+        traced_assert(config);
 
         return *config;
     }

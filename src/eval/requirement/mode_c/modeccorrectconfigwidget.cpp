@@ -33,10 +33,10 @@ namespace EvaluationRequirement
 ModeCCorrectConfigWidget::ModeCCorrectConfigWidget(ModeCCorrectConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of correct Mode C code");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     distance_value_edit_ = new QLineEdit(QString::number(config().maxDistanceFt()));
     distance_value_edit_->setValidator(new QDoubleValidator(0.0, 10000.0, 2, this));
@@ -64,7 +64,7 @@ void ModeCCorrectConfigWidget::distanceValueEditSlot(QString value)
 ModeCCorrectConfig& ModeCCorrectConfigWidget::config()
 {
     ModeCCorrectConfig* config = dynamic_cast<ModeCCorrectConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

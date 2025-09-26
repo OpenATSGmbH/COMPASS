@@ -19,6 +19,7 @@
 
 #include "propertylist.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include "json_fwd.hpp"
 
@@ -38,9 +39,6 @@ class VariableSet;
 
 template <class T>
 class NullableVector;
-
-// template <class T>
-// class OldNullableVector;
 
 typedef std::tuple<std::map<std::string, std::shared_ptr<NullableVector<bool>>>,
 std::map<std::string, std::shared_ptr<NullableVector<char>>>,
@@ -148,7 +146,6 @@ private:
 };
 
 #include "nullablevector.h"
-//#include "oldnullablevector.h"
 
 template <typename T>
 inline bool Buffer::has(const std::string& id) const
@@ -163,7 +160,7 @@ NullableVector<T>& Buffer::get(const std::string& id)
           ArrayListMapTupel>::value>(array_list_tuple_)).count(id))
         logerr << "id '" << id << "' type " << typeid(T).name() << " not found";
 
-    assert ((std::get<BufferIndex<std::map<std::string, std::shared_ptr<NullableVector<T>>>,
+    traced_assert((std::get<BufferIndex<std::map<std::string, std::shared_ptr<NullableVector<T>>>,
              ArrayListMapTupel>::value>(array_list_tuple_)).count(id));
 
     return *(std::get<BufferIndex<std::map<std::string, std::shared_ptr<NullableVector<T>>>,
@@ -178,7 +175,7 @@ const NullableVector<T>& Buffer::get(const std::string& id) const
           ArrayListMapTupel>::value>(array_list_tuple_)).count(id))
         logerr << "id '" << id << "' type " << typeid(T).name() << " not found";
 
-    assert ((std::get<BufferIndex<std::map<std::string, std::shared_ptr<NullableVector<T>>>,
+    traced_assert((std::get<BufferIndex<std::map<std::string, std::shared_ptr<NullableVector<T>>>,
              ArrayListMapTupel>::value>(array_list_tuple_)).count(id));
 
     return *(std::get<BufferIndex<std::map<std::string, std::shared_ptr<NullableVector<T>>>,
@@ -191,7 +188,7 @@ void Buffer::rename(const std::string& id, const std::string& id_new)
 {
     renameArrayListMapEntry<T>(id, id_new);
 
-    assert(properties_.hasProperty(id));
+    traced_assert(properties_.hasProperty(id));
     Property old_property = properties_.get(id);
     properties_.removeProperty(id);
     properties_.addProperty(id_new, old_property.dataType());
@@ -200,8 +197,8 @@ void Buffer::rename(const std::string& id, const std::string& id_new)
 template <typename T>
 void Buffer::remove(const std::string& id)
 {
-    assert(getArrayListMap<T>().count(id) == 1);
-    assert(properties_.hasProperty(id));
+    traced_assert(getArrayListMap<T>().count(id) == 1);
+    traced_assert(properties_.hasProperty(id));
 
     getArrayListMap<T>().erase(id);
     properties_.removeProperty(id);
@@ -228,8 +225,8 @@ const std::map<std::string, std::shared_ptr<NullableVector<T>>>& Buffer::getArra
 template <typename T>
 void Buffer::renameArrayListMapEntry(const std::string& id, const std::string& id_new)
 {
-    assert(getArrayListMap<T>().count(id) == 1);
-    assert(getArrayListMap<T>().count(id_new) == 0);
+    traced_assert(getArrayListMap<T>().count(id) == 1);
+    traced_assert(getArrayListMap<T>().count(id_new) == 0);
     std::shared_ptr<NullableVector<T>> array_list = getArrayListMap<T>().at(id);
     array_list->renameProperty(id_new);
     getArrayListMap<T>().erase(id);
@@ -263,9 +260,9 @@ void Buffer::seizeArrayListMap(Buffer& other_buffer)
     for (auto& it : other_buffer.getArrayListMap<T>())
     {
         logdbg << "seizing '" << it.first << "'";
-        assert (other_buffer.properties().hasProperty(it.first));
+        traced_assert(other_buffer.properties().hasProperty(it.first));
 
-        assert (getArrayListMap<T>().count(it.first));
+        traced_assert(getArrayListMap<T>().count(it.first));
         getArrayListMap<T>().at(it.first)->addData(*it.second);
     }
 

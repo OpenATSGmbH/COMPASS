@@ -19,6 +19,7 @@
 
 #include "dbcontent/target/targetposition.h"
 #include "timeconv.h"
+#include "traced_assert.h"
 
 #include <string>
 #include <map>
@@ -97,7 +98,7 @@ public:
         if (key >= values_.size()) // never set
             return {};
 
-        assert (key < values_.size());
+        traced_assert(key < values_.size());
         if (!values_.at(key).canConvert<T>())
             return {};
 
@@ -108,7 +109,7 @@ public:
     T getValueAsOrAssert(const Key& key) const
     {
         auto v = getValueAs<T>(key);
-        assert(v.has_value());
+        traced_assert(v.has_value());
         return v.value();
     }
 

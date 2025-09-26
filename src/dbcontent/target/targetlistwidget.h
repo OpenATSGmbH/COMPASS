@@ -73,8 +73,10 @@ public slots:
     void evalExcludeTimeWindowsTargetSlot();
     void evalExcludeRequirementsTargetSlot();
 
-    void currentRowChanged(const QModelIndex& current, const QModelIndex& previous);
+    //void currentRowChanged(const QModelIndex& current, const QModelIndex& previous);
     void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+
+    void loadingDoneSlot();
 
 public:
     TargetListWidget(TargetModel& model, DBContentManager& dbcont_manager);

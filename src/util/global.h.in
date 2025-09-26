@@ -53,7 +53,7 @@ static const std::string NULL_GROUP_ID {"None"};
 //std::string my_var = "@MY_VAR@";
 #define USE_EXPERIMENTAL_SOURCE @EXPERIMENTAL_SRC@
 
-#define TODO_ASSERT assert(false);
+#define TODO_ASSERT traced_assert(false);
 #define UNUSED_VARIABLE(expr) do { (void)(expr); } while (0)
 
 static const std::string CMAKE_INSTALL_PREFIX = "@CMAKE_INSTALL_PREFIX@";

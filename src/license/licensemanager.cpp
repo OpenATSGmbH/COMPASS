@@ -121,7 +121,7 @@ bool LicenseManager::readLicenses()
     {
         std::string id = jl.key();
 
-        assert(licenses_.find(id) == licenses_.end());
+        traced_assert(licenses_.find(id) == licenses_.end());
 
         auto& l = licenses_[ id ];
 
@@ -291,7 +291,7 @@ bool LicenseManager::hasLicense(const std::string& id) const
 const license::License& LicenseManager::getLicense(const std::string& id) const
 {
     auto it = licenses_.find(id);
-    assert(it != licenses_.end());
+    traced_assert(it != licenses_.end());
     return it->second;
 }
 
@@ -307,7 +307,7 @@ const std::map<std::string, license::License>& LicenseManager::getLicenses() con
 bool LicenseManager::addLicense(const license::License& license, bool write_licenses)
 {
     //adding a license shall not overwrite existing ids
-    assert(!hasLicense(license.id));
+    traced_assert(!hasLicense(license.id));
 
     licenses_[ license.id ] = license;
 
@@ -339,7 +339,7 @@ bool LicenseManager::setLicense(const license::License& license, bool write_lice
 */
 bool LicenseManager::removeLicense(const std::string& id, bool write_licenses)
 {
-    assert(hasLicense(id));
+    traced_assert(hasLicense(id));
 
     licenses_.erase(id);
 

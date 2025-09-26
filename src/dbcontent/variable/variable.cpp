@@ -64,13 +64,13 @@ std::map<std::string, Variable::Representation> Variable::string_2_representatio
 Variable::Representation Variable::stringToRepresentation(
     const std::string& representation_str)
 {
-    assert(string_2_representation_.count(representation_str) == 1);
+    traced_assert(string_2_representation_.count(representation_str) == 1);
     return string_2_representation_.at(representation_str);
 }
 
 std::string Variable::representationToString(Representation representation)
 {
-    assert(representation_2_string_.count(representation) == 1);
+    traced_assert(representation_2_string_.count(representation) == 1);
     return representation_2_string_.at(representation);
 }
 
@@ -83,37 +83,30 @@ Variable::Variable(const std::string& class_id, const std::string& instance_id,
     registerParameter("name", &name_, std::string());
     registerParameter("short_name", &short_name_, std::string());
     registerParameter("description", &description_, std::string());
+    
     registerParameter("db_column_name", &db_column_name_, std::string());
-    registerParameter("data_type_str", &data_type_str_, std::string());
     registerParameter("is_key", &is_key_, false);
+
+    registerParameter("db_expression", &db_expression_, std::string());
+    registerParameter("db_expression_variables", &db_expression_variables_, nlohmann::json::object());
+    
+    registerParameter("data_type_str", &data_type_str_, std::string());
     registerParameter("representation_str", &representation_str_, std::string());
     registerParameter("dimension", &dimension_, std::string());
     registerParameter("unit", &unit_, std::string());
 
-    if (name_.size() == 0)
-        logerr << "instance " << instance_id << " has no name";
+    traced_assert_msg(name_.size(), "Name required");
 
+    traced_assert_msg(db_column_name_.size() || db_expression_.size(),
+                      "DB name or expression required");  // one or the other
 
-    assert(name_.size() > 0);
-
-    if (data_type_str_.size() == 0)
-        logerr << "name " << name_ << " has no data type";
-
-    assert(data_type_str_.size() > 0);
+    traced_assert_msg(data_type_str_.size(), "Data type required");
     data_type_ = Property::asDataType(data_type_str_);
 
     if (representation_str_.size() == 0)
-    {
         representation_str_ = representationToString(Representation::STANDARD);
-    }
 
     representation_ = stringToRepresentation(representation_str_);
-
-    // loginf << "name " << id_ << " unitdim '" << unit_dimension_ << "'
-    // unitunit '" << unit_unit_ << "'";
-
-    assert (db_column_name_.size());
-    //boost::algorithm::to_lower(db_column_name_); // modifies str
 
     createSubConfigurables();
 }
@@ -204,10 +197,14 @@ bool Variable::operator==(const Variable& var)
     return true;
 }
 
+std::string Variable::str() const
+{
+    return Configurable::getParent().instanceId() + ": " + name_ + " (" + data_type_str_ + ")";
+}
+
 void Variable::print() const
 {
-    loginf << "dbcont " << Configurable::getParent().instanceId() << " id " << name_
-           << " data type " << data_type_str_;
+    loginf << str();
 }
 
 void Variable::checkSubConfigurables()
@@ -216,13 +213,13 @@ void Variable::checkSubConfigurables()
 
 DBContent& Variable::object() const
 {
-    assert(dbcontent_);
+    traced_assert(dbcontent_);
     return *dbcontent_;
 }
 
 const std::string& Variable::dbContentName() const
 {
-    assert(dbcontent_);
+    traced_assert(dbcontent_);
     return dbcontent_->name();
 }
 
@@ -234,7 +231,7 @@ void Variable::name(const std::string& name)
 
 //const std::string& Variable::metaTable() const
 //{
-//    assert(dbcontent_);
+//    traced_assert(dbcontent_);
 //    return dbcontent_->currentMetaTable();
 //}
 
@@ -274,20 +271,20 @@ void Variable::dbColumnName(const std::string& value)
 
 std::string Variable::dbTableName() const
 {
-    assert (dbcontent_);
+    traced_assert(dbcontent_);
     return dbcontent_->dbTableName();
 }
 
-std::string Variable::dbColumnIdentifier() const
-{
-    return dbTableName()+":"+dbColumnName();
-}
+// std::string Variable::dbColumnIdentifier() const
+// {
+//     return dbTableName()+":"+dbColumnName();
+// }
 
 //void Variable::setMinMax()
 //{
-//    assert(!min_max_set_);
+//    traced_assert(!min_max_set_);
 
-//    assert(dbcontent_);
+//    traced_assert(dbcontent_);
 //    logdbg << "variable " << dbcontent_->name() << " " << name_ << ": setMinMax";
 
 //    if (!dbObject().existsInDB() || !dbObject().count())
@@ -314,7 +311,7 @@ std::string Variable::dbColumnIdentifier() const
 //    if (!min_max_set_)
 //        setMinMax();  // already unit transformed
 
-//    assert(min_max_set_);
+//    traced_assert(min_max_set_);
 
 //    logdbg << "object " << dbContentName() << " name " << name()
 //           << " returning " << min_;
@@ -326,7 +323,7 @@ std::string Variable::dbColumnIdentifier() const
 //    if (!min_max_set_)
 //        setMinMax();  // is already unit transformed
 
-//    assert(min_max_set_);
+//    traced_assert(min_max_set_);
 
 //    logdbg << "object " << dbContentName() << " name " << name()
 //           << " returning " << max_;
@@ -362,7 +359,7 @@ VariableWidget* Variable::widget()
     if (!widget_)
     {
         widget_ = new VariableWidget(*this);
-        assert(widget_);
+        traced_assert(widget_);
     }
 
     return widget_;
@@ -464,7 +461,7 @@ std::string Variable::getValueStringFromRepresentation(
     if (representation_str == NULL_STRING)
         return representation_str;
 
-    assert(representation_ != Variable::Representation::STANDARD);
+    traced_assert(representation_ != Variable::Representation::STANDARD);
 
     if (representation_ == Variable::Representation::SECONDS_TO_TIME)
     {
@@ -791,12 +788,45 @@ void Variable::shortName(const std::string& short_name)
 
 bool Variable::hasDBContent() const
 {
-    return COMPASS::instance().dbInterface().hasContentIn(dbTableName(), db_column_name_);
+    if (db_column_name_.size())
+        return COMPASS::instance().dbInterface().hasContentIn(dbTableName(), db_column_name_);
+    else
+    {
+        traced_assert(dbcontent_);
+        traced_assert(db_expression_.size());
+
+        for (auto& var_name : db_expression_variables_)
+        {
+            loginf << "dbcontent " << dbcontent_->name() << " var " << var_name << " exists " << dbcontent_->hasVariable(var_name);
+
+            traced_assert (dbcontent_->hasVariable(var_name));
+
+            if (dbcontent_->variable(var_name).hasDBContent())
+                return true;
+        }
+    }
+
+    return false;
 }
 
 void Variable::setHasDBContent()
 {
     COMPASS::instance().dbInterface().setContentIn(dbTableName(), db_column_name_);
+}
+
+std::vector<std::string> Variable::dbExpressionVariables() const
+{
+    return db_expression_variables_.get<std::vector<std::string>>(); ; 
+}
+
+const std::string& Variable::dbColumnOrExpression() const
+{
+    traced_assert (db_column_name_.size() || db_expression_.size());
+
+    if (db_column_name_.size())
+        return db_column_name_;
+    else
+        return db_expression_;
 }
 
 bool Variable::isKey() const
@@ -811,7 +841,7 @@ void Variable::isKey(bool value)
 
 std::string Variable::getDataSourcesAsString(const std::string& value) const
 {
-    assert(dbcontent_);
+    traced_assert(dbcontent_);
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 

@@ -16,6 +16,7 @@
  */
 
 #include "dbcontent/variable/variableset.h"
+#include "traced_assert.h"
 
 #include <algorithm>
 
@@ -70,7 +71,7 @@ bool VariableSet::add(const VariableSet& set)
 
 void VariableSet::removeVariableAt(unsigned int index)
 {
-    assert(index < set_.size());
+    traced_assert(index < set_.size());
 
     set_.erase(set_.begin() + index);
 
@@ -84,7 +85,7 @@ void VariableSet::removeVariable(const Variable& var)
 
 VariableSet& VariableSet::operator=(const VariableSet& source)
 {
-    logdbg << "start";
+    logdbg;
 
     if (this == &source)  // self assignment
         return *this;
@@ -106,7 +107,7 @@ VariableSet& VariableSet::operator=(const VariableSet& source)
 
 Variable& VariableSet::getVariable(unsigned int index) const
 {
-    assert(index < set_.size());
+    traced_assert(index < set_.size());
     return *set_.at(index);
 }
 
@@ -137,15 +138,24 @@ bool VariableSet::intersect(VariableSet& set)
     return added;
 }
 
-void VariableSet::print()
+std::string VariableSet::str() const
 {
-    logdbg << "size" << set_.size() << " changed " << changed_;
-    std::vector<Variable*>::iterator it;
+    std::ostringstream out;
 
-    for (it = set_.begin(); it != set_.end(); it++)
+    for (auto& var_it : set_)
     {
-        (*it)->print();
+        if (out.str().size())
+            out << ", ";
+
+        out << var_it->str();
     }
+
+    return out.str();
+}
+
+void VariableSet::print() const
+{
+    loginf << str();
 }
 
 void VariableSet::clear()
@@ -172,7 +182,7 @@ bool VariableSet::hasDBColumnName(const std::string& db_column_name)
 
 unsigned int VariableSet::getVariableWithDBColumnName(const std::string& db_column_name)
 {
-    assert(hasDBColumnName(db_column_name));
+    traced_assert(hasDBColumnName(db_column_name));
 
     unsigned int cnt = 0;
     for (auto var_it : set_)
@@ -183,7 +193,7 @@ unsigned int VariableSet::getVariableWithDBColumnName(const std::string& db_colu
         ++cnt;
     }
 
-    assert(false);
+    traced_assert(false);
 }
 
 }

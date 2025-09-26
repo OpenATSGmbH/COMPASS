@@ -68,7 +68,7 @@ PDFGeneratorDialog& PDFGenerator::dialog()
         //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&COMPASS::instance().dbInterface().connection());
         //assert (db_con);
         //@TODO: PWa: did not understand why we need to check the connection at this point?
-        assert(COMPASS::instance().dbInterface().ready());
+        traced_assert(COMPASS::instance().dbInterface().ready());
 
         string current_filename = COMPASS::instance().lastDbFilename();
 
@@ -94,9 +94,9 @@ bool PDFGenerator::pdfLatexFound() const
 
 void PDFGenerator::run ()
 {
-    loginf << "start";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->setRunning(true);
 
     const auto& eval_settings = calculator_.settings();
@@ -133,7 +133,7 @@ void PDFGenerator::run ()
 
         start_time = boost::posix_time::microsec_clock::local_time();
 
-        assert (calculator_.hasResults());
+        traced_assert(calculator_.hasResults());
         std::shared_ptr<Section> root_section = calculator_.resultsGenerator().resultsModel().rootItem()->rootSection();
 
         string status_str, elapsed_time_str, remaining_time_str;
@@ -333,7 +333,7 @@ void PDFGenerator::run ()
 
 void PDFGenerator::cancel ()
 {
-    loginf << "start";
+    loginf;
 
     cancel_ = true;
 

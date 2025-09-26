@@ -64,19 +64,19 @@ BufferTableWidget::~BufferTableWidget() = default;
 
 void BufferTableWidget::clear()
 {
-    assert(model_);
+    traced_assert(model_);
 
     model_->clearData();
 }
 
 void BufferTableWidget::show(std::shared_ptr<Buffer> buffer) 
 {
-    assert(buffer);
+    traced_assert(buffer);
 
     logdbg << "object " << object_.name() << " buffer size "
            << buffer->size() << " properties " << buffer->properties().size();
-    assert(table_);
-    assert(model_);
+    traced_assert(table_);
+    traced_assert(model_);
 
     model_->setData(buffer);
     table_->resizeColumnsToContents();
@@ -110,7 +110,7 @@ void BufferTableWidget::exportSlot()
             filename += ".csv";
 
         loginf << "export filename " << filename.toStdString();
-        assert(model_);
+        traced_assert(model_);
         model_->saveAsCSV(filename.toStdString());
     }
     else
@@ -123,53 +123,53 @@ void BufferTableWidget::exportDoneSlot(bool cancelled) { emit exportDoneSignal(c
 
 void BufferTableWidget::updateToSettingsChange()
 {
-    logdbg << "start";
+    logdbg;
 
-    assert(model_);
+    traced_assert(model_);
     model_->rebuild();
-    assert(table_);
+    traced_assert(table_);
     table_->resizeColumnsToContents();
 }
 
 // void BufferTableWidget::usePresentation(bool value)
 // {
-//     assert(model_);
+//     traced_assert(model_);
 //     model_->rebuild();
-//     assert(table_);
+//     traced_assert(table_);
 //     table_->resizeColumnsToContents();
 // }
 
 // void BufferTableWidget::ignoreNonTargetReports(bool value)
 // {
-//     assert(model_);
+//     traced_assert(model_);
 //     model_->rebuild();
-//     assert(table_);
+//     traced_assert(table_);
 //     table_->resizeColumnsToContents();
 // }
 
 // bool BufferTableWidget::showOnlySelected() const
 // {
-//     assert(model_);
+//     traced_assert(model_);
 //     return model_->showOnlySelected();
 // }
 
 // bool BufferTableWidget::usePresentation() const
 // {
-//     assert(model_);
+//     traced_assert(model_);
 //     return model_->usePresentation();
 // }
 
 void BufferTableWidget::resetModel()
 {
-    assert(model_);
+    traced_assert(model_);
     model_->reset();
 }
 
 void BufferTableWidget::updateToSelection()
 {
-    assert(model_);
+    traced_assert(model_);
     model_->rebuild();
-    assert(table_);
+    traced_assert(table_);
     table_->resizeColumnsToContents();
 }
 
@@ -177,13 +177,13 @@ TableView& BufferTableWidget::view() const { return view_; }
 
 bool BufferTableWidget::hasData() const
 {
-    assert (model_);
+    traced_assert(model_);
     return model_->hasData();
 }
 
 void BufferTableWidget::resizeColumns()
 {
-    assert(table_);
+    traced_assert(table_);
     table_->resizeColumnsToContents();
 }
 
@@ -191,7 +191,7 @@ void BufferTableWidget::keyPressEvent(QKeyEvent* event)
 {
     loginf << "got keypressed";
 
-    assert(table_);
+    traced_assert(table_);
 
     if (event->modifiers() & Qt::ControlModifier)
     {

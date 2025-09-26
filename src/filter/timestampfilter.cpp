@@ -106,7 +106,7 @@ DBFilterWidget* TimestampFilter::createWidget()
 
 void TimestampFilter::checkSubConfigurables()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 
@@ -128,9 +128,9 @@ void TimestampFilter::reset()
 
 void TimestampFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -142,19 +142,19 @@ void TimestampFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
     logdbg << "filter '" << filters.dump(4) << "'";
 
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Timestamp Minimum"));
+    traced_assert(filter.contains("Timestamp Minimum"));
     min_value_str_ = filter.at("Timestamp Minimum");
-    assert (min_value_str_.size());
+    traced_assert(min_value_str_.size());
     min_value_ = Time::fromString(min_value_str_);
 
-    assert (filter.contains("Timestamp Maximum"));
+    traced_assert(filter.contains("Timestamp Maximum"));
     max_value_str_ = filter.at("Timestamp Maximum");
-    assert (max_value_str_.size());
+    traced_assert(max_value_str_.size());
     max_value_ = Time::fromString(max_value_str_);
 
     if (widget())

@@ -53,6 +53,9 @@ public slots:
     void addRequirementSlot(Group& group);
     void deleteRequirementSlot(Group& group, EvaluationRequirement::BaseConfig& req);
 
+    void refMaxTimeDiffEditSlot(QString value);
+    void refMinAccEditSlot(QString value);
+
 public:
     EvaluationStandardWidget(EvaluationStandard& standard);
     virtual ~EvaluationStandardWidget();
@@ -78,5 +81,7 @@ protected:
     QStackedWidget* requirements_widget_{nullptr};
 
     QMenu menu_;
+
+    QWidget* createMainWidget();
 };
 

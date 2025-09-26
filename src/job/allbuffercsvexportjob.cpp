@@ -45,15 +45,15 @@ AllBufferCSVExportJob::AllBufferCSVExportJob(
       only_selected_(only_selected),
       use_presentation_(use_presentation)
 {
-    assert(read_set_);
-    assert(file_name_.size());
+    traced_assert(read_set_);
+    traced_assert(file_name_.size());
 }
 
 AllBufferCSVExportJob::~AllBufferCSVExportJob() {}
 
 void AllBufferCSVExportJob::run_impl()
 {
-    logdbg << "start";
+    logdbg;
     started_ = true;
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
@@ -99,18 +99,18 @@ void AllBufferCSVExportJob::run_impl()
             dbcont_num = row_index_it.first;
             buffer_index = row_index_it.second;
 
-            assert(number_to_dbcont_.count(dbcont_num) == 1);
+            traced_assert(number_to_dbcont_.count(dbcont_num) == 1);
             dbcontent_name = number_to_dbcont_.at(dbcont_num);
 
-            assert(buffers_.count(dbcontent_name) == 1);
+            traced_assert(buffers_.count(dbcontent_name) == 1);
             buffer = buffers_.at(dbcontent_name);
 
-            assert(buffer_index < buffer->size());
+            traced_assert(buffer_index < buffer->size());
 
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-            assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+            traced_assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
             //NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(DBContent::meta_var_rec_num_.name());
 
             // check if skipped because not selected
@@ -138,7 +138,7 @@ void AllBufferCSVExportJob::run_impl()
                 // check if data & variables exist
                 if (variable_dbcontent_name == META_OBJECT_NAME)
                 {
-                    assert(manager.existsMetaVariable(variable_name));
+                    traced_assert(manager.existsMetaVariable(variable_name));
                     if (!manager.metaVariable(variable_name)
                              .existsIn(dbcontent_name))  // not data if not exist
                     {
@@ -154,8 +154,8 @@ void AllBufferCSVExportJob::run_impl()
                         continue;
                     }
 
-                    assert(manager.existsDBContent(dbcontent_name));
-                    assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
+                    traced_assert(manager.existsDBContent(dbcontent_name));
+                    traced_assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
                 }
 
                 Variable& variable = (variable_dbcontent_name == META_OBJECT_NAME)

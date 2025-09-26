@@ -61,13 +61,13 @@ class SelectDBContentDialog : public QDialog
 
     unsigned int category()
     {
-        assert(cat_edit_);
+        traced_assert(cat_edit_);
         return cat_edit_->text().toUInt();
     }
 
     std::string selectedObject()
     {
-        assert(object_box_);
+        traced_assert(object_box_);
         return object_box_->currentText().toStdString();
     }
 

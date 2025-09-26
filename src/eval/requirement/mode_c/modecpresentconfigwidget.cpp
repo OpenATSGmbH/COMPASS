@@ -32,17 +32,17 @@ namespace EvaluationRequirement
 ModeCPresentConfigWidget::ModeCPresentConfigWidget(ModeCPresentConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of Mode C code present");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 }
 
 
 ModeCPresentConfig& ModeCPresentConfigWidget::config()
 {
     ModeCPresentConfig* config = dynamic_cast<ModeCPresentConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

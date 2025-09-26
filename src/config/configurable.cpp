@@ -21,6 +21,7 @@
 #include "configurationmanager.h"
 #include "stringconv.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -75,7 +76,7 @@ Configurable::Configurable(const std::string& class_id,
         }
     }
 
-    assert(configuration_);
+    traced_assert(configuration_);
 
     //connect to configuration to receive changes
     changed_connection_ = configuration_->connectListener([ this ] (const std::vector<std::string>& params) { this->configurationChanged(params); });
@@ -151,8 +152,8 @@ void Configurable::registerParameter(const std::string& parameter_id, T* pointer
 {
     logdbg << instance_id_ << ": parameter_id " << parameter_id;
 
-    assert(configuration_);
-    assert(pointer);
+    traced_assert(configuration_);
+    traced_assert(pointer);
 
     configuration_->registerParameter<T>(parameter_id, pointer, default_value);
 }
@@ -163,7 +164,7 @@ void Configurable::registerParameter(const std::string& parameter_id, T* pointer
 template <typename T>
 T Configurable::getParameterConfigValue(const std::string& parameter_id) const
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     return configuration_->getParameterConfigValue<T>(parameter_id);
 }
 
@@ -187,7 +188,7 @@ Configuration& Configurable::registerSubConfigurable(Configurable& child, bool c
 {
     logdbg << instance_id_ << ": child " << child.instanceId();
 
-    assert(configuration_);
+    traced_assert(configuration_);
 
     const std::string& key = child.keyId();
 
@@ -202,7 +203,7 @@ Configuration& Configurable::registerSubConfigurable(Configurable& child, bool c
     children_.insert(std::pair<std::string, Configurable&>(key, child));
 
     if (config_must_exist)
-        assert(configuration_->hasSubConfiguration(child.classId(), child.instanceId()));
+        traced_assert(configuration_->hasSubConfiguration(child.classId(), child.instanceId()));
 
     return configuration_->getOrCreateSubConfiguration(child.classId(), child.instanceId());
 }
@@ -213,10 +214,10 @@ void Configurable::removeChildConfigurable(Configurable& child, bool remove_conf
 {
     logdbg << instance_id_ << ": child " << child.instanceId();
 
-    assert(configuration_);
+    traced_assert(configuration_);
 
     const std::string& key = child.keyId();
-    assert(children_.find(key) != children_.end());
+    traced_assert(children_.find(key) != children_.end());
 
     logdbg << instance_id_ << ": " << key;
 
@@ -233,7 +234,7 @@ void Configurable::resetToDefault()
 {
     logdbg << instance_id_;
 
-    assert(configuration_);
+    traced_assert(configuration_);
 
     configuration_->resetToDefault();
 
@@ -251,7 +252,7 @@ void Configurable::resetToDefault()
 Configuration& Configurable::addNewSubConfiguration(const std::string& class_id,
                                                     const std::string& instance_id)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     return configuration_->addNewSubConfiguration(class_id, instance_id);
 }
 
@@ -259,7 +260,7 @@ Configuration& Configurable::addNewSubConfiguration(const std::string& class_id,
 */
 Configuration& Configurable::addNewSubConfiguration(const std::string& class_id)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     return configuration_->addNewSubConfiguration(class_id);
 }
 
@@ -267,7 +268,7 @@ Configuration& Configurable::addNewSubConfiguration(const std::string& class_id)
 */
 Configuration& Configurable::addNewSubConfiguration(std::unique_ptr<Configuration>&& configuration)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     return configuration_->addNewSubConfiguration(std::move(configuration));
 }
 
@@ -277,7 +278,7 @@ Configuration& Configurable::addNewSubConfiguration(std::unique_ptr<Configuratio
 const Configuration& Configurable::getSubConfiguration(const std::string& class_id,
                                                        const std::string& instance_id) const
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     return configuration_->getSubConfiguration(class_id, instance_id);
 }
 
@@ -285,7 +286,7 @@ const Configuration& Configurable::getSubConfiguration(const std::string& class_
 */
 void Configurable::writeJSON(nlohmann::json& parent_json, JSONExportType export_type) const
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     configuration_->writeJSON(parent_json, export_type);
 }
 
@@ -293,7 +294,7 @@ void Configurable::writeJSON(nlohmann::json& parent_json, JSONExportType export_
 */
 void Configurable::generateJSON(nlohmann::json& target, JSONExportType export_type) const
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     configuration_->generateJSON(target, export_type);
 }
 
@@ -301,7 +302,7 @@ void Configurable::generateJSON(nlohmann::json& target, JSONExportType export_ty
 */
 void Configurable::createSubConfigurables()
 {
-    assert(configuration_);
+    traced_assert(configuration_);
 
     logdbg << "config instance " << configuration_->getInstanceId()
            << " configurable instance " << instanceId();
@@ -317,7 +318,7 @@ void Configurable::createSubConfigurables()
         {
             logdbg << "class_id '" << key.first << "' instance_id '" << key.second << "' (custom order)";
 
-            assert(!hasSubConfigurable(key.first, key.second));
+            traced_assert(!hasSubConfigurable(key.first, key.second));
             generateSubConfigurable(key.first, key.second);
         }
     }
@@ -334,7 +335,7 @@ void Configurable::createSubConfigurables()
             if (hasSubConfigurable(it->first.first, it->first.second))
                 logerr << "class_id '" << it->first.first << "' instance_id '" << it->first.second << "' already exists";
 
-            assert(!hasSubConfigurable(it->first.first, it->first.second));
+            traced_assert(!hasSubConfigurable(it->first.first, it->first.second));
             generateSubConfigurable(it->first.first, it->first.second);
         }
     }
@@ -365,7 +366,7 @@ void Configurable::generateSubConfigurable(const std::string& class_id,
 */
 void Configurable::generateSubConfigurableFromConfig(std::unique_ptr<Configuration>&& config)
 {
-    assert(config);
+    traced_assert(config);
 
     //note: this might add a unique instance id if yet missing in the passed config
     const auto& added_config = addNewSubConfiguration(std::move(config));
@@ -417,7 +418,7 @@ void Configurable::generateSubConfigurableFromJSON(const Configurable& configura
 bool Configurable::hasSubConfigurable(const std::string& class_id, 
                                       const std::string& instance_id) const
 {
-    assert(configuration_);
+    traced_assert(configuration_);
 
     return (children_.find(keyID(class_id, instance_id)) != children_.end());
 }
@@ -501,7 +502,7 @@ Configurable* Configurable::getApproximateChildNamed (const std::string& approx_
 const Configurable& Configurable::getChild(const std::string& class_id,
                                            const std::string& instance_id) const
 {
-    assert(hasSubConfigurable(class_id, instance_id));
+    traced_assert(hasSubConfigurable(class_id, instance_id));
     return children_.at(keyID(class_id, instance_id));
 }
 
@@ -510,7 +511,7 @@ const Configurable& Configurable::getChild(const std::string& class_id,
 Configurable& Configurable::getChild(const std::string& class_id,
                                      const std::string& instance_id)
 {
-    assert(hasSubConfigurable(class_id, instance_id));
+    traced_assert(hasSubConfigurable(class_id, instance_id));
     return children_.at(keyID(class_id, instance_id));
 }
 
@@ -536,7 +537,7 @@ Configurable::ReconfigureResult Configurable::reconfigure(const nlohmann::json& 
                                                           bool assert_on_error,
                                                           std::string* error)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     return configuration_->reconfigure(config,
                                        this, 
                                        missing_subconfig_keys, 
@@ -549,7 +550,7 @@ Configurable::ReconfigureResult Configurable::reconfigure(const nlohmann::json& 
 */
 void Configurable::configurationChanged(const std::vector<std::string>& changed_params)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
 
     //invoke deriveable method for specific behavior (e.g. widget updates)
     onConfigurationChanged(changed_params);
@@ -578,7 +579,7 @@ void Configurable::addJSONExportFilter(JSONExportType export_type,
                                        JSONExportFilterType filter_type,
                                        const std::string& id)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     configuration_->addJSONExportFilter(export_type, filter_type, id);
 }
 
@@ -589,7 +590,7 @@ void Configurable::addJSONExportFilter(JSONExportType export_type,
                                        JSONExportFilterType filter_type,
                                        const std::vector<std::string>& ids)
 {
-    assert(configuration_);
+    traced_assert(configuration_);
     configuration_->addJSONExportFilter(export_type, filter_type, ids);
 }
 
@@ -626,14 +627,14 @@ Configurable::MissingKeyMode Configurable::reconfigureParameterMode() const
 
 // void Configurable::saveConfigurationAsTemplate (const std::string& template_name)
 //{
-//    assert (parent_);
+//    traced_assert(parent_);
 //    parent_->saveTemplateConfiguration(this, template_name);
 //}
 
 // void Configurable::saveTemplateConfiguration (Configurable *child, const std::string&
 // template_name)
 //{
-//    assert (configuration_.getSubTemplateNameFree(template_name));
+//    traced_assert(configuration_.getSubTemplateNameFree(template_name));
 //    configuration_.addSubTemplate(child->getConfiguration().clone(), template_name);
 //}
 

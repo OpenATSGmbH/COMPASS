@@ -39,7 +39,7 @@ Report::Report(TaskResult* result)
 :   TreeItem(SectionID::SectionReport, nullptr)
 ,   result_ (result)
 {
-    assert(result_);
+    traced_assert(result_);
 
     root_section_ = std::make_shared<Section>(SectionID::SectionResults, "", this, this);
 }
@@ -48,7 +48,7 @@ Report::Report(TaskResult* result)
  */
 Report::~Report()
 {
-    logdbg << "start";
+    logdbg;
 }
 
 /**
@@ -107,7 +107,7 @@ int Report::columnCount() const
  */
 QVariant Report::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return name().c_str();
 }
@@ -192,7 +192,7 @@ bool Report::hasSection(const std::string& id) const
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 return false;
@@ -210,12 +210,12 @@ Section& Report::getSection (const std::string& id)
 {
     logdbg << "id '" << id << "'";
 
-    assert (id.size());
+    traced_assert(id.size());
 
     std::string id_in = root_section_->relativeID(id);
 
     std::vector<std::string> parts = SectionID::subSections(id_in);
-    assert (parts.size());
+    traced_assert(parts.size());
 
     Section* tmp = nullptr;
 
@@ -232,7 +232,7 @@ Section& Report::getSection (const std::string& id)
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 tmp->addSubSection(heading);
@@ -241,7 +241,7 @@ Section& Report::getSection (const std::string& id)
         }
     }
 
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
@@ -249,12 +249,12 @@ const Section& Report::getSection (const std::string& id) const
 {
     logdbg << "id '" << id << "'";
 
-    assert (id.size());
+    traced_assert(id.size());
 
     std::string id_in = root_section_->relativeID(id);
 
     std::vector<std::string> parts = SectionID::subSections(id_in);
-    assert (parts.size());
+    traced_assert(parts.size());
 
     Section* tmp = nullptr;
 
@@ -271,7 +271,7 @@ const Section& Report::getSection (const std::string& id) const
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 tmp->addSubSection(heading);
@@ -280,7 +280,7 @@ const Section& Report::getSection (const std::string& id) const
         }
     }
 
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 

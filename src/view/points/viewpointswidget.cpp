@@ -287,7 +287,7 @@ void ViewPointsWidget::loadingStarted()
 {
     load_in_progress_ = true;
 
-    assert (table_view_);
+    traced_assert(table_view_);
     table_view_->setDisabled(true);
 }
 
@@ -295,7 +295,7 @@ void ViewPointsWidget::loadingDone()
 {
     load_in_progress_ = false;
 
-    assert (table_view_);
+    traced_assert(table_view_);
     table_view_->setDisabled(false);
 
     if (restore_focus_)
@@ -307,26 +307,26 @@ void ViewPointsWidget::loadingDone()
 
 void ViewPointsWidget::loadViewPoints()
 {
-    loginf << "start";
+    loginf;
 
-    assert (table_model_);
+    traced_assert(table_model_);
     table_model_->clearViewPoints();
     table_model_->loadViewPoints();
 
-    assert (table_view_);
+    traced_assert(table_view_);
     table_view_->resizeColumnsToContents();
     table_view_->resizeRowsToContents();
 }
 
 void ViewPointsWidget::clearViewPoints()
 {
-    assert (table_model_);
+    traced_assert(table_model_);
     table_model_->clearViewPoints();
 }
 
 void ViewPointsWidget::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
 {
-    assert (table_model_);
+    traced_assert(table_model_);
     table_model_->addViewPoints(viewpoints);
 
     table_view_->resizeColumnsToContents();
@@ -335,7 +335,7 @@ void ViewPointsWidget::addViewPoints(const std::vector <nlohmann::json>& viewpoi
 
 void ViewPointsWidget::resizeColumnsToContents()
 {
-    loginf << "start";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }
@@ -357,7 +357,7 @@ QStringList ViewPointsWidget::filteredTypes() const
 
 void ViewPointsWidget::filterType (QString type)
 {
-    assert (types_.contains(type));
+    traced_assert(types_.contains(type));
 
     if (filtered_types_.contains(type))
         filtered_types_.removeAll(type);
@@ -383,13 +383,13 @@ void ViewPointsWidget::showNoTypes ()
 
 void ViewPointsWidget::selectPreviousSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (load_in_progress_)
         return;
 
     QModelIndexList list = table_view_->selectionModel()->selectedRows();
-    assert (list.size() <= 1);
+    traced_assert(list.size() <= 1);
 
     if (!list.size()) // none selected yet, start with first
     {
@@ -420,13 +420,13 @@ void ViewPointsWidget::selectPreviousSlot()
 
 void ViewPointsWidget::selectNextSlot()
 {
-    logdbg << "start";
+    logdbg;
 
     if (load_in_progress_)
         return;
 
     QModelIndexList list = table_view_->selectionModel()->selectedRows();
-    assert (list.size() <= 1);
+    traced_assert(list.size() <= 1);
 
     if (!list.size()) // none selected yet, start with first
     {
@@ -458,7 +458,7 @@ void ViewPointsWidget::selectNextSlot()
 void ViewPointsWidget::setSelectedOpenSlot()
 {
     QModelIndexList list = table_view_->selectionModel()->selectedRows();
-    assert (list.size() <= 1);
+    traced_assert(list.size() <= 1);
 
     if (!list.size()) // none selected yet, start with first
     {
@@ -471,7 +471,7 @@ void ViewPointsWidget::setSelectedOpenSlot()
     if (current_index.isValid())
     {
         auto const source_index = proxy_model_->mapToSource(current_index);
-        assert (source_index.isValid());
+        traced_assert(source_index.isValid());
         table_model_->setStatus(source_index, "open");
     }
     else
@@ -481,7 +481,7 @@ void ViewPointsWidget::setSelectedOpenSlot()
 void ViewPointsWidget::setSelectedClosedSlot()
 {
     QModelIndexList list = table_view_->selectionModel()->selectedRows();
-    assert (list.size() <= 1);
+    traced_assert(list.size() <= 1);
 
     if (!list.size()) // none selected yet, start with first
     {
@@ -494,7 +494,7 @@ void ViewPointsWidget::setSelectedClosedSlot()
     if (current_index.isValid())
     {
         auto const source_index = proxy_model_->mapToSource(current_index);
-        assert (source_index.isValid());
+        traced_assert(source_index.isValid());
         table_model_->setStatus(source_index, "closed");
     }
     else
@@ -504,7 +504,7 @@ void ViewPointsWidget::setSelectedClosedSlot()
 void ViewPointsWidget::setSelectedTodoSlot()
 {
     QModelIndexList list = table_view_->selectionModel()->selectedRows();
-    assert (list.size() <= 1);
+    traced_assert(list.size() <= 1);
 
     if (!list.size()) // none selected yet, start with first
     {
@@ -517,7 +517,7 @@ void ViewPointsWidget::setSelectedTodoSlot()
     if (current_index.isValid())
     {
         auto const source_index = proxy_model_->mapToSource(current_index);
-        assert (source_index.isValid());
+        traced_assert(source_index.isValid());
         table_model_->setStatus(source_index, "todo");
     }
     else
@@ -527,7 +527,7 @@ void ViewPointsWidget::setSelectedTodoSlot()
 void ViewPointsWidget::editCommentSlot()
 {
     QModelIndexList list = table_view_->selectionModel()->selectedRows();
-    assert (list.size() <= 1);
+    traced_assert(list.size() <= 1);
 
     if (!list.size()) // none selected yet, start with first
     {
@@ -540,13 +540,13 @@ void ViewPointsWidget::editCommentSlot()
     if (current_index.isValid())
     {
         auto const source_index = proxy_model_->mapToSource(current_index);
-        assert (source_index.isValid());
+        traced_assert(source_index.isValid());
 
         QModelIndex src_comment_index = table_model_->index(source_index.row(), table_model_->commentColumn(),
                                                         QModelIndex());
-        assert (src_comment_index.isValid());
+        traced_assert(src_comment_index.isValid());
         QModelIndex comment_index = proxy_model_->mapFromSource(src_comment_index);
-        assert (comment_index.isValid());
+        traced_assert(comment_index.isValid());
 
         table_view_->edit(comment_index);
     }
@@ -557,33 +557,33 @@ void ViewPointsWidget::editCommentSlot()
 
 //void ViewPointsWidget::openCurrentSelectNext()
 //{
-//    loginf << "start";
+//    loginf;
 //}
 
 //void ViewPointsWidget::closeCurrentSelectNext()
 //{
-//    loginf << "start";
+//    loginf;
 //}
 
 void ViewPointsWidget::databaseOpenedSlot()
 {
-    loginf << "start";
+    loginf;
 
     loadViewPoints();
 }
 
 void ViewPointsWidget::databaseClosedSlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (table_model_);
+    traced_assert(table_model_);
     table_model_->clearViewPoints();
 }
 
 
 void ViewPointsWidget::exportSlot()
 {
-    loginf << "start";
+    loginf;
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -598,18 +598,18 @@ void ViewPointsWidget::exportSlot()
     if (dialog.exec())
     {
         QStringList file_names = dialog.selectedFiles();
-        assert (file_names.size() == 1);
+        traced_assert(file_names.size() == 1);
         std::string filename = file_names.at(0).toStdString();
 
         loginf << "filename '" << filename << "'";
-        assert (table_model_);
+        traced_assert(table_model_);
         table_model_->exportViewPoints(filename);
     }
 }
 
 void ViewPointsWidget::exportPDFSlot()
 {
-    loginf << "start";
+    loginf;
 
     ViewPointsReportGeneratorDialog& dialog = view_manager_.viewPointsGenerator().dialog();
     dialog.exec();
@@ -617,7 +617,7 @@ void ViewPointsWidget::exportPDFSlot()
 
 void ViewPointsWidget::deleteAllSlot()
 {
-    loginf << "start";
+    loginf;
 
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(nullptr, "Delete All", "Delete All Viewpoints?",
@@ -625,7 +625,7 @@ void ViewPointsWidget::deleteAllSlot()
 
     if (reply == QMessageBox::Yes)
     {
-        assert (table_model_);
+        traced_assert(table_model_);
         table_model_->deleteAllViewPoints();
         resizeColumnsToContents();
     }
@@ -633,7 +633,7 @@ void ViewPointsWidget::deleteAllSlot()
 
 void ViewPointsWidget::importSlot()
 {
-    loginf << "start";
+    loginf;
 
     COMPASS::instance().mainWindow().importViewPointsSlot();
 
@@ -649,7 +649,7 @@ void ViewPointsWidget::currentRowChanged(const QModelIndex& current, const QMode
     }
 
     auto const source_index = proxy_model_->mapToSource(current);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     unsigned int id = table_model_->getIdOf(source_index);
 
@@ -661,14 +661,14 @@ void ViewPointsWidget::currentRowChanged(const QModelIndex& current, const QMode
 
 void ViewPointsWidget::typesChangedSlot(QStringList types)
 {
-    loginf << "start";
+    loginf;
 
     types_ = types;
 }
 
 void ViewPointsWidget::statusesChangedSlot(QStringList statuses)
 {
-    loginf << "start";
+    loginf;
 
     statuses_ = statuses;
 }
@@ -685,7 +685,7 @@ void ViewPointsWidget::updateFilteredTypes ()
     QString regex = "^(" + regex_list.join("|") + ")$";
     loginf << "'" << regex.toStdString() << "'";
 
-    assert (proxy_model_);
+    traced_assert(proxy_model_);
     proxy_model_->setFilterRegExp(QRegExp(regex, Qt::CaseSensitive, QRegExp::RegExp));
     proxy_model_->setFilterKeyColumn(table_model_->typeColumn()); // type
 }
@@ -702,14 +702,14 @@ void ViewPointsWidget::updateFilteredStatuses ()
     QString regex = "^(" + regex_list.join("|") + ")$";
     loginf << "'" << regex.toStdString() << "'";
 
-    assert (proxy_model_);
+    traced_assert(proxy_model_);
     proxy_model_->setFilterRegExp(QRegExp(regex, Qt::CaseSensitive, QRegExp::RegExp));
     proxy_model_->setFilterKeyColumn(table_model_->statusColumn()); // status
 }
 
 QStringList ViewPointsWidget::columns() const
 {
-    assert (table_model_);
+    traced_assert(table_model_);
 
     return table_model_->tableColumns();
 }
@@ -722,7 +722,7 @@ QStringList ViewPointsWidget::filteredColumns() const
 
 void ViewPointsWidget::filterColumn(QString name)
 {
-    assert (columns().contains(name));
+    traced_assert(columns().contains(name));
 
     if (filtered_columns_.contains(name))
         filtered_columns_.removeAll(name);
@@ -761,7 +761,7 @@ void ViewPointsWidget::showNoColumns()
 
 void ViewPointsWidget::updateFilteredColumns()
 {
-    assert (table_view_);
+    traced_assert(table_view_);
 
     unsigned int cnt=0;
 
@@ -784,7 +784,7 @@ QStringList ViewPointsWidget::filteredStatuses() const
 
 void ViewPointsWidget::filterStatus (QString status)
 {
-    assert (statuses_.contains(status));
+    traced_assert(statuses_.contains(status));
 
     if (filtered_statuses_.contains(status))
         filtered_statuses_.removeAll(status);
@@ -829,7 +829,7 @@ std::vector<unsigned int> ViewPointsWidget::viewedViewPoints()
         loginf << "row " << index.row();
 
         auto const source_index = proxy_model_->mapToSource(index);
-        assert (source_index.isValid());
+        traced_assert(source_index.isValid());
 
         unsigned int id = table_model_->getIdOf(source_index);
 

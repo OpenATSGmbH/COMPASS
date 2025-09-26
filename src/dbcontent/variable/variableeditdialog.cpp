@@ -130,7 +130,7 @@ void VariableEditDialog::nameChangedSlot(const QString& name)
 {
     loginf << "name '" << name.trimmed().toStdString() << "'";
 
-    assert (name_edit_);
+    traced_assert(name_edit_);
     string new_name = name.trimmed().toStdString();
 
     if (new_name == variable_.name())
@@ -187,7 +187,7 @@ void VariableEditDialog::shortNameChangedSlot(const QString& name)
 
 void VariableEditDialog::commentChangedSlot()
 {
-    assert (description_edit_);
+    traced_assert(description_edit_);
 
     variable_.description(description_edit_->document()->toPlainText().trimmed().toStdString());
 
@@ -196,7 +196,7 @@ void VariableEditDialog::commentChangedSlot()
 
 void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 {
-    assert (db_column_edit_);
+    traced_assert(db_column_edit_);
     string new_name = name.trimmed().toStdString();
 
     if (new_name == variable_.dbColumnName())
@@ -229,7 +229,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 
 void VariableEditDialog::doneSlot()
 {
-    loginf << "start";
+    loginf;
 
     accept();
 }

@@ -48,7 +48,7 @@ namespace EvaluationRequirementResult
 const std::string Joined::SectorTargetsTableName        = "Targets";
 const std::string Joined::SectorOverviewTableName       = "Sector Overview";
 const std::string Joined::SectorOverviewID              = "Sector Overview";
-const int         Joined::SectorOverviewRenderDelayMSec = 2000;
+const int         Joined::SectorOverviewRenderDelayMSec = 5000;
 
 /**
 */
@@ -139,7 +139,7 @@ bool Joined::hasReference(const ResultReport::SectionContentTable& table,
 std::string Joined::reference(const ResultReport::SectionContentTable& table, 
                               const QVariant& annotation) const
 {
-    assert (hasReference(table, annotation));
+    traced_assert(hasReference(table, annotation));
     return EvalSectionID::createForRequirementResult(*this);
 }
 
@@ -361,7 +361,7 @@ bool Joined::exportAsCSV() const
         return true;
 
     QStringList file_names = dialog.selectedFiles();
-    assert (file_names.size() == 1);
+    traced_assert(file_names.size() == 1);
 
     std::string filename = file_names.at(0).toStdString();
 
@@ -400,7 +400,7 @@ void Joined::iterateSingleResults(const SingleResultFunc& func,
                                   const SingleResultFunc& func_used,
                                   const SingleResultFunc& func_unused) const
 {
-    assert(func_used);
+    traced_assert(func_used);
 
     for (const auto& result_it : results_)
     {
@@ -526,7 +526,7 @@ void Joined::updateToChanges(bool reset_viewable)
             auto& single = results_[ used[ i ] ];
 
             auto issues = single->numIssues();
-            assert (issues_total >= issues);
+            traced_assert(issues_total >= issues);
 
             single->setInterestFactor((double)issues / (double)issues_total);
         }
@@ -639,7 +639,7 @@ bool Joined::viewableDataReady() const
 std::shared_ptr<nlohmann::json::object_t> Joined::viewableData(const ResultReport::SectionContentTable& table, 
                                                                const QVariant& annotation) const
 {
-    assert (hasViewableData(table, annotation));
+    traced_assert(hasViewableData(table, annotation));
 
     //return cached viewable (might recreate the viewable)
     return getOrCreateCachedViewable();

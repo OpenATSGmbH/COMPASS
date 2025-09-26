@@ -33,10 +33,10 @@ namespace EvaluationRequirement
 ExtraTrackConfigWidget::ExtraTrackConfigWidget(ExtraTrackConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of extra data");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // min_duration
     min_duration_edit_ = new QLineEdit(QString::number(config().minDuration()));
@@ -95,16 +95,16 @@ void ExtraTrackConfigWidget::minNumUpdatesEditSlot(QString value)
 
 void ExtraTrackConfigWidget::toggleIgnorePrimaryOnlySlot()
 {
-    loginf << "start";
+    loginf;
 
-    assert (ignore_primary_only_check_);
+    traced_assert(ignore_primary_only_check_);
     config().ignorePrimaryOnly(ignore_primary_only_check_->checkState() == Qt::Checked);
 }
 
 ExtraTrackConfig& ExtraTrackConfigWidget::config()
 {
     ExtraTrackConfig* config = dynamic_cast<ExtraTrackConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

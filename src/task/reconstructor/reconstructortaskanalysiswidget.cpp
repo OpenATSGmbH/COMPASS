@@ -169,7 +169,7 @@ ReconstructorTaskAnalysisWidget::~ReconstructorTaskAnalysisWidget()
 
 void ReconstructorTaskAnalysisWidget::updateValues()
 {
-    loginf << "start";
+    loginf;
 
     bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
 
@@ -188,65 +188,65 @@ void ReconstructorTaskAnalysisWidget::updateValues()
         task_.debugSettings().debug_write_reconstruction_viewpoints_ = false;
     }
 
-    assert (debug_check_);
+    traced_assert(debug_check_);
     debug_check_->setChecked(task_.debugSettings().debug_);
 
-    assert (utns_edit_);
+    traced_assert(utns_edit_);
     utns_edit_->setText(String::compress(task_.debugSettings().debug_utns_, ',').c_str());
 
-    assert (rec_nums_edit_);
+    traced_assert(rec_nums_edit_);
     rec_nums_edit_->setText(String::compress(task_.debugSettings().debug_rec_nums_, ',').c_str());
 
-    assert (timestamp_min_edit_);
+    traced_assert(timestamp_min_edit_);
     if (!task_.debugSettings().debug_timestamp_min_.is_not_a_date_time())
         timestamp_min_edit_->setText(QString::fromStdString(
             Utils::Time::toString(task_.debugSettings().debug_timestamp_min_)));
     else
         timestamp_min_edit_->setText("");
 
-    assert (timestamp_max_edit_);
+    traced_assert(timestamp_max_edit_);
     if (!task_.debugSettings().debug_timestamp_max_.is_not_a_date_time())
         timestamp_max_edit_->setText(QString::fromStdString(
             Utils::Time::toString(task_.debugSettings().debug_timestamp_max_)));
     else
         timestamp_max_edit_->setText("");
 
-    assert (debug_association_check_);
+    traced_assert(debug_association_check_);
     debug_association_check_->setChecked(task_.debugSettings().debug_association_);
 
-    assert (debug_outliers_check_);
+    traced_assert(debug_outliers_check_);
     debug_outliers_check_->setChecked(task_.debugSettings().debug_outlier_detection_);
 
-    assert (analyze_check_);
+    traced_assert(analyze_check_);
     analyze_check_->setChecked(task_.debugSettings().analyze_);
 
-    assert (analyze_association_check_);
+    traced_assert(analyze_association_check_);
     analyze_association_check_->setChecked(task_.debugSettings().analyze_association_);
 
-    assert (analyze_outliers_check_);
+    traced_assert(analyze_outliers_check_);
     analyze_outliers_check_->setChecked(task_.debugSettings().analyze_outlier_detection_);
     analyze_outliers_check_->setDisabled(true);
 
     // acc est
 
-    assert (analyze_accuracy_est_check_);
+    traced_assert(analyze_accuracy_est_check_);
     analyze_accuracy_est_check_->setChecked(task_.debugSettings().analyze_accuracy_estimation_);
 
-    assert (analyze_bias_correction_check_);
+    traced_assert(analyze_bias_correction_check_);
     analyze_bias_correction_check_->setChecked(task_.debugSettings().analyze_bias_correction_);
 
-    assert (analyze_geo_altitude_correction_check_);
+    traced_assert(analyze_geo_altitude_correction_check_);
     analyze_geo_altitude_correction_check_->setChecked(task_.debugSettings().analyze_geo_altitude_correction_);
 
     // reference stuff
 
-    assert (debug_reference_calculation_check_);
+    traced_assert(debug_reference_calculation_check_);
     debug_reference_calculation_check_->setChecked(task_.debugSettings().debug_reference_calculation_);
 
-    assert (debug_kalman_chains_check_);
+    traced_assert(debug_kalman_chains_check_);
     debug_kalman_chains_check_->setChecked(task_.debugSettings().debug_kalman_chains_);
 
-    assert (debug_write_reconstruction_viewpoints_check_);
+    traced_assert(debug_write_reconstruction_viewpoints_check_);
     debug_write_reconstruction_viewpoints_check_->setChecked(
         task_.debugSettings().debug_write_reconstruction_viewpoints_);
 }

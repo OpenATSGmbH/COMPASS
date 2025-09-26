@@ -89,13 +89,13 @@ void VariableViewStashDataWidget::preUpdateVariableDataEvent()
 */
 void VariableViewStashDataWidget::postUpdateVariableDataEvent() 
 {
-    loginf << "start";
+    loginf;
 
     //update the stash (bounds, counts, etc.)
     updateStash();
 
     //check the stash integrity
-    assert(stash_.isValid());
+    traced_assert(stash_.isValid());
 
     //invoke derived to process stash data
     processStash(stash_);
@@ -142,9 +142,9 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
         DBContentManager&  dbcontent_man = COMPASS::instance().dbContentManager();
         DataSourceManager& ds_man        = COMPASS::instance().dataSourceManager();
 
-        assert(buffer.has<unsigned int>(
+        traced_assert(buffer.has<unsigned int>(
             dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name()));
-        assert(buffer.has<unsigned int>(
+        traced_assert(buffer.has<unsigned int>(
             dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name()));
 
         const NullableVector<unsigned int>& ds_ids = buffer.get<unsigned int>(
@@ -160,9 +160,9 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
 
         if (dbcontent_name == "CAT063") // use sensor sec/sic special case
         {
-            assert(buffer.has<unsigned char>(
+            traced_assert(buffer.has<unsigned char>(
                 dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_).name()));
-            assert(buffer.has<unsigned char>(
+            traced_assert(buffer.has<unsigned char>(
                 dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_).name()));
 
             sensor_sacs = &buffer.get<unsigned char>(
@@ -173,8 +173,8 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
 
         for (unsigned int index = last_size; index < current_size; ++index)
         {
-            assert (!ds_ids.isNull(index));
-            assert (!line_ids.isNull(index));
+            traced_assert(!ds_ids.isNull(index));
+            traced_assert(!line_ids.isNull(index));
 
             ds_id = ds_ids.get(index);
             line_id = line_ids.get(index);
@@ -208,8 +208,8 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
     }
 
     // add selected flags & rec_nums
-    assert (buffer.has<bool>(DBContent::selected_var.name()));
-    assert (buffer.has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+    traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
+    traced_assert(buffer.has<unsigned long>(DBContent::meta_var_rec_num_.name()));
 
     const NullableVector<bool>&          selected_vec = buffer.get<bool>(DBContent::selected_var.name());
     const NullableVector<unsigned long>& rec_num_vec  = buffer.get<unsigned long>(DBContent::meta_var_rec_num_.name());
@@ -242,7 +242,7 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
             else
                 selected_data.push_back(selected_vec.get(index));
 
-            assert (!rec_num_vec.isNull(index));
+            traced_assert(!rec_num_vec.isNull(index));
             rec_num_data.push_back(rec_num_vec.get(index));
         }
 
@@ -251,7 +251,7 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
             updateVariableData(i, group_name, buffer, group_it.second);
 
         //check counts
-        assert (stash_.isValid());
+        traced_assert(stash_.isValid());
 
         logdbg << "value counts after:";
 
@@ -314,8 +314,8 @@ void VariableViewStashDataWidget::updateVariableData(size_t var_idx,
     
 
 #define UpdateFunc(PDType, DType, Suffix)                                                \
-        assert(view_var.settings().valid_data_types.count(PDType) != 0);         \
-        assert(buffer.has<DType>(current_var_name));                             \
+        traced_assert(view_var.settings().valid_data_types.count(PDType) != 0);         \
+        traced_assert(buffer.has<DType>(current_var_name));                             \
                                                                                  \
         const NullableVector<DType>& data = buffer.get<DType>(current_var_name); \
                                                                                  \
@@ -349,7 +349,7 @@ void VariableViewStashDataWidget::updateStash()
 
     const auto& data_ranges = stash_.dataRanges();
 
-    logdbg << "start";
+    logdbg;
 
     for (size_t i = 0; i < variableView()->numVariables(); ++i)
     {
@@ -396,9 +396,9 @@ boost::optional<std::pair<double, double>> VariableViewStashDataWidget::getVaria
         b->second = Utils::Time::correctLongQtUTC((long)b->second);
     }
 
-    assert(std::isfinite(b->first));
-    assert(std::isfinite(b->second));
-    assert(b->second >= b->first);
+    traced_assert(std::isfinite(b->first));
+    traced_assert(std::isfinite(b->second));
+    traced_assert(b->second >= b->first);
 
     //fix small ranges?
     if (fix_small_ranges && b->second - b->first < RangeMinDefault)
@@ -410,9 +410,9 @@ boost::optional<std::pair<double, double>> VariableViewStashDataWidget::getVaria
         b->first  = mid - eps;
         b->second = mid + eps;
 
-        assert(std::isfinite(b->first));
-        assert(std::isfinite(b->second));
-        assert(b->second >= b->first);
+        traced_assert(std::isfinite(b->first));
+        traced_assert(std::isfinite(b->second));
+        traced_assert(b->second >= b->first);
     }
 
     return b;
@@ -476,8 +476,8 @@ void VariableViewStashDataWidget::selectData(double x_min,
         const std::vector<double>&        y_values       = dbc_stash.variable_stashes[ var_y ].values;
         const std::vector<unsigned long>& rec_num_values = dbc_stash.record_numbers;
 
-        assert (x_values.size() == y_values.size());
-        assert (x_values.size() == rec_num_values.size());
+        traced_assert(x_values.size() == y_values.size());
+        traced_assert(x_values.size() == rec_num_values.size());
 
         double x, y;
         bool in_range;
@@ -513,7 +513,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
     {
         for (auto& buf_it : viewData())
         {
-            assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
             selected_vec.setAll(false);
@@ -526,13 +526,13 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
         string dbcontent_name = dbcont_man.dbContentWithId(sel_cont_id_it.first);
 
-        assert (viewData().count(dbcontent_name));
+        traced_assert(viewData().count(dbcontent_name));
         auto buffer = viewData().at(dbcontent_name);
 
-        assert (buffer->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-        assert (buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+        traced_assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
         NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(
             DBContent::meta_var_rec_num_.name());
 
@@ -542,9 +542,9 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
         for (const auto& rec_num : sel_cont_id_it.second) // iterator over all selected rec_nums
         {
-            assert (rec_num_indexes.count(rec_num));
+            traced_assert(rec_num_indexes.count(rec_num));
             std::vector<unsigned int>& indexes = rec_num_indexes.at(rec_num);
-            assert (indexes.size() == 1);
+            traced_assert(indexes.size() == 1);
 
             index = indexes.at(0);
 
@@ -556,10 +556,10 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
     // for (auto& buf_it : viewData())
     // {
-    //     assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+    //     traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
     //     NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
-    //     assert (buf_it.second->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+    //     traced_assert(buf_it.second->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
     //     NullableVector<unsigned long>& rec_num_vec = buf_it.second->get<unsigned long>(
     //         DBContent::meta_var_rec_num_.name());
 
@@ -567,15 +567,15 @@ void VariableViewStashDataWidget::selectData(double x_min,
     //         rec_num_vec.distinctValuesWithIndexes(0, rec_num_vec.size());
     //     // rec_num -> index
 
-    //     assert (getStash().hasGroupStash(buf_it.first));
+    //     traced_assert(getStash().hasGroupStash(buf_it.first));
     //     const auto& dbc_stash = getStash().groupStash(buf_it.first);
 
     //     const std::vector<double>&        x_values       = dbc_stash.variable_stashes[ var_x ].values;
     //     const std::vector<double>&        y_values       = dbc_stash.variable_stashes[ var_y ].values;
     //     const std::vector<unsigned long>& rec_num_values = dbc_stash.record_numbers;
 
-    //     assert (x_values.size() == y_values.size());
-    //     assert (x_values.size() == rec_num_values.size());
+    //     traced_assert(x_values.size() == y_values.size());
+    //     traced_assert(x_values.size() == rec_num_values.size());
 
     //     double x, y;
     //     bool in_range;
@@ -592,9 +592,9 @@ void VariableViewStashDataWidget::selectData(double x_min,
     //         if (!std::isnan(x) && !std::isnan(y))
     //             in_range =  x >= x_min && x <= x_max && y >= y_min && y <= y_max;
 
-    //         assert (rec_num_indexes.count(rec_num));
+    //         traced_assert(rec_num_indexes.count(rec_num));
     //         std::vector<unsigned int>& indexes = rec_num_indexes.at(rec_num);
-    //         assert (indexes.size() == 1);
+    //         traced_assert(indexes.size() == 1);
 
     //         index = indexes.at(0);
 

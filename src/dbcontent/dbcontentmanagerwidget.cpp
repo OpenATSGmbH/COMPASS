@@ -150,7 +150,7 @@ DBContentManagerWidget::~DBContentManagerWidget()
 
 // void DBContentManagerWidget::databaseOpenedSlot ()
 //{
-//    loginf << "start";
+//    loginf;
 //}
 
 void DBContentManagerWidget::addDBContSlot()
@@ -191,7 +191,7 @@ void DBContentManagerWidget::changedDBContSlot() { updateDBContentsSlot(); }
 
 void DBContentManagerWidget::editDBContSlot()
 {
-    assert(edit_dbcont_buttons_.find((QPushButton*)sender()) != edit_dbcont_buttons_.end());
+    traced_assert(edit_dbcont_buttons_.find((QPushButton*)sender()) != edit_dbcont_buttons_.end());
 
     DBContent* object = edit_dbcont_buttons_[(QPushButton*)sender()];
 
@@ -207,7 +207,7 @@ void DBContentManagerWidget::editDBContSlot()
 
 void DBContentManagerWidget::deleteDBContSlot()
 {
-    assert(delete_dbcont_buttons_.find((QPushButton*)sender()) != delete_dbcont_buttons_.end());
+    traced_assert(delete_dbcont_buttons_.find((QPushButton*)sender()) != delete_dbcont_buttons_.end());
 
     DBContent* object = delete_dbcont_buttons_[(QPushButton*)sender()];
     object_manager_.deleteDBContent(object->name());
@@ -217,7 +217,7 @@ void DBContentManagerWidget::deleteDBContSlot()
 
 void DBContentManagerWidget::updateDBContentsSlot()
 {
-    assert(dbconts_grid_);
+    traced_assert(dbconts_grid_);
 
     QLayoutItem* child;
     while (!dbconts_grid_->isEmpty() && (child = dbconts_grid_->takeAt(0)) != nullptr)
@@ -288,7 +288,7 @@ void DBContentManagerWidget::addMetaVariableSlot() {}
 
 void DBContentManagerWidget::editMetaVariableSlot()
 {
-    assert(edit_meta_buttons_.find((QPushButton*)sender()) != edit_meta_buttons_.end());
+    traced_assert(edit_meta_buttons_.find((QPushButton*)sender()) != edit_meta_buttons_.end());
 
     MetaVariable* meta_var = edit_meta_buttons_[(QPushButton*)sender()];
 
@@ -304,7 +304,7 @@ void DBContentManagerWidget::editMetaVariableSlot()
 
 void DBContentManagerWidget::deleteMetaVariableSlot()
 {
-    assert(delete_meta_buttons_.find((QPushButton*)sender()) != delete_meta_buttons_.end());
+    traced_assert(delete_meta_buttons_.find((QPushButton*)sender()) != delete_meta_buttons_.end());
 
     MetaVariable* meta_var = delete_meta_buttons_[(QPushButton*)sender()];
     object_manager_.deleteMetaVariable(meta_var->name());
@@ -359,7 +359,7 @@ void DBContentManagerWidget::addAllMetaVariablesSlot()
                     object_manager_.generateSubConfigurableFromConfig(std::move(config));
                 }
 
-                assert(object_manager_.existsMetaVariable(var_it.first));
+                traced_assert(object_manager_.existsMetaVariable(var_it.first));
                 MetaVariable& meta_var = object_manager_.metaVariable(var_it.first);
 
                 for (auto dbcont_it2 = found_dbconts.begin(); dbcont_it2 != found_dbconts.end(); dbcont_it2++)
@@ -384,7 +384,7 @@ void DBContentManagerWidget::addAllMetaVariablesSlot()
 
 void DBContentManagerWidget::updateMetaVariablesSlot()
 {
-    assert(meta_variables_grid_);
+    traced_assert(meta_variables_grid_);
 
     QLayoutItem* child;
     while (!meta_variables_grid_->isEmpty() && (child = meta_variables_grid_->takeAt(0)) != nullptr)
@@ -415,7 +415,7 @@ void DBContentManagerWidget::updateMetaVariablesSlot()
 
     for (auto& var_it : object_manager_.metaVariables())
     {
-        assert (var_it.second.get());
+        traced_assert(var_it.second.get());
 
         QLabel* name = new QLabel(var_it.first.c_str());
         meta_variables_grid_->addWidget(name, row, 0);

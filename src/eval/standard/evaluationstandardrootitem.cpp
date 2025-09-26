@@ -44,7 +44,7 @@ int EvaluationStandardRootItem::columnCount() const
 
 QVariant EvaluationStandardRootItem::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return "Standard";
 }

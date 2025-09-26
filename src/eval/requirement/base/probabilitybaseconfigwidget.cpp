@@ -30,7 +30,7 @@ namespace EvaluationRequirement {
 ProbabilityBaseConfigWidget::ProbabilityBaseConfigWidget(ProbabilityBaseConfig& cfg)
     : BaseConfigWidget(cfg)
 {
-    assert (form_layout_);
+    traced_assert(form_layout_);
 
     // prob
     prob_edit_ = new QLineEdit(QString::number(config().prob()));
@@ -63,7 +63,7 @@ void ProbabilityBaseConfigWidget::changedProbabilitySlot(const QString& value)
 
 void ProbabilityBaseConfigWidget::changedTypeSlot()
 {
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
     logdbg << "value " << check_type_box_->getType();
     config().probCheckType(check_type_box_->getType());
 }
@@ -71,7 +71,7 @@ void ProbabilityBaseConfigWidget::changedTypeSlot()
 ProbabilityBaseConfig& ProbabilityBaseConfigWidget::config()
 {
     ProbabilityBaseConfig* config = dynamic_cast<ProbabilityBaseConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

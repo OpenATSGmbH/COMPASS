@@ -282,7 +282,7 @@ public:
      */
     const HistogramBinT<T>& getBin(size_t idx) const
     {
-        assert (idx < bins_.size());
+        traced_assert(idx < bins_.size());
         return bins_.at(idx);
     }
 
@@ -553,7 +553,7 @@ private:
         }
 
         //should never happen
-        assert(n > 0);
+        traced_assert(n > 0);
 
         bins_.resize(n);
         ranges_.resize(n);

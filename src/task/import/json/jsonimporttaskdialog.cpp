@@ -73,14 +73,14 @@ JSONImportTaskDialog::JSONImportTaskDialog(JSONImportTask& task)
 
 void JSONImportTaskDialog::updateSource()
 {
-    assert (task_widget_);
+    traced_assert(task_widget_);
     task_widget_->updateSourceLabel();
 }
 
 void JSONImportTaskDialog::updateButtons()
 {
-    assert (import_button_);
-    assert (test_button_);
+    traced_assert(import_button_);
+    traced_assert(test_button_);
 
     import_button_->setDisabled(!task_.canRun());
     test_button_->setDisabled(!task_.canRun());

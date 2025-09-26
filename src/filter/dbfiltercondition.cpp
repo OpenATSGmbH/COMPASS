@@ -34,7 +34,7 @@
 
 #include <boost/algorithm/string/join.hpp>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <sstream>
 
 using namespace Utils;
@@ -95,7 +95,7 @@ void DBFilterCondition::invert()
  */
 bool DBFilterCondition::filters(const std::string& dbcontent_name)
 {
-    assert(usable_);
+    traced_assert(usable_);
 
     return hasVariable(dbcontent_name);
 }
@@ -103,7 +103,7 @@ bool DBFilterCondition::filters(const std::string& dbcontent_name)
 std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " first " << first;
-    assert(usable_);
+    traced_assert(usable_);
 
     std::stringstream ss;
 
@@ -116,7 +116,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
         variable_suffix = variable_suffix + ")";
     }
 
-    assert (hasVariable(dbcontent_name));
+    traced_assert(hasVariable(dbcontent_name));
 
     dbContent::Variable& var = variable(dbcontent_name);
 
@@ -172,9 +172,9 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
  */
 void DBFilterCondition::valueChanged()
 {
-    logdbg << "start";
-    assert(usable_);
-    assert(edit_);
+    logdbg;
+    traced_assert(usable_);
+    traced_assert(edit_);
 
     std::string new_value = edit_->text().toStdString();
 
@@ -249,7 +249,7 @@ bool DBFilterCondition::hasVariable (const std::string& dbcontent_name)
 
 dbContent::Variable& DBFilterCondition::variable (const std::string& dbcontent_name)
 {
-    assert (hasVariable(dbcontent_name));
+    traced_assert(hasVariable(dbcontent_name));
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -281,7 +281,7 @@ void DBFilterCondition::setValue(const std::string& value)
 
 void DBFilterCondition::reset()
 {
-    assert(usable_);
+    traced_assert(usable_);
 
     std::string value;
 
@@ -296,7 +296,7 @@ void DBFilterCondition::reset()
 //            }
 //            else
 //            {
-//                assert(meta_variable_);
+//                traced_assert(meta_variable_);
 //                value = meta_variable_->getMinStringRepresentation();
 //                logdbg << "value " << value << " repr " << value;
 //            }
@@ -310,7 +310,7 @@ void DBFilterCondition::reset()
 //            }
 //            else
 //            {
-//                assert(meta_variable_);
+//                traced_assert(meta_variable_);
 //                value = meta_variable_->getMaxStringRepresentation();
 //                logdbg << "value " << value << " repr " << value;
 //            }
@@ -334,7 +334,7 @@ bool DBFilterCondition::getDisplayInstanceId() const
 
 bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
 {
-    assert(usable_);
+    traced_assert(usable_);
 
     std::vector<dbContent::Variable*> variables;
 
@@ -348,14 +348,14 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
     {
          DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
-        assert (dbcont_man.existsMetaVariable(variable_name_));
+        traced_assert(dbcont_man.existsMetaVariable(variable_name_));
 
         for (auto var_it : dbcont_man.metaVariable(variable_name_).variables())
             variables.push_back(&var_it.second);
     }
     else
     {
-        assert (hasVariable(variable_dbcontent_name_));
+        traced_assert(hasVariable(variable_dbcontent_name_));
         variables.push_back(&variable(variable_dbcontent_name_));
     }
 
@@ -388,7 +388,7 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
 std::pair<std::string, bool> DBFilterCondition::getTransformedValue(const std::string& untransformed_value,
                                                                     dbContent::Variable* variable)
 {
-    assert(variable);
+    traced_assert(variable);
 
     std::vector<std::string> value_strings;
     std::vector<std::string> transformed_value_strings;
@@ -447,7 +447,7 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(const std::s
     {
         if (operator_ != "IN" && operator_ != "NOT IN")
         {
-            assert(transformed_value_strings.size() == 1);
+            traced_assert(transformed_value_strings.size() == 1);
             value_str = transformed_value_strings.at(0);
         }
         else

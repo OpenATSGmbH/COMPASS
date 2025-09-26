@@ -68,8 +68,8 @@ class VariableSet
     /// @brief Returns variable at a given index
     Variable& getVariable(unsigned int index) const;
 
-    /// @brief Prints contents, for debugging purposes
-    void print();
+    std::string str() const;
+    void print() const;
 
     /// @brief Returns number of variables in the set
     unsigned int getSize() const { return set_.size(); }

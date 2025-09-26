@@ -48,7 +48,7 @@ private:
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1)  override;
-    virtual boost::optional<std::tuple<double, double, double>> getPositionOffsetTargets(
+    virtual boost::optional<std::tuple<double, double>> getPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1,
@@ -67,11 +67,7 @@ private:
         bool do_debug) override;
     // check passed + score (larger is better) returned
     virtual std::tuple<DistanceClassification, double> checkPositionOffsetScore
-        (double distance_m, double sum_stddev_est, bool secondary_verified, bool target_acccuracy_acceptable) override;
-
-    virtual bool isTargetAccuracyAcceptable(
-        double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) override;
-    //virtual bool isTargetAverageDistanceAcceptable(double distance_score_avg, bool secondary_verified) override;
+        (double distance_m, double sum_stddev_est, bool secondary_verified) override;
 
     virtual ReconstructorBase& reconstructor() override;
 };

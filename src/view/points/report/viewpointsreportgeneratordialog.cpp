@@ -234,18 +234,18 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
 
 void ViewPointsReportGeneratorDialog::updateFileInfo ()
 {
-    assert (directory_edit_);
+    traced_assert(directory_edit_);
     directory_edit_->setText(generator_.reportPath().c_str());
-    assert (filename_edit_);
+    traced_assert(filename_edit_);
     filename_edit_->setText(generator_.reportFilename().c_str());
 }
 
 void ViewPointsReportGeneratorDialog::setRunning (bool value)
 {
-    assert (config_container_);
+    traced_assert(config_container_);
     config_container_->setDisabled(value);
 
-    assert (run_button_);
+    traced_assert(run_button_);
     run_button_->setDisabled(value);
 }
 
@@ -261,7 +261,7 @@ void ViewPointsReportGeneratorDialog::setPathSlot ()
     if (dialog.exec())
     {
         QStringList file_names = dialog.selectedFiles();
-        assert (file_names.size() == 1);
+        traced_assert(file_names.size() == 1);
 
         generator_.reportPathAndFilename(file_names.at(0).toStdString());
     }
@@ -269,7 +269,7 @@ void ViewPointsReportGeneratorDialog::setPathSlot ()
 
 void ViewPointsReportGeneratorDialog::pathEditedSlot ()
 {
-    assert (directory_edit_);
+    traced_assert(directory_edit_);
 
     string tmp = directory_edit_->text().toStdString();
     if (*(tmp.rbegin()) != '/')
@@ -283,7 +283,7 @@ void ViewPointsReportGeneratorDialog::pathEditedSlot ()
 
 void ViewPointsReportGeneratorDialog::filenameEditedSlot()
 {
-    assert (filename_edit_);
+    traced_assert(filename_edit_);
     generator_.reportFilename(filename_edit_->text().toStdString());
 }
 
@@ -334,26 +334,26 @@ void ViewPointsReportGeneratorDialog::openPDFChangedSlot (bool checked)
 
 void ViewPointsReportGeneratorDialog::runSlot()
 {
-    loginf << "start";
+    loginf;
     generator_.run();
 }
 
 void ViewPointsReportGeneratorDialog::cancelSlot()
 {
-    loginf << "start";
+    loginf;
     generator_.cancel();
 }
 
 void ViewPointsReportGeneratorDialog::setElapsedTime (const std::string& time_str)
 {
-    assert (elapsed_time_label_);
+    traced_assert(elapsed_time_label_);
     elapsed_time_label_->setText(time_str.c_str());
 }
 
 void ViewPointsReportGeneratorDialog::setProgress (unsigned int min, unsigned int max, unsigned int value)
 {
-    assert (progress_bar_);
-    assert (max >= min);
+    traced_assert(progress_bar_);
+    traced_assert(max >= min);
 
     progress_bar_->setRange(min, max);
     progress_bar_->setValue(value);
@@ -361,12 +361,12 @@ void ViewPointsReportGeneratorDialog::setProgress (unsigned int min, unsigned in
 
 void ViewPointsReportGeneratorDialog::setStatus (const std::string& status)
 {
-    assert (status_label_);
+    traced_assert(status_label_);
     status_label_->setText(status.c_str());
 }
 
 void ViewPointsReportGeneratorDialog::setRemainingTime (const std::string& time_str)
 {
-    assert (remaining_time_label_);
+    traced_assert(remaining_time_label_);
     remaining_time_label_->setText(time_str.c_str());
 }

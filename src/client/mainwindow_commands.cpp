@@ -230,7 +230,7 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     size_t num_sectors = 0;
 
-    assert (COMPASS::instance().evaluationManager().sectorsLoaded());
+    traced_assert(COMPASS::instance().evaluationManager().sectorsLoaded());
     const auto& sector_layers = COMPASS::instance().evaluationManager().sectorsLayers();
 
     for (const auto& sl : sector_layers)
@@ -428,7 +428,7 @@ bool RTCommandLoadData::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->loadButtonSlot();
 
@@ -465,7 +465,7 @@ bool RTCommandExportViewPointsReport::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     //main_window->showViewPointsTab();
 
@@ -554,9 +554,9 @@ void RTCommandExportReport::collectOptions_impl(OptionsDescription& options,
                                                 PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("report,r", po::value<std::string>()->required(), "report name, e.g. ’EUROCAE ED-87E Evaluation'")
-        ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. ’/data/db2/'")
-        ("mode,m", po::value<std::string>()->required(), "export mode, e.g. ’PDF'");
+        ("report,r", po::value<std::string>()->required(), "report name, e.g. 'EUROCAE ED-87E Evaluation'")
+        ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. '/data/report2/'")
+        ("mode,m", po::value<std::string>()->required(), "export mode, i.e. 'JSON','Latex','PDF'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "report")
     ADD_RTCOMMAND_POS_OPTION(positional, "dir"   )

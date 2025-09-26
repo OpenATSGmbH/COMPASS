@@ -79,7 +79,7 @@ public:
     bool hasCurrentAnnotation() const;
 
     bool hasViewPoint () { return current_view_point_ != nullptr; }
-    const ViewableDataConfig& viewPoint() { assert (hasViewPoint()); return *current_view_point_; }
+    const ViewableDataConfig& viewPoint() { traced_assert(hasViewPoint()); return *current_view_point_; }
 
 public slots:
     virtual void unshowViewPointSlot (const ViewableDataConfig* vp) override final;

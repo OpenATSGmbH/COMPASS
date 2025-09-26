@@ -38,7 +38,7 @@ class UnitManager : public Configurable, public Singleton
     /// @brief Returns unit with a given name
     const Dimension& dimension(const std::string& name)
     {
-        assert(hasDimension(name));
+        traced_assert(hasDimension(name));
         return *dimensions_.at(name);
     }
     /// @brief Return container with all units

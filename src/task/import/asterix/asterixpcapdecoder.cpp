@@ -121,7 +121,7 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
                                        int section_idx, 
                                        std::string& error) const
 {
-    assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
+    traced_assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
 
     error = "";
 
@@ -132,7 +132,7 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     std::unique_ptr<nlohmann::json> analysis_info;
 
     analysis_info = jasterix->analyzeData(section.raw_data.data(), section.raw_data.size(), DecodeCheckRecordLimit);
-    assert(analysis_info);
+    traced_assert(analysis_info);
 
     auto& section_error = section.error;
 
@@ -148,8 +148,8 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     //               "sensor_counts": {}
     //           }'
 
-    assert (section_error.analysis_info.contains("num_errors"));
-    assert (section_error.analysis_info.contains("num_records"));
+    traced_assert(section_error.analysis_info.contains("num_errors"));
+    traced_assert(section_error.analysis_info.contains("num_records"));
 
     unsigned int num_errors  = section_error.analysis_info.at("num_errors");
     unsigned int num_records = section_error.analysis_info.at("num_records");
@@ -178,7 +178,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     {
         if (section.used)
         {
-            assert(!section.error.hasError());
+            traced_assert(!section.error.hasError());
             signatures.insert(PacketSniffer::signatureFromString(section.id));
 
             loginf << "importing section '" << section.id << "'";
@@ -189,7 +189,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     bool file_open = sniffer.openPCAP(file_info.filename);
 
     //this should have been checked and caught beforehand
-    assert(file_open);
+    traced_assert(file_open);
 
     auto callback = [this, current_file_line] (std::unique_ptr<nlohmann::json> data, 
                                                size_t num_frames,
@@ -200,24 +200,24 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         if (settings().current_file_framing_ == "")
         {
-            assert(data->contains("data_blocks"));
-            assert(data->at("data_blocks").is_array());
+            traced_assert(data->contains("data_blocks"));
+            traced_assert(data->at("data_blocks").is_array());
 
             if (data->at("data_blocks").size())
             {
                 nlohmann::json& data_block = data->at("data_blocks").back();
 
-                assert(data_block.contains("content"));
-                assert(data_block.at("content").is_object());
-                assert(data_block.at("content").contains("index"));
+                traced_assert(data_block.contains("content"));
+                traced_assert(data_block.at("content").is_object());
+                traced_assert(data_block.at("content").contains("index"));
 
                 setChunkBytesRead(data_block.at("content").at("index"));
             }
         }
         else
         {
-            assert(data->contains("frames"));
-            assert(data->at("frames").is_array());
+            traced_assert(data->contains("frames"));
+            traced_assert(data->at("frames").is_array());
 
             if (data->at("frames").size())
             {
@@ -225,8 +225,8 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
                 if (frame.contains("content"))
                 {
-                    assert(frame.at("content").is_object());
-                    assert (frame.at("content").contains("index"));
+                    traced_assert(frame.at("content").is_object());
+                    traced_assert(frame.at("content").contains("index"));
 
                     setChunkBytesRead(frame.at("content").at("index"));
                 }
@@ -268,7 +268,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
             size_t num_bytes = chunk.size();
 
             loginf << "processing " << num_bytes << " byte(s)"; 
-            assert(num_bytes > 0);
+            traced_assert(num_bytes > 0);
             
             std::vector<char> vec(num_bytes);
             memcpy(vec.data(), chunk.data(), num_bytes * sizeof(char));

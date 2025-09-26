@@ -173,7 +173,7 @@ void VariableCreateDialog::nameChangedSlot(const QString& name)
 {
     loginf << "name '" << name.toStdString() << "'";
 
-    assert (db_column_edit_);
+    traced_assert(db_column_edit_);
 
     name_ = name.toStdString();
 
@@ -200,7 +200,7 @@ void VariableCreateDialog::shortNameChangedSlot(const QString& name)
 
 void VariableCreateDialog::commentChangedSlot()
 {
-    assert (description_edit_);
+    traced_assert(description_edit_);
 
     description_ = description_edit_->document()->toPlainText().toStdString();
 }
@@ -209,7 +209,7 @@ void VariableCreateDialog::dbColumnChangedSlot(const QString& name)
 {
     loginf << "name '" << name.toStdString() << "'";
 
-    assert (db_column_edit_);
+    traced_assert(db_column_edit_);
 
     db_column_name_ = name.toStdString();
 
@@ -229,9 +229,9 @@ void VariableCreateDialog::dbColumnChangedSlot(const QString& name)
 
 void VariableCreateDialog::checkSettings()
 {
-    assert (name_edit_);
-    assert (db_column_edit_);
-    assert (ok_button_);
+    traced_assert(name_edit_);
+    traced_assert(db_column_edit_);
+    traced_assert(ok_button_);
 
     // check name
     string name_quicktip;

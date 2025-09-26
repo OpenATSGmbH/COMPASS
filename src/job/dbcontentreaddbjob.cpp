@@ -22,7 +22,6 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "logger.h"
-//#include "propertylist.h"
 #include "compass.h"
 #include "viewmanager.h"
 
@@ -36,10 +35,10 @@ DBContentReadDBJob::DBContentReadDBJob(DBInterface& db_interface, DBContent& dbc
       read_list_(read_list),
       custom_filter_clause_(custom_filter_clause)
 {
-    assert(dbcontent_.existsInDB());
+    traced_assert(dbcontent_.existsInDB());
 
     use_order_ = true; // always order
-    assert (COMPASS::instance().dbContentManager().metaCanGetVariable(
+    traced_assert(COMPASS::instance().dbContentManager().metaCanGetVariable(
                 dbcontent_.name(), DBContent::meta_var_timestamp_));
 
     // always order by timestamp
@@ -76,14 +75,14 @@ void DBContentReadDBJob::run_impl()
     {
         std::shared_ptr<Buffer> buffer;
         std::tie (buffer, last_buffer) = db_interface_.readDataChunk(dbcontent_);
-        assert(buffer);
+        traced_assert(buffer);
 
         cnt++;
 
         if (obsolete_)
             break;
 
-        assert(buffer->dbContentName() == dbcontent_.name());
+        traced_assert(buffer->dbContentName() == dbcontent_.name());
 
         logdbg << "start" << dbcontent_.name() << ": intermediate signal, #buffers "
                << cnt << " last one " << last_buffer;
@@ -103,8 +102,9 @@ void DBContentReadDBJob::run_impl()
 
         if (last_buffer) // distribute data, !view_manager.isProcessingData() || 
         {
-            logdbg << "start" << dbcontent_.name()
-                   << ": emitting intermediate read, size " << row_count_;
+            logdbg << dbcontent_.name()
+                   << ": emitting intermediate read, size " << cached_buffer_->size();
+            //cached_buffer_->printProperties();
 
             emit intermediateSignal(cached_buffer_);
 
@@ -121,7 +121,7 @@ void DBContentReadDBJob::run_impl()
     if (obsolete_)
         cached_buffer_ = nullptr;
 
-    assert (!cached_buffer_);
+    traced_assert(!cached_buffer_);
 
     logdbg << "start" << dbcontent_.name() << ": finalizing statement";
     db_interface_.finalizeReadStatement(dbcontent_);

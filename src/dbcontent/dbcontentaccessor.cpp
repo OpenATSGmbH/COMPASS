@@ -42,13 +42,13 @@ DBContentAccessor::DBContentAccessor()
 */
 bool DBContentAccessor::add(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    loginf << "start";
+    loginf;
 
     bool something_changed = false;
 
     for (auto& buf_it : buffers)
     {
-        assert (buf_it.second);
+        traced_assert(buf_it.second);
 
         if (!buf_it.second->size()) // empty buffer
             continue;
@@ -83,7 +83,7 @@ bool DBContentAccessor::add(std::map<std::string, std::shared_ptr<Buffer>> buffe
 
 void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime remove_before_time)
 {
-    loginf << "start";
+    loginf;
 
     unsigned int buffer_size;
 
@@ -107,18 +107,18 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
             continue;
         }
 
-        assert (dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
 
         dbContent::Variable& ts_var = dbcont_man.metaVariable(
                                                     DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
 
         Property ts_prop {ts_var.name(), ts_var.dataType()};
-        assert (buf_it->second->hasProperty(ts_prop));
+        traced_assert(buf_it->second->hasProperty(ts_prop));
 
         NullableVector<boost::posix_time::ptime>& ts_vec = buf_it->second->get<boost::posix_time::ptime>(ts_var.name());
 
 #if DO_RECONSTRUCTOR_PEDANTIC_CHECKING
-        assert (ts_vec.isNeverNull());
+        traced_assert(ts_vec.isNeverNull());
 #endif
 
         unsigned int index=0;
@@ -159,8 +159,8 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
         {
             logdbg << "found cutoff at index " << index;
 
-            assert (index >= 1);
-            assert (index < buffer_size);
+            traced_assert(index >= 1);
+            traced_assert(index < buffer_size);
 
             index--; // cut at previous
 
@@ -186,7 +186,7 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
                         logerr << "index " << index
                                << " " << Time::toString(ts_vec.get(index));
 
-                    assert (ts_vec.get(index) > remove_before_time);
+                    traced_assert(ts_vec.get(index) > remove_before_time);
                 }
             }
 #endif
@@ -208,7 +208,7 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
                     logerr << "index " << index
                            << " " << Time::toString(ts_vec.get(index));
 
-                assert (ts_vec.get(index) > remove_before_time);
+                traced_assert(ts_vec.get(index) > remove_before_time);
             }
 #endif
             ++buf_it;
@@ -226,7 +226,7 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
 
 void DBContentAccessor::removeEmptyBuffers()
 {
-    logdbg << "start";
+    logdbg;
 
     bool something_changed = false;
 
@@ -265,7 +265,7 @@ bool DBContentAccessor::has(const std::string& dbcontent_name) const
 */
 std::shared_ptr<Buffer> DBContentAccessor::get(const std::string& dbcontent_name)
 {
-    assert (has(dbcontent_name));
+    traced_assert(has(dbcontent_name));
     return buffers_.at(dbcontent_name);
 }
 
@@ -273,7 +273,7 @@ std::shared_ptr<Buffer> DBContentAccessor::get(const std::string& dbcontent_name
 */
 void DBContentAccessor::updateDBContentLookup()
 {
-    loginf << "start";
+    loginf;
 
     dbcontent_lookup_.clear();
 
@@ -290,7 +290,7 @@ void DBContentAccessor::updateDBContentLookup()
 */
 BufferAccessor DBContentAccessor::bufferAccessor(const std::string& dbcontent_name) const
 {
-    assert (has(dbcontent_name));
+    traced_assert(has(dbcontent_name));
     return BufferAccessor(dbcontent_lookup_.at(dbcontent_name));
 }
 
@@ -298,7 +298,7 @@ BufferAccessor DBContentAccessor::bufferAccessor(const std::string& dbcontent_na
 */
 TargetReportAccessor DBContentAccessor::targetReportAccessor(const std::string& dbcontent_name) const
 {
-    assert (has(dbcontent_name));
+    traced_assert(has(dbcontent_name));
     return TargetReportAccessor(dbcontent_lookup_.at(dbcontent_name));
 }
 

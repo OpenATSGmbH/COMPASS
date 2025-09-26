@@ -22,7 +22,7 @@
 #include <cmath>
 #include <numeric>
 
-#include <cassert>
+#include "traced_assert.h"
 
 /**
 */

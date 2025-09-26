@@ -50,7 +50,7 @@ TableViewWidget::~TableViewWidget() = default;
 TableViewDataWidget* TableViewWidget::getViewDataWidget()
 {
     auto w = dynamic_cast<TableViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -59,7 +59,7 @@ TableViewDataWidget* TableViewWidget::getViewDataWidget()
 const TableViewDataWidget* TableViewWidget::getViewDataWidget() const
 {
     auto w =  dynamic_cast<const TableViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -68,7 +68,7 @@ const TableViewDataWidget* TableViewWidget::getViewDataWidget() const
 TableViewConfigWidget* TableViewWidget::getViewConfigWidget()
 {
     auto w =  dynamic_cast<TableViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -77,7 +77,7 @@ TableViewConfigWidget* TableViewWidget::getViewConfigWidget()
 const TableViewConfigWidget* TableViewWidget::getViewConfigWidget() const
 {
     auto w =  dynamic_cast<const TableViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -86,6 +86,6 @@ const TableViewConfigWidget* TableViewWidget::getViewConfigWidget() const
 TableView* TableViewWidget::getView() 
 { 
     auto view = dynamic_cast<TableView*>(ViewWidget::getView());
-    assert(view);
+    traced_assert(view);
     return view;
 }

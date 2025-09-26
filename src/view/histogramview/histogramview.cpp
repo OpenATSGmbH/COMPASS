@@ -92,7 +92,7 @@ bool HistogramView::init_impl()
 {
     createSubConfigurables();
 
-    assert(data_source_);
+    traced_assert(data_source_);
 
 //    connect(data_source_, &HistogramViewDataSource::loadingStartedSignal, widget_->getDataWidget(),
 //            &HistogramViewDataWidget::loadingStartedSlot);
@@ -131,7 +131,7 @@ void HistogramView::generateSubConfigurable(const std::string& class_id,
            << instance_id;
     if (class_id == "HistogramViewDataSource")
     {
-        assert(!data_source_);
+        traced_assert(!data_source_);
         data_source_ = new HistogramViewDataSource(class_id, instance_id, this);
     }
     else if (class_id == "HistogramViewWidget")
@@ -163,7 +163,7 @@ void HistogramView::checkSubConfigurables()
  */
 HistogramViewDataWidget* HistogramView::getDataWidget()
 {
-    assert (widget_);
+    traced_assert(widget_);
     return widget_->getViewDataWidget();
 }
 
@@ -171,7 +171,7 @@ HistogramViewDataWidget* HistogramView::getDataWidget()
  */
 const HistogramViewDataWidget* HistogramView::getDataWidget() const
 {
-    assert (widget_);
+    traced_assert(widget_);
     return widget_->getViewDataWidget();
 }
 
@@ -179,7 +179,7 @@ const HistogramViewDataWidget* HistogramView::getDataWidget() const
  */
 VariableSet HistogramView::getBaseSet(const std::string& dbcontent_name)
 {
-    assert(data_source_);
+    traced_assert(data_source_);
     return data_source_->getSet()->getFor(dbcontent_name);
 }
 
@@ -214,7 +214,7 @@ void HistogramView::useLogScale(bool use_log_scale, bool notify_changes)
     setParameter(settings_.use_log_scale, use_log_scale);
 
     HistogramViewDataWidget* data_widget = dynamic_cast<HistogramViewDataWidget*>(getDataWidget());
-    assert (data_widget);
+    traced_assert(data_widget);
 
     if (notify_changes)
     {
@@ -226,8 +226,8 @@ void HistogramView::useLogScale(bool use_log_scale, bool notify_changes)
  */
 void HistogramView::updateSelection()
 {
-    loginf << "start";
-    assert(widget_);
+    loginf;
+    traced_assert(widget_);
     
     widget_->getViewDataWidget()->redrawData(true);
 
