@@ -48,7 +48,7 @@ namespace EvaluationRequirementResult
 const std::string Joined::SectorTargetsTableName        = "Targets";
 const std::string Joined::SectorOverviewTableName       = "Sector Overview";
 const std::string Joined::SectorOverviewID              = "Sector Overview";
-const int         Joined::SectorOverviewRenderDelayMSec = 2000;
+const int         Joined::SectorOverviewRenderDelayMSec = 5000;
 
 /**
 */

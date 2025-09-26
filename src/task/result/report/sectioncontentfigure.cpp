@@ -154,7 +154,7 @@ void SectionContentFigure::executeRenderDelay() const
                < render_delay_msec_)
         {
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-            QThread::msleep(10);
+            QThread::msleep(1);
         }
     }
 }
