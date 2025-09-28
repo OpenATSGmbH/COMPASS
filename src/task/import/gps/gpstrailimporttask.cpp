@@ -908,8 +908,11 @@ void GPSTrailImportTask::run()
         }
 
         // accuracy
-        xstddev_vec.set(cnt, fix_it->horizontalAccuracy());
-        ystddev_vec.set(cnt, fix_it->horizontalAccuracy());
+        // Convert GPS horizontal accuracy (95% confidence radius) to 1-sigma standard deviation
+        double accuracy_1sigma = fix_it->horizontalAccuracy() / 2.45; // approximate conversion
+
+        xstddev_vec.set(cnt, accuracy_1sigma);
+        ystddev_vec.set(cnt, accuracy_1sigma);
 
         last_tod = tod;
 
