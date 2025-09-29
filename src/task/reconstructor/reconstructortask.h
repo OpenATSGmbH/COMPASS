@@ -204,6 +204,7 @@ protected:
     boost::posix_time::ptime run_start_time_after_del_;
 
     size_t current_slice_idx_ = 0;
+    size_t num_written_slices_ = 0;
 
     std::unique_ptr<ReconstructorBase::DataSlice> loading_slice_;
     bool loading_data_ {false};

@@ -416,6 +416,7 @@ void ReconstructorTask::run()
     done_ = false;
 
     current_slice_idx_ = 0;
+    num_written_slices_ = 0;
 
     delcalcref_future_ = {};
     deltgts_future_ = {};
@@ -779,9 +780,13 @@ void ReconstructorTask::writeDataSlice()
             dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
     }
 
-    if (writing_slice_->first_slice_)
+    if (num_written_slices_ == 0)
+    {
         connect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                 this, &ReconstructorTask::writeDoneSlot);
+    }
+
+    ++num_written_slices_;
 
     loginf << "references dbcontent";
 
