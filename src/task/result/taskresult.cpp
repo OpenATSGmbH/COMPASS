@@ -828,7 +828,9 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         
         //enable export
         if (view_it.second->hasScreenshotContent())
+        {
             view_it.second->setExporting(true);
+        }
     }
 
     while (dbcont_man.loadInProgress())
@@ -846,15 +848,15 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
             continue;
         
         //skip views which show no content
-        if (!view_it.second->hasScreenshotContent())
-            continue;
+        if (view_it.second->hasScreenshotContent())
+        {
+            //render view and collect
+            auto img = view_it.second->renderData();
+            renderings.emplace_back(img, view_it.second->instanceId());
 
-        //render view and collect
-        auto img = view_it.second->renderData();
-        renderings.emplace_back(img, view_it.second->instanceId());
-
-        //disable export
-        view_it.second->setExporting(false);
+            //disable export
+            view_it.second->setExporting(false);
+        }
     }
 
     return renderings;
