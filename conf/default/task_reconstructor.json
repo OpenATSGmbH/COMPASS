@@ -31,6 +31,7 @@
             "ADSB": true,
             "MLAT": true,
             "Radar": true,
+            "RefTraj": false,
             "Tracker": false
         }
     },
@@ -40,14 +41,14 @@
                 "parameters": {
                     "adsb_pos_acc_fallback": 1000.0,
                     "adsb_vel_acc_fallback": 5.0,
-                    "correct_radar_bias": false,
+                    "correct_radar_bias": true,
                     "debug_accuracy_estimation": true,
                     "default_radar_xy_std_dev": 7.5,
                     "delete_all_calc_reftraj": true,
                     "disable_cat062_outlier_detection": true,
                     "do_multiple_runs": true,
                     "do_outlier_checks": true,
-                    "do_track_number_disassociate_using_distance": false,
+                    "do_track_number_disassociate_using_distance": true,
                     "ds_line": 0,
                     "dynamic_process_noise": true,
                     "filter_references_max_stddev": true,
