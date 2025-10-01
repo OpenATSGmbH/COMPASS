@@ -32,10 +32,24 @@ int main(int argc, char** argv)
     // path to client (assumed to be in the same directory)
     QString realAppPath = QCoreApplication::applicationDirPath() + "/compass_client";
 
+    //collect command line args for COMPASS client
+    bool has_rt_cmd_port = false;
+    QStringList client_args;
+    for (int i = 1; i < argc; ++i) 
+    {
+        QString arg = QString::fromLocal8Bit(argv[i]);
+        if (arg == "--open_rt_cmd_port")
+            has_rt_cmd_port = true;
+        client_args << arg;
+    }
+
     // ensure executable exists
     if (!QFileInfo::exists(realAppPath)) 
     {
-        QMessageBox::critical(nullptr, "Error", "COMPASS client not found.");
+        QString err = "COMPASS client not found";
+        QTextStream(stderr) << err << "\n";
+        if (!has_rt_cmd_port)
+            QMessageBox::critical(nullptr, "Error", err);
         return -1;
     }
 
@@ -58,10 +72,13 @@ int main(int argc, char** argv)
 
     // monitor exit status
     QObject::connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                     [process](int exitCode, QProcess::ExitStatus status) {
+                     [process, &has_rt_cmd_port](int exitCode, QProcess::ExitStatus status) {
         if (status == QProcess::CrashExit) 
         {
-            QMessageBox::critical(nullptr, "Application Crash", "COMPASS client has crashed.");
+            QString err = "COMPASS client crashed with code " + QString::number(exitCode);
+            QTextStream(stderr) << err << "\n";
+            if (!has_rt_cmd_port)
+                QMessageBox::critical(nullptr, "Application Crash", err);
         } 
         else 
         {
@@ -70,18 +87,14 @@ int main(int argc, char** argv)
         QCoreApplication::exit(exitCode);
     });
 
-    //collect command line args for COMPASS client
-    QStringList client_args;
-    for (int i = 1; i < argc; ++i) {
-        client_args << QString::fromLocal8Bit(argv[i]);
-    }
-
     // start client
     process->start(realAppPath, client_args, QIODevice::ReadWrite);
     if (!process->waitForStarted()) 
     {
-        QMessageBox::critical(nullptr, "Error",
-                              "Could not start COMPASS client:\n" + process->errorString());
+        QString err = "Could not start COMPASS client:\n" + process->errorString();
+        QTextStream(stderr) << err << "\n";
+        if (!has_rt_cmd_port)
+            QMessageBox::critical(nullptr, "Error", err);
         return -1;
     }
 
