@@ -263,6 +263,11 @@ std::string normalizeFilename(const std::string& filename_without_ext, bool remo
     return fn_lower.toStdString();
 }
 
+std::string join(const std::string& path0, const std::string& path1)
+{
+    return (boost::filesystem::path(path0) / boost::filesystem::path(path1)).string();
+}
+
 QIcon getIcon(const std::string& name, const QColor& color)
 {
     QString path = getIconFilepath(name).c_str();

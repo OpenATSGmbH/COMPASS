@@ -410,7 +410,7 @@ Result ReportExporterLatex::writePDF() const
 
     if (settings().open_created_file && hasInteraction())
     {
-        std::string fullpath = exportResourceDir() + "/" + exportFilename();
+        std::string fullpath = (boost::filesystem::path(exportResourceDir()) / boost::filesystem::path(exportFilename())).string();
         if (Utils::String::hasEnding(fullpath, ".tex"))
             Utils::String::replace(fullpath, ".tex", ".pdf");
 

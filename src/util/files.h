@@ -77,6 +77,8 @@ std::string replaceExtension(const std::string& path, const std::string& new_ext
 
 std::string normalizeFilename(const std::string& filename_without_ext, bool remove_special_chars);
 
+std::string join(const std::string& path0, const std::string& path1);
+
 class IconProvider {
 public:
     static QIcon getIcon(const std::string& name);

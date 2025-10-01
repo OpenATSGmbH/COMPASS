@@ -34,6 +34,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <QFile>
+
 namespace ResultReport
 {
 
@@ -79,7 +81,7 @@ const ReportExportSettings& ReportExporter::settings() const
  */
 std::string ReportExporter::exportPath() const
 {
-    return exportResourceDir() + "/" + exportFilename();
+    return (boost::filesystem::path(exportResourceDir()) / boost::filesystem::path(exportFilename())).string();
 }
 
 /**
@@ -394,20 +396,20 @@ void ReportExporter::setStatus(const std::string& status)
  */
 std::string ReportExporter::storeFile(ResourceDir dir, const std::string& fn) const
 {
-    auto basename = Utils::Files::getFilenameFromPath(fn);
-    auto dst_dir  = exportResourceDir() + "/" + resourceSubDir(dir);
-    auto dst_path = dst_dir + "/" + basename;
-    auto rel_path = resourceSubDir(dir) + "/" + basename;
+    auto basename = boost::filesystem::path(Utils::Files::getFilenameFromPath(fn));
+    auto dst_dir  = boost::filesystem::path(exportResourceDir()) / boost::filesystem::path(resourceSubDir(dir));
+    auto dst_path = dst_dir / basename;
+    auto rel_path = boost::filesystem::path(resourceSubDir(dir)) / basename;
 
-    if (Utils::Files::fileExists(dst_path))
-        return rel_path;
+    if (Utils::Files::fileExists(dst_path.string()))
+        return rel_path.string();
 
-    Utils::Files::createMissingDirectories(dst_dir);
+    Utils::Files::createMissingDirectories(dst_dir.string());
 
-    if (!boost::filesystem::copy_file(fn, dst_path, boost::filesystem::copy_options::overwrite_existing))
+    if (!QFile::copy(QString::fromStdString(fn), QString::fromStdString(dst_path.string())))
         return "";
 
-    return rel_path;
+    return rel_path.string();
 }
 
 /**
