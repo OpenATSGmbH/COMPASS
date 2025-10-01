@@ -256,7 +256,7 @@ ResultT<std::vector<SectionContentFigure::ImageResource>> SectionContentFigure::
             if (!res.ok())
                 return res;
 
-            if (!r.first.save(QString::fromStdString(res.result().path)))
+            if (!r.first.save(QString::fromStdString(res.result().path), nullptr, 100))
                 return Result::failed("Could not store resource for content '" + name() + "'");
 
             img_res.link = res.result().link;

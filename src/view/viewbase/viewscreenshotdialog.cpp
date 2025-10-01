@@ -284,7 +284,7 @@ void ViewScreenshotDialog::save()
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    bool ok = getScreenshot().save(fn);
+    bool ok = getScreenshot().save(fn, nullptr, 100);
 
     QApplication::restoreOverrideCursor();
 

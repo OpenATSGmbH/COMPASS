@@ -271,7 +271,7 @@ void LatexVisitor::visit(HistogramView* e)
         throw runtime_error("LatexVisitor: visit: HistogramView: unable to create directories for '"
                             +image_path+"'");
 
-    ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
+    ret = screenshot.save(image_path.c_str(), "JPG", 100); // , 50
     traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
@@ -348,7 +348,7 @@ void LatexVisitor::visit(GeographicView* e)
         throw runtime_error("LatexVisitor: visit: GeographicView: unable to create directories for '"
                             +image_path+"'");
 
-    ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
+    ret = screenshot.save(image_path.c_str(), "JPG", 100); // , 50
     traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
@@ -366,7 +366,7 @@ void LatexVisitor::visit(GeographicView* e)
         traced_assert(!overview_screenshot.isNull());
 
         loginf << "saving overview screenshot as '" << overview_image_path << "'";
-        ret = overview_screenshot.save(overview_image_path.c_str(), "JPG"); // , 50
+        ret = overview_screenshot.save(overview_image_path.c_str(), "JPG", 100); // , 50
         traced_assert(ret);
 
         sec.addImage(overview_image_path, e->instanceId()+" Overview");
@@ -430,7 +430,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
         throw runtime_error("LatexVisitor: visit: ScatterPlotView: unable to create directories for '"
                             +image_path+"'");
 
-    ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
+    ret = screenshot.save(image_path.c_str(), "JPG", 100); // , 50
     traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
@@ -489,7 +489,7 @@ void LatexVisitor::visit(GridView* e)
         throw runtime_error("LatexVisitor: visit: GridView: unable to create directories for '"
                             +image_path+"'");
 
-    ret = screenshot.save(image_path.c_str(), "JPG"); // , 50
+    ret = screenshot.save(image_path.c_str(), "JPG", 100); // , 50
     traced_assert(ret);
 
     LatexSection& sec = report_.getSection(current_section_name_);
