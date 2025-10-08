@@ -303,8 +303,8 @@ void KalmanChain::configureEstimator(const KalmanEstimator::Settings& settings)
     //set all needed chain-specific overrides
     settings_override.extract_wgs84_pos = true; //essential for chain
 
-    predictor_.estimator_ptr->settings() = settings_override;
-    tracker_.tracker_ptr->settings()     = settings_override;
+    predictor_.estimator_ptr->settings()      = settings_override;
+    tracker_.tracker_ptr->estimatorSettings() = settings_override;
 }
 
 /**
@@ -752,13 +752,55 @@ const KalmanChain::Update& KalmanChain::getUpdate(size_t idx)
 }
 
 /**
+ */
+double KalmanChain::timeDiffSec(const boost::posix_time::ptime& ts) const
+{
+    if (!canReestimate())
+        return tracker_.tracker_ptr->timeDiffSec(ts);
+
+    //no updates no prediction
+    if (updates_.empty())
+        return std::numeric_limits<double>::max();
+
+    if (settings_.prediction_mode == Settings::PredictionMode::LastUpdate ||
+        settings_.prediction_mode == Settings::PredictionMode::NearestBefore)
+    {
+        //find reference update
+        int idx = (settings_.prediction_mode == Settings::PredictionMode::LastUpdate ? lastIndex() : predictionRefIndex(ts));
+        traced_assert(idx >= 0);
+
+        auto t0 = updates_[ idx ].t;
+
+        return KalmanInterface::timestep(t0, ts);
+    }
+    else if (settings_.prediction_mode == Settings::PredictionMode::Interpolate)
+    {
+        //find reference interval
+        auto iv = predictionRefInterval(ts);
+        traced_assert(iv.first >= 0 || iv.second >= 0); //!updates not empty => non-empty interval needs to exist!
+
+        double dt0 = std::numeric_limits<double>::max();
+        double dt1 = std::numeric_limits<double>::max();
+
+        if (iv.first >= 0)
+            dt0 = KalmanInterface::timestep(updates_[ iv.first ].t, ts);
+        if (iv.second >= 0)
+            dt1 = KalmanInterface::timestep(ts, updates_[ iv.second ].t);
+
+        return std::fabs(dt0) < std::fabs(dt1) ? dt0 : dt1;
+    }
+
+    return std::numeric_limits<double>::max();
+}
+
+/**
  * Checks if a prediction is possible at the given timestamp.
 */
 bool KalmanChain::canPredict(const boost::posix_time::ptime& ts) const
 {
     //static mode? => just ask tracker
     if (!canReestimate())
-        return tracker_.tracker_ptr->canPredict(ts, settings_.prediction_max_tdiff);
+        return tracker_.tracker_ptr->canPredict(ts, settings_.prediction_max_tdiff_sec);
 
     //no updates no prediction
     if (updates_.empty())
@@ -772,11 +814,10 @@ bool KalmanChain::canPredict(const boost::posix_time::ptime& ts) const
         traced_assert(idx >= 0);
 
         //check time diff
-        auto t0 = updates_[ idx ].kalman_update.t;
+        auto t0 = updates_[ idx ].t;
 
-        boost::posix_time::time_duration diff = (ts >= t0 ? ts - t0 : t0 - ts);
-        
-        if (diff > settings_.prediction_max_tdiff)
+        double dt = KalmanInterface::timestep(t0, ts);
+        if (std::fabs(dt) > settings_.prediction_max_tdiff_sec)
             return false;
 
         return true;
@@ -790,9 +831,9 @@ bool KalmanChain::canPredict(const boost::posix_time::ptime& ts) const
         bool first_ok  = false;
         bool second_ok = false;
 
-        if (iv.first >= 0 && (ts - updates_[ iv.first ].t) <= settings_.prediction_max_tdiff)
+        if (iv.first >= 0 && std::fabs(KalmanInterface::timestep(updates_[ iv.first ].t, ts)) <= settings_.prediction_max_tdiff_sec)
             first_ok = true;
-        if (iv.second >= 0 && (updates_[ iv.second ].t - ts) <= settings_.prediction_max_tdiff)
+        if (iv.second >= 0 && std::fabs(KalmanInterface::timestep(ts, updates_[ iv.second ].t)) <= settings_.prediction_max_tdiff_sec)
             second_ok = true;
         
         //not close enough to at least one interval border?
@@ -951,9 +992,9 @@ bool KalmanChain::predictInternal(Measurement* mm,
         bool first_ok  = false;
         bool second_ok = false;
 
-        if (iv.first >= 0 && (ts - updates_[ iv.first ].t) <= settings_.prediction_max_tdiff)
+        if (iv.first >= 0 && std::fabs(KalmanInterface::timestep(updates_[ iv.first ].t, ts)) <= settings_.prediction_max_tdiff_sec)
             first_ok = true;
-        if (iv.second >= 0 && (updates_[ iv.second ].t - ts) <= settings_.prediction_max_tdiff)
+        if (iv.second >= 0 && std::fabs(KalmanInterface::timestep(ts, updates_[ iv.second ].t)) <= settings_.prediction_max_tdiff_sec)
             second_ok = true;
 
         //!assured beforehand by canPredict()!
@@ -1321,7 +1362,7 @@ bool KalmanChain::reestimate(UpdateStats* stats)
 
             //max reestimation duration hit?
             traced_assert(u.t >= tstart);
-            if (u.t - tstart > settings_.reestim_max_duration)
+            if (KalmanInterface::timestep(tstart, u.t) > settings_.reestim_max_duration_sec)
                 break;
 
             //we check the norm starting from the extended range

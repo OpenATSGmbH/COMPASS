@@ -45,6 +45,8 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     //combo_layout->setMargin(0);
     combo_layout->setFormAlignment(Qt::AlignRight | Qt::AlignTop);
 
+    //debug options
+
     debug_check_ = new QCheckBox ();
     connect(debug_check_, &QCheckBox::clicked,
             this, [ = ] (bool ok) { task_.debugSettings().debug_ = ok; });
@@ -90,6 +92,42 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     if (probimm_reconst_ && add_debug_stuff)
         combo_layout->addRow("Debug Outlier Detection", debug_outliers_check_);
 
+    debug_reference_calculation_check_ = new QCheckBox();
+    connect(debug_reference_calculation_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_reference_calculation_ = ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug Reference Calculation", debug_reference_calculation_check_);
+
+    debug_kalman_chains_check_ = new QCheckBox();
+    connect(debug_kalman_chains_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_kalman_chains_= ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug Kalman Chains", debug_kalman_chains_check_);
+
+    debug_jpda_check_ = new QCheckBox();
+    connect(debug_jpda_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_jpda_= ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug JPDA", debug_jpda_check_);
+
+    debug_tentative_targets_check_ = new QCheckBox();
+    connect(debug_tentative_targets_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_tentative_targets_= ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug Tentative Targets", debug_tentative_targets_check_);
+
+    debug_write_reconstruction_viewpoints_check_ = new QCheckBox();
+    connect(debug_write_reconstruction_viewpoints_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_write_reconstruction_viewpoints_ = ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Write Debug Reconstruction View Points", debug_write_reconstruction_viewpoints_check_);
+
+    //analyse options
 
     analyze_check_= new QCheckBox();
     connect(analyze_check_, &QCheckBox::clicked,
@@ -135,28 +173,56 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     if (probimm_reconst_)
         combo_layout->addRow("Analyse Geo.Altitude Correction", analyze_geo_altitude_correction_check_);
 
-    // reference stuff
+    // statistics options
 
-    debug_reference_calculation_check_ = new QCheckBox();
-    connect(debug_reference_calculation_check_, &QCheckBox::clicked,
-            this, [ = ] (bool ok) { task_.debugSettings().debug_reference_calculation_ = ok; });
+    stats_check_ = new QCheckBox();
+    connect(stats_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_ = ok; });
 
-    if (add_debug_stuff)
-        combo_layout->addRow("Debug Reference Calculation", debug_reference_calculation_check_);
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Statistics", stats_check_);
 
-    debug_kalman_chains_check_ = new QCheckBox();
-    connect(debug_kalman_chains_check_, &QCheckBox::clicked,
-            this, [ = ] (bool ok) { task_.debugSettings().debug_kalman_chains_= ok; });
+    stats_reference_calculation_check_ = new QCheckBox();
+    connect(stats_reference_calculation_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_reference_calculation_ = ok; });
 
-    if (add_debug_stuff)
-        combo_layout->addRow("Debug Kalman Chains", debug_kalman_chains_check_);
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Reference Calculation Statistics", stats_reference_calculation_check_);
 
-    debug_write_reconstruction_viewpoints_check_ = new QCheckBox();
-    connect(debug_write_reconstruction_viewpoints_check_, &QCheckBox::clicked,
-            this, [ = ] (bool ok) { task_.debugSettings().debug_write_reconstruction_viewpoints_ = ok; });
+    stats_kalman_chains_check_ = new QCheckBox();
+    connect(stats_kalman_chains_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_kalman_chains_ = ok; });
 
-    if (add_debug_stuff)
-        combo_layout->addRow("Write Debug Reconstruction View Points", debug_write_reconstruction_viewpoints_check_);
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Kalman Chains Statistics", stats_kalman_chains_check_);
+
+    stats_jpda_check_ = new QCheckBox();
+    connect(stats_jpda_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_jpda_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect JPDA Statistics", stats_jpda_check_);
+
+    stats_tentative_targets_check_ = new QCheckBox();
+    connect(stats_tentative_targets_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_tentative_targets_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Tentative Target Statistics", stats_tentative_targets_check_);
+
+    stats_adsb_check_ = new QCheckBox();
+    connect(stats_adsb_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_adsb_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect ADSB Target Statistics", stats_adsb_check_);
+
+    stats_association_check_ = new QCheckBox();
+    connect(stats_association_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_association_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Association Statistics", stats_association_check_);
 
     setLayout(combo_layout);
 
@@ -217,6 +283,22 @@ void ReconstructorTaskAnalysisWidget::updateValues()
     traced_assert(debug_outliers_check_);
     debug_outliers_check_->setChecked(task_.debugSettings().debug_outlier_detection_);
 
+    traced_assert(debug_reference_calculation_check_);
+    debug_reference_calculation_check_->setChecked(task_.debugSettings().debug_reference_calculation_);
+
+    traced_assert(debug_kalman_chains_check_);
+    debug_kalman_chains_check_->setChecked(task_.debugSettings().debug_kalman_chains_);
+
+    traced_assert(debug_jpda_check_);
+    debug_jpda_check_->setChecked(task_.debugSettings().debug_jpda_);
+
+    traced_assert(debug_tentative_targets_check_);
+    debug_tentative_targets_check_->setChecked(task_.debugSettings().debug_tentative_targets_);
+
+    traced_assert(debug_write_reconstruction_viewpoints_check_);
+    debug_write_reconstruction_viewpoints_check_->setChecked(
+        task_.debugSettings().debug_write_reconstruction_viewpoints_);
+
     traced_assert(analyze_check_);
     analyze_check_->setChecked(task_.debugSettings().analyze_);
 
@@ -238,17 +320,28 @@ void ReconstructorTaskAnalysisWidget::updateValues()
     traced_assert(analyze_geo_altitude_correction_check_);
     analyze_geo_altitude_correction_check_->setChecked(task_.debugSettings().analyze_geo_altitude_correction_);
 
-    // reference stuff
+    // stats
 
-    traced_assert(debug_reference_calculation_check_);
-    debug_reference_calculation_check_->setChecked(task_.debugSettings().debug_reference_calculation_);
+    traced_assert(stats_check_);
+    stats_check_->setChecked(task_.debugSettings().stats_);
 
-    traced_assert(debug_kalman_chains_check_);
-    debug_kalman_chains_check_->setChecked(task_.debugSettings().debug_kalman_chains_);
+    traced_assert(stats_reference_calculation_check_);
+    stats_reference_calculation_check_->setChecked(task_.debugSettings().stats_reference_calculation_);
 
-    traced_assert(debug_write_reconstruction_viewpoints_check_);
-    debug_write_reconstruction_viewpoints_check_->setChecked(
-        task_.debugSettings().debug_write_reconstruction_viewpoints_);
+    traced_assert(stats_kalman_chains_check_);
+    stats_kalman_chains_check_->setChecked(task_.debugSettings().stats_kalman_chains_);
+
+    traced_assert(stats_jpda_check_);
+    stats_jpda_check_->setChecked(task_.debugSettings().stats_jpda_);
+
+    traced_assert(stats_tentative_targets_check_);
+    stats_tentative_targets_check_->setChecked(task_.debugSettings().stats_tentative_targets_);
+
+    traced_assert(stats_adsb_check_);
+    stats_adsb_check_->setChecked(task_.debugSettings().stats_adsb_);
+
+    traced_assert(stats_association_check_);
+    stats_association_check_->setChecked(task_.debugSettings().stats_association_);
 }
 
 void ReconstructorTaskAnalysisWidget::utnsChangedSlot(const QString& value)

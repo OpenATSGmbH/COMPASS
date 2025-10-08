@@ -140,10 +140,12 @@ public:
             num_jpda_clutters         = 0;
             jpda_assignment_ratio_sum = 0.0;
 
-            num_tentative_created    = 0;
-            num_tentative_terminated = 0;
-            num_tentative_confirmed  = 0;
-            num_tentative_remaining  = 0;
+            num_tentative_created             = 0;
+            num_tentative_terminated          = 0;
+            num_tentative_terminated_coasting = 0;
+            num_tentative_terminated_low_prob = 0;
+            num_tentative_confirmed           = 0;
+            num_tentative_remaining           = 0;
         }
 
         size_t num_standing_adsb               = 0;
@@ -203,10 +205,12 @@ public:
         size_t num_jpda_clutters         = 0;
         double jpda_assignment_ratio_sum = 0.0;
 
-        size_t num_tentative_created    = 0;
-        size_t num_tentative_terminated = 0;
-        size_t num_tentative_confirmed  = 0;
-        size_t num_tentative_remaining  = 0;
+        size_t num_tentative_created             = 0;
+        size_t num_tentative_terminated          = 0;
+        size_t num_tentative_terminated_coasting = 0;
+        size_t num_tentative_terminated_low_prob = 0;
+        size_t num_tentative_confirmed           = 0;
+        size_t num_tentative_remaining           = 0;
     };
 
     struct InterpOptions
@@ -334,8 +338,8 @@ public:
 
     mutable Transformation trafo_;
 
-    boost::optional<bool> created_from_tentative;
-    boost::optional<bool> contains_tentative;
+    boost::optional<bool> created_from_tentative_;
+    boost::optional<bool> contains_tentative_;
 
     void addTargetReport (unsigned long rec_num);
     void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
@@ -486,6 +490,9 @@ public:
 
     //    bool hasADSBMOPSVersion();
     //    std::set<unsigned int> getADSBMOPSVersions();
+
+    bool createdFromTentative() const;
+    bool containsPreviouslyTentative() const;
 
     static GlobalStats& globalStats() { return global_stats_; }
     static void addUpdateToGlobalStats(const reconstruction::UpdateStats& s);

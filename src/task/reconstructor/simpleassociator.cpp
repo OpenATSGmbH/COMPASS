@@ -44,7 +44,6 @@ SimpleAssociator::SimpleAssociator(SimpleReconstructor& reconstructor)
 void SimpleAssociator::associateNewData()
 {
     unassoc_rec_nums_.clear();
-    unassoc_rec_nums_no_retry_.clear();
 
     loginf << "associating RefTraj data";
 

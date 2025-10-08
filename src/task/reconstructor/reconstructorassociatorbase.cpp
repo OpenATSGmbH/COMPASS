@@ -51,7 +51,6 @@ void ReconstructorAssociatorBase::associateNewData()
     max_time_diff_ = Time::partialSeconds(reconstructor().settings().max_time_diff_);
 
     unassoc_rec_nums_.clear();
-    unassoc_rec_nums_no_retry_.clear();
 
     if (reconstructor().isCancelled())
         return;
@@ -152,7 +151,6 @@ void ReconstructorAssociatorBase::reset()
     reconstructor().targets_container_.tn2utn_.clear();
 
     unassoc_rec_nums_.clear();
-    unassoc_rec_nums_no_retry_.clear();
     assoc_counts_.clear();
 
     num_merges_ = 0;
@@ -696,7 +694,6 @@ void ReconstructorAssociatorBase::countUnAssociated(const std::vector<unsigned l
 void ReconstructorAssociatorBase::countUnAssociated()
 {
     countUnAssociated(unassoc_rec_nums_);
-    countUnAssociated(unassoc_rec_nums_no_retry_);
 }
 
 int ReconstructorAssociatorBase::findUTNFor (dbContent::targetReport::ReconstructorInfo& tr)
@@ -1192,6 +1189,11 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
                           const dbContent::ReconstructorTarget& other =
                               reconstructor().targets_container_.targets_.at(other_utn);
 
+                          // do not merge tentative targets?
+                          if (reconstructor().settings().do_not_merge_targets_with_tentative_origin_ &&
+                              (target.createdFromTentative() || other.createdFromTentative()))
+                              return;
+
                           results[cnt] = AssociationOption(false, other.utn_, 0, false, 0);
 
                           bool do_debug = reconstructor().task().debugSettings().debug_association_
@@ -1420,9 +1422,4 @@ const std::map<unsigned int, std::map<unsigned int,
 const std::vector<unsigned long>& ReconstructorAssociatorBase::unassociatedRecNums() const
 {
     return unassoc_rec_nums_;
-}
-
-const std::map<unsigned int, ReconstructorAssociatorBase::BatchStats>& ReconstructorAssociatorBase::batchStatistics() const
-{
-    return batch_stats_;
 }

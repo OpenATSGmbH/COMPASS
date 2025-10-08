@@ -17,6 +17,8 @@
 
 #include "kalman_online_tracker.h"
 
+#include "kalman_interface.h"
+
 namespace reconstruction
 {
 
@@ -108,16 +110,39 @@ bool KalmanOnlineTracker::track(const kalman::KalmanUpdateMinimal& update)
 }
 
 /**
+ */
+double KalmanOnlineTracker::timeDiffSec(const boost::posix_time::ptime& ts) const
+{
+    if (!isTracking())
+        return std::numeric_limits<double>::max();
+
+    const auto& ts_cur = estimator_->currentTime();
+
+    return KalmanInterface::timestep(ts_cur, ts);
+}
+
+/**
+*/
+bool KalmanOnlineTracker::canPredict(const boost::posix_time::ptime& ts) const
+{
+    return canPredict(ts, settings_.prediction_max_tdiff_sec);
+}
+
+/**
 */
 bool KalmanOnlineTracker::canPredict(const boost::posix_time::ptime& ts,
-                                     const boost::posix_time::time_duration& max_time_diff) const
+                                     double max_tdiff_sec) const
 {
     if (!isTracking())
         return false;
 
-    const auto& ts_cur = estimator_->currentTime();
-    boost::posix_time::time_duration dt = ts >= ts_cur ? ts - ts_cur : ts_cur - ts;
-    if (dt > max_time_diff)
+    bool allow_backwards = estimator_->settings().allow_backwards_step;
+    
+    double dt = timeDiffSec(ts);
+    if (!allow_backwards && dt < 0)
+        return false;
+
+    if (std::fabs(dt) > max_tdiff_sec)
         return false;
 
     return true;
@@ -180,7 +205,7 @@ bool KalmanOnlineTracker::isTracking() const
 
 /**
 */
-KalmanEstimator::Settings& KalmanOnlineTracker::settings()
+KalmanEstimator::Settings& KalmanOnlineTracker::estimatorSettings()
 {
     return estimator_->settings();
 }

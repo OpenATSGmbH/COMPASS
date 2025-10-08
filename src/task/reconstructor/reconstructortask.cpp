@@ -100,9 +100,19 @@ ReconstructorTask::ReconstructorTask(const std::string& class_id, const std::str
                       debug_settings_.debug_association_);
     registerParameter("debug_outlier_detection", &debug_settings_.debug_outlier_detection_,
                       debug_settings_.debug_outlier_detection_);
+    registerParameter("debug_reference_calculation", &debug_settings_.debug_reference_calculation_,
+                      debug_settings_.debug_reference_calculation_);
+    registerParameter("debug_kalman_chains", &debug_settings_.debug_kalman_chains_,
+                      debug_settings_.debug_kalman_chains_);
+    registerParameter("debug_jpda", &debug_settings_.debug_jpda_,
+                      debug_settings_.debug_jpda_);
+    registerParameter("debug_tentative_targets", &debug_settings_.debug_tentative_targets_,
+                      debug_settings_.debug_tentative_targets_);
+    registerParameter("debug_write_reconstruction_viewpoints",
+                      &debug_settings_.debug_write_reconstruction_viewpoints_,
+                      debug_settings_.debug_write_reconstruction_viewpoints_);
 
     registerParameter("analyze", &debug_settings_.analyze_, debug_settings_.analyze_);
-
     registerParameter("analyze_association", &debug_settings_.analyze_association_,
                       debug_settings_.analyze_association_);
     registerParameter("analyze_outlier_detection", &debug_settings_.analyze_outlier_detection_,
@@ -114,13 +124,20 @@ ReconstructorTask::ReconstructorTask(const std::string& class_id, const std::str
     registerParameter("analyze_geo_altitude_correction", &debug_settings_.analyze_geo_altitude_correction_,
                       debug_settings_.analyze_geo_altitude_correction_);
 
-    registerParameter("debug_reference_calculation", &debug_settings_.debug_reference_calculation_,
-                      debug_settings_.debug_reference_calculation_);
-    registerParameter("debug_kalman_chains", &debug_settings_.debug_kalman_chains_,
-                      debug_settings_.debug_kalman_chains_);
-    registerParameter("debug_write_reconstruction_viewpoints",
-                      &debug_settings_.debug_write_reconstruction_viewpoints_,
-                      debug_settings_.debug_write_reconstruction_viewpoints_);
+    registerParameter("stats", &debug_settings_.stats_,
+                      debug_settings_.stats_);
+    registerParameter("stats_reference_calculation", &debug_settings_.stats_reference_calculation_,
+                      debug_settings_.stats_reference_calculation_);
+    registerParameter("stats_kalman_chains", &debug_settings_.stats_kalman_chains_,
+                      debug_settings_.stats_kalman_chains_);
+    registerParameter("stats_jpda", &debug_settings_.stats_jpda_,
+                      debug_settings_.stats_jpda_);
+    registerParameter("stats_tentative_targets", &debug_settings_.stats_tentative_targets_,
+                      debug_settings_.stats_tentative_targets_);
+    registerParameter("stats_adsb", &debug_settings_.stats_adsb_,
+                      debug_settings_.stats_adsb_);
+    registerParameter("stats_association", &debug_settings_.stats_association_,
+                      debug_settings_.stats_association_);
 
     registerParameter("sector_delta_deg", &sector_delta_deg_, sector_delta_deg_);
 

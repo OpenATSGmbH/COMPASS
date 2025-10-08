@@ -636,9 +636,9 @@ void TargetModel::createNewTargets(const std::map<unsigned int, dbContent::Recon
         tgt.adsbCount(tgt_it.second.adsb_count_);
         tgt.adsbMOPSCount(tgt_it.second.adsb_mops_count_);
 
-        if (tgt_it.second.created_from_tentative.has_value() && tgt_it.second.created_from_tentative.value())
+        if (tgt_it.second.createdFromTentative())
             tgt.comment("Created from tentative");
-        else if (tgt_it.second.contains_tentative.has_value() && tgt_it.second.contains_tentative.value())
+        else if (tgt_it.second.containsPreviouslyTentative())
             tgt.comment("Contains tentative");
 
         //++utn;

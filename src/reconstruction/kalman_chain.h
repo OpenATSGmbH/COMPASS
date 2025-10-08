@@ -63,8 +63,6 @@ class KalmanChain
 public:
     struct Settings
     {
-        typedef boost::posix_time::time_duration TD;
-
         enum class Mode
         {
             DynamicInserts = 0,  // allows dynamic inserts and reestimation, but needs to keep track of all states (more memory)
@@ -81,12 +79,12 @@ public:
         Mode           mode            = Mode::DynamicInserts;
         PredictionMode prediction_mode = PredictionMode::NearestBefore;
 
-        TD     reestim_max_duration       = boost::posix_time::seconds(30); // maximum timeframe reestimated after a new mm has been inserted
-        int    reestim_max_updates        = 500;                            // maximum updates reestimated after a new mm has been inserted
-        double reestim_residual_state_sqr = 100;                            // 10  * 10  - reestimation stop criterion based on state change residual
-        double reestim_residual_cov_sqr   = 10000;                          // 100 * 100 - reestimation stop criterion based on cov mat change residual
+        double reestim_max_duration_sec   = 30;    // maximum timeframe reestimated after a new mm has been inserted
+        int    reestim_max_updates        = 500;   // maximum updates reestimated after a new mm has been inserted
+        double reestim_residual_state_sqr = 100;   // 10  * 10  - reestimation stop criterion based on state change residual
+        double reestim_residual_cov_sqr   = 10000; // 100 * 100 - reestimation stop criterion based on cov mat change residual
 
-        TD     prediction_max_tdiff       = boost::posix_time::seconds(10); // maximum difference in time which can be predicted
+        double prediction_max_tdiff_sec   = 10;    // maximum difference in time which can be predicted
         double prediction_max_wgs84_diff  = 0.5;
 
         int    verbosity = 0;
@@ -176,6 +174,8 @@ public:
     bool canReestimate() const;
     bool needsReestimate() const;
     bool reestimate(UpdateStats* stats = nullptr);
+
+    double timeDiffSec(const boost::posix_time::ptime& ts) const;
 
     bool canPredict(const boost::posix_time::ptime& ts) const;
     bool predictMT(Measurement* mm,

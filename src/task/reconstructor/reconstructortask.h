@@ -56,29 +56,36 @@ class ReconstructorTask : public Task, public Configurable
 public:
     struct DebugSettings
     {
-        bool debug_ {false};
-
         std::set<unsigned int> debug_utns_;
         std::set<unsigned long> debug_rec_nums_;
 
         boost::posix_time::ptime debug_timestamp_min_;
         boost::posix_time::ptime debug_timestamp_max_;
 
+        bool debug_ {false};
         bool debug_association_ {false};
         bool debug_outlier_detection_ {false};
         bool debug_geo_altitude_correction_ {false}; // not yet set using gui
+        bool debug_reference_calculation_ {false};
+        bool debug_kalman_chains_ {false};
+        bool debug_jpda_ {false};
+        bool debug_tentative_targets_ {false};
+        bool debug_write_reconstruction_viewpoints_ {false};
 
         bool analyze_ {false};
-
         bool analyze_association_ {false};
         bool analyze_outlier_detection_ {false};
         bool analyze_accuracy_estimation_ {false};
         bool analyze_bias_correction_ {false};
         bool analyze_geo_altitude_correction_ {false};
 
-        bool debug_reference_calculation_ {false};
-        bool debug_kalman_chains_ {false};
-        bool debug_write_reconstruction_viewpoints_ {false};
+        bool stats_ {false};
+        bool stats_reference_calculation_ {false};
+        bool stats_kalman_chains_ {false};
+        bool stats_jpda_ {false};
+        bool stats_tentative_targets_ {false};
+        bool stats_adsb_ {false};
+        bool stats_association_ {false};
 
         bool debugUTN(unsigned int utn) { return debug_utns_.count(utn); }
         bool debugRecNum(unsigned long rec_num) { return debug_rec_nums_.count(rec_num); }

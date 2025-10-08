@@ -25,6 +25,10 @@ namespace Utils
 namespace Accuracy
 {
 
+/********************************************************************************
+ * GeodeticDistanceInfo
+ ********************************************************************************/
+
 /**
  */
 double GeodeticDistanceInfo::mahalanobisDistance(double eps) const
@@ -40,6 +44,24 @@ double GeodeticDistanceInfo::mahalanobisDistanceSqr(double eps) const
     const double d_m = mahalanobisDistance(eps);
     return std::pow(d_m, 2);
 }
+
+/**
+ */
+double GeodeticDistanceInfo::likelihood(double eps) const
+{
+    const double sum_std_dev         = std::max(eps, stddev0 + stddev1);
+    const double sum_std_dev_sqr     = std::pow(sum_std_dev, 2);
+    const double distance_sqr        = std::pow(distance, 2);
+    const double sum_std_dev_sqr_inv = 1.0 / sum_std_dev_sqr;
+    const double factor              = 0.5 * M_1_PI * sum_std_dev_sqr_inv;
+    const double exponent            = -0.5 * distance_sqr * sum_std_dev_sqr_inv;
+    
+    return factor * std::exp(exponent);
+}
+
+/********************************************************************************
+ * Various
+ ********************************************************************************/
 
 /**
  */
