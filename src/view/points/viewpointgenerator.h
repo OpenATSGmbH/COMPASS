@@ -108,6 +108,7 @@ public:
     const std::string& type() const { return type_; }
 
     virtual size_t size() const = 0;
+    virtual QRectF roi() const { return QRectF(); }
     
     static const std::string FeatureTypeFieldName;
     static const std::string FeatureTypeFieldType;
@@ -141,6 +142,7 @@ public:
 
     virtual void reserve(size_t n, bool reserve_cols);
     virtual size_t size() const override { return positions_.size(); }
+    virtual QRectF roi() const override;
 
     void addPoint(const Eigen::Vector2d& pos, 
                   const boost::optional<QColor>& color = boost::optional<QColor>());
@@ -327,6 +329,7 @@ public:
     virtual ~ViewPointGenFeatureText() = default;
 
     virtual size_t size() const { return 1; }
+    virtual QRectF roi() const override;
 
     static const std::string FeatureName;
     static const std::string FeatureTextFieldNameText;
@@ -374,6 +377,7 @@ public:
     static QImage byteStringWithMetadataToImage(const std::string& str);
 
     virtual size_t size() const { return 1; }
+    virtual QRectF roi() const override;
 
     static const std::string FeatureName;
     static const std::string FeatureGeoImageFieldNameSource;
@@ -407,6 +411,7 @@ public:
     virtual ~ViewPointGenFeatureGrid() = default;
 
     virtual size_t size() const { return 1; }
+    virtual QRectF roi() const override;
 
     static const std::string FeatureName;
     static const std::string FeatureGridFieldNameGrid;
@@ -538,6 +543,8 @@ public:
     void toJSON(nlohmann::json& j) const;
     void print(std::ostream& strm, const std::string& prefix = "") const;
 
+    QRectF roi() const;
+
     static const std::string AnnotationFieldName;
     static const std::string AnnotationFieldHidden;
     static const std::string AnnotationFieldSymbolColor;
@@ -581,6 +588,8 @@ public:
     void toJSON(nlohmann::json& j) const;
     void print(std::ostream& strm, const std::string& prefix = "") const;
 
+    QRectF roi() const;
+
 private:
     std::vector<std::unique_ptr<ViewPointGenAnnotation>> annotations_;
     std::map<std::string, size_t>                        anno_map_;
@@ -609,6 +618,7 @@ public:
     static bool hasAnnotations(const nlohmann::json& vp_json);
 
     void setROI(const QRectF& roi) { roi_ = roi; }
+    void autoDetectROI();
 
     void addCustomField(const std::string& name, const QVariant& value);
 

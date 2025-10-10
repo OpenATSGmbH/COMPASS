@@ -32,6 +32,13 @@
 #include "grid2d.h"
 #include "grid2dlayer.h"
 
+#include "compass.h"
+#include "taskmanager.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttable.h"
+#include "task/result/report/sectioncontentfigure.h"
+
 #include "util/timeconv.h"
 #include "util/number.h"
 #include "stringconv.h"
@@ -568,7 +575,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
     std::vector<QPointF> failed_updates;
     std::vector<QPointF> skipped_updates;
 
-    if (debug_target && shallAddAnnotationData())
+    if (debug_target &&  shallAddAnnotationData())
     {
         refs.annotations.addAnnotationData("Input Measurements",
                                            refcalc_annotations::AnnotationStyle(ColorMeasurements, PointSizeMeasurements, LineWidthBase),
@@ -1137,7 +1144,7 @@ bool ReferenceCalculator::writeTargetData(TargetReferences& refs,
 bool ReferenceCalculator::shallAddAnnotationData() const
 {
     //add only if in last iteration
-    return reconstructor_.isLastRunInSlice();
+    return reconstructor_.isLastRunInSlice() && reconstructor_.task().debugSettings().debug_write_reconstruction_viewpoints_;
 }
 
 /**
@@ -1149,8 +1156,9 @@ void ReferenceCalculator::createAnnotations()
     if (references_.empty())
         return;
 
-    std::vector<TargetReferences*>       refs;
-    std::vector<ViewPointGenAnnotation*> annotations;
+    std::vector<TargetReferences*>               refs;
+    std::vector<std::unique_ptr<ViewPointGenVP>> viewpoints;
+    std::vector<ViewPointGenAnnotation*>         annotations;
 
     const auto& task = reconstructor_.task();
 
@@ -1165,6 +1173,7 @@ void ReferenceCalculator::createAnnotations()
         auto anno = vp->annotations().getOrCreateAnnotation("Final Reconstruction");
         
         refs.push_back(&ref.second);
+        viewpoints.push_back(std::move(vp));
         annotations.push_back(anno);
     }
 
@@ -1178,6 +1187,33 @@ void ReferenceCalculator::createAnnotations()
 
         r.annotations.createAnnotations(annotations[ tgt_cnt ]);
     });
+
+    if (num_targets > 0)
+    {
+        auto& report = COMPASS::instance().taskManager().currentReport();
+
+        auto& section_ref_calc = report->getSection("Reference Calculation");
+
+        std::vector<std::string> headings = { "UTN" };
+
+        auto& debug_utn_table = section_ref_calc.addTable("Debug UTNs", headings.size(), headings);
+
+        for (unsigned int i = 0; i < num_targets; ++i)
+        {
+            const auto& ref = refs[ i ];
+            auto& vp = viewpoints[ i ];
+
+            vp->autoDetectROI();
+
+            nlohmann::json j_viewable;
+            vp->toJSON(j_viewable);
+
+            auto j_row = nlohmann::json::array();
+            j_row.push_back(ref->utn);
+
+            debug_utn_table.addRow(j_row, ResultReport::SectionContentViewable(j_viewable));
+        }
+    }
 }
 
 #if 0
