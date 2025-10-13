@@ -93,6 +93,8 @@ struct ReferenceCalculatorTargetReferences
     refcalc_annotations::ReferenceCalculatorAnnotations annotations;
 
     std::unique_ptr<ReferenceCalculatorTargetExportData> export_data;
+
+    std::vector<std::string> debug_events_;
 };
 
 /**
@@ -182,6 +184,9 @@ private:
     bool writeTargetData(TargetReferences& refs,
                          const std::string& fn);
 
+    bool debuggingEnabled() const;
+    bool debugTarget(unsigned int utn) const;
+    bool debugMM(unsigned int utn, const reconstruction::Measurement& mm) const;
     bool shallAddAnnotationData() const;
 
     ReconstructorBase& reconstructor_;

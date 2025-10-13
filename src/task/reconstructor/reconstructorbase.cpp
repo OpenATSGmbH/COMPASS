@@ -1161,7 +1161,6 @@ void ReconstructorBase::createTargetReports()
                 info.position_ = tgt_acc.position(cnt);
                 info.position_accuracy_ = tgt_acc.positionAccuracy(cnt);
 
-
                 info.unsused_ds_pos_ =
                     !info.position().has_value()
                         || (unused_ds_ids.count(info.ds_id_)
@@ -1174,7 +1173,7 @@ void ReconstructorBase::createTargetReports()
 
                 info.track_angle_ = tgt_acc.trackAngle(cnt);
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
-                info.data_source_is_ground_only = ground_only_ds_ids.count(info.ds_id_);
+                info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
                 info.mops_ = tgt_acc.mopsVersion(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);

@@ -250,7 +250,7 @@ struct ReconstructorInfo : public BaseInfo
 
     boost::optional<double> track_angle_;
     boost::optional<bool> ground_bit_;
-    bool data_source_is_ground_only {false};
+    bool data_source_is_ground_only_ {false};
 
     // adsb
     boost::optional<unsigned int> mops_;
@@ -268,6 +268,7 @@ struct ReconstructorInfo : public BaseInfo
     bool isPrimaryOnlyDetection() const;
     bool isUnreliablePrimaryOnlyDetection() const;
 
+    bool hasOnGroundInfo() const;
     bool isOnGround() const; // false if unknown
     bool isMoving() const;   // true if unknown
 

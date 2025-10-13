@@ -269,9 +269,17 @@ bool ReconstructorInfo::isUnreliablePrimaryOnlyDetection() const
     return dbcont_id_ != 62 && dbcont_id_ != 255 && isPrimaryOnlyDetection();
 }
 
+bool ReconstructorInfo::hasOnGroundInfo() const
+{
+    if (data_source_is_ground_only_)
+        return true;
+
+    return ground_bit_.has_value();
+}
+
 bool ReconstructorInfo::isOnGround() const
 {
-    if (data_source_is_ground_only)
+    if (data_source_is_ground_only_)
         return true;
 
     if (ground_bit_)
