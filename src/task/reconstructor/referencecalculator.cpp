@@ -32,6 +32,14 @@
 #include "grid2d.h"
 #include "grid2dlayer.h"
 
+#include "compass.h"
+#include "taskmanager.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttable.h"
+#include "task/result/report/sectioncontentfigure.h"
+#include "task/result/report/sectioncontenttext.h"
+
 #include "util/timeconv.h"
 #include "util/number.h"
 #include "stringconv.h"
@@ -642,7 +650,6 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         }
     };
 
-
     auto debugMM = [ & ] (const reconstruction::Measurement& mm)
     {
         bool debug_mm = debug_target && debug_rec_nums.count(mm.source_id.value());
@@ -698,12 +705,24 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         if (mm.pos_acc_corrected)
             ++refs.num_updates_ccoeff_corr;
 
+        if (debug_mm && reconstructor_.isLastRunInSlice())
+        {
+            refs.debug_events_.push_back("");
+        }
+
         if (debug_mm)
         {
-            loginf << "[ Debugging UTN " << refs.utn << " ID " << mm.source_id.value() << " TS " << Utils::Time::toString(mm.t) << " ]\n\n"
-                   << " * Before State:               \n\n" << estimator.asString()                             << "\n\n"
-                   << " * Before State as Measurement:\n\n" << estimator.currentStateAsMeasurement().asString() << "\n\n"
-                   << " * Measurement:                \n\n" << mm.asString()                                    << "\n\n";
+            std::stringstream ss;
+            ss << "[ Debugging UTN " << refs.utn << " ID " << mm.source_id.value() << " TS " << Utils::Time::toString(mm.t) << " ]\n\n"
+               << " * Before State:               \n\n" << estimator.asString()                             << "\n\n"
+               << " * Before State as Measurement:\n\n" << estimator.currentStateAsMeasurement().asString() << "\n\n"
+               << " * Measurement:                \n\n" << mm.asString()                                    << "\n\n";
+
+            auto s = ss.str();
+            loginf << s;
+
+            if (reconstructor_.isLastRunInSlice())
+                refs.debug_events_.back() += s;
         }
 
         //do kalman step
@@ -713,13 +732,20 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         {
             const auto& step_info = estimator.stepInfo();
 
-            loginf << "Step Result:        " << (int)step_info.result;
-            loginf << "Kalman Error:       " << (int)step_info.kalman_error;
-            loginf << "Reinit After Fail:  " << step_info.reinit_after_fail;
-            loginf << "Projection Changed: " << step_info.proj_changed << "\n";
+            std::stringstream ss;
+            ss << "Step Result:        " << (int)step_info.result;
+            ss << "Kalman Error:       " << (int)step_info.kalman_error;
+            ss << "Reinit After Fail:  " << step_info.reinit_after_fail;
+            ss << "Projection Changed: " << step_info.proj_changed << "\n";
 
-            loginf << " * After State:                \n\n" << estimator.asString()                             << "\n\n"
-                   << " * After State as Measurement: \n\n" << estimator.currentStateAsMeasurement().asString() << "\n";
+            ss << " * After State:                \n\n" << estimator.asString()                             << "\n\n"
+               << " * After State as Measurement: \n\n" << estimator.currentStateAsMeasurement().asString() << "\n";
+
+            auto s = ss.str();
+            loginf << s;
+
+            if (reconstructor_.isLastRunInSlice())
+                refs.debug_events_.back() += s;
         }
 
         //check result
@@ -1134,10 +1160,43 @@ bool ReferenceCalculator::writeTargetData(TargetReferences& refs,
 
 /**
 */
+bool ReferenceCalculator::debuggingEnabled() const
+{
+    const auto& debug_settings = reconstructor_.task().debugSettings();
+    return debug_settings.debug_ &&
+           debug_settings.debug_reference_calculation_;
+}
+
+/**
+*/
+bool ReferenceCalculator::debugTarget(unsigned int utn) const
+{
+    return debuggingEnabled() && reconstructor_.task().debugSettings().debugUTN(utn);
+}
+
+/**
+*/
+bool ReferenceCalculator::debugMM(unsigned int utn, const reconstruction::Measurement& mm) const
+{
+    const auto& debug_settings = reconstructor_.task().debugSettings();
+    bool debug_target = debugTarget(utn);
+    bool debug_mm     = debug_target && debug_settings.debug_rec_nums_.count(mm.source_id.value());
+
+    if (debug_target && !debug_settings.debug_timestamp_min_.is_not_a_date_time() && mm.t >= debug_settings.debug_timestamp_min_
+                     && !debug_settings.debug_timestamp_max_.is_not_a_date_time() && mm.t <= debug_settings.debug_timestamp_max_)
+    {
+        debug_mm = true;
+    }
+
+    return debug_mm;
+}
+
+/**
+*/
 bool ReferenceCalculator::shallAddAnnotationData() const
 {
     //add only if in last iteration
-    return reconstructor_.isLastRunInSlice();
+    return reconstructor_.isLastRunInSlice() && reconstructor_.task().debugSettings().debug_write_reconstruction_viewpoints_;
 }
 
 /**
@@ -1149,22 +1208,28 @@ void ReferenceCalculator::createAnnotations()
     if (references_.empty())
         return;
 
-    std::vector<TargetReferences*>       refs;
-    std::vector<ViewPointGenAnnotation*> annotations;
+    std::vector<TargetReferences*>               refs;
+    std::vector<std::unique_ptr<ViewPointGenVP>> viewpoints;
+    std::vector<ViewPointGenAnnotation*>         annotations;
 
     const auto& task = reconstructor_.task();
 
     for (auto& ref : references_)
     {
-        if (!ref.second.annotations.hasAnnotations())
+        if (!debugTarget(ref.second.utn))
             continue;
 
-        loginf << "creating annotation for UTN " << ref.second.utn;
+        std::unique_ptr<ViewPointGenVP> vp;
+        ViewPointGenAnnotation* anno = nullptr;
 
-        auto vp   = task.getDebugViewpointForUTN(ref.second.utn);
-        auto anno = vp->annotations().getOrCreateAnnotation("Final Reconstruction");
+        if (ref.second.annotations.hasAnnotations())
+        {
+            vp   = task.getDebugViewpointForUTN(ref.second.utn);
+            anno = vp->annotations().getOrCreateAnnotation("Final Reconstruction");
+        }
         
         refs.push_back(&ref.second);
+        viewpoints.push_back(std::move(vp));
         annotations.push_back(anno);
     }
 
@@ -1176,8 +1241,55 @@ void ReferenceCalculator::createAnnotations()
     {
         const auto& r = *refs[ tgt_cnt ];
 
-        r.annotations.createAnnotations(annotations[ tgt_cnt ]);
+        if (annotations[ tgt_cnt ])
+            r.annotations.createAnnotations(annotations[ tgt_cnt ]);
     });
+
+    if (num_targets > 0)
+    {
+        auto& report           = COMPASS::instance().taskManager().currentReport();
+        auto& section_ref_calc = report->getSection("Reference Calculation");
+
+        std::vector<std::string> headings = { "UTN" };
+
+        auto& debug_utn_table = section_ref_calc.addTable("Debug UTNs", headings.size(), headings);
+
+        for (unsigned int i = 0; i < num_targets; ++i)
+        {
+            const auto& ref = refs[ i ];
+
+            auto& section_utn = section_ref_calc.addSubSection("UTN " + std::to_string(ref->utn));
+            
+            std::string fig_link = "";
+            auto& vp = viewpoints[ i ];
+            if (vp)
+            {
+                vp->autoDetectROI();
+
+                nlohmann::json j_viewable;
+                vp->toJSON(j_viewable);
+
+                auto& fig = section_utn.addFigure("Debug Annotations", ResultReport::SectionContentViewable(j_viewable));
+
+                fig_link = fig.name();
+            }
+
+            if (!ref->debug_events_.empty())
+            {
+                size_t cnt = 1;
+                for (const auto& evt : ref->debug_events_)
+                {
+                    auto& text = section_utn.addText("Debug Event " + std::to_string(cnt++));
+                    text.addText(evt);
+                }
+            }
+
+            auto j_row = nlohmann::json::array();
+            j_row.push_back(ref->utn);
+
+            debug_utn_table.addRow(j_row, ResultReport::SectionContentViewable(), section_utn.id(), fig_link);
+        }
+    }
 }
 
 #if 0

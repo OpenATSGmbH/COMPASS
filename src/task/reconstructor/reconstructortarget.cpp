@@ -327,9 +327,10 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
         (!standing_adsb_target_ || other.standing_adsb_target_->ts_init > standing_adsb_target_->ts_init))
         standing_adsb_target_ = other.standing_adsb_target_;
 
-    if ((other.created_from_tentative.has_value() && other.created_from_tentative.value()) || 
-        (other.contains_tentative.has_value() && other.contains_tentative.value()))
-        contains_tentative = true;
+    //update tentative information if available
+    if ((other.created_from_tentative_.has_value() && other.created_from_tentative_.value()) || 
+        (other.contains_tentative_.has_value() && other.contains_tentative_.value()))
+        contains_tentative_ = true;
 }
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(
@@ -1882,11 +1883,11 @@ boost::optional<bool> ReconstructorTarget::groundBitAt (boost::posix_time::ptime
             // if (tr.isPrimaryOnlyDetection()) // override for primary-only CAT010 having GBS=0
             //     return false; // bad thing to do for air PSRs
             // else
-                return tr.ground_bit_.has_value(); },
+                return tr.hasOnGroundInfo(); },
         interp_options);
 
-    bool lower_has_val = lower_tr && lower_tr->ground_bit_.has_value();
-    bool upper_has_val = upper_tr && upper_tr->ground_bit_.has_value();
+    bool lower_has_val = lower_tr && lower_tr->hasOnGroundInfo();
+    bool upper_has_val = upper_tr && upper_tr->hasOnGroundInfo();
 
     // no value
     if (!lower_has_val && !upper_has_val) // TODO check if data sources m3a capable
@@ -1896,9 +1897,9 @@ boost::optional<bool> ReconstructorTarget::groundBitAt (boost::posix_time::ptime
         || (!lower_has_val && upper_has_val)) // only 1 usable
     {
         dbContent::targetReport::ReconstructorInfo& ref1 = lower_has_val ? *lower_tr : *upper_tr;
-        traced_assert(ref1.ground_bit_);
+        traced_assert(ref1.hasOnGroundInfo());
 
-        return *ref1.ground_bit_;
+        return ref1.isOnGround();
     }
 
     // both set & reliable
@@ -1906,9 +1907,9 @@ boost::optional<bool> ReconstructorTarget::groundBitAt (boost::posix_time::ptime
     dbContent::targetReport::ReconstructorInfo& ref2 = *upper_tr;
 
     if ((ref1.timestamp_ - timestamp).total_milliseconds() <=  (ref2.timestamp_ - timestamp).total_milliseconds())
-        return *ref1.ground_bit_;
+        return ref1.isOnGround();
     else
-        return *ref2.ground_bit_;
+        return ref2.isOnGround();
 }
 
 boost::optional<double> ReconstructorTarget::groundSpeedAt (boost::posix_time::ptime timestamp,
@@ -2268,7 +2269,7 @@ TimedDataSeries<bool> ReconstructorTarget::getGroundBitSeries() const
 
         if (info.ground_bit_.has_value())
         {
-            if (info.data_source_is_ground_only)
+            if (info.data_source_is_ground_only_)
                 return 2;
 
             if (info.dbcont_id_ == 21 || info.isModeSDetection())
@@ -2286,7 +2287,7 @@ TimedDataSeries<bool> ReconstructorTarget::getGroundBitSeries() const
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
 
-        if (info.data_source_is_ground_only)
+        if (info.data_source_is_ground_only_)
             return true;
 
         if (info.ground_bit_.has_value())
@@ -3271,6 +3272,23 @@ const reconstruction::KalmanChain& ReconstructorTarget::getChain() const
     traced_assert(chain());
 
     return *chain();
+}
+
+/**
+ */
+bool ReconstructorTarget::createdFromTentative() const
+{
+    return (created_from_tentative_.has_value() && created_from_tentative_.value());
+}
+
+/**
+ */
+bool ReconstructorTarget::containsPreviouslyTentative() const
+{
+    if (createdFromTentative())
+        return true;
+
+    return (contains_tentative_.has_value() && contains_tentative_.value());
 }
 
 //bool ReconstructorTarget::hasADSBMOPSVersion()

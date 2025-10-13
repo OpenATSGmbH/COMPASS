@@ -200,14 +200,18 @@ Section& Section::getSubSection (const std::string& heading)
 
 /**
 */
-void Section::addSubSection (const std::string& heading)
+Section& Section::addSubSection (const std::string& heading)
 {
     logdbg << "Section " << heading_ << ": addSubSection: adding " << heading;
 
     traced_assert(!hasSubSection(heading));
 
-    sub_sections_.push_back(std::make_shared<Section>(heading, compoundHeading(), this, report_));
+    auto subsec = std::make_shared<Section>(heading, compoundHeading(), this, report_);
+
+    sub_sections_.push_back(subsec);
     traced_assert(hasSubSection(heading));
+
+    return *subsec;
 }
 
 /**

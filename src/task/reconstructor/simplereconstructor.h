@@ -53,6 +53,7 @@ class SimpleReconstructor : public ReconstructorBase
     virtual void reset() override;
 
     virtual SimpleReconstructorSettings& settings() override;
+    virtual const SimpleReconstructorSettings& settings() const override;
 
     SimpleReconstructorWidget* widget(); // ownage by caller
 

@@ -37,6 +37,7 @@ struct GeodeticDistanceInfo
 {
     double mahalanobisDistance(double eps = 1e-09) const;
     double mahalanobisDistanceSqr(double eps = 1e-09) const;
+    double likelihood(double eps = 1e-09) const;
 
     double distance = 0.0;
     double bearing  = 0.0;

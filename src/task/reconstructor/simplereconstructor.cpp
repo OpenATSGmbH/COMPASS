@@ -176,6 +176,11 @@ SimpleReconstructorSettings& SimpleReconstructor::settings()
     return settings_;
 }
 
+const SimpleReconstructorSettings& SimpleReconstructor::settings() const
+{
+    return settings_;
+}
+
 SimpleReconstructorWidget* SimpleReconstructor::widget() // ownage by caller
 {
     SimpleReconstructorWidget* widget = new SimpleReconstructorWidget(*this);

@@ -103,7 +103,6 @@ class ReconstructorAssociatorBase
         reconstruction::PredictionStats* stats = nullptr) = 0;
 
     const std::vector<unsigned long>& unassociatedRecNums() const;
-    const std::map<unsigned int, BatchStats>& batchStatistics() const;
 
 protected:
 
@@ -112,15 +111,12 @@ protected:
     std::map<unsigned int, std::map<unsigned int, std::pair<unsigned int, unsigned int>>> assoc_counts_;
     // ds_id -> dbcont id -> (assoc, unassoc cnt)
     std::vector<unsigned long> unassoc_rec_nums_;
-    std::vector<unsigned long> unassoc_rec_nums_no_retry_;
-
+    
     unsigned int num_merges_ {0};
 
     boost::posix_time::time_duration time_assoc_trs_;
     boost::posix_time::time_duration time_assoc_new_utns_;
     boost::posix_time::time_duration time_retry_assoc_trs_;
-
-    std::map<unsigned int, BatchStats> batch_stats_;
 
     void associateTargetReports();
     void associateTargetReportBatch(const boost::posix_time::ptime& ts, 

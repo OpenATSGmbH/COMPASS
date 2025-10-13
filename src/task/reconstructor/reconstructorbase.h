@@ -126,6 +126,10 @@ class ReconstructorBaseSettings
 
     bool use_stopped_adsb_tracking_ {true};
 
+    // experimental switches (most likely to be removed)
+    bool do_not_merge_targets_with_tentative_origin_ {false}; // used for testing primary only tracking
+    bool do_not_associate_systracks_ {false};                 // used for testing primary only tracking
+
     void setVehicleACIDs(const std::string& value);
     void setVehicleACADs(const std::string& value);
 };
@@ -256,6 +260,7 @@ public:
     virtual void reset();
 
     virtual ReconstructorBaseSettings& settings()=0;
+    virtual const ReconstructorBaseSettings& settings() const=0;
 
     ReferenceCalculatorSettings& referenceCalculatorSettings() { return ref_calc_settings_; }
     const ReferenceCalculatorSettings& referenceCalculatorSettings() const { return ref_calc_settings_; }
@@ -369,7 +374,7 @@ protected:
 
     void doUnassociatedAnalysis();
     void doOutlierAnalysis();
-    void doReconstructionReporting();
+    void doReconstructionStatistics();
 
 private:
     void init();

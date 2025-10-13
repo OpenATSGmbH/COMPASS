@@ -400,6 +400,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         QStringList headers;
         headers << "";
         headers << "Name";
+        headers << "Info";
         headers << "Decoding";
         headers << "Error";
 
@@ -410,21 +411,26 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         tree_widget->header()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(1, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(3, QHeaderView::ResizeMode::Stretch);
+        tree_widget->header()->setSectionResizeMode(3, QHeaderView::ResizeMode::ResizeToContents);
+        tree_widget->header()->setSectionResizeMode(4, QHeaderView::ResizeMode::Stretch);
+
+        tree_widget->setColumnHidden(2, COMPASS::instance().isAppImage());
 
         unsigned int file_idx = 0;
 
         for (const auto& file_info : task_.source().files())
         {
             std::string name   = file_info.filename;
+            std::string info   = "";
             std::string status = file_info.decodingTested() ? (!file_info.canDecode() ? "Error" : "OK") : "?";
             std::string descr  = file_info.error.errinfo;
 
             auto item = new QTreeWidgetItem;
             item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
             item->setText(1, QString::fromStdString(name  ));
-            item->setText(2, QString::fromStdString(status));
-            item->setText(3, QString::fromStdString(descr ));
+            item->setText(2, QString::fromStdString(info  ));
+            item->setText(3, QString::fromStdString(status));
+            item->setText(4, QString::fromStdString(descr ));
 
             item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, -1)));
 
@@ -441,14 +447,16 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                 for (const auto& section : file_info.sections)
                 {
                     std::string name   = section.description;
+                    std::string info   = section.info;
                     std::string status = file_info.decodingTested() ? (section.error.hasError() ? "Error" : "OK") : "?";
                     std::string descr  = section.error.errinfo;
 
                     auto sec_item = new QTreeWidgetItem;
                     sec_item->setCheckState(0, section.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
                     sec_item->setText(1, QString::fromStdString(name  ));
-                    sec_item->setText(2, QString::fromStdString(status));
-                    sec_item->setText(3, QString::fromStdString(descr ));
+                    sec_item->setText(2, QString::fromStdString(info  ));
+                    sec_item->setText(3, QString::fromStdString(status));
+                    sec_item->setText(4, QString::fromStdString(descr ));
 
                     sec_item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, section_idx)));
 

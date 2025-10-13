@@ -96,6 +96,7 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
         ASTERIXImportFileSection section;
         section.id               = PacketSniffer::signatureToString(d.first);
         section.description      = PacketSniffer::signatureToString(d.first);
+        section.info             = d.second.info();
         section.total_size_bytes = d.second.size;
 
         if (d.second.valid())
@@ -107,7 +108,8 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
 
         loginf << "adding section '" << section.id << "': "
                << "total size = " << section.total_size_bytes << " " 
-               << "read size = " << section.raw_data.size();
+               << "read size = " << section.raw_data.size() << " "
+               << (section.info.empty() ? "" : "(" + section.info + ")");
 
         file_info.sections.push_back(section);
     }
@@ -130,6 +132,8 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     auto jasterix = task().jASTERIX(true);
 
     std::unique_ptr<nlohmann::json> analysis_info;
+
+    //loginf << "checking data of file " << file_info.filename << " section " << section.id << "...";
 
     analysis_info = jasterix->analyzeData(section.raw_data.data(), section.raw_data.size(), DecodeCheckRecordLimit);
     traced_assert(analysis_info);

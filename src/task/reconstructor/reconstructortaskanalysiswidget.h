@@ -27,19 +27,19 @@ class QLineEdit;
 class ReconstructorTaskAnalysisWidget : public QWidget
 {
     Q_OBJECT
-  signals:
+signals:
 
-  public slots:
+public slots:
     void utnsChangedSlot(const QString& value);
     void recNumsChangedSlot(const QString& value);
 
-  public:
+public:
     explicit ReconstructorTaskAnalysisWidget(ReconstructorTask& task, bool probimm_reconst, QWidget *parent = nullptr);
     virtual ~ReconstructorTaskAnalysisWidget();
 
     void updateValues();
 
-  protected:
+protected:
     void timestampsChanged();
 
     ReconstructorTask& task_;
@@ -55,7 +55,11 @@ class ReconstructorTaskAnalysisWidget : public QWidget
 
     QCheckBox* debug_association_check_{nullptr};
     QCheckBox* debug_outliers_check_{nullptr};
-
+    QCheckBox* debug_reference_calculation_check_{nullptr};
+    QCheckBox* debug_kalman_chains_check_{nullptr};
+    QCheckBox* debug_jpda_check_ {nullptr};
+    QCheckBox* debug_tentative_targets_check_ {nullptr};
+    QCheckBox* debug_write_reconstruction_viewpoints_check_{nullptr};
 
     QCheckBox* analyze_check_{nullptr};
     QCheckBox* analyze_association_check_{nullptr};
@@ -64,7 +68,11 @@ class ReconstructorTaskAnalysisWidget : public QWidget
     QCheckBox* analyze_bias_correction_check_{nullptr};
     QCheckBox* analyze_geo_altitude_correction_check_{nullptr};
 
-    QCheckBox* debug_reference_calculation_check_{nullptr};
-    QCheckBox* debug_kalman_chains_check_{nullptr};
-    QCheckBox* debug_write_reconstruction_viewpoints_check_{nullptr};
+    QCheckBox* stats_check_ {nullptr};
+    QCheckBox* stats_reference_calculation_check_ {nullptr};
+    QCheckBox* stats_kalman_chains_check_ {nullptr};
+    QCheckBox* stats_jpda_check_ {nullptr};
+    QCheckBox* stats_tentative_targets_check_ {nullptr};
+    QCheckBox* stats_adsb_check_ {nullptr};
+    QCheckBox* stats_association_check_ {nullptr};
 };

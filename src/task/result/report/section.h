@@ -80,7 +80,7 @@ public:
 
     bool hasSubSection (const std::string& heading);
     Section& getSubSection (const std::string& heading);
-    void addSubSection (const std::string& heading);
+    Section& addSubSection (const std::string& heading);
     std::vector<std::shared_ptr<Section>> subSections(bool recursive) const;
     std::string relativeID(const std::string& id) const;
 

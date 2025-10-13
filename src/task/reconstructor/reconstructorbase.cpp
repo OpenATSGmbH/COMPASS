@@ -914,12 +914,11 @@ void ReconstructorBase::processSlice()
 
         if (task().debugSettings().analyze_outlier_detection_)
             doOutlierAnalysis();
+    }
 
-        if (currentSlice().is_last_slice_)
-        {
-            if(task().debugSettings().debug_reference_calculation_)
-                doReconstructionReporting();
-        }
+    if (task().debugSettings().stats_ && currentSlice().is_last_slice_)
+    {
+        doReconstructionStatistics();
     }
 
     logdbg << "done";
@@ -1049,8 +1048,8 @@ void ReconstructorBase::createTargetReports()
     {
         traced_assert(dbcont_man.existsDBContent(buf_it.first));
 
-        //if (buf_it.first == "CAT062")
-        //    continue;
+        if (settings().do_not_associate_systracks_ && buf_it.first == "CAT062")
+            continue;
 
         if (!dbcont_man.dbContent(buf_it.first).containsTargetReports())
             continue;
@@ -1162,7 +1161,6 @@ void ReconstructorBase::createTargetReports()
                 info.position_ = tgt_acc.position(cnt);
                 info.position_accuracy_ = tgt_acc.positionAccuracy(cnt);
 
-
                 info.unsused_ds_pos_ =
                     !info.position().has_value()
                         || (unused_ds_ids.count(info.ds_id_)
@@ -1175,7 +1173,7 @@ void ReconstructorBase::createTargetReports()
 
                 info.track_angle_ = tgt_acc.trackAngle(cnt);
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
-                info.data_source_is_ground_only = ground_only_ds_ids.count(info.ds_id_);
+                info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
                 info.mops_ = tgt_acc.mopsVersion(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
@@ -1520,7 +1518,7 @@ std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createReferenc
     }
 }
 
-void ReconstructorBase::doReconstructionReporting()
+void ReconstructorBase::doReconstructionStatistics()
 {
     auto& stats = dbContent::ReconstructorTarget::globalStats();
 
@@ -1534,167 +1532,175 @@ void ReconstructorBase::doReconstructionReporting()
         return QString::number((double)num / (double)num_total * 100.0, 'f', Decimals).toStdString() + "%";
     };
 
-    std::string num_chain_skipped_preempt_p         = perc(stats.num_chain_skipped_preempt        , stats.num_chain_checked       );
-    std::string num_chain_replaced_p                = perc(stats.num_chain_replaced               , stats.num_chain_checked       );
-    std::string num_chain_added_p                   = perc(stats.num_chain_added                  , stats.num_chain_checked       );
-    std::string num_chain_updates_valid_p           = perc(stats.num_chain_updates_valid          , stats.num_chain_updates       );
-    std::string num_chain_updates_failed_p          = perc(stats.num_chain_updates_failed         , stats.num_chain_updates       );
-    std::string num_chain_updates_failed_numeric_p  = perc(stats.num_chain_updates_failed_numeric , stats.num_chain_updates_failed);
-    std::string num_chain_updates_failed_badstate_p = perc(stats.num_chain_updates_failed_badstate, stats.num_chain_updates_failed);
-    std::string num_chain_updates_failed_other_p    = perc(stats.num_chain_updates_failed_other   , stats.num_chain_updates_failed);
-    std::string num_chain_updates_skipped_p         = perc(stats.num_chain_updates_skipped        , stats.num_chain_updates       );
-    std::string num_chain_updates_proj_changed_p    = perc(stats.num_chain_updates_proj_changed   , stats.num_chain_updates       );
-
-    std::string num_chain_predictions_failed_p          = perc(stats.num_chain_predictions_failed         , stats.num_chain_predictions       );
-    std::string num_chain_predictions_failed_numeric_p  = perc(stats.num_chain_predictions_failed_numeric , stats.num_chain_predictions_failed);
-    std::string num_chain_predictions_failed_badstate_p = perc(stats.num_chain_predictions_failed_badstate, stats.num_chain_predictions_failed);
-    std::string num_chain_predictions_failed_other_p    = perc(stats.num_chain_predictions_failed_other   , stats.num_chain_predictions_failed);
-    std::string num_chain_predictions_fixed_p           = perc(stats.num_chain_predictions_fixed          , stats.num_chain_predictions       );
-    std::string num_chain_predictions_proj_changed_p    = perc(stats.num_chain_predictions_proj_changed   , stats.num_chain_predictions       );
-
-    std::string num_rec_updates_ccoeff_corr_p     = perc(stats.num_rec_updates_ccoeff_corr    , stats.num_rec_updates       );
-    std::string num_rec_updates_valid_p           = perc(stats.num_rec_updates_valid          , stats.num_rec_updates       );
-    std::string num_rec_updates_failed_p          = perc(stats.num_rec_updates_failed         , stats.num_rec_updates       );
-    std::string num_rec_updates_failed_numeric_p  = perc(stats.num_rec_updates_failed_numeric , stats.num_rec_updates_failed);
-    std::string num_rec_updates_failed_badstate_p = perc(stats.num_rec_updates_failed_badstate, stats.num_rec_updates_failed);
-    std::string num_rec_updates_failed_other_p    = perc(stats.num_rec_updates_failed_other   , stats.num_rec_updates_failed);
-    std::string num_rec_updates_raf_p             = perc(stats.num_rec_updates_raf            , stats.num_rec_updates       );
-    std::string num_rec_updates_raf_numeric_p     = perc(stats.num_rec_updates_raf_numeric    , stats.num_rec_updates_raf   );
-    std::string num_rec_updates_raf_badstate_p    = perc(stats.num_rec_updates_raf_badstate   , stats.num_rec_updates_raf   );
-    std::string num_rec_updates_raf_other_p       = perc(stats.num_rec_updates_raf_other      , stats.num_rec_updates_raf   );
-    std::string num_rec_updates_skipped_p         = perc(stats.num_rec_updates_skipped        , stats.num_rec_updates       );
-    std::string num_rec_smooth_steps_failed_p     = perc(stats.num_rec_smooth_steps_failed    , stats.num_rec_updates       );
-
-    auto& section = COMPASS::instance().taskManager().currentReport()->getSection("Reconstruction Statistics");
-
-    if (!section.hasTable("Reconstruction Statistics"))
-        section.addTable("Reconstruction Statistics", 4, {"", "", "Value", "Value [%]"}, false);
-
-    auto& table = section.getTable("Reconstruction Statistics");
-
-    table.addRow({"Standing ADSB", "", "", ""});
-    table.addRow({"rec nums added", "", stats.num_standing_adsb, ""});
-    table.addRow({"updates added min", "", stats.num_standing_adsb_updates_min, ""});
-    table.addRow({"updates added max", "", stats.num_standing_adsb_updates_max, ""});
-    table.addRow({"updates added total", "", stats.num_standing_adsb_updates_total, ""});
-
-    table.addRow({"", "", "", ""});
-    table.addRow({"Chain updates", "", "", ""});
-    table.addRow({"mm checked", "", stats.num_chain_checked, ""});
-    table.addRow({"skipped pre", "", stats.num_chain_skipped_preempt, num_chain_skipped_preempt_p});
-    table.addRow({"replaced", "", stats.num_chain_replaced, num_chain_replaced_p});
-    table.addRow({"added", "", stats.num_chain_added, num_chain_added_p});
-    table.addRow({"mm fresh", "", stats.num_chain_fresh, ""});
-    table.addRow({"valid", "", stats.num_chain_updates_valid, num_chain_updates_valid_p});
-    table.addRow({"failed", "", stats.num_chain_updates_failed, num_chain_updates_failed_p});
-    table.addRow({"", "numeric", stats.num_chain_updates_failed_numeric, num_chain_updates_failed_numeric_p});
-    table.addRow({"", "bad state", stats.num_chain_updates_failed_badstate, num_chain_updates_failed_badstate_p});
-    table.addRow({"", "other", stats.num_chain_updates_failed_other, num_chain_updates_failed_other_p});
-    table.addRow({"skipped", "", stats.num_chain_updates_skipped, num_chain_updates_skipped_p});
-    table.addRow({"total", "", stats.num_chain_updates, ""});
-    table.addRow({"proj changed", "", stats.num_chain_updates_proj_changed, num_chain_updates_proj_changed_p});
-
-    table.addRow({"", "", "", ""});
-    table.addRow({"Chain predictions", "", "", ""});
-
-    table.addRow({"failed", "", stats.num_chain_predictions_failed , num_chain_predictions_failed_p});
-    table.addRow({"", "numeric", stats.num_chain_predictions_failed_numeric, num_chain_predictions_failed_numeric_p});
-    table.addRow({"", "bad state", stats.num_chain_predictions_failed_badstate, num_chain_predictions_failed_badstate_p});
-    table.addRow({"", "other", stats.num_chain_predictions_failed_other, num_chain_predictions_failed_other_p});
-
-    table.addRow({"fixed", "", stats.num_chain_predictions_fixed, num_chain_predictions_fixed_p});
-    table.addRow({"total", "", stats.num_chain_predictions, ""});
-    table.addRow({"proj changed", "", stats.num_chain_predictions_proj_changed, num_chain_predictions_proj_changed_p});
-
-    table.addRow({"", "", "", ""});
-    table.addRow({"Rec updates", "", "", ""});
-
-    table.addRow({"ccoeff corr", "", stats.num_rec_updates_ccoeff_corr, num_rec_updates_ccoeff_corr_p});
-    table.addRow({"valid", "", stats.num_rec_updates_valid, num_rec_updates_valid_p});
-    table.addRow({"failed", "", stats.num_rec_updates_failed, num_rec_updates_failed_p});
-    table.addRow({"", "numeric", stats.num_rec_updates_failed_numeric, num_rec_updates_failed_numeric_p});
-    table.addRow({"", "bad state", stats.num_rec_updates_failed_badstate, num_rec_updates_failed_badstate_p});
-    table.addRow({"", "other", stats.num_rec_updates_failed_other, num_rec_updates_failed_other_p});
-    table.addRow({"reinit after fail", "", stats.num_rec_updates_raf, num_rec_updates_raf_p});
-    table.addRow({"", "numeric", stats.num_rec_updates_raf_numeric, num_rec_updates_raf_numeric_p});
-    table.addRow({"", "bad state", stats.num_rec_updates_raf_badstate, num_rec_updates_raf_badstate_p});
-    table.addRow({"", "other", stats.num_rec_updates_raf_other, num_rec_updates_raf_other_p});
-    table.addRow({"skipped", "", stats.num_rec_updates_skipped, num_rec_updates_skipped_p});
-    table.addRow({"total", "", stats.num_rec_updates, ""});
-
-    table.addRow({"", "", "", ""});
-    table.addRow({"Rec smooth steps", "", "", ""});
-
-    table.addRow({"failed steps", "", stats.num_rec_smooth_steps_failed, num_rec_smooth_steps_failed_p});
-    table.addRow({"failed targets", "", stats.num_rec_smooth_target_failed, ""});
-
-    table.addRow({"", "", "", ""});
-    table.addRow({"Rec interp steps", "", "", ""});
-    table.addRow({"", "failed", stats.num_rec_interp_failed, ""});
-
-    table.addRow({"", "", "", ""});
-    table.addRow({"Primary Only", "", "", ""});
-
-    table.addRow({"secondarys unassoc", stats.num_sec_unassoc, "", ""});
-    table.addRow({"secondarys reassociated", stats.num_sec_reassociated, "", ""});
-    table.addRow({"secondary reassoc ratio", (double)stats.num_sec_reassociated / (double)stats.num_sec_unassoc * 100, "", ""});
-
-    table.addRow({"primary onlys unassoc", stats.num_po_unassoc, "", ""});
-    table.addRow({"primary onlys reassociated", stats.num_po_reassociated, "", ""});
-    table.addRow({"primary only reassoc ratio", (double)stats.num_po_reassociated / (double)stats.num_po_unassoc * 100, "", ""});
-
-    table.addRow({"reassociated", stats.num_sec_reassociated + stats.num_po_reassociated, "", ""});
-    table.addRow({"reassoc ratio", (double)(stats.num_sec_reassociated + stats.num_po_reassociated) / (double)(stats.num_po_unassoc + stats.num_sec_unassoc) * 100, "", ""});
-
-    if (stats.num_jpda_runs > 0)
+    auto getTable = [ & ] ()
     {
-        table.addRow({"jpda runs", stats.num_jpda_runs, "", ""});
-        table.addRow({"jpda success", stats.num_jpda_success, "", ""});
-        table.addRow({"jpda failed", stats.num_jpda_failed, "", ""});
-        table.addRow({"jpda runs greedy", stats.num_jpda_runs_greedy, "", ""});
-        table.addRow({"jpda hypotheses max", stats.num_jpda_hyp_max, "", ""});
-        table.addRow({"jpda measurements max", stats.num_jpda_mms_max, "", ""});
-        table.addRow({"jpda assignments total", stats.num_jpda_assignments, "", ""});
-        table.addRow({"jpda clutter total", stats.num_jpda_clutters, "", ""});
-        table.addRow({"jpda assignment ratio", (double)stats.num_jpda_assignments / (double)stats.num_po_unassoc * 100, "", ""});
-        table.addRow({"jpda assignment ratio per-batch", stats.jpda_assignment_ratio_sum / stats.num_jpda_success * 100, "", ""});
+        auto& section = COMPASS::instance().taskManager().currentReport()->getSection("Reconstruction Statistics");
+        if (!section.hasTable("Reconstruction Statistics"))
+            section.addTable("Reconstruction Statistics", 4, {"", "", "Value", "Value [%]"}, false);
+
+        return &section.getTable("Reconstruction Statistics");
+    };
+
+    if (task().debugSettings().stats_kalman_chains_)
+    {
+        auto table = getTable();
+
+        std::string num_chain_skipped_preempt_p         = perc(stats.num_chain_skipped_preempt        , stats.num_chain_checked       );
+        std::string num_chain_replaced_p                = perc(stats.num_chain_replaced               , stats.num_chain_checked       );
+        std::string num_chain_added_p                   = perc(stats.num_chain_added                  , stats.num_chain_checked       );
+        std::string num_chain_updates_valid_p           = perc(stats.num_chain_updates_valid          , stats.num_chain_updates       );
+        std::string num_chain_updates_failed_p          = perc(stats.num_chain_updates_failed         , stats.num_chain_updates       );
+        std::string num_chain_updates_failed_numeric_p  = perc(stats.num_chain_updates_failed_numeric , stats.num_chain_updates_failed);
+        std::string num_chain_updates_failed_badstate_p = perc(stats.num_chain_updates_failed_badstate, stats.num_chain_updates_failed);
+        std::string num_chain_updates_failed_other_p    = perc(stats.num_chain_updates_failed_other   , stats.num_chain_updates_failed);
+        std::string num_chain_updates_skipped_p         = perc(stats.num_chain_updates_skipped        , stats.num_chain_updates       );
+        std::string num_chain_updates_proj_changed_p    = perc(stats.num_chain_updates_proj_changed   , stats.num_chain_updates       );
+
+        std::string num_chain_predictions_failed_p          = perc(stats.num_chain_predictions_failed         , stats.num_chain_predictions       );
+        std::string num_chain_predictions_failed_numeric_p  = perc(stats.num_chain_predictions_failed_numeric , stats.num_chain_predictions_failed);
+        std::string num_chain_predictions_failed_badstate_p = perc(stats.num_chain_predictions_failed_badstate, stats.num_chain_predictions_failed);
+        std::string num_chain_predictions_failed_other_p    = perc(stats.num_chain_predictions_failed_other   , stats.num_chain_predictions_failed);
+        std::string num_chain_predictions_fixed_p           = perc(stats.num_chain_predictions_fixed          , stats.num_chain_predictions       );
+        std::string num_chain_predictions_proj_changed_p    = perc(stats.num_chain_predictions_proj_changed   , stats.num_chain_predictions       );
+
+        table->addRow({"Chain Updates", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"mm checked", "", stats.num_chain_checked, ""});
+        table->addRow({"skipped pre", "", stats.num_chain_skipped_preempt, num_chain_skipped_preempt_p});
+        table->addRow({"replaced", "", stats.num_chain_replaced, num_chain_replaced_p});
+        table->addRow({"added", "", stats.num_chain_added, num_chain_added_p});
+        table->addRow({"mm fresh", "", stats.num_chain_fresh, ""});
+        table->addRow({"valid", "", stats.num_chain_updates_valid, num_chain_updates_valid_p});
+        table->addRow({"failed", "", stats.num_chain_updates_failed, num_chain_updates_failed_p});
+        table->addRow({"", "numeric", stats.num_chain_updates_failed_numeric, num_chain_updates_failed_numeric_p});
+        table->addRow({"", "bad state", stats.num_chain_updates_failed_badstate, num_chain_updates_failed_badstate_p});
+        table->addRow({"", "other", stats.num_chain_updates_failed_other, num_chain_updates_failed_other_p});
+        table->addRow({"skipped", "", stats.num_chain_updates_skipped, num_chain_updates_skipped_p});
+        table->addRow({"total", "", stats.num_chain_updates, ""});
+        table->addRow({"proj changed", "", stats.num_chain_updates_proj_changed, num_chain_updates_proj_changed_p});
+        table->addRow({"", "", "", ""});
+
+        table->addRow({"Chain Predictions", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"failed", "", stats.num_chain_predictions_failed , num_chain_predictions_failed_p});
+        table->addRow({"", "numeric", stats.num_chain_predictions_failed_numeric, num_chain_predictions_failed_numeric_p});
+        table->addRow({"", "bad state", stats.num_chain_predictions_failed_badstate, num_chain_predictions_failed_badstate_p});
+        table->addRow({"", "other", stats.num_chain_predictions_failed_other, num_chain_predictions_failed_other_p});
+        table->addRow({"fixed", "", stats.num_chain_predictions_fixed, num_chain_predictions_fixed_p});
+        table->addRow({"total", "", stats.num_chain_predictions, ""});
+        table->addRow({"proj changed", "", stats.num_chain_predictions_proj_changed, num_chain_predictions_proj_changed_p});
+        table->addRow({"", "", "", ""});
     }
 
-    if (stats.num_tentative_created > 0)
+    if (task().debugSettings().stats_reference_calculation_)
     {
-        table.addRow({"tentative created", stats.num_tentative_created, "", ""});
-        table.addRow({"tentative confirmed", stats.num_tentative_confirmed, "", ""});
-        table.addRow({"tentative terminated", stats.num_tentative_terminated, "", ""});
-        table.addRow({"tentative remaining", stats.num_tentative_remaining, "", ""});
+        auto table = getTable();
+
+        std::string num_rec_updates_ccoeff_corr_p     = perc(stats.num_rec_updates_ccoeff_corr    , stats.num_rec_updates       );
+        std::string num_rec_updates_valid_p           = perc(stats.num_rec_updates_valid          , stats.num_rec_updates       );
+        std::string num_rec_updates_failed_p          = perc(stats.num_rec_updates_failed         , stats.num_rec_updates       );
+        std::string num_rec_updates_failed_numeric_p  = perc(stats.num_rec_updates_failed_numeric , stats.num_rec_updates_failed);
+        std::string num_rec_updates_failed_badstate_p = perc(stats.num_rec_updates_failed_badstate, stats.num_rec_updates_failed);
+        std::string num_rec_updates_failed_other_p    = perc(stats.num_rec_updates_failed_other   , stats.num_rec_updates_failed);
+        std::string num_rec_updates_raf_p             = perc(stats.num_rec_updates_raf            , stats.num_rec_updates       );
+        std::string num_rec_updates_raf_numeric_p     = perc(stats.num_rec_updates_raf_numeric    , stats.num_rec_updates_raf   );
+        std::string num_rec_updates_raf_badstate_p    = perc(stats.num_rec_updates_raf_badstate   , stats.num_rec_updates_raf   );
+        std::string num_rec_updates_raf_other_p       = perc(stats.num_rec_updates_raf_other      , stats.num_rec_updates_raf   );
+        std::string num_rec_updates_skipped_p         = perc(stats.num_rec_updates_skipped        , stats.num_rec_updates       );
+        std::string num_rec_smooth_steps_failed_p     = perc(stats.num_rec_smooth_steps_failed    , stats.num_rec_updates       );
+
+        table->addRow({"Rec Updates", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"ccoeff corr", "", stats.num_rec_updates_ccoeff_corr, num_rec_updates_ccoeff_corr_p});
+        table->addRow({"valid", "", stats.num_rec_updates_valid, num_rec_updates_valid_p});
+        table->addRow({"failed", "", stats.num_rec_updates_failed, num_rec_updates_failed_p});
+        table->addRow({"", "numeric", stats.num_rec_updates_failed_numeric, num_rec_updates_failed_numeric_p});
+        table->addRow({"", "bad state", stats.num_rec_updates_failed_badstate, num_rec_updates_failed_badstate_p});
+        table->addRow({"", "other", stats.num_rec_updates_failed_other, num_rec_updates_failed_other_p});
+        table->addRow({"reinit after fail", "", stats.num_rec_updates_raf, num_rec_updates_raf_p});
+        table->addRow({"", "numeric", stats.num_rec_updates_raf_numeric, num_rec_updates_raf_numeric_p});
+        table->addRow({"", "bad state", stats.num_rec_updates_raf_badstate, num_rec_updates_raf_badstate_p});
+        table->addRow({"", "other", stats.num_rec_updates_raf_other, num_rec_updates_raf_other_p});
+        table->addRow({"skipped", "", stats.num_rec_updates_skipped, num_rec_updates_skipped_p});
+        table->addRow({"total", "", stats.num_rec_updates, ""});
+        table->addRow({"", "", "", ""});
+
+        table->addRow({"Rec Smooth Steps", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"failed steps", "", stats.num_rec_smooth_steps_failed, num_rec_smooth_steps_failed_p});
+        table->addRow({"failed targets", "", stats.num_rec_smooth_target_failed, ""});
+        table->addRow({"", "", "", ""});
+
+        table->addRow({"Rec Interp Steps", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"", "failed", stats.num_rec_interp_failed, ""});
+        table->addRow({"", "", "", ""});
     }
 
-    for (const auto& batch_stats : associator().batchStatistics())
+    if (task().debugSettings().stats_jpda_)
     {
-        if (!COMPASS::instance().dataSourceManager().hasDBDataSource(batch_stats.first))
-        {
-            logerr << "batch statistics for unknown data source id " << batch_stats.first;
-            continue;
-        }
+        auto table = getTable();
 
-        auto& ds = COMPASS::instance().dataSourceManager().dbDataSource(batch_stats.first);
+        table->addRow({"JPDA", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
 
-        loginf << "* batch statistics for data source '" << ds.name() << "':";
-        loginf << "";
-        loginf << "   #batches:        " << batch_stats.second.num_batches;
-        loginf << "   batch size min:  " << batch_stats.second.batch_size_min;
-        loginf << "   batch size max:  " << batch_stats.second.batch_size_max;
-        loginf << "   batch size mean: " << batch_stats.second.batchSizeMean();
-        loginf << "";
-        loginf << "   #in slice batches:        " << batch_stats.second.num_batches_slice;
-        loginf << "   in slice batch size min:  " << batch_stats.second.batch_slice_size_min;
-        loginf << "   in slice batch size max:  " << batch_stats.second.batch_slice_size_max;
-        loginf << "   in slice batch size mean: " << batch_stats.second.batchSizeInSliceMean();
-        loginf << "";
-        loginf << "   #primary only batches:        " << batch_stats.second.num_batches_po;
-        loginf << "   primary only batch size min:  " << batch_stats.second.batch_po_size_min;
-        loginf << "   primary only batch size max:  " << batch_stats.second.batch_po_size_max;
-        loginf << "   primary only batch size mean: " << batch_stats.second.batchSizePrimaryOnlyMean();
-        loginf << "";
+        table->addRow({"jpda runs", "", stats.num_jpda_runs, ""});
+        table->addRow({"jpda success", "", stats.num_jpda_success, ""});
+        table->addRow({"jpda failed", "", stats.num_jpda_failed, ""});
+        table->addRow({"jpda runs greedy", "", stats.num_jpda_runs_greedy, ""});
+        table->addRow({"jpda hypotheses max", "", stats.num_jpda_hyp_max, ""});
+        table->addRow({"jpda measurements max", "", stats.num_jpda_mms_max, ""});
+        table->addRow({"jpda assignments total", "", stats.num_jpda_assignments, ""});
+        table->addRow({"jpda clutter total", "", stats.num_jpda_clutters, ""});
+        table->addRow({"jpda assignment ratio", "", perc(stats.num_jpda_assignments, stats.num_po_unassoc), ""});
+        table->addRow({"jpda assignment ratio per-batch", "", perc(stats.jpda_assignment_ratio_sum, stats.num_jpda_success), ""});
+        table->addRow({"", "", "", ""});
+    }
+
+    if (task().debugSettings().stats_tentative_targets_)
+    {
+        auto table = getTable();
+
+        table->addRow({"Tentative Targets", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"tentative created", "", stats.num_tentative_created, ""});
+        table->addRow({"tentative confirmed", "", stats.num_tentative_confirmed, ""});
+        table->addRow({"tentative terminated", "", stats.num_tentative_terminated, ""});
+        table->addRow({"tentative terminated coasting", "", stats.num_tentative_terminated_coasting, ""});
+        table->addRow({"tentative terminated low prob", "", stats.num_tentative_terminated_low_prob, ""});
+        table->addRow({"tentative remaining", "", stats.num_tentative_remaining, ""});
+        table->addRow({"", "", "", ""});
+    }
+
+    if (task().debugSettings().stats_association_)
+    {
+        auto table = getTable();
+
+        table->addRow({"Primary Onlys", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        table->addRow({"secondarys unassoc", "", stats.num_sec_unassoc, ""});
+        table->addRow({"secondarys reassociated", "", stats.num_sec_reassociated, ""});
+        table->addRow({"secondary reassoc ratio", "", perc(stats.num_sec_reassociated, stats.num_sec_unassoc), ""});
+        table->addRow({"primary onlys unassoc", "", stats.num_po_unassoc, ""});
+        table->addRow({"primary onlys reassociated", "", stats.num_po_reassociated, ""});
+        table->addRow({"primary only reassoc ratio", "", perc(stats.num_po_reassociated, stats.num_po_unassoc), ""});
+        table->addRow({"reassociated", "", stats.num_sec_reassociated + stats.num_po_reassociated, ""});
+        table->addRow({"reassoc ratio", "", perc(stats.num_sec_reassociated + stats.num_po_reassociated, stats.num_po_unassoc + stats.num_sec_unassoc), ""});
+        table->addRow({"", "", "", ""});
+    }
+
+    if (task().debugSettings().stats_adsb_)
+    {
+        auto table = getTable();
+
+        table->addRow({"Standing ADSB", "", "", ""}, {}, "", "", {}, ResultReport::CellStyleTextBold);
+
+        bool min_max_set = stats.num_standing_adsb_updates_min == std::numeric_limits<size_t>::max();
+
+        table->addRow({"rec nums added", "", stats.num_standing_adsb, ""});
+        table->addRow({"updates added min", "", min_max_set ? stats.num_standing_adsb_updates_min : -1, ""});
+        table->addRow({"updates added max", "", min_max_set ? stats.num_standing_adsb_updates_max : -1, ""});
+        table->addRow({"updates added total", "", stats.num_standing_adsb_updates_total, ""});
+        table->addRow({"", "", "", ""});
     }
 }
 
@@ -2064,6 +2070,8 @@ std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfigured
     chain->settings().verbosity       = 0;
     chain->settings().debug           = false;
 
+    chain->settings().prediction_max_tdiff_sec = settings().max_time_diff_;
+
     chain->configureEstimator(referenceCalculatorSettings().chainEstimatorSettings());
     chain->init(referenceCalculatorSettings().kalman_type_assoc);
 
@@ -2104,10 +2112,12 @@ std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createCo
     std::unique_ptr<reconstruction::KalmanOnlineTracker> kalman;
     kalman.reset(new reconstruction::KalmanOnlineTracker);
 
-    kalman->settings() = referenceCalculatorSettings().chainEstimatorSettings();
-    kalman->settings().extract_wgs84_pos = extract_wgs84_pos;
-    kalman->settings().verbosity         = 0;
-    kalman->settings().debug             = false;
+    kalman->settings().prediction_max_tdiff_sec = settings().max_time_diff_;
+
+    kalman->estimatorSettings() = referenceCalculatorSettings().chainEstimatorSettings();
+    kalman->estimatorSettings().extract_wgs84_pos = extract_wgs84_pos;
+    kalman->estimatorSettings().verbosity         = 0;
+    kalman->estimatorSettings().debug             = false;
 
     kalman->init(referenceCalculatorSettings().kalman_type_assoc);
 
