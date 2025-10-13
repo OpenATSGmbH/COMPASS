@@ -31,7 +31,8 @@
             "ADSB": true,
             "MLAT": true,
             "Radar": true,
-            "Tracker": true
+            "RefTraj": false,
+            "Tracker": false
         }
     },
     "sub_configs": {
@@ -47,7 +48,7 @@
                     "disable_cat062_outlier_detection": true,
                     "do_multiple_runs": true,
                     "do_outlier_checks": true,
-                    "do_track_number_disassociate_using_distance": false,
+                    "do_track_number_disassociate_using_distance": true,
                     "ds_line": 0,
                     "dynamic_process_noise": true,
                     "filter_references_max_stddev": true,
@@ -57,6 +58,7 @@
                     "initial_ground_accuracy_average": 10.0,
                     "initial_unknown_accuracy_average": 100.0,
                     "jpda_clutter_density": 1.25e-10,
+                    "jpda_create_tentative_targets": false,
                     "jpda_gate_threshold_sqr": 9.0,
                     "jpda_prob_detect": 0.95,
                     "jpda_reestimate_target_updates": false,
@@ -71,7 +73,7 @@
                     "max_mahalanobis_dubious_verified": 5.0,
                     "max_mahalanobis_notok_unverified": 6.0,
                     "max_mahalanobis_notok_verified": 7.0,
-                    "max_mahalanobis_sec_unknown_dist": 2.0,
+                    "max_mahalanobis_sec_unknown_dist": 3.0,
                     "max_mahalanobis_sec_verified_dist": 5.0,
                     "max_pos_stddev_air": 100.0,
                     "max_pos_stddev_ground": 20.0,
@@ -113,7 +115,7 @@
                     "ref_Q_std_ground": 1.0,
                     "ref_Q_std_unknown": 2.0,
                     "ref_max_distance": 50000.0,
-                    "ref_max_dt": 6.0,
+                    "ref_max_dt": 3.0,
                     "ref_max_proj_distance_cart": 20000.0,
                     "ref_min_chain_size": 1,
                     "ref_min_dt": 0.001,
@@ -150,7 +152,10 @@
                     "unspecific_pos_acc_fallback": 1000.0,
                     "use_adsb_geo_altitude": true,
                     "use_min_std_dev": true,
-                    "use_stopped_adsb_tracking_": true
+                    "use_risky_adsb": true,
+                    "use_stopped_adsb_tracking_": true,
+                    "vehicle_acads": "",
+                    "vehicle_acids": ""
                 }
             }
         },

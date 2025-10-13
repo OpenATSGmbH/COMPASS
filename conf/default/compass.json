@@ -1,10 +1,16 @@
 {
     "parameters": {
+        "app_font_scale": 1.149999976158142,
         "db_file_list": [
         ],
         "last_db_filename": "",
-        "min_app_height": 1080,
-        "min_app_width": 1600
+        "min_app_height": 800,
+        "min_app_width": 1600,
+        "unspecific_acids": [
+            "00000000",
+            "????????",
+            "        "
+        ]
     },
     "sub_config_files": [
         {
