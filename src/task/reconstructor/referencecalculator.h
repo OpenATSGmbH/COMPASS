@@ -56,6 +56,13 @@ struct ReferenceCalculatorTargetExportData
 */
 struct ReferenceCalculatorTargetReferences
 {
+    struct DebugEvent
+    {
+        unsigned long            rec_num;
+        boost::posix_time::ptime ts;
+        std::string              info;
+    };
+
     typedef ReferenceCalculatorInputInfo InputInfo;
 
     void reset();
@@ -94,7 +101,7 @@ struct ReferenceCalculatorTargetReferences
 
     std::unique_ptr<ReferenceCalculatorTargetExportData> export_data;
 
-    std::vector<std::string> debug_events_;
+    std::vector<DebugEvent> debug_events_;
 };
 
 /**
