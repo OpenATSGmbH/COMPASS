@@ -77,7 +77,9 @@
                     "EvaluationStandard": {
                         "EvaluationStandard1171": {
                             "parameters": {
-                                "name": "EUROCAE ED-117A"
+                                "name": "EUROCAE ED-117A",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 12.5
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -92,6 +94,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -113,6 +116,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 15.0,
@@ -137,6 +141,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 12.5,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 125.0,
                                                         "threshold_value_check_type": 3,
@@ -150,6 +155,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.5,
                                                         "short_name": "RPA",
                                                         "threshold_value": 25.0,
                                                         "threshold_value_check_type": 1,
@@ -170,6 +176,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -191,6 +198,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -215,6 +223,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 100.0,
                                                         "threshold_value_check_type": 3,
@@ -228,6 +237,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "RPA",
                                                         "threshold_value": 20.0,
                                                         "threshold_value_check_type": 1,
@@ -316,6 +326,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -337,6 +348,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -361,6 +373,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 6.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 60.0,
                                                         "threshold_value_check_type": 3,
@@ -374,6 +387,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2,
                                                         "short_name": "RPA",
                                                         "threshold_value": 12.0,
                                                         "threshold_value_check_type": 1,
@@ -388,7 +402,9 @@
                         },
                         "EvaluationStandard1172": {
                             "parameters": {
-                                "name": "EUROCAE ED-87E"
+                                "name": "EUROCAE ED-87E",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 12.5
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -403,6 +419,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -424,6 +441,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -464,6 +482,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 12.5,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 125.0,
                                                         "threshold_value_check_type": 3,
@@ -477,6 +496,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.5,
                                                         "short_name": "RPA",
                                                         "threshold_value": 25.0,
                                                         "threshold_value_check_type": 1,
@@ -514,6 +534,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -535,6 +556,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -554,6 +576,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -594,6 +617,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 100.0,
                                                         "threshold_value_check_type": 3,
@@ -607,6 +631,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "RPA",
                                                         "threshold_value": 20.0,
                                                         "threshold_value_check_type": 1,
@@ -685,6 +710,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -706,6 +732,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -725,6 +752,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -765,6 +793,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 6.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 60.0,
                                                         "threshold_value_check_type": 3,
@@ -778,6 +807,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "RPA",
                                                         "threshold_value": 12.0,
                                                         "threshold_value_check_type": 1,
@@ -826,7 +856,9 @@
                         },
                         "EvaluationStandard1421": {
                             "parameters": {
-                                "name": "EUROCAE ED-87D"
+                                "name": "EUROCAE ED-87D",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 12.5
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -841,6 +873,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -862,6 +895,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -902,6 +936,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 12.5,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 125.0,
                                                         "threshold_value_check_type": 3,
@@ -915,6 +950,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.5,
                                                         "short_name": "RPA",
                                                         "threshold_value": 25.0,
                                                         "threshold_value_check_type": 1,
@@ -935,6 +971,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -956,6 +993,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -975,6 +1013,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -1015,6 +1054,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 100.0,
                                                         "threshold_value_check_type": 3,
@@ -1028,6 +1068,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "RPA",
                                                         "threshold_value": 20.0,
                                                         "threshold_value_check_type": 1,
@@ -1089,6 +1130,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -1110,6 +1152,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -1129,6 +1172,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -1169,6 +1213,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 6.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 60.0,
                                                         "threshold_value_check_type": 3,
@@ -1182,6 +1227,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2,
                                                         "short_name": "RPA",
                                                         "threshold_value": 12.0,
                                                         "threshold_value_check_type": 1,
@@ -1213,7 +1259,9 @@
                         },
                         "EvaluationStandard1422": {
                             "parameters": {
-                                "name": "Tracker Comparison"
+                                "name": "Tracker Comparison",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 50.0
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -1253,6 +1301,7 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": false,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -1499,6 +1548,7 @@
                                                         "name": "Position Across",
                                                         "prob": 0.9,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "AC",
                                                         "use": true
                                                     }
@@ -1514,6 +1564,7 @@
                                                         "name": "Postion Along",
                                                         "prob": 0.9,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "AL",
                                                         "use": true
                                                     }
@@ -1531,6 +1582,7 @@
                                                         "name": "Position Correct",
                                                         "prob": 0.9,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "PCP",
                                                         "threshold_value": 400.0,
                                                         "threshold_value_check_type": 1,
@@ -1546,6 +1598,7 @@
                                                         "name": "Position False",
                                                         "prob": 0.01,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 50.0,
                                                         "short_name": "PFP",
                                                         "threshold_value": 500.0,
                                                         "threshold_value_check_type": 3,
@@ -1558,6 +1611,9 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "name": "Position Correct RMS",
+                                                        "prob": 0.9,
+                                                        "prob_check_type": 3,
+                                                        "ref_min_accuracy": 20.0,
                                                         "short_name": "PCP RMS",
                                                         "threshold_value": 200.0,
                                                         "use": true
@@ -1702,6 +1758,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-116 3.4.2\n",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": false,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -1726,6 +1783,7 @@
                                                         "name": "Horizontal Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "HPA",
                                                         "threshold_value": 7.5,
                                                         "threshold_value_check_type": 0,
@@ -1758,6 +1816,7 @@
                                                         "name": "Horizontal Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 4.0,
                                                         "short_name": "HPA",
                                                         "threshold_value": 40.0,
                                                         "threshold_value_check_type": 1,
@@ -1781,6 +1840,7 @@
                                                         "name": "Horizontal Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "HPA",
                                                         "threshold_value": 20.0,
                                                         "threshold_value_check_type": 1,
@@ -1801,6 +1861,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.2.4",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -1830,6 +1891,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.2.1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -1878,6 +1940,7 @@
                                                         "name": "Probability of False Detection",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 0,
+                                                        "ref_min_accuracy": 5.0,
                                                         "short_name": "PFD",
                                                         "threshold_value": 50.0,
                                                         "threshold_value_check_type": 2,
@@ -1898,6 +1961,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.2.3",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -1922,6 +1986,7 @@
                                                         "name": "Horizontal Position Accuracy 2",
                                                         "prob": 0.99,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "HPA2",
                                                         "threshold_value": 12.0,
                                                         "threshold_value_check_type": 1,
@@ -1935,6 +2000,7 @@
                                                         "name": "Horizontal Position Accuracy 1",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "HPA1",
                                                         "threshold_value": 7.5,
                                                         "threshold_value_check_type": 1,
@@ -1955,6 +2021,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.4",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -1984,6 +2051,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.4",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2003,6 +2071,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.2.2",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2032,6 +2101,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-117 Section 3.3.4",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2055,7 +2125,9 @@
                         },
                         "EvaluationStandardEUROCAE ED-1420": {
                             "parameters": {
-                                "name": "EUROCAE ED-142"
+                                "name": "EUROCAE ED-142",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 210.0
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -2122,6 +2194,7 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 16.4,
@@ -2141,6 +2214,7 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "hold_for_any_target": true,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2226,6 +2300,7 @@
                                                         "name": "Probability of False Detection",
                                                         "prob": 0.001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 210.0,
                                                         "short_name": "PFD",
                                                         "threshold_value": 2100.0,
                                                         "threshold_value_check_type": 2,
@@ -2238,6 +2313,9 @@
                                                     "parameters": {
                                                         "comment": "Ref 3.3.8",
                                                         "name": "Horizontal Position Accuracy",
+                                                        "prob": 0.9,
+                                                        "prob_check_type": 3,
+                                                        "ref_min_accuracy": 35.0,
                                                         "short_name": "HPA",
                                                         "threshold_value": 350.0,
                                                         "use": true
@@ -2257,6 +2335,7 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 16.5,
@@ -2276,6 +2355,7 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "hold_for_any_target": true,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2361,6 +2441,7 @@
                                                         "name": "Probability of False Detection",
                                                         "prob": 0.001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 210.0,
                                                         "short_name": "PFD",
                                                         "threshold_value": 2100.0,
                                                         "threshold_value_check_type": 2,
@@ -2373,6 +2454,9 @@
                                                     "parameters": {
                                                         "comment": "Ref 3.3.8",
                                                         "name": "Horizontal Position Accuracy",
+                                                        "prob": 0.9,
+                                                        "prob_check_type": 3,
+                                                        "ref_min_accuracy": 15.0,
                                                         "short_name": "HPA",
                                                         "threshold_value": 150.0,
                                                         "use": true
@@ -2386,7 +2470,9 @@
                         },
                         "EvaluationStandardEUROCAE ED-87C0": {
                             "parameters": {
-                                "name": "EUROCAE ED-87C"
+                                "name": "EUROCAE ED-87C",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 12.5
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -2401,6 +2487,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -2422,6 +2509,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -2462,6 +2550,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 12.5,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 125.0,
                                                         "threshold_value_check_type": 3,
@@ -2475,6 +2564,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.5,
                                                         "short_name": "RPA",
                                                         "threshold_value": 25.0,
                                                         "threshold_value_check_type": 1,
@@ -2495,6 +2585,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -2516,6 +2607,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2535,6 +2627,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -2575,6 +2668,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 100.0,
                                                         "threshold_value_check_type": 3,
@@ -2588,6 +2682,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2.0,
                                                         "short_name": "RPA",
                                                         "threshold_value": 20.0,
                                                         "threshold_value_check_type": 1,
@@ -2649,6 +2744,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "max_ref_time_diff": 5.0,
@@ -2670,6 +2766,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2689,6 +2786,7 @@
                                                     "parameters": {
                                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": true,
                                                         "invert_prob": true,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 5.0,
@@ -2729,6 +2827,7 @@
                                                         "name": "Probability of False Target Report",
                                                         "prob": 0.0001,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 6.0,
                                                         "short_name": "PFTR",
                                                         "threshold_value": 60.0,
                                                         "threshold_value_check_type": 3,
@@ -2742,6 +2841,7 @@
                                                         "name": "Reported Position Accuracy",
                                                         "prob": 0.95,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 2,
                                                         "short_name": "RPA",
                                                         "threshold_value": 12.0,
                                                         "threshold_value_check_type": 1,
@@ -2773,7 +2873,9 @@
                         },
                         "EvaluationStandardRadar0": {
                             "parameters": {
-                                "name": "Radar"
+                                "name": "Radar",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 10.0
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -2788,6 +2890,7 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "hold_for_any_target": false,
+                                                        "ignore_primary_only": false,
                                                         "invert_prob": false,
                                                         "max_gap_length_s": 5.0,
                                                         "min_gap_length_s": 3.0,
@@ -2864,6 +2967,9 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "name": "Azimuth Error",
+                                                        "prob": 0.9,
+                                                        "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "AZM",
                                                         "threshold_value": 0.08,
                                                         "use": true
@@ -2875,6 +2981,9 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "name": "Range Error",
+                                                        "prob": 0.9,
+                                                        "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "RNG",
                                                         "threshold_value": 70.0,
                                                         "use": true
@@ -2888,7 +2997,9 @@
                         },
                         "EvaluationStandardtest0": {
                             "parameters": {
-                                "name": "test"
+                                "name": "test",
+                                "reference_max_time_diff": 5.0,
+                                "reference_min_accuracy": 50.0
                             },
                             "sub_configs": {
                                 "EvaluationRequirementGroup": {
@@ -3233,6 +3344,7 @@
                                                         "name": "Across",
                                                         "prob": 0.9,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "AC",
                                                         "use": true
                                                     }
@@ -3248,6 +3360,7 @@
                                                         "name": "Along",
                                                         "prob": 0.9,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "AL",
                                                         "use": true
                                                     }
@@ -3280,6 +3393,7 @@
                                                         "name": "Position False",
                                                         "prob": 0.01,
                                                         "prob_check_type": 1,
+                                                        "ref_min_accuracy": 50.0,
                                                         "short_name": "PFP",
                                                         "threshold_value": 500.0,
                                                         "threshold_value_check_type": 3,
@@ -3292,6 +3406,9 @@
                                                     "parameters": {
                                                         "comment": "",
                                                         "name": "Position Correct RMS",
+                                                        "prob": 0.9,
+                                                        "prob_check_type": 3,
+                                                        "ref_min_accuracy": 30.0,
                                                         "short_name": "PCP RMS",
                                                         "threshold_value": 300.0,
                                                         "use": true
@@ -3308,6 +3425,7 @@
                                                         "name": "Latency",
                                                         "prob": 0.9,
                                                         "prob_check_type": 3,
+                                                        "ref_min_accuracy": 10.0,
                                                         "short_name": "LT",
                                                         "use": true
                                                     }

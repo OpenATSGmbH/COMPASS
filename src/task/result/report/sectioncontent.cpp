@@ -114,7 +114,7 @@ std::string SectionContent::resourceFilename(const std::string& postfix) const
  */
 std::string SectionContent::resourceRelDirectory(ResourceDir rdir) const
 {
-    return ReportExporter::resourceSubDir(rdir) + "/" + contentPath();
+    return Utils::Files::join(ReportExporter::resourceSubDir(rdir), contentPath());
 }
 
 /**
@@ -133,7 +133,7 @@ ResultT<SectionContent::ResourceLink> SectionContent::prepareResource(const std:
 {
     //store data in temp dir
     auto link = resourceLink(rdir, prefix);
-    auto path = resource_dir + "/" + link;
+    auto path = Utils::Files::join(resource_dir, link);
     auto dir  = Utils::Files::getDirectoryFromPath(path);
 
     if (!Utils::Files::createMissingDirectories(dir))

@@ -246,7 +246,7 @@ void ReportExportDialog::configureUI(const boost::optional<std::string>& export_
         // Utils::Files::getDirectoryFromPath(db_fn);
         //auto base_name = boost::filesystem::path(db_fn).stem().string();
 
-        report_dir = db_dir + "/" + Utils::Files::normalizeFilename(result_name, false);
+        report_dir = (boost::filesystem::path(db_dir) / boost::filesystem::path(Utils::Files::normalizeFilename(result_name, false))).string();
 
         loginf << "db_fn " << db_fn << " db_dir " << db_dir
             << " result_name " << result_name << " report_dir " << report_dir;
