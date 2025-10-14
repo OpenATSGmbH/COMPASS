@@ -18,9 +18,7 @@
 #include "asterixjsonmappingjob.h"
 #include "asterixjsonparser.h"
 #include "buffer.h"
-//#include "dbcontent/dbcontent.h"
 #include "json_tools.h"
-//#include "jsonobjectparser.h"
 #include "logger.h"
 
 #include <exception>
@@ -75,6 +73,9 @@ void ASTERIXJSONMappingJob::run_impl()
 
         if (this->obsolete_)
             return;
+
+        if (record.count("error") && record.at("error") == true)
+            return; // skip target reports marked with errors            
 
         unsigned int category{0};
 

@@ -210,6 +210,9 @@ void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
     {
         file_info.error.errtype = ASTERIXImportFileError::ErrorType::CouldNotParse;
         file_info.error.errinfo = error;
+
+        loginf << "error: " << file_info.error.errinfo;
+
         return;
     }
 

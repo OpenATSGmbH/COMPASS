@@ -35,6 +35,9 @@ ASTERIXPostProcess::ASTERIXPostProcess() {}
 
 void ASTERIXPostProcess::postProcess(unsigned int category, nlohmann::json& record)
 {
+    if (record.count("error") && record.at("error") == true)
+        return; // skip target reports marked with errors
+
     record["category"] = category;
 
     int sac{-1};

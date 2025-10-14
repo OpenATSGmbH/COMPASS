@@ -485,8 +485,7 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
 
                 if (tod - last_reported_tod_ >= 3600) // 1h
                 {
-                    loginf << "processing tod "
-                           << String::timeStringFromDouble(tod);
+                    logdbg << "processing tod " << String::timeStringFromDouble(tod);
                     last_reported_tod_ = tod;
                 }
 

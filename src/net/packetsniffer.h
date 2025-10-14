@@ -186,6 +186,7 @@ public:
     std::pair<size_t, std::set<int>> unknownLinkTypes() const;
     std::pair<size_t, std::set<int>> unknownEthernetTypes() const;
     std::pair<size_t, std::set<int>> unknownIPProtocols() const;
+    void printUnknowns() const;
 
     bool hasUnknownPacketHeaders() const;
 
