@@ -336,7 +336,16 @@ std::string ASTERIXDecoderFile::statusInfoString() const
         size_fmt << std::fixed << std::setprecision(2) << mb;
 
         // Decoded‐status cell
-        std::string status_cell = file_info.fileProcessed() ? "Done" : "";
+        std::string status_cell;
+        
+        if (file_info.filename == getCurrentFilename())
+            status_cell = "Decoding";
+        else if (file_info.fileProcessed())
+            status_cell = "Done";
+
+        if (file_info.hasError())
+            status_cell += "<br> <b><font color=\"red\">(errors detected)</font></b>";
+
 
         // One row per file
         html << "<tr>"

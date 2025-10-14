@@ -21,6 +21,8 @@
 
 #include <jasterix/jasterix.h>
 
+using namespace std;
+
 /**
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
@@ -201,10 +203,10 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     //this should have been checked and caught beforehand
     traced_assert(file_open);
 
-    auto callback = [this, current_file_line] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
                                                size_t num_frames,
                                                size_t num_records, 
-                                               size_t numErrors) 
+                                               size_t num_errors) 
     {
         // get last index
 
@@ -245,8 +247,14 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         addRecordsRead(num_records);
 
+        if (num_errors)
+        {
+            file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
+            file_info.error.errinfo = "Number: "+to_string(num_errors);
+        }
+
         if (job() && !job()->obsolete())
-            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, numErrors);
+            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, num_errors);
     };
 
     size_t max_packets = std::numeric_limits<size_t>::max();
