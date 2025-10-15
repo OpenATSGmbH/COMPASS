@@ -91,6 +91,7 @@ public:
     unsigned int getMaxDBContentID();
     bool existsDBContentWithId (unsigned int id);
     const std::string& dbContentWithId (unsigned int id);
+    unsigned int dbContentId(const std::string& dbcont_name);
 
     bool existsMetaVariable(const std::string& var_name);
     dbContent::MetaVariable& metaVariable(const std::string& var_name);

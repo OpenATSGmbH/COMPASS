@@ -238,6 +238,12 @@ const std::string& DBContentManager::dbContentWithId (unsigned int id)
     return dbcontent_ids_.at(id)->name();
 }
 
+unsigned int DBContentManager::dbContentId(const std::string& dbcont_name)
+{
+    assert (existsDBContent(dbcont_name));
+    return dbContent(dbcont_name).id();
+}
+
 /**
  */
 bool DBContentManager::existsMetaVariable(const std::string& var_name)

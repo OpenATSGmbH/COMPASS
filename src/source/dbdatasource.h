@@ -57,6 +57,7 @@ public:
     const std::map<std::string, std::map<unsigned int, unsigned int>>& numInsertedMap() const;
     std::map<unsigned int, unsigned int> numInsertedLinesMap() const;
     std::map<std::string, unsigned int> numInsertedSummedLinesMap() const;
+    std::set<std::string> insertedDBContents() const;
 
     void addNumInserted(const std::string& db_content, unsigned int line_id, unsigned int num);
     void clearNumInserted(const std::string& db_content);
