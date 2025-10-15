@@ -215,12 +215,14 @@ void EvaluationStandardWidget::addGroupSlot()
 
 void EvaluationStandardWidget::deleteGroupSlot(Group& group)
 {
-    loginf << standard_.name();
+    loginf << "standard " << standard_.name() << " group " << group.name();
+
+    model().beginReset();
 
     standard_.removeGroup (group.name());
 
-    // if (widget_)
-    //     endModelReset();
+    model().endReset();
+    expandAll();
 }
 
 void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_id)
