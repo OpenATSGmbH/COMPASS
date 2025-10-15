@@ -51,6 +51,21 @@ const unsigned int PacketSniffer::UnspecifiedPort = std::numeric_limits<unsigned
 using namespace std;
 using namespace Utils;
 
+#ifndef DLT_LINUX_SLL2
+#define DLT_LINUX_SLL2 276
+struct sll2_header {
+    uint16_t sll2_protocol;
+    uint16_t sll2_reserved_mbz;
+    uint32_t sll2_if_index;
+    uint16_t sll2_hatype;
+    uint8_t  sll2_pkttype;
+    uint8_t  sll2_halen;
+    uint8_t  sll2_addr[8];
+};
+#endif
+
+
+
 /**
 */
 std::string PacketSniffer::Data::info() const
