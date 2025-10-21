@@ -220,17 +220,17 @@ bool UTNFilter::updateUTNSFromStr(const std::string& values_str)
             else
             {
                 logerr << "utn '" << tmp_str << "' not valid";
-                break;
+                return false;
             }
         }
 
         values_tmp.push_back(utn_tmp);
     }
 
-    if (!ok)
-        return false;
 
     values_ = values_tmp;
+
+    logdbg << "values_str '" << values_str << "'" << " values " << String::compress(values_, ',') << " null wanted " << null_wanted_;
 
     return true;
 }
