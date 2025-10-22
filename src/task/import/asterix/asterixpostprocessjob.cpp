@@ -24,6 +24,8 @@
 #include "util/stringconv.h"
 #include "global.h"
 
+#include <osgEarth/GeoMath>
+
 #include <QThread>
 
 using namespace std;
@@ -39,22 +41,10 @@ tbb::concurrent_unordered_map<std::string, std::string> ASTERIXPostprocessJob::o
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
-    bool filter_tod_active, float filter_tod_min, float filter_tod_max,
-    bool filter_position_active,
-    float filter_latitude_min, float filter_latitude_max,
-    float filter_longitude_min, float filter_longitude_max,
-    bool filter_modec_active,
-    float filter_modec_min, float filter_modec_max,
-    bool do_obfuscate_secondary_info)
+    ASTERIXImportTaskSettings settings)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
-    filter_tod_active_(filter_tod_active), filter_tod_min_(filter_tod_min), filter_tod_max_(filter_tod_max),
-    filter_position_active_(filter_position_active),
-    filter_latitude_min_(filter_latitude_min), filter_latitude_max_(filter_latitude_max),
-    filter_longitude_min_(filter_longitude_min), filter_longitude_max_(filter_longitude_max),
-    filter_modec_active_(filter_modec_active),
-    filter_modec_min_(filter_modec_min), filter_modec_max_(filter_modec_max),
-    do_obfuscate_secondary_info_(do_obfuscate_secondary_info)
+    settings_(settings)
 {
     obfuscate_m3a_map_[512] = 512; // 1000
     obfuscate_m3a_map_[1024] = 1024; // 2000
@@ -98,10 +88,11 @@ void ASTERIXPostprocessJob::run_impl()
     doADSBPositionProcessing();
     doGroundSpeedCalculations();
 
-    if (filter_tod_active_ || filter_position_active_ || filter_modec_active_)
+    if (settings_.filter_tod_active_  || settings_.filter_position_rec_active_ 
+        || settings_.filter_position_circ_active_ || settings_.filter_modec_active_)
         doFilters();
 
-    if (do_obfuscate_secondary_info_)
+    if (settings_.obfuscate_secondary_info_)
         doObfuscate();
 
     auto t_diff = boost::posix_time::microsec_clock::local_time() - start_time;
@@ -500,7 +491,7 @@ void ASTERIXPostprocessJob::doFilters()
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     // do time based filtering first
-    if (filter_tod_active_)
+    if (settings_.filter_tod_active_)
     {
         string tod_var_name;
 
@@ -528,24 +519,20 @@ void ASTERIXPostprocessJob::doFilters()
 
             for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
             {
-                if (filter_tod_active_)
-                {
                     if (tod_vec.isNull(cnt)
-                        || (tod_vec.get(cnt) < filter_tod_min_ || tod_vec.get(cnt) > filter_tod_max_))
+                        || (tod_vec.get(cnt) < settings_.filter_tod_min_ || tod_vec.get(cnt) > settings_.filter_tod_max_))
                     {
                         to_be_removed.push_back(cnt);
                         continue;
                     }
-                }
             }
 
             buffer->removeIndexes(to_be_removed);
         }
     }
 
-
     // others
-    if (filter_position_active_ || filter_modec_active_)
+    if (settings_.filter_position_rec_active_ || settings_.filter_position_circ_active_ || settings_.filter_modec_active_)
     {
         string lat_var_name;
         string lon_var_name;
@@ -601,24 +588,46 @@ void ASTERIXPostprocessJob::doFilters()
 
             for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
             {
-                if (filter_position_active_ && !lat_vec.isNull(cnt) && !lon_vec.isNull(cnt)
-                    && (lat_vec.get(cnt) < filter_latitude_min_ || lat_vec.get(cnt) > filter_latitude_max_
-                        || lon_vec.get(cnt) < filter_longitude_min_ || lon_vec.get(cnt) > filter_longitude_max_))
+                if (settings_.filter_position_rec_active_ && !lat_vec.isNull(cnt) &&
+                    !lon_vec.isNull(cnt) &&
+                    (lat_vec.get(cnt) < settings_.filter_rec_latitude_min_ ||
+                     lat_vec.get(cnt) > settings_.filter_rec_latitude_max_ ||
+                     lon_vec.get(cnt) < settings_.filter_rec_longitude_min_ ||
+                     lon_vec.get(cnt) > settings_.filter_rec_longitude_max_))
                 {
                     to_be_removed.push_back(cnt);
                     continue;
                 }
 
-                if (filter_modec_active_)
+                if (settings_.filter_position_circ_active_ && !lat_vec.isNull(cnt) &&
+                    !lon_vec.isNull(cnt))
+                {
+                    double distance_m = osgEarth::GeoMath::distance(
+                        osg::DegreesToRadians(settings_.filter_circ_latitude_),
+                        osg::DegreesToRadians(settings_.filter_circ_longitude_),
+                        osg::DegreesToRadians(lat_vec.get(cnt)),
+                        osg::DegreesToRadians(lon_vec.get(cnt)));
+
+                    logdbg << "distance_m_ " << distance_m << " nm " << distance_m / NM2M
+                    << " range " << settings_.filter_circ_range_ << " remove " << (distance_m / NM2M > settings_.filter_circ_range_);
+
+                    if (distance_m / NM2M > settings_.filter_circ_range_)
+                    {
+                        to_be_removed.push_back(cnt);
+                        continue;
+                    }
+                }
+
+                if (settings_.filter_modec_active_)
                 {
                     if (!mc_vec.isNull(cnt)
-                        && (mc_vec.get(cnt) < filter_modec_min_ || mc_vec.get(cnt) > filter_modec_max_))
+                        && (mc_vec.get(cnt) < settings_.filter_modec_min_ || mc_vec.get(cnt) > settings_.filter_modec_max_))
                     {
                         to_be_removed.push_back(cnt);
                         continue;
                     }
                     else if (mc_vec2 && !mc_vec2->isNull(cnt)
-                             && (mc_vec2->get(cnt) < filter_modec_min_ || mc_vec2->get(cnt) > filter_modec_max_))
+                             && (mc_vec2->get(cnt) < settings_.filter_modec_min_ || mc_vec2->get(cnt) > settings_.filter_modec_max_))
                     {
                         to_be_removed.push_back(cnt);
                         continue;
@@ -643,8 +652,7 @@ void ASTERIXPostprocessJob::doFilters()
 
 void ASTERIXPostprocessJob::doObfuscate()
 {
-
-    traced_assert(do_obfuscate_secondary_info_);
+    traced_assert(settings_.obfuscate_secondary_info_);
 
     string dbcontent_name;
 

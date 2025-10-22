@@ -266,13 +266,25 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
 
     for (auto ds_id_it : datasource_vec.distinctValues())
     {
-        if (!projection.hasCoordinateSystem(ds_id_it))
+        if (!projection.hasCoordinateSystem(ds_id_it) && !projection.hasMissingCoordinateSystem(ds_id_it))
         {
-            if (ds_man.hasConfigDataSource(ds_id_it) && ds_man.configDataSource(ds_id_it).dsType() != "Radar")
-                continue; // ok for non-radars
+            std::string ds_name;
 
-            logwrn << "data source id "
-                   << ds_id_it << " not set up"; // should have been in ASTERIX import task
+            if (ds_man.hasConfigDataSource(ds_id_it))
+            {
+                ds_name = ds_man.configDataSource(ds_id_it).name();
+
+                if (ds_man.configDataSource(ds_id_it).dsType() != "Radar")
+                    continue; // ok for non-radars
+            }
+
+            if (ds_name.empty())
+                ds_name = "id " + to_string(ds_id_it);
+
+            logwrn << "data source "
+                   << ds_name << " not set up"; // should have been in ASTERIX import task
+
+            projection.addMissingCoordinateSystem(ds_id_it);
         }
     }
 

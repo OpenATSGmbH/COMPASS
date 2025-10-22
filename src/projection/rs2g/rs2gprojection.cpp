@@ -71,6 +71,8 @@ void RS2GProjection::clearCoordinateSystems()
 {
     coordinate_systems_.clear();
     coordinate_systems_added_ = false;
+
+    missing_coordinate_systems_.clear();
 }
 
 bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double slant_range_m,

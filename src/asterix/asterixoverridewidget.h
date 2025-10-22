@@ -39,11 +39,16 @@ class ASTERIXOverrideWidget : public QWidget
     void minTimeChanged(QTime time);
     void maxTimeChanged(QTime time);
 
-    void filterPositionActiveCheckedSlot();
-    void latitudeMinEditedSlot(const QString& value_str);
-    void latitudeMaxEditedSlot(const QString& value_str);
-    void longitudeMinEditedSlot(const QString& value_str);
-    void longitudeMaxEditedSlot(const QString& value_str);
+    void filterPositionRecActiveCheckedSlot();
+    void recLatitudeMinEditedSlot(const QString& value_str);
+    void recLatitudeMaxEditedSlot(const QString& value_str);
+    void recLongitudeMinEditedSlot(const QString& value_str);
+    void recLongitudeMaxEditedSlot(const QString& value_str);
+
+    void filterPositionCircActiveCheckedSlot();
+    void circLatitudeEditedSlot(const QString& value_str);
+    void circLongitudeEditedSlot(const QString& value_str);
+    void circRangeEditedSlot(const QString& value_str);
 
     void filterModeCActiveCheckedSlot();
     void modeCMinEditedSlot(const QString& value_str);
@@ -65,11 +70,16 @@ class ASTERIXOverrideWidget : public QWidget
     QTimeEdit* filter_tod_min_edit_{nullptr};
     QTimeEdit* filter_tod_max_edit_{nullptr};
 
-    QCheckBox* filter_position_active_check_{nullptr};
-    QLineEdit* filter_latitude_min_edit_{nullptr};
-    QLineEdit* filter_latitude_max_edit_{nullptr};
-    QLineEdit* filter_longitude_min_edit_{nullptr};
-    QLineEdit* filter_longitude_max_edit_{nullptr};
+    QCheckBox* filter_position_rec_active_check_{nullptr};
+    QLineEdit* filter_rec_latitude_min_edit_{nullptr};
+    QLineEdit* filter_rec_latitude_max_edit_{nullptr};
+    QLineEdit* filter_rec_longitude_min_edit_{nullptr};
+    QLineEdit* filter_rec_longitude_max_edit_{nullptr};
+
+    QCheckBox* filter_position_circ_active_check_{nullptr};
+    QLineEdit* filter_circ_latitude_edit_{nullptr};
+    QLineEdit* filter_circ_longitude_edit_{nullptr};
+    QLineEdit* filter_circ_range_edit_{nullptr};
 
     QCheckBox* filter_modec_active_check_{nullptr};
     QLineEdit* filter_modec_min_edit_{nullptr};

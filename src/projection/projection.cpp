@@ -102,4 +102,13 @@ bool Projection::coordinateSystemsAdded()
     return coordinate_systems_added_;
 }
 
+bool Projection::hasMissingCoordinateSystem(unsigned int ds_id)
+{
+    return missing_coordinate_systems_.count(ds_id);
+}
+void Projection::addMissingCoordinateSystem(unsigned int ds_id)
+{
+    missing_coordinate_systems_.insert(ds_id);
+}
+
 void Projection::checkSubConfigurables() {}

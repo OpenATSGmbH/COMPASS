@@ -72,11 +72,15 @@ ASTERIXImportTaskSettings::ASTERIXImportTaskSettings()
     ,   filter_tod_active_        (false)
     ,   filter_tod_min_           (0.0f)
     ,   filter_tod_max_           (24*3600.0 - 1)
-    ,   filter_position_active_   (false)
-    ,   filter_latitude_min_      (-90.0)
-    ,   filter_latitude_max_      ( 00.0)
-    ,   filter_longitude_min_     (-180.0)
-    ,   filter_longitude_max_     ( 180.0)
+    ,   filter_position_rec_active_   (false)
+    ,   filter_rec_latitude_min_      (-90.0)
+    ,   filter_rec_latitude_max_      ( 90.0)
+    ,   filter_rec_longitude_min_     (-180.0)
+    ,   filter_rec_longitude_max_     ( 180.0)
+    ,   filter_position_circ_active_  (false)
+    ,   filter_circ_latitude_         (0.0)
+    ,   filter_circ_longitude_        (0.0)
+    ,   filter_circ_range_            (10.0)    
     ,   filter_modec_active_      (false)
     ,   filter_modec_min_         (-10000.0f)
     ,   filter_modec_max_         ( 50000.0f)
@@ -122,17 +126,27 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
     registerParameter("filter_tod_min", &settings_.filter_tod_min_, ASTERIXImportTaskSettings().filter_tod_min_);
     registerParameter("filter_tod_max", &settings_.filter_tod_max_, ASTERIXImportTaskSettings().filter_tod_max_);
 
-    registerParameter("filter_position_active", &settings_.filter_position_active_,
-                      ASTERIXImportTaskSettings().filter_position_active_);
-    addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_active");
-    registerParameter("filter_latitude_min", &settings_.filter_latitude_min_,
-                      ASTERIXImportTaskSettings().filter_latitude_min_);
-    registerParameter("filter_latitude_max", &settings_.filter_latitude_max_,
-                      ASTERIXImportTaskSettings().filter_latitude_max_);
-    registerParameter("filter_longitude_min", &settings_.filter_longitude_min_,
-                      ASTERIXImportTaskSettings().filter_longitude_min_);
-    registerParameter("filter_longitude_max", &settings_.filter_longitude_max_,
-                      ASTERIXImportTaskSettings().filter_longitude_max_);
+    registerParameter("filter_position_rec_active", &settings_.filter_position_rec_active_,
+                      ASTERIXImportTaskSettings().filter_position_rec_active_);
+    addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_rec_active");
+    registerParameter("filter_rec_latitude_min", &settings_.filter_rec_latitude_min_,
+                      ASTERIXImportTaskSettings().filter_rec_latitude_min_);
+    registerParameter("filter_rec_latitude_max", &settings_.filter_rec_latitude_max_,
+                      ASTERIXImportTaskSettings().filter_rec_latitude_max_);
+    registerParameter("filter_rec_longitude_min", &settings_.filter_rec_longitude_min_,
+                      ASTERIXImportTaskSettings().filter_rec_longitude_min_);
+    registerParameter("filter_rec_longitude_max", &settings_.filter_rec_longitude_max_,
+                      ASTERIXImportTaskSettings().filter_rec_longitude_max_);
+
+    registerParameter("filter_position_circ_active", &settings_.filter_position_circ_active_,
+                      ASTERIXImportTaskSettings().filter_position_circ_active_);
+    addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_circ_active");
+    registerParameter("filter_circ_latitude", &settings_.filter_circ_latitude_,
+                      ASTERIXImportTaskSettings().filter_circ_latitude_);
+    registerParameter("filter_circ_longitude", &settings_.filter_circ_longitude_,
+                      ASTERIXImportTaskSettings().filter_circ_longitude_);
+    registerParameter("filter_circ_range", &settings_.filter_circ_range_,
+                      ASTERIXImportTaskSettings().filter_circ_range_);
 
     registerParameter("filter_modec_active", &settings_.filter_modec_active_,
                       ASTERIXImportTaskSettings().filter_modec_active_);
@@ -1146,17 +1160,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-        make_shared<ASTERIXPostprocessJob>(
-            std::move(job_buffers),
-            settings_.filter_tod_active_,
-            settings_.filter_tod_min_, settings_.filter_tod_max_,
-            settings_.filter_position_active_,
-            settings_.filter_latitude_min_, settings_.filter_latitude_max_,
-            settings_.filter_longitude_min_, settings_.filter_longitude_max_,
-            settings_.filter_modec_active_,
-            settings_.filter_modec_min_, settings_.filter_modec_max_,
-            settings_.obfuscate_secondary_info_
-            );
+        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_);
 
     postprocess_jobs_.push_back(postprocess_job);
 

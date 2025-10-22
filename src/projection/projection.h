@@ -75,6 +75,9 @@ public:
 
     bool coordinateSystemsAdded();
 
+    bool hasMissingCoordinateSystem(unsigned int ds_id);
+    void addMissingCoordinateSystem(unsigned int ds_id);
+
 protected:
     ProjectionManager& proj_manager_;
 
@@ -82,6 +85,8 @@ protected:
 
     boost::mutex coordinate_systems_mutex_;
     bool coordinate_systems_added_ {false};
+
+    std::set<unsigned int> missing_coordinate_systems_;
 
     virtual void checkSubConfigurables();
 };

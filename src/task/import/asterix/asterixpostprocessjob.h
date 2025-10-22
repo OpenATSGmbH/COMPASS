@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "asteriximportsettings.h"
 #include "job.h"
 
 #include <boost/date_time/posix_time/ptime.hpp>
@@ -33,13 +34,7 @@ class ASTERIXPostprocessJob : public Job
 {
 public:
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
-                          bool filter_tod_active, float filter_tod_min, float filter_tod_max,
-                          bool filter_position_active,
-                          float filter_latitude_min, float filter_latitude_max,
-                          float filter_longitude_min, float filter_longitude_max,
-                          bool filter_modec_active,
-                          float filter_modec_min, float filter_modec_max,
-                          bool do_obfuscate_secondary_info);
+                          ASTERIXImportTaskSettings settings);
 
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers);
     // ctor with no checks/overrides/filters for JSON
@@ -54,21 +49,7 @@ protected:
 private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;
 
-    bool filter_tod_active_{false};
-    float filter_tod_min_{0};
-    float filter_tod_max_{0};
-
-    bool filter_position_active_{false};
-    float filter_latitude_min_{0};
-    float filter_latitude_max_{0};
-    float filter_longitude_min_{0};
-    float filter_longitude_max_{0};
-
-    bool filter_modec_active_{false};
-    float filter_modec_min_{0};
-    float filter_modec_max_{0};
-
-    bool do_obfuscate_secondary_info_{false};
+    ASTERIXImportTaskSettings settings_;
 
     static boost::mutex m3a_map_mutex_;
     static tbb::concurrent_unordered_map<unsigned int, unsigned int> obfuscate_m3a_map_;

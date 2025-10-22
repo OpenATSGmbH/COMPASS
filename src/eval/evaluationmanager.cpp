@@ -628,7 +628,7 @@ void EvaluationManager::createNewSector(const std::string& name,
 
     calculator_->clearData();
 
-    emit sectorsChangedSignal();
+    //emit sectorsChangedSignal(); // do in caller, otherwise too often
 }
 
 /**
