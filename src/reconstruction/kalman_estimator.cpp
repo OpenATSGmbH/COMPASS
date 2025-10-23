@@ -854,6 +854,30 @@ void KalmanEstimator::initProjection(double lat_proj_center,
 
 /**
 */
+void KalmanEstimator::changeProjection(kalman::Vector& state_vec, 
+                                       const Eigen::Vector2d& proj_center_old, 
+                                       const Eigen::Vector2d& proj_center_new,
+                                       KalmanProjectionHandler* proj_handler_ext) const
+{
+    if (proj_center_old == proj_center_new)
+        return;
+
+    auto proj_handler = proj_handler_ext ? proj_handler_ext : proj_handler_.get();
+
+    double x, y;
+    kalman_interface_->xPos(x, y, state_vec);
+
+    double lat, lon;
+    proj_handler->unproject(lat, lon, x, y, &proj_center_old);
+
+    proj_handler->initProjection(proj_center_new.x(), proj_center_new.y());
+    proj_handler->project(x, y, lat, lon);
+
+    kalman_interface_->xPos(state_vec, x, y);
+}
+
+/**
+*/
 KalmanEstimator::StepResult KalmanEstimator::kalmanStep(kalman::KalmanUpdate& update,
                                                         const Measurement& mm)
 {

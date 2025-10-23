@@ -248,6 +248,11 @@ public:
     bool checkPrediction(const Measurement& mm) const;
     bool validateState(const kalman::KalmanState& state) const;
 
+    void changeProjection(kalman::Vector& state_vec, 
+                          const Eigen::Vector2d& proj_center_old, 
+                          const Eigen::Vector2d& proj_center_new,
+                          KalmanProjectionHandler* proj_handler_ext = nullptr) const;
+
     std::string asString(int flags = kalman::KalmanInfoFlags::InfoAll, const std::string& prefix = "") const;
 
     void enableDebugging(bool ok);

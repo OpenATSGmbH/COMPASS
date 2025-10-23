@@ -110,6 +110,11 @@ void ReconstructorAssociatorBase::associateNewData()
     if (reconstructor().isCancelled())
         return;
 
+    postAssociate();
+
+    if (reconstructor().isCancelled())
+        return;
+
     start_time = boost::posix_time::microsec_clock::local_time();
 
     loginf << "retryAssociateTargetReports";

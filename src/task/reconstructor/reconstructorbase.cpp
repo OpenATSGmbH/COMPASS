@@ -1668,6 +1668,8 @@ void ReconstructorBase::doReconstructionStatistics()
         table->addRow({"tentative terminated coasting", "", stats.num_tentative_terminated_coasting, ""});
         table->addRow({"tentative terminated low prob", "", stats.num_tentative_terminated_low_prob, ""});
         table->addRow({"tentative remaining", "", stats.num_tentative_remaining, ""});
+        table->addRow({"tentative tr reassoc", "", stats.num_tentative_tr_reassoc, ""});
+        table->addRow({"tentative tr lost", "", stats.num_tentative_tr_lost, ""});
         table->addRow({"", "", "", ""});
     }
 
