@@ -107,24 +107,39 @@ private:
 };
 
 /**
- * Score check for early exit in cartesian product.
- * Maintains a stack of scores for each depth.
- * Handles scores in [0, 1].
  */
 class ScoreCheckMultiply
 {
 public:
-    using ScoreFunc     = std::function<double(std::size_t, std::size_t)>;
-    using ThresholdFunc = std::function<double()>;
+    ScoreCheckMultiply() = default;
+    virtual ~ScoreCheckMultiply() = default;
 
-    ScoreCheckMultiply(const ScoreFunc& score_func = nullptr,
-                       const ThresholdFunc& threshold_func = nullptr)
+    virtual void init(size_t n) {}
+    virtual bool add(std::size_t vec_idx, std::size_t elem_idx) { return true; }
+    virtual void erase() {}
+    virtual double score() const { return 0.0; }
+    virtual bool enabled() const { return false; }
+};
+
+/**
+ * Score check for early exit in cartesian product.
+ * Maintains a stack of scores for each depth.
+ * Handles scores in [0, 1].
+ */
+template<typename T_score_func, typename T_thres_func>
+class ScoreCheckMultiplyT : public ScoreCheckMultiply
+{
+public:
+    ScoreCheckMultiplyT(const T_score_func& score_func,
+                        const T_thres_func& threshold_func)
     :   score_func_    (score_func    )
     ,   threshold_func_(threshold_func)
     {
     }
 
-    void init(size_t n)
+    virtual ~ScoreCheckMultiplyT() = default;
+
+    void init(size_t n) override
     {
         idx_ = 0;
         score_stack_.resize(n + 1);
@@ -132,9 +147,9 @@ public:
     }
 
     // Called when adding an element at (vec_idx, elem_idx)
-    bool add(std::size_t vec_idx, std::size_t elem_idx)
+    bool add(std::size_t vec_idx, std::size_t elem_idx) override
     {
-        if (!score_func_ || !threshold_func_) return true;
+        if (!valid_) return true;
         double new_score = score_stack_[ idx_ ] * score_func_(vec_idx, elem_idx);
         ++idx_;
         score_stack_[ idx_ ] = new_score;
@@ -142,26 +157,27 @@ public:
     }
 
     // Called when backtracking/removing an element
-    void erase()
+    void erase() override
     {
         if (idx_ > 0)
             --idx_;
     }
 
-    double score() const { return score_stack_[ idx_ ]; }
-    bool enabled() const { return score_func_ && threshold_func_; }
+    double score() const override { return score_stack_[ idx_ ]; }
+    bool enabled() const override { return true; }
 
 private:
-    ScoreFunc           score_func_;
-    ThresholdFunc       threshold_func_;
+    T_score_func        score_func_;
+    T_thres_func        threshold_func_;
     std::vector<double> score_stack_;
     size_t              idx_ = 0;
+    bool                valid_ = false;
 };
 
 /**
  */
 template <class T, 
-          class Callback, 
+          class Callback,
           class DuplicateCheck = DefaultDuplicateCheck<T>,
           class ScoreCheckT = ScoreCheckMultiply>
 bool cartesianProduct(const std::vector<std::vector<T>>& input,

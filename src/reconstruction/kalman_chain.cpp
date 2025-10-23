@@ -1134,7 +1134,9 @@ bool KalmanChain::reinit(int idx) const
     const auto& update = updates_[ idx ];
 
     //update is the currently tracked update => nothing to do
-    if (!tracker_.tracked_mm_id.has_value() || update.mm_id != tracker_.tracked_mm_id.value())
+    if (!tracker_.tracked_mm_id.has_value() || 
+        update.mm_id != tracker_.tracked_mm_id.value() ||
+        update.t != update.t_mm)
     {
         //if (settings_.verbosity > 0)
         //    loginf << "Reinit at idx=" << idx << " t=" << Utils::Time::toString(updates_[ idx ].kalman_update.t);

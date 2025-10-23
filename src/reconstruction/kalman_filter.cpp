@@ -338,13 +338,16 @@ KalmanFilter::Error KalmanFilter::predict(double dt,
     // save backup state
     backup();
 
-    //update internal time-dependent matrices
-    updateInternalMatrices(dt, Q_var);
+    if (dt != 0.0) // only predict if there is a timestep
+    {
+        //update internal time-dependent matrices
+        updateInternalMatrices(dt, Q_var);
 
-    // predict
-    auto err = predict_impl(x_, P_, dt, Q_var_, u);
-    if (err != Error::NoError)
-        return err;
+        // predict
+        auto err = predict_impl(x_, P_, dt, Q_var_, u);
+        if (err != Error::NoError)
+            return err;
+    }
 
     // save prior state
     x_prior_ = x_;
@@ -407,7 +410,7 @@ KalmanFilter::Error KalmanFilter::predictAndUpdate(double dt,
         revert();
         return err;
     }
-
+    
     //update
     err = update(z, R);
     if (err != Error::NoError)
