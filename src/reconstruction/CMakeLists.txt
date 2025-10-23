@@ -22,6 +22,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.h"
         
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_tools.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_filter_linear.cpp"

@@ -707,7 +707,11 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
         if (debug_mm && reconstructor_.isLastRunInSlice())
         {
-            refs.debug_events_.push_back("");
+            ReferenceCalculatorTargetReferences::DebugEvent evt;
+            evt.rec_num = mm.source_id.value();
+            evt.ts      = mm.t;
+
+            refs.debug_events_.push_back(evt);
         }
 
         if (debug_mm)
@@ -722,7 +726,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             loginf << s;
 
             if (reconstructor_.isLastRunInSlice())
-                refs.debug_events_.back() += s;
+                refs.debug_events_.back().info += s;
         }
 
         //do kalman step
@@ -745,7 +749,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             loginf << s;
 
             if (reconstructor_.isLastRunInSlice())
-                refs.debug_events_.back() += s;
+                refs.debug_events_.back().info += s;
         }
 
         //check result
@@ -1259,7 +1263,7 @@ void ReferenceCalculator::createAnnotations()
             const auto& ref = refs[ i ];
 
             auto& section_utn = section_ref_calc.addSubSection("UTN " + std::to_string(ref->utn));
-            
+
             std::string fig_link = "";
             auto& vp = viewpoints[ i ];
             if (vp)
@@ -1276,11 +1280,20 @@ void ReferenceCalculator::createAnnotations()
 
             if (!ref->debug_events_.empty())
             {
-                size_t cnt = 1;
+                auto& debug_evt_table = section_utn.addTable("Debug Events", 2u, {"Record Number", "Timestamp"});
+
                 for (const auto& evt : ref->debug_events_)
                 {
-                    auto& text = section_utn.addText("Debug Event " + std::to_string(cnt++));
-                    text.addText(evt);
+                    auto& evt_sec = section_utn.addSubSection(Utils::Time::toString(evt.ts) + " " + std::to_string(evt.rec_num));
+
+                    auto& evt_txt = evt_sec.addText("Debug Event");
+                    evt_txt.addText(evt.info);
+
+                    auto j_row = nlohmann::json::array();
+                    j_row.push_back(evt.rec_num);
+                    j_row.push_back(Utils::Time::toString(evt.ts));
+
+                    debug_evt_table.addRow(j_row, ResultReport::SectionContentViewable(), evt_sec.id());
                 }
             }
 

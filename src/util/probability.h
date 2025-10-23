@@ -56,46 +56,57 @@ public:
 
     void clear()
     {
-        queue_ = Queue();
+        queue_     = Queue();
+        is_full_   = false;
+        threshold_ = 0.0;
     }
 
     double threshold() const
     {
-        if (!isFull())
+        if (!is_full_)
             return 0.0;
         
-        return queue_.top().probability;
+        return threshold_;
     }
 
     bool isFull() const
     {
-        return queue_.size() >= k_;
+        return is_full_;
     }
 
     bool canAdd(const HypothesisT<T>& hyp) const
     {
-        if (!isFull())
+        if (!is_full_)
             return true;
 
-        return hyp.probability > queue_.top().probability;
+        return hyp.probability > threshold_;
     }
 
     bool add(const HypothesisT<T>& hyp)
     {
         //queue not full => just add
-        if (!isFull())
+        if (!is_full_)
         {
+            size_t n_before = queue_.size();
             queue_.push(hyp);
+            
+            if (n_before + 1 >= k_)
+                is_full_ = true;
+            if (n_before == 0 || hyp.probability < threshold_)
+                threshold_ = hyp.probability;
+            
             return true;
         }
 
         //not in current top k? => skip
-        if (hyp.probability <= queue_.top().probability)
+        if (hyp.probability <= threshold_)
             return false;
 
         //replace in queue
         queue_.pop();
         queue_.push(hyp);
+
+        threshold_ = queue_.top().probability;
 
         return true;
     }
@@ -106,7 +117,7 @@ public:
         h.hyp         = hyp;
         h.probability = probability;
 
-        return add(h);
+        return add(std::move(h));
     };
 
     std::vector<HypothesisT<T>> popHypotheses()
@@ -123,6 +134,8 @@ public:
 private:
     Queue  queue_;
     size_t k_;
+    bool   is_full_ = false;
+    double threshold_ = 0.0;
 };
 
 }  // namespace Probability

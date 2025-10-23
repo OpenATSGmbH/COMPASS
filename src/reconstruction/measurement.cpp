@@ -370,17 +370,18 @@ std::string Measurement::asString(const std::string& prefix) const
     std::string ax_stddev_str = (ax_stddev.has_value() ? std::to_string(ax_stddev.value()) : "-");
     std::string ay_stddev_str = (ay_stddev.has_value() ? std::to_string(ay_stddev.value()) : "-");
 
-    std::string Q_var_str        = (Q_var.has_value() ? std::to_string(Q_var.value()) : "-");
+    std::string Q_var_str        = (Q_var.has_value()        ? std::to_string(Q_var.value())        : "-");
     std::string Q_var_interp_str = (Q_var_interp.has_value() ? std::to_string(Q_var_interp.value()) : "-");
 
     ss << prefix << "source_id:    " << (source_id.has_value() ? std::to_string(source_id.value()) : "-") << std::endl;
+    ss << prefix << "timestamp:    " << Utils::Time::toString(t) << std::endl;
     ss << prefix << "interp:       " << mm_interp << std::endl;
     ss << prefix << "pos acc corr: " << pos_acc_corrected << std::endl;
     ss << prefix << "pos wgs84:    " << lat << ", " << lon << std::endl;
     ss << prefix << "pos cart:     " << x << ", " << y << ", " << alt_str << " (" << x_stddev_str << ", " << y_stddev_str << ", " << xy_cov_str << ")" << std::endl;
     ss << prefix << "velocity:     " << vx_str << ", " << vy_str << " (" << vx_stddev_str << ", " << vy_stddev_str << ")" << std::endl;
-    ss << prefix << "accel:        " << ax_str << ", " << ay_str << " (" << ax_stddev_str << ", " << ay_stddev_str << ")";
-    ss << prefix << "Q_var:        " << Q_var_str;
+    ss << prefix << "accel:        " << ax_str << ", " << ay_str << " (" << ax_stddev_str << ", " << ay_stddev_str << ")" << std::endl;
+    ss << prefix << "Q_var:        " << Q_var_str << std::endl;
     ss << prefix << "Q_var_interp: " << Q_var_interp_str;
 
     return ss.str();
