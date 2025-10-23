@@ -114,10 +114,10 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
            << "' framing '" << settings().current_file_framing_ << "' line " << current_file_line;
 
     //jasterix callback
-    auto callback = [this, current_file_line] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
                                                size_t num_frames,
                                                size_t num_records, 
-                                               size_t numErrors) 
+                                               size_t num_errors) 
     {
         // get last index
 
@@ -158,9 +158,15 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         addRecordsRead(num_records);
 
+        if (num_errors)
+        {
+            file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
+            file_info.error.errinfo = "Number: "+to_string(num_errors);
+        }
+
         //invoke job callback
         if (job() && !job()->obsolete())
-            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, numErrors);
+            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, num_errors);
     };
 
     //start decoding

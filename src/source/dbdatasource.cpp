@@ -130,6 +130,17 @@ std::map<std::string, unsigned int> DBDataSource::numInsertedSummedLinesMap() co
     return line_sum_map;
 }
 
+std::set<std::string>  DBDataSource::insertedDBContents() const
+{
+    std::set<std::string> dbcontents;
+
+    // db_content -> line id -> count
+    for (auto& db_cont_it : num_inserted_)
+        dbcontents.insert(db_cont_it.first);
+
+    return dbcontents;
+}
+
 void DBDataSource::addNumInserted(const std::string& db_content, unsigned int line_id, unsigned int num)
 {
     num_inserted_[db_content][line_id] += num;

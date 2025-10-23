@@ -215,26 +215,18 @@ void EvaluationStandardWidget::addGroupSlot()
 
 void EvaluationStandardWidget::deleteGroupSlot(Group& group)
 {
-    loginf << standard_.name();
+    loginf << "standard " << standard_.name() << " group " << group.name();
+
+    model().beginReset();
 
     standard_.removeGroup (group.name());
 
-    // if (widget_)
-    //     endModelReset();
+    model().endReset();
+    expandAll();
 }
 
-void EvaluationStandardWidget::addRequirementSlot(Group& group)
+void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_id)
 {
-    loginf << standard_.name();
-
-    QAction* action = dynamic_cast<QAction*>(QObject::sender());
-    traced_assert(action);
-
-    QVariant data = action->data();
-    traced_assert(data.isValid());
-
-    string class_id = data.toString().toStdString();
-
     loginf << standard_.name() << ": class_id " << class_id;
 
     bool ok;
@@ -305,13 +297,14 @@ void EvaluationStandardWidget::deleteRequirementSlot(Group& group, EvaluationReq
 {
     loginf << group.name();
 
-    QAction* action = dynamic_cast<QAction*>(QObject::sender());
-    traced_assert(action);
+    // QAction* action = dynamic_cast<QAction*>(QObject::sender());
+    // traced_assert(action);
 
-    QVariant data = action->data();
-    traced_assert(data.isValid());
+    //QVariant data = action->data();
+    //traced_assert(data.isValid());
 
-    string name = data.toString().toStdString();
+    //string name = data.toString().toStdString();
+    string name = req.name();
 
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(nullptr, "Delete Requirement", ("Confirm to delete requirement '"+name+"'").c_str(),
@@ -372,9 +365,9 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
 
         for (auto& req_it : Group::requirement_type_mapping_)
         {
-            QAction* action = req_menu->addAction(req_it.second.c_str());
-            action->setData(req_it.first.c_str());
-            connect(action, &QAction::triggered, [this,&group]() {this->addRequirementSlot(group);});
+            std::string class_id = req_it.first;
+            QAction* action = req_menu->addAction(class_id.c_str());
+            connect(action, &QAction::triggered, [this,&group,class_id]() {this->addRequirementSlot(group, class_id);});
         }
 
         {
@@ -383,7 +376,6 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
             for (auto& cfg_it : group.configs())
             {
                 QAction* action = del_menu->addAction(cfg_it->name().c_str());
-                action->setData(cfg_it->name().c_str());
                 connect(action, &QAction::triggered, [this,&cfg_it,&group]() {
                     this->deleteRequirementSlot(group, *cfg_it.get());});
             }

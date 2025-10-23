@@ -93,15 +93,13 @@ GridView::GridView(const std::string& class_id,
 */
 GridView::~GridView()
 {
-    loginf;
+    logdbg;
 
     if (widget_)
     {
         delete widget_;
         widget_ = nullptr;
     }
-
-    loginf << "done";
 }
 
 /**

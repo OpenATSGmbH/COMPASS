@@ -21,6 +21,8 @@
 
 #include <jasterix/jasterix.h>
 
+using namespace std;
+
 /**
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
@@ -78,6 +80,10 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
     if (sniffer.hasUnknownPacketHeaders())
     {
         error = "Unknown packet headers encountered";
+
+        logwrn << "unknown packet headers encountered:";
+        sniffer.printUnknowns();
+
         return false;
     }
 
@@ -133,7 +139,7 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 
     std::unique_ptr<nlohmann::json> analysis_info;
 
-    //loginf << "checking data of file " << file_info.filename << " section " << section.id << "...";
+    loginf << "checking data of file " << file_info.filename << " section " << section.id;
 
     analysis_info = jasterix->analyzeData(section.raw_data.data(), section.raw_data.size(), DecodeCheckRecordLimit);
     traced_assert(analysis_info);
@@ -157,6 +163,8 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 
     unsigned int num_errors  = section_error.analysis_info.at("num_errors");
     unsigned int num_records = section_error.analysis_info.at("num_records");
+
+    loginf << analysis_info->dump(2);
 
     if (num_errors || !num_records) // decoder errors or no data
     {
@@ -195,10 +203,10 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     //this should have been checked and caught beforehand
     traced_assert(file_open);
 
-    auto callback = [this, current_file_line] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
                                                size_t num_frames,
                                                size_t num_records, 
-                                               size_t numErrors) 
+                                               size_t num_errors) 
     {
         // get last index
 
@@ -239,8 +247,14 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         addRecordsRead(num_records);
 
+        if (num_errors)
+        {
+            file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
+            file_info.error.errinfo = "Number: "+to_string(num_errors);
+        }
+
         if (job() && !job()->obsolete())
-            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, numErrors);
+            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, num_errors);
     };
 
     size_t max_packets = std::numeric_limits<size_t>::max();
@@ -257,7 +271,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
         //check for errors
         if (!data.has_value())
         {
-            logerr << "Could not read data chunk from PCAP";
+            logerr << "could not read data chunk from PCAP";
             logError("Could not read data chunk from PCAP");
             break;
         }

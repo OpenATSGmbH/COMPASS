@@ -859,7 +859,7 @@ void MainWindow::importAsterixFromPCAPSlot()
 
     // task.runDialog(this);
 
-    QFileDialog dialog(this, "Import PCAP File(s)");
+    QFileDialog dialog(this, "Import PCAP File(s)", QString(), "PCAP Files (*.pcap *.PCAP)");
     dialog.setViewMode(QFileDialog::Detail);
     dialog.setFileMode(QFileDialog::ExistingFiles);
     dialog.setDirectory(COMPASS::instance().lastUsedPath().c_str());

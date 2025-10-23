@@ -223,11 +223,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
     {
         boost::mutex::scoped_lock locker(extracted_data_mutex_);
 
-        //assert(!extracted_data_.size());
-
         extracted_data_.emplace_back(std::move(data));
-
-        //assert(extracted_data_.size());
     }
 
     ++signal_count_;
@@ -236,11 +232,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
 
     emit decodedASTERIXSignal();
 
-    logdbg << "wait " << signal_count_;
-
-    //QThread::msleep(10);
-
-    logdbg << "waiting done " << signal_count_;
+    logdbg << "done " << signal_count_;
 }
 
 /**
@@ -452,6 +444,9 @@ void ASTERIXDecodeJob::checkCAT001SacSics(nlohmann::json& data_block)
     // check if any SAC/SIC info can be found
     for (nlohmann::json& record : records)
     {
+        if (record.count("error") && record.at("error") == true)
+            return; // skip target reports marked with errors
+
         if (!found_any_sac_sic)
         {
             if (record.contains("010"))  // found, set as transferable values

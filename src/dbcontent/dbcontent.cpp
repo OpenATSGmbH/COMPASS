@@ -207,8 +207,6 @@ DBContent::DBContent(COMPASS& compass,
         || name_ == "CAT034" || name_ == "CAT065")
     {
         checkStaticVariable(DBContent::meta_var_message_type_);
-        checkStaticVariable(DBContent::meta_var_longitude_);
-        checkStaticVariable(DBContent::meta_var_utn_);
 
         contains_status_content_ = true;
     }
@@ -978,11 +976,11 @@ void DBContent::checkStaticVariable(const Property& property)
 {
     if (!hasVariable(property.name()))
     {
-        logwrn << "start" << name_ << " has no variable " << property.name();
+        logwrn << "start " << name_ << " has no variable " << property.name();
     }
     else if (variable(property.name()).dataType() != property.dataType())
     {
-        logwrn << "start" << name_ << " variable " << property.name()
+        logwrn << "start " << name_ << " variable " << property.name()
                << " has wrong data type (" << variable(property.name()).dataTypeString()
                << " insteaf of " << property.dataTypeString() << ")";
     }

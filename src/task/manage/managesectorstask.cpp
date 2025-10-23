@@ -396,6 +396,9 @@ void ManageSectorsTask::parseCurrentFile (bool import)
 
     GDALClose(data_set);
 
+    if (import)
+        emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
+
     if (dialog_)
         dialog_->updateParseMessage();
 }
@@ -464,7 +467,7 @@ void ManageSectorsTask::addLinearRing (const std::string& sector_name, OGRLinear
         ++found_sectors_num_;
 
         if (import)
-            addSector (sector_name, move(points));
+            addSector (sector_name, std::move(points));
     }
 }
 

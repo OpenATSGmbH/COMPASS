@@ -18,6 +18,7 @@
 #include "packetsniffer.h"
 #include "logger.h"
 #include "files.h"
+#include "stringconv.h"
 
 #include <iostream>
 #include "traced_assert.h"
@@ -46,6 +47,24 @@ const std::string PacketSniffer::SignatureIPPortSeparator          = ":";
 const std::string PacketSniffer::SignaturePlaceholder              = "any";
 
 const unsigned int PacketSniffer::UnspecifiedPort = std::numeric_limits<unsigned int>::max();
+
+using namespace std;
+using namespace Utils;
+
+#ifndef DLT_LINUX_SLL2
+#define DLT_LINUX_SLL2 276
+struct sll2_header {
+    uint16_t sll2_protocol;
+    uint16_t sll2_reserved_mbz;
+    uint32_t sll2_if_index;
+    uint16_t sll2_hatype;
+    uint8_t  sll2_pkttype;
+    uint8_t  sll2_halen;
+    uint8_t  sll2_addr[8];
+};
+#endif
+
+
 
 /**
 */
@@ -110,6 +129,26 @@ std::pair<size_t, std::set<int>> PacketSniffer::unknownEthernetTypes() const
 std::pair<size_t, std::set<int>> PacketSniffer::unknownIPProtocols() const
 {
     return std::make_pair(unknown_ip_prot_.size(), std::set<int>(unknown_ip_prot_.begin(), unknown_ip_prot_.end()));
+}
+
+void PacketSniffer::printUnknowns() const
+{
+    auto printUnknown = [ & ] (const std::pair<size_t, std::set<int>>& unknown, const std::string& name)
+    {
+        std::stringstream ss;
+        ss << "encountered unknown " << name << ": " << unknown.first;
+        if (unknown.second.size() > 0)
+        {
+            ss << " | ";
+            for (auto u : unknown.second)
+                ss << u << " ";
+        }
+        std::cout << ss.str() << std::endl;
+    };
+
+    printUnknown(unknownLinkTypes()    , "link types"    );
+    printUnknown(unknownEthernetTypes(), "ethernet types");
+    printUnknown(unknownIPProtocols()  , "ip protocols"  );
 }
 
 /**
@@ -201,6 +240,17 @@ void PacketSniffer::digestPCAPPacket(const struct pcap_pkthdr* pkthdr,
     {
         const struct sll_header* sll = (struct sll_header*)packet;
         digestPCAPEtherPacket(ntohs(sll->sll_protocol), pkthdr, packet + sizeof(struct sll_header), sizeof(struct sll_header), read_config);
+    }
+    else if(link_layer_type == DLT_LINUX_SLL2)
+    {
+        const struct sll2_header* sll2 = (struct sll2_header*)packet;
+        digestPCAPEtherPacket(ntohs(sll2->sll2_protocol), pkthdr, packet + sizeof(struct sll2_header), sizeof(struct sll2_header), read_config);
+    }
+    // Raw IP packets (no link layer header)
+    else if(link_layer_type == DLT_RAW)
+    {
+        // Skip directly to IP processing
+        digestPCAPEtherPacket(ETHERTYPE_IP, pkthdr, packet, 0, read_config);
     }
     else
     {
@@ -625,22 +675,7 @@ void PacketSniffer::print() const
 
     std::cout << std::endl;
 
-    auto printUnknown = [ & ] (const std::pair<size_t, std::set<int>>& unknown, const std::string& name)
-    {
-        std::stringstream ss;
-        ss << "encountered unknown " << name << ": " << unknown.first;
-        if (unknown.second.size() > 0)
-        {
-            ss << " | ";
-            for (auto u : unknown.second)
-                ss << u << " ";
-        }
-        std::cout << ss.str() << std::endl;
-    };
-
-    printUnknown(unknownLinkTypes()    , "link types"    );
-    printUnknown(unknownEthernetTypes(), "ethernet types");
-    printUnknown(unknownIPProtocols()  , "ip protocols"  );
+    printUnknowns();
 }
 
 namespace
