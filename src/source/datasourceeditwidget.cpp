@@ -125,7 +125,7 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
     // ground_only_check_
 
     ++row;
-    properties_layout_->addWidget(new QLabel("Ground Only (SMR)"), row, 0);
+    properties_layout_->addWidget(new QLabel("Ground Only"), row, 0);
     
     ground_only_check_ = new QCheckBox();
     connect(ground_only_check_, &QCheckBox::clicked,
@@ -962,9 +962,6 @@ void DataSourceEditWidget::updateContent()
 
     detection_type_combo_->blockSignals(true);
 
-    ground_only_check_->setChecked(false); // to be safe, activate only
-    ground_only_check_->setDisabled(true);
-
     if (!has_current_ds_)
     {
         disableAll();
@@ -1086,6 +1083,9 @@ void DataSourceEditWidget::updateMain(dbContent::DataSourceBase* ds)
     auto current_type = ds->detectionType();
     detection_type_combo_->setCurrentIndex((int)current_type);
 
+    traced_assert (ground_only_check_);
+    ground_only_check_->setChecked(ds->groundOnly());
+
     loginf << "ds_type " << ds->dsType() << " has pos " << ds->hasPosition();
 }
 
@@ -1111,9 +1111,6 @@ void DataSourceEditWidget::updateRadar(dbContent::DataSourceBase* ds)
 {
     if (ds->detectionType() == DataSourceBase::DetectionType::PrimaryOnly)
     {
-        ground_only_check_->setChecked(ds->groundOnly());
-        ground_only_check_->setDisabled(false);
-
         psr_jpda_widget_->setHidden(false);
 
         if (ds->hasProbabilityOfDetection())
