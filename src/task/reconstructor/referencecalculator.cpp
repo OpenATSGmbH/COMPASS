@@ -350,7 +350,7 @@ bool mmSortPred(const reconstruction::Measurement& mm0,
         return mm0.t < mm1.t;
 
     //otherwise sort by source id
-    if (mm0.source_id != mm1.source_id)
+    if (mm0.source_id.value() != mm1.source_id.value())
         return mm0.source_id < mm1.source_id;
 
     //time and source id are the same => must be interpolated

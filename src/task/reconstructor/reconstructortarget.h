@@ -146,6 +146,8 @@ public:
             num_tentative_terminated_low_prob = 0;
             num_tentative_confirmed           = 0;
             num_tentative_remaining           = 0;
+            num_tentative_tr_reassoc          = 0;
+            num_tentative_tr_lost             = 0;
         }
 
         size_t num_standing_adsb               = 0;
@@ -211,6 +213,8 @@ public:
         size_t num_tentative_terminated_low_prob = 0;
         size_t num_tentative_confirmed           = 0;
         size_t num_tentative_remaining           = 0;
+        size_t num_tentative_tr_reassoc          = 0;
+        size_t num_tentative_tr_lost             = 0;
     };
 
     struct InterpOptions

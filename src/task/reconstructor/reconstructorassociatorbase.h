@@ -132,6 +132,7 @@ protected:
     void retryAssociateTargetReports();
     void associate(dbContent::targetReport::ReconstructorInfo& tr, int utn);
     virtual void postAssociate(dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn) {};
+    virtual void postAssociate() {}
     //void checkACADLookup();
     virtual void countUnAssociated();
     void countUnAssociated(const std::vector<unsigned long>& rec_nums);
