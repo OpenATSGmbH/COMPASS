@@ -37,6 +37,8 @@ namespace dbContent
 const std::string DataSourceBase::DetectionKey{"detection_type"};
 const std::string DataSourceBase::GroundOnlyKey{"ground_only"};
 
+const std::string DataSourceBase::IgnoreRadarAzmRngKey{"ignore_radar_azm_rng"};
+
 const std::string DataSourceBase::PDKey{"pd"};
 const std::string DataSourceBase::ClutterRateKey{"clutter_rate"};
 
@@ -282,6 +284,21 @@ double DataSourceBase::altitude () const
 bool DataSourceBase::isPrimaryRadar() const
 {
     return dsType() == "Radar" && detectionType() == DetectionType::PrimaryOnly;
+}
+
+bool DataSourceBase::ignoreRadarAzmRange() const
+{
+    assert (dsType() == "Radar");
+
+    if (!info_.contains(IgnoreRadarAzmRngKey))
+        return false;
+    else
+        return info_.at(IgnoreRadarAzmRngKey);
+}
+void DataSourceBase::ignoreRadarAzmRange(bool value)
+{
+    assert(dsType() == "Radar");
+    info_[IgnoreRadarAzmRngKey] = value;
 }
 
 bool DataSourceBase::hasProbabilityOfDetection () const

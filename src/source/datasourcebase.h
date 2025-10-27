@@ -50,6 +50,7 @@ public:
 
     static const std::string DetectionKey;
     static const std::string GroundOnlyKey;
+    static const std::string IgnoreRadarAzmRngKey;
 
     static const std::string PDKey;
     static const std::string ClutterRateKey;
@@ -117,6 +118,9 @@ public:
 
     // radar stuff
     bool isPrimaryRadar() const;
+
+    bool ignoreRadarAzmRange() const;
+    void ignoreRadarAzmRange(bool value);
 
     bool hasProbabilityOfDetection () const;
     void probabilityOfDetection (double value);

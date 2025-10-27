@@ -52,6 +52,7 @@ public slots:
     void detectionTypeChangedSlot(int index); // Slot to handle detection type change
 
     void groundOnlyCheckedSlot();
+    void ignoreRadarAzmRangeCheckedSlot();
 
     void latitudeEditedSlot(const QString& value_str);
     void longitudeEditedSlot(const QString& value_str);
@@ -103,6 +104,9 @@ protected:
 
     QComboBox* detection_type_combo_{nullptr};
     QCheckBox* ground_only_check_{nullptr}; 
+    
+    QWidget* radar_widget_{nullptr};
+    QCheckBox* radar_ignore_azmrng_check_{nullptr}; 
 
     // position
     QWidget* position_widget_{nullptr};
