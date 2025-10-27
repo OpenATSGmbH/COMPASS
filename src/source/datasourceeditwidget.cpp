@@ -133,6 +133,25 @@ DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceMa
 
     properties_layout_->addWidget(ground_only_check_, row, 1);
 
+    //  radar_widget_
+    radar_widget_ = new QWidget();
+    radar_widget_->setContentsMargins(0, 0, 0, 0);
+
+    QGridLayout* radar_layout = new QGridLayout();
+    radar_layout->setContentsMargins(0, 0, 0, 0);
+
+    radar_layout->addWidget(new QLabel("Ignore Range/Azimuth Values"), 0, 0);
+
+    radar_ignore_azmrng_check_ = new QCheckBox();
+    connect(radar_ignore_azmrng_check_, &QCheckBox::clicked, this,
+            &DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot);
+
+    radar_layout->addWidget(radar_ignore_azmrng_check_, 0, 1);
+
+    radar_widget_->setLayout(radar_layout);
+
+    main_layout->addWidget(radar_widget_);
+
     // position_widget_
 
     position_widget_ = new QWidget();
@@ -629,6 +648,24 @@ void DataSourceEditWidget::groundOnlyCheckedSlot()
     ds_man_.configDataSource(current_ds_id_).groundOnly(checked);
 }
 
+void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
+{
+    loginf;
+
+    traced_assert(radar_ignore_azmrng_check_);
+
+    bool checked = radar_ignore_azmrng_check_->checkState() == Qt::Checked;
+
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).ignoreRadarAzmRange(checked);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).ignoreRadarAzmRange(checked);    
+}
+
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
 {
     bool ok;
@@ -995,6 +1032,8 @@ void DataSourceEditWidget::updateContent()
         }
         else
         {
+            radar_widget_->setHidden(true);
+
             psr_jpda_widget_->setHidden(true);
 
             ranges_widget_->setHidden(true);
@@ -1034,6 +1073,10 @@ void DataSourceEditWidget::disableAll()
 
     detection_type_combo_->setCurrentIndex(0);
     detection_type_combo_->setDisabled(true);
+
+    ground_only_check_->setHidden(true);
+    
+    radar_widget_->setHidden(true);
 
     position_widget_->setHidden(true);
 
@@ -1084,6 +1127,7 @@ void DataSourceEditWidget::updateMain(dbContent::DataSourceBase* ds)
     detection_type_combo_->setCurrentIndex((int)current_type);
 
     traced_assert (ground_only_check_);
+    ground_only_check_->setHidden(false);
     ground_only_check_->setChecked(ds->groundOnly());
 
     loginf << "ds_type " << ds->dsType() << " has pos " << ds->hasPosition();
@@ -1109,6 +1153,12 @@ void DataSourceEditWidget::updatePosition(dbContent::DataSourceBase* ds)
 
 void DataSourceEditWidget::updateRadar(dbContent::DataSourceBase* ds)
 {
+
+    traced_assert (radar_widget_);
+    radar_widget_->setHidden(false);
+
+    radar_ignore_azmrng_check_->setChecked(ds->ignoreRadarAzmRange());
+
     if (ds->detectionType() == DataSourceBase::DetectionType::PrimaryOnly)
     {
         psr_jpda_widget_->setHidden(false);

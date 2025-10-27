@@ -1349,10 +1349,12 @@ std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
             (*lay_it)->addSector(shared_ptr<Sector>(eval_sector));
             traced_assert((*lay_it)->hasSector(name));
 
-            loginf << "loaded sector '" << name << "' in layer '"
+            logdbg << "loaded sector '" << name << "' in layer '"
                 << layer_name << "' num points " << (*lay_it)->sector(name)->size();
         }
     }
+
+    loginf << "loaded " << sector_layers.size() << " sector layers";
 
     return sector_layers;
 }
