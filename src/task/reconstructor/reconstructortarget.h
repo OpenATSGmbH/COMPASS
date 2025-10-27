@@ -138,6 +138,7 @@ public:
             num_jpda_mms_max          = 0;
             num_jpda_assignments      = 0;
             num_jpda_clutters         = 0;
+            num_jpda_tentatives       = 0;
             jpda_assignment_ratio_sum = 0.0;
 
             num_tentative_created             = 0;
@@ -205,6 +206,7 @@ public:
         size_t num_jpda_mms_max          = 0;
         size_t num_jpda_assignments      = 0;
         size_t num_jpda_clutters         = 0;
+        size_t num_jpda_tentatives       = 0;
         double jpda_assignment_ratio_sum = 0.0;
 
         size_t num_tentative_created             = 0;
@@ -342,8 +344,8 @@ public:
 
     mutable Transformation trafo_;
 
-    boost::optional<bool> created_from_tentative_;
-    boost::optional<bool> contains_tentative_;
+    bool created_from_tentative_ = false;
+    bool contains_tentative_     = false;
 
     void addTargetReport (unsigned long rec_num);
     void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
@@ -496,7 +498,7 @@ public:
     //    std::set<unsigned int> getADSBMOPSVersions();
 
     bool createdFromTentative() const;
-    bool containsPreviouslyTentative() const;
+    bool containsTentative() const;
 
     static GlobalStats& globalStats() { return global_stats_; }
     static void addUpdateToGlobalStats(const reconstruction::UpdateStats& s);

@@ -878,6 +878,39 @@ void KalmanEstimator::changeProjection(kalman::Vector& state_vec,
 
 /**
 */
+Eigen::Vector2d KalmanEstimator::state2LatLon(const kalman::Vector& state_vec, 
+                                              const Eigen::Vector2d& proj_center,
+                                              KalmanProjectionHandler* proj_handler_ext) const
+{
+    auto proj_handler = proj_handler_ext ? proj_handler_ext : proj_handler_.get();
+
+    double x, y;
+    kalman_interface_->xPos(x, y, state_vec);
+
+    double lat, lon;
+    proj_handler->unproject(lat, lon, x, y, &proj_center);
+
+    return Eigen::Vector2d(lat, lon);
+}
+
+/**
+*/
+Eigen::Vector2d KalmanEstimator::mmPos2Cart(const Measurement& mm,
+                                            const Eigen::Vector2d& proj_center,
+                                            KalmanProjectionHandler* proj_handler_ext) const
+{
+    auto proj_handler = proj_handler_ext ? proj_handler_ext : proj_handler_.get();
+
+    proj_handler->initProjection(proj_center.x(), proj_center.y());
+
+    double x, y;
+    proj_handler->project(x, y, mm.lat, mm.lon);
+
+    return Eigen::Vector2d(x, y);
+}
+
+/**
+*/
 KalmanEstimator::StepResult KalmanEstimator::kalmanStep(kalman::KalmanUpdate& update,
                                                         const Measurement& mm)
 {

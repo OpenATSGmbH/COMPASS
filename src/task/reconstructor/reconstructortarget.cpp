@@ -328,8 +328,7 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
         standing_adsb_target_ = other.standing_adsb_target_;
 
     //update tentative information if available
-    if ((other.created_from_tentative_.has_value() && other.created_from_tentative_.value()) || 
-        (other.contains_tentative_.has_value() && other.contains_tentative_.value()))
+    if (other.created_from_tentative_ || other.contains_tentative_)
         contains_tentative_ = true;
 }
 
@@ -3278,17 +3277,17 @@ const reconstruction::KalmanChain& ReconstructorTarget::getChain() const
  */
 bool ReconstructorTarget::createdFromTentative() const
 {
-    return (created_from_tentative_.has_value() && created_from_tentative_.value());
+    return created_from_tentative_;
 }
 
 /**
  */
-bool ReconstructorTarget::containsPreviouslyTentative() const
+bool ReconstructorTarget::containsTentative() const
 {
     if (createdFromTentative())
         return true;
 
-    return (contains_tentative_.has_value() && contains_tentative_.value());
+    return contains_tentative_;
 }
 
 //bool ReconstructorTarget::hasADSBMOPSVersion()

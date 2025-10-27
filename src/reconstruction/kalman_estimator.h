@@ -252,6 +252,12 @@ public:
                           const Eigen::Vector2d& proj_center_old, 
                           const Eigen::Vector2d& proj_center_new,
                           KalmanProjectionHandler* proj_handler_ext = nullptr) const;
+    Eigen::Vector2d state2LatLon(const kalman::Vector& state_vec, 
+                                 const Eigen::Vector2d& proj_center,
+                                 KalmanProjectionHandler* proj_handler_ext = nullptr) const;
+    Eigen::Vector2d mmPos2Cart(const Measurement& mm,
+                               const Eigen::Vector2d& proj_center,
+                               KalmanProjectionHandler* proj_handler_ext = nullptr) const;
 
     std::string asString(int flags = kalman::KalmanInfoFlags::InfoAll, const std::string& prefix = "") const;
 

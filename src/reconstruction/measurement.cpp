@@ -115,60 +115,52 @@ double Measurement::distanceSqr(const Measurement& other, CoordSystem cs) const
 
 /**
 */
+Utils::Accuracy::GeoInfo Measurement::geoInfo() const
+{
+    return Utils::Accuracy::GeoInfo(lat, lon);
+}
+
+/**
+*/
+Utils::Accuracy::GeoAccInfo Measurement::geoAccuracyInfo() const
+{
+    traced_assert(hasStdDevPosition());
+    return Utils::Accuracy::GeoAccInfo(lat, lon, x_stddev.value(), y_stddev.value(), hasCovPosition() ? xy_cov.value() : 0.0);
+}
+
+/**
+*/
 double Measurement::geodeticDistance(const Measurement& other) const
 {
-    return osgEarth::GeoMath::distance(lat       * DEG2RAD,
-                                       lon       * DEG2RAD,
-                                       other.lat * DEG2RAD, 
-                                       other.lon * DEG2RAD);
+    return geoInfo().geodeticDistance(other.geoInfo());
 }
 
 /**
 */
 double Measurement::bearing(const Measurement& other) const
 {
-    return osgEarth::GeoMath::bearing(lat       * DEG2RAD,
-                                      lon       * DEG2RAD,
-                                      other.lat * DEG2RAD, 
-                                      other.lon * DEG2RAD);
+    return geoInfo().bearing(other.geoInfo());
 }
 
+/**
+*/
 Utils::Accuracy::GeodeticDistanceInfo Measurement::geodeticDistanceInfo(const Measurement& other) const
 {
-    double d = geodeticDistance(other);
-    double b = bearing(other);
-
-    Utils::Accuracy::EllipseDef acc_ell;
-
-    Utils::Accuracy::estimateEllipse(acc_ell, x_stddev.value(), y_stddev.value(), xy_cov.value());
-    double stddev0 = Utils::Accuracy::estimateAccuracyAt(acc_ell, b);
-
-    Utils::Accuracy::estimateEllipse(acc_ell, other.x_stddev.value(), other.y_stddev.value(), other.xy_cov.value());
-    double stddev1 = Utils::Accuracy::estimateAccuracyAt(acc_ell, b);
-
-    Utils::Accuracy::GeodeticDistanceInfo gdi;
-    gdi.distance = d;
-    gdi.bearing  = b;
-    gdi.stddev0  = stddev0;
-    gdi.stddev1  = stddev1;
-
-    return gdi;
+    return geoAccuracyInfo().distance(other.geoAccuracyInfo());
 }
 
 /**
 */
 double Measurement::mahalanobisDistanceGeodetic(const Measurement& other) const
 {
-    auto gdi = geodeticDistanceInfo(other);
-    return gdi.mahalanobisDistance();
+    return geodeticDistanceInfo(other).mahalanobisDistance();
 }
 
 /**
 */
 double Measurement::mahalanobisDistanceGeodeticSqr(const Measurement& other) const
 {
-    auto gdi = geodeticDistanceInfo(other);
-    return gdi.mahalanobisDistanceSqr();
+    return geodeticDistanceInfo(other).mahalanobisDistanceSqr();
 }
 
 /**

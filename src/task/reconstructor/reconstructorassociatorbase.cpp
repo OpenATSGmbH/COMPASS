@@ -415,7 +415,27 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
 
 void ReconstructorAssociatorBase::selfAssociateNewUTNs()
 {
+    //return;
+
     loginf;
+
+    size_t num_tentative_origin = 0;
+    size_t num_targets          = 0;
+    for (auto utn : reconstructor().targets_container_.utn_vec_)
+    {
+        traced_assert(reconstructor().targets_container_.targets_.count(utn));
+        dbContent::ReconstructorTarget& target = reconstructor().targets_container_.targets_.at(utn);
+
+        if (!target.target_reports_.size()) // can not compare
+            continue;
+
+        ++num_targets;
+
+        if (target.created_from_tentative_)
+            ++num_tentative_origin;
+    }
+
+    loginf << "merging " << num_targets << " target(s), " << num_tentative_origin << " created from tentative(s)";
 
     unsigned int loop_cnt {0};
 

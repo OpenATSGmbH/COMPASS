@@ -737,6 +737,14 @@ const kalman::KalmanUpdateMinimal& KalmanChain::getKalmanUpdate(size_t idx) cons
 
 /**
 */
+const kalman::KalmanUpdateMinimal& KalmanChain::getKalmanUpdateAtEnd() const
+{
+    traced_assert(canReestimate());
+    return updates_.back().kalman_update;
+}
+
+/**
+*/
 kalman::KalmanUpdateMinimal KalmanChain::lastKalmanUpdate() const
 {
     traced_assert(hasData());

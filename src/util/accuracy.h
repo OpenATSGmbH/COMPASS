@@ -45,6 +45,42 @@ struct GeodeticDistanceInfo
     double stddev1  = 0.0;
 };
 
+/**
+ */
+struct GeoInfo
+{
+    GeoInfo() = default;
+    GeoInfo(double latitude, double longitude) : lat(latitude), lon(longitude) {}
+
+    double geodeticDistance(const GeoInfo& other) const;
+    double bearing(const GeoInfo& other) const;
+
+    double lat      = 0.0;
+    double lon      = 0.0;
+};
+
+/**
+ */
+struct GeoAccInfo : public GeoInfo
+{
+    GeoAccInfo() = default;
+    GeoAccInfo(double latitude, 
+               double longitude,
+               double xstddev,
+               double ystddev,
+               double xycov) 
+    :   GeoInfo (latitude, longitude)
+    ,   x_stddev(xstddev)
+    ,   y_stddev(ystddev)
+    ,   xy_cov  (xycov) {}
+
+    GeodeticDistanceInfo distance(const GeoAccInfo& other) const;
+
+    double x_stddev = 0.0;
+    double y_stddev = 0.0;
+    double xy_cov   = 0.0;
+};
+
 void estimateEllipse(EllipseDef& def,
                      double x_stddev,
                      double y_stddev,

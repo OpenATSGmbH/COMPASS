@@ -1220,7 +1220,7 @@ void ReconstructorBase::createTargetReportBatches()
     //std::map<unsigned int, std::map<unsigned int, std::map<unsigned int, std::vector<unsigned long>>>> tr_ds_;
     // dbcontent id -> ds_id -> line id -> record_num, sorted by ts
 
-    std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "MLAT", "Radar", "Other", "Tracker"};
+    std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "Tracker", "MLAT", "Radar", "Other"};
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -1651,6 +1651,7 @@ void ReconstructorBase::doReconstructionStatistics()
         table->addRow({"jpda measurements max", "", stats.num_jpda_mms_max, ""});
         table->addRow({"jpda assignments total", "", stats.num_jpda_assignments, ""});
         table->addRow({"jpda clutter total", "", stats.num_jpda_clutters, ""});
+        table->addRow({"jpda tentatives total", "", stats.num_jpda_tentatives, ""});
         table->addRow({"jpda assignment ratio", "", perc(stats.num_jpda_assignments, stats.num_po_unassoc), ""});
         table->addRow({"jpda assignment ratio per-batch", "", perc(stats.jpda_assignment_ratio_sum, stats.num_jpda_success), ""});
         table->addRow({"", "", "", ""});

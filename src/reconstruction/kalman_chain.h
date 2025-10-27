@@ -166,6 +166,7 @@ public:
 
     kalman::KalmanUpdateMinimal lastKalmanUpdate() const;
     const kalman::KalmanUpdateMinimal& getKalmanUpdate(size_t idx) const;
+    const kalman::KalmanUpdateMinimal& getKalmanUpdateAtEnd() const;
     const Update& getUpdate(size_t idx);
 
     bool hasUpdateFor(const boost::posix_time::ptime& ts) const;

@@ -55,6 +55,8 @@ struct Measurement
     double distance(const Measurement& other, CoordSystem cs) const;
     double distanceSqr(const Measurement& other, CoordSystem cs) const;
 
+    Utils::Accuracy::GeoInfo geoInfo() const;
+    Utils::Accuracy::GeoAccInfo geoAccuracyInfo() const;
     double geodeticDistance(const Measurement& other) const;
     double bearing(const Measurement& other) const;
     Utils::Accuracy::GeodeticDistanceInfo geodeticDistanceInfo(const Measurement& other) const;

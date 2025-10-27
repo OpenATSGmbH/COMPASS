@@ -16,9 +16,12 @@
  */
 
 #include "accuracy.h"
+#include "global.h"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+
+#include <osgEarth/GeoMath>
 
 namespace Utils
 {
@@ -57,6 +60,66 @@ double GeodeticDistanceInfo::likelihood(double eps) const
     const double exponent            = -0.5 * distance_sqr * sum_std_dev_sqr_inv;
     
     return factor * std::exp(exponent);
+}
+
+/********************************************************************************
+ * GeoInfo
+ ********************************************************************************/
+
+/**
+*/
+double GeoInfo::geodeticDistance(const GeoInfo& other) const
+{
+    return osgEarth::GeoMath::distance(lat       * DEG2RAD,
+                                       lon       * DEG2RAD,
+                                       other.lat * DEG2RAD, 
+                                       other.lon * DEG2RAD);
+}
+
+/**
+*/
+double GeoInfo::bearing(const GeoInfo& other) const
+{
+    return osgEarth::GeoMath::bearing(lat       * DEG2RAD,
+                                      lon       * DEG2RAD,
+                                      other.lat * DEG2RAD, 
+                                      other.lon * DEG2RAD);
+}
+
+/********************************************************************************
+ * GeoAccInfo
+ ********************************************************************************/
+
+/**
+ */
+GeodeticDistanceInfo GeoAccInfo::distance(const GeoAccInfo& other) const
+{
+    double d = geodeticDistance(other);
+    double b = bearing(other);
+
+    Utils::Accuracy::EllipseDef acc_ell;
+
+    double stddev0 = x_stddev;
+    if (x_stddev != y_stddev)
+    {
+        Utils::Accuracy::estimateEllipse(acc_ell, x_stddev, y_stddev, xy_cov);
+        stddev0 = Utils::Accuracy::estimateAccuracyAt(acc_ell, b);
+    }
+
+    double stddev1 = other.x_stddev;
+    if (other.x_stddev != other.y_stddev)
+    {
+        Utils::Accuracy::estimateEllipse(acc_ell, other.x_stddev, other.y_stddev, other.xy_cov);
+        stddev1 = Utils::Accuracy::estimateAccuracyAt(acc_ell, b);
+    }
+
+    Utils::Accuracy::GeodeticDistanceInfo gdi;
+    gdi.distance = d;
+    gdi.bearing  = b;
+    gdi.stddev0  = stddev0;
+    gdi.stddev1  = stddev1;
+
+    return gdi;
 }
 
 /********************************************************************************
