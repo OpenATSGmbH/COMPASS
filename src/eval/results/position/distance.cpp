@@ -16,9 +16,11 @@
  */
 
 #include "eval/results/position/distance.h"
+#include "eval/requirement/position/distance.h"
 #include "stringconv.h"
 
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace Utils;
 
@@ -71,6 +73,18 @@ nlohmann::json::array_t SinglePositionDistance::targetTableValuesCustom() const
              num_failed_,
              num_passed_ }; 
 }
+
+std::string SinglePositionDistance::targetTableCustomSortColumn() const 
+{
+    const EvaluationRequirement::PositionDistance* req = 
+    dynamic_cast<const EvaluationRequirement::PositionDistance*>(requirement().get());
+    traced_assert(req);
+
+    if (req->failedValuesOfInterest())
+        return "#CF";
+    else
+        return "#CP";
+};
 
 /**
 */

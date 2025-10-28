@@ -217,6 +217,11 @@ nlohmann::json::array_t SingleSpeed::targetTableValuesCustom() const
              num_comp_passed_ };                 // "#DNOK"
 }
 
+std::string SingleSpeed::targetTableCustomSortColumn() const 
+{
+    return "#CF";
+};
+
 /**
 */
 std::vector<Single::TargetInfo> SingleSpeed::targetInfos() const

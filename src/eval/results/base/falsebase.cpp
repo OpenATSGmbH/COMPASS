@@ -175,6 +175,11 @@ nlohmann::json::array_t SingleFalseBase::targetTableValuesCustom() const
     return { num_updates_, num_no_ref_pos_ + num_no_ref_val_, num_unknown_, num_correct_, num_false_ };
 }
 
+std::string SingleFalseBase::targetTableCustomSortColumn() const 
+{
+    return "#False";
+};
+
 /**
 */
 std::vector<Single::TargetInfo> SingleFalseBase::targetInfos() const

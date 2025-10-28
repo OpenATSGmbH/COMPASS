@@ -217,6 +217,11 @@ nlohmann::json::array_t SingleTrackAngle::targetTableValuesCustom() const
              num_comp_passed_ };                 // "#DNOK"
 }
 
+std::string SingleTrackAngle::targetTableCustomSortColumn() const 
+{
+    return "#CF";
+};
+
 /**
 */
 std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
