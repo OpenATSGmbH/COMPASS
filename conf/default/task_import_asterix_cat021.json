@@ -2198,6 +2198,22 @@
                     "unit": ""
                 }
             },
+            "JSONDataMapping45b": {
+                "parameters": {
+                    "active": true,
+                    "append_value": false,
+                    "comment": "Type number, value 7",
+                    "db_content_name": "CAT021",
+                    "db_content_variable_name": "NUCp or NIC",
+                    "dimension": "",
+                    "format_data_type": "",
+                    "in_array": false,
+                    "json_key": "090.PA",
+                    "json_value_format": "",
+                    "mandatory": false,
+                    "unit": ""
+                }
+            },
             "JSONDataMapping46": {
                 "parameters": {
                     "active": true,

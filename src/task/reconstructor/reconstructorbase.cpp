@@ -1046,6 +1046,7 @@ void ReconstructorBase::createTargetReports()
 
     for (auto& buf_it : *accessor_)
     {
+        loginf << "processing " << buf_it.first;
         traced_assert(dbcont_man.existsDBContent(buf_it.first));
 
         if (settings().do_not_associate_systracks_ && buf_it.first == "CAT062")

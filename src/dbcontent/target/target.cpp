@@ -16,6 +16,7 @@
  */
 
 #include "target.h"
+#include <exception>
 #include "stringconv.h"
 #include "timeconv.h"
 #include "traced_assert.h"
@@ -409,9 +410,14 @@ std::set<unsigned int> Target::adsbMopsList() const
 
     if (hasADSBMOPS())
     {
-        for (const auto& mops_it : info_.at(KEY_ADSB_INFO).at(KEY_ADSB_MOPS).get<
-                                   std::map<std::string, nlohmann::json>>())
+        for (const auto& mops_it : info_.at(KEY_ADSB_INFO).at(KEY_ADSB_MOPS).get<std::map<std::string, nlohmann::json>>())
+        {
+            if (mops_it.first == "NULL") // set in ReconstructorTarget::addTargetReportInternal
+                continue;
+
+            logdbg << "key '" << mops_it.first << "' value '" <<  mops_it.second.dump(-1) << "'";
             ret.insert(std::stoul(mops_it.first));
+        }
     }
 
     return ret;

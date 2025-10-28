@@ -121,23 +121,30 @@ bool EvaluationTargetData::hasTstData () const
  */
 void EvaluationTargetData::finalize () const
 {
-    //    loginf << "utn " << utn_
-    //           << " ref " << hasRefData() << " up " << ref_rec_nums_.size()
-    //           << " tst " << hasTstData() << " up " << tst_rec_nums_.size();
+    logdbg << "utn " << utn_ << " ref " << hasRefData() << " tst " << hasTstData();
 
+    logdbg << "ref finalize";
     ref_chain_.finalize();
+    logdbg << "tst finalize";
     tst_chain_.finalize();
 
+    logdbg << "updated acids";
     updateACIDs();
+    logdbg << "updated acads";
     updateACADs();
+    logdbg << "updated mas";
     updateModeACodes();
+    logdbg << "updated mcs";
     updateModeCMinMax();
+    logdbg << "updated pos";
     updatePositionMinMax();
 
+    logdbg << "updated use";
     updateUseInfo();
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
+    logdbg << "updated mops";
     if (dbcont_man.hasTargetsInfo()   &&
         dbcont_man.existsTarget(utn_) &&
         dbcont_man.target(utn_).hasADSBMOPS())
@@ -198,8 +205,12 @@ void EvaluationTargetData::finalize () const
     //        //               << " nacp "<<  (has_nacp ? nacpStr() : " none ");
     //    }
 
+    logdbg << "test data mappings";
     calculateTestDataMappings();
+    logdbg << "sector inside";
     computeSectorInsideInfo();
+
+    logdbg << "done";
 }
 
 /**

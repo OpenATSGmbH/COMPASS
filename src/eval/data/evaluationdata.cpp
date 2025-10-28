@@ -321,9 +321,15 @@ void EvaluationData::finalize ()
         auto task = [&] (int cnt) { target_data_[cnt].finalize(); return true; };
 
         Utils::Async::waitDialogAsyncArray(task, (int) num_targets, "Finalizing data");
+
+        // single thread for testing
+        // for (unsigned int cnt=0; cnt < num_targets; cnt++)
+        //     task(cnt);
     }
 
     finalized_ = true;
+
+    loginf << "done";
 }
 
 /**
