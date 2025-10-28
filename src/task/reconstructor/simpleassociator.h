@@ -56,7 +56,7 @@ private:
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) override;
 
-    virtual boost::optional<bool> checkTrackPositionOffsetTooLarge (
+    virtual boost::optional<bool> isTrackNumberPositionOffsetTooLarge (
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
         bool secondary_verified,bool do_debug) override;
 

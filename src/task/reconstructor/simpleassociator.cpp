@@ -219,7 +219,7 @@ boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetT
     return std::tuple<double, double>(distance_m, -1);
 }
 
-boost::optional<bool> SimpleAssociator::checkTrackPositionOffsetTooLarge (
+boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (
     dbContent::targetReport::ReconstructorInfo& tr,
     unsigned int utn, bool secondary_verified, bool do_debug)
 {
