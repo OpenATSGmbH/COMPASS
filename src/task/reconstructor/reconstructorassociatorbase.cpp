@@ -415,8 +415,6 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
 
 void ReconstructorAssociatorBase::selfAssociateNewUTNs()
 {
-    //return;
-
     loginf;
 
     size_t num_tentative_origin = 0;
@@ -435,7 +433,13 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
             ++num_tentative_origin;
     }
 
-    loginf << "merging " << num_targets << " target(s), " << num_tentative_origin << " created from tentative(s)";
+    loginf << "about to merge " << num_targets << " target(s), " << num_tentative_origin << " created from tentative(s)";
+
+    if (reconstructor().settings().do_not_merge_utns_)
+    {
+        loginf << "skipping";
+        return;
+    }
 
     unsigned int loop_cnt {0};
 

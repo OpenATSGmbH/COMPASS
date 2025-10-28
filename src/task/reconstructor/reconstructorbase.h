@@ -127,6 +127,7 @@ class ReconstructorBaseSettings
     bool use_stopped_adsb_tracking_ {true};
 
     // experimental switches (most likely to be removed)
+    bool do_not_merge_utns_ {false};
     bool do_not_merge_targets_with_tentative_origin_ {false}; // used for testing primary only tracking
     bool do_not_associate_systracks_ {false};                 // used for testing primary only tracking
 
