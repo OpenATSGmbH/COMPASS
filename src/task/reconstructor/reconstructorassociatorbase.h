@@ -160,7 +160,7 @@ protected:
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) = 0; // distance, sum_std_dev
 
-    virtual boost::optional<bool> checkTrackPositionOffsetAcceptable (
+    virtual boost::optional<bool> isTrackNumberPositionOffsetTooLarge (
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
         bool secondary_verified, bool do_debug) = 0;
     // empty if not possible, else check passed or failed returned

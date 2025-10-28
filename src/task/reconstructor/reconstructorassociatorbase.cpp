@@ -788,10 +788,10 @@ START_TR_ASSOC:
                     loginf << "DBG stored utn in tn2utn_ checking position offset";
 
                 // check for position offsets
-                boost::optional<bool> check_result = checkTrackPositionOffsetAcceptable(
+                boost::optional<bool> check_result = isTrackNumberPositionOffsetTooLarge(
                     tr, utn, true, do_debug);
 
-                if (check_result && !*check_result)
+                if (check_result && *check_result)
                 {
                     if (do_debug)
                         loginf << "DBG stored utn in tn2utn_ position offset not acceptable " << *check_result;
