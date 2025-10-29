@@ -148,7 +148,8 @@ protected:
             // tries to find existing utn for target report, based on mode a/c and position, -1 if failed
     int findUTNByModeACPos (const dbContent::targetReport::ReconstructorInfo& tr);
 
-    std::vector<ReconstructorAssociatorBase::AssociationOption> findUTNsForTarget (unsigned int utn);
+    std::vector<ReconstructorAssociatorBase::AssociationOption> findUTNsForTarget (unsigned int utn,
+                                                                                   std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption>& assoc_option_cache);
 
     virtual bool canGetPositionOffsetTargets(
         const boost::posix_time::ptime& ts,

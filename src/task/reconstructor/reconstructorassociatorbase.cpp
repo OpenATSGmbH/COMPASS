@@ -444,7 +444,6 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
     unsigned int loop_cnt {0};
 
     std::multimap<float, std::pair<unsigned int, unsigned int>> scored_utn_pairs;
-    set<unsigned int> utns_joined; // already joined in current run, do only once to be save
     set<unsigned int> utns_to_remove;
 
     //float min_score = reconstructor().settings().targets_min_assoc_score_;
@@ -455,7 +454,6 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
 RESTART_SELF_ASSOC:
 
     scored_utn_pairs.clear();
-    utns_joined.clear();
     utns_to_remove.clear();
 
     //std::map<std::pair<unsigned int, unsigned int>, float> assessed_scores; // utn_pair -> score
@@ -466,6 +464,8 @@ RESTART_SELF_ASSOC:
     logdbg << "loop " << loop_cnt;
 
     reconstructor().targets_container_.checkACADLookup();
+
+    std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption> assoc_option_cache;
 
     // collect scored pairs
     for (auto utn : reconstructor().targets_container_.utn_vec_)
@@ -485,14 +485,15 @@ RESTART_SELF_ASSOC:
         // tie(score, utn_pair) = findUTNsForTarget(utn); // , utns_to_remove
 
         // if (score != std::numeric_limits<float>::lowest())
-        //     scored_utn_pairs.insert({score, utn_pair});
+        //     scored_utn_pairs.insert({-score, utn_pair});
 
-        std::vector<ReconstructorAssociatorBase::AssociationOption> options = findUTNsForTarget(utn);
+        std::vector<ReconstructorAssociatorBase::AssociationOption> options = findUTNsForTarget(utn, assoc_option_cache);
 
         for (auto& option : options)
         {
             traced_assert (option.usable_);
-            scored_utn_pairs.insert({option.score_, {option.utn_, option.other_utn_}});
+            scored_utn_pairs.insert({-option.score_, {option.utn_, option.other_utn_}});
+            assoc_option_cache[{option.utn_, option.other_utn_}] = option;
         }
     }
 
@@ -505,54 +506,45 @@ RESTART_SELF_ASSOC:
     while (!scored_utn_pairs.empty())
     {
         // get iterator to the last element (largest score)
-        auto last_it = scored_utn_pairs.rbegin();
+        auto last_it = scored_utn_pairs.begin();
         float largest_score = last_it->first;
 
-        // get the range of elements with the largest score
-        auto range = scored_utn_pairs.equal_range(largest_score);
+        // Access the key and value
+        tie(utn, other_utn) = last_it->second;
 
-        // process elements with the largest score
-        for (auto it = range.first; it != range.second; ++it)
+        if (!utns_to_remove.count(utn) && !utns_to_remove.count(other_utn))
         {
-            // Access the key and value
-            float score = it->first;
-            tie(utn, other_utn) = it->second;
+            // join and schedule for remove
+            traced_assert(reconstructor().targets_container_.targets_.count(utn));
+            dbContent::ReconstructorTarget& target =
+                reconstructor().targets_container_.targets_.at(utn);
 
-            if (!utns_joined.count(utn) && !utns_joined.count(other_utn)
-                && !utns_to_remove.count(utn) && !utns_to_remove.count(other_utn))
-            {
-                // join and schedule for remove
-                traced_assert(reconstructor().targets_container_.targets_.count(utn));
-                dbContent::ReconstructorTarget& target =
-                    reconstructor().targets_container_.targets_.at(utn);
+            traced_assert(reconstructor().targets_container_.targets_.count(other_utn));
+            dbContent::ReconstructorTarget& other_target =
+                reconstructor().targets_container_.targets_.at(other_utn);
 
-                traced_assert(reconstructor().targets_container_.targets_.count(other_utn));
-                dbContent::ReconstructorTarget& other_target =
-                    reconstructor().targets_container_.targets_.at(other_utn);
+            loginf << "loop " << loop_cnt
+                    << ": merging '" << target.asStr()
+                    << "' with '" << other_target.asStr() << "' using score "
+                    << String::doubleToStringPrecision(largest_score, 2);
 
-                loginf << "loop " << loop_cnt
-                       << ": merging '" << target.asStr()
-                       << "' with '" << other_target.asStr() << "' using score "
-                       << String::doubleToStringPrecision(score, 2);
+            // move target reports
+            target.addTargetReports(other_target);
 
-                // move target reports
-                target.addTargetReports(other_target);
+            // schedule remove from targets
+            utns_to_remove.insert(other_utn);
 
-                // schedule remove from targets
-                utns_to_remove.insert(other_utn);
+            reconstructor().targets_container_.replaceInLookup(other_utn, utn);
 
-                // add to targets to ignore for other joins, re-check in next loop to be safe
-                utns_joined.insert(utn);
-                utns_joined.insert(other_utn);
+            ++num_merges_;
 
-                reconstructor().targets_container_.replaceInLookup(other_utn, utn);
-
-                ++num_merges_;
-            }
+            assoc_option_cache.erase({other_utn, utn});
+            assoc_option_cache.erase({utn, other_utn});
         }
+        
 
         // Erase all elements with the largest key
-        scored_utn_pairs.erase(range.first, range.second);
+        scored_utn_pairs.erase(last_it);
     }
 
     // remove scheduled from targets
@@ -1069,7 +1061,8 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 }
 
 std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssociatorBase::findUTNsForTarget (
-    unsigned int utn)
+    unsigned int utn,
+    std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption>& assoc_option_cache)
 {
     std::vector<ReconstructorAssociatorBase::AssociationOption> ret_options;
 
@@ -1101,6 +1094,17 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
 #endif
                       {
                           unsigned int other_utn = reconstructor().targets_container_.utn_vec_.at(cnt);
+
+                          auto assoc_option_it = assoc_option_cache.find({utn, other_utn});
+                          if (assoc_option_it != assoc_option_cache.end())
+                          {
+                              results[cnt] = assoc_option_it->second;
+#ifdef FIND_UTN_FOR_TARGET_MT
+                              return;
+#else
+                              continue;
+#endif
+                          }
 
                           //bool print_debug_target = debug_utns.count(utn) && debug_utns.count(other_utn);
 
