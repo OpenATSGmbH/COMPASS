@@ -456,6 +456,7 @@ RESTART_SELF_ASSOC:
 
     scored_utn_pairs.clear();
     utns_to_remove.clear();
+    utns_to_ignore.clear();
 
     //std::map<std::pair<unsigned int, unsigned int>, float> assessed_scores; // utn_pair -> score
 
