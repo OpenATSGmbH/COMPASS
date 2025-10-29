@@ -447,8 +447,9 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
     set<unsigned int> utns_joined; // already joined in current run, do only once to be save
     set<unsigned int> utns_to_remove;
 
-    float score;
-    std::pair<unsigned int, unsigned int> utn_pair;
+    //float min_score = reconstructor().settings().targets_min_assoc_score_;
+    //float score;
+    //std::pair<unsigned int, unsigned int> utn_pair;
     unsigned int utn, other_utn;
 
 RESTART_SELF_ASSOC:
@@ -456,6 +457,8 @@ RESTART_SELF_ASSOC:
     scored_utn_pairs.clear();
     utns_joined.clear();
     utns_to_remove.clear();
+
+    //std::map<std::pair<unsigned int, unsigned int>, float> assessed_scores; // utn_pair -> score
 
     if (reconstructor().isCancelled())
         return;
@@ -479,14 +482,24 @@ RESTART_SELF_ASSOC:
         if (do_debug)
             loginf << "checking utn " << utn;
 
-        tie(score, utn_pair) = findUTNsForTarget(utn); // , utns_to_remove
+        // tie(score, utn_pair) = findUTNsForTarget(utn); // , utns_to_remove
 
-        if (score != std::numeric_limits<float>::lowest())
-            scored_utn_pairs.insert({score, utn_pair});
+        // if (score != std::numeric_limits<float>::lowest())
+        //     scored_utn_pairs.insert({score, utn_pair});
+
+        std::vector<ReconstructorAssociatorBase::AssociationOption> options = findUTNsForTarget(utn);
+
+        for (auto& option : options)
+        {
+            traced_assert (option.usable_);
+            scored_utn_pairs.insert({option.score_, {option.utn_, option.other_utn_}});
+        }
     }
 
     if (reconstructor().isCancelled())
         return;
+
+    loginf << "loop " << loop_cnt << " pairs to merge " << scored_utn_pairs.size();
 
     // reverse iterate and remove elements with the largest key
     while (!scored_utn_pairs.empty())
@@ -1055,11 +1068,13 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     return -1;
 }
 
-std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorBase::findUTNsForTarget (
+std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssociatorBase::findUTNsForTarget (
     unsigned int utn)
 {
+    std::vector<ReconstructorAssociatorBase::AssociationOption> ret_options;
+
     if (!reconstructor().targets_container_.targets_.size()) // check if targets exist
-        return std::pair<float, std::pair<unsigned int, unsigned int>>{std::numeric_limits<float>::lowest(), {0,0}};
+        return ret_options;
 
     traced_assert(reconstructor().targets_container_.targets_.count(utn));
 
@@ -1078,131 +1093,6 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
     prediction_stats.resize(num_utns);
 
     const auto& settings = reconstructor().settings();
-
-    //computes a match score for the given other target
-    auto scoreUTN = [ & ] (const std::vector<size_t>& rec_nums,
-                        const dbContent::ReconstructorTarget& other,
-                        unsigned int result_idx,
-                        bool secondary_verified,
-                        bool do_debug)
-    {
-        vector<pair<unsigned long, double>> distance_scores;
-        double distance_scores_sum {0};
-
-        unsigned int pos_not_ok_cnt {0};
-        unsigned int pos_dubious_cnt {0};
-        unsigned int pos_good_cnt {0};
-        unsigned int pos_skipped_cnt {0};
-
-        double distance_m, stddev_sum_targets;
-        float pos_not_ok_rate, pos_dubious_rate;
-        bool pos_not_ok_rate_acceptable, pos_dubious_rate_acceptable;
-
-        if (do_debug)
-            loginf << "\ttarget " << utn << " other utn " << other.utn_ << " rec_nums " << rec_nums.size();
-
-        for (auto rn_it : rec_nums)
-        {
-            traced_assert(reconstructor().target_reports_.count(rn_it));
-
-            const dbContent::targetReport::ReconstructorInfo& tr = reconstructor().target_reports_.at(rn_it);
-
-            if (tr.doNotUsePosition() || !canGetPositionOffsetTargets(tr.timestamp_, target, other))
-            {
-                ++pos_skipped_cnt;
-                continue;
-            }
-
-            //@TODO: debug flag
-            auto pos_offs = getPositionOffsetTargets(tr.timestamp_, target, other, false,
-                                                     {}, &prediction_stats[ result_idx ]);
-            if (!pos_offs.has_value())
-            {
-                ++pos_skipped_cnt;
-                continue;
-            }
-
-            tie(distance_m, stddev_sum_targets) = pos_offs.value();
-
-            //double sum_stddev_est = stddev_est_target + stddev_est_other;
-            ReconstructorAssociatorBase::DistanceClassification score_class;
-            double distance_score;
-
-            std::tie(score_class, distance_score) = checkPositionOffsetScore (
-                distance_m, stddev_sum_targets, secondary_verified);
-
-            // distance_score is supposed to be positve, the higher the better
-
-            if (score_class == DistanceClassification::Distance_Dubious)
-                ++pos_dubious_cnt;
-            else if (score_class == DistanceClassification::Distance_Good)
-                ++pos_good_cnt;
-            else if (score_class == DistanceClassification::Distance_NotOK)
-                ++pos_not_ok_cnt;
-
-            //loginf << "\tdist " << distance;
-
-            distance_scores.push_back({rn_it, distance_score});
-            distance_scores_sum += distance_score;
-        }
-
-        if (pos_good_cnt)
-        {
-            pos_not_ok_rate = (float) pos_not_ok_cnt / (float) pos_good_cnt;
-            pos_dubious_rate = (float) pos_dubious_cnt / (float) pos_good_cnt;
-        }
-        else
-        {
-            pos_dubious_rate = 0;
-            pos_not_ok_rate = 0;
-        }
-
-        if (do_debug)
-            loginf << "\ttarget " << utn << " other utn " << other.utn_
-                   << " pos_not_ok_rate " << pos_not_ok_rate << " pos_not_ok_cnt " << pos_not_ok_cnt
-                   << " pos_dubious_rate " << pos_dubious_rate << " pos_dubious_cnt " << pos_dubious_cnt
-                   << " pos_good_cnt " << pos_good_cnt;
-
-        pos_not_ok_rate_acceptable =
-            secondary_verified ? pos_not_ok_rate < settings.target_max_positions_not_ok_verified_rate_
-                               : pos_not_ok_rate < settings.target_max_positions_not_ok_unknown_rate_;
-
-        pos_dubious_rate_acceptable =
-            secondary_verified ? pos_dubious_rate < settings.target_max_positions_dubious_verified_rate_
-                               : pos_dubious_rate < settings.target_max_positions_dubious_unknown_rate_;
-
-        if (do_debug)
-            loginf << "\ttarget " << utn << " other utn " << other.utn_
-                   << " pos_good_cnt " << pos_good_cnt
-                   << " distance_scores_sum " << distance_scores_sum
-                   << " pos_not_ok_rate_acceptable " << pos_not_ok_rate_acceptable
-                   << " pos_dubious_rate_acceptable " << pos_dubious_rate_acceptable
-                   << " (distance_scores " << distance_scores.size() << " < target_min_updates "
-                   << settings.target_min_updates_ << ") "
-                   << (distance_scores.size() >= settings.target_min_updates_);
-
-        if (pos_good_cnt && distance_scores_sum > 0
-            && pos_not_ok_rate_acceptable && pos_dubious_rate_acceptable
-            && distance_scores.size() >= settings.target_min_updates_)
-        {
-            double distance_score_avg = distance_scores_sum / (float) distance_scores.size();
-
-            if (do_debug)
-                loginf << "\ttarget " << target.utn_ << " other " << other.utn_
-                       << " next utn " << num_utns << " distance_score_avg " << distance_score_avg
-                       << " num " << distance_scores.size();
-
-            results[result_idx] = AssociationOption(
-                true, other.utn_, distance_scores.size(), true, distance_score_avg);
-        }
-        else
-        {
-            if (do_debug)
-                loginf << "\ttarget " << target.utn_ << " other " << other.utn_
-                       << " same distances failed "
-                       << distance_scores.size() << " < " << settings.target_min_updates_;
-        }
-    };
 
 #ifdef FIND_UTN_FOR_TARGET_MT
     tbb::parallel_for(uint(0), num_utns, [&](unsigned int cnt)
@@ -1223,7 +1113,7 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
                               (target.createdFromTentative() || other.createdFromTentative()))
                               return;
 
-                          results[cnt] = AssociationOption(false, other.utn_, 0, false, 0);
+                          results[cnt] = AssociationOption(false, utn, other.utn_, 0, false, 0);
 
                           bool do_debug = reconstructor().task().debugSettings().debug_association_
                                           && reconstructor().task().debugSettings().debugUTN(utn)
@@ -1330,7 +1220,7 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
                                                  << " mode c check passed";
 
                                       // check positions
-                                      scoreUTN(mc_same, other, cnt, true, do_debug);
+                                      scoreUTN(target, mc_same, other, results[cnt], &prediction_stats[cnt], true, do_debug);
                                   }
                                   else if (!mc_different.size())
                                   {
@@ -1339,7 +1229,7 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
                                                  << " mode c check failed, checking on position only";
 
                                       // check based on pos only
-                                      scoreUTN(target.target_reports_, other, cnt, false, do_debug);
+                                      scoreUTN(target, target.target_reports_, other, results[cnt], &prediction_stats[cnt],false, do_debug);
                                   }
                               }
                               else if (!ma_different.size())
@@ -1349,7 +1239,7 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
                                              << " mode a check failed, checking on position only";
 
                                   // check based on pos only
-                                  scoreUTN(target.target_reports_, other, cnt, false, do_debug);
+                                  scoreUTN(target, target.target_reports_, other, results[cnt], &prediction_stats[cnt],false, do_debug);
                               }
                               else
                                   if (do_debug)
@@ -1376,19 +1266,22 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
 
     // TODO rework to 1?
 
-    bool best_found = false;
-    unsigned int best_other_utn {0};
+    // bool best_found = false;
+    // unsigned int best_other_utn {0};
     //unsigned int best_num_updates {0};
-    unsigned int best_score {0};
+    //unsigned int best_score {0};
 
-    float score;
+
+    float min_score = reconstructor().settings().targets_min_assoc_score_;
+
+    //float score;
     for (auto& res_it : results) // usable, other utn, num updates, avg distance
     {
         do_debug = reconstructor().task().debugSettings().debug_association_
                    && (reconstructor().task().debugSettings().debugUTN(utn)
                        || reconstructor().task().debugSettings().debugUTN(res_it.other_utn_));
 
-        if (!res_it.usable_)
+        if (!res_it.usable_ || res_it.score_ < min_score)
         {
             // if (do_debug)
             //     loginf << "\ttarget " << target.utn_ << " other " << other_utn << " not usable";
@@ -1396,50 +1289,180 @@ std::pair<float, std::pair<unsigned int, unsigned int>> ReconstructorAssociatorB
             continue;
         }
 
-        score = res_it.num_updates_ / res_it.avg_distance_;
+        // score = res_it.num_updates_ / res_it.avg_distance_;
 
-        if (res_it.associate_based_on_secondary_attributes_)
-            score *= 5;
+        // if (res_it.associate_based_on_secondary_attributes_)
+        //     score *= 5;
 
-        if (do_debug)
+        // if (do_debug)
             loginf << "\ttarget " << target.utn_ << " other " << res_it.other_utn_
-                   << " do_assoc " << res_it.associate_based_on_secondary_attributes_
+                   << " assoc_sec " << res_it.associate_based_on_secondary_attributes_
                    << " avg dist " << String::doubleToStringPrecision(res_it.avg_distance_, 2)
-                   << " score " << String::doubleToStringPrecision(score, 2);
+                   << " score " << String::doubleToStringPrecision(res_it.score_, 2);
 
-        if (res_it.associate_based_on_secondary_attributes_ || res_it.avg_distance_ <= 0)
-        {
-            if (do_debug)
-                loginf << "\ttarget " << target.utn_ << " other " << res_it.other_utn_
-                       << " merging, based on sec.at. " << res_it.associate_based_on_secondary_attributes_
-                       << " avg dist " << String::doubleToStringPrecision(res_it.avg_distance_, 2);
+        // if (res_it.associate_based_on_secondary_attributes_ || res_it.avg_distance_ <= 0)
+        // {
+        //     if (do_debug)
+        //         loginf << "\ttarget " << target.utn_ << " other " << res_it.other_utn_
+        //                << " merging, based on sec.at. " << res_it.associate_based_on_secondary_attributes_
+        //                << " avg dist " << String::doubleToStringPrecision(res_it.avg_distance_, 2);
 
-            //utns_to_merge.push_back(res_it.other_utn_);
+            ret_options.push_back(res_it);
 
-            if (best_found)
-            {
-                if (best_score < score)
-                {
-                    best_other_utn = res_it.other_utn_;
-                    //best_num_updates = res_it.num_updates_;
-                    best_score = score;
-                }
-            }
-            else
-            {
-                best_other_utn = res_it.other_utn_;
-                //best_num_updates = res_it.num_updates_;
-                best_score = score;
-            }
+            // if (best_found)
+            // {
+            //     if (best_score < score)
+            //     {
+            //         best_other_utn = res_it.other_utn_;
+            //         best_score = score;
+            //     }
+            // }
+            // else
+            // {
+            //     best_other_utn = res_it.other_utn_;
+            //     best_score = score;
+            // }
 
-            best_found = true;
+            // best_found = true;
         }
+    //}
+
+    if (ret_options.size())
+        loginf << "utn " << utn << " found " << ret_options.size() << " options";
+
+    return ret_options;
+
+    // if (best_found)
+    //     return std::pair<float, std::pair<unsigned int, unsigned int>>{score, {utn,best_other_utn}};
+    // else
+    //     return std::pair<float, std::pair<unsigned int, unsigned int>>{std::numeric_limits<float>::lowest(), {0,0}};
+}
+
+ //computes a match score for the given other target
+void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget& target, const std::vector<size_t>& rec_nums,
+                                           const dbContent::ReconstructorTarget& other,
+                                           AssociationOption& result_ref, reconstruction::PredictionStats* stats,
+                                           bool secondary_verified, bool do_debug)
+{
+    const auto& settings = reconstructor().settings();
+
+    traced_assert(stats);
+
+    vector<pair<unsigned long, double>> distance_scores;
+    double distance_scores_sum{0};
+
+    unsigned int pos_not_ok_cnt{0};
+    unsigned int pos_dubious_cnt{0};
+    unsigned int pos_good_cnt{0};
+    unsigned int pos_skipped_cnt{0};
+
+    double distance_m, stddev_sum_targets;
+    float pos_not_ok_rate, pos_dubious_rate;
+    bool pos_not_ok_rate_acceptable, pos_dubious_rate_acceptable;
+
+    if (do_debug)
+        loginf << "\ttarget " << target.utn_ << " other utn " << other.utn_ << " rec_nums "
+               << rec_nums.size();
+
+    for (auto rn_it : rec_nums)
+    {
+        traced_assert(reconstructor().target_reports_.count(rn_it));
+
+        const dbContent::targetReport::ReconstructorInfo& tr =
+            reconstructor().target_reports_.at(rn_it);
+
+        if (tr.doNotUsePosition() || !canGetPositionOffsetTargets(tr.timestamp_, target, other))
+        {
+            ++pos_skipped_cnt;
+            continue;
+        }
+
+        //@TODO: debug flag
+        auto pos_offs = getPositionOffsetTargets(tr.timestamp_, target, other, false, {}, stats);
+        if (!pos_offs.has_value())
+        {
+            ++pos_skipped_cnt;
+            continue;
+        }
+
+        tie(distance_m, stddev_sum_targets) = pos_offs.value();
+
+        // double sum_stddev_est = stddev_est_target + stddev_est_other;
+        ReconstructorAssociatorBase::DistanceClassification score_class;
+        double distance_score;
+
+        std::tie(score_class, distance_score) =
+            checkPositionOffsetScore(distance_m, stddev_sum_targets, secondary_verified);
+
+        // distance_score is supposed to be positve, the higher the better
+
+        if (score_class == DistanceClassification::Distance_Dubious)
+            ++pos_dubious_cnt;
+        else if (score_class == DistanceClassification::Distance_Good)
+            ++pos_good_cnt;
+        else if (score_class == DistanceClassification::Distance_NotOK)
+            ++pos_not_ok_cnt;
+
+        // loginf << "\tdist " << distance;
+
+        distance_scores.push_back({rn_it, distance_score});
+        distance_scores_sum += distance_score;
     }
 
-    if (best_found)
-        return std::pair<float, std::pair<unsigned int, unsigned int>>{score, {utn,best_other_utn}};
+    if (pos_good_cnt)
+    {
+        pos_not_ok_rate = (float)pos_not_ok_cnt / (float)pos_good_cnt;
+        pos_dubious_rate = (float)pos_dubious_cnt / (float)pos_good_cnt;
+    }
     else
-        return std::pair<float, std::pair<unsigned int, unsigned int>>{std::numeric_limits<float>::lowest(), {0,0}};
+    {
+        pos_dubious_rate = 0;
+        pos_not_ok_rate = 0;
+    }
+
+    if (do_debug)
+        loginf << "\ttarget " << target.utn_ << " other utn " << other.utn_ << " pos_not_ok_rate "
+               << pos_not_ok_rate << " pos_not_ok_cnt " << pos_not_ok_cnt << " pos_dubious_rate "
+               << pos_dubious_rate << " pos_dubious_cnt " << pos_dubious_cnt << " pos_good_cnt "
+               << pos_good_cnt;
+
+    pos_not_ok_rate_acceptable =
+        secondary_verified ? pos_not_ok_rate < settings.target_max_positions_not_ok_verified_rate_
+                           : pos_not_ok_rate < settings.target_max_positions_not_ok_unknown_rate_;
+
+    pos_dubious_rate_acceptable =
+        secondary_verified ? pos_dubious_rate < settings.target_max_positions_dubious_verified_rate_
+                           : pos_dubious_rate < settings.target_max_positions_dubious_unknown_rate_;
+
+    if (do_debug)
+        loginf << "\ttarget " << target.utn_ << " other utn " << other.utn_ << " pos_good_cnt "
+               << pos_good_cnt << " distance_scores_sum " << distance_scores_sum
+               << " pos_not_ok_rate_acceptable " << pos_not_ok_rate_acceptable
+               << " pos_dubious_rate_acceptable " << pos_dubious_rate_acceptable
+               << " (distance_scores " << distance_scores.size() << " < target_min_updates "
+               << settings.target_min_updates_ << ") "
+               << (distance_scores.size() >= settings.target_min_updates_);
+
+    if (pos_good_cnt && distance_scores_sum > 0 && pos_not_ok_rate_acceptable &&
+        pos_dubious_rate_acceptable && distance_scores.size() >= settings.target_min_updates_)
+    {
+        double distance_score_avg = distance_scores_sum / (float)distance_scores.size();
+
+        if (do_debug)
+            loginf << "\ttarget " << target.utn_ << " other " << other.utn_ 
+                   << " distance_score_avg " << distance_score_avg << " num "
+                   << distance_scores.size();
+
+        result_ref = AssociationOption(true, target.utn_, other.utn_, distance_scores.size(),
+                                                secondary_verified, distance_score_avg);
+    }
+    else
+    {
+        if (do_debug)
+            loginf << "\ttarget " << target.utn_ << " other " << other.utn_
+                   << " same distances failed " << distance_scores.size() << " < "
+                   << settings.target_min_updates_;
+    }
 }
 
 const std::map<unsigned int, std::map<unsigned int,

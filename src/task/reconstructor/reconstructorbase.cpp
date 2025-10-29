@@ -597,6 +597,10 @@ void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings
                       &settings.target_max_positions_not_ok_unknown_rate_,
                       settings.target_max_positions_not_ok_unknown_rate_);
 
+    registerParameter("targets_min_assoc_score",
+                      &settings.targets_min_assoc_score_,
+                      settings.targets_min_assoc_score_);                      
+
     registerParameter("min_aircraft_modec", &settings.min_aircraft_modec_, settings.min_aircraft_modec_);
 
     registerParameter("vehicle_acids", &settings.vehicle_acids_, {});

@@ -55,18 +55,24 @@ class ReconstructorAssociatorBase
     {
         AssociationOption(){}
 
-        AssociationOption(bool usable, unsigned int other_utn, unsigned int num_updates,
-                          bool associate, float avg_distance)
-            : usable_(usable), other_utn_(other_utn), num_updates_(num_updates),
-            associate_based_on_secondary_attributes_(associate), avg_distance_(avg_distance)
-        {}
+        AssociationOption(bool usable, unsigned int utn, unsigned int other_utn, unsigned int num_updates,
+                          bool associate_secondary, float avg_distance)
+            : usable_(usable), utn_(utn), other_utn_(other_utn), num_updates_(num_updates),
+            associate_based_on_secondary_attributes_(associate_secondary), avg_distance_(avg_distance),
+            score_((float)num_updates_ / avg_distance_)
+        {
+            if (associate_based_on_secondary_attributes_)
+                    score_ *= 5;
+        }
 
         bool usable_ {false};
+        unsigned int utn_ {0};
         unsigned int other_utn_ {0};
         unsigned int num_updates_{0};
 
         bool associate_based_on_secondary_attributes_ {false};
         float avg_distance_{0};
+        float score_{0};
     };
 
     struct BatchStats
@@ -142,11 +148,7 @@ protected:
             // tries to find existing utn for target report, based on mode a/c and position, -1 if failed
     int findUTNByModeACPos (const dbContent::targetReport::ReconstructorInfo& tr);
 
-    // score -> utn, other_utn
-    std::pair<float, std::pair<unsigned int, unsigned int>> findUTNsForTarget (
-        unsigned int utn); //  const std::set<unsigned int>& utns_to_ignore
-
-    //unsigned int createNewTarget(const dbContent::targetReport::ReconstructorInfo& tr);
+    std::vector<ReconstructorAssociatorBase::AssociationOption> findUTNsForTarget (unsigned int utn);
 
     virtual bool canGetPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
@@ -179,5 +181,9 @@ protected:
     //virtual bool isTargetAverageDistanceAcceptable(double distance_score_avg, bool secondary_verified) = 0;
 
     virtual ReconstructorBase& reconstructor() = 0;
+
+    void scoreUTN(const dbContent::ReconstructorTarget& target, const std::vector<size_t>& rec_nums, 
+        const dbContent::ReconstructorTarget& other, 
+        AssociationOption& result_ref, reconstruction::PredictionStats* stats, bool secondary_verified, bool do_debug);
 };
 

@@ -104,6 +104,8 @@ class ReconstructorBaseSettings
     double target_max_positions_not_ok_verified_rate_ {0.1};
     double target_max_positions_not_ok_unknown_rate_ {0.05};
 
+    double targets_min_assoc_score_ {100};
+
     static const unsigned int REC_DS_SAC = 255;
     static const unsigned int REC_DS_SIC = 1;
 
