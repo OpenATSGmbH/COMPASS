@@ -417,8 +417,10 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
 {
     loginf;
 
-    size_t num_tentative_origin = 0;
-    size_t num_targets          = 0;
+    size_t num_tentative_origin       = 0;
+    size_t num_targets                = 0;
+    size_t num_tentative_origin_slice = 0;
+    size_t num_targets_slice          = 0;
     for (auto utn : reconstructor().targets_container_.utn_vec_)
     {
         traced_assert(reconstructor().targets_container_.targets_.count(utn));
@@ -428,12 +430,19 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
             continue;
 
         ++num_targets;
-
         if (target.created_from_tentative_)
             ++num_tentative_origin;
+
+        if (target.created_in_current_slice_)
+        {
+            ++num_targets_slice;
+            if (target.created_from_tentative_)
+                ++num_tentative_origin_slice;
+        }
     }
 
-    loginf << "about to merge " << num_targets << " target(s), " << num_tentative_origin << " created from tentative(s)";
+    loginf << "about to merge " << num_targets_slice << " slice target(s) (" << num_tentative_origin_slice << " tentative origin), " 
+           << num_targets << " total target(s) (" << num_tentative_origin << " tentative origin)";
 
     if (reconstructor().settings().do_not_merge_utns_)
     {
