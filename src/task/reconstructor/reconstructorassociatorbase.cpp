@@ -461,7 +461,7 @@ RESTART_SELF_ASSOC:
     if (reconstructor().isCancelled())
         return;
 
-    logdbg << "loop " << loop_cnt;
+    loginf << "loop " << loop_cnt;
 
     reconstructor().targets_container_.checkACADLookup();
 
@@ -526,7 +526,7 @@ RESTART_SELF_ASSOC:
             loginf << "loop " << loop_cnt
                     << ": merging '" << target.asStr()
                     << "' with '" << other_target.asStr() << "' using score "
-                    << String::doubleToStringPrecision(largest_score, 2);
+                    << String::doubleToStringPrecision(-largest_score, 2); // invert sign again
 
             // move target reports
             target.addTargetReports(other_target);
