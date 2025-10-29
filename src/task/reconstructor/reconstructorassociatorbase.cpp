@@ -445,6 +445,7 @@ void ReconstructorAssociatorBase::selfAssociateNewUTNs()
 
     std::multimap<float, std::pair<unsigned int, unsigned int>> scored_utn_pairs;
     set<unsigned int> utns_to_remove;
+    set<unsigned int> utns_to_ignore; // utns that changed from pri to sec
 
     //float min_score = reconstructor().settings().targets_min_assoc_score_;
     //float score;
@@ -512,7 +513,8 @@ RESTART_SELF_ASSOC:
         // Access the key and value
         tie(utn, other_utn) = last_it->second;
 
-        if (!utns_to_remove.count(utn) && !utns_to_remove.count(other_utn))
+        if (!utns_to_remove.count(utn) && !utns_to_remove.count(other_utn) 
+        && !utns_to_ignore.count(utn) && !utns_to_ignore.count(other_utn))
         {
             // join and schedule for remove
             traced_assert(reconstructor().targets_container_.targets_.count(utn));
@@ -528,11 +530,16 @@ RESTART_SELF_ASSOC:
                     << "' with '" << other_target.asStr() << "' using score "
                     << String::doubleToStringPrecision(largest_score, 2);
 
+            bool target_was_pri = target.isPrimary();
+
             // move target reports
             target.addTargetReports(other_target);
 
             // schedule remove from targets
             utns_to_remove.insert(other_utn);
+
+            if (target_was_pri && !target.isPrimary())
+                utns_to_ignore.insert(utn);
 
             reconstructor().targets_container_.replaceInLookup(other_utn, utn);
 
@@ -542,7 +549,6 @@ RESTART_SELF_ASSOC:
             assoc_option_cache.erase({utn, other_utn});
         }
         
-
         // Erase all elements with the largest key
         scored_utn_pairs.erase(last_it);
     }
