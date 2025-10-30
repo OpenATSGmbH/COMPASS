@@ -45,7 +45,6 @@ class CreateARTASAssociationsTask : public Task, public Configurable
 
 public slots:
     void dialogRunSlot();
-    void dialogCancelSlot();
 
     void createDoneSlot();
     void createObsoleteSlot();
@@ -99,7 +98,7 @@ public:
                                 TaskManager& task_manager);
     virtual ~CreateARTASAssociationsTask();
 
-    CreateARTASAssociationsTaskDialog* dialog();
+    void showDialog();
 
     std::string currentDataSourceName() const;
     void currentDataSourceName(const std::string& currentDataSourceName);
@@ -158,8 +157,6 @@ protected:
     bool save_associations_{true};
 
     std::map<std::string, std::shared_ptr<Buffer>> data_;
-
-    std::unique_ptr<CreateARTASAssociationsTaskDialog> dialog_;
 
     std::unique_ptr<CreateARTASAssociationsStatusDialog> status_dialog_{nullptr};
 

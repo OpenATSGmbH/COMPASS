@@ -36,7 +36,6 @@
 #include "viewpointsimporttaskdialog.h"
 #include "gpstrailimporttask.h"
 #include "gpstrailimporttaskdialog.h"
-//#include "gpsimportcsvtask.h"
 #include "managesectorstask.h"
 #include "managesectorstaskdialog.h"
 #include "evaluationmanager.h"
@@ -984,7 +983,7 @@ void MainWindow::importViewPointsSlot()
 
         updateMenus();
 
-        COMPASS::instance().taskManager().viewPointsImportTask().dialog()->show();
+        COMPASS::instance().taskManager().viewPointsImportTask().showDialog();
     }
 }
 
@@ -992,14 +991,14 @@ void MainWindow::calculateRadarPlotPositionsSlot()
 {
     loginf;
 
-    COMPASS::instance().taskManager().radarPlotPositionCalculatorTask().dialog()->show();
+    COMPASS::instance().taskManager().radarPlotPositionCalculatorTask().showDialog();
 }
 
 void MainWindow::calculateAssociationsARTASSlot()
 {
     loginf;
 
-    COMPASS::instance().taskManager().createArtasAssociationsTask().dialog()->show();
+    COMPASS::instance().taskManager().createArtasAssociationsTask().showDialog();
 }
 
 void MainWindow::reconstructReferencesSlot()

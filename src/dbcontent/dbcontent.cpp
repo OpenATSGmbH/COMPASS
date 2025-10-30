@@ -181,6 +181,24 @@ DBContent::DBContent(COMPASS& compass,
     registerParameter("info", &info_, std::string());
     registerParameter("db_table_name", &db_table_name_, std::string());
 
+    if (name_ == "CAT001" || name_ == "CAT010"
+        || name_ == "CAT020"|| name_ == "CAT021"
+        || name_ == "CAT048" || name_ == "CAT062"
+        || name_ == "RefTraj")
+    {
+        contains_target_reports_ = true;
+    }
+
+    registerParameter("contains_target_reports", &contains_target_reports_, contains_target_reports_);
+
+    if (name_ == "CAT002" || name_ == "CAT010" || name_ == "CAT019" || name_ == "CAT023" ||
+        name_ == "CAT034" || name_ == "CAT063" || name_ == "CAT065")
+    {
+        contains_status_content_ = true;
+    }
+
+    registerParameter("contains_status_content", &contains_status_content_, contains_status_content_);
+
     traced_assert(db_table_name_.size());
 
     createSubConfigurables();
@@ -190,26 +208,17 @@ DBContent::DBContent(COMPASS& compass,
 
     checkStaticVariable(DBContent::meta_var_ds_id_);
 
-    if (name_ == "CAT001" || name_ == "CAT010"
-        || name_ == "CAT020"|| name_ == "CAT021"
-        || name_ == "CAT048" || name_ == "CAT062"
-        || name_ == "RefTraj")
+    if (contains_target_reports_)
     {
         checkStaticVariable(DBContent::meta_var_latitude_);
         checkStaticVariable(DBContent::meta_var_longitude_);
         checkStaticVariable(DBContent::meta_var_utn_);
-
-        contains_target_reports_ = true;
     }
 
-    if (name_ == "CAT002" || name_ == "CAT010"
-        || name_ == "CAT019"|| name_ == "CAT023"
-        || name_ == "CAT034" || name_ == "CAT065")
-    {
-        checkStaticVariable(DBContent::meta_var_message_type_);
-
-        contains_status_content_ = true;
-    }
+    // if (contains_status_content_) // not in CAT063
+    // {
+    //     checkStaticVariable(DBContent::meta_var_message_type_);
+    // }
 
     is_reftraj_content_ = name_ == "RefTraj";
 

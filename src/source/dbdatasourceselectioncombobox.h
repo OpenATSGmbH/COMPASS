@@ -20,6 +20,7 @@
 #include "compass.h"
 #include "datasourcemanager.h"
 #include "source/dbdatasource.h"
+#include "logger.h"
 
 #include <QComboBox>
 
@@ -97,13 +98,25 @@ class DBDataSourceComboBox : public QComboBox
     {
         clear();
 
+        if (show_dstype_only_)
+            loginf << "show_dstype_only " << show_dstype_only_ << " only_dstype_name '" << only_dstype_name_ << "'";
+
+        if (show_dbcontent_only_)
+            loginf << "show_dbcontent_only " << show_dbcontent_only_ << " only_dbcontent_name '" << only_dbcontent_name_ << "'";
+
         for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
         {
             if (show_dstype_only_ && ds_it->dsType() != only_dstype_name_)
+            {
+                loginf << "skip " << ds_it->name() << " dsType " << ds_it->dsType();
                 continue;
+            }
 
             if (show_dbcontent_only_ && !ds_it->hasNumInserted(only_dbcontent_name_))
+            {
+                loginf << "skip " << ds_it->name() << " hasNumInserted " << ds_it->hasNumInserted(only_dbcontent_name_);
                 continue;
+            }
 
             addItem(ds_it->name().c_str());
         }

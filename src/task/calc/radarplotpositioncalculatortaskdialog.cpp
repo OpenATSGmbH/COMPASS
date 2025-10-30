@@ -38,55 +38,31 @@ RadarPlotPositionCalculatorTaskDialog::RadarPlotPositionCalculatorTaskDialog(Rad
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
-    widget_.reset(new RadarPlotPositionCalculatorTaskWidget(task_));
-    main_layout->addWidget(widget_.get());
+    RadarPlotPositionCalculatorTaskWidget* widget = new RadarPlotPositionCalculatorTaskWidget(task_);
+    main_layout->addWidget(widget);
 
     main_layout->addStretch();
 
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_button = new QPushButton("Cancel");
-    connect(cancel_button, &QPushButton::clicked,
-            this, &RadarPlotPositionCalculatorTaskDialog::cancelClickedSlot);
+    connect(cancel_button,  &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
-    ok_button_ = new QPushButton("OK");
-    connect(ok_button_, &QPushButton::clicked,
-            this, &RadarPlotPositionCalculatorTaskDialog::okClickedSlot);
+    QPushButton* ok_button_ = new QPushButton("OK");
+    connect(ok_button_, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(ok_button_);
+
+    ok_button_->setDefault(true);
+
+    ok_button_->setDisabled(!task_.canRun());
 
     main_layout->addLayout(button_layout);
 
     setLayout(main_layout);
 }
 
-RadarPlotPositionCalculatorTaskDialog::~RadarPlotPositionCalculatorTaskDialog()
-{
-    loginf;
-    widget_ = nullptr;
-}
 
-bool RadarPlotPositionCalculatorTaskDialog::runWanted() const
-{
-    return run_wanted_;
-}
 
-void RadarPlotPositionCalculatorTaskDialog::updateCanRun()
-{
-    ok_button_->setEnabled(task_.canRun());
-}
-
-void RadarPlotPositionCalculatorTaskDialog::okClickedSlot()
-{
-    run_wanted_ = true;
-
-    emit closeSignal();
-}
-void RadarPlotPositionCalculatorTaskDialog::cancelClickedSlot()
-{
-    run_wanted_ = false;
-
-    emit closeSignal();
-}

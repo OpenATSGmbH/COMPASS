@@ -66,7 +66,7 @@ ProjectionManagerWidget::ProjectionManagerWidget(ProjectionManager& proj_man, QW
 
 ProjectionManagerWidget::~ProjectionManagerWidget()
 {
-    loginf;
+    logdbg;
 }
 
 void ProjectionManagerWidget::selectedObjectParserSlot(const QString& name)

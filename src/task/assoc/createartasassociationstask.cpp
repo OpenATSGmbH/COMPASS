@@ -73,21 +73,16 @@ CreateARTASAssociationsTask::CreateARTASAssociationsTask(const std::string& clas
 
 CreateARTASAssociationsTask::~CreateARTASAssociationsTask() {}
 
-CreateARTASAssociationsTaskDialog* CreateARTASAssociationsTask::dialog()
+void CreateARTASAssociationsTask::showDialog()
 {
-    if (!dialog_)
-    {
-        dialog_.reset(new CreateARTASAssociationsTaskDialog(*this));
+    CreateARTASAssociationsTaskDialog dialog(*this);
 
-        connect(dialog_.get(), &CreateARTASAssociationsTaskDialog::runSignal,
-                this, &CreateARTASAssociationsTask::dialogRunSlot);
+    if (dialog.exec() == QDialog::Rejected)
+        return;
 
-        connect(dialog_.get(), &CreateARTASAssociationsTaskDialog::cancelSignal,
-                this, &CreateARTASAssociationsTask::dialogCancelSlot);
-    }
+    traced_assert(canRun());
+    run();
 
-    traced_assert(dialog_);
-    return dialog_.get();
 }
 
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
@@ -223,7 +218,7 @@ void CreateARTASAssociationsTask::run()
         if (!dbcont_it.second->hasData())
             continue;
 
-        if (dbcont_it.second->containsStatusContent() ||
+        if (!dbcont_it.second->containsTargetReports() ||
             dbcont_it.second->isReferenceContent()) // not covered by ARTAS
             continue;
 
@@ -320,21 +315,9 @@ void CreateARTASAssociationsTask::dialogRunSlot()
 {
     loginf;
 
-    traced_assert(dialog_);
-    dialog_->hide();
-
     traced_assert(canRun());
     run ();
 }
-
-void CreateARTASAssociationsTask::dialogCancelSlot()
-{
-    loginf;
-
-    traced_assert(dialog_);
-    dialog_->hide();
-}
-
 
 void CreateARTASAssociationsTask::createDoneSlot()
 {
@@ -558,7 +541,7 @@ VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcont
         read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_tris_));
         read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_tri_recnums_));
     }
-    else
+    else if (dbcont_man.dbContent(dbcontent_name).containsTargetReports())
     {
         read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_));
     }
