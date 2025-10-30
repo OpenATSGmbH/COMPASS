@@ -86,7 +86,7 @@ void AllBufferCSVExportJob::run_impl()
 
         for (size_t col = 0; col < read_set_size; col++)
         {
-            ss << ";" << read_set_->variableDefinition(col).first;
+            ss << ";" << read_set_->variableDefinition(col).second;
         }
         output_file << ss.str() << "\n";
 

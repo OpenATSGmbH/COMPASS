@@ -36,7 +36,7 @@
 #include "viewpointsimporttaskdialog.h"
 #include "gpstrailimporttask.h"
 #include "gpstrailimporttaskdialog.h"
-#include "gpsimportcsvtask.h"
+//#include "gpsimportcsvtask.h"
 #include "managesectorstask.h"
 #include "managesectorstaskdialog.h"
 #include "evaluationmanager.h"
