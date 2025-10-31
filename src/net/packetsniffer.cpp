@@ -92,14 +92,14 @@ PacketSniffer::~PacketSniffer()
 */
 void PacketSniffer::clear()
 {
+    packet_idx_        = 0;
     num_read_          = 0;
     num_dropped_       = 0;
     bytes_read_        = 0;
     num_read_total_    = 0;
     num_dropped_total_ = 0;
     bytes_read_total_  = 0;
-    packet_idx_        = 0;
-
+    
     reached_eof_ = false;
 
     data_per_signature_.clear();
@@ -717,6 +717,8 @@ void PacketSniffer::closePCAPFile()
 
         if (device_ == Device::File)
             device_ = Device::NoDevice;
+
+        link_layer_type_ = -1;
     }
 }
 

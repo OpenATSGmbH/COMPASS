@@ -29,6 +29,8 @@ class ASTERIXImportTask;
 class ASTERIXDecodeJob;
 class ASTERIXImportTaskSettings;
 
+class AsyncTaskProgressWrapper;
+
 /**
  * Base class for an ASTERIX decoder.
  */
@@ -42,7 +44,7 @@ public:
     virtual std::string name() const { return ""; }
 
     bool canRun() const;
-    bool canDecode(bool force_recompute) const;
+    bool canDecode(bool force_recompute, AsyncTaskProgressWrapper* progress = nullptr) const;
     
     void start(ASTERIXDecodeJob* job);
     void stop();
@@ -79,7 +81,7 @@ protected:
 
     virtual bool canRun_impl() const = 0;
     virtual bool canDecode_impl() const = 0;
-    virtual void checkDecoding_impl(bool force_recompute) const {};
+    virtual void checkDecoding_impl(bool force_recompute, AsyncTaskProgressWrapper* progress) const {};
 
     virtual void start_impl() = 0;
     virtual void stop_impl() = 0;
@@ -87,7 +89,7 @@ protected:
     ASTERIXImportSource& source_;
     
 private:
-    void checkDecoding(bool force_recompute) const;
+    void checkDecoding(bool force_recompute, AsyncTaskProgressWrapper* progress) const;
 
     ASTERIXDecodeJob*                job_      = nullptr;
     ASTERIXImportTask*               task_     = nullptr;

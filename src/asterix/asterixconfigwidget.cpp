@@ -140,9 +140,9 @@ void ASTERIXConfigWidget::framingChangedSlot()
     traced_assert(framing_combo_);
     loginf << "start" << framing_combo_->getFraming();
 
-    task_.settings().current_file_framing_ = framing_combo_->getFraming();
+    task_.settings().setActiveFileFraming(framing_combo_->getFraming());
 
-    if (task_.settings().current_file_framing_ == "")
+    if (task_.settings().activeFileFraming() == "")
         framing_edit_->setDisabled(true);
     else
         framing_edit_->setDisabled(false);
@@ -153,7 +153,7 @@ void ASTERIXConfigWidget::framingChangedSlot()
 void ASTERIXConfigWidget::framingEditSlot()
 {
     std::string framing_path = "file:///" + task_.jASTERIX()->framingsFolderPath() + "/" +
-            task_.settings().current_file_framing_ + ".json";
+            task_.settings().activeFileFraming() + ".json";
     loginf << "path '" << framing_path << "'";
     QDesktopServices::openUrl(QUrl(framing_path.c_str()));
 }
@@ -164,10 +164,10 @@ void ASTERIXConfigWidget::updateFraming()
     traced_assert(framing_edit_);
 
     framing_combo_->loadFramings();
-    framing_combo_->setFraming(task_.settings().current_file_framing_);
+    framing_combo_->setFraming(task_.settings().activeFileFraming());
     framing_combo_->setEnabled(!task_.requiresFixedFraming());
 
-    if (task_.settings().current_file_framing_ == "")
+    if (task_.settings().activeFileFraming() == "")
         framing_edit_->setDisabled(true);
     else
         framing_edit_->setDisabled(false);

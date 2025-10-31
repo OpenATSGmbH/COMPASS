@@ -41,10 +41,7 @@ public:
     virtual std::string statusInfoString() const override;
     virtual float statusInfoProgress() const override;
     virtual std::string currentDataSourceName() const override;
-
-    void checkDecoding(ASTERIXImportFileInfo& file_info,
-                       bool force_recompute) const;
-
+    
     std::string getCurrentFilename() const;
 
     static bool isSupportedArchive(const ASTERIXImportFileInfo& file_info);
@@ -59,12 +56,15 @@ public:
 protected:
     virtual bool canRun_impl() const override;
     virtual bool canDecode_impl() const override;
-    virtual void checkDecoding_impl(bool force_recompute) const override;
+    virtual void checkDecoding_impl(bool force_recompute, AsyncTaskProgressWrapper* progress) const override final;
 
     virtual void start_impl() override;
 
     virtual bool checkFile(ASTERIXImportFileInfo& file_info, std::string& error) const { return true; }
-    virtual bool checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& error) const = 0;
+    virtual bool checkDecoding(ASTERIXImportFileInfo& file_info, 
+                               int section_idx, 
+                               std::string& information,
+                               std::string& error) const = 0;
     virtual void processFile(ASTERIXImportFileInfo& file_info) = 0;
 
     void addRecordsRead(size_t n);
@@ -82,8 +82,16 @@ private:
     bool atEnd() const;
     void processCurrentFile();
 
+    void checkFile(ASTERIXImportFileInfo& file_info,
+                   bool force_recompute,
+                   bool check_decoding,
+                   AsyncTaskProgressWrapper* progress = nullptr) const;
+    void checkDecoding(ASTERIXImportFileInfo& file_info,
+                       bool force_recompute, 
+                       AsyncTaskProgressWrapper* progress) const;
     bool checkDecoding(ASTERIXImportFileInfo& file_info, 
                        int section_idx, 
+                       std::string& contentinfo,
                        ASTERIXImportFileError& error) const;
 
     size_t currentlyReadBytes() const;

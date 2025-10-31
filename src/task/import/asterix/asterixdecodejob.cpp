@@ -113,7 +113,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
 
     if (decoder_ && decoder_->error())
     {
-        loginf << "errors state";
+        loginf << "error state";
         return;
     }
 
@@ -150,7 +150,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
         post_process_.postProcess(category, record);
     };
 
-    if (settings_.current_file_framing_ == "")
+    if (settings_.activeFileFraming() == "")
     {
         traced_assert(data->contains("data_blocks"));
         traced_assert(data->at("data_blocks").is_array());
@@ -275,7 +275,6 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
         post_process_.postProcess(category, record);
     };
 
-    //assert (settings_.current_file_framing_ == ""); irrelephant
     traced_assert(data->contains("data_blocks"));
     traced_assert(data->at("data_blocks").is_array());
 

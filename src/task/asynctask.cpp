@@ -97,6 +97,10 @@ void AsyncTask::run()
         return;
     }
 
+    //finish any unfinished progress (for optics)
+    if (task_progress_.progress() > 0 && !task_progress_.isFinished())
+        task_progress_wrapper_.setFinished(true);
+
     setState(AsyncTaskState::State::Done);
 }
 

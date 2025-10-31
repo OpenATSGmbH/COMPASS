@@ -127,6 +127,7 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
 */
 bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, 
                                        int section_idx, 
+                                       std::string& information,
                                        std::string& error) const
 {
     traced_assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
@@ -166,13 +167,52 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 
     loginf << analysis_info->dump(2);
 
-    if (num_errors || !num_records) // decoder errors or no data
+    if (num_errors) // decoder errors
     {
         error = "Decoding failed";
         return false;
     }
 
-    return true;
+    if (!num_records) // no data
+    {
+        error = "Decoding failed";
+        return false;
+    }
+
+    std::set<std::string> categories;
+    for (const auto& sac_sic : analysis_info->items())
+    {
+        //no sensor => continue
+        if (!sac_sic.value().is_object())
+            continue;
+
+        //sensor unknown? => error
+        if (error.empty() && sac_sic.key() == "unknown")
+        {
+            error = "Missing SAC/SIC";
+        }
+
+        for (const auto& category : sac_sic.value().items())
+        {
+            bool ok;
+            QString::fromStdString(category.key()).toInt(&ok);
+
+            if (ok)
+                categories.insert(category.key());
+            else if (error.empty())
+                error = "Invalid category '" + category.key() + "'";
+
+            if (error.empty() &&
+                (!category.value().contains("010.SAC") ||
+                 !category.value().contains("010.SIC")))
+                error = "No SAC/SIC data items found";
+        }
+    }
+
+    for (const auto& cat : categories)
+        information += (information.empty() ? "" : ", ") + cat;
+
+    return error.empty();
 }
 
 /**
@@ -210,7 +250,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     {
         // get last index
 
-        if (settings().current_file_framing_ == "")
+        if (settings().activeFileFraming() == "")
         {
             traced_assert(data->contains("data_blocks"));
             traced_assert(data->at("data_blocks").is_array());
@@ -250,7 +290,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
         if (num_errors)
         {
             file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
-            file_info.error.errinfo = "Number: "+to_string(num_errors);
+            file_info.error.errinfo = "Number: " + std::to_string(num_errors);
         }
 
         if (job() && !job()->obsolete())

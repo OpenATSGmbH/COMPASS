@@ -372,7 +372,7 @@ bool ASTERIXJSONDecoder::checkFile(ASTERIXImportFileInfo& file_info, std::string
 
 /**
 */
-bool ASTERIXJSONDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& error) const
+bool ASTERIXJSONDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& information, std::string& error) const
 {
     //for now just assume that the files contain valid json
     return true;

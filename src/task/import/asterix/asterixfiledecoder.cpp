@@ -51,20 +51,21 @@ void ASTERIXFileDecoder::stop_impl()
 
 /**
 */
-bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& error) const
+bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& information, std::string& error) const
 {
     //get a fresh jasterix instance
     auto jasterix = task().jASTERIX(true);
 
-    bool has_framing = settings().current_file_framing_.size() > 0;
+    bool has_framing = settings().activeFileFraming().size() > 0;
 
     loginf << "file '" << file_info.filename << "' decoding now...";
 
     //analyze asterix file
     std::unique_ptr<nlohmann::json> analysis_info;
-    analysis_info = has_framing ? jasterix->analyzeFile(file_info.filename, settings().current_file_framing_, DecodeCheckRecordLimit) :
+    analysis_info = has_framing ? jasterix->analyzeFile(file_info.filename, settings().activeFileFraming(), DecodeCheckRecordLimit) :
                                   jasterix->analyzeFile(file_info.filename, DecodeCheckRecordLimit);
     traced_assert(analysis_info);
+    traced_assert(analysis_info->is_object());
 
     auto& file_error = file_info.error;
 
@@ -91,13 +92,52 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int sec
     unsigned int num_errors  = file_error.analysis_info.at("num_errors");
     unsigned int num_records = file_error.analysis_info.at("num_records");
 
-    if (num_errors || !num_records) // decoder errors or no data
+    if (num_errors) // decoder errors
     {
         error = "Decoding failed";
         return false;
     }
 
-    return true;
+    if (!num_records) // no data
+    {
+        error = "Decoding failed";
+        return false;
+    }
+
+    std::set<std::string> categories;
+    for (const auto& sac_sic : analysis_info->items())
+    {
+        //no sensor => continue
+        if (!sac_sic.value().is_object())
+            continue;
+
+        //sensor unknown? => error
+        if (error.empty() && sac_sic.key() == "unknown")
+        {
+            error = "Missing SAC/SIC";
+        }
+
+        for (const auto& category : sac_sic.value().items())
+        {
+            bool ok;
+            QString::fromStdString(category.key()).toInt(&ok);
+
+            if (ok)
+                categories.insert(category.key());
+            else if (error.empty())
+                error = "Invalid category '" + category.key() + "'";
+
+            if (error.empty() &&
+                (!category.value().contains("010.SAC") ||
+                 !category.value().contains("010.SIC")))
+                error = "No SAC/SIC data items found";
+        }
+    }
+
+    for (const auto& cat : categories)
+        information += (information.empty() ? "" : ", ") + cat;
+
+    return error.empty();
 }
 
 /**
@@ -111,7 +151,7 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
     unsigned int current_file_line = settings().file_line_id_; //files_info_.at(current_file_count_).line_id_;
 
     loginf << "file '" << current_filename
-           << "' framing '" << settings().current_file_framing_ << "' line " << current_file_line;
+           << "' framing '" << settings().activeFileFraming() << "' line " << current_file_line;
 
     //jasterix callback
     auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
@@ -121,7 +161,7 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
     {
         // get last index
 
-        if (settings().current_file_framing_ == "")
+        if (settings().activeFileFraming() == "")
         {
             traced_assert(data->contains("data_blocks"));
             traced_assert(data->at("data_blocks").is_array());
@@ -170,8 +210,8 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
     };
 
     //start decoding
-    if (settings().current_file_framing_ == "")
+    if (settings().activeFileFraming() == "")
         task().jASTERIX()->decodeFile(current_filename, callback);
     else
-        task().jASTERIX()->decodeFile(current_filename, settings().current_file_framing_, callback);
+        task().jASTERIX()->decodeFile(current_filename, settings().activeFileFraming(), callback);
 }

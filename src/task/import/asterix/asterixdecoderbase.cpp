@@ -23,6 +23,8 @@
 #include "asterixnetworkdecoder.h"
 #include "asteriximporttask.h"
 
+#include "asynctask.h"
+
 #include "compass.h"
 #include "taskmanager.h"
 
@@ -76,14 +78,14 @@ Checks if the decoder can decode the currently set import source.
 @param force_recompute If true the information needed to decide if decode is valid or not is recomputed
 (e.g. by decoding a small portion of the source data).
 */
-bool ASTERIXDecoderBase::canDecode(bool force_recompute) const
+bool ASTERIXDecoderBase::canDecode(bool force_recompute, AsyncTaskProgressWrapper* progress) const
 {
     //cannot run => cannot decode
     if (!canRun())
         return false;
 
     //refresh decoding info
-    checkDecoding(force_recompute);
+    checkDecoding(force_recompute, progress);
 
     //decide if decoding is possible
     return canDecode_impl();
@@ -94,9 +96,9 @@ Refreshes internal information about decoding the currently set import source.
 @param force_recompute If true this information is always recomputed, otherwise
 cached values might be used.
 */
-void ASTERIXDecoderBase::checkDecoding(bool force_recompute) const
+void ASTERIXDecoderBase::checkDecoding(bool force_recompute, AsyncTaskProgressWrapper* progress) const
 {
-    checkDecoding_impl(force_recompute);
+    checkDecoding_impl(force_recompute, progress);
 }
 
 /**

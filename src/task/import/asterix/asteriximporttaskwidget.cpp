@@ -81,7 +81,7 @@ void ASTERIXImportTaskWidget::addMainTab()
 
         main_tab_layout->addLayout(sources_grid_);
 
-        main_tab_layout->addStretch();
+        //main_tab_layout->addStretch();
 
         if (task_.source().isNetworkType())
         {
@@ -119,7 +119,7 @@ void ASTERIXImportTaskWidget::addMainTab()
         main_tab_layout->addLayout(source_layout);
     }
 
-    main_tab_layout->addStretch();
+    //main_tab_layout->addStretch();
 
     // final stuff
 
@@ -401,6 +401,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         headers << "";
         headers << "Name";
         headers << "Info";
+        headers << "Content";
         headers << "Decoding";
         headers << "Error";
 
@@ -408,11 +409,14 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         tree_widget->setColumnCount(headers.count());
         tree_widget->setHeaderLabels(headers);
 
+        tree_widget->setColumnHidden(3, true);
+
         tree_widget->header()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(1, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(3, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(4, QHeaderView::ResizeMode::Stretch);
+        tree_widget->header()->setSectionResizeMode(4, QHeaderView::ResizeMode::ResizeToContents);
+        tree_widget->header()->setSectionResizeMode(5, QHeaderView::ResizeMode::Stretch);
 
         tree_widget->setColumnHidden(2, COMPASS::instance().isAppImage());
 
@@ -422,6 +426,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         {
             std::string name   = file_info.filename;
             std::string info   = "";
+            std::string cinfo  = file_info.contentinfo;
             std::string status = file_info.decodingTested() ? (!file_info.canDecode() ? "Error" : "OK") : "?";
             std::string descr  = file_info.error.errinfo;
 
@@ -429,18 +434,21 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
             item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
             item->setText(1, QString::fromStdString(name  ));
             item->setText(2, QString::fromStdString(info  ));
-            item->setText(3, QString::fromStdString(status));
-            item->setText(4, QString::fromStdString(descr ));
+            item->setText(3, QString::fromStdString(cinfo  ));
+            item->setText(4, QString::fromStdString(status));
+            item->setText(5, QString::fromStdString(descr ));
 
             item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, -1)));
 
             bool has_error = file_info.decodingTested() && !file_info.canDecode();
 
+            //loginf << "decoding tested: " << file_info.decodingTested() << ", " << file_info.canDecode();
+
             if (has_error)
                 item->setFlags(Qt::ItemIsSelectable);
 
             //file itself has no error? => add sections
-            if (!has_error)
+            //if (!has_error)
             {
                 unsigned int section_idx = 0;
 
@@ -448,6 +456,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                 {
                     std::string name   = section.description;
                     std::string info   = section.info;
+                    std::string cinfo  = section.contentinfo;
                     std::string status = file_info.decodingTested() ? (section.error.hasError() ? "Error" : "OK") : "?";
                     std::string descr  = section.error.errinfo;
 
@@ -455,8 +464,9 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                     sec_item->setCheckState(0, section.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
                     sec_item->setText(1, QString::fromStdString(name  ));
                     sec_item->setText(2, QString::fromStdString(info  ));
-                    sec_item->setText(3, QString::fromStdString(status));
-                    sec_item->setText(4, QString::fromStdString(descr ));
+                    sec_item->setText(3, QString::fromStdString(cinfo  ));
+                    sec_item->setText(4, QString::fromStdString(status));
+                    sec_item->setText(5, QString::fromStdString(descr ));
 
                     sec_item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, section_idx)));
 

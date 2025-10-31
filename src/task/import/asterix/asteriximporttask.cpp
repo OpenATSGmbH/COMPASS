@@ -259,7 +259,7 @@ void ASTERIXImportTask::asterixFileFraming(const std::string& asterix_framing)
         && std::find(framings.begin(), framings.end(), asterix_framing) == framings.end())
         throw runtime_error ("ASTERIXImportTask: unknown framing '"+asterix_framing+"'");
 
-    settings_.current_file_framing_ = asterix_framing;
+    settings_.setActiveFileFraming(asterix_framing);
 }
 
 /**
@@ -371,9 +371,7 @@ void ASTERIXImportTask::sourceChanged()
     loginf << "created new decoder "  << decoder_->name();
 
     //switch to framing required by the decoder?
-    auto required_framing = decoder_->requiredASTERIXFraming();
-    if (required_framing.has_value())
-        settings_.current_file_framing_ = required_framing.value();
+    settings_.setFileFramingOverride(decoder_->requiredASTERIXFraming());
 
     //test decoding
     testFileDecoding();
@@ -412,13 +410,13 @@ void ASTERIXImportTask::refreshjASTERIX() const
                                                      settings_.debug_jasterix_, true);
 
     std::vector<std::string> framings = jasterix_->framings();
-    if (std::find(framings.begin(), framings.end(), settings_.current_file_framing_) == framings.end())
+    if (std::find(framings.begin(), framings.end(), settings_.activeFileFraming()) == framings.end())
     {
         logdbg << "resetting to no framing";
 
         //@TODO: thats not nice...
         ASTERIXImportTaskSettings& settings = const_cast<ASTERIXImportTaskSettings&>(settings_);
-        settings.current_file_framing_ = "";
+        settings.setActiveFileFraming("");
     }
 
     // set category configs
@@ -682,7 +680,9 @@ void ASTERIXImportTask::testFileDecoding()
     {
         //refresh decoder check
         traced_assert(this->decoder_);
-        this->decoder_->canDecode(true);
+        this->decoder_->canDecode(true, &progress);
+
+        progress.setFinished(true);
 
         return Result::succeeded();
     };
@@ -1020,7 +1020,7 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     std::vector<std::string> keys;
 
-    if (settings_.current_file_framing_ == "" || source_.isNetworkType()) // force netto when doing network import
+    if (settings_.activeFileFraming() == "" || source_.isNetworkType()) // force netto when doing network import
         keys = {"data_blocks", "content", "records"};
     else
         keys = {"frames", "content", "data_blocks", "content", "records"};

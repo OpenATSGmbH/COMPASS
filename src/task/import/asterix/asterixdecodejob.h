@@ -100,9 +100,10 @@ private:
 
     boost::posix_time::ptime start_time_;
 
-    size_t num_frames_ {0};
-    size_t num_records_{0};
-    size_t num_errors_ {0};
+    size_t num_frames_   {0};
+    size_t num_records_  {0};
+    size_t num_errors_   {0};
+    size_t num_warnings_ {0};
 
     std::vector<std::unique_ptr<nlohmann::json>> extracted_data_;
     boost::mutex extracted_data_mutex_;

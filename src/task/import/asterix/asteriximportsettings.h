@@ -18,6 +18,7 @@
  #pragma once
 
 #include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/optional.hpp>
 
 #include <string>
 
@@ -25,6 +26,26 @@ class ASTERIXImportTaskSettings
 {
 public:
     ASTERIXImportTaskSettings(); // defines default param values
+
+    std::string activeFileFraming() const 
+    { 
+        return current_file_framing_override_.has_value() ? current_file_framing_override_.value() : current_file_framing_; 
+    }
+    void setActiveFileFraming(const std::string& file_framing)
+    {
+        //resets any active override
+        resetFileFramingOverride();
+
+        current_file_framing_ = file_framing;
+    }
+    void setFileFramingOverride(const boost::optional<std::string>& file_framing)
+    {
+        current_file_framing_override_ = file_framing;
+    }
+    void resetFileFramingOverride()
+    {
+        current_file_framing_override_.reset();
+    }
 
     // registered
     bool reset_date_between_files_;
@@ -73,4 +94,7 @@ public:
     unsigned int chunk_size_insert;
 
     unsigned int max_packets_in_processing_{5};
+
+private:
+    boost::optional<std::string> current_file_framing_override_;
 };
