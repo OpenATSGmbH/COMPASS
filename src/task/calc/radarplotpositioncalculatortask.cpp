@@ -56,20 +56,15 @@ RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(const std::stri
 
 RadarPlotPositionCalculatorTask::~RadarPlotPositionCalculatorTask() {}
 
-RadarPlotPositionCalculatorTaskDialog* RadarPlotPositionCalculatorTask::dialog()
+void RadarPlotPositionCalculatorTask::showDialog()
 {
-    if (!dialog_)
-    {
-        dialog_.reset(new RadarPlotPositionCalculatorTaskDialog(*this));
+    RadarPlotPositionCalculatorTaskDialog dialog (*this);
 
-        connect(dialog_.get(), &RadarPlotPositionCalculatorTaskDialog::closeSignal,
-                this, &RadarPlotPositionCalculatorTask::dialogCloseSlot);
-    }
+    if (dialog.exec() == QDialog::Rejected)
+        return;
 
-    dialog_->updateCanRun();
-
-    traced_assert(dialog_);
-    return dialog_.get();
+    traced_assert(canRun());
+    run();
 }
 
 bool RadarPlotPositionCalculatorTask::canRun()
@@ -271,7 +266,6 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
     {
         loginf << "fully done";
 
-        dialog_ = nullptr;
         data_.clear();
 
         traced_assert(msg_box_);
@@ -310,19 +304,6 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         loginf << "not yet done";
 }
 
-void RadarPlotPositionCalculatorTask::dialogCloseSlot()
-{
-    traced_assert(dialog_);
-
-    bool run_wanted = dialog_->runWanted();
-
-    dialog_->close();
-
-    if (run_wanted)
-        run();
-    else
-        dialog_ = nullptr;
-}
 
 bool RadarPlotPositionCalculatorTask::isCalculating() { return calculating_; }
 

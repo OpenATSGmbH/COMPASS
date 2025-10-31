@@ -43,34 +43,26 @@ CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTAS
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
-    task_widget_ = new CreateARTASAssociationsTaskWidget(task_, this);
+    CreateARTASAssociationsTaskWidget* task_widget_ = new CreateARTASAssociationsTaskWidget(task_, this);
     main_layout->addWidget(task_widget_);
 
     QHBoxLayout* button_layout = new QHBoxLayout();
 
-    cancel_button_ = new QPushButton("Cancel");
-    connect(cancel_button_, &QPushButton::clicked, this, &CreateARTASAssociationsTaskDialog::cancelClickedSlot);
-    button_layout->addWidget(cancel_button_);
+    QPushButton* cancel_button = new QPushButton("Cancel");
+    connect(cancel_button,  &QPushButton::clicked, this, &QDialog::reject);
+    button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
-    run_button_ = new QPushButton("Run");
-    connect(run_button_, &QPushButton::clicked, this, &CreateARTASAssociationsTaskDialog::runClickedSlot);
-    button_layout->addWidget(run_button_);
+    QPushButton* run_button = new QPushButton("Run");
+    connect(run_button, &QPushButton::clicked, this, &QDialog::accept);
+    button_layout->addWidget(run_button);
 
     main_layout->addLayout(button_layout);
 
     setLayout(main_layout);
 
-    update();
-    updateButtons();
-
-    connect(&task_, &CreateARTASAssociationsTask::dataSourceChanged, this, &CreateARTASAssociationsTaskDialog::updateButtons);
-}
-
-void CreateARTASAssociationsTaskDialog::updateButtons()
-{
-    traced_assert(run_button_);
+    traced_assert(run_button);
 
     auto err = task_.checkError();
 
@@ -80,16 +72,10 @@ void CreateARTASAssociationsTaskDialog::updateButtons()
     else if (err == CreateARTASAssociationsTask::Error::NoDataForLineID)
         tt = "Chosen line empty";
 
-    run_button_->setEnabled(err == CreateARTASAssociationsTask::Error::NoError);
-    run_button_->setToolTip(tt);
+    run_button->setDefault(true);
+
+    run_button->setEnabled(err == CreateARTASAssociationsTask::Error::NoError);
+    run_button->setToolTip(tt);
+
 }
 
-void CreateARTASAssociationsTaskDialog::runClickedSlot()
-{
-    emit runSignal();
-}
-
-void CreateARTASAssociationsTaskDialog::cancelClickedSlot()
-{
-    emit cancelSignal();
-}

@@ -52,8 +52,6 @@ RadarPlotPositionCalculatorTaskWidget::RadarPlotPositionCalculatorTaskWidget(
 
 RadarPlotPositionCalculatorTaskWidget::~RadarPlotPositionCalculatorTaskWidget()
 {
-    loginf;
-
     ProjectionManager::instance().deleteWidget();
 }
 

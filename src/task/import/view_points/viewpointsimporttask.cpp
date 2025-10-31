@@ -62,39 +62,23 @@ ViewPointsImportTask::~ViewPointsImportTask()
 {
 }
 
-ViewPointsImportTaskDialog* ViewPointsImportTask::dialog()
+void ViewPointsImportTask::showDialog()
 {
-    if (!dialog_)
-    {
-        dialog_.reset(new ViewPointsImportTaskDialog(*this));
+    ViewPointsImportTaskDialog dialog (*this);
 
-        connect(dialog_.get(), &ViewPointsImportTaskDialog::importSignal,
-                this, &ViewPointsImportTask::dialogImportSlot);
-
-        connect(dialog_.get(), &ViewPointsImportTaskDialog::cancelSignal,
-                this, &ViewPointsImportTask::dialogCancelSlot);
-    }
-
-    traced_assert(dialog_);
-    return dialog_.get();
-
-}
-
-void ViewPointsImportTask::dialogImportSlot()
-{
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+    
     traced_assert(canRun());
-
-    traced_assert(dialog_);
-    dialog_->hide();
-
     run();
 }
 
-void ViewPointsImportTask::dialogCancelSlot()
-{
-    traced_assert(dialog_);
-    dialog_->hide();
-}
+// void ViewPointsImportTask::dialogImportSlot()
+// {
+//     traced_assert(canRun());
+
+//     run();
+// }
 
 void ViewPointsImportTask::generateSubConfigurable(const std::string& class_id,
                                                    const std::string& instance_id)
@@ -108,9 +92,6 @@ void ViewPointsImportTask::importFilename(const std::string& filename)
     current_filename_ = filename;
 
     parseCurrentFile();
-
-    if (dialog_)
-        dialog_->updateText();
 }
 
 std::string ViewPointsImportTask::currentError() const

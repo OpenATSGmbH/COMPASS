@@ -51,8 +51,6 @@ public slots:
 
     void updateDoneSlot(DBContent& db_content);
 
-    void dialogCloseSlot();
-
 public:
     RadarPlotPositionCalculatorTask(const std::string& class_id, const std::string& instance_id,
                                     TaskManager& task_manager);
@@ -60,7 +58,7 @@ public:
 
     bool isCalculating();
 
-    RadarPlotPositionCalculatorTaskDialog* dialog();
+    void showDialog();
 
     virtual bool canRun() override;
     virtual void run() override;
@@ -73,8 +71,6 @@ protected:
 
     std::map<std::string, std::shared_ptr<Buffer>> data_;
     std::set<std::string> dbcontent_done_;
-
-    std::unique_ptr<RadarPlotPositionCalculatorTaskDialog> dialog_;
 
     QMessageBox* msg_box_{nullptr};
 
