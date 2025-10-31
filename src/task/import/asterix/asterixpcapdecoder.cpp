@@ -18,10 +18,12 @@
 #include "asterixpcapdecoder.h"
 #include "asteriximporttask.h"
 #include "packetsniffer.h"
+#include "stringconv.h"
 
 #include <jasterix/jasterix.h>
 
 using namespace std;
+using namespace Utils;
 
 /**
  * @param source Import source to retrieve data from.
@@ -195,12 +197,17 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
         for (const auto& category : sac_sic.value().items())
         {
             bool ok;
-            QString::fromStdString(category.key()).toInt(&ok);
+            auto cat = QString::fromStdString(category.key()).toUInt(&ok);
 
             if (ok)
-                categories.insert(category.key());
+            {
+                auto cat_str = String::categoryString(cat);
+                categories.insert(cat_str);
+            }
             else if (error.empty())
+            {
                 error = "Invalid category '" + category.key() + "'";
+            }
 
             if (error.empty() &&
                 (!category.value().contains("010.SAC") ||

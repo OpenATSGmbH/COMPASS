@@ -409,8 +409,6 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         tree_widget->setColumnCount(headers.count());
         tree_widget->setHeaderLabels(headers);
 
-        tree_widget->setColumnHidden(3, true);
-
         tree_widget->header()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(1, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::ResizeToContents);
@@ -419,6 +417,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         tree_widget->header()->setSectionResizeMode(5, QHeaderView::ResizeMode::Stretch);
 
         tree_widget->setColumnHidden(2, COMPASS::instance().isAppImage());
+        //tree_widget->setColumnHidden(3, true);
 
         unsigned int file_idx = 0;
 
