@@ -100,10 +100,10 @@ find_package(OpenSceneGraph 3.6.5 REQUIRED osgTerrain osgSim osgDB osgGA osgUtil
     # libOpenThreads & libosg automatically searched  osgQt
 message("  OSG_INCLUDE_DIR: ${OPENSCENEGRAPH_INCLUDE_DIRS}")
 
-find_package(osgQt REQUIRED)
+#find_package(osgQt REQUIRED)
 
-message("  OSGQT_INCLUDE_DIR: ${OSGQT_INCLUDE_DIR}")
-message("  OSGQT_LIBRARIES: ${OSGQT_LIBRARIES}")
+#message("  OSGQT_INCLUDE_DIR: ${OSGQT_INCLUDE_DIR}")
+#message("  OSGQT_LIBRARIES: ${OSGQT_LIBRARIES}")
 
 find_package(OSGEarth 3.2 REQUIRED)
 
@@ -115,7 +115,7 @@ message("  OSGEARTH_LIBRARY: ${OSGEARTH_LIBRARY}")
 
 message("OSG libs
     ${OPENSCENEGRAPH_LIBRARIES}"
-    ${OSGQT_INCLUDE_DIR}
+    #${OSGQT_INCLUDE_DIR}
     )
 
 find_package(GeographicLib REQUIRED)
@@ -204,7 +204,7 @@ target_link_libraries ( compass
     NemaTode::NemaTode
     Threads::Threads
     ${OPENSCENEGRAPH_LIBRARIES}
-    ${OSGQT_LIBRARIES}
+    #${OSGQT_LIBRARIES}
     ${OSGEARTH_LIBRARY}
     ${GeographicLib_LIBRARIES}
     #Arrow::arrow_static 
