@@ -420,7 +420,6 @@ std::string ASTERIXDecoderFile::statusInfoString() const
         if (file_info.hasError())
             status_cell += "<br> <b><font color=\"red\">(errors detected)</font></b>";
 
-
         // One row per file
         html << "<tr>"
                 "<td align=\"left\">"   << filename_cell    << "</td>"
@@ -456,6 +455,32 @@ std::string ASTERIXDecoderFile::statusInfoString() const
          << "</table>";
 
     return html.str();
+}
+
+/**
+*/
+std::vector<std::string> ASTERIXDecoderFile::errors() const
+{
+    auto errors = ASTERIXDecoderBase::errors();
+
+    const auto& file_infos = source_.files();
+    for (const auto& file_info : file_infos)
+    {
+        // Skip unused files
+        if (!file_info.used)
+            continue;
+
+        auto fn = boost::filesystem::path(file_info.filename).filename().string();
+
+        if (file_info.hasError())
+            errors.push_back("File '" + fn + "'" + (file_info.error.errinfo.empty() ? " obtains errors" : ": " + file_info.error.errinfo));
+        
+        for (const auto& s : file_info.sections)
+            if (s.used && s.error.hasError())
+                errors.push_back("File '" + fn + "' Section '" + s.description + "': " + s.error.errinfo);
+    }
+
+    return errors;
 }
 
 /**

@@ -41,6 +41,7 @@ public:
     virtual std::string statusInfoString() const override;
     virtual float statusInfoProgress() const override;
     virtual std::string currentDataSourceName() const override;
+    virtual std::vector<std::string> errors() const override;
     
     std::string getCurrentFilename() const;
 

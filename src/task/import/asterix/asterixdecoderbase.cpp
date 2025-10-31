@@ -126,6 +126,18 @@ std::string ASTERIXDecoderBase::errorMessage() const
 }
 
 /**
+ */
+std::vector<std::string> ASTERIXDecoderBase::errors() const
+{
+    std::vector<std::string> errors;
+
+    if (error())
+        errors.push_back("General decoder error: " + (errorMessage().empty() ? "Unknown error" : errorMessage()));
+
+    return errors;
+}
+
+/**
  * Stores the given error and increments the error count.
 */
 void ASTERIXDecoderBase::logError(const std::string& err)
