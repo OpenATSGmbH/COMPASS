@@ -53,7 +53,6 @@ ASTERIXDecodeJob::ASTERIXDecodeJob(ASTERIXImportTask& task,
 */
 ASTERIXDecodeJob::~ASTERIXDecodeJob()
 {
-    loginf;
     traced_assert(done_);
 }
 
