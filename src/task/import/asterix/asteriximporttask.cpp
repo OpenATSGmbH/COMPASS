@@ -1536,6 +1536,19 @@ void ASTERIXImportTask::checkAllDone()
             << ", inserted " << num_records_ << " rec"
             << " with " << records_per_second << " rec/s";
 
+        auto errors = decoder_->errors();
+
+        if (!errors.empty())
+        {
+            std::stringstream ss;
+            for (const auto& e : errors)
+                ss << e << "\n";
+
+            COMPASS::instance().logError("ASTERIX Import")
+                << "Import finished with errors." << "\n\n"
+                << ss.str();
+        }
+
         COMPASS::instance().mainWindow().updateMenus(); // re-enable import menu
 
         logdbg << "refresh";

@@ -1543,6 +1543,12 @@ nlohmann::json SectionContentTable::exportContent(unsigned int row,
 
     auto style = cellStyle((int)row, (int)col);
 
+    //@TODO: hack
+    if (j.is_string() && j.get<std::string>() == "Passed")
+        style |= CellStyleTextColorGreen;
+    if (j.is_string() && j.get<std::string>() == "Failed")
+        style |= CellStyleTextColorRed;
+
     if (mode == ReportExportMode::Latex || 
         mode == ReportExportMode::LatexPDF)
     {

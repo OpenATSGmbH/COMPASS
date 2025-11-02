@@ -303,6 +303,10 @@ QVariant LogStore::data(const QModelIndex& index, int role) const
         else
             return QVariant();;
     }
+    case Qt::TextAlignmentRole:
+    {
+        return (int)(Qt::AlignLeft | Qt::AlignTop);
+    }
     // case Qt::UserRole: // to find the checkboxes
     // {
     //     if (index.column() == 0)

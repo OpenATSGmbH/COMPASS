@@ -297,7 +297,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
         if (num_errors)
         {
             file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
-            file_info.error.errinfo = "Number: " + std::to_string(num_errors);
+            file_info.error.errinfo = "Decoding errors: " + std::to_string(num_errors);
         }
 
         if (job() && !job()->obsolete())

@@ -201,7 +201,7 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
         if (num_errors)
         {
             file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
-            file_info.error.errinfo = "Number: "+to_string(num_errors);
+            file_info.error.errinfo = "Decoding errors: "+to_string(num_errors);
         }
 
         //invoke job callback

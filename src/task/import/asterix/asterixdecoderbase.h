@@ -50,7 +50,6 @@ public:
     void stop();
 
     size_t numErrors() const;
-
     bool error() const;
     std::string errorMessage() const;
 
@@ -58,6 +57,7 @@ public:
     virtual std::string statusInfoString() const { return ""; }
     virtual float statusInfoProgress() const { return 0; } // percent
     virtual std::string currentDataSourceName() const { return ""; }
+    virtual std::vector<std::string> errors() const;
 
     virtual boost::optional<std::string> requiredASTERIXFraming() const { return {}; }
 
