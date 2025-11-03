@@ -5,7 +5,7 @@ This dialog allows management of data sources, as stored in the configuration as
 
 \begin{figure}[H]
     \hspace*{-2cm}
-    \includegraphics[width=18cm]{figures/configure_data_sources.png}
+    \includegraphics[width=18cm,frame]{figures/configure_data_sources.png}
   \caption{Configure Data Sources}
 \end{figure}
 
@@ -30,6 +30,7 @@ However, for CAT010,CAT020 and CAT062 exists the option to project from a Cartes
 \item DSType: Data source type, e.g. Radar, MLAT, ADS-B, ...
 \item SAC: System Area Code, number between [0,255]
 \item SIC: System Identification Code, number between [0,255]
+\item DS ID: ID derived from SAC/SIC (255*SAC+SIC)
 \item In DB: Indicator whether the data source is stored in the database
 \item In Config: Indicator whether the data source is stored in the configuration
 \end{itemize}
@@ -39,10 +40,12 @@ When a data source is selected in the table, additional details are shown in the
 
 Please \textbf{note} that all changes to a data sources are always written to the database as well as the configuration. \\
 
-Depending on the DSType, additional information can be set in a source. For a non-Radar source, the following information is given:
+Depending on the DSType, additional information can be set in a source. For all sources, the following information is given:
 
 \begin{itemize}
-\item ID: Number identifier (unique)
+\item Detection Type: See below
+\item Update Interval: Update interval in seconds (for correct labeling)
+\item Ground Only: Check if the data source \textbf{only} provides detection for on-ground targets (SMRs)
 \item Network Line information
 \begin{itemize}
     \item 4 different lines are possible, each with 
@@ -63,6 +66,7 @@ Please note that if e.g. only Multicast IP and port are set, and the Multicast I
 For sources of DSType 'Radar', the following additional information should be provided:
 
 \begin{itemize}
+\item Ignore Range/Azimuth values: Ignore such position information (if provided erroneously)
 \item Latitude: Source center position as WGS-84 latitude, as floating point number in degrees, e.g. 42.0001
 \item Longitude: Source center position as WGS-84 longitude, as floating point number in degrees, e.g. 17.01
 \item Altitude: Source center altitude above MSL, in meters
@@ -73,13 +77,28 @@ Additional optional information can be provided:
 
 \subsubsection{Detection Type}
 
-A detection type can be given of any data source, 'Mode S' is given as default. Currently only 'Primary Ground Only' used during reconstruction, but it is very important to set this type for SMRs, to mitigate sub-optimal association of primary-only target reports in close distances to clutter. \\
+A detection type can be given of any data source, 'Unknown' is given as default. Currently only 'Primary Only' used during reconstruction, but it is very important to set this type for SMRs, to mitigate sub-optimal association of primary-only target reports in close distances to clutter. \\
 
 \begin{figure}[H]
   \center
     \includegraphics[width=8cm,frame]{figures/configure_ds_dettyp.png}
-  \caption{Configure Data Sources: Detection type}
+  \caption{Configure Data Sources: Detection Type}
 \end{figure}
+
+For primary-only data sources, addition JPDA settings for the reconstructor can be given:
+
+\begin{itemize}
+\item JPDA PD [1]: Probability of Detection, e.g. 0.9 for 90\%
+\item Clutter Rage [1]: Rate of clutter detections per update interval, e.g. 10\\ in the given PSR Maximum range (has to be set below to take effect)
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=8cm,frame]{figures/configure_ds_jpda.png}
+  \caption{Configure Data Sources: JPDA}
+\end{figure}
+
 
 \subsubsection{Radar Ranges \& Accuracies}
 

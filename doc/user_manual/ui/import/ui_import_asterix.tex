@@ -6,7 +6,7 @@ This task allows importing of ASTERIX data recording files into the opened datab
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data.png}
   \caption{Import ASTERIX data}
 \end{figure}
 
@@ -107,7 +107,7 @@ therefore changing the information displayed in the main tab.
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data_decoder.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data_decoder.png}
   \caption{Import ASTERIX data Decoder}
 \end{figure}
 
@@ -143,7 +143,7 @@ Using the 'Refresh' button, all of the jASTERIX definitions are re-loaded from h
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data_override.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data_override.png}
   \caption{Task: Import ASTERIX Data Override / Filter}
 \end{figure}
 
@@ -158,7 +158,8 @@ These features should only be used in very specific circumstances.
 \item Filters
 \begin{itemize}
 \item Filter Time of Day: Use minimum / maximum times, everything outside will be ignored
-\item Filter Position: Use minimum / maximum rectangle in latitude and longitude
+\item Filter Position Rectangle: Use minimum / maximum rectangle in latitude and longitude
+\item Filter Position Circle: Use center position latitude and longitude and range in nautical miles
 \item Filter Mode C: Use minimum / maximum rectangle in Mode C. Target reports without Mode C will not be filtered.
 \end{itemize}
 \item Obfuscate Secondary Information: Obfuscates main secondary information
@@ -181,7 +182,7 @@ Please also \textbf{note} that the obfuscation function only currently overrides
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data_mappings.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data_mappings.png}
   \caption{Task: Import ASTERIX data mappings}
 \end{figure}
 
@@ -226,11 +227,11 @@ Using the 'Import' button the import task can be performed. During import a stat
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=14cm]{figures/asterix_import_data_status.png}
+    \includegraphics[width=14cm,frame]{figures/asterix_import_data_status.png}
   \caption{Import ASTERIX data status}
 \end{figure}
 
-If a decoding error occurs, a brief message box is shown, after which the application has to be closed. 
+If a decoding error occurs, an error is indicated in the status dialog, and a Task log error is created. 
 Please make sure that the correct framing and edition versions are selected, or contact the author for support if this does not resolve the issue. \\
 
 \paragraph{Comments}

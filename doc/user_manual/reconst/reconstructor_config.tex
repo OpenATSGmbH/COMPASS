@@ -6,7 +6,7 @@
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_main.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_main.png}
     \caption{Calculate References Main}
 \end{figure}
 
@@ -36,13 +36,15 @@ In the main tab, the following parameters can be set:
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_data_sources.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_data_sources.png}
     \caption{Calculate References Data Sources}
 \end{figure}
 
 In this tab, the data sources to contribute to the calculated references can be selected. \\
 
-Please \textbf{note} that de-selected data sources are still associated, but only their target report positions do not contribute to the references.
+Please \textbf{note} that de-selected data sources are still associated, but only their target report positions do not contribute to the references. \\
+
+Please also \textbf{note} that for ground surveillance datasets containing \textbf{SMRs}, it is imperative to set both the detection type to "Primary Only", as well as to set the "Ground Only" checkbox. Otherwise, SMR plots will be associated over long distances and cause sub-optimal reconstructor results.
 
 \subsubsection{Classification}
 
@@ -50,7 +52,7 @@ In the classification, special parameters can be set to identify the AnyAircraft
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_class.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_class.png}
     \caption{Classification Parameters}
 \end{figure}
 
@@ -60,7 +62,7 @@ In the classification, special parameters can be set to identify the AnyAircraft
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_scorum_assoc.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_scorum_assoc.png}
     \caption{Scoring + UMKalman Association Parameters}
 \end{figure}
 
@@ -89,7 +91,7 @@ In this tab, the association parameters can be set, i.e. the thresholds used to 
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_ref_calc.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
     \caption{Scoring + UMKalman Reconstruction Parameters}
 \end{figure}
 
@@ -125,17 +127,26 @@ process standard deviation (parameter \textit{Resample Process Stddev}).
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_probimm_assoc.png}
+      \includegraphics[width=17cm,frame]{figures/dialog_probimm_assoc.png}
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
-Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. For users with a professional license, a dedicated reconstructor user manual appendix is provided.
+\textbf{JPDA}
+
+\begin{figure}[H]
+    \center
+      \includegraphics[width=16cm,frame]{figures/dialog_probimm_assoc_jpda.png}
+    \caption{Probabilistic + IMM Association Parameters}
+\end{figure}
+
+
+Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. For users with a professional license, a dedicated reconstructor user manual appendix will be provided.
 
 \subsubsection{Reference Calculation}
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_ref_calc.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
     \caption{Probabilistic + IMM Reconstruction Parameters}
 \end{figure}
 
@@ -145,7 +156,7 @@ The given parameters are the same as discussed in the 'Scoring + UMKalman' chapt
 
 \begin{figure}[H]
     \center
-      \includegraphics[width=16cm]{figures/dialog_probimm_analyse.png}
+      \includegraphics[width=16cm,frame]{figures/dialog_probimm_analyse.png}
     \caption{Probabilistic + IMM Analysis Parameters}
 \end{figure}
 
