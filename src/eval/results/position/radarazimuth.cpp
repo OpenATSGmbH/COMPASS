@@ -16,8 +16,11 @@
  */
 
 #include "eval/results/position/radarazimuth.h"
+#include "stringconv.h"
 
 #include "logger.h"
+
+using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
@@ -39,10 +42,12 @@ SinglePositionRadarAzimuth::SinglePositionRadarAzimuth(const std::string& result
                                                        unsigned int num_no_ref,
                                                        unsigned int num_pos_outside,
                                                        unsigned int num_pos_inside,
+                                                       unsigned int num_ref_inaccurate,
                                                        unsigned int num_comp_passed,
                                                        unsigned int num_comp_failed)
 :   SinglePositionValueBase("SinglePositionRadarAzimuth", result_id, requirement, sector_layer, utn, target, calculator, details,
-                            num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_comp_passed, num_comp_failed)
+                            num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_ref_inaccurate, 
+                            num_comp_passed, num_comp_failed)
 {
     updateResult();
 }
@@ -79,8 +84,10 @@ std::vector<Single::TargetInfo> SinglePositionRadarAzimuth::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "DMin [m]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
@@ -94,7 +101,7 @@ std::vector<Single::TargetInfo> SinglePositionRadarAzimuth::targetInfos() const
 */
 std::vector<std::string> SinglePositionRadarAzimuth::detailHeaders() const
 {
-    return { "ToD", "NoRef", "PosInside", "Azimuth", "CP", "#CF", "#CP", "Comment" };
+    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Azimuth", "CP", "#CF", "#CP", "Comment" };
 }
 
 /**
@@ -107,6 +114,7 @@ nlohmann::json::array_t SinglePositionRadarAzimuth::detailValues(const Evaluatio
     return { Utils::Time::toString(detail.timestamp()),
             !has_ref_pos,
              detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
+             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
              detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
@@ -144,8 +152,10 @@ std::vector<Joined::SectorInfo> JoinedPositionRadarAzimuth::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "DMin [m]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 

@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LATEXTEXT_H
-#define LATEXTEXT_H
+#pragma once
 
 #include "latexcontent.h"
 
@@ -30,5 +29,3 @@ public:
 protected:
     std::string latex_text_;
 };
-
-#endif // LATEXTEXT_H

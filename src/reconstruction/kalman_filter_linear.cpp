@@ -1,4 +1,3 @@
-
 /*
  * This file is part of OpenATS COMPASS.
  *
@@ -88,8 +87,8 @@ bool KalmanFilterLinear::validateState(const kalman::KalmanState& s, bool xP_onl
     if (!KalmanFilter::validateState(s, xP_only))
         return false;
 
-    if (!xP_only && (s.F.cols() != dim_x_ ||
-                     s.F.rows() != dim_x_))
+    if (!xP_only && (static_cast<size_t>(s.F.cols()) != dim_x_ ||
+                     static_cast<size_t>(s.F.rows()) != dim_x_))
         return false;
 
     return true;
@@ -102,8 +101,8 @@ bool KalmanFilterLinear::validateState(const kalman::BasicKalmanState& s, bool x
     if (!KalmanFilter::validateState(s, xP_only))
         return false;
 
-    if (!xP_only && (s.F.cols() != dim_x_ ||
-                     s.F.rows() != dim_x_))
+    if (!xP_only && (static_cast<size_t>(s.F.cols()) != dim_x_ ||
+                     static_cast<size_t>(s.F.rows()) != dim_x_))
         return false;
 
     return true;
@@ -139,11 +138,11 @@ void KalmanFilterLinear::printIntermSteps(std::stringstream& strm, const std::st
 */
 void KalmanFilterLinear::updateInternalMatrices_impl(double dt, double Q_var)
 {
-    assert(F_func_);
-    assert(Q_func_);
+    traced_assert(F_func_);
+    traced_assert(Q_func_);
 
     F_func_(F_, dt);
-    Q_func_(Q_, dt, Q_var);
+    Q_func_(Q_, std::fabs(dt), Q_var);
 }
 
 /**
@@ -199,10 +198,9 @@ KalmanFilter::Error KalmanFilterLinear::update(const Vector& z,
     // project system uncertainty into measurement space
     S_  = (H * PHT) + R;
 
-    if (!Eigen::FullPivLU<Eigen::MatrixXd>(S_).isInvertible())
+    // check if S is invertible
+    if (!KalmanFilter::invertMatrix(SI_, S_))
         return Error::Numeric;
-
-    SI_ = S_.inverse();
 
     // K = PH'inv(S)
     // map system uncertainty into kalman gain
@@ -220,7 +218,7 @@ KalmanFilter::Error KalmanFilterLinear::update(const Vector& z,
     Matrix I_KH = I_ - K_ * H;
     P_ = I_KH * P_ * I_KH.transpose() + K_ * R * K_.transpose();
 
-    // save measurement and posterior state
+    // save measurement
     z_ = z;
 
     return Error::NoError;
@@ -237,6 +235,24 @@ KalmanFilter::Error KalmanFilterLinear::update_impl(const Vector& z,
 
 /**
 */
+KalmanFilter::Error KalmanFilterLinear::generateMeasurement_impl(Vector& x_pred_mm,
+                                                                 Matrix& P_pred_mm,
+                                                                 const Vector& x_pred, 
+                                                                 const Matrix& P_pred) const
+{
+    // x_mm = Hx
+    // project state to measurement space
+    x_pred_mm = H_ * x_pred;
+
+    // S = HPH' + R
+    // project system uncertainty into measurement space
+    P_pred_mm  = (H_ * P_pred * H_.transpose());
+
+    return Error::NoError;
+}
+
+/**
+*/
 KalmanFilter::Error KalmanFilterLinear::predictState_impl(Vector& x, 
                                                           Matrix& P,
                                                           double dt,
@@ -245,8 +261,8 @@ KalmanFilter::Error KalmanFilterLinear::predictState_impl(Vector& x,
                                                           const OVector& u,
                                                           KalmanState* state) const
 {
-    assert(F_func_);
-    assert(Q_func_);
+    traced_assert(F_func_);
+    traced_assert(Q_func_);
 
     KalmanFilter::Error err;
 
@@ -365,7 +381,7 @@ bool KalmanFilterLinear::smoothingStep_impl(Vector& x0_smooth,
 
     if (!Eigen::FullPivLU<Eigen::MatrixXd>(P1_pred).isInvertible())
     {
-        loginf << "KalmanFilterLinear: smoothingStep_impl: Could not invert P1_pred:\n" << P1_pred;
+        loginf << "Could not invert P1_pred:\n" << P1_pred;
         return false;
     }
 

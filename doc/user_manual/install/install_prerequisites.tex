@@ -33,11 +33,11 @@ The required hardware strongly depends on the use cases, for simple visual inspe
 \end{itemize}
 \ \\
 
-Depending on the loaded datasize, more RAM or a better graphics card might be of advantage. \\
+Depending on the loaded data size, more RAM or a better graphics card might be of advantage. \\
 
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that other graphics cards (Intel, Matrox) will in good probability also work, but are not supported. \\\\
 
-An optimal setup could be similiar to:
+An optimal setup could be similar to:
 
 \begin{itemize}  
 \item Intel i5 or better (at least 2 physical cores)
@@ -99,14 +99,14 @@ OpenGL ES profile extensions:
 This reveals several important points:
 
 \begin{itemize}  
-\item OpenGL vendor string: This is the grapics card driver. Only NVidia or ATI ones are supported.
+\item OpenGL vendor string: This is the graphics card driver. Only NVidia or ATI ones are supported.
 \item OpenGL version string: This is the OpenGl version, 3.0 or later is recommended.
 \item OpenGL shading language version string: This is the OpenGL shader version, 3.0 or later is recommended.
 \end{itemize}
 
 \paragraph{Unsupported Graphics Cards or Drivers}
 
-If different graphics cards or drivers are in use, the output of glxinfo might be similiar to this:
+If different graphics cards or drivers are in use, the output of glxinfo might be similar to this:
 
 \begin{lstlisting}
 OpenGL vendor string: nouveau
@@ -145,10 +145,10 @@ In such cases, the following issues can be expected and will currently not be ad
 \begin{itemize} 
 \item Application might not even start (OpenGL version error)
 \item Slow display performance (OpenGL emulation by CPU-based Mesa driver)
-\item Graphical display errors (wrong colors, artefacts, etc.) 
+\item Graphical display errors (wrong colors, artifacts, etc.) 
 \end{itemize} 
 
-Please know that they might also work, but no guarantees or support can be given at this moment. \\
+Please note that they might also work, but no guarantees or support can be given at this moment. \\
 
 If you encounter a white-only Geographic View and shader errors are present in the console log, please refer to \nameref{ref:issue_shaders}.
 

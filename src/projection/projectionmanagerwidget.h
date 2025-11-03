@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PROJECTIONMANAGERWIDGET_H_
-#define PROJECTIONMANAGERWIDGET_H_
+#pragma once
 
 #include <QWidget>
 
@@ -41,5 +40,3 @@ class ProjectionManagerWidget : public QWidget
 
     QComboBox* projection_box_{nullptr};
 };
-
-#endif /* PROJECTIONMANAGERWIDGET_H_ */

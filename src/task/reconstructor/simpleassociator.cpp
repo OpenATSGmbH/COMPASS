@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "simpleassociator.h"
 #include "simplereconstructor.h"
 #include "compass.h"
@@ -28,7 +45,7 @@ void SimpleAssociator::associateNewData()
 {
     unassoc_rec_nums_.clear();
 
-    loginf << "SimpleAssociator: associateNewData: associating RefTraj data";
+    loginf << "associating RefTraj data";
 
     if (reconstructor().isCancelled())
         return;
@@ -40,7 +57,7 @@ void SimpleAssociator::associateNewData()
 
     // create tracker targets
 
-    loginf << "SimpleAssociator: associateNewData: associating CAT062 data";
+    loginf << "associating CAT062 data";
 
     associateTargetReports({62});
 
@@ -58,7 +75,7 @@ void SimpleAssociator::associateNewData()
     if (reconstructor().isCancelled())
         return;
 
-    loginf << "SimpleAssociator: associateNewData: tracker targets " << reconstructor_.targets_container_.targets_.size()
+    loginf << "tracker targets " << reconstructor_.targets_container_.targets_.size()
            << " multiple " << multiple_associated << " single " << single_associated;
 
     // create non-tracker utns
@@ -73,7 +90,7 @@ void SimpleAssociator::associateNewData()
     if (reconstructor().isCancelled())
         return;
 
-    loginf << "SimpleAssociator: associateNewData: associating remaining sensor data";
+    loginf << "associating remaining sensor data";
 
     associateTargetReports(sensor_dbcont_ids);
 
@@ -118,7 +135,7 @@ void SimpleAssociator::associateNewData()
 
     // unassoc_rec_nums_.clear(); moved to beginning for statistics
 
-    loginf << "SimpleAssociator: associateNewData: after non-tracker targets "
+    loginf << "after non-tracker targets "
            << reconstructor_.targets_container_.targets_.size()
            << " multiple " << multiple_associated << " single " << single_associated;
 }
@@ -149,7 +166,7 @@ boost::optional<std::tuple<double, double, double>> SimpleAssociator::getPositio
     tie(ref_pos, ok) = target.interpolatedPosForTimeFast(
         tr.timestamp_, max_time_diff_);
 
-    assert (ok);
+    traced_assert(ok);
 
     double distance_m = osgEarth::GeoMath::distance(tr.position_->latitude_ * DEG2RAD,
                                                     tr.position_->longitude_ * DEG2RAD,
@@ -176,8 +193,8 @@ bool SimpleAssociator::canGetPositionOffsetTargets(const boost::posix_time::ptim
     return ok;
 }
 
-// distance, target0 acc, target1 acc
-boost::optional<std::tuple<double, double, double>> SimpleAssociator::getPositionOffsetTargets(
+// distance, target0+target0 acc
+boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetTargets(
     const boost::posix_time::ptime& ts,
     const dbContent::ReconstructorTarget& target0,
     const dbContent::ReconstructorTarget& target1,
@@ -189,20 +206,20 @@ boost::optional<std::tuple<double, double, double>> SimpleAssociator::getPositio
     bool ok;
 
     tie(target0_pos, ok) = target0.interpolatedPosForTimeFast(ts, max_time_diff_);
-    assert (ok);
+    traced_assert(ok);
 
     dbContent::targetReport::Position target1_pos;
     tie(target1_pos, ok) = target1.interpolatedPosForTimeFast(ts, max_time_diff_);
-    assert (ok);
+    traced_assert(ok);
 
     double distance_m = osgEarth::GeoMath::distance(target0_pos.latitude_ * DEG2RAD, target0_pos.longitude_ * DEG2RAD,
                                                     target1_pos.latitude_ * DEG2RAD, target1_pos.longitude_ * DEG2RAD);
 
     // distance, target acc, tr acc
-    return std::tuple<double, double, double>(distance_m, -1, -1);
+    return std::tuple<double, double>(distance_m, -1);
 }
 
-boost::optional<bool> SimpleAssociator::checkTrackPositionOffsetAcceptable (
+boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (
     dbContent::targetReport::ReconstructorInfo& tr,
     unsigned int utn, bool secondary_verified, bool do_debug)
 {
@@ -229,7 +246,7 @@ boost::optional<std::pair<bool, double>> SimpleAssociator::calculatePositionOffs
 
 std::tuple<ReconstructorAssociatorBase::DistanceClassification, double>
 SimpleAssociator::checkPositionOffsetScore (double distance_m, double sum_stddev_est,
-                                           bool secondary_verified, bool target_acccuracy_acceptable)
+                                           bool secondary_verified)
 {
     const auto& settings = reconstructor_.settings();
 
@@ -248,11 +265,7 @@ SimpleAssociator::checkPositionOffsetScore (double distance_m, double sum_stddev
         classif, settings.max_distance_acceptable_ - distance_m);
 }
 
-bool SimpleAssociator::isTargetAccuracyAcceptable(
-    double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug)
-{
-    return true;
-}
+
 
 // bool SimpleAssociator::isTargetAverageDistanceAcceptable(double distance_score_avg, bool secondary_verified)
 // {

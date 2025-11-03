@@ -1,6 +1,24 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "scatterseriesmodel.h"
 #include "scatterseriestreeitem.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace std;
 
@@ -17,7 +35,7 @@ ScatterSeriesModel::~ScatterSeriesModel()
 
 QVariant ScatterSeriesModel::data(const QModelIndex& index, int role) const
 {
-    logdbg << "ScatterSeriesModel: data: index row " << index.row() << " col " << index.column()
+    logdbg << "index row " << index.row() << " col " << index.column()
            << " valid " << index.isValid();
 
     if (!index.isValid())
@@ -30,13 +48,13 @@ QVariant ScatterSeriesModel::data(const QModelIndex& index, int role) const
         if (index.column() == 1)  // only col 0 have icons
             return QVariant();
 
-        logdbg << "ScatterSeriesModel: data: icon role";
+        logdbg << "icon role";
         ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
         return item->icon();
     }
     case Qt::DisplayRole:
     {
-        logdbg << "ScatterSeriesModel: data: display role";
+        logdbg << "display role";
         ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
         return item->data(index.column());
     }
@@ -46,17 +64,17 @@ QVariant ScatterSeriesModel::data(const QModelIndex& index, int role) const
     //    }
     default:
     {
-        logdbg << "ScatterSeriesModel: data: default";
+        logdbg << "default";
         return QVariant();
     }
     }
 }
 Qt::ItemFlags ScatterSeriesModel::flags(const QModelIndex& index) const
 {
-    logdbg << "ScatterSeriesModel: flags: index valid " << index.isValid();
+    logdbg << "index valid " << index.isValid();
 
     if (!index.isValid())
-        return 0;
+        return Qt::NoItemFlags;
 
     return QAbstractItemModel::flags(index);
 }
@@ -65,11 +83,11 @@ QVariant ScatterSeriesModel::headerData(int section, Qt::Orientation orientation
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        logdbg << "ScatterSeriesModel: headerData: returning root data";
+        logdbg << "returning root data";
         return root_item_->data(section);
     }
 
-    logdbg << "ScatterSeriesModel: headerData: wrong role";
+    logdbg << "wrong role";
     return QVariant();
 }
 QModelIndex ScatterSeriesModel::index(int row, int column,
@@ -77,13 +95,13 @@ QModelIndex ScatterSeriesModel::index(int row, int column,
 {
     if (!hasIndex(row, column, parent))
     {
-        logerr << "ScatterSeriesModel: index: row " << row << " col " << column << " not existing";
+        logerr << "row " << row << " col " << column << " not existing";
         return QModelIndex();
     }
 
     ScatterSeriesTreeItem* parent_item;
 
-    logdbg << "ScatterSeriesModel: index: parent valid " << parent.isValid();
+    logdbg << "parent valid " << parent.isValid();
 
     if (!parent.isValid())
         parent_item = root_item_.get();
@@ -93,24 +111,24 @@ QModelIndex ScatterSeriesModel::index(int row, int column,
     ScatterSeriesTreeItem* childItem = parent_item->child(row);
     if (childItem)
     {
-        logdbg << "ScatterSeriesModel: index: returning create index row " << row << " col " << column;
+        logdbg << "returning create index row " << row << " col " << column;
         return createIndex(row, column, childItem);
     }
     else
     {
-        logerr << "ScatterSeriesModel: index: child row " << row << " not existing";
+        logerr << "child row " << row << " not existing";
         return QModelIndex();
     }
 }
 QModelIndex ScatterSeriesModel::parent(const QModelIndex& index) const
 {
-    logdbg << "ScatterSeriesModel: parent: index valid " << index.isValid();
+    logdbg << "index valid " << index.isValid();
 
     if (!index.isValid())
         return QModelIndex();
 
     ScatterSeriesTreeItem* child_item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-    assert(child_item);
+    traced_assert(child_item);
     ScatterSeriesTreeItem* parent_item = child_item->parentItem();
 
     if (parent_item == root_item_.get())
@@ -118,11 +136,11 @@ QModelIndex ScatterSeriesModel::parent(const QModelIndex& index) const
 
     if (!parent_item)
     {
-        logerr << "ScatterSeriesModel: parent: null parent in " << child_item->name();
+        logerr << "null parent in " << child_item->name();
     }
 
-    assert(parent_item);
-    logdbg << "ScatterSeriesModel: parent: returning create index";
+    traced_assert(parent_item);
+    logdbg << "returning create index";
     return createIndex(parent_item->row(), 0, parent_item);
 }
 int ScatterSeriesModel::rowCount(const QModelIndex& parent) const
@@ -134,20 +152,20 @@ int ScatterSeriesModel::rowCount(const QModelIndex& parent) const
     else
         parent_item = static_cast<ScatterSeriesTreeItem*>(parent.internalPointer());
 
-    logdbg << "ScatterSeriesModel: rowCount: row " << parent.row() << " col " << parent.column()
+    logdbg << "row " << parent.row() << " col " << parent.column()
            << " child count " << parent_item->childCount();
 
     return parent_item->childCount();
 }
 int ScatterSeriesModel::columnCount(const QModelIndex& parent) const
 {
-    logdbg << "ScatterSeriesModel: columnCount: index valid " << parent.isValid();
+    logdbg << "index valid " << parent.isValid();
 
     if (parent.isValid())
         return static_cast<ScatterSeriesTreeItem*>(parent.internalPointer())->columnCount();
     else
     {
-        logdbg << "ScatterSeriesModel: columnCount: root count " << root_item_->columnCount();
+        logdbg << "root count " << root_item_->columnCount();
         return root_item_->columnCount();
     }
 }
@@ -170,7 +188,7 @@ void ScatterSeriesModel::updateFrom (ScatterSeriesCollection& collection)
 
 void ScatterSeriesModel::deselectAll()
 {
-    assert (root_item_);
+    traced_assert(root_item_);
     root_item_->hideAll();
     root_item_->hide(false);
 }

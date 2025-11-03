@@ -25,7 +25,7 @@
 #include <QMessageBox>
 
 #include <algorithm>
-#include <cassert>
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -52,12 +52,12 @@ TableViewDataSource::~TableViewDataSource()
 void TableViewDataSource::generateSubConfigurable(const std::string& class_id,
                                                     const std::string& instance_id)
 {
-    logdbg << "TableViewDataSource: generateSubConfigurable: class_id " << class_id
+    logdbg << "class_id " << class_id
            << " instance_id " << instance_id;
 
     if (class_id.compare("VariableOrderedSet") == 0)
     {
-        assert (!set_);
+        traced_assert(!set_);
 
         set_.reset(new VariableOrderedSet(class_id, instance_id, this));
 
@@ -82,7 +82,7 @@ void TableViewDataSource::checkSubConfigurables()
     if (!set_)
     {
         generateSubConfigurable("VariableOrderedSet", DEFAULT_SET_NAME);
-        assert(set_);
+        traced_assert(set_);
         addDefaultVariables(*set_.get());
     }
 
@@ -91,29 +91,29 @@ void TableViewDataSource::checkSubConfigurables()
 //        DBContent& cat021_cont = dbcont_man.dbContent("CAT021");
 
 //        generateSubConfigurable("VariableOrderedSet", "ADS-B Quality");
-//        assert(hasSet("ADS-B Quality"));
+//        traced_assert(hasSet("ADS-B Quality"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("ADS-B Quality");
 
 //        addDefaultVariables(*set.get());
 
-//        assert (cat021_cont.hasVariable(DBContent::var_cat021_mops_version_.name()));
+//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_mops_version_.name()));
 //        set->add(cat021_cont.variable(DBContent::var_cat021_mops_version_.name()));
 
-//        assert (cat021_cont.hasVariable(DBContent::var_cat021_nacp_.name()));
+//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_nacp_.name()));
 //        set->add(cat021_cont.variable(DBContent::var_cat021_nacp_.name()));
 
-//        assert (cat021_cont.hasVariable(DBContent::var_cat021_sil_.name()));
+//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_sil_.name()));
 //        set->add(cat021_cont.variable(DBContent::var_cat021_sil_.name()));
 
-//        assert (cat021_cont.hasVariable(DBContent::var_cat021_nucp_nic_.name()));
+//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_nucp_nic_.name()));
 //        set->add(cat021_cont.variable(DBContent::var_cat021_nucp_nic_.name()));
 //    }
 
 //    if (!hasSet("Horizontal Movement"))
 //    {
 //        generateSubConfigurable("VariableOrderedSet", "Horizontal Movement");
-//        assert(hasSet("Horizontal Movement"));
+//        traced_assert(hasSet("Horizontal Movement"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Horizontal Movement");
 
@@ -132,7 +132,7 @@ void TableViewDataSource::checkSubConfigurables()
 //    if (!hasSet("Mode A/C Info"))
 //    {
 //        generateSubConfigurable("VariableOrderedSet", "Mode A/C Info");
-//        assert(hasSet("Mode A/C Info"));
+//        traced_assert(hasSet("Mode A/C Info"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Mode A/C Info");
 
@@ -157,7 +157,7 @@ void TableViewDataSource::checkSubConfigurables()
 //    if (!hasSet("Track Lifetime"))
 //    {
 //        generateSubConfigurable("VariableOrderedSet", "Track Lifetime");
-//        assert(hasSet("Track Lifetime"));
+//        traced_assert(hasSet("Track Lifetime"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Track Lifetime");
 
@@ -179,7 +179,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 VariableOrderedSet* TableViewDataSource::getSet()
 {
-    assert (set_);
+    traced_assert(set_);
     return set_.get();
 }
 
@@ -187,7 +187,7 @@ void TableViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
 {
     for (auto& var_it : temporary_added_variables_)
     {
-        loginf << "TableViewDataSource: unshowViewPoint: removing var " << var_it.first << ", " << var_it.second;
+        loginf << "removing var " << var_it.first << ", " << var_it.second;
 
         removeTemporaryVariable(var_it.first, var_it.second);
     }
@@ -197,7 +197,7 @@ void TableViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
 
 void TableViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 {
-    assert (vp);
+    traced_assert(vp);
     const json& data = vp->data();
 
 //    "context_variables": {
@@ -211,14 +211,14 @@ void TableViewDataSource::showViewPoint (const ViewableDataConfig* vp)
     if (data.contains("context_variables"))
     {
         const json& context_variables = data.at("context_variables");
-        assert (context_variables.is_object());
+        traced_assert(context_variables.is_object());
 
         for (auto& obj_it : context_variables.get<json::object_t>())
         {
             string dbcontent_name = obj_it.first;
             json& variable_names = obj_it.second;
 
-            assert (variable_names.is_array());
+            traced_assert(variable_names.is_array());
 
             for (auto& var_it : variable_names.get<json::array_t>())
             {
@@ -226,7 +226,7 @@ void TableViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 
                 if (addTemporaryVariable(dbcontent_name, var_name))
                 {
-                    loginf << "TableViewDataSource: showViewPoint: added var " << dbcontent_name << ", " << var_name;
+                    loginf << "added var " << dbcontent_name << ", " << var_name;
                     temporary_added_variables_.push_back({dbcontent_name, var_name});
                 }
             }
@@ -236,15 +236,15 @@ void TableViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 
 bool TableViewDataSource::addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    loginf << "TableViewDataSource: addTemporaryVariable: dbcontent_name '" << dbcontent_name
+    loginf << "dbcontent_name '" << dbcontent_name
            << "' var_name '" << var_name << "'";
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
     
-    assert (set_);
+    traced_assert(set_);
     if (dbcontent_name == META_OBJECT_NAME)
     {
-        assert (dbcont_man.existsMetaVariable(var_name));
+        traced_assert(dbcont_man.existsMetaVariable(var_name));
         MetaVariable& meta_var = dbcont_man.metaVariable(var_name);
         if (!getSet()->hasMetaVariable(meta_var))
         {
@@ -256,10 +256,10 @@ bool TableViewDataSource::addTemporaryVariable (const std::string& dbcontent_nam
     }
     else
     {
-        assert (dbcont_man.existsDBContent(dbcontent_name));
+        traced_assert(dbcont_man.existsDBContent(dbcontent_name));
         DBContent& obj = dbcont_man.dbContent(dbcontent_name);
 
-        assert (obj.hasVariable(var_name));
+        traced_assert(obj.hasVariable(var_name));
         Variable& var = obj.variable(var_name);
 
         if (!getSet()->hasVariable(var))
@@ -276,26 +276,26 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 {
 //    auto el = find(temporary_added_variables_.begin(), temporary_added_variables_.end(),
 //                   pair<string, string>{dbcontent_name, var_name});
-//    assert (el != temporary_added_variables_.end());
+//    traced_assert(el != temporary_added_variables_.end());
 //    temporary_added_variables_.erase(el);
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
-        assert (dbcont_man.existsMetaVariable(var_name));
+        traced_assert(dbcont_man.existsMetaVariable(var_name));
         MetaVariable& meta_var = dbcont_man.metaVariable(var_name);
-        assert (getSet()->hasMetaVariable(meta_var));
+        traced_assert(getSet()->hasMetaVariable(meta_var));
         getSet()->removeMetaVariable(meta_var);
     }
     else
     {
-        assert (dbcont_man.existsDBContent(dbcontent_name));
+        traced_assert(dbcont_man.existsDBContent(dbcontent_name));
         DBContent& obj = dbcont_man.dbContent(dbcontent_name);
 
-        assert (obj.hasVariable(var_name));
+        traced_assert(obj.hasVariable(var_name));
         Variable& var = obj.variable(var_name);
-        assert (getSet()->hasVariable(var));
+        traced_assert(getSet()->hasVariable(var));
         getSet()->removeVariable(var);
     }
 }

@@ -47,12 +47,12 @@ ScatterPlotViewWidget::ScatterPlotViewWidget(const std::string& class_id,
 
     auto activeIfDataShownCB = [ data_widget ] (QAction* a)
     {
-        a->setEnabled(data_widget->showsData());
+        a->setEnabled(data_widget->isDrawn());
     };
 
     auto activeIfVariableDataShownCB = [ data_widget, view ] (QAction* a)
     {
-        a->setEnabled(data_widget->showsData() && view->showsVariables());
+        a->setEnabled(data_widget->isDrawn() && view->showsVariables());
     };
 
     getViewToolSwitcher()->addTool(Tool::SP_NAVIGATE_TOOL, "Navigate", {}, QIcon(), Qt::OpenHandCursor);
@@ -83,7 +83,7 @@ ScatterPlotViewWidget::~ScatterPlotViewWidget() = default;
 ScatterPlotView* ScatterPlotViewWidget::getView() 
 { 
     auto view = dynamic_cast<ScatterPlotView*>(ViewWidget::getView());
-    assert(view);
+    traced_assert(view);
     return view;
 }
 
@@ -92,7 +92,7 @@ ScatterPlotView* ScatterPlotViewWidget::getView()
 ScatterPlotViewDataWidget* ScatterPlotViewWidget::getViewDataWidget()
 {
     auto w = dynamic_cast<ScatterPlotViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -101,7 +101,7 @@ ScatterPlotViewDataWidget* ScatterPlotViewWidget::getViewDataWidget()
 const ScatterPlotViewDataWidget* ScatterPlotViewWidget::getViewDataWidget() const
 {
     auto w = dynamic_cast<const ScatterPlotViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -110,7 +110,7 @@ const ScatterPlotViewDataWidget* ScatterPlotViewWidget::getViewDataWidget() cons
 ScatterPlotViewConfigWidget* ScatterPlotViewWidget::getViewConfigWidget()
 {
     auto w = dynamic_cast<ScatterPlotViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -119,6 +119,6 @@ ScatterPlotViewConfigWidget* ScatterPlotViewWidget::getViewConfigWidget()
 const ScatterPlotViewConfigWidget* ScatterPlotViewWidget::getViewConfigWidget() const
 {
     auto w = dynamic_cast<const ScatterPlotViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }

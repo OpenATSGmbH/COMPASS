@@ -20,7 +20,7 @@
 #include "lateximage.h"
 #include "latextext.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <sstream>
 
 using namespace std;
@@ -48,18 +48,18 @@ bool LatexSection::hasSubSection (const std::string& heading)
 LatexSection& LatexSection::getSubSection (const std::string& heading)
 {
     LatexSection* tmp = findSubSection (heading);
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
 void LatexSection::addSubSection (const std::string& heading)
 {
-    assert (!hasSubSection(heading));
-    assert (level_ <= LatexSectionLevel::PARAGRAPH);
+    traced_assert(!hasSubSection(heading));
+    traced_assert(level_ <= LatexSectionLevel::PARAGRAPH);
     unsigned int next_level = static_cast<unsigned int>(level_) + 1;
     sub_content_.push_back(unique_ptr<LatexSection>(
                            new LatexSection(static_cast<LatexSectionLevel>(next_level), heading)));
-    assert (hasSubSection(heading));
+    traced_assert(hasSubSection(heading));
 }
 
 void LatexSection::addText (const std::string& latex_str)
@@ -75,7 +75,7 @@ bool LatexSection::hasTable (const std::string& name)
 LatexTable& LatexSection::getTable (const std::string& name)
 {
     LatexTable* tmp = findTable (name);
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
@@ -83,10 +83,10 @@ void LatexSection::addTable (const std::string& name, unsigned int num_columns,
                              std::vector<std::string> headings, std::string heading_alignment,
                              bool convert_to_latex)
 {
-    assert (!hasTable(name));
+    traced_assert(!hasTable(name));
     sub_content_.push_back(unique_ptr<LatexTable>(
                            new LatexTable(name, num_columns, headings, heading_alignment, convert_to_latex)));
-    assert (hasTable(name));
+    traced_assert(hasTable(name));
 }
 
 bool LatexSection::hasImage (const std::string& filename)
@@ -97,16 +97,16 @@ bool LatexSection::hasImage (const std::string& filename)
 LatexImage& LatexSection::getImage (const std::string& filename)
 {
     LatexImage* tmp = findImage (filename);
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
 void LatexSection::addImage (const std::string& filename, const std::string& caption)
 {
-    assert (!hasImage(filename));
+    traced_assert(!hasImage(filename));
     sub_content_.push_back(unique_ptr<LatexImage>(
                            new LatexImage(filename, caption)));
-    assert (hasImage(filename));
+    traced_assert(hasImage(filename));
 }
 
 std::string LatexSection::toString()

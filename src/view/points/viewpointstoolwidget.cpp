@@ -20,6 +20,7 @@
 
 #include "files.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QColorDialog>
@@ -34,7 +35,7 @@ using namespace Utils;
 ViewPointsToolWidget::ViewPointsToolWidget(ViewPointsWidget* vp_widget, QWidget* parent)
 : QWidget(parent), vp_widget_(vp_widget)
 {
-    assert (vp_widget_);
+    traced_assert(vp_widget_);
 
     setMaximumHeight(40);
 
@@ -147,7 +148,7 @@ void ViewPointsToolWidget::actionTriggeredSlot(QAction* action)
         showStatusesMenu();
     }
     else
-        logwrn << "ViewPointsToolWidget: actionTriggeredSlot: unkown action '" << text << "'";
+        logwrn << "unkown action '" << text << "'";
 }
 
 void ViewPointsToolWidget::showTypesMenu ()
@@ -213,9 +214,9 @@ void ViewPointsToolWidget::showStatusesMenu ()
 void ViewPointsToolWidget::typeFilteredSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
-    loginf << "ViewPointsToolWidget: typeFilteredSlot: " << action->text().toStdString();
+    loginf << "start" << action->text().toStdString();
 
     QString type = action->text();
 
@@ -230,9 +231,9 @@ void ViewPointsToolWidget::typeFilteredSlot ()
 void ViewPointsToolWidget::statusFilteredSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
-    loginf << "ViewPointsToolWidget: statusFilteredSlot: " << action->text().toStdString();
+    loginf << "start" << action->text().toStdString();
 
     QString status = action->text();
 
@@ -282,9 +283,9 @@ void ViewPointsToolWidget::showColumnsMenu()
 void ViewPointsToolWidget::columnFilteredSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
-    loginf << "ViewPointsToolWidget: columnFilteredSlot: " << action->text().toStdString();
+    loginf << "start" << action->text().toStdString();
 
     QString col = action->text();
 

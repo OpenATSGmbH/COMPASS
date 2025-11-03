@@ -64,10 +64,10 @@ HistogramViewDataWidget::HistogramViewDataWidget(HistogramViewWidget* view_widge
 :   VariableViewDataWidget(view_widget, view_widget->getView(), parent, f)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     data_source_ = view_->getDataSource();
-    assert(data_source_);
+    traced_assert(data_source_);
 
     main_layout_ = new QHBoxLayout();
     main_layout_->setMargin(0);
@@ -139,19 +139,19 @@ void HistogramViewDataWidget::postUpdateVariableDataEvent()
 
 /**
  */
-bool HistogramViewDataWidget::updateVariableDisplay()
+ViewDataWidget::DrawState HistogramViewDataWidget::updateVariableDisplay()
 {
     return updateChart();
 }
 
 /**
  */
-void HistogramViewDataWidget::updateFromAnnotations()
+bool HistogramViewDataWidget::updateFromAnnotations()
 {
-    loginf << "HistogramViewDataWidget: updateFromAnnotations";
+    loginf;
 
     if (!view_->hasCurrentAnnotation())
-        return;
+        return false;
 
     const auto& anno = view_->currentAnnotation();
 
@@ -161,12 +161,12 @@ void HistogramViewDataWidget::updateFromAnnotations()
     const auto& feature = anno.feature_json;
 
     if (!feature.is_object() || !feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
-        return;
-    
+        return false;
+
     if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
     {
         histogram_raw_.clear();
-        return;
+        return false;
     }
 
     if (histogram_raw_.useLogScale().has_value())
@@ -175,7 +175,9 @@ void HistogramViewDataWidget::updateFromAnnotations()
         view_->updateComponents();
     }
 
-    loginf << "HistogramViewDataWidget: updateFromAnnotations: done";
+    loginf << "done";
+
+    return true;
 }
 
 /**
@@ -183,10 +185,10 @@ void HistogramViewDataWidget::updateFromAnnotations()
  */
 void HistogramViewDataWidget::updateFromVariables()
 {
-    loginf << "HistogramViewDataWidget: updateVariableData";
+    loginf;
 
-    assert(view_->numVariables() == 1);
-    assert(view_->variable(0).hasVariable());
+    traced_assert(view_->numVariables() == 1);
+    traced_assert(view_->variable(0).hasVariable());
 
     auto& variable = view_->variable(0);
 
@@ -199,7 +201,7 @@ void HistogramViewDataWidget::updateFromVariables()
     dbContent::Variable*     data_var = variable.variablePtr();
     dbContent::MetaVariable* meta_var = variable.metaVariablePtr();
 
-    assert (meta_var || data_var);
+    traced_assert(meta_var || data_var);
 
     auto data_type = meta_var ? meta_var->dataType() : data_var->dataType();
 
@@ -211,17 +213,17 @@ void HistogramViewDataWidget::updateFromVariables()
         logerr << msg;                                                                                                                        \
         throw std::runtime_error(msg);
 
-    #define UnsupportedFunc(PDType, DType, Suffix) assert(true);
+    #define UnsupportedFunc(PDType, DType, Suffix) traced_assert(true);
 
     SwitchPropertyDataTypeNumeric(data_type, UpdateFunc, UnsupportedFunc, UnsupportedFunc, NotFoundFunc)
 
-    assert (histogram_generator_);
+    traced_assert(histogram_generator_);
     
     histogram_generator_->update();
     //histogram_generator_->print();
 
     HistogramGeneratorBuffer* generator = dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
-    assert(generator);
+    traced_assert(generator);
     
     //variable missing from buffer?
     if (generator->dataNotInBuffer())
@@ -233,7 +235,7 @@ void HistogramViewDataWidget::updateFromVariables()
     addNullCount(generator->getResults().buffer_null_count);
     addNanCount (generator->getResults().buffer_nan_count );
 
-    loginf << "HistogramViewDataWidget: updateVariableData: done";
+    loginf << "done";
 }
 
 /**
@@ -288,17 +290,22 @@ QCursor HistogramViewDataWidget::currentCursor() const
  */
 QPixmap HistogramViewDataWidget::renderPixmap()
 {
-    assert (chart_view_);
+    traced_assert(chart_view_);
     return chart_view_->grab();
 }
 
 /**
  */
-bool HistogramViewDataWidget::updateChart()
+ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 {
-    loginf << "HistogramViewDataWidget: updateChart";
+    loginf;
+
+    //check if data is present/valid
+    bool has_data = histogram_raw_.hasData() && (variablesOk() || view_->showsAnnotation());
 
     chart_view_.reset(nullptr);
+
+    ViewDataWidget::DrawState draw_state = ViewDataWidget::DrawState::NotDrawn;
 
     //create chart
     QChart* chart = new QChart();
@@ -346,16 +353,13 @@ bool HistogramViewDataWidget::updateChart()
             chart_y_axis = new QValueAxis;
             chart_y_axis->setRange(0, (int)max_count);
         }
-        assert (chart_y_axis);
+        traced_assert(chart_y_axis);
 
         chart_y_axis->setTitleText(y_axis_name);
 
         chart->addAxis(chart_y_axis, Qt::AlignLeft);
         chart_series->attachAxis(chart_y_axis);
     };
-
-    //check if data is present/valid
-    bool has_data = histogram_raw_.hasData() && variablesOk();
 
     if (has_data)
     {
@@ -403,6 +407,8 @@ bool HistogramViewDataWidget::updateChart()
         max_count = std::max(max_count, (unsigned)1);
 
         generateYAxis(use_log_scale, max_count);
+
+        draw_state = ViewDataWidget::DrawState::DrawnContent;
     }
     else 
     {
@@ -423,6 +429,8 @@ bool HistogramViewDataWidget::updateChart()
         chart_y_axis->setLabelsVisible(false);
         chart_y_axis->setGridLineVisible(false);
         chart_y_axis->setMinorGridLineVisible(false);
+
+        draw_state = ViewDataWidget::DrawState::Drawn;
     }
 
     //update chart
@@ -442,16 +450,16 @@ bool HistogramViewDataWidget::updateChart()
 
     main_layout_->addWidget(chart_view_.get());
 
-    loginf << "HistogramViewDataWidget: updateChart: done";
+    loginf << "done";
 
-    return has_data;
+    return draw_state;
 }
 
 /**
  */
 void HistogramViewDataWidget::exportDataSlot(bool overwrite)
 {
-    logdbg << "HistogramViewDataWidget: exportDataSlot";
+    logdbg;
 
 }
 
@@ -466,7 +474,7 @@ void HistogramViewDataWidget::exportDoneSlot(bool cancelled)
  */
 void HistogramViewDataWidget::selectData(unsigned int index1, unsigned int index2)
 {
-    loginf << "HistogramViewDataWidget: rectangleSelectedSlot: index1 " << index1 << " index2 " << index2;
+    loginf << "index1 " << index1 << " index2 " << index2;
 
     if (histogram_generator_)
         histogram_generator_->select(index1, index2);
@@ -510,11 +518,11 @@ void HistogramViewDataWidget::rectangleSelectedSlot(unsigned int index1, unsigne
  */
 void HistogramViewDataWidget::invertSelectionSlot()
 {
-    loginf << "HistogramViewDataWidget: invertSelectionSlot";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -533,11 +541,11 @@ void HistogramViewDataWidget::invertSelectionSlot()
  */
 void HistogramViewDataWidget::clearSelectionSlot()
 {
-    loginf << "HistogramViewDataWidget: clearSelectionSlot";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -551,7 +559,7 @@ void HistogramViewDataWidget::clearSelectionSlot()
  */
 void HistogramViewDataWidget::resetZoomSlot()
 {
-    loginf << "HistogramViewDataWidget: resetZoomSlot";
+    loginf;
 
     if (histogram_generator_ && histogram_generator_->subRangeActive())
     {
@@ -619,6 +627,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
             return ranges;
         };
+        UNUSED_VARIABLE(obtainRanges);
 
         info[ "result_range_min"      ] = range.first;
         info[ "result_range_max"      ] = range.second;
@@ -639,10 +648,10 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         {
             nlohmann::json chart_info;
 
-            bool y_axis_log = dynamic_cast<QLogValueAxis*>(chart_view_->chart()->axisY()) != nullptr;
+            bool y_axis_log = dynamic_cast<QLogValueAxis*>(chart_view_->chart()->axes(Qt::Vertical).first()) != nullptr;
 
-            chart_info[ "x_axis_label" ] = chart_view_->chart()->axisX()->titleText().toStdString();
-            chart_info[ "y_axis_label" ] = chart_view_->chart()->axisY()->titleText().toStdString();
+            chart_info[ "x_axis_label" ] = chart_view_->chart()->axes(Qt::Horizontal).first()->titleText().toStdString();
+            chart_info[ "y_axis_label" ] = chart_view_->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
             chart_info[ "y_axis_log"   ] = y_axis_log;
             chart_info[ "num_series"   ] = chart_view_->chart()->series().count();
 
@@ -654,7 +663,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
             for (auto s : series)
             {
                 QBarSeries* bar_series = dynamic_cast<QBarSeries*>(s);
-                assert(bar_series);
+                traced_assert(bar_series);
 
                 nlohmann::json series_info;
                 series_info[ "name"     ] = bar_series->name().toStdString();

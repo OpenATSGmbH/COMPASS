@@ -90,7 +90,7 @@ EvaluationDataWidget::EvaluationDataWidget(EvaluationData& eval_data,
 
 void EvaluationDataWidget::resizeColumnsToContents()
 {
-    loginf << "EvaluationDataWidget: resizeColumnsToContents";
+    loginf;
     //table_model_->update();
     table_view_->resizeColumnsToContents();
 }
@@ -220,21 +220,21 @@ namespace
 
 void EvaluationDataWidget::customContextMenuSlot(const QPoint& p)
 {
-    logdbg << "EvaluationDataWidget: customContextMenuSlot";
+    logdbg;
 
-    assert (table_view_);
+    traced_assert(table_view_);
 
     QModelIndex index = table_view_->indexAt(p);
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     const EvaluationTargetData& target = eval_data_.getTargetOf(source_index);
 
     unsigned int utn = target.utn_;
-    loginf << "EvaluationDataWidget: customContextMenuSlot: row " << index.row() << " utn " << utn;
-    assert (calculator_.data().hasTargetData(utn));
+    loginf << "row " << index.row() << " utn " << utn;
+    traced_assert(calculator_.data().hasTargetData(utn));
 
     QMenu menu;
 
@@ -280,11 +280,11 @@ void EvaluationDataWidget::jumpToRequirement(const std::string& req_id, unsigned
 {
     std::string sum_id = EvaluationResultsReport::SectionID::prependReportResultID(req_id);
 
-    loginf << "EvaluationDataWidget: jumpToRequirement: sum id: " << sum_id;
+    loginf << "sum id: " << sum_id;
 
     std::string utn_id = EvaluationResultsReport::SectionID::sumResult2Target(sum_id, utn, calculator_);
 
-    loginf << "EvaluationDataWidget: jumpToRequirement: utn id: " << utn_id;
+    loginf << "utn id: " << utn_id;
 
     //calculator_.manager().widget(showResultId(utn_id, true, true);
 }
@@ -292,11 +292,11 @@ void EvaluationDataWidget::jumpToRequirement(const std::string& req_id, unsigned
 void EvaluationDataWidget::showFullUTNSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
-    loginf << "EvaluationDataWidget: showFullUTNSlot: utn " << utn;
+    loginf << "utn " << utn;
 
     calculator_.showFullUTN(utn);
 }
@@ -304,11 +304,11 @@ void EvaluationDataWidget::showFullUTNSlot ()
 void EvaluationDataWidget::showSurroundingDataSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
-    loginf << "EvaluationDataWidget: showSurroundingDataSlot: utn " << utn;
+    loginf << "utn " << utn;
 
     //calculator_.showSurroundingData(utn);
 }
@@ -322,16 +322,16 @@ void EvaluationDataWidget::itemClicked(const QModelIndex& index)
 {
     if (!index.isValid())
     {
-        loginf << "EvaluationDataWidget: itemClicked: invalid index";
+        loginf << "invalid index";
         return;
     }
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     const EvaluationTargetData& target = eval_data_.getTargetOf(source_index);
 
-    loginf << "EvaluationDataWidget: itemClicked: current target " << target.utn_;
+    loginf << "current target " << target.utn_;
     //restore_focus_ = true;
 
     calculator_.showUTN(target.utn_);

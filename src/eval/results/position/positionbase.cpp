@@ -50,12 +50,14 @@ PositionBase::PositionBase(unsigned int num_pos,
                            unsigned int num_no_ref,
                            unsigned int num_pos_outside,
                            unsigned int num_pos_inside,
+                           unsigned int num_ref_inaccurate,
                            unsigned int num_passed,
                            unsigned int num_failed)
 :   num_pos_        (num_pos)
 ,   num_no_ref_     (num_no_ref)
 ,   num_pos_outside_(num_pos_outside)
 ,   num_pos_inside_ (num_pos_inside)
+,   num_ref_inaccurate_(num_ref_inaccurate)
 ,   num_passed_     (num_passed)
 ,   num_failed_     (num_failed)
 {
@@ -89,6 +91,11 @@ unsigned int PositionBase::numPosInside() const
     return num_pos_inside_;
 }
 
+unsigned int PositionBase::numRefInaccurate() const
+{
+    return num_ref_inaccurate_;
+}
+
 /**
 */
 unsigned int PositionBase::numPos() const
@@ -116,13 +123,13 @@ const ValueAccumulator& PositionBase::accumulator() const
 
 /**
 */
-SinglePositionBaseCommon::SinglePositionBaseCommon(unsigned int num_pos,
-                                                   unsigned int num_no_ref,
+SinglePositionBaseCommon::SinglePositionBaseCommon(unsigned int num_pos, unsigned int num_no_ref,
                                                    unsigned int num_pos_outside,
                                                    unsigned int num_pos_inside,
-                                                   unsigned int num_passed,
-                                                   unsigned int num_failed)
-:   PositionBase(num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_passed, num_failed)
+                                                   unsigned int num_ref_inaccurate,
+                                                   unsigned int num_passed, unsigned int num_failed)
+    : PositionBase(num_pos, num_no_ref, num_pos_outside, num_pos_inside,
+                   num_ref_inaccurate, num_passed, num_failed)
 {
 }
 
@@ -130,19 +137,19 @@ SinglePositionBaseCommon::SinglePositionBaseCommon(unsigned int num_pos,
 */
 boost::optional<double> SinglePositionBaseCommon::common_computeResult(const Single* single_result) const
 {
-    assert (single_result);
-    assert (num_no_ref_ <= num_pos_);
-    assert (num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(single_result);
+    traced_assert(num_no_ref_ <= num_pos_);
+    traced_assert(num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
 
     accumulator_.reset();
 
     auto values = single_result->getValues(DetailKey::Value);
 
-    assert (values.size() == num_passed_ + num_failed_);
+    traced_assert(values.size() == num_passed_ + num_failed_);
 
     unsigned int num_distances = values.size();
 
-    assert (num_passed_ <= num_distances);
+    traced_assert(num_passed_ <= num_distances);
 
     if (num_distances > 0)
         accumulator_.accumulate(values, true);
@@ -165,7 +172,7 @@ bool SinglePositionBaseCommon::common_detailIsOk(const EvaluationDetail& detail,
     const EvaluationRequirement::PositionDistance* req = dynamic_cast<const EvaluationRequirement::PositionDistance*>(requirement.get());
 
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);
-    assert(check_passed.has_value());
+    traced_assert(check_passed.has_value());
 
     if (req)
     {
@@ -213,10 +220,11 @@ SinglePositionProbabilityBase::SinglePositionProbabilityBase(const std::string& 
                                                              unsigned int num_no_ref,
                                                              unsigned int num_pos_outside, 
                                                              unsigned int num_pos_inside,
+                                                             unsigned int num_ref_inaccurate,
                                                              unsigned int num_passed, 
                                                              unsigned int num_failed)
 :   SingleProbabilityBase(result_type, result_id, requirement, sector_layer, utn, target, calculator, details)
-,   SinglePositionBaseCommon(num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_passed, num_failed)
+,   SinglePositionBaseCommon(num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate, num_passed, num_failed)
 {
 }
 
@@ -261,7 +269,7 @@ void SinglePositionProbabilityBase::addAnnotationForDetail(nlohmann::json& annot
                                                            TargetAnnotationType type,
                                                            bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (detail.numPositions() == 1) // no ref pos
         return;
@@ -301,10 +309,11 @@ SinglePositionValueBase::SinglePositionValueBase(const std::string& result_type,
                                                  unsigned int num_no_ref,
                                                  unsigned int num_pos_outside, 
                                                  unsigned int num_pos_inside,
+                                                 unsigned int num_ref_inaccurate,
                                                  unsigned int num_passed, 
                                                  unsigned int num_failed)
 :   Single(result_type, result_id, requirement, sector_layer, utn, target, calculator, details)
-,   SinglePositionBaseCommon(num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_passed, num_failed)
+,   SinglePositionBaseCommon(num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate, num_passed, num_failed)
 {
 }
 
@@ -344,7 +353,7 @@ void SinglePositionValueBase::addAnnotationForDetail(nlohmann::json& annotations
                                                      TargetAnnotationType type,
                                                      bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (detail.numPositions() == 1) // no ref pos
         return;
@@ -399,6 +408,7 @@ void JoinedPositionBase::common_clearResults()
     num_no_ref_      = 0;
     num_pos_outside_ = 0;
     num_pos_inside_  = 0;
+    num_ref_inaccurate_ = 0;
     num_failed_      = 0;
     num_passed_      = 0;
 
@@ -414,12 +424,13 @@ void JoinedPositionBase::common_accumulateSingleResult(unsigned int utn, const P
     num_no_ref_      += single_result.numNoRef();
     num_pos_outside_ += single_result.numPosOutside();
     num_pos_inside_  += single_result.numPosInside();
+    num_ref_inaccurate_ += single_result.numRefInaccurate();
     num_passed_      += single_result.numPassed();
     num_failed_      += single_result.numFailed();
 
     if (single_result.accumulator().max() > 10000)
     {
-        loginf << "JoinedPositionBase: common_accumulateSingleResult: utn " << utn
+        loginf << "utn " << utn
                << " dist max " <<  single_result.accumulator().max()
                << " count " << single_result.accumulator().numValues();
     }
@@ -431,8 +442,8 @@ void JoinedPositionBase::common_accumulateSingleResult(unsigned int utn, const P
 */
 boost::optional<double> JoinedPositionBase::common_computeResult() const
 {
-    assert (num_no_ref_ <= num_pos_);
-    assert (num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_no_ref_ <= num_pos_);
+    traced_assert(num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
 
     // nothing to do
 
@@ -444,7 +455,7 @@ boost::optional<double> JoinedPositionBase::common_computeResult() const
 bool JoinedPositionBase::common_exportAsCSV(std::ofstream& strm,
                                             const Joined* result) const
 {
-    // assert(result);
+    // traced_assert(result);
 
     // strm << csv_header_ << "\n";
 
@@ -583,9 +594,10 @@ void JoinedPositionProbabilityBase::accumulateSingleResult(
 */
 boost::optional<double> JoinedPositionProbabilityBase::computeResult_impl() const
 {
-    loginf << "JoinedPositionProbabilityBase: computeResult_impl:" << type()
+    loginf << "start" << type()
             << " num_pos " << num_pos_
             << " num_no_ref " << num_no_ref_
+            << " num_ref_inaccurate " << num_ref_inaccurate_
             << " num_failed " << num_failed_
             << " num_passed " << num_passed_;
 
@@ -666,9 +678,10 @@ void JoinedPositionValueBase::accumulateSingleResult(
 */
 boost::optional<double> JoinedPositionValueBase::computeResult_impl() const
 {
-    loginf << "JoinedPositionValueBase: computeResult_impl:" << type()
+    loginf << "start" << type()
             << " num_pos " << num_pos_
             << " num_no_ref " << num_no_ref_
+            << " num_ref_inaccurate " << num_ref_inaccurate_
             << " num_failed " << num_failed_
             << " num_passed " << num_passed_;
 

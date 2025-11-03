@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "taskresultswidget.h"
 
@@ -44,12 +61,12 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     connect(report_combo_, QOverload<const QString &>::of(&QComboBox::currentTextChanged),
             [ = ] (const QString& text){
 
-                loginf << "TaskResultsWidget: report_combo_ currentText '" << text.toStdString() << "'";
+                loginf << "report_combo_ currentText '" << text.toStdString() << "'";
 
                 if (!text.size()) // happens on clear
                     return;
 
-                assert (task_man_.hasResult(text.toStdString()));
+                traced_assert(task_man_.hasResult(text.toStdString()));
                 setReport(text.toStdString());
             });
 
@@ -135,13 +152,13 @@ TaskResultsWidget::~TaskResultsWidget() {}
  */
 void TaskResultsWidget::setReport(const std::string name)
 {
-    loginf << "TaskResultsWidget: setReport: name '" << name << "'";
+    loginf << "name '" << name << "'";
 
     current_report_name_ = name;
 
     int name_idx = report_combo_->findText(current_report_name_.c_str());
 
-    loginf << "TaskResultsWidget: setReport: name_idx " << name_idx;
+    loginf << "name_idx " << name_idx;
 
     if (name_idx < 0)
     {
@@ -165,7 +182,7 @@ void TaskResultsWidget::setReport(const std::string name)
 
     report_combo_->setDisabled(false);
 
-    assert (task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
     auto result = task_man_.result(name);
     auto report = result->report();
 
@@ -174,9 +191,9 @@ void TaskResultsWidget::setReport(const std::string name)
     std::string default_section = ResultReport::SectionID::reportResultOverviewID();
 
     if (!result->startSection().empty())
-        report_widget_->selectId(result->startSection());
+        report_widget_->selectId(result->startSection(), false, {});
     else if (report->hasSection(default_section))
-        report_widget_->selectId(default_section);
+        report_widget_->selectId(default_section, false, {});
 
     report_widget_->setDisabled(false);
 
@@ -194,10 +211,7 @@ void TaskResultsWidget::updateResultsSlot()
  */
 void TaskResultsWidget::updateResults(const std::string& selected_result)
 {
-    loginf << "TaskResultsWidget: updateResultsSlot";
-
-    current_report_name_backup_  = current_report_name_;
-    current_section_name_backup_ = report_widget_->currentSection();
+    loginf;
 
     report_combo_->blockSignals(true);
     report_combo_->clear();
@@ -209,7 +223,7 @@ void TaskResultsWidget::updateResults(const std::string& selected_result)
     bool current_found = false;
     for (auto& res_it : task_man_.results())
     {
-        loginf << "TaskResultsWidget: updateResultsSlot: adding '" << res_it.second->name() << "'";
+        loginf << "adding '" << res_it.second->name() << "'";
 
         report_combo_->addItem(res_it.second->name().c_str());
 
@@ -225,7 +239,7 @@ void TaskResultsWidget::updateResults(const std::string& selected_result)
     if (current_report_name_.empty() && !task_man_.results().empty())
         current_report_name_ = task_man_.results().begin()->second->name();
 
-    loginf << "TaskResultsWidget: updateResultsSlot: count " << report_combo_->count();
+    loginf << "count " << report_combo_->count();
 
     if (!report_combo_->count())
         current_report_name_ = "";
@@ -236,7 +250,7 @@ void TaskResultsWidget::updateResults(const std::string& selected_result)
 
     report_combo_->blockSignals(false);
 
-    loginf << "TaskResultsWidget: updateResultsSlot: setReport";
+    loginf << "set report";
     setReport(current_report_name_);
 }
 
@@ -255,7 +269,7 @@ void TaskResultsWidget::updateResultUI(const std::string& name)
         return;
 
     auto result = task_man_.result(name);
-    assert(result);
+    traced_assert(result);
 
     bool update_needed = result->updateNeeded();
     bool locked        = result->isLocked();
@@ -308,7 +322,7 @@ void TaskResultsWidget::removeCurrentResult()
     int new_index = idx < n - 1 ? idx + 1 : (idx > 0 ? idx - 1 : -1);
 
     auto name = report_combo_->currentText().toStdString();
-    assert(task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
 
     QString msg = "Do you really want to remove report '" + QString::fromStdString(name) + "'?";
     auto answer = QMessageBox::question(this, "Remove Report", msg, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No);
@@ -333,7 +347,7 @@ void TaskResultsWidget::removeCurrentResult()
 void TaskResultsWidget::exportCurrentResult(ResultReport::ReportExportMode mode)
 {
     auto name = report_combo_->currentText().toStdString();
-    assert(task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
 
     task_man_.exportResult(name, mode);
 }
@@ -343,12 +357,12 @@ void TaskResultsWidget::exportCurrentResult(ResultReport::ReportExportMode mode)
 void TaskResultsWidget::refreshCurrentResult()
 {
     auto name = report_combo_->currentText().toStdString();
-    assert(task_man_.hasResult(name));
+    traced_assert(task_man_.hasResult(name));
 
     auto res = task_man_.result(name)->update(true);
     if (!res.ok())
     {
-        logerr << "TaskResultsWidget: refreshCurrentResult: failed: " << res.error();
+        logerr << "failed: " << res.error();
         QMessageBox::critical(this, "Error", "Refreshing report failed.");
     }
 }
@@ -423,14 +437,27 @@ std::string TaskResultsWidget::currentReportName() const
  */
 void TaskResultsWidget::selectID(const std::string id, bool show_figure)
 {
-    report_widget_->selectId(id, show_figure);
+    report_widget_->selectId(id, show_figure, {});
+}
+
+/**
+ */
+void TaskResultsWidget::storeBackupSection()
+{
+    current_report_name_backup_    = current_report_name_;
+    current_section_name_backup_   = report_widget_ ? report_widget_->currentSectionID() : "";
+    current_section_config_backup_ = report_widget_ ? report_widget_->currentSectionConfig() : nlohmann::json();
+
+    loginf << "backing up section '" << current_section_name_backup_ << "'";
+           //<< " with config: \n" 
+           //<< current_section_config_backup_.dump(4);
 }
 
 /**
  */
 void TaskResultsWidget::restoreBackupSection()
 {
-    loginf << "TaskResultsWidget: restoreBackupSection: trying to restore section";
+    loginf << "trying to restore section";
 
     if (current_report_name_backup_.empty())
         return;
@@ -441,12 +468,12 @@ void TaskResultsWidget::restoreBackupSection()
     if (current_report_name_backup_ != current_report_name_)
         return;
 
-    loginf << "TaskResultsWidget: restoreBackupSection: restored report '" << current_report_name_backup_ << "'";
+    loginf << "restored report '" << current_report_name_backup_ << "'";
 
     if (current_section_name_backup_.empty())
         return;
 
-    report_widget_->selectId(current_section_name_backup_);
-
-    loginf << "TaskResultsWidget: restoreBackupSection: restored section '" << current_section_name_backup_ << "'";
+    report_widget_->selectId(current_section_name_backup_, false, current_section_config_backup_);
+    
+    loginf << "restored section '" << current_section_name_backup_ << "'";
 }

@@ -1,6 +1,24 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "datasourcelineinfo.h"
 #include "stringconv.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -16,7 +34,7 @@ const string sender_ip_key{"sender_ip"};
 DataSourceLineInfo::DataSourceLineInfo(const std::string& key, nlohmann::json& config)
     : key_(key), config_(config)
 {
-    assert (key_ == "L1" || key_ == "L2" || key_ == "L3" || key_ == "L4");
+    traced_assert(key_ == "L1" || key_ == "L2" || key_ == "L3" || key_ == "L4");
 
     if (config_.is_string()) // deprecated version
     {
@@ -25,14 +43,14 @@ DataSourceLineInfo::DataSourceLineInfo(const std::string& key, nlohmann::json& c
         string ip = String::ipFromString(value);
         unsigned int port = String::portFromString(value);
 
-        assert (ip.size());
+        traced_assert(ip.size());
 
         config_ = json::object();
 
         mcastIP(ip);
         mcastPort(port);
 
-        logdbg << "DataSourceLineInfo: ctor: created info from deprecated " << asString()
+        logdbg << "created info from deprecated " << asString()
                << " '" << config_.dump() << "'";
     }
 
@@ -52,8 +70,8 @@ bool DataSourceLineInfo::hasListenIP() const
 
 const std::string DataSourceLineInfo::listenIP() const
 {
-    assert (hasListenIP());
-    assert (config_.at(listen_ip_key).is_string());
+    traced_assert(hasListenIP());
+    traced_assert(config_.at(listen_ip_key).is_string());
     return config_.at(listen_ip_key);
 }
 
@@ -64,8 +82,8 @@ void DataSourceLineInfo::listenIP(const std::string& value)
 
 const std::string DataSourceLineInfo::mcastIP() const
 {
-    assert (config_.contains(mcast_ip_key));
-    assert (config_.at(mcast_ip_key).is_string());
+    traced_assert(config_.contains(mcast_ip_key));
+    traced_assert(config_.at(mcast_ip_key).is_string());
     return config_.at(mcast_ip_key);
 }
 
@@ -76,8 +94,8 @@ void DataSourceLineInfo::mcastIP(const std::string& value)
 
 unsigned int DataSourceLineInfo::mcastPort() const
 {
-    assert (config_.contains(mcast_port_key));
-    assert (config_.at(mcast_port_key).is_number());
+    traced_assert(config_.contains(mcast_port_key));
+    traced_assert(config_.at(mcast_port_key).is_number());
     return config_.at(mcast_port_key);
 }
 
@@ -93,8 +111,8 @@ bool DataSourceLineInfo::hasSenderIP() const
 
 const std::string DataSourceLineInfo::senderIP() const
 {
-    assert (hasSenderIP());
-    assert (config_.at(sender_ip_key).is_string());
+    traced_assert(hasSenderIP());
+    traced_assert(config_.at(sender_ip_key).is_string());
     return config_.at(sender_ip_key);
 }
 

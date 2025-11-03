@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONRESULTSREPORTSECTIONCONTENTTEXT_H
-#define EVALUATIONRESULTSREPORTSECTIONCONTENTTEXT_H
+#pragma once
 
 #include "eval/results/report/sectioncontent.h"
 
@@ -45,4 +44,3 @@ namespace EvaluationResultsReport
 
 
 }
-#endif // EVALUATIONRESULTSREPORTSECTIONCONTENTTEXT_H

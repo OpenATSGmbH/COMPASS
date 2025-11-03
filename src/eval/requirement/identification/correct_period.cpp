@@ -265,11 +265,11 @@ IdentificationCorrectPeriodConfig& IdentificationCorrectPeriodConfigWidget::conf
 void IdentificationCorrectPeriodConfigWidget::identificationTypeChanged()
 {
     auto data = identification_type_combo_->currentData();
-    assert(!data.isNull());
+    traced_assert(!data.isNull());
 
     auto id_type = (IdentificationCorrectPeriodConfig::IdentificationType)data.toInt();
 
-    loginf << "IdentificationCorrectPeriodConfigWidget: identificationTypeChanged: value " << IdentificationCorrectPeriod::identificationName(id_type);
+    loginf << "value " << IdentificationCorrectPeriod::identificationName(id_type);
 
     config().identificationType(id_type);
 

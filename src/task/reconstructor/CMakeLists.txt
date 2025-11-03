@@ -24,6 +24,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reconstructortaskclassificationwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/reconstructortaskanalysiswidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/reconstructormainwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reconstructorsectorwidget.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/reconstructortask.cpp"
@@ -43,4 +44,5 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reconstructortaskclassificationwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reconstructortaskanalysiswidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reconstructormainwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reconstructorsectorwidget.cpp"
 )

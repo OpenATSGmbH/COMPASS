@@ -1,0 +1,149 @@
+\subsection{Mode 3/A False}
+\label{sec:eval_req_m3a_false} 
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \includegraphics[width=14cm,frame]{figures/eval_req_m3a_false.png}
+  \caption{Evaluation Mode 3/A False requirement}
+\end{figure}
+
+The 'Mode 3/A False' requirement is used to calculate the probability of a target report having a false Mode 3/A code. False in this context means there is Mode 3/A information data available, and it is not the same as in the reference. Only values which are valid and not garbled are used. \\
+
+\begin{itemize}  
+\item Probability [1]: Probability of false Mode 3/A code
+\item Probability Check Type: $\leq$
+\end{itemize}
+\ \\
+
+\subsubsection{Result Values}
+
+\paragraph{Sector}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Sector Layer & Name of the sector layer & fir\_cut\_sim \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement & Name of the requirement & Mode A False \\ \hline
+    Num Results & Total number of results & 728 \\ \hline
+    Num Usable Results & Number of usable results & 106 \\ \hline
+    Num Unusable Results & Number of unusable results & 622 \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Up [1] & Number of updates & 101669 \\ \hline
+    \#NoRef [1] & Number of updates w/o reference position or code & 7353 \\ \hline
+    \#NoRefPos [1] & Number of updates w/o reference position  & 7353 \\ \hline
+    \#NoRef [1] & Number of updates w/o reference code & 0 \\ \hline
+    \#PosInside [1] & Number of updates inside sector & 53987 \\ \hline
+    \#PosOutside [1] & Number of updates outside sector & 40329 \\ \hline
+    \#Unknown [1] & Number of updates unknown code & 198 \\ \hline
+    \#Correct [1] & Number of updates with correct code & 53788 \\ \hline
+    \#False [1] & Number of updates with false code & 1 \\ \hline
+    PF [\%] & Probability of Mode 3/A false & 0 \\ \hline
+    Condition &  & <= 1.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+Also, a table is given for all single targets, sorted by PF.
+
+\paragraph{Single Target}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Up [1] & Number of updates & 732 \\ \hline
+    \#NoRef [1] & Number of updates w/o reference position or code & 35 \\ \hline
+    \#NoRefPos [1] & Number of updates w/o reference position  & 35 \\ \hline
+    \#NoRef [1] & Number of updates w/o reference code & 0 \\ \hline
+    \#PosInside [1] & Number of updates inside sector & 542 \\ \hline
+    \#PosOutside [1] & Number of updates outside sector & 155 \\ \hline
+    \#Unknown [1] & Number of updates unknown code & 5 \\ \hline
+    \#Correct [1] & Number of updates with correct code & 536 \\ \hline
+    \#False [1] & Number of updates with false code & 1 \\ \hline
+    PF [\%] & Probability of Mode 3/A false & 0.19 \\ \hline
+    Condition &  & <= 1.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+\subsection{Mode 3/A Present}
+\label{sec:eval_req_m3a_present} 
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \includegraphics[width=14cm,frame]{figures/eval_req_m3a_present.png}
+  \caption{Evaluation Mode 3/A Present requirement}
+\end{figure}
+
+The 'Mode 3/A Present' requirement is used to calculate the probability of a target report having any Mode 3/A code. Present in this context means there is Mode 3/A information data available, irrespectively if correct or not. \\
+
+\begin{itemize}  
+\item Probability [1]: Probability of Mode 3/A code present
+\item Probability Check Type: $\geq$
+\end{itemize}
+\ \\
+
+\subsubsection{Result Values}
+
+\paragraph{Sector}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Sector Layer & Name of the sector layer & fir\_cut\_sim \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement & Name of the requirement & Mode A Present \\ \hline
+    Num Results & Total number of results & 728 \\ \hline
+    Num Usable Results & Number of usable results & 107 \\ \hline
+    Num Unusable Results & Number of unusable results & 621 \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Up [1] & Number of updates & 101685 \\ \hline
+    \#NoRef [1] & Number of updates w/o reference position & 7359 \\ \hline
+    \#NoRefPos [1] & Number of updates w/o reference position  & 7359 \\ \hline
+    \#PosInside [1] & Number of updates inside sector & 53997 \\ \hline
+    \#PosOutside [1] & Number of updates outside sector & 40329 \\ \hline
+    \#NoRefId [1] & Number of updates without reference code & 10 \\ \hline
+    \#Present [1] & Number of updates with present tst code & 53789 \\ \hline
+    \#Missing [1] & Number of updates with missing tst code & 198 \\ \hline
+    PP [\%] & Probability of Mode 3/A present & 99.63 \\ \hline
+    Condition &  & >= 98.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+Also, a table is given for all single targets, sorted by PP.
+
+\paragraph{Single Target}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Up [1] & Number of updates & 956 \\ \hline
+    \#NoRef [1] & Number of updates w/o reference position & 60 \\ \hline
+    \#NoRefPos [1] & Number of updates w/o reference position  & 60 \\ \hline
+    \#PosInside [1] & Number of updates inside sector & 467 \\ \hline
+    \#PosOutside [1] & Number of updates outside sector & 429 \\ \hline
+    \#NoRefId [1] & Number of updates without reference code & 0 \\ \hline
+    \#Present [1] & Number of updates with present tst code & 456 \\ \hline
+    \#Missing [1] & Number of updates with missing tst code & 11 \\ \hline
+    PP [\%] & Probability of Mode 3/A present & 97.64 \\ \hline
+    Condition &  & >= 98.00 \\ \hline
+    Condition Fulfilled &  & Failed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}

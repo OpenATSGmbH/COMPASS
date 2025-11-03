@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of OpenATS COMPASS.
  *
  * COMPASS is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <algorithm>
 #include <cmath>
 
@@ -121,23 +121,30 @@ bool EvaluationTargetData::hasTstData () const
  */
 void EvaluationTargetData::finalize () const
 {
-    //    loginf << "EvaluationTargetData: finalize: utn " << utn_
-    //           << " ref " << hasRefData() << " up " << ref_rec_nums_.size()
-    //           << " tst " << hasTstData() << " up " << tst_rec_nums_.size();
+    logdbg << "utn " << utn_ << " ref " << hasRefData() << " tst " << hasTstData();
 
+    logdbg << "ref finalize";
     ref_chain_.finalize();
+    logdbg << "tst finalize";
     tst_chain_.finalize();
 
+    logdbg << "updated acids";
     updateACIDs();
+    logdbg << "updated acads";
     updateACADs();
+    logdbg << "updated mas";
     updateModeACodes();
+    logdbg << "updated mcs";
     updateModeCMinMax();
+    logdbg << "updated pos";
     updatePositionMinMax();
 
+    logdbg << "updated use";
     updateUseInfo();
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
+    logdbg << "updated mops";
     if (dbcont_man.hasTargetsInfo()   &&
         dbcont_man.existsTarget(utn_) &&
         dbcont_man.target(utn_).hasADSBMOPS())
@@ -198,8 +205,12 @@ void EvaluationTargetData::finalize () const
     //        //               << " nacp "<<  (has_nacp ? nacpStr() : " none ");
     //    }
 
+    logdbg << "test data mappings";
     calculateTestDataMappings();
+    logdbg << "sector inside";
     computeSectorInsideInfo();
+
+    logdbg << "done";
 }
 
 /**
@@ -303,7 +314,7 @@ std::string EvaluationTargetData::timeDurationStr() const
  */
 std::set<unsigned int> EvaluationTargetData::modeACodes() const
 {
-    logdbg << "EvaluationTargetData: modeACodes: utn " << utn_ << " num codes " << mode_a_codes_.size();
+    logdbg << "utn " << utn_ << " num codes " << mode_a_codes_.size();
     return mode_a_codes_;
 }
 
@@ -338,7 +349,7 @@ bool EvaluationTargetData::hasModeC() const
  */
 float EvaluationTargetData::modeCMin() const
 {
-    assert (has_mode_c_);
+    traced_assert(has_mode_c_);
     return mode_c_min_;
 }
 
@@ -356,7 +367,7 @@ std::string EvaluationTargetData::modeCMinStr() const
  */
 float EvaluationTargetData::modeCMax() const
 {
-    assert (has_mode_c_);
+    traced_assert(has_mode_c_);
     return mode_c_max_;
 }
 
@@ -441,8 +452,8 @@ bool EvaluationTargetData::hasMappedRefData(const DataID& tst_id,
 
     if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
     {
-        assert (mapping.timestamp_ref1_ <= timestamp);
-        assert (mapping.timestamp_ref2_ >= timestamp);
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
 
         if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
             return false;
@@ -474,8 +485,8 @@ std::pair<ptime, ptime> EvaluationTargetData::mappedRefTimes(const DataID& tst_i
 
     if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
     {
-        assert (mapping.timestamp_ref1_ <= timestamp);
-        assert (mapping.timestamp_ref2_ >= timestamp);
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
 
         if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
             return {{}, {}};
@@ -511,19 +522,19 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
     auto index     = tst_chain_.indexFromDataID(tst_id);
 
     if (debug)
-        loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " timestamp "
+        loginf << "utn " << utn_ << " timestamp "
                << Time::toString(timestamp) << " d_max " << Time::toString(d_max);
 
     const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
 
     if (debug)
-        loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " has_ref1 "
+        loginf << "utn " << utn_ << " has_ref1 "
                << mapping.has_ref1_ << " has_ref2 " << mapping.has_ref2_;
 
     if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
     {
         if (debug)
-            loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " no ref data";
+            loginf << "utn " << utn_ << " no ref data";
 
         return {};
     }
@@ -531,7 +542,7 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
     if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
     {
         if (debug)
-            loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " exact match";
+            loginf << "utn " << utn_ << " exact match";
 
         return mapping.pos_ref_;
     }
@@ -539,18 +550,18 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
     if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
     {
         if (debug)
-            loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " both ref data";
+            loginf << "utn " << utn_ << " both ref data";
 
-        assert (mapping.timestamp_ref1_ <= timestamp);
-        assert (mapping.timestamp_ref2_ >= timestamp);
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
 
         if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
         {
             //            if (utn_ == debug_utn)
-            //                loginf << "EvaluationTargetData: interpolatedRefPosForTime: lower too far";
+            //                loginf << "lower too far";
 
             if (debug)
-                loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " lower too far "
+                loginf << "utn " << utn_ << " lower too far "
                     << Time::toString(mapping.timestamp_ref1_ - timestamp);
 
             return {};
@@ -559,10 +570,10 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
         if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
         {
             //            if (utn_ == debug_utn)
-            //                loginf << "EvaluationTargetData: interpolatedRefPosForTime: upper too far";
+            //                loginf << "upper too far";
 
             if (debug)
-                loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " higher too far "
+                loginf << "utn " << utn_ << " higher too far "
                        << Time::toString(mapping.timestamp_ref2_ - timestamp);
 
             return {};
@@ -571,16 +582,16 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
         if (!mapping.has_ref_pos_)
         {
             //            if (utn_ == debug_utn)
-            //                loginf << "EvaluationTargetData: interpolatedRefPosForTime: no ref pos";
+            //                loginf << "no ref pos";
 
             if (debug)
-                loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " no ref_pos in mapping";
+                loginf << "utn " << utn_ << " no ref_pos in mapping";
 
             return {};
         }
 
         //        if (utn_ == debug_utn)
-        //            loginf << "EvaluationTargetData: interpolatedRefPosForTime: 2pos tod " << String::timeStringFromDouble(tod)
+        //            loginf << "2pos tod " << String::timeStringFromDouble(tod)
         //                   << " has_alt " << mapping.pos_ref_.has_altitude_
         //                   << " alt_calc " << mapping.pos_ref_.altitude_calculated_
         //                   << " alt " << mapping.pos_ref_.altitude_;
@@ -589,9 +600,131 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
     }
 
     if (debug)
-        loginf << "EvaluationTargetData: mappedRefPos: utn " << utn_ << " only 1";
+        loginf << "utn " << utn_ << " only 1";
 
     return {};
+}
+
+boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
+    const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
+    bool debug) const
+{
+    auto timestamp = tst_id.timestamp();
+    auto index     = tst_chain_.indexFromDataID(tst_id);
+
+    if (debug)
+        loginf << "utn " << utn_ << " timestamp "
+               << Time::toString(timestamp) << " d_max " << Time::toString(d_max);
+
+    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
+
+    if (debug)
+        loginf << "utn " << utn_ << " has_ref1 "
+               << mapping.has_ref1_ << " has_ref2 " << mapping.has_ref2_;
+
+    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
+    {
+        if (debug)
+            loginf << "utn " << utn_ << " no ref data";
+
+        return {};
+    }
+
+    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
+    {
+        if (debug)
+            loginf << "utn " << utn_ << " exact match";
+
+        auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
+
+        if (acc1)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " acc1 "
+                       << String::doubleToStringPrecision(acc1->max(), 1);
+
+            return acc1->max();
+        }
+        else
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " no acc1";
+            return {};
+        }
+    }
+
+    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
+    {
+        if (debug)
+            loginf << "utn " << utn_ << " both ref data";
+
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
+
+        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
+        {
+            //            if (utn_ == debug_utn)
+            //                loginf << "lower too far";
+
+            if (debug)
+                loginf << "utn " << utn_ << " lower too far "
+                    << Time::toString(mapping.timestamp_ref1_ - timestamp);
+
+            return {};
+        }
+
+        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
+        {
+            //            if (utn_ == debug_utn)
+            //                loginf << "upper too far";
+
+            if (debug)
+                loginf << "utn " << utn_ << " higher too far "
+                       << Time::toString(mapping.timestamp_ref2_ - timestamp);
+
+            return {};
+        }
+
+        auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
+        auto acc2 = ref_chain_.posAccuracy(mapping.dataid_ref2_);
+
+        if (acc1 && acc2)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both, max acc1,2 "
+                       << String::doubleToStringPrecision(std::max(acc1->max(), acc2->max()), 1);
+
+            return std::max(acc1->max(), acc2->max());
+        }
+        else if (acc1)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both, acc1 "
+                       << String::doubleToStringPrecision(acc1->max(), 1);
+
+            return acc1->max();
+        }
+        else if (acc2)
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both, acc2 "
+                       << String::doubleToStringPrecision(acc2->max(), 1);
+
+            return acc2->max();            
+        }
+        else
+        {
+            if (debug)
+                loginf << "utn " << utn_ << " both no acc";
+
+            return {};
+        }
+    }
+
+    if (debug)
+        loginf << "utn " << utn_ << " only 1";
+
+    return {};    
 }
 
 /**
@@ -612,13 +745,13 @@ boost::optional<dbContent::TargetVelocity> EvaluationTargetData::mappedRefSpeed(
 
     if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
     {
-        assert (mapping.timestamp_ref1_ <= timestamp);
-        assert (mapping.timestamp_ref2_ >= timestamp);
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
 
         if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
         {
             //            if (utn_ == debug_utn)
-            //                loginf << "EvaluationTargetData: interpolatedRefPosForTime: lower too far";
+            //                loginf << "lower too far";
 
             return {};
         }
@@ -626,7 +759,7 @@ boost::optional<dbContent::TargetVelocity> EvaluationTargetData::mappedRefSpeed(
         if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
         {
             //            if (utn_ == debug_utn)
-            //                loginf << "EvaluationTargetData: interpolatedRefPosForTime: upper too far";
+            //                loginf << "upper too far";
 
             return {};
         }
@@ -634,13 +767,13 @@ boost::optional<dbContent::TargetVelocity> EvaluationTargetData::mappedRefSpeed(
         if (!mapping.has_ref_spd_)
         {
             //            if (utn_ == debug_utn)
-            //                loginf << "EvaluationTargetData: interpolatedRefPosForTime: no ref pos";
+            //                loginf << "no ref pos";
 
             return {};
         }
 
         //        if (utn_ == debug_utn)
-        //            loginf << "EvaluationTargetData: interpolatedRefPosForTime: 2pos tod " << String::timeStringFromDouble(tod)
+        //            loginf << "2pos tod " << String::timeStringFromDouble(tod)
         //                   << " has_alt " << mapping.pos_ref_.has_altitude_
         //                   << " alt_calc " << mapping.pos_ref_.altitude_calculated_
         //                   << " alt " << mapping.pos_ref_.altitude_;
@@ -678,8 +811,8 @@ boost::optional<bool> EvaluationTargetData::mappedRefGroundBit(const DataID& tst
 
     if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
     {
-        assert (mapping.timestamp_ref1_ <= timestamp);
-        assert (mapping.timestamp_ref2_ >= timestamp);
+        traced_assert(mapping.timestamp_ref1_ <= timestamp);
+        traced_assert(mapping.timestamp_ref2_ >= timestamp);
 
         if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
             return {};
@@ -754,7 +887,7 @@ boost::optional<bool> EvaluationTargetData::tstGroundBitInterpolated(
 
 //bool EvaluationTargetData::hasTstMultipleSources() const
 //{
-//    assert (canCheckTstMultipleSources());
+//    traced_assert(canCheckTstMultipleSources());
 
 //    NullableVector<bool>& tst_multiple_srcs_vec =
 //            eval_data_.tst_buffer_->get<bool>(eval_data_.tst_multiple_srcs_name_);
@@ -790,11 +923,11 @@ boost::optional<bool> EvaluationTargetData::tstGroundBitInterpolated(
 
 //bool EvaluationTargetData::hasSingleLUDSID() const
 //{
-//    assert (canCheckTrackLUDSID());
+//    traced_assert(canCheckTrackLUDSID());
 
 //    // check if only single source updates
-//    assert (canCheckTstMultipleSources());
-//    assert (!hasTstMultipleSources());
+//    traced_assert(canCheckTstMultipleSources());
+//    traced_assert(!hasTstMultipleSources());
 
 //    bool lu_ds_id_found = false;
 //    unsigned int lu_ds_id;
@@ -824,7 +957,7 @@ boost::optional<bool> EvaluationTargetData::tstGroundBitInterpolated(
 
 //unsigned int EvaluationTargetData::singleTrackLUDSID() const
 //{
-//    assert (hasSingleLUDSID());
+//    traced_assert(hasSingleLUDSID());
 
 //    NullableVector<unsigned int> tst_ls_ds_id_vec =
 //            eval_data_.tst_buffer_->get<unsigned int>(eval_data_.tst_track_lu_ds_id_name_);
@@ -835,14 +968,14 @@ boost::optional<bool> EvaluationTargetData::tstGroundBitInterpolated(
 //            return tst_ls_ds_id_vec.get(tst_index);
 //    }
 
-//    assert (false); // can not be reached
+//    traced_assert(false); // can not be reached
 //}
 
 /**
  */
 double EvaluationTargetData::latitudeMin() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return latitude_min_;
 }
 
@@ -850,7 +983,7 @@ double EvaluationTargetData::latitudeMin() const
  */
 double EvaluationTargetData::latitudeMax() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return latitude_max_;
 }
 
@@ -858,7 +991,7 @@ double EvaluationTargetData::latitudeMax() const
  */
 double EvaluationTargetData::longitudeMin() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return longitude_min_;
 }
 
@@ -866,7 +999,7 @@ double EvaluationTargetData::longitudeMin() const
  */
 double EvaluationTargetData::longitudeMax() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return longitude_max_;
 }
 
@@ -895,7 +1028,7 @@ bool EvaluationTargetData::hasMOPSVersion() const
  */
 std::set<unsigned int> EvaluationTargetData::mopsVersions() const
 {
-    assert (has_mops_versions_);
+    traced_assert(has_mops_versions_);
     return mops_versions_;
 }
 
@@ -1024,7 +1157,7 @@ void EvaluationTargetData::addInterestFactor (const Evaluation::RequirementSumRe
                                               double factor, 
                                               bool reset) const
 {
-    logdbg << "EvaluationTargetData: addInterestFactor: utn " << utn_
+    logdbg << "utn " << utn_
            << " req_section_id " << EvalSectionID::requirementResultSumID(id)
            << " factor " << factor
            << " reset " << reset;
@@ -1056,7 +1189,7 @@ std::string EvaluationTargetData::stringForInterestFactor(const Evaluation::Requ
 std::string EvaluationTargetData::enabledInterestFactorsString(const InterestMap& interest_factors,
                                                                const InterestEnabledFunc& interest_enabled_func)
 {
-    assert(interest_enabled_func);
+    traced_assert(interest_enabled_func);
 
     std::string ret;
     if (interest_factors.empty())
@@ -1240,7 +1373,7 @@ void EvaluationTargetData::updateACADs() const
  */
 void EvaluationTargetData::updateModeACodes() const
 {
-    logdbg << "EvaluationTargetData: updateModeACodes: utn " << utn_;
+    logdbg << "utn " << utn_;
 
     mode_a_codes_.clear();
 
@@ -1256,14 +1389,14 @@ void EvaluationTargetData::updateModeACodes() const
         mode_a_codes_.insert(values.begin(), values.end());
     }
 
-    logdbg << "EvaluationTargetData: updateModeACodes: utn " << utn_ << " num codes " << mode_a_codes_.size();
+    logdbg << "utn " << utn_ << " num codes " << mode_a_codes_.size();
 }
 
 /**
  */
 void EvaluationTargetData::updateModeCMinMax() const
 {
-    logdbg << "EvaluationTargetData: updateModeC: utn " << utn_;
+    logdbg << "utn " << utn_;
 
     // garbled, valid flags?
 
@@ -1339,10 +1472,10 @@ void EvaluationTargetData::updatePositionMinMax() const
 
 //    if (ref_chain_.size() && ref_buffer_->dbContentName() == "ADSB")
 //    {
-//        assert (ref_buffer_->has<int>(mops_name));
-//        assert (ref_buffer_->has<char>(nacp_name));
-//        assert (ref_buffer_->has<char>(nucp_nic_name));
-//        assert (ref_buffer_->has<char>(sil_name));
+//        traced_assert(ref_buffer_->has<int>(mops_name));
+//        traced_assert(ref_buffer_->has<char>(nacp_name));
+//        traced_assert(ref_buffer_->has<char>(nucp_nic_name));
+//        traced_assert(ref_buffer_->has<char>(sil_name));
 
 //        NullableVector<int>& mops = ref_buffer_->get<int>(mops_name);
 //        NullableVector<char>& nacps = ref_buffer_->get<char>(nacp_name);
@@ -1379,10 +1512,10 @@ void EvaluationTargetData::updatePositionMinMax() const
 
 //    if (tst_chain_.size() && tst_buffer_->dbContentName() == "ADSB")
 //    {
-//        assert (tst_buffer_->has<int>(mops_name));
-//        assert (tst_buffer_->has<char>(nacp_name));
-//        assert (tst_buffer_->has<char>(nucp_nic_name));
-//        assert (tst_buffer_->has<char>(sil_name));
+//        traced_assert(tst_buffer_->has<int>(mops_name));
+//        traced_assert(tst_buffer_->has<char>(nacp_name));
+//        traced_assert(tst_buffer_->has<char>(nucp_nic_name));
+//        traced_assert(tst_buffer_->has<char>(sil_name));
 
 //        NullableVector<int>& mops = tst_buffer_->get<int>(mops_name);
 //        NullableVector<char>& nacps = tst_buffer_->get<char>(nacp_name);
@@ -1422,9 +1555,9 @@ void EvaluationTargetData::updatePositionMinMax() const
  */
 void EvaluationTargetData::calculateTestDataMappings() const
 {
-    logdbg << "EvaluationTargetData: calculateTestDataMappings: utn " << utn_;
+    logdbg << "utn " << utn_;
 
-    assert (!tst_data_mappings_.size());
+    traced_assert(!tst_data_mappings_.size());
 
     tst_data_mappings_.resize(tst_chain_.size());
 
@@ -1441,7 +1574,7 @@ void EvaluationTargetData::calculateTestDataMappings() const
             ++cnt;
     }
 
-    logdbg << "EvaluationTargetData: calculateTestDataMappings: utn " << utn_ << " done, num map "
+    logdbg << "utn " << utn_ << " done, num map "
            << tst_data_mappings_.size() << " ref pos " << cnt;
 }
 
@@ -1454,7 +1587,7 @@ void EvaluationTargetData::computeSectorInsideInfo() const
     inside_map_           = {};
     inside_sector_layers_ = {};
 
-    assert (calculator_.sectorsLoaded());
+    traced_assert(calculator_.sectorsLoaded());
 
     auto sector_layers = calculator_.sectorLayers();
 
@@ -1479,7 +1612,7 @@ void EvaluationTargetData::computeSectorInsideInfo() const
 
     size_t num_cols          = num_sector_layers + num_extra;
 
-    assert(num_map == num_tst);
+    traced_assert(num_map == num_tst);
 
     auto gb_max_sec = boost::posix_time::seconds(InterpGroundBitMaxSeconds);
 
@@ -1579,7 +1712,7 @@ void EvaluationTargetData::computeSectorInsideInfo(InsideCheckMatrix& mat,
                                                    const boost::optional<bool>& ground_bit,
                                                    const SectorLayer* min_height_filter) const
 {
-    assert(idx_internal < mat.rows());
+    traced_assert(idx_internal < mat.rows());
 
     size_t num_sector_layers = inside_sector_layers_.size();
     size_t extra_offset      = num_sector_layers;
@@ -1607,7 +1740,7 @@ void EvaluationTargetData::computeSectorInsideInfo(InsideCheckMatrix& mat,
     for (const auto& sl : inside_sector_layers_)
     {
         auto layer = sl.first;
-        assert(layer);
+        traced_assert(layer);
 
         auto lidx = sl.second;
 
@@ -1717,10 +1850,10 @@ bool EvaluationTargetData::mappedRefPosInside(const SectorLayer& layer,
 // {
 //     //check cached inside info
 //     auto idx_internal = index.idx_internal;
-//     assert(idx_internal < mat.rows());
+//     traced_assert(idx_internal < mat.rows());
 
 //     auto extra_offset = (int)inside_sector_layers_.size();
-//     assert(extra_offset < mat.cols());
+//     traced_assert(extra_offset < mat.cols());
 
 //     return mat(idx_internal, extra_offset);
 // }
@@ -1732,10 +1865,10 @@ bool EvaluationTargetData::mappedRefPosInside(const SectorLayer& layer,
 // {
 //     //check cached inside info
 //     auto idx_internal = index.idx_internal;
-//     assert(idx_internal < mat.rows());
+//     traced_assert(idx_internal < mat.rows());
 
 //     auto extra_offset = (int)inside_sector_layers_.size();
-//     assert(extra_offset + 1 < mat.cols());
+//     traced_assert(extra_offset + 1 < mat.cols());
 
 //     return mat(idx_internal, extra_offset + 1);
 // }
@@ -1747,14 +1880,14 @@ bool EvaluationTargetData::checkInside(const SectorLayer& layer,
                                        const Index& index) const
 {
     auto lit = inside_sector_layers_.find(&layer);
-    assert(lit != inside_sector_layers_.end());
+    traced_assert(lit != inside_sector_layers_.end());
     
     //check cached inside info
     auto idx_internal = index.idx_internal;
-    assert(idx_internal < mat.rows());
+    traced_assert(idx_internal < mat.rows());
 
     auto lidx = (int)lit->second;
-    assert(lidx < mat.cols());
+    traced_assert(lidx < mat.cols());
 
     return mat(idx_internal, lidx);
 }

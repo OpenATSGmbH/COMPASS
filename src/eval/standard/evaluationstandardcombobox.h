@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONSTANDARDCOMBOBOX_H
-#define EVALUATIONSTANDARDCOMBOBOX_H
+#pragma once
 
 #include <QComboBox>
 
@@ -42,5 +41,3 @@ public:
 protected:
     EvaluationCalculator& calculator_;
 };
-
-#endif // EVALUATIONSTANDARDCOMBOBOX_H

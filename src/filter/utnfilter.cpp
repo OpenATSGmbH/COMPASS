@@ -53,7 +53,7 @@ bool UTNFilter::filters(const std::string& dbcont_name)
 
 std::string UTNFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "UTNFilter: getConditionString: dbcontent " << dbcontent_name << " active " << active_
+    logdbg << "dbcontent " << dbcontent_name << " active " << active_
            << " null_wanted " << null_wanted_;
 
     if (!active_ || !COMPASS::instance().dbContentManager().hasAssociations())
@@ -77,7 +77,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, boo
         }
         // else no condition
 
-        logdbg << "UTNFilter: getConditionString: condition '" << ss.str() << "'";
+        logdbg << "condition '" << ss.str() << "'";
         return ss.str();
     }
 
@@ -110,7 +110,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, boo
         first = false;
     }
 
-    logdbg << "UTNFilter: getConditionString: condition '" << ss.str() << "'";
+    logdbg << "condition '" << ss.str() << "'";
 
     return ss.str();
 }
@@ -118,14 +118,14 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, boo
 void UTNFilter::generateSubConfigurable(const std::string& class_id,
                                         const std::string& instance_id)
 {
-    logdbg << "UTNFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("UTNFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 void UTNFilter::checkSubConfigurables()
 {
-    logdbg << "UTNFilter: checkSubConfigurables";
+    logdbg;
 
 }
 
@@ -143,9 +143,9 @@ void UTNFilter::reset()
 
 void UTNFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -154,12 +154,12 @@ void UTNFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void UTNFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("utns"));
+    traced_assert(filter.contains("utns"));
     utns_str_ = filter.at("utns");
 
     updateUTNSFromStr(utns_str_);
@@ -219,18 +219,18 @@ bool UTNFilter::updateUTNSFromStr(const std::string& values_str)
             }
             else
             {
-                logerr << "UTNFilter: updateUTNSFromStr: utn '" << tmp_str << "' not valid";
-                break;
+                logerr << "utn '" << tmp_str << "' not valid";
+                return false;
             }
         }
 
         values_tmp.push_back(utn_tmp);
     }
 
-    if (!ok)
-        return false;
 
     values_ = values_tmp;
+
+    logdbg << "values_str '" << values_str << "'" << " values " << String::compress(values_, ',') << " null wanted " << null_wanted_;
 
     return true;
 }

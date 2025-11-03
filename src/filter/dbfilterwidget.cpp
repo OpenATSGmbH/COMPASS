@@ -37,7 +37,7 @@ using namespace Utils;
 DBFilterWidget::DBFilterWidget(DBFilter& filter)
     : QFrame(), filter_(filter)
 {
-    logdbg << "DBFilterWidget: constructor";
+    logdbg;
 
     QVBoxLayout* main_layout = new QVBoxLayout();
     main_layout->setContentsMargins(1, 1, 1, 1);
@@ -121,7 +121,7 @@ void DBFilterWidget::createMenu()
 
 void DBFilterWidget::addChildWidget(QWidget* widget)
 {
-    assert(widget);
+    traced_assert(widget);
     child_layout_->addWidget(widget);
 }
 
@@ -135,8 +135,8 @@ void DBFilterWidget::updateChildWidget()
         auto label = conditions.at(cnt)->getLabel();
         auto edit  = conditions.at(cnt)->getEdit();
 
-        assert(label);
-        assert(edit);
+        traced_assert(label);
+        traced_assert(edit);
 
         int row = child_layout_->rowCount();
         child_layout_->addWidget(label, row, 0);
@@ -149,14 +149,14 @@ void DBFilterWidget::updateChildWidget()
 
 void DBFilterWidget::toggleVisible()
 {
-    logdbg << "DBFilterWidget: toggleVisible";
+    logdbg;
     filter_.widgetVisible(!filter_.widgetVisible());
     child_->setVisible(filter_.widgetVisible());
 }
 
 void DBFilterWidget::toggleAnd()
 {
-    logdbg << "DBFilterWidget: toggleAnd";
+    logdbg;
 
     // checked is or is false
     // unchecked is and is true
@@ -168,7 +168,7 @@ void DBFilterWidget::toggleAnd()
 
 void DBFilterWidget::toggleActive()
 {
-    logdbg << "DBFilterWidget: toggleActive";
+    logdbg;
     filter_.setActive(active_checkbox_->checkState() == Qt::Checked);
 
     emit possibleFilterChange();
@@ -176,7 +176,7 @@ void DBFilterWidget::toggleActive()
 
 void DBFilterWidget::update(void)
 {
-    logdbg << "DBFilterWidget: update";
+    logdbg;
 
     visible_checkbox_->setText(filter_.getName().c_str());
 
@@ -209,7 +209,7 @@ void DBFilterWidget::expand()
 
 void DBFilterWidget::possibleSubFilterChange()
 {
-    logdbg << "DBFilterWidget: possibleSubFilterChange";
+    logdbg;
     emit possibleFilterChange();
 }
 
@@ -226,7 +226,7 @@ void DBFilterWidget::deleteFilter() { emit deleteFilterSignal(&filter_); }
 
 void DBFilterWidget::filterEditSlot()
 {
-    logdbg << "DBFilterWidget: filterEditSlot";
+    logdbg;
     emit filterEdit(&filter_);
 }
 
@@ -288,7 +288,7 @@ int DBFilterWidget::columnWidth(int layout_column) const
         {
             max_width = litem->widget()->sizeHint().width();
             //if (dynamic_cast<QLabel*>(litem->widget()))
-            //    loginf << "Scanned filter row '" << dynamic_cast<QLabel*>(litem->widget())->text().toStdString() << "'";
+            //    loginf << "scanned filter row '" << dynamic_cast<QLabel*>(litem->widget())->text().toStdString() << "'";
         }
     }
 

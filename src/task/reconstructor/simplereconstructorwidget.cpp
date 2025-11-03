@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "simplereconstructorwidget.h"
 
@@ -6,6 +23,7 @@
 #include "simplereconstructorassociationwidget.h"
 #include "referencecalculatorwidget.h"
 #include "datasourcesusewidget.h"
+#include "reconstructorsectorwidget.h"
 #include "reconstructortask.h"
 #include "reconstructortaskanalysiswidget.h"
 #include "reconstructortaskclassificationwidget.h"
@@ -57,6 +75,9 @@ SimpleReconstructorWidget::SimpleReconstructorWidget(SimpleReconstructor& recons
 
     tab_widget->addTab(use_widget_.get(), "Data Sources");
 
+    sectors_widget_.reset(new ReconstructorSectorWidget(reconstructor_.task()));
+    tab_widget->addTab(sectors_widget_.get(), "Sectors");
+
     assoc_widget_.reset(new SimpleReconstructorAssociationWidget(reconstructor_, *this));
     tab_widget->addTab(assoc_widget_.get(), "Association");
 
@@ -91,14 +112,17 @@ SimpleReconstructorWidget::~SimpleReconstructorWidget()
 
 void SimpleReconstructorWidget::update()
 {
-    assert (use_widget_);
+    traced_assert(use_widget_);
     use_widget_->updateContent();
     use_widget_->disableDataSources(reconstructor_.task().disabledDataSources());
 
-    assert (assoc_widget_);
+    traced_assert(sectors_widget_);
+    sectors_widget_->update();
+
+    traced_assert(assoc_widget_);
     assoc_widget_->updateValues();
 
-    assert (calc_widget_);
+    traced_assert(calc_widget_);
     calc_widget_->update();
 
     if (debug_widget_)

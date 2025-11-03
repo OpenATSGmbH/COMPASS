@@ -15,8 +15,7 @@
  */
 
 #include "scatterseries.h"
-
-//#include "timeconv.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -153,6 +152,13 @@ boost::optional<QRectF> ScatterSeries::getDataBounds() const
         return QRectF(QPointF(x_min, y_min), QPointF(x_max, y_max));
 }
 
+/**
+*/
+size_t ScatterSeries::numPoints() const
+{
+    return points.size();
+}
+
 /*******************************************************************************************
  * ScatterSeriesCollection
  *******************************************************************************************/
@@ -211,7 +217,7 @@ void ScatterSeriesCollection::addDataSeries(const ScatterSeries& scatter_series,
     series.color          = color;
     series.marker_size    = marker_size;
 
-    assert (!data_series_.count(name));
+    traced_assert(!data_series_.count(name));
     data_series_[name] = series;
 }
 
@@ -220,6 +226,23 @@ void ScatterSeriesCollection::addDataSeries(const ScatterSeries& scatter_series,
 size_t ScatterSeriesCollection::numDataSeries() const
 {
     return data_series_.size();
+}
+
+/**
+*/
+size_t ScatterSeriesCollection::numPoints(bool visible_series_only) const
+{
+    size_t count = 0;
+
+    for (const auto& series_it : data_series_)
+    {
+        if (visible_series_only && !series_it.second.visible)
+            continue;
+
+        count += series_it.second.scatter_series.numPoints();
+    }
+
+    return count;
 }
 
 /**
@@ -329,7 +352,7 @@ bool ScatterSeriesCollection::fromJSON(const nlohmann::json& data)
         if (js.contains(TagMarkerSize))
             dseries.marker_size = js[ TagMarkerSize ];
 
-        assert (!data_series_.count(dseries.name));
+        traced_assert(!data_series_.count(dseries.name));
         data_series_[dseries.name] = dseries;
     }
 
@@ -374,13 +397,16 @@ nlohmann::json ScatterSeriesCollection::toJSON(bool binary) const
 
 /**
 */
-boost::optional<QRectF> ScatterSeriesCollection::getDataBounds() const
+boost::optional<QRectF> ScatterSeriesCollection::getDataBounds(bool visible_series_only) const
 {
     QRectF bounds;
     bool empty = true;
 
     for (const auto& dseries : data_series_)
     {
+        if (visible_series_only && !dseries.second.visible)
+            continue;
+
         auto b = dseries.second.scatter_series.getDataBounds();
         if (!b.has_value())
             continue;

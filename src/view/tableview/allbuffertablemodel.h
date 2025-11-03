@@ -74,12 +74,12 @@ class AllBufferTableModel : public QAbstractTableModel
 
     std::shared_ptr<AllBufferCSVExportJob> export_job_;
 
-    std::map<unsigned int, std::string> number_to_dbo_;
+    std::map<unsigned int, std::string> number_to_dbcont_;
     std::map<std::string, unsigned int> dbcont_to_number_;
 
     std::multimap<boost::posix_time::ptime, std::pair<unsigned int, unsigned int>> time_to_indexes_;
-    // timestamp -> [dbo num,index]
-    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> dbo num,index
+    // timestamp -> [dbcont num,index]
+    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> dbcont num,index
 
     void updateTimeIndexes();
     void rebuildRowIndexes();

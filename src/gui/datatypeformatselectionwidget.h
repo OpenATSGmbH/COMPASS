@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DATATYPEFORMATSELECTIONWIDGET_H
-#define DATATYPEFORMATSELECTIONWIDGET_H
+#pragma once
 
 #include "format.h"
 //#include "property.h"
@@ -61,5 +60,3 @@ class DataTypeFormatSelectionWidget : public QPushButton
     void showValues();
     void createMenu();
 };
-
-#endif  // DATATYPEFORMATSELECTIONWIDGET_H

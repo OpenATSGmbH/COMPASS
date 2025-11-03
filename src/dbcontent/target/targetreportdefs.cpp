@@ -24,7 +24,7 @@
 
 #include <boost/optional/optional_io.hpp>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <algorithm>
 #include <sstream>
 
@@ -165,7 +165,7 @@ void PositionAccuracy::scaleToMinStdDev(double min_stddev)
 
 void PositionAccuracy::scaleUsing(double scale_factor)
 {
-    assert (std::isfinite(scale_factor));
+    traced_assert(std::isfinite(scale_factor));
 
     x_stddev_ *= scale_factor;
     y_stddev_ *= scale_factor;
@@ -208,6 +208,8 @@ void VelocityAccuracy::scaleToMinStdDev(double min_stddev)
         }
     }
 }
+
+const double ReconstructorInfo::GroundSpeedMin = 0.257; //m/s
 
 boost::optional<targetReport::Position>& ReconstructorInfo::position()
 {
@@ -262,15 +264,36 @@ bool ReconstructorInfo::isPrimaryOnlyDetection() const
     return !(acad_ || acid_ || mode_a_code_ || barometric_altitude_);
 }
 
+bool ReconstructorInfo::isUnreliablePrimaryOnlyDetection() const
+{
+    return dbcont_id_ != 62 && dbcont_id_ != 255 && isPrimaryOnlyDetection();
+}
+
+bool ReconstructorInfo::hasOnGroundInfo() const
+{
+    if (data_source_is_ground_only_)
+        return true;
+
+    return ground_bit_.has_value();
+}
+
 bool ReconstructorInfo::isOnGround() const
 {
-    if (data_source_is_ground_only)
+    if (data_source_is_ground_only_)
         return true;
 
     if (ground_bit_)
         return *ground_bit_;
 
     return false;
+}
+
+bool ReconstructorInfo::isMoving() const
+{
+    if (!velocity_)
+        return true;
+
+    return velocity_->speed_ >= GroundSpeedMin;
 }
 
 bool ReconstructorInfo::doNotUsePosition() const

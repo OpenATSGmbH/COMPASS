@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "traced_assert.h"
+
 #include <string>
 
 #include "json.hpp"
@@ -42,7 +44,7 @@ public:
     ConfigurableParameterT<T>* as()
     {
         ConfigurableParameterT<T>* param = dynamic_cast<ConfigurableParameterT<T>*>(this);
-        assert(param);
+        traced_assert(param);
         return param;
     }
 
@@ -50,7 +52,7 @@ public:
     const ConfigurableParameterT<T>* as() const
     {
         const ConfigurableParameterT<T>* param = dynamic_cast<const ConfigurableParameterT<T>*>(this);
-        assert(param);
+        traced_assert(param);
         return param;
     }
 

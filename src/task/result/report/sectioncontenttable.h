@@ -40,6 +40,8 @@ class Section;
 
 class ViewableDataConfig;
 
+class PopupMenu;
+
 namespace Utils
 {
     class StringTable;
@@ -48,6 +50,7 @@ namespace Utils
 class QPushButton;
 class QTableView;
 class QMenu;
+class QToolBar;
 
 namespace ResultReport
 {
@@ -86,10 +89,11 @@ protected:
 
         QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
 
-        if (show_unused_)
-            return true;
-        else
-            return (sourceModel()->data(index, Qt::BackgroundRole) != QBrush(Qt::lightGray));
+        bool accepted = show_unused_ ? true : (sourceModel()->flags(index) & Qt::ItemIsEnabled) != 0;
+
+        //loginf << "row " << index.row() << " col " << index.column() << " => " << accepted;
+
+        return accepted;
     }
 };
 
@@ -100,24 +104,20 @@ class SectionContentTableWidget;
 class SectionContentTable : public SectionContent
 {
 public:
-    /**
-     */
-    struct ColumnGroup
-    {
-        std::vector<int> columns;
-        bool             enabled = true;
-    };
-
     enum ColumnFlag
     {
         ColumnHidden      = 1 << 0,
         ColumnNotExported = 1 << 1
     };
 
-    typedef std::map<std::pair<int,int>, unsigned int> CellStyles;
-    typedef std::map<std::string, ColumnGroup>         ColumnGroups;
-    
+    enum SpecialRole
+    {
+        CellStyleRole = Qt::UserRole + 1
+    };
 
+    typedef std::map<std::pair<int,int>, unsigned int> CellStyles;
+    typedef std::map<std::string, TableColumnGroup>    ColumnGroups;
+    
     SectionContentTable(unsigned int id,
                         const std::string& name, 
                         unsigned int num_columns,
@@ -160,17 +160,17 @@ public:
     size_t numRows() const;
     size_t numColumns() const;
     const std::vector<std::string>& headings() const;
-    unsigned int filteredRowCount () const;
-    std::vector<std::string> sortedRowStrings(unsigned int row, bool latex=true) const;
 
-    ColumnGroup& setColumnGroup(const std::string& name, 
-                                const std::vector<int>& columns,
-                                bool enabled = true);
+    const ColumnGroups& columnGroups() const { return column_groups_; }
+    void setColumnGroup(const std::string& name, 
+                        const std::vector<int>& columns,
+                        bool enabled = true);
     void enableColumnGroup(const std::string& name,
                            bool ok);
+    bool hasColumnGroup(const std::string& name) const;
     bool columnGroupEnabled(const std::string& name) const;
-
     bool columnVisible(int column) const;
+    bool columnsHidden() const;
 
     bool hasReference (unsigned int row) const;
     std::string reference (unsigned int row) const;
@@ -181,22 +181,46 @@ public:
     void registerCallBack(const std::string& name, const std::function<void()>& func);
 
     QVariant data(const QModelIndex& index, int role) const;
-    Qt::ItemFlags flags(const QModelIndex &index) const;
+    QVariant data(int row, int col, int role) const;
+    std::pair<Qt::ItemFlags, bool> flags(const QModelIndex &index) const;
     
-    void clicked(unsigned int row);
+    bool clicked(unsigned int row);
     void doubleClicked(unsigned int row);
     void customContextMenu(unsigned int row, const QPoint& pos);
     void addActionsToMenu(QMenu* menu);
 
-    Utils::StringTable toStringTable() const;
-    nlohmann::json toJSONTable(bool rowwise = true,
-                               const std::vector<int>& cols = std::vector<int>()) const;
+    nlohmann::json jsonConfig() const override final;
+    bool configure(const nlohmann::json& j) override final;
+
+    nlohmann::json exportContent(unsigned int row, 
+                                 unsigned int col,
+                                 ReportExportMode mode,
+                                 bool* ok = nullptr) const;
+    nlohmann::json exportContent(unsigned int row,
+                                 ReportExportMode mode) const;
+    boost::optional<std::vector<nlohmann::json>> exportContent(ReportExportMode mode) const;
+
+    nlohmann::json exportProxyContent(unsigned int row, 
+                                      unsigned int col,
+                                      ReportExportMode mode,
+                                      bool* ok = nullptr) const;
+    nlohmann::json exportProxyContent(unsigned int row,
+                                      ReportExportMode mode) const;
+    boost::optional<std::vector<nlohmann::json>> exportProxyContent(ReportExportMode mode) const;
+
+    unsigned int numProxyRows () const;
+    unsigned int numProxyColumns () const;
+    std::vector<std::string> proxyHeadings() const;
 
     static boost::optional<QColor> cellTextColor(unsigned int style);
     static boost::optional<QColor> cellBGColor(unsigned int style);
-    static boost::optional<QIcon> cellIcon(const nlohmann::json& data);
+    static std::string cellTextColorLatex(unsigned int style);
+    static std::string cellBGColorLatex(unsigned int style);
+    static boost::optional<std::pair<std::string, std::string>> cellIconFn(const nlohmann::json& data);
+    static boost::optional<std::pair<QIcon, std::string>> cellIcon(const nlohmann::json& data);
     static boost::optional<bool> cellChecked(const nlohmann::json& data);
     static void cellFont(QFont& font, unsigned int style);
+    static bool cellIsInactive(unsigned int style);
     static bool cellShowsText(unsigned int style);
     static bool cellShowsCheckBox(unsigned int style);
     static bool cellShowsIcon(unsigned int style);
@@ -216,6 +240,7 @@ public:
     static const std::string FieldCellStyles;
     static const std::string FieldShowTooltips;
     static const std::string FieldMaxRowCount;
+    static const std::string FieldColumnGroups;
 
     static const std::string FieldDocColumns;
     static const std::string FieldDocData;
@@ -228,6 +253,10 @@ public:
     static const std::string FieldAnnoIndex;
     static const std::string FieldAnnoStyle;
 
+    static const std::string FieldColGroupName;
+    static const std::string FieldColGroupColumns;
+    static const std::string FieldColGroupEnabledOnInit;
+
     static const QColor ColorTextRed;
     static const QColor ColorTextOrange;
     static const QColor ColorTextGreen;
@@ -239,13 +268,27 @@ public:
     static const QColor ColorBGGray;
     static const QColor ColorBGYellow;
 
+    static const std::string ColorTextLatexRed;
+    static const std::string ColorTextLatexOrange;
+    static const std::string ColorTextLatexGreen;
+    static const std::string ColorTextLatexGray;
+
+    static const std::string ColorBGLatexRed;
+    static const std::string ColorBGLatexOrange;
+    static const std::string ColorBGLatexGreen;
+    static const std::string ColorBGLatexGray;
+    static const std::string ColorBGLatexYellow;
+
+    static const double LatexIconWidth_cm;
+
 protected:
     void clearContent_impl() override final;
 
     void toJSON_impl(nlohmann::json& j) const override final; 
     bool fromJSON_impl(const nlohmann::json& j) override final;
     Result toJSONDocument_impl(nlohmann::json& j,
-                               const std::string* resource_dir) const override final;
+                               const std::string* resource_dir,
+                               ReportExportMode export_style) const override final;
 
     bool loadOnDemand() override final;
 
@@ -262,9 +305,12 @@ protected:
     
     void executeCallback(const std::string& name);
 
-    void updateGroupColumns(const ColumnGroup& col_group);
+    void updateGroupColumns(bool update_widget = true);
+    void updateGroupColumns(const TableColumnGroup& col_group,
+                            bool update_widget = true);
 
-    unsigned int               num_columns_ {0};
+    unsigned int               num_columns_      {0};
+    unsigned int               num_columns_proxy_{0};
     std::vector<std::string>   headings_;
     std::vector<unsigned int>  column_styles_;
     std::vector<unsigned char> column_flags_;
@@ -294,8 +340,9 @@ protected:
     mutable std::vector<nlohmann::json> rows_;
     mutable std::vector<RowAnnotation>  annotations_;
     
-    CellStyles                          cell_styles_;
-    std::map<std::string, ColumnGroup>  column_groups_;
+    CellStyles    cell_styles_;
+    ColumnGroups  column_groups_;
+    unsigned int  latex_ref_column_ = 0;
 
     mutable SectionContentTableWidget* table_widget_ {nullptr};
 
@@ -352,10 +399,22 @@ public:
     void updateColumnVisibility();
 
     int fromProxy(int proxy_row) const;
+    int scrollPosV() const;
+    int scrollPosH() const;
 
-    std::vector<std::string> sortedRowStrings(unsigned int row, bool latex) const;
+    nlohmann::json jsonConfig() const;
+    bool configure(const nlohmann::json& j);
 
     static const int DoubleClickCheckIntervalMSecs;
+
+    static const std::string FieldConfigSortColumn;
+    static const std::string FieldConfigSortOrder;
+    static const std::string FieldConfigScrollPosV;
+    static const std::string FieldConfigScrollPosH;
+    static const std::string FieldColGroupStates;
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override final;
 
 private:
     void clicked(const QModelIndex& index);
@@ -363,16 +422,25 @@ private:
     void customContextMenu(const QPoint& p);
     void performClickAction();
     void updateOptionsMenu();
+    void updateToolBar();
+    void updateScrollBarV();
+    void updateScrollBarH();
 
-    SectionContentTable*        content_table_  = nullptr;
-    SectionContentTableModel*   model_          = nullptr;
-    TableQSortFilterProxyModel* proxy_model_    = nullptr;
-    QTableView*                 table_view_     = nullptr;
-    QPushButton*                options_button_ = nullptr;
-    QMenu*                      options_menu_   = nullptr;
+    SectionContentTable*        content_table_     = nullptr;
+    SectionContentTableModel*   model_             = nullptr;
+    TableQSortFilterProxyModel* proxy_model_       = nullptr;
+    QTableView*                 table_view_        = nullptr;
+    QPushButton*                options_button_    = nullptr;
+    std::unique_ptr<PopupMenu>  options_menu_;
+    QToolBar*                   col_group_toolbar_ = nullptr;
 
-    QTimer click_action_timer_;
+    int           sort_column_ = -1;
+    Qt::SortOrder sort_order_  = Qt::AscendingOrder;
+
+    QTimer                        click_action_timer_;
     boost::optional<unsigned int> last_clicked_row_index_;
+    boost::optional<int>          scroll_pos_h_;
+    boost::optional<int>          scroll_pos_v_;
 };
 
 }

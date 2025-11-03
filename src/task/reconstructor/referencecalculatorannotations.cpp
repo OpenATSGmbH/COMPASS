@@ -139,7 +139,7 @@ RTSAnnotation ReferenceCalculatorAnnotations::createRTSAnnotation(const kalman::
 {
     RTSAnnotation anno;
 
-    assert(rts_debug_info.state0.imm_state);
+    traced_assert(rts_debug_info.state0.imm_state);
 
     size_t nm = rts_debug_info.state0.imm_state->filter_states.size();
 
@@ -196,7 +196,7 @@ IMMAnnotation ReferenceCalculatorAnnotations::createIMMAnnotation(const kalman::
                                                                   const reconstruction::KalmanEstimator& estimator,
                                                                   reconstruction::KalmanProjectionHandler& phandler) const
 {
-    assert(imm_update.state.imm_state);
+    traced_assert(imm_update.state.imm_state);
 
     size_t nm = imm_update.state.imm_state->filter_states.size();
 
@@ -453,7 +453,7 @@ void ReferenceCalculatorAnnotations::addAnnotationData(const std::string& name,
  */
 void ReferenceCalculatorAnnotations::createAnnotations(ViewPointGenAnnotation* annotation) const
 {
-    assert (annotation);
+    traced_assert(annotation);
 
     auto parent_anno = annotation;
     auto common_anno = parent_anno->getOrCreateAnnotation("Common");
@@ -804,7 +804,7 @@ void ReferenceCalculatorAnnotations::createAnnotations(ViewPointGenAnnotation* a
         {
             auto anno_rts = data_anno->getOrCreateAnnotation("RTS Infos", true);
 
-            loginf << "Adding " << data.rts_annotations.size() << " RTS info(s)";
+            loginf << "adding " << data.rts_annotations.size() << " RTS info(s)";
 
             size_t cnt = 0;
             for (const auto& rts_anno : data.rts_annotations)
@@ -857,7 +857,7 @@ void ReferenceCalculatorAnnotations::createAnnotations(ViewPointGenAnnotation* a
         {
             auto anno_rts = data_anno->getOrCreateAnnotation("IMM Infos", true);
 
-            loginf << "Adding " << data.imm_annotations.size() << " IMM info(s)";
+            loginf << "adding " << data.imm_annotations.size() << " IMM info(s)";
 
             size_t cnt = 0;
             for (const auto& imm_anno : data.imm_annotations)

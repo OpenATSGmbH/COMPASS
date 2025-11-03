@@ -14,8 +14,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HISTOGRAMVIEWCHARTVIEW_H
-#define HISTOGRAMVIEWCHARTVIEW_H
+#pragma once
 
 #include <chartview.h>
 
@@ -61,5 +60,3 @@ protected:
 };
 
 }
-
-#endif // HISTOGRAMVIEWCHARTVIEW_H

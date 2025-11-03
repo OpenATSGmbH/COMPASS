@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef STRINGREPRESENTATIONCOMBOBOX_H_
-#define STRINGREPRESENTATIONCOMBOBOX_H_
+#pragma once
 
 #include "dbcontent/variable/variable.h"
 //#include "global.h"
@@ -36,7 +35,7 @@ class StringRepresentationComboBox : public QComboBox
   public slots:
     void changedSlot()
     {
-        loginf << "StringRepresentationComboBox: changed " << currentText().toStdString();
+        loginf << currentText().toStdString();
 
         representation_ = representation();
         representation_str_ = dbContent::Variable::representationToString(representation_);
@@ -81,5 +80,3 @@ class StringRepresentationComboBox : public QComboBox
         setCurrentText(dbContent::Variable::representationToString(representation_).c_str());
     }
 };
-
-#endif /* STRINGREPRESENTATIONCOMBOBOX_H_ */

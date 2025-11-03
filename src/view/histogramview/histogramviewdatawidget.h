@@ -100,9 +100,9 @@ protected:
     virtual void resetVariableDisplay() override final;
     virtual void preUpdateVariableDataEvent() override final;
     virtual void postUpdateVariableDataEvent() override final;
-    virtual bool updateVariableDisplay() override final;
+    virtual DrawState updateVariableDisplay() override final;
     virtual void updateFromVariables() override final;
-    virtual void updateFromAnnotations() override final;
+    virtual bool updateFromAnnotations() override final;
 
     void toolChanged_impl(int mode) override;
     void viewInfoJSON_impl(nlohmann::json& info) const override;
@@ -110,7 +110,7 @@ protected:
     void resetHistogram();
     void compileRawDataFromGenerator();
 
-    bool updateChart();
+    DrawState updateChart();
     bool updateChartFromVariable();
 
     void selectData(unsigned int index1, unsigned int index2);

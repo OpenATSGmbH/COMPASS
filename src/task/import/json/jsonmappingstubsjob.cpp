@@ -38,26 +38,26 @@ JSONMappingStubsJob::~JSONMappingStubsJob() {}
 
 void JSONMappingStubsJob::run_impl()
 {
-    logdbg << "JSONMappingStubsJob: run";
+    logdbg;
 
     started_ = true;
 
     auto process_lambda = [this](nlohmann::json& record) {
         for (auto& map_it : parsers_)
         {
-            logdbg << "JSONMappingStubsJob: run: mapping json: obj "
+            logdbg << "mapping json: obj "
                    << map_it.second.dbContentName();
             map_it.second.createMappingStubs(record);
         }
     };
 
-    logdbg << "JSONMappingStubsJob: run: mapping json";
+    logdbg << "mapping json";
 
-    assert(data_);
-    loginf << "JSONMappingStubsJob: run: applying JSON function";
+    traced_assert(data_);
+    loginf << "applying JSON function";
     JSON::applyFunctionToValues(*data_.get(), data_record_keys_, data_record_keys_.begin(),
                                 process_lambda, false);
 
     done_ = true;
-    logdbg << "JSONMappingStubsJob: run: done";
+    logdbg << "done";
 }

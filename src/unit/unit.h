@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef UNIT_H_
-#define UNIT_H_
+#pragma once
 
 #include <cmath>
 #include <map>
@@ -42,11 +41,11 @@ class Unit : public Configurable
         registerParameter("definition", &definition_, std::string());
         registerParameter("factor", &factor_, 1.0);
 
-        logdbg << "Unit: constructor: dimension " << parent.instanceId() << " unit " << instance_id
+        logdbg << "dimension " << parent.instanceId() << " unit " << instance_id
                << " factor " << factor_;
 
-        assert(factor_ != 0);
-        assert(!std::isinf(factor_));
+        traced_assert(factor_ != 0);
+        traced_assert(!std::isinf(factor_));
     }
     /// @brief Destructor
     virtual ~Unit() {}
@@ -54,7 +53,7 @@ class Unit : public Configurable
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id)
     {
-        assert(false);
+        traced_assert(false);
     }
 
     double factor() const { return factor_; }
@@ -68,5 +67,3 @@ class Unit : public Configurable
   protected:
     virtual void checkSubConfigurables() {}
 };
-
-#endif /* UNIT_H_ */

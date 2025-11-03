@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef UNITMANAGER_H_
-#define UNITMANAGER_H_
+#pragma once
 
 #include "configurable.h"
 #include "singleton.h"
@@ -39,7 +38,7 @@ class UnitManager : public Configurable, public Singleton
     /// @brief Returns unit with a given name
     const Dimension& dimension(const std::string& name)
     {
-        assert(hasDimension(name));
+        traced_assert(hasDimension(name));
         return *dimensions_.at(name);
     }
     /// @brief Return container with all units
@@ -64,5 +63,3 @@ class UnitManager : public Configurable, public Singleton
         return instance;
     }
 };
-
-#endif /* UNITMANAGER_H_ */

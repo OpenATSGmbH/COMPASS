@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ASTERIXEDITIONCOMBOBOX_H
-#define ASTERIXEDITIONCOMBOBOX_H
+#pragma once
 
 #include <jasterix/category.h>
 #include <jasterix/jasterix.h>
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QComboBox>
 #include <memory>
@@ -51,7 +51,7 @@ class ASTERIXEditionComboBox : public QComboBox
     {
         for (const auto& ed_it : category_->editions())
         {
-            logdbg << "ASTERIXEditionComboBox: ctor: cat " << category->number() << " ed " << ed_it.first;
+            logdbg << "cat " << category->number() << " ed " << ed_it.first;
 
             addItem(ed_it.first.c_str());
         }
@@ -70,7 +70,7 @@ class ASTERIXEditionComboBox : public QComboBox
     void setEdition(const std::string& edition)
     {
         int index = findText(QString(edition.c_str()));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 
@@ -78,5 +78,3 @@ class ASTERIXEditionComboBox : public QComboBox
     ASTERIXImportTask& task_;
     const std::shared_ptr<jASTERIX::Category> category_;
 };
-
-#endif  // ASTERIXEDITIONCOMBOBOX_H

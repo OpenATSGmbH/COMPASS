@@ -15,14 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_VARIABLE_H_
-#define DBCONTENT_VARIABLE_H_
+#pragma once
 
 #include "configurable.h"
-//#include "global.h"
 #include "property.h"
 #include "stringconv.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QObject>
 
@@ -69,6 +68,7 @@ class Variable : public QObject, public Property, public Configurable
 
     bool operator==(const Variable& var);
 
+    std::string str() const;
     void print() const;
 
     virtual void generateSubConfigurable(const std::string& class_id,
@@ -89,7 +89,12 @@ class Variable : public QObject, public Property, public Configurable
     void dbColumnName(const std::string& value);
 
     std::string dbTableName() const;
-    std::string dbColumnIdentifier() const;
+    //std::string dbColumnIdentifier() const;
+
+    const std::string& dbExpression() const { return db_expression_; }
+    std::vector<std::string> dbExpressionVariables() const;
+
+    const std::string& dbColumnOrExpression() const;
 
     bool isKey() const;
     void isKey(bool value);
@@ -101,9 +106,9 @@ class Variable : public QObject, public Property, public Configurable
     std::string& unit() { return unit_; }
     std::string dimensionUnitStr() const;
 
-    DBContent& dbObject() const
+    DBContent& dbContent() const
     {
-        assert(dbcontent_);
+        traced_assert(dbcontent_);
         return *dbcontent_;
     }
 
@@ -123,7 +128,7 @@ class Variable : public QObject, public Property, public Configurable
     template <typename T>
     std::string getAsSpecialRepresentationString(T value) const
     {
-        assert(representation_ != Variable::Representation::STANDARD);
+        traced_assert(representation_ != Variable::Representation::STANDARD);
 
         std::ostringstream out;
         try
@@ -150,11 +155,12 @@ class Variable : public QObject, public Property, public Configurable
             }
             else if (representation_ == Variable::Representation::CLIMB_DESCENT)
             {
-                if (value == 0)
+                int numeric_value = static_cast<int>(value);
+                if (numeric_value == 0)
                     return "LVL";
-                else if (value == 1)
+                else if (numeric_value == 1)
                     return "CLB";
-                else if (value == 2)
+                else if (numeric_value == 2)
                     return "DSC";
                 else
                     return "UDF";
@@ -188,12 +194,12 @@ class Variable : public QObject, public Property, public Configurable
         }
         catch (std::exception& e)
         {
-            logerr << "Variable: getAsSpecialRepresentationString: exception thrown: "
+            logerr << "exception thrown: "
                    << e.what();
         }
         catch (...)
         {
-            logerr << "Variable: getAsSpecialRepresentationString: exception thrown";
+            logerr << "exception thrown";
             ;
         }
 
@@ -228,12 +234,14 @@ private:
     Representation representation_;
 
     std::string description_;
+    
     std::string db_column_name_;
     bool is_key_ {false};
 
-    /// Unit dimension such as time
+    std::string db_expression_;
+    nlohmann::json db_expression_variables_;
+
     std::string dimension_;
-    /// Unit unit such as seconds
     std::string unit_;
 
 //    bool min_max_set_{false};
@@ -254,5 +262,3 @@ private:
 }
 
 Q_DECLARE_METATYPE(dbContent::Variable*)
-
-#endif /* DBCONTENT_VARIABLE_H_ */

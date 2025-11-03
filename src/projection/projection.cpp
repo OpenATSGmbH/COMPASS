@@ -28,7 +28,7 @@ Projection::Projection(const std::string& class_id, const std::string& instance_
 {
     registerParameter("name", &name_, std::string());
 
-    assert(name_.size());
+    traced_assert(name_.size());
 
     // createSubConfigurables called in subclasses
 }
@@ -52,7 +52,7 @@ void Projection::getGroundRange(
 
 void Projection::addAllCoordinateSystems()
 {
-    loginf << "Projection: addAllCoordinateSystems: adding";
+    logdbg << "adding";
 
     if (!coordinate_systems_added_)
     {
@@ -70,7 +70,7 @@ void Projection::addAllCoordinateSystems()
                 if (!ds_it->hasPosition())
                     continue;
 
-                loginf << "Projection: addAllCoordinateSystems: adding " << ds_it->name();
+                logdbg << "adding " << ds_it->name();
                 addCoordinateSystem(ds_it->id(), ds_it->latitude(), ds_it->longitude(), ds_it->altitude());
             }
         }
@@ -82,7 +82,7 @@ void Projection::addAllCoordinateSystems()
                 if (!ds_it->hasPosition())
                     continue;
 
-                loginf << "Projection: addAllCoordinateSystems: adding " << ds_it->name();
+                logdbg << "adding " << ds_it->name();
                 addCoordinateSystem(ds_it->id(), ds_it->latitude(), ds_it->longitude(), ds_it->altitude());
             }
         }
@@ -100,6 +100,15 @@ bool Projection::coordinateSystemsAdded()
     boost::mutex::scoped_lock locker(coordinate_systems_mutex_);
 
     return coordinate_systems_added_;
+}
+
+bool Projection::hasMissingCoordinateSystem(unsigned int ds_id)
+{
+    return missing_coordinate_systems_.count(ds_id);
+}
+void Projection::addMissingCoordinateSystem(unsigned int ds_id)
+{
+    missing_coordinate_systems_.insert(ds_id);
 }
 
 void Projection::checkSubConfigurables() {}

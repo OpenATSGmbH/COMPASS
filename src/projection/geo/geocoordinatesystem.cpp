@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "geocoordinatesystem.h"
 
 #include "global.h"
@@ -31,7 +48,7 @@ bool GeoCoordinateSystem::polarSlantToCartesian(double azimuth_rad, double slant
         // Check if delta_h is within valid range
         if (std::abs(delta_h) > slant_range_m)
         {
-            logerr << "GeoCoordinateSystem: polarSlantToCartesian: absolute value of delta_h "
+            logerr << "absolute value of delta_h "
                    << std::abs(delta_h) << " is greater than slant range " << slant_range_m;
 
             return polarHorizontalToCartesian(azimuth_rad, slant_range_m, x_pos_m, y_pos_m);
@@ -58,16 +75,16 @@ bool GeoCoordinateSystem::polarHorizontalToCartesian(double azimuth_rad, double 
 bool GeoCoordinateSystem::wgs842Cartesian(double latitude_deg, double longitude_deg, double& x_pos,
                                           double& y_pos)
 {
-    logdbg << "GeoCoordinateSystem: wgs842Cartesian: lat " << latitude_deg << " long "
+    logdbg << "lat " << latitude_deg << " long "
            << longitude_deg;
 
     double z;
 
 
-    assert (proj_);
+    traced_assert(proj_);
     proj_->Forward(latitude_deg, longitude_deg, 0.0, x_pos, y_pos, z);
 
-    assert (proj_wo_alt_);
+    traced_assert(proj_wo_alt_);
     proj_wo_alt_->Forward(latitude_deg, longitude_deg, 0.0, x_pos, y_pos, z);
 
     return true;
@@ -76,11 +93,11 @@ bool GeoCoordinateSystem::wgs842Cartesian(double latitude_deg, double longitude_
 bool GeoCoordinateSystem::cartesian2WGS84(double x_pos, double y_pos, double& latitude,
                                           double& longitude)
 {
-    logdbg << "GeoCoordinateSystem: cartesian2WGS84: x_pos " << x_pos << " y_pos " << y_pos;
+    logdbg << "x_pos " << x_pos << " y_pos " << y_pos;
 
     double h_back;
 
-    assert (proj_wo_alt_);
+    traced_assert(proj_wo_alt_);
 
     proj_wo_alt_->Reverse(x_pos, y_pos, 0.0, latitude, longitude, h_back);
 
@@ -90,7 +107,7 @@ bool GeoCoordinateSystem::cartesian2WGS84(double x_pos, double y_pos, double& la
 bool GeoCoordinateSystem::wgs842PolarHorizontal(
     double latitude_deg, double longitude_deg, double& azimuth_deg, double& ground_range_m)
 {
-    assert (proj_wo_alt_);
+    traced_assert(proj_wo_alt_);
 
     // Compute ENU coordinates of the target relative to the radar
     double north, east, up;

@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "reportwidget.h"
 #include "report/treeitem.h"
 #include "report/report.h"
@@ -18,11 +35,17 @@
 #include <QWidgetAction>
 #include <QApplication>
 #include <QClipboard>
+#include <QScrollBar>
+
+#include <osg/Group>
 
 using namespace Utils;
 
 namespace ResultReport
 {
+
+const std::string ReportWidget::FieldConfigScrollPosV = "container_scroll_pos_v";
+const std::string ReportWidget::FieldConfigScrollPosH = "container_scroll_pos_h";
 
 ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
     : QWidget(nullptr), task_result_widget_(task_result_widget)
@@ -93,8 +116,11 @@ void ReportWidget::setReport(const std::shared_ptr<Report>& report)
 
     id_history_.clear();
 
+    current_section_ = nullptr;
+    current_section_label_->setText("");
+
     updateBackButton();
-    updateCurrentSection();
+    updateCurrentSectionLabel();
 
     showResultWidget(nullptr, false);
 }
@@ -104,31 +130,35 @@ void ReportWidget::clear()
     tree_model_.clear();
     id_history_.clear();
 
+    current_section_ = nullptr;
+    current_section_label_->setText("");
+
     updateBackButton();
-    updateCurrentSection();
+    updateCurrentSectionLabel();
 }
 
 void ReportWidget::expand()
 {
-    loginf << "ReportWidget: expand";
+    loginf;
 
     tree_view_->expandToDepth(3);
 }
 
 void ReportWidget::selectId (const std::string& id,
-                             bool show_figure)
+                             bool show_figure,
+                             const nlohmann::json& config)
 {
-    loginf << "ReportWidget: selectId: id '" << id << "'";
+    loginf << "id '" << id << "'";
 
     QModelIndex index = tree_model_.findItem(id);
 
     if (!index.isValid())
     {
-        logerr << "ReportWidget: selectId: id '" << id << "' not found";
+        logerr << "id '" << id << "' not found";
         return;
     }
 
-    assert (tree_view_);
+    traced_assert(tree_view_);
     tree_view_->selectionModel()->clear();
 
     expandAllParents(index);
@@ -146,13 +176,20 @@ void ReportWidget::selectId (const std::string& id,
 
     if (show_figure)
         showFigure(index);
+
+    if (current_section_ && config.is_object() && !config.empty())
+    {
+        bool ok = configureSection(config);
+        if (ok)
+            loginf << "restored config of section '" << id << "'";
+    }
 }
 
 void ReportWidget::reshowLastId ()
 {
     if (id_history_.size() >= 1)
     {
-        selectId(*id_history_.rbegin()); // select last one
+        selectId(*id_history_.rbegin(), false, {}); // select last one
 
         id_history_.pop_back(); // remove re-added id. slightly hacky
     }
@@ -162,28 +199,28 @@ void ReportWidget::triggerItem (const QModelIndex& index,
                                 bool preload_ondemand_contents)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     id_history_.push_back(item->id());
 
-    loginf << "ReportWidget: triggerItem: name " << item->name() << " id " << item->id();
+    loginf << "name " << item->name() << " id " << item->id();
 
     if (dynamic_cast<ResultReport::Report*>(item))
     {
-        loginf << "ReportWidget: triggerItem: root report";
+        loginf << "root report";
         showResultWidget(nullptr, preload_ondemand_contents);
     }
     else if (dynamic_cast<ResultReport::Section*>(item))
     {
         ResultReport::Section* section = dynamic_cast<ResultReport::Section*>(item);
-        assert (section);
+        traced_assert(section);
 
-        loginf << "ReportWidget: triggerItem: section " << section->name();
+        loginf << "section " << section->name();
         showResultWidget(section, preload_ondemand_contents);
     }
 
     updateBackButton();
-    updateCurrentSection();
+    updateCurrentSectionLabel();
 }
 
 void ReportWidget::itemClickedSlot(const QModelIndex& index)
@@ -220,9 +257,9 @@ void ReportWidget::contextMenuSlot(const QPoint& pos)
 void ReportWidget::showFigure(const QModelIndex& index)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
-    loginf << "ReportWidget: showFigure: name " << item->name() << " id " << item->id();
+    loginf << "name " << item->name() << " id " << item->id();
 
     if (dynamic_cast<ResultReport::Report*>(item))
     {
@@ -231,9 +268,9 @@ void ReportWidget::showFigure(const QModelIndex& index)
     else if (dynamic_cast<ResultReport::Section*>(item))
     {
         ResultReport::Section* section = dynamic_cast<ResultReport::Section*>(item);
-        assert (section);
+        traced_assert(section);
 
-        loginf << "ReportWidget: showFigure: section " << section->name();
+        loginf << "section " << section->name();
 
         auto figures = section->getFigures();
         if (!figures.empty())
@@ -245,21 +282,23 @@ void ReportWidget::showFigure(const QModelIndex& index)
 
 void ReportWidget::stepBackSlot()
 {
-    loginf << "ReportWidget: stepBackSlot";
+    loginf;
 
-    assert (id_history_.size() > 1);
+    traced_assert(id_history_.size() > 1);
 
     id_history_.pop_back(); // remove last entry
     reshowLastId(); // show last id
 
     updateBackButton();
-    updateCurrentSection();
+    updateCurrentSectionLabel();
 }
 
 void ReportWidget::showResultWidget(Section* section, 
                                     bool preload_ondemand_contents)
 {
-    assert(results_widget_);
+    traced_assert(results_widget_);
+
+    current_section_ = section;
 
     if (!section)
     {
@@ -275,8 +314,6 @@ void ReportWidget::showResultWidget(Section* section,
         results_widget_->addWidget(widget);
 
     results_widget_->setCurrentWidget(widget);
-
-    auto id = QString::fromStdString(section->id());
 }
 
 void ReportWidget::expandAllParents (QModelIndex index)
@@ -296,68 +333,60 @@ void ReportWidget::expandAllParents (QModelIndex index)
 
 void ReportWidget::updateBackButton ()
 {
-    assert (back_button_);
+    traced_assert(back_button_);
 
     back_button_->setEnabled(id_history_.size() > 1);
 }
 
-void ReportWidget::updateCurrentSection()
+void ReportWidget::updateCurrentSectionLabel()
 {
-    current_section_label_->setText(id_history_.empty() ? "" : QString::fromStdString(id_history_.back()));
+    current_section_label_->setText(current_section_ ? QString::fromStdString(current_section_->id()) : "");
 }
 
-std::string ReportWidget::currentSection() const
+std::string ReportWidget::currentSectionID() const
 {
-    return current_section_label_->text().toStdString();
+    return current_section_ ? current_section_->id() : "";
 }
 
-boost::optional<nlohmann::json> ReportWidget::getTableData(const std::string& result_id,
-                                                                const std::string& table_id,
-                                                                bool rowwise,
-                                                                const std::vector<int>& cols) const
+nlohmann::json ReportWidget::currentSectionConfig() const
 {
-    QString result_id_corr = QString::fromStdString(result_id);
-
-    //this is just for convenience
-    if (!result_id_corr.startsWith("Report:Results:"))
-    {
-        if (result_id_corr.startsWith("Results:"))
-            result_id_corr = "Report:" + result_id_corr;
-        else
-            result_id_corr = "Report:Results:" + result_id_corr;
-    }
-
-    //get result section
-    QModelIndex index = tree_model_.findItem(result_id_corr.toStdString());
-
-    if (!index.isValid())
-    {
-        logerr << "ReportWidget: getTableData: id '" << result_id_corr.toStdString() << "' not found";
+    if (!current_section_)
         return {};
-    }
 
-    TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
-    if (!item)
-    {
-        logerr << "ReportWidget: getTableData: item null";
+    auto config = current_section_->jsonConfig();
+    if (!config.is_object() || config.empty())
         return {};
-    }
 
-    ResultReport::Section* section = dynamic_cast<ResultReport::Section*>(item);
-    if (!section)
-    {
-        logerr << "ReportWidget: getTableData: no section found";
-        return {};
-    }
+    config[ FieldConfigScrollPosV ] = tree_view_->verticalScrollBar()->isVisible() ? tree_view_->verticalScrollBar()->value() : -1;
+    config[ FieldConfigScrollPosH ] = tree_view_->horizontalScrollBar()->isVisible() ? tree_view_->horizontalScrollBar()->value() : -1;
 
-    //check if table is available
-    if (!section->hasTable(table_id))
-    {
-        logerr << "ReportWidget: getTableData: no table found";
-        return {};
-    }
+    return config;
+}
 
-    return section->getTable(table_id).toJSONTable(rowwise, cols);
+bool ReportWidget::configureSection(const nlohmann::json& config)
+{
+    if (!current_section_)
+        return false;
+
+    if (!config.is_object() || config.empty())
+        return false;
+
+    if (!config.contains(FieldConfigScrollPosV) || 
+        !config.contains(FieldConfigScrollPosH))
+        return false;
+
+    int scroll_pos_v = config[FieldConfigScrollPosV].get<int>();
+    int scroll_pos_h = config[FieldConfigScrollPosH].get<int>();
+
+    //restore widget scroll positions
+    if (scroll_pos_v >= 0 && tree_view_->verticalScrollBar()->isVisible())
+        tree_view_->verticalScrollBar()->setValue(scroll_pos_v);
+
+    if (scroll_pos_h >= 0 && tree_view_->horizontalScrollBar()->isVisible())
+        tree_view_->horizontalScrollBar()->setValue(scroll_pos_h);
+
+    //configure section
+    return current_section_->configure(config);
 }
 
 }

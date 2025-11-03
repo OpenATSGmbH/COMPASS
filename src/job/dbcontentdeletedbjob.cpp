@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "dbcontentdeletedbjob.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
@@ -20,22 +37,22 @@ DBContentDeleteDBJob::~DBContentDeleteDBJob() {}
 
 void DBContentDeleteDBJob::setBeforeTimestamp(boost::posix_time::ptime before_timestamp)
 {
-    assert (!use_specific_dbcontent_);
+    traced_assert(!use_specific_dbcontent_);
     use_before_timestamp_ = true;
     before_timestamp_ = before_timestamp;
 }
 
 void DBContentDeleteDBJob::setSpecificDBContent(const std::string& specific_dbcontent)
 {
-    assert (!use_before_timestamp_);
+    traced_assert(!use_before_timestamp_);
     use_specific_dbcontent_ = true;
     specific_dbcontent_ = specific_dbcontent;
 }
 
 void DBContentDeleteDBJob::setSpecificSacSic(unsigned int sac, unsigned int sic)
 {
-    assert (!use_before_timestamp_);
-    assert (use_specific_dbcontent_);
+    traced_assert(!use_before_timestamp_);
+    traced_assert(use_specific_dbcontent_);
 
     use_specific_sac_sic_ = true;
     specific_sac_ = sac;
@@ -44,9 +61,9 @@ void DBContentDeleteDBJob::setSpecificSacSic(unsigned int sac, unsigned int sic)
 
 void DBContentDeleteDBJob::setSpecificLineId(unsigned int line_id)
 {
-    assert (!use_before_timestamp_);
-    assert (use_specific_dbcontent_);
-    assert (use_specific_sac_sic_);
+    traced_assert(!use_before_timestamp_);
+    traced_assert(use_specific_dbcontent_);
+    traced_assert(use_specific_sac_sic_);
 
     use_specific_line_id_ = true;
     specific_line_id_ = line_id;
@@ -59,19 +76,19 @@ void DBContentDeleteDBJob::cleanupDB(bool cleanup_db)
 
 void DBContentDeleteDBJob::run_impl()
 {
-    logdbg << "DBContentDeleteDBJob: run: start";
+    logdbg;
     started_ = true;
 
     if (obsolete_)
     {
-        logdbg << "DBContentDeleteDBJob: run: obsolete before prepared";
+        logdbg << "obsolete before prepared";
         done_ = true;
         return;
     }
 
     if (!(use_before_timestamp_ || use_specific_dbcontent_))
     {
-        logerr << "DBContentDeleteDBJob: run: neither before time or dbcontent defined";
+        logerr << "neither before time or dbcontent defined";
         done_ = true;
         return;
     }
@@ -87,7 +104,7 @@ void DBContentDeleteDBJob::run_impl()
             if (!dbcont_it.second->existsInDB())
                 continue;
 
-            logdbg << "DBContentDeleteDBJob: run: deleting dbcontent for " << dbcont_it.first;
+            logdbg << "deleting dbcontent for " << dbcont_it.first;
             db_interface_.deleteBefore(*dbcont_it.second, before_timestamp_);
         }
     }
@@ -95,32 +112,32 @@ void DBContentDeleteDBJob::run_impl()
     {
         if (use_specific_line_id_)
         {
-            loginf << "DBContentDeleteDBJob: run: deleting dbcontent for " << specific_dbcontent_
+            loginf << "deleting dbcontent for " << specific_dbcontent_
                    << " for specific sac/sic + line";
-            assert (dbcont_man.existsDBContent(specific_dbcontent_));
-            assert (use_specific_sac_sic_);
+            traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
+            traced_assert(use_specific_sac_sic_);
 
             db_interface_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
                                         specific_sac_, specific_sic_, specific_line_id_);
         }
         else if (use_specific_sac_sic_)
         {
-            loginf << "DBContentDeleteDBJob: run: deleting dbcontent for " << specific_dbcontent_
+            loginf << "deleting dbcontent for " << specific_dbcontent_
                    << " for specific sac/sic";
-            assert (dbcont_man.existsDBContent(specific_dbcontent_));
+            traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
 
             db_interface_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
                                         specific_sac_, specific_sic_);
         }
         else // all
         {
-            loginf << "DBContentDeleteDBJob: run: deleting all dbcontent for " << specific_dbcontent_;
-            assert (dbcont_man.existsDBContent(specific_dbcontent_));
+            loginf << "deleting all dbcontent for " << specific_dbcontent_;
+            traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
             db_interface_.deleteAll(dbcont_man.dbContent(specific_dbcontent_));
         }
     }
     else
-        assert (false);
+        traced_assert(false);
 
     //cleanup db after delete?
     if (cleanup_db_)
@@ -128,7 +145,7 @@ void DBContentDeleteDBJob::run_impl()
 
     boost::posix_time::time_duration diff = boost::posix_time::microsec_clock::local_time() - start_time;
 
-    logdbg << "DBContentDeleteDBJob: run: done after " << Time::toString(diff);
+    logdbg << "done after " << Time::toString(diff);
 
     done_ = true;
 

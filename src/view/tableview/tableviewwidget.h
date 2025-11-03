@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LISTBOXVIEWWIDGET_H_
-#define LISTBOXVIEWWIDGET_H_
+#pragma once
 
 #include "viewwidget.h"
 
@@ -53,5 +52,3 @@ class TableViewWidget : public ViewWidget
     /// @brief Returns the basis view
     TableView* getView();
 };
-
-#endif /* LISTBOXVIEWWIDGET_H_ */

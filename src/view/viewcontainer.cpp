@@ -63,8 +63,8 @@ ViewContainer::ViewContainer(const std::string& class_id,
       tab_widget_(tab_widget),
       window_cnt_(window_cnt)
 {
-    logdbg << "ViewContainer: ctor: window " << window_cnt_;
-    assert(tab_widget_);
+    logdbg << "window " << window_cnt_;
+    traced_assert(tab_widget_);
 
     creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
 
@@ -91,22 +91,22 @@ ViewContainer::ViewContainer(const std::string& class_id,
 
 ViewContainer::~ViewContainer()
 {
-    logdbg << "ViewContainer: dtor";
+    logdbg;
 
     view_manager_.removeContainer(instanceId());
 
-    logdbg << "ViewContainer: dtor: views list";
+    logdbg << "views list";
     for (auto& view : views_)
-        logdbg << "ViewContainer: dtor: view " << view->instanceId();
+        logdbg << "view " << view->instanceId();
 
     views_.clear();
 
-    logdbg << "ViewContainer: dtor: done";
+    logdbg << "done";
 }
 
 void ViewContainer::addView(const std::string& class_id)
 {
-    assert (!disable_add_remove_views_);
+    traced_assert(!disable_add_remove_views_);
 
     auto config = Configuration::create(class_id, view_manager_.newViewInstanceId(class_id),
                           view_manager_.newViewName(class_id));
@@ -116,18 +116,18 @@ void ViewContainer::addView(const std::string& class_id)
 
 void ViewContainer::enableViewTab(QWidget* widget, bool value)
 {
-    assert (widget);
+    traced_assert(widget);
 
     int index = tab_widget_->indexOf(widget);
 
-    assert (index >= 0); // check if has widget
+    traced_assert(index >= 0); // check if has widget
     tab_widget_->setTabEnabled(index, value);;
 }
 
 void ViewContainer::showView(QWidget* widget)
 {
-    assert (widget);
-    assert (tab_widget_->indexOf(widget) >= 0); // check if has widget
+    traced_assert(widget);
+    traced_assert(tab_widget_->indexOf(widget) >= 0); // check if has widget
     tab_widget_->setCurrentWidget(widget);
 }
 
@@ -137,7 +137,7 @@ void ViewContainer::showView(QWidget* widget)
 //    std::map<std::string, Configuration> &templates =
 //    ViewManager::getInstance().getConfiguration()
 //            .getConfigurationTemplates ();
-//    assert (templates.find (template_name) != templates.end());
+//    traced_assert(templates.find (template_name) != templates.end());
 //    Configuration view_config = templates [template_name];
 //    view_config.setInstanceId(view_name);
 //    view_config.setTemplate(false, "");
@@ -149,9 +149,9 @@ void ViewContainer::showView(QWidget* widget)
 
 void ViewContainer::addView(View* view)
 {
-    assert(view);
+    traced_assert(view);
     QWidget* w = view->getCentralWidget();
-    assert(w);
+    traced_assert(w);
 
     const QString view_name = QString::fromStdString(view->getName());
 
@@ -170,51 +170,53 @@ void ViewContainer::addView(View* view)
     tab_widget_->tabBar()->setTabButton(index, QTabBar::RightSide, manage_button);
 
     //in localbuild we show some info about how the view is reachable via rtcommands
+#if USE_EXPERIMENTAL_SOURCE == true
     if (!COMPASS::instance().isAppImage())
     {
         QString tt = rtcommand::getTooltip(view->getViewWidget(), view);
         tab_widget_->setTabToolTip(index, tt);
     }
+#endif
 }
 
 void ViewContainer::deleteViewSlot()
 {
-    assert (!disable_add_remove_views_);
+    traced_assert(!disable_add_remove_views_);
 
     QAction* action = dynamic_cast<QAction*>(sender());
-    assert (action);
+    traced_assert(action);
 
     QVariant instance_id_var = action->property("view_instance_id");
-    assert (instance_id_var.isValid());
+    traced_assert(instance_id_var.isValid());
 
     string instance_id = instance_id_var.toString().toStdString();
 
     auto iter = std::find_if(views_.begin(), views_.end(),
                              [&instance_id](const unique_ptr<View>& x) { return x->instanceId() == instance_id;});
 
-    assert (iter != views_.end());
+    traced_assert(iter != views_.end());
 
     views_.erase(iter);
 }
 
 void ViewContainer::addNewViewSlot()
 {
-    assert (!disable_add_remove_views_);
+    traced_assert(!disable_add_remove_views_);
 
     QAction* action = dynamic_cast<QAction*>(sender());
-    assert (action);
+    traced_assert(action);
 
     QVariant location_var = action->property("location");
-    assert (location_var.isValid());
+    traced_assert(location_var.isValid());
 
     string location = location_var.toString().toStdString();
 
     QVariant class_id_var = action->property("class_id");
-    assert (class_id_var.isValid());
+    traced_assert(class_id_var.isValid());
 
     string class_id = class_id_var.toString().toStdString();
 
-    loginf << "ViewContainer: addNewViewSlot: location " << location << " class_id " << class_id;
+    loginf << "location " << location << " class_id " << class_id;
 
     if (location == "here")
         addView(class_id);
@@ -224,8 +226,7 @@ void ViewContainer::addNewViewSlot()
         container_widget->viewContainer().addView(class_id);
     }
     else
-        logerr << "ViewContainer: addNewViewSlot: unknown location '" << location << "'";
-
+        logerr << "unknown location '" << location << "'";
 }
 
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }
@@ -270,7 +271,7 @@ void ViewContainer::generateSubConfigurable(const std::string& class_id,
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
 #else
-        loginf << "ViewContainer: generateSubConfigurable: GeographicView ignored since compiled w/o experimental source";
+        loginf << "ignored GeographicView since compiled w/o experimental source";
 #endif
 
     }
@@ -281,7 +282,7 @@ void ViewContainer::generateSubConfigurable(const std::string& class_id,
     //    if (number >= view_count_)
     //      view_count_ = number+1;
 
-    //    assert( view );
+    //    traced_assert( view );
     //    view->init();
     //  }
     else
@@ -304,8 +305,8 @@ std::string ViewContainer::getWindowName()
 
 void ViewContainer::showAddViewMenuSlot()
 {
-    loginf << "ViewContainer: showAddViewMenuSlot: window " << window_cnt_;
-    assert (!disable_add_remove_views_);
+    loginf << "window " << window_cnt_;
+    traced_assert(!disable_add_remove_views_);
 
     QMenu menu;
 
@@ -333,15 +334,15 @@ void ViewContainer::showAddViewMenuSlot()
 
 void ViewContainer::showViewMenuSlot()
 {
-    loginf << "ViewContainer: showViewMenuSlot: window " << window_cnt_;
+    loginf << "window " << window_cnt_;
 
-    assert (!disable_add_remove_views_);
+    traced_assert(!disable_add_remove_views_);
 
     QPushButton* button = dynamic_cast<QPushButton*>(sender());
-    assert (button);
+    traced_assert(button);
 
     QVariant instance_id_var = button->property("view_instance_id");
-    assert (instance_id_var.isValid());
+    traced_assert(instance_id_var.isValid());
 
     string instance_id = instance_id_var.toString().toStdString();
 
@@ -369,9 +370,9 @@ void ViewContainer::resetToStartupConfiguration()
 
 // void ViewContainerWidget::saveViewTemplate ()
 //{
-//    assert (last_active_manage_button_);
+//    traced_assert(last_active_manage_button_);
 
-//    assert (view_manage_buttons_.find (last_active_manage_button_) != view_manage_buttons_.end());
+//    traced_assert(view_manage_buttons_.find (last_active_manage_button_) != view_manage_buttons_.end());
 //    View *view = view_manage_buttons_ [last_active_manage_button_];
 
 //    bool ok;
@@ -380,7 +381,7 @@ void ViewContainer::resetToStartupConfiguration()
 //                                         view->getInstanceId().c_str(), &ok);
 //    if (ok && !text.isEmpty())
 //    {
-//        loginf << "ViewContainerWidget: saveViewTemplate: for view " << view->getInstanceId() <<
+//        loginf << "for view " << view->getInstanceId() <<
 //                " as template " << text.toStdString();
 //        //TODO
 //        //ViewManager::getInstance().saveViewAsTemplate (view, text.toStdString());

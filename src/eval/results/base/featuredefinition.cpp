@@ -58,7 +58,7 @@ FeatureDefinition::~FeatureDefinition() = default;
 */
 std::unique_ptr<ViewPointGenFeature> FeatureDefinition::createFeature(const Base* result) const
 {
-    assert(result);
+    traced_assert(result);
 
     auto feat = createFeature_impl(result);
     if (!feat)
@@ -121,7 +121,7 @@ FeatureDefinitions::~FeatureDefinitions() = default;
 FeatureDefinitions& FeatureDefinitions::addDefinition(const std::string& value_description,
                                                       std::unique_ptr<FeatureDefinition>&& def)
 {
-    assert(def);
+    traced_assert(def);
     feature_defs_[ value_description ].push_back(std::move(def));
 
     return *this;
@@ -132,7 +132,7 @@ FeatureDefinitions& FeatureDefinitions::addDefinition(const std::string& value_d
 FeatureDefinitions& FeatureDefinitions::addDefinition(const std::string& value_description,
                                                       FeatureDefinition* def)
 {
-    assert(def);
+    traced_assert(def);
     feature_defs_[ value_description ].emplace_back(def);
 
     return *this;

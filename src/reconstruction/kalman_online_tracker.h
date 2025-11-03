@@ -38,6 +38,11 @@ class KalmanProjectionHandler;
 class KalmanOnlineTracker
 {
 public:
+    struct Settings
+    {
+        double prediction_max_tdiff_sec = 10.0;
+    };
+
     KalmanOnlineTracker();
     virtual ~KalmanOnlineTracker();
 
@@ -51,16 +56,24 @@ public:
     bool track(const kalman::KalmanUpdate& update);
     bool track(const kalman::KalmanUpdateMinimal& update);
 
+    double timeDiffSec(const boost::posix_time::ptime& ts) const;
+
+    bool canPredict(const boost::posix_time::ptime& ts) const;
     bool canPredict(const boost::posix_time::ptime& ts,
-                    const boost::posix_time::time_duration& max_time_diff = boost::posix_time::seconds(10)) const;
-    kalman::KalmanError predict(Measurement& mm_predicted,
+                    double max_tdiff_sec) const;
+    kalman::KalmanError predict(Measurement* mm,
+                                kalman::GeoProbState* gp_state,
+                                kalman::GeoProbState* gp_state_mm,
                                 const boost::posix_time::ptime& ts,
                                 bool* fixed = nullptr) const;
 
     bool isTracking() const;
 
-    KalmanEstimator::Settings& settings();
+    Settings& settings() { return settings_; }
+    KalmanEstimator::Settings& estimatorSettings();
+
     const boost::optional<kalman::KalmanUpdate>& currentState() const;
+    boost::optional<reconstruction::Measurement> currentMeasurement() const;
     const boost::posix_time::ptime& currentTime() const;
     const KalmanEstimator::StepInfo& stepInfo() const;
     const KalmanEstimator& estimator() const;
@@ -73,6 +86,8 @@ private:
     std::unique_ptr<KalmanEstimator>      estimator_;
     boost::optional<kalman::KalmanUpdate> current_update_;
     kalman::KalmanUpdate                  tmp_update_;
+
+    Settings settings_;
 };
 
 } // reconstruction

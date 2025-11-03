@@ -45,10 +45,10 @@
 namespace EvaluationRequirementResult
 {
 
-const std::string Joined::SectorOverviewID              = "sector_overview";
-const int         Joined::SectorOverviewRenderDelayMSec = 2000;
-
-const std::string Joined::TargetsTableName              = "Targets";
+const std::string Joined::SectorTargetsTableName        = "Targets";
+const std::string Joined::SectorOverviewTableName       = "Sector Overview";
+const std::string Joined::SectorOverviewID              = "Sector Overview";
+const int         Joined::SectorOverviewRenderDelayMSec = 5000;
 
 /**
 */
@@ -139,7 +139,7 @@ bool Joined::hasReference(const ResultReport::SectionContentTable& table,
 std::string Joined::reference(const ResultReport::SectionContentTable& table, 
                               const QVariant& annotation) const
 {
-    assert (hasReference(table, annotation));
+    traced_assert(hasReference(table, annotation));
     return EvalSectionID::createForRequirementResult(*this);
 }
 
@@ -167,15 +167,15 @@ void Joined::iterateDetails(const DetailFunc& func,
 */
 void Joined::addToReport(std::shared_ptr<ResultReport::Report> report)
 {
-    logdbg << "Joined: addToReport: " <<  requirement_->name();
+    logdbg << "start" <<  requirement_->name();
 
     if (!results_.size()) // some data must exist
     {
-        logerr << "Joined: addToReport: " <<  requirement_->name() <<": no data";
+        logerr << "start" <<  requirement_->name() <<": no data";
         return;
     }
 
-    logdbg << "Joined: addToReport: " <<  requirement_->name() << ": adding joined result";
+    logdbg << "start" <<  requirement_->name() << ": adding joined result";
 
     addSectorToOverviewTable(report);
     addSectorDetailsToReport(report);
@@ -235,8 +235,8 @@ void Joined::addSectorToOverviewTable(std::shared_ptr<ResultReport::Report> repo
 std::vector<Joined::SectorInfo> Joined::sectorInfosCommon() const
 {
     return { { "Sector Layer"        , "Name of the sector layer"     , sector_layer_.name()       },
-             { "Reqirement Group"    , "Name of the requirement group", requirement_->groupName()  },
-             { "Reqirement"          , "Name of the requirement"      , requirement_->name()       },
+             { "Requirement Group"    , "Name of the requirement group", requirement_->groupName()  },
+             { "Requirement"          , "Name of the requirement"      , requirement_->name()       },
              { "Num Results"         , "Total number of results"      , numSingleResults()         },
              { "Num Usable Results"  , "Number of usable results"     , numUsableSingleResults()   },
              { "Num Unusable Results", "Number of unusable results"   , numUnusableSingleResults() },
@@ -306,10 +306,10 @@ void Joined::addSectorDetailsToReport(std::shared_ptr<ResultReport::Report> repo
 {
     auto& sector_section = getRequirementSection(report);
 
-    if (!sector_section.hasTable("sector_details_table"))
-        sector_section.addTable("sector_details_table", 3, {"Name", "Comment", "Value"}, false);
+    if (!sector_section.hasTable(SectorOverviewTableName))
+        sector_section.addTable(SectorOverviewTableName, 3, {"Name", "Comment", "Value"}, false);
 
-    auto& sec_det_table = sector_section.getTable("sector_details_table");
+    auto& sec_det_table = sector_section.getTable(SectorOverviewTableName);
 
     // callbacks
     if (canExportCSV())
@@ -348,7 +348,7 @@ bool Joined::exportAsCSV() const
     if (!canExportCSV())
         return false;
 
-    loginf << "Joined: exportAsCSV: " << type();
+    loginf << "start" << type();
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -361,7 +361,7 @@ bool Joined::exportAsCSV() const
         return true;
 
     QStringList file_names = dialog.selectedFiles();
-    assert (file_names.size() == 1);
+    traced_assert(file_names.size() == 1);
 
     std::string filename = file_names.at(0).toStdString();
 
@@ -400,7 +400,7 @@ void Joined::iterateSingleResults(const SingleResultFunc& func,
                                   const SingleResultFunc& func_used,
                                   const SingleResultFunc& func_unused) const
 {
-    assert(func_used);
+    traced_assert(func_used);
 
     for (const auto& result_it : results_)
     {
@@ -526,7 +526,7 @@ void Joined::updateToChanges(bool reset_viewable)
             auto& single = results_[ used[ i ] ];
 
             auto issues = single->numIssues();
-            assert (issues_total >= issues);
+            traced_assert(issues_total >= issues);
 
             single->setInterestFactor((double)issues / (double)issues_total);
         }
@@ -557,7 +557,7 @@ std::shared_ptr<nlohmann::json::object_t> Joined::getOrCreateCachedViewable() co
 {
     if (!viewable_)
     {
-        loginf << "Joined: getOrCreateCachedViewable: recreating viewable for "
+        loginf << "recreating viewable for "
                << "requirement '" << requirement_->name() << "' " 
                << "sector '" << sector_layer_.name() << "'..."; 
 
@@ -639,7 +639,7 @@ bool Joined::viewableDataReady() const
 std::shared_ptr<nlohmann::json::object_t> Joined::viewableData(const ResultReport::SectionContentTable& table, 
                                                                const QVariant& annotation) const
 {
-    assert (hasViewableData(table, annotation));
+    traced_assert(hasViewableData(table, annotation));
 
     //return cached viewable (might recreate the viewable)
     return getOrCreateCachedViewable();

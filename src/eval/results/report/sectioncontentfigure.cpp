@@ -47,7 +47,7 @@ SectionContentFigure::SectionContentFigure(
 
 void SectionContentFigure::addToLayout (QVBoxLayout* layout)
 {
-    assert (layout);
+    traced_assert(layout);
 
     QHBoxLayout* fig_layout = new QHBoxLayout();
 
@@ -64,13 +64,13 @@ void SectionContentFigure::addToLayout (QVBoxLayout* layout)
 
 void SectionContentFigure::accept(LatexVisitor& v)
 {
-    loginf << "SectionContentFigure: accept";
+    loginf;
     v.visit(this);
 }
 
 void SectionContentFigure::viewSlot()
 {
-    loginf << "SectionContentFigure: viewSlot";
+    loginf;
     view();
 }
 
@@ -92,7 +92,7 @@ void SectionContentFigure::view() const
 
 std::string SectionContentFigure::getSubPath() const
 {
-    assert (parent_section_);
+    traced_assert(parent_section_);
 
     return EvaluationResultsReport::SectionID::sectionID2Path(parent_section_->compoundResultsHeading());
 }

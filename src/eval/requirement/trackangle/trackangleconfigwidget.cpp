@@ -76,7 +76,7 @@ TrackAngleConfigWidget::TrackAngleConfigWidget(TrackAngleConfig& cfg)
 
 void TrackAngleConfigWidget::thresholdValueEditSlot(QString value)
 {
-    loginf << "TrackAngleConfigWidget: thresholdValueEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -84,14 +84,14 @@ void TrackAngleConfigWidget::thresholdValueEditSlot(QString value)
     if (ok)
         config().threshold(val);
     else
-        loginf << "TrackAngleConfigWidget: thresholdValueEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void TrackAngleConfigWidget::toggleUseMinimumSpeedSlot()
 {
-    loginf << "TrackAngleConfigWidget: toggleUseMinimumSpeedSlot";
+    loginf;
 
-    assert (use_minimum_speed_check_);
+    traced_assert(use_minimum_speed_check_);
     config().useMinimumSpeed(use_minimum_speed_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -99,7 +99,7 @@ void TrackAngleConfigWidget::toggleUseMinimumSpeedSlot()
 
 void TrackAngleConfigWidget::minimumSpeedEditSlot(QString value)
 {
-    loginf << "TrackAngleConfigWidget: minimumSpeedEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -107,36 +107,36 @@ void TrackAngleConfigWidget::minimumSpeedEditSlot(QString value)
     if (ok)
         config().minimumSpeed(val);
     else
-        loginf << "TrackAngleConfigWidget: minimumSpeedEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void TrackAngleConfigWidget::changedThresholdValueCheckTypeSlot()
 {
-    assert (threshold_value_check_type_box_);
-    loginf << "TrackAngleConfigWidget: changedThresholdValueCheckTypeSlot: value "
+    traced_assert(threshold_value_check_type_box_);
+    loginf << "value "
            << threshold_value_check_type_box_->getType();
     config().thresholdValueCheckType(threshold_value_check_type_box_->getType());
 }
 
 void TrackAngleConfigWidget::toggleFailedValuesOfInterestSlot()
 {
-    loginf << "TrackAngleConfigWidget: toggleFailedValuesOfInterestSlot";
+    loginf;
 
-    assert (failed_values_of_interest_check_);
+    traced_assert(failed_values_of_interest_check_);
     config().failedValuesOfInterest(failed_values_of_interest_check_->checkState() == Qt::Checked);
 }
 
 TrackAngleConfig& TrackAngleConfigWidget::config()
 {
     TrackAngleConfig* config = dynamic_cast<TrackAngleConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
 
 void TrackAngleConfigWidget::updateActive()
 {
-    assert (minimum_speed_edit_);
+    traced_assert(minimum_speed_edit_);
     minimum_speed_edit_->setEnabled(config().useMinimumSpeed());
 }
 

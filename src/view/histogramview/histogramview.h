@@ -62,7 +62,7 @@ public:
     /// @brief Returns the used data source
     HistogramViewDataSource* getDataSource()
     {
-        assert(data_source_);
+        traced_assert(data_source_);
         return data_source_;
     }
 

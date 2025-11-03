@@ -1,4 +1,21 @@
-﻿#include "dbcontent/dbcontent.h"
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "dbcontent/dbcontent.h"
 #include "asterixpostprocessjob.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "buffer.h"
@@ -6,6 +23,8 @@
 #include "projectionmanager.h"
 #include "util/stringconv.h"
 #include "global.h"
+
+#include <osgEarth/GeoMath>
 
 #include <QThread>
 
@@ -22,22 +41,10 @@ tbb::concurrent_unordered_map<std::string, std::string> ASTERIXPostprocessJob::o
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
-    bool filter_tod_active, float filter_tod_min, float filter_tod_max,
-    bool filter_position_active,
-    float filter_latitude_min, float filter_latitude_max,
-    float filter_longitude_min, float filter_longitude_max,
-    bool filter_modec_active,
-    float filter_modec_min, float filter_modec_max,
-    bool do_obfuscate_secondary_info)
+    ASTERIXImportTaskSettings settings)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
-    filter_tod_active_(filter_tod_active), filter_tod_min_(filter_tod_min), filter_tod_max_(filter_tod_max),
-    filter_position_active_(filter_position_active),
-    filter_latitude_min_(filter_latitude_min), filter_latitude_max_(filter_latitude_max),
-    filter_longitude_min_(filter_longitude_min), filter_longitude_max_(filter_longitude_max),
-    filter_modec_active_(filter_modec_active),
-    filter_modec_min_(filter_modec_min), filter_modec_max_(filter_modec_max),
-    do_obfuscate_secondary_info_(do_obfuscate_secondary_info)
+    settings_(settings)
 {
     obfuscate_m3a_map_[512] = 512; // 1000
     obfuscate_m3a_map_[1024] = 1024; // 2000
@@ -55,14 +62,14 @@ ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buf
 
 ASTERIXPostprocessJob::~ASTERIXPostprocessJob()
 {
-    logdbg << "ASTERIXPostprocessJob: dtor";
+    logdbg;
 }
 
 
 
 void ASTERIXPostprocessJob::run_impl()
 {
-    logdbg << "ASTERIXPostprocessJob: " << this << " run on thread " << QThread::currentThreadId()
+    logdbg << "run on thread " << QThread::currentThreadId()
            << " on cpu " << sched_getcpu();
 
     unsigned cnt=0;
@@ -70,7 +77,7 @@ void ASTERIXPostprocessJob::run_impl()
     for (auto& buf_it : buffers_)
         cnt += buf_it.second->size();
 
-    logdbg << "ASTERIXPostprocessJob: run: num buffers " << buffers_.size() << " size " << cnt;
+    logdbg << "num buffers " << buffers_.size() << " size " << cnt;
 
     started_ = true;
 
@@ -81,10 +88,11 @@ void ASTERIXPostprocessJob::run_impl()
     doADSBPositionProcessing();
     doGroundSpeedCalculations();
 
-    if (filter_tod_active_ || filter_position_active_ || filter_modec_active_)
+    if (settings_.filter_tod_active_  || settings_.filter_position_rec_active_ 
+        || settings_.filter_position_circ_active_ || settings_.filter_modec_active_)
         doFilters();
 
-    if (do_obfuscate_secondary_info_)
+    if (settings_.obfuscate_secondary_info_)
         doObfuscate();
 
     auto t_diff = boost::posix_time::microsec_clock::local_time() - start_time;
@@ -99,7 +107,7 @@ void ASTERIXPostprocessJob::run_impl()
 
     float num_secs =  t_diff.total_milliseconds() ? t_diff.total_milliseconds() / 1000.0 : 10E-6;
 
-    logdbg << "ASTERIXPostprocessJob: run: done: took "
+    logdbg << "done: took "
            << String::timeStringFromDouble(num_secs, true)
            << " full " << String::timeStringFromDouble(num_secs, true)
            << " " << ((float) num_processed) / num_secs << " rec/s";
@@ -117,7 +125,7 @@ void ASTERIXPostprocessJob::doRadarPlotPositionCalculations()
 
 void ASTERIXPostprocessJob::doXYPositionCalculations()
 {
-    logdbg << "ASTERIXPostprocessJob: doXYPositionCalculations";
+    logdbg;
 
     // tracked data sources with only x/y coordinates
     ProjectionManager::instance().doXYPositionCalculations(buffers_);
@@ -138,11 +146,11 @@ void ASTERIXPostprocessJob::doADSBPositionProcessing()
     if (!buffer_size)
         return;
 
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
 
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_latitude_hr_));
-    assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_longitude_hr_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_latitude_hr_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_longitude_hr_));
 
     dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
     dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
@@ -150,10 +158,10 @@ void ASTERIXPostprocessJob::doADSBPositionProcessing()
     dbContent::Variable& lat_hr_var = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_latitude_hr_);
     dbContent::Variable& lon_hr_var = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_longitude_hr_);
 
-    assert (lat_var.dataType() == PropertyDataType::DOUBLE);
-    assert (lon_var.dataType() == PropertyDataType::DOUBLE);
-    assert (lat_hr_var.dataType() == PropertyDataType::DOUBLE);
-    assert (lon_hr_var.dataType() == PropertyDataType::DOUBLE);
+    traced_assert(lat_var.dataType() == PropertyDataType::DOUBLE);
+    traced_assert(lon_var.dataType() == PropertyDataType::DOUBLE);
+    traced_assert(lat_hr_var.dataType() == PropertyDataType::DOUBLE);
+    traced_assert(lon_hr_var.dataType() == PropertyDataType::DOUBLE);
 
     string lat_var_name = lat_var.name();
     string lon_var_name = lon_var.name();
@@ -215,8 +223,8 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         unsigned int buffer_size = buffer->size();
         //assert(buffer_size);
 
-        assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-        assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
 
         dbContent::Variable& vx_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_);
         dbContent::Variable& vy_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_);
@@ -229,10 +237,10 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         speed_var_name = speed_var.name();
         track_angle_var_name = track_angle_var.name();
 
-        assert (vx_var.dataType() == PropertyDataType::DOUBLE);
-        assert (vy_var.dataType() == PropertyDataType::DOUBLE);
-        assert (speed_var.dataType() == PropertyDataType::DOUBLE);
-        assert (track_angle_var.dataType() == PropertyDataType::DOUBLE);
+        traced_assert(vx_var.dataType() == PropertyDataType::DOUBLE);
+        traced_assert(vy_var.dataType() == PropertyDataType::DOUBLE);
+        traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
+        traced_assert(track_angle_var.dataType() == PropertyDataType::DOUBLE);
 
         if (!buffer->has<double>(vx_var_name) || !buffer->has<double>(vy_var_name))
             continue; // cant calculate
@@ -241,7 +249,7 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
             && buffer->get<double>(speed_var_name).isNeverNull()
             && buffer->get<double>(track_angle_var_name).isNeverNull())
         {
-            logdbg << "ASTERIXPostprocessJob: doGroundSpeedCalculations: "
+            logdbg << "start"
                    << dbcontent_name << " speed and track angle already set";
 
             continue; // no need for calculation
@@ -282,7 +290,7 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
             ++cnt;
         }
 
-        logdbg << "ASTERIXPostprocessJob: doGroundSpeedCalculations: "
+        logdbg << "start"
                << dbcontent_name << " speed and track angle calc " << cnt << " / " << buffer_size;
     }
 
@@ -294,7 +302,7 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
     unsigned int spd_already_set {0}, sgv_spd_no_val {0}, sgv_hgt_no_value {0},
         sgv_is_heading {0}, sgv_is_magnetic {0}, sgv_usable {0};
 
-    logdbg << "ASTERIXPostprocessJob: doGroundSpeedCalculations: got ads-b "
+    logdbg << "got ads-b "
            << (buffers_.count(dbcontent_name) && buffers_.at(dbcontent_name)->size());
 
     if (buffers_.count(dbcontent_name) && buffers_.at(dbcontent_name)->size())
@@ -302,9 +310,50 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         auto& buffer = buffers_.at(dbcontent_name);
 
         unsigned int buffer_size = buffer->size();
-        assert(buffer_size);
+        traced_assert(buffer_size);
 
-        logdbg << "ASTERIXPostprocessJob: doGroundSpeedCalculations: got ads-b sgv gss "
+        if (!buffer->has<float>(DBContent::var_cat021_sgv_gss_.name()) &&
+            buffer->has<bool>(DBContent::var_cat021_sgv_stp_.name()))
+        {  // no speed but sgv stopped bit
+            logdbg << "got ads-b no gss but stp";
+
+            unsigned int stp_set {0};
+
+            dbContent::Variable& speed_var =
+                dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
+            traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
+
+            NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
+            NullableVector<bool>& sgv_stp_vec = buffer->get<bool>(DBContent::var_cat021_sgv_stp_.name());
+
+            for (unsigned int index = 0; index < buffer_size; index++)
+            {
+                if (!speed_vec.isNull(index))  // already set
+                {
+                    spd_already_set++;
+                    continue;
+                }
+
+                if (sgv_stp_vec.isNull(index)) // speed not set
+                {
+                    ++sgv_spd_no_val;
+                    continue;
+                }
+
+                if (sgv_stp_vec.get(index))
+                {
+                    speed_vec.set(index, 0.0);
+                    ++stp_set;
+                }
+            }
+
+            logdbg << "CAT021 spd_already_set " << spd_already_set << " sgv_spd_no_val "
+                   << sgv_spd_no_val << " stp_set " << stp_set;
+
+            return;
+        }
+
+        logdbg << "got ads-b sgv gss "
                << buffer->has<float>(DBContent::var_cat021_sgv_gss_.name())
                << " hgt " << buffer->has<double>(DBContent::var_cat021_sgv_hgt_.name())
                << " htt " << buffer->has<bool>(DBContent::var_cat021_sgv_htt_.name())
@@ -323,8 +372,8 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         speed_var_name = speed_var.name();
         track_angle_var_name = track_angle_var.name();
 
-        assert (speed_var.dataType() == PropertyDataType::DOUBLE);
-        assert (track_angle_var.dataType() == PropertyDataType::DOUBLE);
+        traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
+        traced_assert(track_angle_var.dataType() == PropertyDataType::DOUBLE);
 
         NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
         NullableVector<double>& track_angle_vec = buffer->get<double>(track_angle_var_name);
@@ -334,7 +383,7 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         NullableVector<bool>& sgv_htt_vec = buffer->get<bool>(DBContent::var_cat021_sgv_htt_.name());
         NullableVector<bool>& sgv_hrd_vec = buffer->get<bool>(DBContent::var_cat021_sgv_hrd_.name());
 
-        assert(buffer->has<boost::posix_time::ptime>(DBContent::meta_var_timestamp_.name()));
+        traced_assert(buffer->has<boost::posix_time::ptime>(DBContent::meta_var_timestamp_.name()));
         NullableVector<boost::posix_time::ptime> ts_vec =
             buffer->get<boost::posix_time::ptime>(DBContent::meta_var_timestamp_.name());
 
@@ -399,7 +448,7 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
 
                 if (lat_vec && lon_vec && !lat_vec->isNull(index) && !lon_vec->isNull(index))
                 {
-                    assert (!ts_vec.isNull(index));
+                    traced_assert(!ts_vec.isNull(index));
                     float year = static_cast<float>(ts_vec.get(index).date().year());
 
                     float altitude_m {0};
@@ -428,7 +477,7 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
             sgv_usable++; // there
         }
 
-        logdbg << "ASTERIXPostprocessJob: doGroundSpeedCalculations: CAT021 spd_already_set " << spd_already_set
+        logdbg << "CAT021 spd_already_set " << spd_already_set
                << " sgv_spd_no_val " << sgv_spd_no_val << " sgv_hgt_no_value " << sgv_hgt_no_value
                << " sgv_is_heading " << sgv_is_heading << " sgv_is_magnetic " << sgv_is_magnetic
                << " sgv_usable " << sgv_usable;
@@ -442,7 +491,7 @@ void ASTERIXPostprocessJob::doFilters()
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     // do time based filtering first
-    if (filter_tod_active_)
+    if (settings_.filter_tod_active_)
     {
         string tod_var_name;
 
@@ -456,13 +505,13 @@ void ASTERIXPostprocessJob::doFilters()
             if(!buffer_size)
                 continue;
 
-            assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
 
             dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
 
             tod_var_name = tod_var.name();
 
-            assert (buffer->has<float>(tod_var_name));
+            traced_assert(buffer->has<float>(tod_var_name));
 
             NullableVector<float>& tod_vec = buffer->get<float>(tod_var_name);
 
@@ -470,24 +519,20 @@ void ASTERIXPostprocessJob::doFilters()
 
             for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
             {
-                if (filter_tod_active_)
-                {
                     if (tod_vec.isNull(cnt)
-                        || (tod_vec.get(cnt) < filter_tod_min_ || tod_vec.get(cnt) > filter_tod_max_))
+                        || (tod_vec.get(cnt) < settings_.filter_tod_min_ || tod_vec.get(cnt) > settings_.filter_tod_max_))
                     {
                         to_be_removed.push_back(cnt);
                         continue;
                     }
-                }
             }
 
             buffer->removeIndexes(to_be_removed);
         }
     }
 
-
     // others
-    if (filter_position_active_ || filter_modec_active_)
+    if (settings_.filter_position_rec_active_ || settings_.filter_position_circ_active_ || settings_.filter_modec_active_)
     {
         string lat_var_name;
         string lon_var_name;
@@ -508,9 +553,9 @@ void ASTERIXPostprocessJob::doFilters()
             if(!buffer_size)
                 continue;
 
-            assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-            assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-            assert (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
 
             dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
             dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
@@ -520,9 +565,9 @@ void ASTERIXPostprocessJob::doFilters()
             lon_var_name = lon_var.name();
             mc_var_name = mc_var.name();
 
-            assert (buffer->has<double>(lat_var_name));
-            assert (buffer->has<double>(lon_var_name));
-            assert (buffer->has<float>(mc_var_name));
+            traced_assert(buffer->has<double>(lat_var_name));
+            traced_assert(buffer->has<double>(lon_var_name));
+            traced_assert(buffer->has<float>(mc_var_name));
 
             NullableVector<double>& lat_vec = buffer->get<double>(lat_var_name);
             NullableVector<double>& lon_vec = buffer->get<double>(lon_var_name);
@@ -532,7 +577,7 @@ void ASTERIXPostprocessJob::doFilters()
 
             if (dbcontent_name == "CAT062")
             {
-                assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
+                traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
                 dbContent::Variable& mc_var2 = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_);
 
                 if (buffer->has<float>(mc_var2.name()))
@@ -543,24 +588,46 @@ void ASTERIXPostprocessJob::doFilters()
 
             for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
             {
-                if (filter_position_active_ && !lat_vec.isNull(cnt) && !lon_vec.isNull(cnt)
-                    && (lat_vec.get(cnt) < filter_latitude_min_ || lat_vec.get(cnt) > filter_latitude_max_
-                        || lon_vec.get(cnt) < filter_longitude_min_ || lon_vec.get(cnt) > filter_longitude_max_))
+                if (settings_.filter_position_rec_active_ && !lat_vec.isNull(cnt) &&
+                    !lon_vec.isNull(cnt) &&
+                    (lat_vec.get(cnt) < settings_.filter_rec_latitude_min_ ||
+                     lat_vec.get(cnt) > settings_.filter_rec_latitude_max_ ||
+                     lon_vec.get(cnt) < settings_.filter_rec_longitude_min_ ||
+                     lon_vec.get(cnt) > settings_.filter_rec_longitude_max_))
                 {
                     to_be_removed.push_back(cnt);
                     continue;
                 }
 
-                if (filter_modec_active_)
+                if (settings_.filter_position_circ_active_ && !lat_vec.isNull(cnt) &&
+                    !lon_vec.isNull(cnt))
+                {
+                    double distance_m = osgEarth::GeoMath::distance(
+                        osg::DegreesToRadians(settings_.filter_circ_latitude_),
+                        osg::DegreesToRadians(settings_.filter_circ_longitude_),
+                        osg::DegreesToRadians(lat_vec.get(cnt)),
+                        osg::DegreesToRadians(lon_vec.get(cnt)));
+
+                    logdbg << "distance_m_ " << distance_m << " nm " << distance_m / NM2M
+                    << " range " << settings_.filter_circ_range_ << " remove " << (distance_m / NM2M > settings_.filter_circ_range_);
+
+                    if (distance_m / NM2M > settings_.filter_circ_range_)
+                    {
+                        to_be_removed.push_back(cnt);
+                        continue;
+                    }
+                }
+
+                if (settings_.filter_modec_active_)
                 {
                     if (!mc_vec.isNull(cnt)
-                        && (mc_vec.get(cnt) < filter_modec_min_ || mc_vec.get(cnt) > filter_modec_max_))
+                        && (mc_vec.get(cnt) < settings_.filter_modec_min_ || mc_vec.get(cnt) > settings_.filter_modec_max_))
                     {
                         to_be_removed.push_back(cnt);
                         continue;
                     }
                     else if (mc_vec2 && !mc_vec2->isNull(cnt)
-                             && (mc_vec2->get(cnt) < filter_modec_min_ || mc_vec2->get(cnt) > filter_modec_max_))
+                             && (mc_vec2->get(cnt) < settings_.filter_modec_min_ || mc_vec2->get(cnt) > settings_.filter_modec_max_))
                     {
                         to_be_removed.push_back(cnt);
                         continue;
@@ -585,8 +652,7 @@ void ASTERIXPostprocessJob::doFilters()
 
 void ASTERIXPostprocessJob::doObfuscate()
 {
-
-    assert (do_obfuscate_secondary_info_);
+    traced_assert(settings_.obfuscate_secondary_info_);
 
     string dbcontent_name;
 
@@ -614,7 +680,7 @@ void ASTERIXPostprocessJob::doObfuscate()
 
             var_name = var.name();
 
-            assert (buffer->has<unsigned int>(var_name));
+            traced_assert(buffer->has<unsigned int>(var_name));
 
             NullableVector<unsigned int>& var_vec = buffer->get<unsigned int>(var_name);
 
@@ -661,7 +727,7 @@ void ASTERIXPostprocessJob::doObfuscate()
 
             var_name = var.name();
 
-            assert (buffer->has<unsigned int>(var_name));
+            traced_assert(buffer->has<unsigned int>(var_name));
 
             NullableVector<unsigned int>& var_vec = buffer->get<unsigned int>(var_name);
 
@@ -698,7 +764,7 @@ void ASTERIXPostprocessJob::doObfuscate()
 
             var_name = var.name();
 
-            assert (buffer->has<string>(var_name));
+            traced_assert(buffer->has<string>(var_name));
 
             NullableVector<string>& var_vec = buffer->get<string>(var_name);
 
@@ -729,7 +795,7 @@ void ASTERIXPostprocessJob::obfuscateM3A (unsigned int& value)
             ++obfuscated_val;
         }
 
-        assert (obfuscated_val <= 4095);
+        traced_assert(obfuscated_val <= 4095);
         obfuscate_m3a_map_[value] = obfuscated_val;
     }
 

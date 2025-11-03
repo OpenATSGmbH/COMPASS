@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "scatterplotviewchartview.h"
 #include "scatterplotviewdatawidget.h"
 #include "logger.h"
@@ -20,7 +37,7 @@ ScatterPlotViewChartView::ScatterPlotViewChartView (ScatterPlotViewDataWidget* d
 :   ChartView   (chart, ChartView::SelectionStyle::RubberBand, parent)
 ,   data_widget_(data_widget)
 {
-    assert (data_widget_);
+    traced_assert(data_widget_);
 }
 
 /**
@@ -48,7 +65,7 @@ bool ScatterPlotViewChartView::handleMousePress(Qt::MouseButtons buttons, const 
 
         if (tool == SP_NAVIGATE_TOOL)
         {
-            logdbg << "ScatterPlotViewChartView: handleMousePress: NAVIGATE x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
             drag_data_      = widget_pos;
             drag_data_init_ = true;
@@ -57,12 +74,12 @@ bool ScatterPlotViewChartView::handleMousePress(Qt::MouseButtons buttons, const 
         }
         else if (tool == SP_ZOOM_RECT_TOOL || tool == SP_SELECT_TOOL)
         {
-            loginf << "ScatterPlotViewChartView: handleMousePress: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
 
-            loginf << "ScatterPlotViewChartView: handleMousePress: RECT xc " << p.x() << " yc " << p.y();
+            loginf << "rect xc " << p.x() << " yc " << p.y();
 
             p1_      = widget_pos.toPoint();
             p1_data_ = p;
@@ -89,7 +106,7 @@ bool ScatterPlotViewChartView::handleMouseMove(Qt::MouseButtons buttons, const Q
 
         if (tool == SP_NAVIGATE_TOOL)
         {
-            logdbg << "ScatterPlotViewChartView: handleMouseMove: NAVIGATE x " << widget_pos.x() << " y " << widget_pos.y() << " drag_data_init " << drag_data_init_;
+            logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y() << " drag_data_init " << drag_data_init_;
 
             if (drag_data_init_)
             {
@@ -104,7 +121,7 @@ bool ScatterPlotViewChartView::handleMouseMove(Qt::MouseButtons buttons, const Q
         }
         else if ((tool == SP_ZOOM_RECT_TOOL || tool == SP_SELECT_TOOL) && isSelectionEnabled())
         {
-            logdbg << "ScatterPlotViewChartView: handleMouseMove: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
@@ -131,7 +148,7 @@ bool ScatterPlotViewChartView::handleMouseRelease(Qt::MouseButtons buttons, cons
 
         if (tool == SP_NAVIGATE_TOOL)
         {
-            logdbg << "ScatterPlotViewChartView: handleMouseRelease: NAVIGATE x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
             drag_data_init_ = false;
 
@@ -139,12 +156,12 @@ bool ScatterPlotViewChartView::handleMouseRelease(Qt::MouseButtons buttons, cons
         }
         else if ((tool == SP_ZOOM_RECT_TOOL || tool == SP_SELECT_TOOL) && isSelectionEnabled())
         {
-            loginf << "ScatterPlotViewChartView: handleMouseRelease: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
 
-            loginf << "ScatterPlotViewChartView: handleMouseRelease: RECT xc " << p.x() << " yc " << p.y();
+            loginf << "rect xc " << p.x() << " yc " << p.y();
 
             if (update_pos)
             {
@@ -152,7 +169,7 @@ bool ScatterPlotViewChartView::handleMouseRelease(Qt::MouseButtons buttons, cons
                 p2_data_ = p;
             }
             
-            loginf << "ScatterPlotViewChartView: handleMouseRelease: REGION p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
+            loginf << "region p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
 
             updateSelection(p1_, p2_, p1_data_, p2_data_);
             sendSelectedRegion();

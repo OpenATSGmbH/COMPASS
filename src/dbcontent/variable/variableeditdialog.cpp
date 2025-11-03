@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "dbcontent/variable/variableeditdialog.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
@@ -68,7 +85,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
 
     form_layout->addRow("Comment", description_edit_);
 
-    //    DBOVariableDataTypeComboBox* type_combo_ {nullptr};
+    //    VariableDataTypeComboBox* type_combo_ {nullptr};
     type_combo_ = new VariableDataTypeComboBox(variable_.dataTypeRef(), variable_.dataTypeStringRef());
     type_combo_->setEnabled(expert_mode_);
     form_layout->addRow("Data Type", type_combo_);
@@ -111,9 +128,9 @@ Variable &VariableEditDialog::variable() const
 
 void VariableEditDialog::nameChangedSlot(const QString& name)
 {
-    loginf << "VariableEditDialog: nameChangedSlot: name '" << name.trimmed().toStdString() << "'";
+    loginf << "name '" << name.trimmed().toStdString() << "'";
 
-    assert (name_edit_);
+    traced_assert(name_edit_);
     string new_name = name.trimmed().toStdString();
 
     if (new_name == variable_.name())
@@ -127,7 +144,7 @@ void VariableEditDialog::nameChangedSlot(const QString& name)
 
     if (variable_.object().hasVariable(new_name))
     {
-        logwrn << "VariableEditDialog: nameChangedSlot: name '" << new_name << "' already in use";
+        logwrn << "name '" << new_name << "' already in use";
 
         name_edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
         name_edit_->setToolTip(("Variable name '"+new_name+"' already in use").c_str());
@@ -139,7 +156,7 @@ void VariableEditDialog::nameChangedSlot(const QString& name)
     name_edit_->setStyleSheet("");
     name_edit_->setToolTip("");
 
-    loginf << "VariableEditDialog: nameChangedSlot: renaming '" << variable_.name() << "' to '" << new_name << "'";
+    loginf << "renaming '" << variable_.name() << "' to '" << new_name << "'";
     variable_.object().renameVariable(std::string(variable_.name()), new_name); // copy, otherwise wrong
 
     if (new_name.size())
@@ -161,7 +178,7 @@ void VariableEditDialog::nameChangedSlot(const QString& name)
 
 void VariableEditDialog::shortNameChangedSlot(const QString& name)
 {
-    loginf << "VariableEditDialog: shortNameChangedSlot: name '" << name.trimmed().toStdString() << "'";
+    loginf << "name '" << name.trimmed().toStdString() << "'";
 
     variable_.shortName(name.trimmed().toStdString());
 
@@ -170,7 +187,7 @@ void VariableEditDialog::shortNameChangedSlot(const QString& name)
 
 void VariableEditDialog::commentChangedSlot()
 {
-    assert (description_edit_);
+    traced_assert(description_edit_);
 
     variable_.description(description_edit_->document()->toPlainText().trimmed().toStdString());
 
@@ -179,7 +196,7 @@ void VariableEditDialog::commentChangedSlot()
 
 void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 {
-    assert (db_column_edit_);
+    traced_assert(db_column_edit_);
     string new_name = name.trimmed().toStdString();
 
     if (new_name == variable_.dbColumnName())
@@ -193,7 +210,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 
     if (variable_.object().hasVariableDBColumnName(new_name))
     {
-        logwrn << "VariableEditDialog: dbColumnChangedSlot: name '" << new_name << "' already in use";
+        logwrn << "name '" << new_name << "' already in use";
 
         db_column_edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
         db_column_edit_->setToolTip(("Variable DB Column name '"+new_name+"' already in use").c_str());
@@ -203,7 +220,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
     db_column_edit_->setStyleSheet("");
     db_column_edit_->setToolTip("");
 
-    loginf << "VariableEditDialog: dbColumnChangedSlot: changing '" << variable_.dbColumnName()
+    loginf << "changing '" << variable_.dbColumnName()
            << "' to '" << new_name << "'";
     variable_.dbColumnName(new_name);
 
@@ -212,7 +229,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 
 void VariableEditDialog::doneSlot()
 {
-    loginf << "VariableEditDialog: doneSlot";
+    loginf;
 
     accept();
 }

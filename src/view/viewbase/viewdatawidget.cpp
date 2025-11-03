@@ -51,7 +51,7 @@ ViewDataWidget::ViewDataWidget(ViewWidget* view_widget, QWidget* parent, Qt::Win
 :   QWidget     (parent, f)
 ,   view_widget_(view_widget)
 {
-    assert(view_widget_);
+    traced_assert(view_widget_);
 
     setObjectName("datawidget");
 
@@ -72,6 +72,42 @@ bool ViewDataWidget::hasData() const
     return !data_.empty();
 }
 
+/**
+ * Checks if the view has any annotations.
+ */
+bool ViewDataWidget::hasAnnotations() const
+{
+    return hasAnnotations_impl();
+}
+
+/**
+ * Checks if the view has any visible content (data or annotations).
+ */
+bool ViewDataWidget::hasContent() const
+{
+    return (hasData() || hasAnnotations());
+}
+
+/**
+ * Checks if the view has any visible content (data or annotations) which is currently drawn.
+ * (Note: This is different from hasContent() as it also checks if content has been drawn.)
+ */
+bool ViewDataWidget::hasVisibleContent() const
+{
+    return hasContent() && isContentDrawn();
+}
+
+/**
+ */
+bool ViewDataWidget::hasScreenshotContent() const
+{
+    //@TODO: we could also just call hasVisibleContent() here,
+    //then we could detect if content really has been drawn in a meaningful way
+    return hasContent() && isDrawn();
+}
+
+/**
+ */
 unsigned int ViewDataWidget::loadedDataCount()
 {
     unsigned int count = 0;
@@ -83,12 +119,20 @@ unsigned int ViewDataWidget::loadedDataCount()
 }
 
 /**
- * Checks if the view currently shows any data.
+ * Checks if the view has been drawn.
  */
-bool ViewDataWidget::showsData() const
+bool ViewDataWidget::isDrawn() const
 {
-    //the view needs to obtain data, and the last redraw needs to be a valid one.
-    return drawn_;
+    return draw_state_ == DrawState::Drawn || 
+           draw_state_ == DrawState::DrawnContent;
+}
+
+/**
+ * Checks if any content has been drawn.
+ */
+bool ViewDataWidget::isContentDrawn() const
+{
+    return draw_state_ == DrawState::DrawnContent;
 }
 
 /**
@@ -167,7 +211,7 @@ void ViewDataWidget::endTool()
  */
 void ViewDataWidget::loadingStarted()
 {
-    loginf << "ViewDataWidget: loadingStarted";
+    loginf;
 
     //clear and update display
     clearData();
@@ -182,7 +226,7 @@ void ViewDataWidget::loadingStarted()
  */
 void ViewDataWidget::loadingDone()
 {
-    loginf << "ViewDataWidget: loadingDone";
+    loginf;
 
     //invoke derived
     loadingDone_impl();
@@ -204,7 +248,7 @@ void ViewDataWidget::loadingDone_impl()
  */
 void ViewDataWidget::updateData(const BufferData& data, bool requires_reset)
 {
-    logdbg << "ViewDataWidget: updateData";
+    logdbg;
 
     //store new data
     data_ = data;
@@ -219,10 +263,10 @@ void ViewDataWidget::updateData(const BufferData& data, bool requires_reset)
  */
 void ViewDataWidget::clearData()
 {
-    logdbg << "ViewDataWidget: clearData";
+    logdbg;
 
-    data_  = {};
-    drawn_ = false;
+    data_       = {};
+    draw_state_ = DrawState::NotDrawn;
 
     count_null_.reset();
     count_nan_.reset();
@@ -248,9 +292,9 @@ void ViewDataWidget::clearIntermediateRedrawData()
  * @param notify If set, signals will be emitted before and after the redraw (this is only needed for manual redraws like in ViewLoadStateWidget).
  * @return True if the redraw succeeded.
 */
-bool ViewDataWidget::redrawData(bool recompute, bool notify)
+ViewDataWidget::DrawState ViewDataWidget::redrawData(bool recompute, bool notify)
 {
-    loginf << "ViewDataWidget: redrawData: recompute " << recompute << " notify " << notify;
+    loginf << "recompute " << recompute << " notify " << notify;
 
     if (notify)
     {
@@ -265,14 +309,14 @@ bool ViewDataWidget::redrawData(bool recompute, bool notify)
     }
     
     //invoke derived: redraw and remember if data has been redrawn correctly
-    drawn_ = redrawData_impl(recompute);
+    draw_state_ = redrawData_impl(recompute);
 
     if (recompute)
     {
         //check for nan values in the data
         if (nanCount().has_value() && nanCount().value() > 0)
         {
-            logerr << "ViewDataWidget: redrawData: " << nanCount().value() << " inf value(s) detected "
+            logerr << "start" << nanCount().value() << " inf value(s) detected "
                    << "in view " << getWidget()->getView()->instanceId();
         }
     }
@@ -285,7 +329,7 @@ bool ViewDataWidget::redrawData(bool recompute, bool notify)
     //signal display changed to whom it may concern
     emit displayChanged();
     
-    return drawn_;
+    return draw_state_;
 }
 
 /**
@@ -345,7 +389,12 @@ nlohmann::json ViewDataWidget::viewInfoJSON() const
     nlohmann::json info;
 
     //add general information
-    info[ "has_data"    ] = hasData();
+    info[ "has_data"            ] = hasData();
+    info[ "has_annotations"     ] = hasAnnotations();
+    info[ "drawn"               ] = isDrawn();
+    info[ "drawn_content"       ] = isContentDrawn();
+    info[ "has_visible_content" ] = hasVisibleContent();
+
     info[ "num_buffers" ] = data_.size();
 
     nlohmann::json buffer_infos = nlohmann::json::array();
@@ -371,7 +420,7 @@ nlohmann::json ViewDataWidget::viewInfoJSON() const
     }
 
     info[ "buffers" ] = buffer_infos;
-
+    
     //add view-specific information
     viewInfoJSON_impl(info);
 

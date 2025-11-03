@@ -74,16 +74,16 @@ ADSBQualityFilter::ADSBQualityFilter(const std::string& class_id, const std::str
 
 ADSBQualityFilter::~ADSBQualityFilter() {}
 
-bool ADSBQualityFilter::filters(const std::string& dbo_type)
+bool ADSBQualityFilter::filters(const std::string& dbcont_name)
 {
-    loginf << "ADSBQualityFilter: filters " << dbo_type << " " << (dbo_type == "CAT021");
+    loginf << dbcont_name << " " << (dbcont_name == "CAT021");
 
-    return dbo_type == "CAT021";
+    return dbcont_name == "CAT021";
 }
 
 std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    loginf << "ADSBQualityFilter: getConditionString: dbo " << dbcontent_name << " active " << active_;
+    loginf << "dbcont_name " << dbcontent_name << " active " << active_;
 
     if (dbcontent_name != "CAT021")
         return "";
@@ -171,7 +171,7 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 
     }
 
-    loginf << "ADSBQualityFilter: getConditionString: here '" << ss.str() << "'";
+    loginf << "here '" << ss.str() << "'";
 
     return ss.str();
 }
@@ -180,7 +180,7 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 void ADSBQualityFilter::generateSubConfigurable(const std::string& class_id,
                                                 const std::string& instance_id)
 {
-    logdbg << "ADSBQualityFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("ADSBQualityFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
@@ -188,7 +188,7 @@ void ADSBQualityFilter::generateSubConfigurable(const std::string& class_id,
 
 void ADSBQualityFilter::checkSubConfigurables()
 {
-    logdbg << "ADSBQualityFilter: checkSubConfigurables";
+    logdbg;
 }
 
 DBFilterWidget* ADSBQualityFilter::createWidget()
@@ -223,9 +223,9 @@ void ADSBQualityFilter::reset()
 
 void ADSBQualityFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -266,73 +266,73 @@ void ADSBQualityFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void ADSBQualityFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("use_v0"));
+    traced_assert(filter.contains("use_v0"));
     use_v0_ = filter.at("use_v0");
 
-    assert (filter.contains("use_v1"));
+    traced_assert(filter.contains("use_v1"));
     use_v1_ = filter.at("use_v1");
 
-    assert (filter.contains("use_v2"));
+    traced_assert(filter.contains("use_v2"));
     use_v2_= filter.at("use_v2");
 
     // nucp
-    assert (filter.contains("use_min_nucp"));
+    traced_assert(filter.contains("use_min_nucp"));
     use_min_nucp_ = filter.at("use_min_nucp");
-    assert (filter.contains("min_nucp"));
+    traced_assert(filter.contains("min_nucp"));
     min_nucp_ = filter.at("min_nucp");
 
-    assert (filter.contains("use_max_nucp"));
+    traced_assert(filter.contains("use_max_nucp"));
     use_max_nucp_ = filter.at("use_max_nucp");
-    assert (filter.contains("max_nucp"));
+    traced_assert(filter.contains("max_nucp"));
     max_nucp_ = filter.at("max_nucp");
 
     // nic
-    assert (filter.contains("use_min_nic"));
+    traced_assert(filter.contains("use_min_nic"));
     use_min_nic_ = filter.at("use_min_nic");
-    assert (filter.contains("min_nic"));
+    traced_assert(filter.contains("min_nic"));
     min_nic_ = filter.at("min_nic");
 
-    assert (filter.contains("use_max_nic"));
+    traced_assert(filter.contains("use_max_nic"));
     use_max_nic_ = filter.at("use_max_nic");
-    assert (filter.contains("max_nic"));
+    traced_assert(filter.contains("max_nic"));
     max_nic_ = filter.at("max_nic");
 
     // nacp
-    assert (filter.contains("use_min_nacp"));
+    traced_assert(filter.contains("use_min_nacp"));
     use_min_nacp_ = filter.at("use_min_nacp");
-    assert (filter.contains("min_nacp"));
+    traced_assert(filter.contains("min_nacp"));
     min_nacp_ = filter.at("min_nacp");
 
-    assert (filter.contains("use_max_nacp"));
+    traced_assert(filter.contains("use_max_nacp"));
     use_max_nacp_ = filter.at("use_max_nacp");
-    assert (filter.contains("max_nacp"));
+    traced_assert(filter.contains("max_nacp"));
     max_nacp_ = filter.at("max_nacp");
 
     // sil v1
-    assert (filter.contains("use_min_sil_v1"));
+    traced_assert(filter.contains("use_min_sil_v1"));
     use_min_sil_v1_ = filter.at("use_min_sil_v1");
-    assert (filter.contains("min_sil_v1"));
+    traced_assert(filter.contains("min_sil_v1"));
     min_sil_v1_ = filter.at("min_sil_v1");
 
-    assert (filter.contains("use_max_sil_v1"));
+    traced_assert(filter.contains("use_max_sil_v1"));
     use_max_sil_v1_ = filter.at("use_max_sil_v1");
-    assert (filter.contains("max_sil_v1"));
+    traced_assert(filter.contains("max_sil_v1"));
     max_sil_v1_ = filter.at("max_sil_v1");
 
     // sil v2
-    assert (filter.contains("use_min_sil_v2"));
+    traced_assert(filter.contains("use_min_sil_v2"));
     use_min_sil_v2_ = filter.at("use_min_sil_v2");
-    assert (filter.contains("min_sil_v2"));
+    traced_assert(filter.contains("min_sil_v2"));
     min_sil_v2_ = filter.at("min_sil_v2");
 
-    assert (filter.contains("use_max_sil_v2"));
+    traced_assert(filter.contains("use_max_sil_v2"));
     use_max_sil_v2_ = filter.at("use_max_sil_v2");
-    assert (filter.contains("max_sil_v2"));
+    traced_assert(filter.contains("max_sil_v2"));
     max_sil_v2_ = filter.at("max_sil_v2");
 
 
@@ -347,7 +347,7 @@ bool ADSBQualityFilter::useV0() const
 
 void ADSBQualityFilter::useV0(bool value)
 {
-    loginf << "ADSBQualityFilter: useV0: value " << value;
+    loginf << "value " << value;
     use_v0_ = value;
 }
 
@@ -358,7 +358,7 @@ bool ADSBQualityFilter::useV1() const
 
 void ADSBQualityFilter::useV1(bool value)
 {
-    loginf << "ADSBQualityFilter: useV1: value " << value;
+    loginf << "value " << value;
     use_v1_ = value;
 }
 
@@ -369,7 +369,7 @@ bool ADSBQualityFilter::useV2() const
 
 void ADSBQualityFilter::useV2(bool value)
 {
-    loginf << "ADSBQualityFilter: useV2: value " << value;
+    loginf << "value " << value;
     use_v2_ = value;
 }
 
@@ -380,7 +380,7 @@ bool ADSBQualityFilter::useMinNUCP() const
 
 void ADSBQualityFilter::useMinNUCP(bool value)
 {
-    loginf << "ADSBQualityFilter: useMinNUCP: value " << value;
+    loginf << "value " << value;
     use_min_nucp_ = value;
 }
 
@@ -391,7 +391,7 @@ unsigned int ADSBQualityFilter::minNUCP() const
 
 void ADSBQualityFilter::minNUCP(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: minNUCP: value " << value;
+    loginf << "value " << value;
     min_nucp_ = value;
 }
 
@@ -402,7 +402,7 @@ bool ADSBQualityFilter::useMinNIC() const
 
 void ADSBQualityFilter::useMinNIC(bool value)
 {
-    loginf << "ADSBQualityFilter: useMinNIC: value " << value;
+    loginf << "value " << value;
     use_min_nic_ = value;
 }
 
@@ -413,7 +413,7 @@ unsigned int ADSBQualityFilter::minNIC() const
 
 void ADSBQualityFilter::minNIC(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: minNIC: value " << value;
+    loginf << "value " << value;
     min_nic_ = value;
 }
 
@@ -424,7 +424,7 @@ bool ADSBQualityFilter::useMinNACp() const
 
 void ADSBQualityFilter::useMinNACp(bool value)
 {
-    loginf << "ADSBQualityFilter: useMinNACp: value " << value;
+    loginf << "value " << value;
     use_min_nacp_ = value;
 }
 
@@ -435,7 +435,7 @@ unsigned int ADSBQualityFilter::minNACp() const
 
 void ADSBQualityFilter::minNACp(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: minNACp: value " << value;
+    loginf << "value " << value;
     min_nacp_ = value;
 }
 
@@ -446,7 +446,7 @@ bool ADSBQualityFilter::useMinSILv1() const
 
 void ADSBQualityFilter::useMinSILv1(bool value)
 {
-    loginf << "ADSBQualityFilter: useMinSILv1: value " << value;
+    loginf << "value " << value;
     use_min_sil_v1_ = value;
 }
 
@@ -457,7 +457,7 @@ unsigned int ADSBQualityFilter::minSILv1() const
 
 void ADSBQualityFilter::minSILv1(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: minSILv1: value " << value;
+    loginf << "value " << value;
     min_sil_v1_ = value;
 }
 
@@ -468,7 +468,7 @@ bool ADSBQualityFilter::useMinSILv2() const
 
 void ADSBQualityFilter::useMinSILv2(bool value)
 {
-    loginf << "ADSBQualityFilter: useMinSILv2: value " << value;
+    loginf << "value " << value;
     use_min_sil_v2_ = value;
 }
 
@@ -479,7 +479,7 @@ unsigned int ADSBQualityFilter::minSILv2() const
 
 void ADSBQualityFilter::minSILv2(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: minSILv2: value " << value;
+    loginf << "value " << value;
     min_sil_v2_ = value;
 }
 
@@ -490,7 +490,7 @@ bool ADSBQualityFilter::useMaxNUCP() const
 
 void ADSBQualityFilter::useMaxNUCP(bool value)
 {
-    loginf << "ADSBQualityFilter: useMaxNUCP: value " << value;
+    loginf << "value " << value;
     use_max_nucp_ = value;
 }
 
@@ -501,7 +501,7 @@ unsigned int ADSBQualityFilter::maxNUCP() const
 
 void ADSBQualityFilter::maxNUCP(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: maxNUCP: value " << value;
+    loginf << "value " << value;
     max_nucp_ = value;
 }
 
@@ -512,7 +512,7 @@ bool ADSBQualityFilter::useMaxNIC() const
 
 void ADSBQualityFilter::useMaxNIC(bool value)
 {
-    loginf << "ADSBQualityFilter: useMaxNIC: value " << value;
+    loginf << "value " << value;
     use_max_nic_ = value;
 }
 
@@ -523,7 +523,7 @@ unsigned int ADSBQualityFilter::maxNIC() const
 
 void ADSBQualityFilter::maxNIC(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: maxNIC: value " << value;
+    loginf << "value " << value;
     max_nic_ = value;
 }
 
@@ -534,7 +534,7 @@ bool ADSBQualityFilter::useMaxNACp() const
 
 void ADSBQualityFilter::useMaxNACp(bool value)
 {
-    loginf << "ADSBQualityFilter: useMaxNACp: value " << value;
+    loginf << "value " << value;
     use_max_nacp_ = value;
 }
 
@@ -545,7 +545,7 @@ unsigned int ADSBQualityFilter::maxNACp() const
 
 void ADSBQualityFilter::maxNACp(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: maxNACp: value " << value;
+    loginf << "value " << value;
     max_nacp_ = value;
 }
 
@@ -556,7 +556,7 @@ bool ADSBQualityFilter::useMaxSILv1() const
 
 void ADSBQualityFilter::useMaxSILv1(bool value)
 {
-    loginf << "ADSBQualityFilter: useMaxSILv1: value " << value;
+    loginf << "value " << value;
     use_max_sil_v1_ = value;
 }
 
@@ -567,7 +567,7 @@ unsigned int ADSBQualityFilter::maxSILv1() const
 
 void ADSBQualityFilter::maxSILv1(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: maxSILv1: value " << value;
+    loginf << "value " << value;
     max_sil_v1_ = value;
 }
 
@@ -578,7 +578,7 @@ bool ADSBQualityFilter::useMaxSILv2() const
 
 void ADSBQualityFilter::useMaxSILv2(bool value)
 {
-    loginf << "ADSBQualityFilter: useMaxSILv2: value " << value;
+    loginf << "value " << value;
     use_max_sil_v2_ = value;
 }
 
@@ -589,6 +589,6 @@ unsigned int ADSBQualityFilter::maxSILv2() const
 
 void ADSBQualityFilter::maxSILv2(unsigned int value)
 {
-    loginf << "ADSBQualityFilter: maxSILv2: value " << value;
+    loginf << "value " << value;
     max_sil_v2_ = value;
 }

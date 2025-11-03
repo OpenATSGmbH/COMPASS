@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FILTERCONDITIONRESETVALUECOMBOBOX_H_
-#define FILTERCONDITIONRESETVALUECOMBOBOX_H_
+#pragma once
 
 #include <QComboBox>
 #include <QList>
@@ -43,5 +42,3 @@ class FilterConditionResetValueComboBox : public QComboBox
 };
 
 QList<QString> FilterConditionResetValueComboBox::stringsList_;
-
-#endif /* FILTERCONDITIONRESETVALUECOMBOBOX_H_ */

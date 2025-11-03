@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "excludedtimewindowsfilter.h"
 #include "excludedtimewindowsfilterwidget.h"
 #include "compass.h"
@@ -25,15 +42,15 @@ ExcludedTimeWindowsFilter::ExcludedTimeWindowsFilter(const std::string& class_id
 
 ExcludedTimeWindowsFilter::~ExcludedTimeWindowsFilter() {}
 
-bool ExcludedTimeWindowsFilter::filters(const std::string& dbo_type)
+bool ExcludedTimeWindowsFilter::filters(const std::string& dbcont_name)
 {
     return COMPASS::instance().dbContentManager().metaVariable(
-                                                     DBContent::meta_var_timestamp_.name()).existsIn(dbo_type);
+                                                     DBContent::meta_var_timestamp_.name()).existsIn(dbcont_name);
 }
 
 std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "ExcludedTimeWindowsFilter: getConditionString: dbo " << dbcontent_name << " active " << active_;
+    logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
     auto& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -70,7 +87,7 @@ std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbc
         first = false;
     }
 
-    loginf << "ExcludedTimeWindowsFilter: getConditionString: here '" << ss.str() << "'";
+    loginf << "here '" << ss.str() << "'";
 
     return ss.str();
 }
@@ -78,7 +95,7 @@ std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbc
 
 void ExcludedTimeWindowsFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
 {
-    logdbg << "ExcludedTimeWindowsFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("ExcludedTimeWindowsFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
@@ -91,7 +108,7 @@ DBFilterWidget* ExcludedTimeWindowsFilter::createWidget()
 
 void ExcludedTimeWindowsFilter::checkSubConfigurables()
 {
-    logdbg << "ExcludedTimeWindowsFilter: checkSubConfigurables";
+    logdbg;
 }
 
 
@@ -104,9 +121,9 @@ void ExcludedTimeWindowsFilter::reset()
 
 void ExcludedTimeWindowsFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -115,14 +132,14 @@ void ExcludedTimeWindowsFilter::saveViewPointConditions (nlohmann::json& filters
 
 void ExcludedTimeWindowsFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    logdbg << "ExcludedTimeWindowsFilter: loadViewPointConditions: filter '" << filters.dump(4) << "'";
+    logdbg << "filter '" << filters.dump(4) << "'";
 
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Windows"));
+    traced_assert(filter.contains("Windows"));
     time_windows_json_ = filter.at("Windows");
 
     time_windows_.setFrom(time_windows_json_);

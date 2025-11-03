@@ -38,6 +38,7 @@ public:
                          unsigned int num_no_ref,
                          unsigned int num_pos_outside, 
                          unsigned int num_pos_inside,
+                         unsigned int num_ref_inaccurate,
                          unsigned int num_value_ok, 
                          unsigned int num_value_nok);
 

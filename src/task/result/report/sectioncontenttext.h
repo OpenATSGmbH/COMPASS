@@ -56,7 +56,8 @@ protected:
     void toJSON_impl(nlohmann::json& j) const override final;
     bool fromJSON_impl(const nlohmann::json& j) override final;
     Result toJSONDocument_impl(nlohmann::json& j,
-                               const std::string* resource_dir) const override final;
+                               const std::string* resource_dir,
+                               ReportExportMode export_style) const override final;
 
     std::vector<std::string> texts_;
 };

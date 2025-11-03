@@ -63,7 +63,7 @@ bool injectKeyEvent(QWidget* root,
         return false;
     }
 
-    loginf << "Injecting key " << QKeySequence(key).toString(QKeySequence::NativeText).toStdString();
+    loginf << "injecting key " << QKeySequence(key).toString(QKeySequence::NativeText).toStdString();
 
     QTest::keyClick(w.second, key, Qt::NoModifier, delay);
 
@@ -96,13 +96,15 @@ bool injectKeysEvent(QWidget* root,
 
     const int nl = lines.count();
 
-    auto logLine = [ & ] (const QString& line) { loginf << "injectKeysEvent: Injecting key sequence " << line.toStdString(); };
+    auto logLine = [ & ] (const QString& line) {
+         loginf << "injecting key sequence " << line.toStdString(); 
+        };
 
     if (pb_mode == PageBreakMode::Forbidden)
     {
         if (nl != 1 || lines[ 0 ].isEmpty())
         {
-            loginf << "injectKeysEvent: Page break found but forbidden";
+            loginf << "page break found but forbidden";
             return false;
         }
         //inject single line
@@ -134,7 +136,7 @@ bool injectKeysEvent(QWidget* root,
             //inject newlines as enter keys
             if (i < nl - 1)
             {
-                loginf << "injectKeysEvent: Injecting page break";
+                loginf << "injecting page break";
                 QTest::keyClick(w.second, Qt::Key_Enter, Qt::NoModifier, delay);
             }    
         }
@@ -167,7 +169,7 @@ bool injectKeyCmdEvent(QWidget* root,
     
     auto injectionMsg = [ & ] (const std::string& obj_type) 
     {
-        loginf << "Injecting key into " << obj_type;
+        loginf << "injecting key into " << obj_type;
     };
  
     if (obj.second->isWidgetType())
@@ -205,7 +207,7 @@ bool injectKeySequenceEvent(QWidget* root,
     
     auto injectionMsg = [ & ] (const std::string& obj_type) 
     {
-        loginf << "Injecting key sequence into " << obj_type;
+        loginf << "injecting key sequence into " << obj_type;
     };
  
     if (obj.second->isWidgetType())
@@ -258,7 +260,7 @@ bool injectClickEvent(QWidget* root,
 
     auto injectionMsg = [ & ] (const std::string& obj_type) 
     {
-        loginf << "Injecting mouse button '" << (int)button << "' click at (" << std::to_string(x) << "," << std::to_string(y) << ")";
+        loginf << "injecting mouse button '" << (int)button << "' click at (" << std::to_string(x) << "," << std::to_string(y) << ")";
     };
  
     if (obj.second->isWidgetType())
@@ -271,12 +273,12 @@ bool injectClickEvent(QWidget* root,
             w = scroll_area->viewport();
         
         injectionMsg("widget");
-        QTest::mouseClick(w, button, 0, pos, delay);
+        QTest::mouseClick(w, button, Qt::NoModifier, pos, delay);
     }
     else //window
     {
         injectionMsg("window");
-        QTest::mouseClick(dynamic_cast<QWindow*>(obj.second), button, 0, pos, delay);
+        QTest::mouseClick(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos, delay);
     }
 
     return true;
@@ -311,7 +313,7 @@ bool injectRectEvent(QWidget* root,
 
     auto injectionMsg = [ & ] (const std::string& obj_type) 
     {
-        loginf << "Injecting mouse button '" << (int)button << "' rectangle from (" << std::to_string(x0) << "," << std::to_string(y0) << ") to (" << std::to_string(x1) << "," << std::to_string(y1) << ")";
+        loginf << "injecting mouse button '" << (int)button << "' rectangle from (" << std::to_string(x0) << "," << std::to_string(y0) << ") to (" << std::to_string(x1) << "," << std::to_string(y1) << ")";
     };
 
     if (obj.second->isWidgetType())
@@ -324,16 +326,16 @@ bool injectRectEvent(QWidget* root,
             w = scroll_area->viewport();
 
         injectionMsg("widget");
-        QTest::mousePress(w, button, 0, pos0, 0);
+        QTest::mousePress(w, button, Qt::NoModifier, pos0, 0);
         QTest::mouseMove(w, pos1, 0);
-        QTest::mouseRelease(w, button, 0, pos1, 0);
+        QTest::mouseRelease(w, button, Qt::NoModifier, pos1, 0);
     }
     else //window
     {
         injectionMsg("window");
-        QTest::mousePress(dynamic_cast<QWindow*>(obj.second), button, 0, pos0, 0);
+        QTest::mousePress(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos0, 0);
         QTest::mouseMove(dynamic_cast<QWindow*>(obj.second), pos1, 0);
-        QTest::mouseRelease(dynamic_cast<QWindow*>(obj.second), button, 0, pos1, 0);
+        QTest::mouseRelease(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos1, 0);
     }
 
     return true;
@@ -421,7 +423,7 @@ namespace
             current_action = findAction(current_menu, p, is_menu);
             if (!current_action)
             {
-                loginf << "traverseMenu: Item text '" << p.toStdString() << "' not found";
+                loginf << "item text '" << p.toStdString() << "' not found";
                 return false;
             }
 
@@ -437,7 +439,7 @@ namespace
                 current_menu = current_action->menu();
         }
 
-        loginf << "traverseMenu: Final action is '" << current_action->text().toStdString() << "'";
+        loginf << "final action is '" << current_action->text().toStdString() << "'";
 
         return true;
     }
@@ -519,7 +521,7 @@ namespace
             current_action = traverseMenuFor(current_menu, p, is_menu, delay);
             if (!current_action)
             {
-                loginf << "traverseMenuKeys: Item text '" << p.toStdString() << "' not found";
+                loginf << "item text '" << p.toStdString() << "' not found";
                 return false;
             }
 
@@ -534,7 +536,7 @@ namespace
             }
         }
 
-        loginf << "traverseMenu: Final action is '" << current_action->text().toStdString() << "'";
+        loginf << "final action is '" << current_action->text().toStdString() << "'";
 
         //fire the final action via enter key
         if (!injectKeyEvent(current_menu, "", Qt::Key_Return, delay))
@@ -634,7 +636,7 @@ bool injectComboBoxEditEvent(QWidget* root,
     int idx = obj.second->findText(entry_txt);
     if (idx < 0)
     {
-        loginf << "injectComboBoxEditEvent: Entry '" << entry_txt.toStdString() << "' not found";
+        loginf << "entry '" << entry_txt.toStdString() << "' not found";
         return false;
     }
 
@@ -670,7 +672,7 @@ bool injectComboBoxEditEvent(QWidget* root,
 
     if (entry_idx < 0 || entry_idx >= obj.second->count())
     {
-        loginf << "injectComboBoxEditEvent: Index " << entry_idx << " out of bounds";
+        loginf << "index " << entry_idx << " out of bounds";
         return false;
     }
 
@@ -706,7 +708,7 @@ bool injectTabSelectionEvent(QWidget* root,
 
     if (obj.second->count() < 1)
     {
-        loginf << "injectTabSelectionEvent: Tab empty";
+        loginf << "tab empty";
         return false;
     }
 
@@ -722,7 +724,7 @@ bool injectTabSelectionEvent(QWidget* root,
         
     if (idx < 0)
     {
-        loginf << "injectTabSelectionEvent: Tab text '" << tab_txt.toStdString() << "' not found";
+        loginf << "tab text '" << tab_txt.toStdString() << "' not found";
         return false;
     }
 
@@ -777,14 +779,14 @@ bool injectToolSelectionEvent(QWidget* root,
 
     if (idx < 0)
     {
-        loginf << "injectToolSelectionEvent: Tool name '" << tool_name.toStdString() << "' not found";
+        loginf << "tool name '" << tool_name.toStdString() << "' not found";
         return false;
     }
 
     QWidget* w = obj.second->widgetForAction(action);
     if (!w)
     {
-        loginf << "injectToolSelectionEvent: Tool '" << tool_name.toStdString() << "' obtains no widget";
+        loginf << "tool '" << tool_name.toStdString() << "' obtains no widget";
         return false;
     }
 

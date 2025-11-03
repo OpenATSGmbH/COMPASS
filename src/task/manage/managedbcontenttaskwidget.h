@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MANAGEDBOBJECTSTASKWIDGET_H
-#define MANAGEDBOBJECTSTASKWIDGET_H
+#pragma once
 
 #include <taskwidget.h>
 
@@ -38,5 +37,3 @@ class ManageDBContentTaskWidget : public TaskWidget
 
     DBContentManagerWidget* object_manager_widget_{nullptr};
 };
-
-#endif  // MANAGEDBOBJECTSTASKWIDGET_H

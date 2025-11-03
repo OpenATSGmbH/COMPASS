@@ -56,6 +56,13 @@ struct ReferenceCalculatorTargetExportData
 */
 struct ReferenceCalculatorTargetReferences
 {
+    struct DebugEvent
+    {
+        unsigned long            rec_num;
+        boost::posix_time::ptime ts;
+        std::string              info;
+    };
+
     typedef ReferenceCalculatorInputInfo InputInfo;
 
     void reset();
@@ -64,6 +71,7 @@ struct ReferenceCalculatorTargetReferences
     unsigned int utn;
 
     std::vector<reconstruction::Measurement>    measurements;
+    std::vector<reconstruction::MMContribution> measurement_contributions;
     std::vector<kalman::KalmanUpdate>           updates;
     std::vector<kalman::KalmanUpdate>           updates_smooth;
     std::vector<double>                         updates_smooth_Qvars;
@@ -92,6 +100,8 @@ struct ReferenceCalculatorTargetReferences
     refcalc_annotations::ReferenceCalculatorAnnotations annotations;
 
     std::unique_ptr<ReferenceCalculatorTargetExportData> export_data;
+
+    std::vector<DebugEvent> debug_events_;
 };
 
 /**
@@ -163,6 +173,7 @@ private:
                                 Measurements& measurements);
     void interpolateMeasurements(Measurements& measurements, 
                                  const reconstruction::InterpOptions& options) const;
+    void addStoppedADSBMeasurements(Measurements& measurements) const;
     
     InitRecResult initReconstruction(TargetReferences& refs);
     void reconstructMeasurements(TargetReferences& refs);
@@ -180,6 +191,9 @@ private:
     bool writeTargetData(TargetReferences& refs,
                          const std::string& fn);
 
+    bool debuggingEnabled() const;
+    bool debugTarget(unsigned int utn) const;
+    bool debugMM(unsigned int utn, const reconstruction::Measurement& mm) const;
     bool shallAddAnnotationData() const;
 
     ReconstructorBase& reconstructor_;

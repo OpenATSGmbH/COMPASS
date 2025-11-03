@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "acidfilter.h"
 #include "compass.h"
 #include "acidfilterwidget.h"
@@ -26,18 +43,18 @@ ACIDFilter::ACIDFilter(const std::string& class_id, const std::string& instance_
 
 ACIDFilter::~ACIDFilter() {}
 
-bool ACIDFilter::filters(const std::string& dbcont_type)
+bool ACIDFilter::filters(const std::string& dbcont_name)
 {
-    if (dbcont_type == "CAT062")
+    if (dbcont_name == "CAT062")
         return true; // acid and callsign fpl
     else
         return COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_acid_.name()).existsIn(dbcont_type);
+                    DBContent::meta_var_acid_.name()).existsIn(dbcont_name);
 }
 
 std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "ACIDFilter: getConditionString: dbo " << dbcontent_name << " active " << active_;
+    logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
     if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
         return "";
@@ -53,7 +70,7 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, bo
 
         if (dbcontent_name == "CAT062")
         {
-            assert (COMPASS::instance().dbContentManager().canGetVariable(
+            traced_assert(COMPASS::instance().dbContentManager().canGetVariable(
                         dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
             cs_fpl_var = &COMPASS::instance().dbContentManager().getVariable(
@@ -100,21 +117,21 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, bo
         first = false;
     }
 
-    loginf << "ACIDFilter: getConditionString: here '" << ss.str() << "'";
+    loginf << "here '" << ss.str() << "'";
 
     return ss.str();
 }
 
 void ACIDFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
 {
-    logdbg << "ACIDFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("ACIDFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 void ACIDFilter::checkSubConfigurables()
 {
-    logdbg << "ACIDFilter: checkSubConfigurables";
+    logdbg;
 }
 
 DBFilterWidget* ACIDFilter::createWidget()
@@ -130,9 +147,9 @@ void ACIDFilter::reset()
 
 void ACIDFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -141,12 +158,12 @@ void ACIDFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void ACIDFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Aircraft Identification Values"));
+    traced_assert(filter.contains("Aircraft Identification Values"));
     values_str_ = filter.at("Aircraft Identification Values");
 
     if (widget())
@@ -181,7 +198,7 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
     dbContent::Variable& acid_var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_acid_.name()).getFor(dbcontent_name);
 
-    assert (buffer->has<string> (acid_var.name()));
+    traced_assert(buffer->has<string> (acid_var.name()));
 
     NullableVector<string>& acid_vec = buffer->get<string> (acid_var.name());
 
@@ -190,13 +207,13 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
 
     if (dbcontent_name == "CAT062")
     {
-        assert (COMPASS::instance().dbContentManager().canGetVariable(
+        traced_assert(COMPASS::instance().dbContentManager().canGetVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
         cs_fpl_var = &COMPASS::instance().dbContentManager().getVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
-        assert (buffer->has<string> (cs_fpl_var->name()));
+        traced_assert(buffer->has<string> (cs_fpl_var->name()));
 
         cs_fpl_vec = &buffer->get<string> (cs_fpl_var->name());
     }
@@ -246,7 +263,7 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
         }
     }
 
-    loginf << "ACIDFilter: filterBuffer: content " << dbcontent_name << " erase '" << values_str_ << "' num "
+    loginf << "content " << dbcontent_name << " erase '" << values_str_ << "' num "
            << to_be_removed.size() << " total " << buffer->size();
 
     return to_be_removed;

@@ -17,7 +17,7 @@
 
 #include "viewinfo.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 /**
 */
@@ -33,7 +33,7 @@ void ViewInfos::clear()
 */
 ViewInfos& ViewInfos::addSection(const std::string& name)
 {
-    assert(!name.empty());
+    traced_assert(!name.empty());
 
     infos_.emplace_back("", name, "", true, Style::Bold);
     ++num_sections_;
@@ -48,7 +48,7 @@ ViewInfos& ViewInfos::addInfo(const std::string& id,
                               const std::string& value,
                               bool value_italic)
 {
-    assert(!name.empty() || !value.empty());
+    traced_assert(!name.empty() || !value.empty());
 
     infos_.emplace_back(id, name, value, false, value_italic ? Style::Italic : Style::None);
     ++num_infos_;

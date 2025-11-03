@@ -62,6 +62,7 @@ public:
     virtual ~SectorInsideTest();
 
     CheckResult isInside(double x, double y) const;
+    CheckResult isInside(double x, double y, double delta) const;
 
     bool isValid() const;
 
@@ -163,6 +164,7 @@ public:
                           bool has_ground_bit, 
                           bool ground_bit_set,
                           InsideCheckType check_type = InsideCheckType::XYZ) const;
+    bool isInside(double latitude, double longitude, double delta_deg) const;
 
     std::pair<double, double> getMinMaxLatitude() const;
     std::pair<double, double> getMinMaxLongitude() const;

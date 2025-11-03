@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONDISTANCECONFIG_H
-#define EVALUATIONREQUIREMENTPOSITIONDISTANCECONFIG_H
+#pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "eval/requirement/base/positionbaseconfig.h"
 
 class Group;
 class EvaluationStandard;
@@ -31,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionDistanceConfig : public ProbabilityBaseConfig
+class PositionDistanceConfig : public PositionBaseConfig
 {
 public:
     PositionDistanceConfig(const std::string& class_id, const std::string& instance_id,
@@ -60,5 +59,3 @@ protected:
 };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONDISTANCECONFIG_H

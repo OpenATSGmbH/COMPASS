@@ -51,27 +51,28 @@ void ASTERIXFileDecoder::stop_impl()
 
 /**
 */
-bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& error) const
+bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& information, std::string& error) const
 {
     //get a fresh jasterix instance
     auto jasterix = task().jASTERIX(true);
 
-    bool has_framing = settings().current_file_framing_.size() > 0;
+    bool has_framing = settings().activeFileFraming().size() > 0;
 
-    loginf << "ASTERIXFileDecoder: checkDecoding: file '" << file_info.filename << "' decoding now...";
+    loginf << "file '" << file_info.filename << "' decoding now...";
 
     //analyze asterix file
     std::unique_ptr<nlohmann::json> analysis_info;
-    analysis_info = has_framing ? jasterix->analyzeFile(file_info.filename, settings().current_file_framing_, DecodeCheckRecordLimit) :
+    analysis_info = has_framing ? jasterix->analyzeFile(file_info.filename, settings().activeFileFraming(), DecodeCheckRecordLimit) :
                                   jasterix->analyzeFile(file_info.filename, DecodeCheckRecordLimit);
-    assert(analysis_info);
+    traced_assert(analysis_info);
+    traced_assert(analysis_info->is_object());
 
     auto& file_error = file_info.error;
 
     //store analysis info for later usage
     file_error.analysis_info = *analysis_info;
 
-    loginf << "ASTERIXFileDecoder: checkDecoding: file '" << file_info.filename << "' json '" << file_error.analysis_info.dump(4) << "'";
+    loginf << "file '" << file_info.filename << "' json '" << file_error.analysis_info.dump(4) << "'";
     //            json '{
     //               "data_items": {},
     //               "num_errors": 12,
@@ -91,13 +92,52 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int sec
     unsigned int num_errors  = file_error.analysis_info.at("num_errors");
     unsigned int num_records = file_error.analysis_info.at("num_records");
 
-    if (num_errors || !num_records) // decoder errors or no data
+    if (num_errors) // decoder errors
     {
         error = "Decoding failed";
         return false;
     }
 
-    return true;
+    if (!num_records) // no data
+    {
+        error = "Decoding failed";
+        return false;
+    }
+
+    std::set<std::string> categories;
+    for (const auto& sac_sic : analysis_info->items())
+    {
+        //no sensor => continue
+        if (!sac_sic.value().is_object())
+            continue;
+
+        //sensor unknown? => error
+        if (error.empty() && sac_sic.key() == "unknown")
+        {
+            error = "Missing SAC/SIC";
+        }
+
+        for (const auto& category : sac_sic.value().items())
+        {
+            bool ok;
+            QString::fromStdString(category.key()).toInt(&ok);
+
+            if (ok)
+                categories.insert(category.key());
+            else if (error.empty())
+                error = "Invalid category '" + category.key() + "'";
+
+            if (error.empty() &&
+                (!category.value().contains("010.SAC") ||
+                 !category.value().contains("010.SIC")))
+                error = "No SAC/SIC data items found";
+        }
+    }
+
+    for (const auto& cat : categories)
+        information += (information.empty() ? "" : ", ") + cat;
+
+    return error.empty();
 }
 
 /**
@@ -110,37 +150,37 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
     string       current_filename  = file_info.filename;
     unsigned int current_file_line = settings().file_line_id_; //files_info_.at(current_file_count_).line_id_;
 
-    loginf << "ASTERIXFileDecoder: processFile: file '" << current_filename
-           << "' framing '" << settings().current_file_framing_ << "' line " << current_file_line;
+    loginf << "file '" << current_filename
+           << "' framing '" << settings().activeFileFraming() << "' line " << current_file_line;
 
     //jasterix callback
-    auto callback = [this, current_file_line] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
                                                size_t num_frames,
                                                size_t num_records, 
-                                               size_t numErrors) 
+                                               size_t num_errors) 
     {
         // get last index
 
-        if (settings().current_file_framing_ == "")
+        if (settings().activeFileFraming() == "")
         {
-            assert(data->contains("data_blocks"));
-            assert(data->at("data_blocks").is_array());
+            traced_assert(data->contains("data_blocks"));
+            traced_assert(data->at("data_blocks").is_array());
 
             if (data->at("data_blocks").size())
             {
                 json& data_block = data->at("data_blocks").back();
 
-                assert(data_block.contains("content"));
-                assert(data_block.at("content").is_object());
-                assert(data_block.at("content").contains("index"));
+                traced_assert(data_block.contains("content"));
+                traced_assert(data_block.at("content").is_object());
+                traced_assert(data_block.at("content").contains("index"));
 
                 setFileBytesRead(data_block.at("content").at("index"));
             }
         }
         else
         {
-            assert(data->contains("frames"));
-            assert(data->at("frames").is_array());
+            traced_assert(data->contains("frames"));
+            traced_assert(data->at("frames").is_array());
 
             if (data->at("frames").size())
             {
@@ -148,8 +188,8 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
                 if (frame.contains("content"))
                 {
-                    assert(frame.at("content").is_object());
-                    assert (frame.at("content").contains("index"));
+                    traced_assert(frame.at("content").is_object());
+                    traced_assert(frame.at("content").contains("index"));
 
                     setFileBytesRead(frame.at("content").at("index"));
                 }
@@ -158,14 +198,20 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         addRecordsRead(num_records);
 
+        if (num_errors)
+        {
+            file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
+            file_info.error.errinfo = "Decoding errors: "+to_string(num_errors);
+        }
+
         //invoke job callback
         if (job() && !job()->obsolete())
-            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, numErrors);
+            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, num_errors);
     };
 
     //start decoding
-    if (settings().current_file_framing_ == "")
+    if (settings().activeFileFraming() == "")
         task().jASTERIX()->decodeFile(current_filename, callback);
     else
-        task().jASTERIX()->decodeFile(current_filename, settings().current_file_framing_, callback);
+        task().jASTERIX()->decodeFile(current_filename, settings().activeFileFraming(), callback);
 }

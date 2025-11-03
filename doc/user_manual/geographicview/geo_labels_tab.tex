@@ -34,7 +34,7 @@ This menu allows showing all nor no data source labels, or to edit label content
 
 Using the 'Label menu' button \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png}, the label content specific to a DBContent can be edited. \\
 
-The label contents are organized in a 3x3 matrix, the contents if the first 2 rows and columns are fixed while row 3 and column 3 can be edited. 
+The label contents are organized in a 3x3 matrix, the contents of the first 2 rows and columns are fixed while row 3 and column 3 can be edited. 
 
 \begin{figure}[H]
    \center
@@ -53,7 +53,7 @@ Multiple level of details (\textbf{LoD}s) are defined (as indicated with border 
 \begin{itemize}
 \item LoD 1
 \begin{itemize}
- \item Row 1, column 1: Best available indentification in bold text, in the following order
+ \item Row 1, column 1: Best available identification in bold text, in the following order
  \begin{itemize}
  \item Aircraft Identification, Aircraft Address, Mode 3/A Code, or '?' if not available
  \end{itemize} 
@@ -95,7 +95,7 @@ Please \textbf{note} that when automatic labeling is active, manually created la
   \caption{Geographic View Auto-Labels LoD 1}
 \end{figure}
 
-For each target (as in the the last layer item according to \nameref{sec:layer_mode}) a single label is created for the latest shown target report. \\
+For each target (as in the last layer item according to \nameref{sec:layer_mode}) a single label is created for the latest shown target report. \\
 
 The Level of Detail can have the following values:
 \begin{itemize}
@@ -135,7 +135,7 @@ When active, this filter forces labeling of data with the given Mode A code(s), 
 
 When active, based on the Mode C Min and Mode C Max values, target reports are only labeled if the minimum and maximum flight level matches the specified thresholds. Target reports without a Mode C Code will not be labeled unless the NULL checkbox is checked.
 
-\paragraph{Aircraft Identifcation}
+\paragraph{Aircraft Identification}
 
 When active, this filter forces labeling of data only from aircraft identifications matching the given expression. The percent operator denotes a 'any characters' placeholder. So e.g. '\%TEST\%' will match 'TEST123' or 'TEST123   ' (with spaces) or 'MYTEST'. Target reports without a given aircraft identification will not be labeled unless the value 'NULL' is (also) given.
 

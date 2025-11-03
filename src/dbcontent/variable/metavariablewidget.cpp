@@ -113,11 +113,11 @@ void MetaVariableWidget::unlock()
 
 void MetaVariableWidget::editNameSlot()
 {
-    logdbg << "MetaVariableWidget: editName";
-    assert(name_edit_);
+    logdbg;
+    traced_assert(name_edit_);
 
     std::string text = name_edit_->text().toStdString();
-    assert(text.size() > 0);
+    traced_assert(text.size() > 0);
     variable_.name(text);
 
     emit metaVariableChangedSignal();
@@ -127,9 +127,9 @@ void MetaVariableWidget::subVariableChangedSlot()
 {
     VariableSelectionWidget* var_sel =
         dynamic_cast<VariableSelectionWidget*>(QObject::sender());
-    assert(var_sel);
-    assert(!var_sel->hasMetaVariable());
-    assert(selection_widgets_.count(var_sel) > 0);
+    traced_assert(var_sel);
+    traced_assert(!var_sel->hasMetaVariable());
+    traced_assert(selection_widgets_.count(var_sel) > 0);
 
     std::string obj_name = selection_widgets_.at(var_sel);
 
@@ -138,7 +138,7 @@ void MetaVariableWidget::subVariableChangedSlot()
 
     if (var_sel->hasVariable())
     {
-        assert(!variable_.existsIn(obj_name));
+        traced_assert(!variable_.existsIn(obj_name));
         Variable& variable = var_sel->selectedVariable();
         variable_.addVariable(obj_name, variable.name());
     }
@@ -146,7 +146,7 @@ void MetaVariableWidget::subVariableChangedSlot()
 
 void MetaVariableWidget::updateSlot()
 {
-    assert(grid_layout_);
+    traced_assert(grid_layout_);
 
     QLayoutItem* child;
     while (!grid_layout_->isEmpty() && (child = grid_layout_->takeAt(0)) != nullptr)

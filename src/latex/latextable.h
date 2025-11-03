@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LATEXTABLE_H
-#define LATEXTABLE_H
+#pragma once
 
 #include "latexcontent.h"
 
@@ -54,5 +53,3 @@ protected:
 
 
 };
-
-#endif // LATEXTABLE_H

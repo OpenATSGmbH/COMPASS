@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LATEXSECTION_H
-#define LATEXSECTION_H
+#pragma once
 
 #include "latexcontent.h"
 
@@ -69,5 +68,3 @@ protected:
 
     std::string label_;
 };
-
-#endif // LATEXSECTION_H

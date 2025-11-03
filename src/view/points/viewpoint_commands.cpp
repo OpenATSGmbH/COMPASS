@@ -46,7 +46,7 @@ RTCommandSetViewPoint::RTCommandSetViewPoint()
 
 bool RTCommandSetViewPoint::run_impl()
 {
-    loginf << "RTCommandSetViewPoint: run_impl: vp_json_str_ '" << vp_json_str_ << "'";
+    loginf << "vp_json_str_ '" << vp_json_str_ << "'";
 
     if (!COMPASS::instance().dbOpened())
     {
@@ -73,7 +73,7 @@ bool RTCommandSetViewPoint::run_impl()
     }
     catch (exception& e)
     {
-        logerr << "RTCommandSetViewPoint: run_impl: JSON parse error '" << e.what() << "'";
+        logerr << "JSON parse error '" << e.what() << "'";
         setResultMessage(string("JSON parse error '") + e.what() + "'");
         return false;
     }

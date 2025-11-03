@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "source/configurationdatasource.h"
 #include "source/dbdatasource.h"
 #include "datasourcemanager.h"
@@ -22,17 +39,17 @@ ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, co
     registerParameter("sac", &sac_, 0u);
     registerParameter("sic", &sic_, 0u);
 
-    assert (ds_type_.size());
+    traced_assert(ds_type_.size());
 
     if (find(DataSourceManager::data_source_types_.begin(),
              DataSourceManager::data_source_types_.end(), ds_type_)
         == DataSourceManager::data_source_types_.end())
     {
-        logerr << "ConfigurationDataSource: sac/sic " << sac_ << sic_ << " ds_type '" << ds_type_
+        logerr << "sac/sic " << sac_ << sic_ << " ds_type '" << ds_type_
                << "' wrong";
     }
 
-    assert (find(DataSourceManager::data_source_types_.begin(),
+    traced_assert(find(DataSourceManager::data_source_types_.begin(),
                  DataSourceManager::data_source_types_.end(), ds_type_)
             != DataSourceManager::data_source_types_.end());
 
@@ -42,14 +59,14 @@ ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, co
 
     registerParameter("info", &info_, {});
 
-    assert (name_.size());
+    traced_assert(name_.size());
 
     if (has_short_name_ && !short_name_.size())
         has_short_name_ = false;
 
     parseNetworkLineInfo();
 
-    logdbg << "ConfigurationDataSource: ctor: " << name()
+    logdbg << "start" << name()
            << " sac/sic " << sac() << "/" << sic();
 }
 
@@ -59,18 +76,18 @@ ConfigurationDataSource::~ConfigurationDataSource()
 
 void ConfigurationDataSource::setFromJSON(const json& j)
 {
-    logdbg << "ConfigurationDataSource: setFromJSON: '" << j.dump(4) << "'";
+    logdbg << "'" << j.dump(4) << "'";
 
-    assert(j.contains("ds_type"));
+    traced_assert(j.contains("ds_type"));
 
     ds_type_ = j["ds_type"];
 
-    assert(j.contains("sac"));
-    assert(j.contains("sic"));
+    traced_assert(j.contains("sac"));
+    traced_assert(j.contains("sic"));
     sac_ = j["sac"];
     sic_ = j["sic"];
 
-    assert(j.contains("name"));
+    traced_assert(j.contains("name"));
     name_ = j["name"];
 
     if (j.contains("short_name"))
@@ -104,7 +121,7 @@ DBDataSource* ConfigurationDataSource::getAsNewDBDS()
     if (!info_.is_null())
         new_ds->info(info_.dump());
 
-    loginf << "ConfigurationDataSource: getAsNewDBDS: name " << new_ds->name()
+    loginf << "name " << new_ds->name()
             << " sac/sic " << new_ds->sac() << "/" << new_ds->sic();
 
     return new_ds;

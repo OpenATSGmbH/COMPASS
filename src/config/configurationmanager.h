@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONFIGURATIONMANAGER_H_
-#define CONFIGURATIONMANAGER_H_
+#pragma once
 
 #include <map>
 #include <vector>
@@ -86,5 +85,3 @@ class ConfigurationManager : public Singleton
 
     void saveJSONConfiguration();
 };
-
-#endif /* CONFIGURATIONMANAGER_H_ */

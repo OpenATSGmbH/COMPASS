@@ -30,7 +30,7 @@
 
 
 #include <algorithm>
-#include <cassert>
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -60,12 +60,12 @@ HistogramViewDataSource::~HistogramViewDataSource()
 void HistogramViewDataSource::generateSubConfigurable(const std::string& class_id,
                                                     const std::string& instance_id)
 {
-    logdbg << "HistogramViewDataSource: generateSubConfigurable: class_id " << class_id
+    logdbg << "class_id " << class_id
            << " instance_id " << instance_id;
 
     if (class_id.compare("VariableOrderedSet") == 0)
     {
-        assert(set_ == 0);
+        traced_assert(set_ == 0);
         set_ = new VariableOrderedSet(class_id, instance_id, this);
     }
     else
@@ -78,7 +78,7 @@ void HistogramViewDataSource::checkSubConfigurables()
     if (set_ == nullptr)
     {
         generateSubConfigurable("VariableOrderedSet", "VariableOrderedSet0");
-        assert(set_);
+        traced_assert(set_);
 
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -91,7 +91,7 @@ void HistogramViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
 {
     for (auto& var_it : temporary_added_variables_)
     {
-        loginf << "HistogramViewDataSource: unshowViewPoint: removing var " << var_it.first << ", " << var_it.second;
+        loginf << "removing var " << var_it.first << ", " << var_it.second;
 
         removeTemporaryVariable(var_it.first, var_it.second);
     }
@@ -101,7 +101,7 @@ void HistogramViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
 
 void HistogramViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 {
-    assert (vp);
+    traced_assert(vp);
     const json& data = vp->data();
 
 //    "context_variables": {
@@ -115,14 +115,14 @@ void HistogramViewDataSource::showViewPoint (const ViewableDataConfig* vp)
     if (data.contains("context_variables"))
     {
         const json& context_variables = data.at("context_variables");
-        assert (context_variables.is_object());
+        traced_assert(context_variables.is_object());
 
         for (auto& obj_it : context_variables.get<json::object_t>())
         {
             string dbcontent_name = obj_it.first;
             json& variable_names = obj_it.second;
 
-            assert (variable_names.is_array());
+            traced_assert(variable_names.is_array());
 
             for (auto& var_it : variable_names.get<json::array_t>())
             {
@@ -130,7 +130,7 @@ void HistogramViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 
                 if (addTemporaryVariable(dbcontent_name, var_name))
                 {
-                    loginf << "HistogramViewDataSource: showViewPoint: added var " << dbcontent_name << ", " << var_name;
+                    loginf << "added var " << dbcontent_name << ", " << var_name;
                     temporary_added_variables_.push_back({dbcontent_name, var_name});
                 }
             }
@@ -144,7 +144,7 @@ bool HistogramViewDataSource::addTemporaryVariable (const std::string& dbcontent
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
-        assert (dbcont_man.existsMetaVariable(var_name));
+        traced_assert(dbcont_man.existsMetaVariable(var_name));
         MetaVariable& meta_var = dbcont_man.metaVariable(var_name);
         if (!set_->hasMetaVariable(meta_var))
         {
@@ -156,10 +156,10 @@ bool HistogramViewDataSource::addTemporaryVariable (const std::string& dbcontent
     }
     else
     {
-        assert (dbcont_man.existsDBContent(dbcontent_name));
+        traced_assert(dbcont_man.existsDBContent(dbcontent_name));
         DBContent& obj = dbcont_man.dbContent(dbcontent_name);
 
-        assert (obj.hasVariable(var_name));
+        traced_assert(obj.hasVariable(var_name));
         Variable& var = obj.variable(var_name);
 
         if (!set_->hasVariable(var))
@@ -178,19 +178,19 @@ void HistogramViewDataSource::removeTemporaryVariable (const std::string& dbcont
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
-        assert (dbcont_man.existsMetaVariable(var_name));
+        traced_assert(dbcont_man.existsMetaVariable(var_name));
         MetaVariable& meta_var = dbcont_man.metaVariable(var_name);
-        assert (set_->hasMetaVariable(meta_var));
+        traced_assert(set_->hasMetaVariable(meta_var));
         set_->removeMetaVariable(meta_var);
     }
     else
     {
-        assert (dbcont_man.existsDBContent(dbcontent_name));
+        traced_assert(dbcont_man.existsDBContent(dbcontent_name));
         DBContent& obj = dbcont_man.dbContent(dbcontent_name);
 
-        assert (obj.hasVariable(var_name));
+        traced_assert(obj.hasVariable(var_name));
         Variable& var = obj.variable(var_name);
-        assert (set_->hasVariable(var));
+        traced_assert(set_->hasVariable(var));
         set_->removeVariable(var);
     }
 }

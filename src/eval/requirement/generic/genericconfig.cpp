@@ -39,7 +39,7 @@ GenericIntegerConfig::GenericIntegerConfig(const std::string& class_id, const st
                                    Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
     : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator), variant_(variant)
 {
-    assert (variant_.size());
+    traced_assert(variant_.size());
 }
 
 std::shared_ptr<Base> GenericIntegerConfig::createRequirement()
@@ -55,7 +55,7 @@ std::shared_ptr<Base> GenericIntegerConfig::createRequirement()
     else if (variant_ == "CoastingCorrect")
         return make_shared<CoastingCorrect>(name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_);
 
-    assert (false);
+    traced_assert(false);
 }
 
 BaseConfigWidget* GenericIntegerConfig::createWidget()
@@ -82,7 +82,7 @@ GenericDoubleConfig::GenericDoubleConfig(const std::string& class_id, const std:
                                            Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
     : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator), variant_(variant)
 {
-    assert (variant_.size());
+    traced_assert(variant_.size());
 
     registerParameter("threshold", &threshold_, 0.0);
 }
@@ -98,7 +98,7 @@ std::shared_ptr<Base> GenericDoubleConfig::createRequirement()
 //    else if (variant_ == "MomVertRateCorrect")
 //        return make_shared<MomVertRateCorrect>(name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_);
 
-    assert (false);
+    traced_assert(false);
 }
 
 BaseConfigWidget* GenericDoubleConfig::createWidget()

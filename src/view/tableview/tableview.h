@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LISTBOXVIEW_H_
-#define LISTBOXVIEW_H_
+#pragma once
 
 #include "view.h"
 #include "tableviewdatasource.h"
@@ -55,7 +54,7 @@ public:
     /// @brief Returns the used data source
     TableViewDataSource* getDataSource()
     {
-        assert(data_source_);
+        traced_assert(data_source_);
         return data_source_;
     }
     TableViewDataWidget* getDataWidget();
@@ -93,5 +92,3 @@ protected:
 
     Settings settings_;
 };
-
-#endif /* LISTBOXVIEW_H_ */

@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWCONTAINER_H
-#define VIEWCONTAINER_H
+#pragma once
 
 #include <QMenu>
 #include <QObject>
@@ -81,5 +80,3 @@ class ViewContainer : public QObject, public Configurable
     virtual void checkSubConfigurables();
     void addView(View* view);
 };
-
-#endif  // VIEWCONTAINER_H

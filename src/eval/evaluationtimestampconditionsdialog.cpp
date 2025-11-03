@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "evaluationtimestampconditionsdialog.h"
 #include "util/timeconv.h"
 #include "timewindowcollectionwidget.h"
@@ -76,7 +93,7 @@ EvaluationTimestampConditionsDialog::~EvaluationTimestampConditionsDialog()
 
 bool EvaluationTimestampConditionsDialog::somethingChangedFlag() const
 {
-    assert (tw_widget_);
+    traced_assert(tw_widget_);
     return something_changed_flag_ || tw_widget_->somethingChangedFlag();
 }
 
@@ -85,15 +102,15 @@ void EvaluationTimestampConditionsDialog::updateValues()
     update_active_ = true;
 
     // time filter
-    assert (use_time_check_);
+    traced_assert(use_time_check_);
     use_time_check_->setChecked(eval_man_.useTimestampFilter());
 
-    assert (time_begin_edit_);
+    traced_assert(time_begin_edit_);
     //time_begin_edit_->setText(String::timeStringFromDouble(eval_man_.loadTimestampBegin()).c_str());
     time_begin_edit_->setDateTime(QDateTime::fromString(Time::toString(eval_man_.loadTimestampBegin()).c_str(),
                                                         Time::QT_DATETIME_FORMAT.c_str()));
 
-    assert (time_end_edit_);
+    traced_assert(time_end_edit_);
     //time_end_edit_->setText(String::timeStringFromDouble(eval_man_.loadTimestampEnd()).c_str());
     time_end_edit_->setDateTime(QDateTime::fromString(Time::toString(eval_man_.loadTimestampEnd()).c_str(),
                                                       Time::QT_DATETIME_FORMAT.c_str()));
@@ -106,7 +123,7 @@ void EvaluationTimestampConditionsDialog::updateValues()
  */
 void EvaluationTimestampConditionsDialog::toggleUseTimeSlot()
 {
-    assert (use_time_check_);
+    traced_assert(use_time_check_);
     eval_man_.useTimestampFilter(use_time_check_->checkState() == Qt::Checked);
 
     something_changed_flag_ = true;
@@ -119,7 +136,7 @@ void EvaluationTimestampConditionsDialog::timeBeginEditedSlot (const QDateTime& 
     if (update_active_)
         return;
 
-    loginf << "EvaluationTimestampConditionsDialog: timeBeginEditedSlot: value "
+    loginf << "value "
            << datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString();
 
     eval_man_.loadTimestampBegin(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()));
@@ -134,7 +151,7 @@ void EvaluationTimestampConditionsDialog::timeEndEditedSlot (const QDateTime& da
     if (update_active_)
         return;
 
-    loginf << "EvaluationTimestampConditionsDialog: timeEndEditedSlot: value "
+    loginf << "value "
            << datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString();
 
     eval_man_.loadTimestampEnd(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()));

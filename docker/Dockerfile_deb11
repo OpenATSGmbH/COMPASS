@@ -1,0 +1,103 @@
+FROM debian:11
+
+ARG USER_NAME
+ARG USER_ID
+ARG USER_GROUP_ID
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV USER_NAME=${USER_NAME} \
+    USER_ID=${USER_ID} \
+    USER_GROUP_ID=${USER_GROUP_ID}
+
+RUN echo ">>> USER_NAME=${USER_NAME}" \
+ && echo ">>> USER_ID=${USER_ID}" \
+ && echo ">>> USER_GROUP_ID=${USER_GROUP_ID}"
+
+# Enable source repositories for Bullseye
+RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \
+  && echo 'deb-src http://deb.debian.org/debian bullseye main' >> /etc/apt/sources.list \
+  && echo 'deb http://deb.debian.org/debian bullseye-backports main' >> /etc/apt/sources.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+       openssl apt-utils software-properties-common build-essential gcc g++ wget \
+       libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev \
+       libcurl4-gnutls-dev libexpat1-dev libnoise-dev libsqlite3-dev pkg-config \
+       locate zip unzip libzip-dev zipcmp zipmerge ziptool qtchooser chrpath libtbb-dev libgeos-dev gedit \
+       libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-x11-dev libqt5charts5-dev \
+       qtbase5-dev qtdeclarative5-dev qt5-qmake libqt5opengl5-dev \
+       libqt5waylandclient5-dev libqt5waylandcompositor5-dev qtwayland5 \
+       libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool \
+       curl libglew-dev libpcap-dev libgeographic-dev protobuf-compiler \
+       libprotobuf-dev zlib1g-dev libopenscenegraph-dev libboost-all-dev sudo git pkg-config libglib2.0-dev libglib2.0-bin \
+    && apt-get install -y -t bullseye-backports cmake \
+  && rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN groupadd -r someusers --gid=${USER_GROUP_ID} \
+ && useradd -r -p "$(openssl passwd -1 ${USER_NAME})" -g someusers -G sudo \
+     --uid=${USER_ID} --create-home --shell /bin/bash ${USER_NAME}
+
+ENV CXXFLAGS="-march=x86-64 -mtune=generic"
+ENV CFLAGS="-march=x86-64 -mtune=generic"
+
+# Build and install osgQt (Qt4)
+RUN wget https://github.com/openscenegraph/osgQt/archive/Qt4.zip \
+ && unzip Qt4.zip \
+ && mkdir osgQt-Qt4/build \
+ && cd osgQt-Qt4/build \
+    && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release .. \
+ && make -j$(nproc) \
+ && make install
+
+# Build and install osgEarth 3.7.2 with GL2 (fixed-function) support via git clone
+#RUN git clone --branch osgearth-3.7.2 \
+#              --depth 1 \
+#              --recursive \
+#              https://github.com/gwaldron/osgearth.git \
+#              osgearth-3.7.2 \
+# && mkdir osgearth-3.7.2/build \
+# && cd osgearth-3.7.2/build \
+#    && cmake \
+#         -DCMAKE_INSTALL_PREFIX=/usr \
+#         -DBUILD_SHARED_LIBS=ON \
+#         -DOSGEARTH_BUILD_TESTS=OFF \
+#         -DOSGEARTH_BUILD_EXAMPLES=OFF \
+#         -DOPENGL_PROFILE=GL2 \
+#         -DOSG_GL_FIXED_FUNCTION_AVAILABLE=ON \
+#         -DCMAKE_BUILD_TYPE=Release \
+#         .. \
+#    && make -j"$(nproc)" \
+#    && make install
+
+RUN wget https://github.com/gwaldron/osgearth/archive/osgearth-3.2.zip
+RUN unzip osgearth-3.2.zip
+RUN mkdir osgearth-osgearth-3.2/build
+RUN cd osgearth-osgearth-3.2/build && cmake -DCMAKE_CXX_FLAGS=-std=c++11 -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
+RUN cd osgearth-osgearth-3.2/build && make -j $(nproc)
+RUN cd osgearth-osgearth-3.2/build && make install
+
+# Build and install NemaTode
+RUN wget https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip \
+ && unzip master.zip \
+ && mkdir NemaTode-master/build \
+ && cd NemaTode-master/build \
+    && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release .. \
+ && make -j$(nproc) \
+ && make install
+
+# Install DuckDB v1.3.1
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.3.1/libduckdb-linux-amd64.zip \
+ && mkdir libduckdb-linux-amd64 \
+ && unzip libduckdb-linux-amd64.zip -d libduckdb-linux-amd64 \
+ && cd libduckdb-linux-amd64 && cp *.h /usr/include && cp lib* /usr/lib
+
+# Refresh shared library cache and locate
+RUN ldconfig -v /usr/lib64/ /usr/local/ \
+ && updatedb
+
+# Grant sudo
+RUN echo "${USER_NAME} ALL=(ALL)  ALL" >> /etc/sudoers
+
+USER ${USER_NAME}
+WORKDIR /app/workspace/compass/docker

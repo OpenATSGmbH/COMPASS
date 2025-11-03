@@ -17,6 +17,7 @@
 #include "histogramviewchartview.h"
 #include "histogramviewdatawidget.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QRubberBand>
@@ -37,7 +38,7 @@ HistogramViewChartView::HistogramViewChartView(HistogramViewDataWidget* data_wid
 {
     setSelectionAxes(SelectionAxes::X);
 
-    assert (data_widget_);
+    traced_assert(data_widget_);
 }
 
 /**
@@ -55,7 +56,7 @@ bool HistogramViewChartView::handleMousePress(Qt::MouseButtons buttons, const QP
         if (tool == HG_SELECT_TOOL ||
             tool == HG_ZOOM_TOOL)
         {
-            logdbg << "HistogramViewChartView: handleMousePress: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
@@ -87,7 +88,7 @@ bool HistogramViewChartView::handleMouseMove(Qt::MouseButtons buttons, const QPo
         {
             if (isSelectionEnabled())
             {
-                logdbg << "HistogramViewChartView: handleMouseMove: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+                logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
                 // view widget coordinates to chart coordinates
                 QPointF p = widgetToChart(widget_pos);
@@ -117,7 +118,7 @@ bool HistogramViewChartView::handleMouseRelease(Qt::MouseButtons buttons, const 
         {
             if (isSelectionEnabled())
             {
-                logdbg << "HistogramViewChartView: handleMouseRelease: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+                logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
                 // view widget coordinates to chart coordinates
                 QPointF p = widgetToChart(widget_pos);
@@ -128,7 +129,7 @@ bool HistogramViewChartView::handleMouseRelease(Qt::MouseButtons buttons, const 
                     p2_data_ = p;
                 }
                 
-                logdbg << "ScatterPlotViewChartView: handleMouseRelease: REGION p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
+                logdbg << "region p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
 
                 updateSelection(p1_, p2_, p1_data_, p2_data_);
                 sendSelectedBins();
@@ -165,7 +166,7 @@ void HistogramViewChartView::sendSelectedBins()
         clampBinToRange(bin_min);
         clampBinToRange(bin_max);
 
-        logdbg << "HistogramViewChartView: sendSelectedBins: bin range [" << bin_min << "," << bin_max << "] bins = " << bins;
+        logdbg << "bin range [" << bin_min << "," << bin_max << "] bins = " << bins;
 
         //only send range when valid
         if (bin_min <= bin_max)

@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_DBCONTENTMANAGERWIDGET_H_
-#define DBCONTENT_DBCONTENTMANAGERWIDGET_H_
+#pragma once
 
 #include <QWidget>
 
@@ -43,15 +42,10 @@ class DBContentManagerWidget : public QWidget
     Q_OBJECT
 
   public slots:
-    /// @brief Adds a DBContent
-    void addDBOSlot();
-    /// @brief Is called when a DBContent was changed
-    void changedDBOSlot();
-    /// @brief Edits a DBContent
-    void editDBOSlot();
-    /// @brief Deletes a DBContent
-    void deleteDBOSlot();
-    /// @brief Updates the DBContent list
+    void addDBContSlot();
+    void changedDBContSlot();
+    void editDBContSlot();
+    void deleteDBContSlot();
     void updateDBContentsSlot();
 
     void addMetaVariableSlot();
@@ -60,44 +54,25 @@ class DBContentManagerWidget : public QWidget
     void addAllMetaVariablesSlot();
     void updateMetaVariablesSlot();
 
-    /// @brief Unlocks editing functionality
-    // void databaseOpenedSlot ();
-
   public:
-    /// @brief Constructor
     DBContentManagerWidget(DBContentManager& object_manager);
-    /// @brief Destructor
     virtual ~DBContentManagerWidget();
-
-    //    void lock ();
-    //    void unlock ();
 
   private:
     DBContentManager& object_manager_;
 
-    /// Grid with all DBContents
-    QGridLayout* dbobjects_grid_{nullptr};
+    QGridLayout* dbconts_grid_{nullptr};
     QGridLayout* meta_variables_grid_{nullptr};
 
-    /// Editing functionality unlocked flag
-    // bool locked_ {false};
-
-    /// New DBO add button
-    QPushButton* add_dbo_button_{nullptr};
+    QPushButton* add_dbcont_button_{nullptr};
     QPushButton* add_metavar_button_{nullptr};
 
-    /// Container with DBO edit buttons
-    std::map<QPushButton*, DBContent*> edit_dbo_buttons_;
-    /// Container with DBO edit buttons
-    std::map<QPushButton*, DBContent*> delete_dbo_buttons_;
+    std::map<QPushButton*, DBContent*> edit_dbcont_buttons_;
+    std::map<QPushButton*, DBContent*> delete_dbcont_buttons_;
 
-    /// Container with already existing edit DBO widgets
-    std::map<DBContent*, DBContentWidget*> edit_dbo_widgets_;
+    std::map<DBContent*, DBContentWidget*> edit_dbcont_widgets_;
 
     std::map<QPushButton*, dbContent::MetaVariable*> edit_meta_buttons_;
-    /// Container with DBO edit buttons
     std::map<QPushButton*, dbContent::MetaVariable*> delete_meta_buttons_;
     std::map<dbContent::MetaVariable*, dbContent::MetaVariableWidget*> edit_meta_widgets_;
 };
-
-#endif /* DBCONTENT_DBCONTENTMANAGERWIDGET_H_ */

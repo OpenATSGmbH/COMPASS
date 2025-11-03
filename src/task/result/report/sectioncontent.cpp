@@ -25,7 +25,7 @@
 
 #include "files.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -58,10 +58,10 @@ SectionContent::SectionContent(ContentType type,
 ,   content_type_  (type                )
 ,   content_id_    (id                  )
 {
-    assert(parent_section);
+    traced_assert(parent_section);
 
     report_ = parent_section->report();
-    assert(report_);
+    traced_assert(report_);
 }
 
 /**
@@ -71,10 +71,10 @@ SectionContent::SectionContent(ContentType type,
 :   ReportItem     (parent_section)
 ,   content_type_  (type          )
 {
-    assert(parent_section);
+    traced_assert(parent_section);
 
     report_ = parent_section->report();
-    assert(report_);
+    traced_assert(report_);
 }
 
 /**
@@ -114,7 +114,7 @@ std::string SectionContent::resourceFilename(const std::string& postfix) const
  */
 std::string SectionContent::resourceRelDirectory(ResourceDir rdir) const
 {
-    return ReportExporter::resourceSubDir(rdir) + "/" + contentPath();
+    return Utils::Files::join(ReportExporter::resourceSubDir(rdir), contentPath());
 }
 
 /**
@@ -133,7 +133,7 @@ ResultT<SectionContent::ResourceLink> SectionContent::prepareResource(const std:
 {
     //store data in temp dir
     auto link = resourceLink(rdir, prefix);
-    auto path = resource_dir + "/" + link;
+    auto path = Utils::Files::join(resource_dir, link);
     auto dir  = Utils::Files::getDirectoryFromPath(path);
 
     if (!Utils::Files::createMissingDirectories(dir))
@@ -281,13 +281,13 @@ bool SectionContent::loadOnDemand()
     loading_ = true;
 
     //if the task result is locked we should never give an opportunity to load on demand content
-    assert(!isLocked());
+    traced_assert(!isLocked());
 
-    loginf << "SectionContent: loadOnDemand: Loading on-demand data for content '" << name() << "' of type '" << contentTypeAsString() << "'";
+    loginf << "loading on-demand data for content '" << name() << "' of type '" << contentTypeAsString() << "'";
 
-    assert(isOnDemand());
-    assert(!isComplete());
-    assert(report_);
+    traced_assert(isOnDemand());
+    traced_assert(!isComplete());
+    traced_assert(report_);
 
     bool ok = report_->result().loadOnDemandContent(this);
 
@@ -296,7 +296,7 @@ bool SectionContent::loadOnDemand()
 
     if (!ok)
     {
-        logerr << "SectionContent: loadOnDemand: Could not load on-demand data for content '" << name() << "' of type '" << contentTypeAsString() << "'";
+        logerr << "could not load on-demand data for content '" << name() << "' of type '" << contentTypeAsString() << "'";
         return false;
     }
 
@@ -372,7 +372,7 @@ bool SectionContent::fromJSON_impl(const nlohmann::json& j)
         !j.contains(FieldContentID)   ||
         !j.contains(FieldOnDemand))
     {
-        logerr << "SectionContent: fromJSON_impl: Error: Section content does not obtain needed fields";
+        logerr << "section content does not obtain needed fields";
         return false;
     }
 
@@ -383,7 +383,7 @@ bool SectionContent::fromJSON_impl(const nlohmann::json& j)
     auto t = contentTypeFromString(t_str);
     if (!t.has_value())
     {
-        logerr << "SectionContent: fromJSON_impl: Error: Could not deduce section content type";
+        logerr << "could not deduce section content type";
         return false;
     }
 
@@ -397,7 +397,8 @@ bool SectionContent::fromJSON_impl(const nlohmann::json& j)
 /**
  */
 Result SectionContent::toJSONDocument_impl(nlohmann::json& j,
-                                           const std::string* resource_dir) const
+                                           const std::string* resource_dir,
+                                           ReportExportMode export_style) const
 {
     j[ FieldContentType ] = contentTypeAsString(content_type_);
 

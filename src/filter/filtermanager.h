@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FILTERMANAGER_H_
-#define FILTERMANAGER_H_
+#pragma once
 
 #include "configurable.h"
 #include "appmode.h"
@@ -103,5 +102,3 @@ protected:
 
     bool checkDBContent (const std::string& dbcontent_name); // returns true if ok
 };
-
-#endif /* FILTERMANAGER_H_ */

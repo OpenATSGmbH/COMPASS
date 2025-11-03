@@ -47,13 +47,15 @@ GridViewWidget::GridViewWidget(const std::string& class_id,
 
     auto activeIfDataShownCB = [ data_widget ] (QAction* a)
     {
-        a->setEnabled(data_widget->showsData());
+        a->setEnabled(data_widget->isDrawn());
     };
 
     auto activeIfVariableDataShownCB = [ data_widget, view ] (QAction* a)
     {
-        a->setEnabled(data_widget->showsData() && view->showsVariables());
+        a->setEnabled(data_widget->isDrawn() && view->showsVariables());
     };
+
+    UNUSED_VARIABLE(activeIfVariableDataShownCB);
 
     getViewToolSwitcher()->addTool(Tool::GV_NAVIGATE_TOOL, "Navigate", {}, QIcon(), Qt::OpenHandCursor);
     //getViewToolSwitcher()->addTool(Tool::GV_SELECT_TOOL, "Select", Qt::Key_S, getIcon("select_action.png"), Qt::CrossCursor);
@@ -83,7 +85,7 @@ GridViewWidget::~GridViewWidget() = default;
 GridView* GridViewWidget::getView() 
 { 
     auto view = dynamic_cast<GridView*>(ViewWidget::getView());
-    assert(view);
+    traced_assert(view);
     return view;
 }
 
@@ -92,7 +94,7 @@ GridView* GridViewWidget::getView()
 GridViewDataWidget* GridViewWidget::getViewDataWidget()
 {
     auto w = dynamic_cast<GridViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -101,7 +103,7 @@ GridViewDataWidget* GridViewWidget::getViewDataWidget()
 const GridViewDataWidget* GridViewWidget::getViewDataWidget() const
 {
     auto w = dynamic_cast<const GridViewDataWidget*>(ViewWidget::getViewDataWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -110,7 +112,7 @@ const GridViewDataWidget* GridViewWidget::getViewDataWidget() const
 GridViewConfigWidget* GridViewWidget::getViewConfigWidget()
 {
     auto w = dynamic_cast<GridViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }
 
@@ -119,6 +121,6 @@ GridViewConfigWidget* GridViewWidget::getViewConfigWidget()
 const GridViewConfigWidget* GridViewWidget::getViewConfigWidget() const
 {
     auto w = dynamic_cast<const GridViewConfigWidget*>(ViewWidget::getViewConfigWidget());
-    assert(w);
+    traced_assert(w);
     return w;
 }

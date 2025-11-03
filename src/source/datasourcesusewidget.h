@@ -17,14 +17,16 @@
 
 #pragma once
 
+#include "datasourceswidget.h"
+
 #include <QWidget>
 #include <QMenu>
 
-#include <map>
 #include <set>
 #include <functional>
 
 class DataSourceManager;
+class DataSourceEditWidget;
 
 class QGridLayout;
 class QPushButton;
@@ -37,26 +39,14 @@ namespace dbContent
 class DBDataSourceWidget;
 }
 
-class DataSourcesUseWidget : public QWidget
+class DataSourcesUseWidget : public DataSourcesWidget
 {
     Q_OBJECT
 
   public slots:
     void loadDSTypeChangedSlot();
-    //void loadDSChangedSlot();
 
-    void editClickedSlot();
-
-    void selectAllDSTypesSlot();
-    void deselectAllDSTypesSlot();
-
-    void selectAllDataSourcesSlot();
-    void deselectAllDataSourcesSlot();
-    void selectDSTypeSpecificDataSourcesSlot();
-    void deselectDSTypeSpecificDataSourcesSlot();
-
-    void deselectAllLinesSlot();
-    void selectSpecificLineSlot();
+    void dataSourceSelectedSlot(unsigned int ds_id);
 
   public:
     DataSourcesUseWidget(std::function<bool(const std::string&)> get_use_dstype_func,
@@ -69,12 +59,7 @@ class DataSourcesUseWidget : public QWidget
 
     void disableDataSources (const std::set<unsigned int>& disabled_ds);
 
-    void updateContent();
-    void loadingDone();
-
   private:
-    DataSourceManager& ds_man_;
-
     std::function<bool(const std::string&)> get_use_dstype_func_;
     std::function<void(const std::string&, bool)> set_use_dstype_func_;
 
@@ -83,17 +68,16 @@ class DataSourcesUseWidget : public QWidget
 
     std::function<bool(unsigned int,unsigned int)> get_use_ds_line_func_;
     std::function<void(unsigned int,unsigned int, bool)> set_use_ds_line_func_;
-    QMenu edit_menu_;
+    
+    DataSourceEditWidget* edit_widget_ {nullptr};
 
-    QGridLayout* type_layout_{nullptr};
-
-    std::map<std::string, QCheckBox*> ds_type_boxes_;
-
-    std::map<unsigned int, dbContent::DBDataSourceWidget*> ds_widgets_; // ds_id -> widget
-
-    void clearAndCreateContent();
-
-    void clear();
-    void arrangeSourceWidgetWidths();
+    virtual void setUseDSType(const std::string& ds_type_name, bool use) override;
+    virtual bool getUseDSType(const std::string& ds_type_name) const override;
+    virtual void setUseDS(unsigned int ds_id, bool use) override;
+    virtual bool getUseDS(unsigned int ds_id) const override;
+    virtual void setUseDSLine(unsigned int ds_id, unsigned int ds_line, bool use) override;
+    virtual bool getUseDSLine(unsigned int ds_id, unsigned int ds_line) const override;
+    virtual void setShowCounts(bool show) const override;
+    virtual bool getShowCounts() const override;
 };
 

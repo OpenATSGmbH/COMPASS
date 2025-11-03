@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCOMMAND_H_
-#define DBCOMMAND_H_
+#pragma once
 
 #include "propertylist.h"
 
@@ -61,5 +60,3 @@ protected:
 };
 
 using DBCommandVector = std::vector<DBCommand>;
-
-#endif /* DBCOMMAND_H_ */

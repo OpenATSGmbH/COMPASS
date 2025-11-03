@@ -81,17 +81,22 @@ std::string exec(const std::string& cmd)
 {
     std::array<char, 128> buffer;
     std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    //std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+
+    FILE* pipe = popen(cmd.c_str(), "r");
 
     if (!pipe)
     {
-        logerr  << "Utils: exec: command '" << cmd << "' popen failed";
+        logerr << "command '" << cmd << "' popen failed";
         throw std::runtime_error("Utils: exec: popen failed");
     }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+    
+    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
     {
         result += buffer.data();
     }
+
+    pclose(pipe);
     return result;
 }
 

@@ -43,7 +43,7 @@ VariableOrderedSet::VariableOrderedSet(const std::string& class_id,
 
     // check set contents
 
-    loginf << "VariableOrderedSet: ctor: checking";
+    loginf << "checking";
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -55,20 +55,20 @@ VariableOrderedSet::VariableOrderedSet(const std::string& class_id,
         {
             if (!dbcont_man.existsMetaVariable(def_it.second))
             {
-                logwrn << "VariableOrderedSet: ctor: outdated meta variable " << def_it.second;
+                logwrn << "outdated meta variable " << def_it.second;
                 removeVariableAt(getIndexFor(def_it.first, def_it.second), false);
             }
         }
         else if (!dbcont_man.existsDBContent(def_it.first) ||
                  !dbcont_man.dbContent(def_it.first).hasVariable(def_it.second))
         {
-            logwrn << "VariableOrderedSet: ctor: outdated dbcont name "
+            logwrn << "outdated dbcont name "
                    << def_it.first << " variable " << def_it.second;
             removeVariableAt(getIndexFor(def_it.first, def_it.second), false);
         }
     }
 
-    loginf << "VariableOrderedSet: ctor: checking done";
+    loginf << "checking done";
 }
 
 VariableOrderedSet::~VariableOrderedSet() = default;
@@ -76,7 +76,7 @@ VariableOrderedSet::~VariableOrderedSet() = default;
 void VariableOrderedSet::generateSubConfigurable(const std::string& class_id,
                                                  const std::string& instance_id)
 {
-    logdbg << "VariableOrderedSet: generateSubConfigurable: class_id " << class_id
+    logdbg << "class_id " << class_id
            << " instance_id " << instance_id;
 
     throw std::runtime_error("VariableOrderedSet: generateSubConfigurable: unknown class_id " + class_id);
@@ -143,9 +143,9 @@ void VariableOrderedSet::removeVariableAt(unsigned int index)
 
 void VariableOrderedSet::removeVariableAt(unsigned int index, bool signal_changes)
 {
-    loginf << "VariableOrderedSet: removeVariableAt: index " << index;
+    loginf << "index " << index;
 
-    assert(index < variable_definitions_.size());
+    traced_assert(index < variable_definitions_.size());
 
     variable_definitions_.erase(index);
     notifyModifications();
@@ -159,7 +159,7 @@ void VariableOrderedSet::removeVariableAt(unsigned int index, bool signal_change
 
 void VariableOrderedSet::removeVariable(const Variable& variable)
 {
-    assert (hasVariable(variable));
+    traced_assert(hasVariable(variable));
 
     unsigned int index =  getIndexFor(variable.dbContentName(), variable.name());
 
@@ -168,7 +168,7 @@ void VariableOrderedSet::removeVariable(const Variable& variable)
 
 void VariableOrderedSet::removeMetaVariable(const MetaVariable& variable)
 {
-    assert (hasMetaVariable(variable));
+    traced_assert(hasMetaVariable(variable));
 
     unsigned int index =  getIndexFor(META_OBJECT_NAME, variable.name());
 
@@ -185,12 +185,12 @@ template <typename t> void vec_move(std::vector<t>& v, size_t old_index, size_t 
 
 void VariableOrderedSet::moveVariableUp(unsigned int index)
 {
-    logdbg << "VariableOrderedSet: moveVariableUp: index " << index;
-    assert(index < variable_definitions_.size());
+    logdbg << "index " << index;
+    traced_assert(index < variable_definitions_.size());
 
     if (index == 0)
     {
-        logwrn << "VariableOrderedSet: moveVariableUp: tried to move up first variable";
+        logwrn << "tried to move up first variable";
         return;
     }
 
@@ -207,12 +207,12 @@ void VariableOrderedSet::moveVariableUp(unsigned int index)
 
 void VariableOrderedSet::moveVariableDown(unsigned int index)
 {
-    logdbg << "VariableOrderedSet: moveVariableDown: index " << index;
-    assert(index < variable_definitions_.size());
+    logdbg << "index " << index;
+    traced_assert(index < variable_definitions_.size());
 
     if (index == variable_definitions_.size() - 1)
     {
-        logerr << "VariableOrderedSet: moveVariableDown: tried to down up last variable";
+        logerr << "tried to down up last variable";
         return;
     }
 
@@ -229,7 +229,7 @@ void VariableOrderedSet::moveVariableDown(unsigned int index)
 
 VariableSet VariableOrderedSet::getFor(const std::string& dbcontent_name)
 {
-    logdbg << "VariableOrderedSet: getFor: dbcontent_name " << dbcontent_name;
+    logdbg << "dbcontent_name " << dbcontent_name;
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -241,14 +241,14 @@ VariableSet VariableOrderedSet::getFor(const std::string& dbcontent_name)
     {
         if (def_it.first == META_OBJECT_NAME)
         {
-            assert(dbcont_man.existsMetaVariable(def_it.second));
+            traced_assert(dbcont_man.existsMetaVariable(def_it.second));
             if (dbcont_man.metaVariable(def_it.second).existsIn(dbcontent_name))
                 per_dbcont_set.add(dbcont_man.metaVariable(def_it.second).getFor(dbcontent_name));
         }
         else if (def_it.first == dbcontent_name)
         {
-            assert(dbcont_man.existsDBContent(dbcontent_name));
-            assert(dbcont_man.dbContent(dbcontent_name).hasVariable(def_it.second));
+            traced_assert(dbcont_man.existsDBContent(dbcontent_name));
+            traced_assert(dbcont_man.dbContent(dbcontent_name).hasVariable(def_it.second));
             per_dbcont_set.add(dbcont_man.dbContent(dbcontent_name).variable(def_it.second));
         }
     }
@@ -263,7 +263,7 @@ std::vector<std::pair<std::string,std::string>> VariableOrderedSet::definitions(
 
 std::pair<std::string,std::string> VariableOrderedSet::variableDefinition(unsigned int index) const
 {
-    assert (index < variable_definitions_.size());
+    traced_assert(index < variable_definitions_.size());
     return definitions().at(index);
 }
 
@@ -277,7 +277,7 @@ bool VariableOrderedSet::hasVariable(const Variable& variable) const
     std::vector<std::pair<std::string,std::string>> tmp_vec = definitions();
 
     return std::find(tmp_vec.begin(), tmp_vec.end(),
-                     std::pair<std::string,std::string>{variable.dbObject().name(), variable.name()}) != tmp_vec.end();
+                     std::pair<std::string,std::string>{variable.dbContent().name(), variable.name()}) != tmp_vec.end();
 }
 
 bool VariableOrderedSet::hasMetaVariable(const MetaVariable& variable) const
@@ -303,11 +303,11 @@ unsigned int VariableOrderedSet::getIndexFor(const std::string& dbcontent_name, 
     auto it = std::find(tmp_vec.begin(), tmp_vec.end(), std::pair<std::string,std::string>{dbcontent_name,var_name});
 
     // If element was found
-    assert (it != tmp_vec.end());
+    traced_assert(it != tmp_vec.end());
 
     // calculating the index
     int index = it - tmp_vec.begin();
-    assert (index >= 0);
+    traced_assert(index >= 0);
 
     return index;
 }

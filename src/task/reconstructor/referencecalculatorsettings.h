@@ -1,4 +1,4 @@
- /*
+/*
  * This file is part of OpenATS COMPASS.
  *
  * COMPASS is free software: you can redistribute it and/or modify
@@ -119,6 +119,9 @@ struct ReferenceCalculatorSettings
 
     bool   smooth_rts   = true;
     double smooth_scale = 1.0;
+
+    //stopped adsb tracking related
+    bool track_stopped_adsb = true;
 
     //result resampling related
     bool                            resample_result     = true;

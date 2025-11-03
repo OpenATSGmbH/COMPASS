@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "geotiff.h"
 
@@ -6,7 +23,7 @@
 #include "logger.h"
 #include "files.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QImage>
 
@@ -475,7 +492,7 @@ bool GeoTIFF::subsampleRaw(RawRasterData& raw_data_subsampled,
             {
                 for (x_block = 0, idx_block = line_idx_block; x_block < subsampling; ++x_block, ++idx_block)
                 {
-                    assert(idx_block < n_out);
+                    traced_assert(idx_block < n_out);
                     r_out[ idx_block ] = r;
                     g_out[ idx_block ] = g;
                     b_out[ idx_block ] = b;
@@ -633,16 +650,16 @@ bool GeoTIFF::writeGeoTIFF(const std::string& fn,
     subsampling = std::max(subsampling, (size_t)1);
 
     if (verbose)
-        loginf << "GeoTIFF: writeGeoTIFF: " << "fn = " << fn;
+        loginf << "start" << "fn = " << fn;
     if (verbose)
-        loginf << "GeoTIFF: writeGeoTIFF: ref in =\n" << ref.asString();
+        loginf << "ref in =\n" << ref.asString();
  
     //split image data into layers
     size_t w_in = (size_t)img.width();
     size_t h_in = (size_t)img.height();
 
     if (verbose)
-        loginf << "GeoTIFF: writeGeoTIFF: img w = " << w_in << ", h = " << h_in << ", depth = " << img.depth() << ", subsampling = " << subsampling;
+        loginf << "img w = " << w_in << ", h = " << h_in << ", depth = " << img.depth() << ", subsampling = " << subsampling;
 
     //QImage -> raw 4-channel data
     RawRasterData raw_data;
@@ -655,14 +672,14 @@ bool GeoTIFF::writeGeoTIFF(const std::string& fn,
     RasterReference ref_out = ref;
 
     if (verbose)
-        loginf << "GeoTIFF: converted to raw";
+        loginf << "converted to raw";
 
     //subsample if desired
     if (subsampling > 1)
     {
         if (!GeoTIFF::subsampleRaw(raw_data, subsampling))
         {
-            logError("GeoTIFF: writeGeoTIFF: ", "subsampling failed", error);
+            logError("", "subsampling failed", error);
             return false;
         }
 
@@ -674,9 +691,9 @@ bool GeoTIFF::writeGeoTIFF(const std::string& fn,
     size_t h_out = raw_data.rasterSizeY();
 
     if (verbose)
-        loginf << "GeoTIFF: writeGeoTIFF: raw data w = " << w_out << ", h = " << h_out;
+        loginf << "raw data w = " << w_out << ", h = " << h_out;
     if (verbose)
-        loginf << "GeoTIFF: writeGeoTIFF: ref out =\n" << ref_out.asString();
+        loginf << "ref out =\n" << ref_out.asString();
 
     //configure paths
     std::string fn_in  = fn;
@@ -689,7 +706,7 @@ bool GeoTIFF::writeGeoTIFF(const std::string& fn,
     }
 
     if (verbose)
-        loginf << "GeoTIFFWriter: writeGeoTIFF: input filename = " << fn_in;
+        loginf << "input filename = " << fn_in;
 
     GDALDatasetH dataset;
 
@@ -708,13 +725,13 @@ bool GeoTIFF::writeGeoTIFF(const std::string& fn,
     }
 
     if (verbose)
-        loginf << "GeoTIFF: writeGeoTIFF: wkt = " << GeoTIFF::wktString(dataset);
+        loginf << "wkt = " << GeoTIFF::wktString(dataset);
 
     //warp dataset to other srs
     if (!warp_to_srs.empty())
     {
         if (verbose)
-            loginf << "GeoTIFF: writeGeoTIFF: warping...\n\n" << GDALGetProjectionRef(dataset) << "\n =>\n" << warp_to_srs << "\n";
+            loginf << "warping...\n\n" << GDALGetProjectionRef(dataset) << "\n =>\n" << warp_to_srs << "\n";
 
         //GDALWarpOptions *psWarpOptions = GDALCreateWarpOptions();
 
@@ -756,7 +773,7 @@ bool GeoTIFF::writeGeoTIFF(const std::string& fn,
         //GDALDestroyWarpOptions(psWarpOptions);
 
         if (verbose)
-            loginf << "GeoTIFF: writeGeoTIFF: warped";
+            loginf << "warped";
     }
     else
     {
@@ -794,16 +811,16 @@ bool GeoTIFF::warpGeoTIFF(const std::string& fn,
     };
 
     if (verbose)
-        loginf << "GeoTIFF: warpGeoTIFF: fn = " << fn;
+        loginf << "fn = " << fn;
     if (verbose)
-        loginf << "GeoTIFF: warpGeoTIFF: fn_out = " << fn_out;
+        loginf << "fn_out = " << fn_out;
 
     int w  = GDALGetRasterXSize(dataset);
     int h  = GDALGetRasterYSize(dataset);
     int nb = GDALGetRasterCount(dataset);
 
     if (verbose)
-        loginf << "GeoTIFF: warpGeoTIFF: w = " << w << ", h = " << h << ", bands = " << nb;
+        loginf << "w = " << w << ", h = " << h << ", bands = " << nb;
 
     if (w < 1 || h < 1 || nb < 1)
     {
@@ -831,7 +848,7 @@ bool GeoTIFF::warpGeoTIFF(const std::string& fn,
         if (!enforce_upsample)
         {
             if (verbose)
-                loginf << "GeoTIFF: warpGeoTIFF: trying to subsample using " << subsampling << " samples...";
+                loginf << "trying to subsample using " << subsampling << " samples...";
 
             dataset_interm = GeoTIFF::subsampleGTiff(fn_interm, dataset, subsampling);
         }
@@ -840,7 +857,7 @@ bool GeoTIFF::warpGeoTIFF(const std::string& fn,
         if (!dataset_interm)
         {
             if (verbose)
-                loginf << "GeoTIFF: warpGeoTIFF: trying to upsample using " << subsampling << " samples...";
+                loginf << "trying to upsample using " << subsampling << " samples...";
 
             dataset_interm = GeoTIFF::upsampleGTiff(fn_interm, dataset, subsampling);
         }
@@ -872,12 +889,12 @@ bool GeoTIFF::warpGeoTIFF(const std::string& fn,
                 return false;
             }
 
-            logwrn << "GeoTIFF: warpGeoTIFF: subsampling could not be applied, skipping...";
+            logwrn << "subsampling could not be applied, skipping...";
         }
     }
     
     if (verbose)
-        loginf << "GeoTIFF: warpGeoTIFF: warping...\n\n" << GDALGetProjectionRef(dataset) << "\n =>\n" << warp_to_srs << "\n";
+        loginf << "warping...\n\n" << GDALGetProjectionRef(dataset) << "\n =>\n" << warp_to_srs << "\n";
 
     //GDALWarpOptions *psWarpOptions = GDALCreateWarpOptions();
 
@@ -906,7 +923,7 @@ bool GeoTIFF::warpGeoTIFF(const std::string& fn,
     cleanupDataset();
 
     if (verbose)
-        loginf << "GeoTIFF: warpGeoTIFF: warped";
+        loginf << "warped";
 
     return true;
 }

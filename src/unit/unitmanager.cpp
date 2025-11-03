@@ -40,7 +40,7 @@ void UnitManager::generateSubConfigurable(const std::string& class_id,
     if (class_id == "Dimension")
     {
         Dimension* dimension = new Dimension(class_id, instance_id, this);
-        assert(dimensions_.find(dimension->instanceId()) == dimensions_.end());
+        traced_assert(dimensions_.find(dimension->instanceId()) == dimensions_.end());
         dimensions_.insert(std::pair<std::string, Dimension*>(dimension->instanceId(), dimension));
     }
     else

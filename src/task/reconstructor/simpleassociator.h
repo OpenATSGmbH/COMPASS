@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include "targetreportdefs.h"
@@ -31,7 +48,7 @@ private:
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1)  override;
-    virtual boost::optional<std::tuple<double, double, double>> getPositionOffsetTargets(
+    virtual boost::optional<std::tuple<double, double>> getPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1,
@@ -39,7 +56,7 @@ private:
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) override;
 
-    virtual boost::optional<bool> checkTrackPositionOffsetAcceptable (
+    virtual boost::optional<bool> isTrackNumberPositionOffsetTooLarge (
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
         bool secondary_verified,bool do_debug) override;
 
@@ -50,11 +67,7 @@ private:
         bool do_debug) override;
     // check passed + score (larger is better) returned
     virtual std::tuple<DistanceClassification, double> checkPositionOffsetScore
-        (double distance_m, double sum_stddev_est, bool secondary_verified, bool target_acccuracy_acceptable) override;
-
-    virtual bool isTargetAccuracyAcceptable(
-        double tgt_est_std_dev, unsigned int utn, const dbContent::targetReport::ReconstructorInfo& tr, bool do_debug) override;
-    //virtual bool isTargetAverageDistanceAcceptable(double distance_score_avg, bool secondary_verified) override;
+        (double distance_m, double sum_stddev_est, bool secondary_verified) override;
 
     virtual ReconstructorBase& reconstructor() override;
 };

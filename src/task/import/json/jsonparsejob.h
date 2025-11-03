@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONPARSEJOB_H
-#define JSONPARSEJOB_H
+#pragma once
 
 #include <memory>
 
@@ -52,5 +51,3 @@ class JSONParseJob : public Job
 
     void checkCAT001SacSics(nlohmann::json& data_block);
 };
-
-#endif  // JSONPARSEJOB_H

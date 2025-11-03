@@ -16,7 +16,7 @@
  */
 
 #include "eval/requirement/identification/false.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/identification/false.h"
 
 #include "evaluationmanager.h"
@@ -46,9 +46,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
         const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
         const SectorLayer& sector_layer)
 {
-    logdbg << "EvaluationRequirementIdentificationFalse '" << name_ << "': evaluate: utn " << target_data.utn_;
+    logdbg << "'" << name_ << "': utn " << target_data.utn_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -258,15 +258,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                         num_unknown, num_correct, num_false, comment);
     }
 
-    logdbg << "EvaluationRequirementIdentificationFalse '" << name_ << "': evaluate: utn " << target_data.utn_
+    logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " num_updates " << num_updates << " num_no_ref_pos " << num_no_ref_pos
            << " num_no_ref_val " << num_no_ref_val
            << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
            << " num_unknown " << num_unknown << " num_correct " << num_correct
            << " num_false " << num_false;
 
-    assert (num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
-    assert (num_pos_inside == num_no_ref_val+num_unknown+num_correct+num_false);
+    traced_assert(num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos_inside == num_no_ref_val+num_unknown+num_correct+num_false);
 
     //assert (details.size() == tst_data.size());
 

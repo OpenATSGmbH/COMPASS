@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWPOINTSIMPORTTASKWIDGET_H
-#define VIEWPOINTSIMPORTTASKWIDGET_H
+#pragma once
 
 #include <taskwidget.h>
 
@@ -46,5 +45,3 @@ protected:
     QTextEdit* context_edit_ {nullptr};
 
 };
-
-#endif // VIEWPOINTSIMPORTTASKWIDGET_H

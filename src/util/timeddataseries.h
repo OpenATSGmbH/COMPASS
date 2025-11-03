@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include <vector>
@@ -80,9 +97,9 @@ public:
         , confidence_func_(confidence_func)
         , value_func_(value_func)
     {
-        assert (!min_ptime_.is_not_a_date_time());
-        assert (!max_ptime_.is_not_a_date_time());
-        assert (min_ptime_ <= max_ptime_);
+        traced_assert(!min_ptime_.is_not_a_date_time());
+        traced_assert(!max_ptime_.is_not_a_date_time());
+        traced_assert(min_ptime_ <= max_ptime_);
 
         initializeDataVector();
     }
@@ -99,9 +116,9 @@ public:
     void resetRange(const ptime& new_min_ptime,
                     const ptime& new_max_ptime)
     {
-        assert (!new_min_ptime.is_not_a_date_time());
-        assert (!new_max_ptime.is_not_a_date_time());
-        assert (new_min_ptime <= new_max_ptime);
+        traced_assert(!new_min_ptime.is_not_a_date_time());
+        traced_assert(!new_max_ptime.is_not_a_date_time());
+        traced_assert(new_min_ptime <= new_max_ptime);
 
         min_ptime_ = new_min_ptime;
         max_ptime_ = new_max_ptime;
@@ -137,7 +154,7 @@ public:
                 unsigned long value_index, bool debug=false)
     {
         // Reject if outside the defined range
-        assert (timestamp >= min_ptime_ && timestamp <= max_ptime_);
+        traced_assert(timestamp >= min_ptime_ && timestamp <= max_ptime_);
 
         // Compute confidence for this value
         int conf = confidence_func_(value_index);
@@ -237,10 +254,10 @@ public:
     {
         OptionalEntry entry = getAt(timestamp);
 
-        assert (entry && entry->confidence != -1);
+        traced_assert(entry && entry->confidence != -1);
 
         auto opt_val = value_func_(entry->value_index);
-        assert (opt_val.has_value());
+        traced_assert(opt_val.has_value());
 
         return *opt_val;
     }
@@ -276,7 +293,7 @@ private:
     void initializeDataVector()
     {
         time_duration span = max_ptime_ - min_ptime_;
-        assert (!span.is_negative());
+        traced_assert(!span.is_negative());
 
         long total_secs = span.total_seconds() + 1;
         data_.clear();
@@ -297,7 +314,7 @@ private:
         time_duration diff = timestamp - min_ptime_;
 
         long seconds       = diff.total_seconds();
-        assert (seconds >= 0);
+        traced_assert(seconds >= 0);
 
         return static_cast<std::size_t>(seconds);
     }

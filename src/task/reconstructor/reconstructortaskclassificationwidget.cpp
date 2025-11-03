@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "reconstructortaskclassificationwidget.h"
 #include "reconstructortask.h"
 #include "logger.h"
@@ -53,18 +70,18 @@ void ReconstructorTaskClassificationWidget::updateValues()
 
 void ReconstructorTaskClassificationWidget::minAircraftModeCEditedSlot (int value)
 {
-    loginf << "ProbabilisticAssociationWidget: maxAltitudeDiffEditedSlot: value '" << value << "'";
+    loginf << "value '" << value << "'";
 
-    reconstructor_.settings().max_altitude_diff_ = value;
+    reconstructor_.settings().min_aircraft_modec_ = value;
 }
 
 void ReconstructorTaskClassificationWidget::vehicleACIDsChangedSlot()
 {
-    assert (vehicle_acids_edit_);
+    traced_assert(vehicle_acids_edit_);
     reconstructor_.settings().setVehicleACIDs(vehicle_acids_edit_->document()->toPlainText().toStdString());
 }
 void ReconstructorTaskClassificationWidget::vehicleACADsChangedSlot()
 {
-    assert (vehicle_acads_edit_);
+    traced_assert(vehicle_acads_edit_);
     reconstructor_.settings().setVehicleACADs(vehicle_acads_edit_->document()->toPlainText().toStdString());
 }

@@ -129,7 +129,7 @@ void EvaluationReportTabWidget::updateFromSettings()
  */
 void EvaluationReportTabWidget::toggleSplitResultsByMOPSSlot()
 {
-    assert (split_results_by_mops_check_);
+    traced_assert(split_results_by_mops_check_);
     calculator_.settings().report_split_results_by_mops_ = split_results_by_mops_check_->checkState() == Qt::Checked;
 }
 
@@ -137,7 +137,7 @@ void EvaluationReportTabWidget::toggleSplitResultsByMOPSSlot()
  */
 void EvaluationReportTabWidget::toggleSplitResultsByMACMSSlot()
 {
-    assert (split_results_by_mac_ms_check_);
+    traced_assert(split_results_by_mac_ms_check_);
     calculator_.settings().report_split_results_by_aconly_ms_ = split_results_by_mac_ms_check_->checkState() == Qt::Checked;
 }
 
@@ -145,7 +145,7 @@ void EvaluationReportTabWidget::toggleSplitResultsByMACMSSlot()
  */
 void EvaluationReportTabWidget::toggleShowOKJoinedSlot()
 {
-    assert (show_ok_joined_target_reports_check_);
+    traced_assert(show_ok_joined_target_reports_check_);
     calculator_.settings().show_ok_joined_target_reports_ = show_ok_joined_target_reports_check_->checkState() == Qt::Checked;
 }
 
@@ -153,7 +153,7 @@ void EvaluationReportTabWidget::toggleShowOKJoinedSlot()
  */
 void EvaluationReportTabWidget::toggleSkipNoDataDetailsSlot()
 {
-    assert (skip_no_data_details_check_);
+    traced_assert(skip_no_data_details_check_);
     calculator_.settings().report_skip_no_data_details_ = skip_no_data_details_check_->checkState() == Qt::Checked;
 }
 
@@ -161,7 +161,7 @@ void EvaluationReportTabWidget::toggleSkipNoDataDetailsSlot()
  */
 void EvaluationReportTabWidget::resultDetailZoomEditSlot(QString value)
 {
-    loginf << "EvaluationReportTabWidget: resultDetailZoomEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -169,5 +169,5 @@ void EvaluationReportTabWidget::resultDetailZoomEditSlot(QString value)
     if (ok)
         calculator_.settings().result_detail_zoom_ = val;
     else
-        loginf << "EvaluationReportTabWidget: resultDetailZoomEditSlot: axvalid value";
+        loginf << "axvalid value";
 }

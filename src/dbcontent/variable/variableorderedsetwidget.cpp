@@ -184,23 +184,23 @@ void VariableOrderedSetWidget::triggerSlot(QAction* action)
 
     if (obj_name == META_OBJECT_NAME)
     {
-        assert(manager.existsMetaVariable(var_name));
+        traced_assert(manager.existsMetaVariable(var_name));
         set_.add(manager.metaVariable(var_name));
     }
     else
     {
-        assert(manager.existsDBContent(obj_name));
-        assert(manager.dbContent(obj_name).hasVariable(var_name));
+        traced_assert(manager.existsDBContent(obj_name));
+        traced_assert(manager.dbContent(obj_name).hasVariable(var_name));
         set_.add(manager.dbContent(obj_name).variable(var_name));
     }
 }
 
 void VariableOrderedSetWidget::removeSlot()
 {
-    assert(list_widget_);
+    traced_assert(list_widget_);
     int index = list_widget_->currentRow();
 
-    loginf << "VariableOrderedSetWidget: remove: index " << index;
+    loginf << "index " << index;
 
     if (index < 0)
         return;
@@ -211,9 +211,9 @@ void VariableOrderedSetWidget::removeSlot()
 
 void VariableOrderedSetWidget::moveUpSlot()
 {
-    assert(list_widget_);
+    traced_assert(list_widget_);
     int index = list_widget_->currentRow();
-    loginf << "VariableOrderedSetWidget: moveUp: index " << index;
+    loginf << "index " << index;
 
     if (index <= 0)
         return;
@@ -226,9 +226,9 @@ void VariableOrderedSetWidget::moveUpSlot()
 
 void VariableOrderedSetWidget::moveDownSlot()
 {
-    assert(list_widget_);
+    traced_assert(list_widget_);
     int index = list_widget_->currentRow();
-    loginf << "VariableOrderedSetWidget: moveDown: index " << index;
+    loginf << "index " << index;
 
     if (index < 0 || index == (int)set_.getSize() - 1)
         return;
@@ -241,13 +241,13 @@ void VariableOrderedSetWidget::moveDownSlot()
 
 void VariableOrderedSetWidget::updateVariableListSlot()
 {
-    logdbg << "VariableOrderedSetWidget: updateVariableListSlot";
+    logdbg;
 
-    assert(list_widget_);
+    traced_assert(list_widget_);
 
     list_widget_->clear();
 
-    logdbg << "VariableOrderedSetWidget: updateVariableListSlot: clear done";
+    logdbg << "clear done";
 
     DBContentManager& manager = COMPASS::instance().dbContentManager();
 
@@ -257,13 +257,13 @@ void VariableOrderedSetWidget::updateVariableListSlot()
     {
         if (def_it.first == META_OBJECT_NAME)
         {
-            assert(manager.existsMetaVariable(def_it.second));
+            traced_assert(manager.existsMetaVariable(def_it.second));
             tooltip = manager.metaVariable(def_it.second).info();
         }
         else
         {
-            assert(manager.existsDBContent(def_it.first));
-            assert(manager.dbContent(def_it.first).hasVariable(def_it.second));
+            traced_assert(manager.existsDBContent(def_it.first));
+            traced_assert(manager.dbContent(def_it.first).hasVariable(def_it.second));
             tooltip = manager.dbContent(def_it.first).variable(def_it.second).info();
         }
 
@@ -275,7 +275,7 @@ void VariableOrderedSetWidget::updateVariableListSlot()
 
     if (current_index_ != -1)
     {
-        logdbg << "VariableOrderedSetWidget: updateVariableListSlot: current index "
+        logdbg << "current index "
                << current_index_;
         list_widget_->setCurrentRow(current_index_);
         current_index_ = -1;
@@ -321,13 +321,13 @@ bool VariableOrderedSetWidget::uiSet(const QString& str)
         if (idx < 1 || idx >= vs.count() - nsep)
             return false;
 
-        QString dbo   = vs.mid(0, idx);
+        QString dbcont   = vs.mid(0, idx);
         QString param = vs.mid(idx + nsep);
 
-        if (dbo.isEmpty() || param.isEmpty())
+        if (dbcont.isEmpty() || param.isEmpty())
             return false;
 
-        vars.emplace_back(dbo.toStdString(), param.toStdString());
+        vars.emplace_back(dbcont.toStdString(), param.toStdString());
     }
 
     set_.set(vars);

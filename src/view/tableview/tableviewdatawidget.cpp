@@ -39,10 +39,10 @@ TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
 :   ViewDataWidget(view_widget, parent, f)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     data_source_ = view_->getDataSource();
-    assert(data_source_);
+    traced_assert(data_source_);
 
     QHBoxLayout* layout = new QHBoxLayout();
     layout->setMargin(0);
@@ -77,7 +77,7 @@ TableViewDataWidget::~TableViewDataWidget()
 
 void TableViewDataWidget::clearData_impl()
 {
-    logdbg << "TableViewDataWidget: clearData_impl: begin";
+    logdbg << "begin";
 
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->clear();
@@ -85,7 +85,7 @@ void TableViewDataWidget::clearData_impl()
     for (auto buffer_table : buffer_tables_)
         buffer_table.second->clear();
 
-    logdbg << "TableViewDataWidget: clearData_impl: end";
+    logdbg << "end";
 }
 
 void TableViewDataWidget::clearIntermediateRedrawData_impl()
@@ -95,22 +95,22 @@ void TableViewDataWidget::clearIntermediateRedrawData_impl()
 
 void TableViewDataWidget::loadingStarted_impl()
 {
-    loginf << "TableViewDataWidget: loadingStarted_impl";
+    loginf;
     //nothing to do yet
 }
 
 void TableViewDataWidget::updateData_impl(bool requires_reset)
 {
-    logdbg << "TableViewDataWidget: updateData_impl: begin";
+    logdbg << "begin";
 
     //nothing to do yet
 
-    logdbg << "TableViewDataWidget: updateData_impl: end";
+    logdbg << "end";
 }
 
 void TableViewDataWidget::loadingDone_impl()
 {
-    logdbg << "TableViewDataWidget: loadingDone_impl: begin";
+    logdbg << "begin";
 
     //default behavior
     ViewDataWidget::loadingDone_impl();
@@ -118,27 +118,27 @@ void TableViewDataWidget::loadingDone_impl()
     for (auto& buf_widget : buffer_tables_)
         showTab(buf_widget.second, buf_widget.second->hasData());
 
-    logdbg << "TableViewDataWidget: loadingDone_impl: end";
+    logdbg << "end";
 }
 
-bool TableViewDataWidget::redrawData_impl(bool recompute)
+ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
 {
-    logdbg << "TableViewDataWidget: redrawData_impl: start - recompute = " << recompute;
+    logdbg << "start - recompute = " << recompute;
 
-    assert(all_buffer_table_widget_);
+    traced_assert(all_buffer_table_widget_);
     all_buffer_table_widget_->show(viewData());
 
     for (auto& buf_it : viewData())
     {
-        assert(buffer_tables_.count(buf_it.first) > 0);
+        traced_assert(buffer_tables_.count(buf_it.first) > 0);
         buffer_tables_.at(buf_it.first)->show(buf_it.second);
     }
 
     selectFirstSelectedRow();
 
-    logdbg << "TableViewDataWidget: redrawData_impl: end";
+    logdbg << "end";
 
-    return (all_buffer_table_widget_->rowCount() > 0);
+    return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
 }
 
 void TableViewDataWidget::liveReload_impl()
@@ -148,8 +148,8 @@ void TableViewDataWidget::liveReload_impl()
 
 void TableViewDataWidget::exportDataSlot()
 {
-    logdbg << "TableViewDataWidget: exportDataSlot";
-    assert(tab_widget_);
+    logdbg;
+    traced_assert(tab_widget_);
 
     AllBufferTableWidget* all_buffer_widget =
         dynamic_cast<AllBufferTableWidget*>(tab_widget_->currentWidget());
@@ -184,7 +184,7 @@ void TableViewDataWidget::exportDoneSlot(bool cancelled)
 
 void TableViewDataWidget::updateToSettingsChange()
 {
-    loginf << "TableViewDataWidget: updateToSettingsChange";
+    loginf;
 
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->updateToSettingsChange();
@@ -200,9 +200,9 @@ void TableViewDataWidget::showTab(QWidget* widget_ptr, bool value)
 {
     if (tab_widget_)
     {
-        assert (widget_ptr);
+        traced_assert(widget_ptr);
         int index = tab_widget_->indexOf(widget_ptr);
-        assert (index >= 0);
+        traced_assert(index >= 0);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
         tab_widget_->setTabVisible(index, value);
@@ -239,7 +239,7 @@ void TableViewDataWidget::selectFirstSelectedRow()
 
 AllBufferTableWidget* TableViewDataWidget::getAllBufferTableWidget ()
 {
-    assert (all_buffer_table_widget_);
+    traced_assert(all_buffer_table_widget_);
     return all_buffer_table_widget_;
 }
 

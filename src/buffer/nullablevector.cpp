@@ -46,8 +46,8 @@ template <>
 void NullableVector<bool>::setFromFormat(unsigned int index, const std::string& format,
                                       const std::string& value_str, bool debug)
 {
-    logdbg << "NullableVector " << property_.name() << ": setFromFormat";
-    bool value;
+    logdbg2 << property_.name();
+    bool value{false};
 
     if (format == "invert")
     {
@@ -57,18 +57,18 @@ void NullableVector<bool>::setFromFormat(unsigned int index, const std::string& 
             value = 0;
         else
         {
-            logerr << "NullableVector: setFromFormat: unknown bool value '" << value_str << "'";
-            assert(false);
+            logerr << "unknown bool value '" << value_str << "'";
+            traced_assert(false);
         }
     }
     else
     {
-        logerr << "NullableVector: setFromFormat: unknown format '" << format << "'";
-        assert(false);
+        logerr << "unknown format '" << format << "'";
+        traced_assert(false);
     }
 
     if (debug)
-        loginf << "NullableVector: setFromFormat: index " << index << " value_str '" << value_str
+        loginf << "index " << index << " value_str '" << value_str
                << "' value '" << value << "'";
 
     set(index, value);
@@ -77,13 +77,13 @@ void NullableVector<bool>::setFromFormat(unsigned int index, const std::string& 
 template <>
 void NullableVector<bool>::append(unsigned int index, bool value)
 {
-    logdbg << "ArrayListTemplate " << property_.name() << ": append: index " << index << " value '"
+    logdbg2 << property_.name() << ": index " << index << " value '"
            << value << "'";
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= data_.size())  // allocate new stuff, fill all new with not null
@@ -95,25 +95,25 @@ void NullableVector<bool>::append(unsigned int index, bool value)
     }
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < data_.size());
+        traced_assert(index < data_.size());
 
     data_.at(index) = data_.at(index) || value;
 
     unsetNull(index);
 
-    // logdbg << "ArrayListTemplate: append: size " << size_ << " max_size " << max_size_;
+    // logdbg2 << "size " << size_ << " max_size " << max_size_;
 }
 
 template <>
 void NullableVector<std::string>::append(unsigned int index, std::string value)
 {
-    logdbg << "ArrayListTemplate " << property_.name() << ": append: index " << index << " value '"
+    logdbg2 << property_.name() << ": index " << index << " value '"
            << value << "'";
 
     if (BUFFER_PEDANTIC_CHECKING)
     {
-        assert(data_.size() <= buffer_.size_);
-        assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(data_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
     if (index >= data_.size())  // allocate new stuff, fill all new with not null
@@ -125,7 +125,7 @@ void NullableVector<std::string>::append(unsigned int index, std::string value)
     }
 
     if (BUFFER_PEDANTIC_CHECKING)
-        assert(index < data_.size());
+        traced_assert(index < data_.size());
 
     if (data_.at(index).size())
         data_.at(index) += ";" + value;
@@ -134,7 +134,7 @@ void NullableVector<std::string>::append(unsigned int index, std::string value)
 
     unsetNull(index);
 
-    // logdbg << "ArrayListTemplate: append: size " << size_ << " max_size " << max_size_;
+    // logdbg2 << "size " << size_ << " max_size " << max_size_;
 }
 
 template <>
@@ -157,3 +157,4 @@ nlohmann::json NullableVector<boost::posix_time::ptime>::asJSON(unsigned int max
 
     return list;
 }
+

@@ -37,7 +37,7 @@
 #include "viewpoint.h"
 #include "compass.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <algorithm>
 #include <fstream>
 
@@ -170,14 +170,14 @@ std::shared_ptr<Joined> SingleSpeed::createEmptyJoined(const std::string& result
 */
 boost::optional<double> SingleSpeed::computeResult_impl() const
 {
-    assert (num_no_ref_ <= num_pos_);
-    assert (num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_no_ref_ <= num_pos_);
+    traced_assert(num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
 
     accumulator_.reset();
 
     auto values = getValues(DetailKey::Offset);
 
-    assert (values.size() == num_comp_failed_ + num_comp_passed_);
+    traced_assert(values.size() == num_comp_failed_ + num_comp_passed_);
 
     unsigned int num_speeds = values.size();
 
@@ -186,7 +186,7 @@ boost::optional<double> SingleSpeed::computeResult_impl() const
 
     accumulator_.accumulate(values, true);
 
-    assert (num_comp_failed_ <= num_speeds);
+    traced_assert(num_comp_failed_ <= num_speeds);
     
     return (double)num_comp_passed_ / (double)num_speeds;
 }
@@ -217,14 +217,19 @@ nlohmann::json::array_t SingleSpeed::targetTableValuesCustom() const
              num_comp_passed_ };                 // "#DNOK"
 }
 
+std::string SingleSpeed::targetTableCustomSortColumn() const 
+{
+    return "#CF";
+};
+
 /**
 */
 std::vector<Single::TargetInfo> SingleSpeed::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           },
              { "#NoRef [1]"     , "Number of updates w/o reference speeds"   , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   },
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#NoTstData [1]" , "Number of updates without tst speed data" , num_no_tst_value_                  },
              { "OMin [m/s]"     , "Minimum of speed offset"                  , formatValue(accumulator_.min())    },
              { "OMax [m/s]"     , "Maximum of speed offset"                  , formatValue(accumulator_.max())    },
@@ -264,12 +269,12 @@ nlohmann::json::array_t SingleSpeed::detailValues(const EvaluationDetail& detail
 bool SingleSpeed::detailIsOk(const EvaluationDetail& detail) const
 {
     EvaluationRequirement::Speed* req = dynamic_cast<EvaluationRequirement::Speed*>(requirement_.get());
-    assert(req);
+    traced_assert(req);
 
     auto failed_values_of_interest = req->failedValuesOfInterest();
 
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);
-    assert(check_passed.has_value());
+    traced_assert(check_passed.has_value());
 
     return (( failed_values_of_interest &&  check_passed.value()) ||
             (!failed_values_of_interest && !check_passed.value()));
@@ -282,7 +287,7 @@ void SingleSpeed::addAnnotationForDetail(nlohmann::json& annotations_json,
                                          TargetAnnotationType type,
                                          bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -359,15 +364,14 @@ void JoinedSpeed::accumulateSingleResult(const std::shared_ptr<Single>& single_r
 */
 boost::optional<double> JoinedSpeed::computeResult_impl() const
 {
-    loginf << "JoinedTrackAngle: computeResult_impl:"
-            << " num_pos " << num_pos_
+    loginf << " num_pos " << num_pos_
             << " num_no_ref " << num_no_ref_
             << " num_no_tst_value " << num_no_tst_value_
             << " num_comp_failed " << num_comp_failed_
             << " num_comp_passed " << num_comp_passed_;
 
-    assert (num_no_ref_ <= num_pos_);
-    assert (num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_no_ref_ <= num_pos_);
+    traced_assert(num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
 
     unsigned int total = num_comp_passed_ + num_comp_failed_;
 
@@ -383,8 +387,8 @@ std::vector<Joined::SectorInfo> JoinedSpeed::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                       , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference speeds"  , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"         , num_pos_inside_                    }, 
              { "#PosOutside [1]", "Number of updates outside sector"        , num_pos_outside_                   },
+             { "#PosInside [1]" , "Number of updates inside sector"         , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst speed data", num_no_tst_value_                  }, 
              { "OMin [m/s]"     , "Minimum of speed offset"                 , formatValue(accumulator_.min())    }, 
              { "OMax [m/s]"     , "Maximum of speed offset"                 , formatValue(accumulator_.max())    }, 
@@ -399,7 +403,7 @@ std::vector<Joined::SectorInfo> JoinedSpeed::sectorInfos() const
 */
 bool JoinedSpeed::exportAsCSV(std::ofstream& strm) const
 {
-    // loginf << "JoinedSpeed: exportAsCSV";
+    // loginf;
 
     // strm << "speed_offset\n";
     

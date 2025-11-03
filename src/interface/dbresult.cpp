@@ -35,8 +35,8 @@ std::string DBResult::printResult() const
         ss << (is_null ? "null" : property_templates::toString<DType>(buffer_->get<DType>(pname).get(r), dec));
 
     #define NotFoundFunc                                                                        \
-        logerr << "DBResult: printResult: unknown property type " << Property::asString(dtype); \
-        assert(false);
+        logerr << "unknown property type " << Property::asString(dtype); \
+        traced_assert(false);
 
     size_t n  = buffer_->size();
     size_t np = buffer_->properties().size();

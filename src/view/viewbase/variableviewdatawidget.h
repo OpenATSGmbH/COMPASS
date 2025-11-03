@@ -62,8 +62,9 @@ protected:
     virtual void updateData_impl(bool requires_reset) override final;
     virtual void clearData_impl() override final;
     virtual void clearIntermediateRedrawData_impl() override final;
-    virtual bool redrawData_impl(bool recompute) override final;
+    virtual DrawState redrawData_impl(bool recompute) override final;
     virtual void liveReload_impl() override final;
+    virtual bool hasAnnotations_impl() const override final;
 
     void viewInfoJSON_impl(nlohmann::json& info) const override;
 
@@ -88,11 +89,11 @@ protected:
     /// creates view data from the chosen variables for a specific dbcontent and its respective buffer
     virtual void updateVariableData(const std::string& dbcontent_name, Buffer& buffer) {}
     /// creates view data from annotations collected in View
-    virtual void updateFromAnnotations() {}
+    virtual bool updateFromAnnotations() { return false; }
     /// called after updating from the variables
     virtual void postUpdateVariableDataEvent() = 0;
     /// updates the display (e.g. by updating a chart showing the data)
-    virtual bool updateVariableDisplay() = 0;
+    virtual DrawState updateVariableDisplay() = 0;
 
     const VariableView* variableView() const { return variable_view_; }
     VariableView* variableView() { return variable_view_; }
@@ -103,4 +104,6 @@ private:
     VariableView* variable_view_ = nullptr;
 
     mutable std::vector<VariableState> variable_states_;
+
+    bool shows_annotations_ = false;
 };

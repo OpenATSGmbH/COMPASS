@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_DBCONTENTWIDGET_H_
-#define DBCONTENT_DBCONTENTWIDGET_H_
+#pragma once
 
 #include <QWidget>
 
@@ -40,7 +39,7 @@ class DBContentWidget : public QWidget
     Q_OBJECT
 
   signals:
-    void changedDBOSignal();
+    void changedDBContSignal();
 
   public slots:
     void updateDataSourcesGridSlot();
@@ -51,9 +50,9 @@ class DBContentWidget : public QWidget
     void editDBContentVariableNameSlot();
     void editDBContentVariableDescriptionSlot();
     void editDBContentVariableDBColumnSlot(const QString& text);
-    void deleteDBOVarSlot();
+    void deleteDBContVarSlot();
 
-    void updateDBOVarsGridSlot();
+    void updateDBContVarsGridSlot();
 
   public:
     DBContentWidget(DBContent* object, QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
@@ -72,7 +71,5 @@ class DBContentWidget : public QWidget
 
     QPushButton* new_meta_button_{nullptr};
 
-    QGridLayout* dbovars_grid_{nullptr};
+    QGridLayout* dbcontvars_grid_{nullptr};
 };
-
-#endif /* DBCONTENT_DBCONTENTWIDGET_H_ */

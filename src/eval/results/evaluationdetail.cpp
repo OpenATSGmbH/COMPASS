@@ -209,7 +209,7 @@ QVariant EvaluationDetail::getValue(const Key& key) const
     if (key >= values_.size()) // never set
         return {};
 
-    assert (key < values_.size());
+    traced_assert(key < values_.size());
     return values_.at(key);
 }
 

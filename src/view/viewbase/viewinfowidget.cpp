@@ -29,7 +29,7 @@ ViewInfoWidget::ViewInfoWidget(View* view, QWidget* parent)
 :   QWidget(parent)
 ,   view_  (view  )
 {
-    assert(view_);
+    traced_assert(view_);
 
     setObjectName("infowidget");
 
@@ -177,7 +177,7 @@ void ViewInfoWidget::updateInfos()
 
     auto infos = view_->viewInfos();
 
-    //loginf << "ViewInfoWidget: updateInfos: adding " << infos.numInfos() 
+    //loginf << "adding " << infos.numInfos() 
     //      << " info(s) in " << infos.numSections() << " section(s)"
     //      << " to " << view_->instanceId();
 

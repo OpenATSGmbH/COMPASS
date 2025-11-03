@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "fftsconfigurationdialog.h"
 #include "ffttablemodel.h"
 #include "ffteditwidget.h"
@@ -135,11 +152,11 @@ void FFTsConfigurationDialog::endResetModel()
 
 void FFTsConfigurationDialog::currentRowChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-    assert (edit_widget_);
+    traced_assert(edit_widget_);
 
     if (!current.isValid())
     {
-        loginf << "FFTsConfigurationDialog: currentRowChanged: invalid index";
+        loginf << "invalid index";
 
         edit_widget_->clear();
 
@@ -147,18 +164,18 @@ void FFTsConfigurationDialog::currentRowChanged(const QModelIndex& current, cons
     }
 
     auto const source_index = proxy_model_->mapToSource(current);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     string name = table_model_->getNameOf(source_index);
 
-    loginf << "FFTsConfigurationDialog: currentRowChanged: current name " << name;
+    loginf << "current name " << name;
 
     edit_widget_->showFFT(name);
 }
 
 void FFTsConfigurationDialog::newFFTClickedSlot()
 {
-    loginf << "FFTsConfigurationDialog: newFFTClickedSlot";
+    loginf;
 
     bool ok;
     QString text =
@@ -194,13 +211,13 @@ void FFTsConfigurationDialog::newFFTClickedSlot()
         QModelIndexList items = table_model_->match(
                     table_model_->index(0, 0), Qt::DisplayRole, name.c_str(),
                     -1, Qt::MatchExactly);
-        assert (items.size() == 1);
+        traced_assert(items.size() == 1);
 
         QModelIndex tmp = items.at(0);
-        assert (tmp.isValid());
+        traced_assert(tmp.isValid());
 
         auto const target_index = proxy_model_->mapFromSource(tmp);
-        assert (target_index.isValid());
+        traced_assert(target_index.isValid());
 
         table_view_->selectionModel()->setCurrentIndex(target_index,
                                                        QItemSelectionModel::Select | QItemSelectionModel::Rows);
@@ -211,7 +228,7 @@ void FFTsConfigurationDialog::newFFTClickedSlot()
 
 void FFTsConfigurationDialog::importClickedSlot()
 {
-    loginf << "FFTsConfigurationDialog: importClickedSlot";
+    loginf;
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import FFTs",
@@ -240,7 +257,7 @@ void FFTsConfigurationDialog::deleteAllClickedSlot()
 
     if (reply == QMessageBox::Yes)
     {
-        loginf << "FFTsConfigurationDialog: deleteAllClickedSlot: deletion confirmed";
+        loginf << "deletion confirmed";
 
         table_model_->beginModelReset();
 
@@ -253,7 +270,7 @@ void FFTsConfigurationDialog::deleteAllClickedSlot()
 
 void FFTsConfigurationDialog::exportClickedSlot()
 {
-    loginf << "FFTsConfigurationDialog: exportClickedSlot";
+    loginf;
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export FFTs as JSON",
@@ -261,7 +278,7 @@ void FFTsConfigurationDialog::exportClickedSlot()
 
     if (filename.size() > 0)
     {
-        loginf << "FFTsConfigurationDialog: exportClickedSlot: file '" << filename << "'";
+        loginf << "file '" << filename << "'";
 
         fft_man_.exportFFTs(filename);
     }

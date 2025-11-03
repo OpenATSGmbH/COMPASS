@@ -6,7 +6,7 @@ A ScatterPlot View displays the distribution of two numerical variables as point
 \begin{figure}[H]
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_start.png}
-  \caption{Scatterplot View startup}
+  \caption{ScatterPlot View startup}
 \end{figure}
 
 \section{Layout}
@@ -24,7 +24,7 @@ To load the data the mechanism described in section \nameref{sec:ui_overview} or
 \begin{figure}[H]
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_loaded.png}
-  \caption{Scatterplot View after loading data}
+  \caption{ScatterPlot View after loading data}
 \end{figure}
 
 The values of the selected variables are used for positioning on the x-axis and y-axis. For each value pair a data point is generated. 
@@ -88,9 +88,6 @@ Scatter data items can be drawn with their data points connected by lines by che
 \textbf{Note} that on a reload, if the total number of drawn data points exceeds 100000, connections lines will be deactivated automatically
 in order to prevent performance issues. After the reload the connection lines can be reactivated manually by the user if desired.
 
-%\hl{TODO}
-%Please note that visualization of evaluation result data is currently not implemented.
-
 \subsection{Scatterplot}
 
 \subsubsection{Selection Tool}
@@ -100,7 +97,7 @@ If the 'Select' tool is active, data can be selected. Using the left mouse-butto
 \begin{figure}[H]
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_select.png}
-  \caption{Scatterplot View data selection}
+  \caption{ScatterPlot View data selection}
 \end{figure}
 
 The selected data is then presented in an extra 'Selected' item in the scatter data list.
@@ -108,13 +105,11 @@ The selected data is then presented in an extra 'Selected' item in the scatter d
 \begin{figure}[H]
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_selected.png}
-  \caption{Scatterplot View data selected}
+  \caption{ScatterPlot View data selected}
 \end{figure}
 
 This enables selection of parts of the data based on the presented variables, allowing deeper analysis e.g. of dubious data. \\
 
-%TODO_V7 maybe easier selection is the wrong term when talking about removing the selection?
-%TODO_V7 lets discuss when we talk of 'points'/'data points' and 'target reports', this is mixed up a little at the moment
 The 'Invert Selection' \includegraphics[width=0.5cm,frame]{../../data/icons/select_invert.png} or 'Delete Selection' \includegraphics[width=0.5cm,frame]{../../data/icons/select_delete.png} actions 
 allow for easier selection of the wanted target reports. \\
 

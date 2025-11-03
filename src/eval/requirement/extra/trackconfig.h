@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTEXTRATRACKCONFIG_H
-#define EVALUATIONREQUIREMENTEXTRATRACKCONFIG_H
+#pragma once
 
 #include "eval/requirement/base/probabilitybaseconfig.h"
 
@@ -63,5 +62,3 @@ namespace EvaluationRequirement
     };
 
 }
-
-#endif // EVALUATIONREQUIREMENTEXTRATRACKCONFIG_H

@@ -15,8 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ASTERIXFRAMINGCOMBOBOX_H
-#define ASTERIXFRAMINGCOMBOBOX_H
+#pragma once
+
+#include "traced_assert.h"
 
 #include <jasterix/jasterix.h>
 
@@ -60,7 +61,7 @@ class ASTERIXFramingComboBox : public QComboBox
     void setFraming(const std::string& framing)
     {
         int index = findData(QVariant(QString::fromStdString(framing)));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 
@@ -72,5 +73,3 @@ protected:
 
     ASTERIXImportTask& task_;
 };
-
-#endif  // ASTERIXFRAMINGCOMBOBOX_H

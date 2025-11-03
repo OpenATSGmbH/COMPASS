@@ -123,14 +123,14 @@ CreateARTASAssociationsStatusDialog::CreateARTASAssociationsStatusDialog(
 
     main_layout->addStretch();
 
-    // per dbo associations
-    //    QLabel* dbo_associated_label = new QLabel("DBContent Associations");
-    //    dbo_associated_label->setFont(font_big);
-    //    main_layout->addWidget(dbo_associated_label);
+    // per dbcont associations
+    //    QLabel* dbcont_associated_label = new QLabel("DBContent Associations");
+    //    dbcont_associated_label->setFont(font_big);
+    //    main_layout->addWidget(dbcont_associated_label);
 
-    dbo_associated_grid_ = new QGridLayout();
+    dbcont_associated_grid_ = new QGridLayout();
     updateDBContentAssociatedGrid();
-    main_layout->addLayout(dbo_associated_grid_);
+    main_layout->addLayout(dbcont_associated_grid_);
 
     main_layout->addStretch();
 
@@ -156,12 +156,12 @@ void CreateARTASAssociationsStatusDialog::markStartTime()
 
 void CreateARTASAssociationsStatusDialog::setDone()
 {
-    assert(ok_button_);
+    traced_assert(ok_button_);
 
     updateTime();
     updateDBContentAssociatedGrid();
 
-    loginf << "CreateARTASAssociationsStatusDialog: setDone: done after " << elapsed_time_str_;
+    loginf << "done after " << elapsed_time_str_;
 
     ok_button_->setVisible(true);
 }
@@ -170,7 +170,7 @@ void CreateARTASAssociationsStatusDialog::setAssociationStatus(const std::string
 {
     status_ = status;
 
-    assert(association_status_label_);
+    traced_assert(association_status_label_);
     association_status_label_->setText(status_.c_str());
 
     updateTime();
@@ -188,7 +188,7 @@ void CreateARTASAssociationsStatusDialog::setDubiousAssociations(const size_t& d
 {
     dubious_associations_ = dubious_associations;
 
-    assert(dubious_label_);
+    traced_assert(dubious_label_);
     dubious_label_->setText(QString::number(dubious_associations_));
     ;
 }
@@ -198,7 +198,7 @@ void CreateARTASAssociationsStatusDialog::setMissingHashesAtBeginning(
 {
     missing_hashes_at_beginning_ = missing_hashes_at_beginning;
 
-    assert(missing_hashes_at_beginning_label_);
+    traced_assert(missing_hashes_at_beginning_label_);
     missing_hashes_at_beginning_label_->setText(QString::number(missing_hashes_at_beginning_));
     ;
 }
@@ -207,7 +207,7 @@ void CreateARTASAssociationsStatusDialog::setMissingHashes(const size_t& missing
 {
     missing_hashes_ = missing_hashes;
 
-    assert(missing_hashes_label_);
+    traced_assert(missing_hashes_label_);
     missing_hashes_label_->setText(QString::number(missing_hashes_));
 }
 
@@ -215,7 +215,7 @@ void CreateARTASAssociationsStatusDialog::setFoundHashes(const size_t& found_has
 {
     found_hashes_ = found_hashes;
 
-    assert(found_hashes_label_);
+    traced_assert(found_hashes_label_);
     found_hashes_label_->setText(QString::number(found_hashes_));
 }
 
@@ -223,13 +223,13 @@ void CreateARTASAssociationsStatusDialog::setFoundDuplicates(const size_t& found
 {
     found_duplicates_ = found_duplicates;
 
-    assert(found_duplicates_label_);
+    traced_assert(found_duplicates_label_);
     found_duplicates_label_->setText(QString::number(found_duplicates_));
 }
 
 void CreateARTASAssociationsStatusDialog::updateTime()
 {
-    assert(time_label_);
+    traced_assert(time_label_);
 
     stop_time_ = boost::posix_time::microsec_clock::local_time();
     time_diff_ = stop_time_ - start_time_;
@@ -241,43 +241,43 @@ void CreateARTASAssociationsStatusDialog::updateTime()
 
 void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
 {
-    assert(dbo_associated_grid_);
+    traced_assert(dbcont_associated_grid_);
 
-    // loginf << "CreateARTASAssociationsStatusDialog: updateDBODoneGrid: rowcount " <<
+    // loginf << "rowcount " <<
     // cat_counters_grid_->rowCount();
 
     int row = 1;
-    if (dbo_associated_grid_->rowCount() == 1)
+    if (dbcont_associated_grid_->rowCount() == 1)
     {
-        // loginf << "CreateARTASAssociationsStatusDialog: updateDBODoneGrid: adding first row";
+        // loginf << "adding first row";
 
         QFont font_bold;
         font_bold.setBold(true);
 
-        QLabel* dbo_label = new QLabel("DBContent");
-        dbo_label->setFont(font_bold);
-        dbo_associated_grid_->addWidget(dbo_label, row, 0);
+        QLabel* dbcont_label = new QLabel("DBContent");
+        dbcont_label->setFont(font_bold);
+        dbcont_associated_grid_->addWidget(dbcont_label, row, 0);
 
         QLabel* count_label = new QLabel("Count");
         count_label->setFont(font_bold);
         count_label->setAlignment(Qt::AlignRight);
-        dbo_associated_grid_->addWidget(count_label, row, 1);
+        dbcont_associated_grid_->addWidget(count_label, row, 1);
 
         QLabel* associated_label = new QLabel("Associated");
         associated_label->setFont(font_bold);
         associated_label->setAlignment(Qt::AlignRight);
-        dbo_associated_grid_->addWidget(associated_label, row, 2);
+        dbcont_associated_grid_->addWidget(associated_label, row, 2);
 
         QLabel* percent_label = new QLabel("Percent");
         percent_label->setFont(font_bold);
         percent_label->setAlignment(Qt::AlignRight);
-        dbo_associated_grid_->addWidget(percent_label, row, 3);
+        dbcont_associated_grid_->addWidget(percent_label, row, 3);
     }
 
-    for (auto& dbo_it : COMPASS::instance().dbContentManager())
+    for (auto& dbcont_it : COMPASS::instance().dbContentManager())
     {
-        if (dbo_it.second->isStatusContent() ||
-            dbo_it.second->isReferenceContent())
+        if (!dbcont_it.second->containsTargetReports() ||
+            dbcont_it.second->isReferenceContent())
             continue;
 
         ++row;
@@ -286,55 +286,55 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
         unsigned int assoc_cnt = 0;
         float assoc_perc = 0;
 
-        if (association_counts_.count(dbo_it.first))
+        if (association_counts_.count(dbcont_it.first))
         {
-            total_cnt = get<0>(association_counts_.at(dbo_it.first));
-            assoc_cnt = get<1>(association_counts_.at(dbo_it.first));
+            total_cnt = get<0>(association_counts_.at(dbcont_it.first));
+            assoc_cnt = get<1>(association_counts_.at(dbcont_it.first));
 
             if (total_cnt)
                 assoc_perc = 100.0 * (float) assoc_cnt / (float) total_cnt;
         }
 
-        if (dbo_associated_grid_->rowCount() < row + 1)
+        if (dbcont_associated_grid_->rowCount() < row + 1)
         {
-            // loginf << "CreateARTASAssociationsStatusDialog: updateDBODoneGrid: adding row " <<
+            // loginf << "adding row " <<
             // row;
 
-            dbo_associated_grid_->addWidget(new QLabel(), row, 0);
+            dbcont_associated_grid_->addWidget(new QLabel(), row, 0);
 
             QLabel* count_label = new QLabel();
             count_label->setAlignment(Qt::AlignRight);
-            dbo_associated_grid_->addWidget(count_label, row, 1);
+            dbcont_associated_grid_->addWidget(count_label, row, 1);
 
             QLabel* associated_label = new QLabel();
             associated_label->setAlignment(Qt::AlignRight);
-            dbo_associated_grid_->addWidget(associated_label, row, 2);
+            dbcont_associated_grid_->addWidget(associated_label, row, 2);
 
             QLabel* percent_label = new QLabel();
             percent_label->setAlignment(Qt::AlignRight);
-            dbo_associated_grid_->addWidget(percent_label, row, 3);
+            dbcont_associated_grid_->addWidget(percent_label, row, 3);
         }
 
-        // loginf << "CreateARTASAssociationsStatusDialog: updateDBODoneGrid: setting row " << row;
+        // loginf << "setting row " << row;
 
-        QLabel* dbo_label =
-            dynamic_cast<QLabel*>(dbo_associated_grid_->itemAtPosition(row, 0)->widget());
-        assert(dbo_label);
-        dbo_label->setText(dbo_it.first.c_str());
+        QLabel* dbcont_label =
+            dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 0)->widget());
+        traced_assert(dbcont_label);
+        dbcont_label->setText(dbcont_it.first.c_str());
 
         QLabel* count_label =
-            dynamic_cast<QLabel*>(dbo_associated_grid_->itemAtPosition(row, 1)->widget());
-        assert(count_label);
+            dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 1)->widget());
+        traced_assert(count_label);
         count_label->setText(QString::number(total_cnt));
 
         QLabel* associated_label =
-            dynamic_cast<QLabel*>(dbo_associated_grid_->itemAtPosition(row, 2)->widget());
-        assert(associated_label);
+            dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 2)->widget());
+        traced_assert(associated_label);
         associated_label->setText(QString::number(assoc_cnt));
 
         QLabel* percent_label =
-            dynamic_cast<QLabel*>(dbo_associated_grid_->itemAtPosition(row, 3)->widget());
-        assert(percent_label);
+            dynamic_cast<QLabel*>(dbcont_associated_grid_->itemAtPosition(row, 3)->widget());
+        traced_assert(percent_label);
 
         if (total_cnt)
             percent_label->setText((String::percentToString(assoc_perc) + "%").c_str());

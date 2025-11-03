@@ -73,8 +73,8 @@ BaseConfig::BaseConfig(
     registerParameter("short_name", &short_name_, std::string());
     registerParameter("comment", &comment_, std::string());
 
-    assert (name_.size());
-    assert (short_name_.size());
+    traced_assert(name_.size());
+    traced_assert(short_name_.size());
 
     createSubConfigurables();
 }
@@ -101,7 +101,7 @@ bool BaseConfig::checkable() const
 void BaseConfig::generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id)
 {
-    assert(false);
+    traced_assert(false);
 }
 
 std::string BaseConfig::name() const
@@ -150,7 +150,7 @@ int BaseConfig::columnCount() const
 
 QVariant BaseConfig::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return name_.c_str();
 }
@@ -162,7 +162,7 @@ int BaseConfig::row() const
 
 void BaseConfig::name(const std::string& name)
 {
-    loginf << "BaseConfig: name: value '" << name << "'";
+    loginf << "value '" << name << "'";
 
     name_ = name;
 
@@ -171,7 +171,7 @@ void BaseConfig::name(const std::string& name)
 
 void BaseConfig::shortName(const std::string& short_name)
 {
-    loginf << "BaseConfig: shortName: value '" << short_name << "'";
+    loginf << "value '" << short_name << "'";
 
     short_name_ = short_name;
 }

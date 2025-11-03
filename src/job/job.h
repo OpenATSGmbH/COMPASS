@@ -159,7 +159,7 @@ protected:
 
         if (cpu < 0)
         {
-            logerr << "Job: setThreadAffinity: failed to set thread affinity of job " 
+            logerr << "failed to set thread affinity of job " 
                    << job_id_.value() << ": cpu could not be determined";
             return;
         }
@@ -171,7 +171,7 @@ protected:
         pthread_t nativeThread = pthread_self();
         if (pthread_setaffinity_np(nativeThread, sizeof(cpu_set_t), &cpuset) != 0)
         {
-            logerr << "Job: setThreadAffinity: failed to set thread affinity of job " 
+            logerr << "failed to set thread affinity of job " 
                    << job_id_.value() << " to cpu" << cpu;
         }
     }

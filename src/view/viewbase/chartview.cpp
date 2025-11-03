@@ -34,7 +34,15 @@ ChartView::ChartView(QtCharts::QChart* chart, SelectionStyle sel_style, QWidget*
 ,   sel_style_(sel_style)
 {
     //rescale axis font to obtain title font
-    QFont title_font = chart->axisX()->titleFont();
+    QFont title_font;
+    for (auto axis : chart->axes())
+    {
+        if (axis->orientation() == Qt::Horizontal)
+        {
+            title_font = axis->titleFont();
+            break;
+        }
+    }
     title_font.setPointSize(title_font.pointSize() * 1.2);
     chart->setTitleFont(title_font);
 
@@ -110,8 +118,10 @@ void ChartView::createDisplayElements(QtCharts::QChart* chart)
         chart->addSeries(selection_box_);
 
         //note: attaching the axis should be called after adding the series to the chart
-        selection_box_->attachAxis(chart->axisX());
-        selection_box_->attachAxis(chart->axisY());
+        for (auto axis : chart->axes(Qt::Horizontal))
+            selection_box_->attachAxis(axis);
+        for (auto axis : chart->axes(Qt::Vertical))
+            selection_box_->attachAxis(axis);
     }
     else if (sel_style_ == SelectionStyle::SeriesLines)
     {
@@ -124,11 +134,12 @@ void ChartView::createDisplayElements(QtCharts::QChart* chart)
         
         updateSelectionLines(QRectF());
 
-        chart->addSeries(selection_lines_);
-
         //note: attaching the axis should be called after adding the series to the chart
-        selection_lines_->attachAxis(chart->axisX());
-        selection_lines_->attachAxis(chart->axisY());
+        for (auto axis : chart->axes(Qt::Horizontal))
+            selection_lines_->attachAxis(axis);
+        for (auto axis : chart->axes(Qt::Vertical))
+            selection_lines_->attachAxis(axis);
+
     }
     else //SelectionStyle::RubberBand
     {
@@ -351,7 +362,7 @@ void ChartView::seriesPressedSlot(const QPointF& point)
 {
     QPointF p = widgetFromChart(point); // widget pos
 
-    logdbg << "ChartView: seriesPressedSlot: x " << point.x() << " y " << point.y();
+    logdbg << "x " << point.x() << " y " << point.y();
 
     //forward to handler method
     handleMousePress(Qt::LeftButton, p);
@@ -365,7 +376,7 @@ void ChartView::seriesReleasedSlot(const QPointF& point)
 {
     QPointF p = widgetFromChart(point); // widget pos
 
-    logdbg << "ChartView: seriesReleasedSlot: x " << point.x() << " y " << point.y();
+    logdbg << "x " << point.x() << " y " << point.y();
 
     //forward to handler method
     handleMouseRelease(Qt::LeftButton, p, false);
@@ -375,7 +386,7 @@ void ChartView::seriesReleasedSlot(const QPointF& point)
  */
 void ChartView::mousePressEvent(QMouseEvent* event)
 {
-    logdbg << "ChartView: mousePressEvent: BUTTON = " << event->button() << " BUTTONS = " << event->buttons();
+    logdbg << "button = " << event->button() << " buttons = " << event->buttons();
 
     //forward to handler method
     if (handleMousePress(event->button(), event->pos()))
@@ -390,7 +401,7 @@ void ChartView::mousePressEvent(QMouseEvent* event)
  */
 void ChartView::mouseMoveEvent(QMouseEvent* event)
 {
-    logdbg << "ChartView: mouseMoveEvent: BUTTON = " << event->button() << " BUTTONS = " << event->buttons();
+    logdbg << "button = " << event->button() << " buttons = " << event->buttons();
 
     //forward to handler method
     if (handleMouseMove(event->buttons(), event->pos()))
@@ -405,7 +416,7 @@ void ChartView::mouseMoveEvent(QMouseEvent* event)
  */
 void ChartView::mouseReleaseEvent(QMouseEvent* event)
 {
-    logdbg << "ChartView: mouseReleaseEvent: BUTTON = " << event->button() << " BUTTONS = " << event->buttons();
+    logdbg << "button = " << event->button() << " buttons = " << event->buttons();
 
     //forward to handler method
     if (handleMouseRelease(event->button(), event->pos(), true))

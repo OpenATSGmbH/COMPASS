@@ -34,12 +34,12 @@ namespace EvaluationRequirement
 IntervalBaseConfigWidget::IntervalBaseConfigWidget(IntervalBaseConfig& cfg)
 :   ProbabilityBaseConfigWidget(cfg)
 {
-    assert (form_layout_);
+    traced_assert(form_layout_);
 
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of code detection or miss (inverted probability)");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     uint32_t config_flags = config().configFlags();
 
@@ -132,7 +132,7 @@ IntervalBaseConfigWidget::IntervalBaseConfigWidget(IntervalBaseConfig& cfg)
 IntervalBaseConfig& IntervalBaseConfigWidget::config()
 {
     IntervalBaseConfig* config = dynamic_cast<IntervalBaseConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
@@ -155,7 +155,7 @@ void IntervalBaseConfigWidget::updateActive()
 */
 void IntervalBaseConfigWidget::updateIntervalEditSlot(QString value)
 {
-    loginf << "IntervalBaseConfigWidget: updateIntervalEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -163,14 +163,14 @@ void IntervalBaseConfigWidget::updateIntervalEditSlot(QString value)
     if (ok)
         config().updateInterval(val);
     else
-        loginf << "IntervalBaseConfigWidget: updateIntervalEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 /**
 */
 void IntervalBaseConfigWidget::toggleUseMinGapLengthSlot()
 {
-    loginf << "IntervalBaseConfigWidget: toggleUseMinGapLengthSlot";
+    loginf;
 
     if (use_min_gap_length_check_)
     {
@@ -180,7 +180,7 @@ void IntervalBaseConfigWidget::toggleUseMinGapLengthSlot()
 }
 void IntervalBaseConfigWidget::minGapLengthEditSlot(QString value)
 {
-    loginf << "IntervalBaseConfigWidget: minGapLengthEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -188,14 +188,14 @@ void IntervalBaseConfigWidget::minGapLengthEditSlot(QString value)
     if (ok)
         config().minGapLength(val);
     else
-        loginf << "IntervalBaseConfigWidget: minGapLengthEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 /**
 */
 void IntervalBaseConfigWidget::toggleUseMaxGapLengthSlot()
 {
-    loginf << "IntervalBaseConfigWidget: toggleUseMaxGapLengthSlot";
+    loginf;
 
     if (use_max_gap_length_check_)
     {
@@ -205,7 +205,7 @@ void IntervalBaseConfigWidget::toggleUseMaxGapLengthSlot()
 }
 void IntervalBaseConfigWidget::maxGapLengthEditSlot(QString value)
 {
-    loginf << "IntervalBaseConfigWidget: maxGapLengthEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -213,14 +213,14 @@ void IntervalBaseConfigWidget::maxGapLengthEditSlot(QString value)
     if (ok)
         config().maxGapLength(val);
     else
-        loginf << "IntervalBaseConfigWidget: maxGapLengthEditSlot: axvalid value";
+        loginf << "axvalid value";
 }
 
 /**
 */
 void IntervalBaseConfigWidget::toggleUseMissToleranceSlot()
 {
-    loginf << "IntervalBaseConfigWidget: toggleUseMissToleranceSlot";
+    loginf;
 
     if (use_miss_tolerance_check_)
     {
@@ -230,7 +230,7 @@ void IntervalBaseConfigWidget::toggleUseMissToleranceSlot()
 }
 void IntervalBaseConfigWidget::missToleranceEditSlot(QString value)
 {
-    loginf << "IntervalBaseConfigWidget: missToleranceEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -238,14 +238,14 @@ void IntervalBaseConfigWidget::missToleranceEditSlot(QString value)
     if (ok)
         config().missTolerance(val);
     else
-        loginf << "IntervalBaseConfigWidget: missToleranceEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 /**
 */
 void IntervalBaseConfigWidget::toggleHoldForAnyTargetSlot()
 {
-    loginf << "IntervalBaseConfigWidget: toggleHoldForAnyTargetSlot";
+    loginf;
 
     if (hold_for_any_target_check_)
     {

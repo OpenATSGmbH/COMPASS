@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "asteriximportsettings.h"
 #include "asterixdecodejob.h"
 #include "asterixpostprocess.h"
 #include "configurable.h"
@@ -63,54 +64,7 @@ struct ASTERIXFileInfo
 
 /**
 */
-class ASTERIXImportTaskSettings
-{
-public:
-    ASTERIXImportTaskSettings(); // defines default param values
 
-    // registered
-    bool reset_date_between_files_;
-    bool ignore_time_jumps_;
-    bool debug_jasterix_;
-    std::string current_file_framing_;
-
-    unsigned int num_packets_overload_;
-
-    bool override_tod_active_; // not saved
-    double override_tod_offset_;
-
-    bool filter_tod_active_; // not saved
-    float filter_tod_min_;
-    float filter_tod_max_;
-
-    bool filter_position_active_; // not saved
-    double filter_latitude_min_;
-    double filter_latitude_max_;
-    double filter_longitude_min_;
-    double filter_longitude_max_;
-
-    bool filter_modec_active_; // not saved
-    float filter_modec_min_;
-    float filter_modec_max_;
-
-    // not saved
-    unsigned int file_line_id_;
-    std::string date_str_;
-
-    bool network_ignore_future_ts_;
-
-    bool obfuscate_secondary_info_;
-
-    // not in config
-    boost::posix_time::ptime date_;
-    unsigned int max_network_lines_;
-
-    //import chunk sizes
-    unsigned int chunk_size_jasterix;
-    unsigned int chunk_size_insert;
-
-    unsigned int max_packets_in_processing_{5};
-};
 
 /**
 */
@@ -248,8 +202,6 @@ protected:
     std::string error_message_;
 
     bool insert_active_{false};
-    //boost::posix_time::ptime insert_start_time_;
-    //double total_insert_time_ms_ {0};
 
     std::set<int> added_data_sources_;
 

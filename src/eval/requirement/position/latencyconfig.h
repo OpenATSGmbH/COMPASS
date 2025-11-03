@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONLATENCYCONFIG_H
-#define EVALUATIONREQUIREMENTPOSITIONLATENCYCONFIG_H
+#pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "eval/requirement/base/positionbaseconfig.h"
 
 class Group;
 class EvaluationStandard;
@@ -31,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionLatencyConfig : public ProbabilityBaseConfig
+class PositionLatencyConfig : public PositionBaseConfig
 {
 public:
     PositionLatencyConfig(const std::string& class_id, const std::string& instance_id,
@@ -53,5 +52,3 @@ protected:
 };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONLATENCYCONFIG_H

@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include <QDialog>
@@ -39,7 +56,7 @@ public slots:
     void removeTASlot(bool checked);
     void removeTABlackListSlot(bool checked);
     void removeTAValuesSlot();
-    // dbo
+    // dbcont
     void removeDBContentsSlot(bool checked);
     void removeSpecificDBContentsSlot(bool checked);
 
@@ -73,8 +90,8 @@ protected:
     QCheckBox* remove_ta_blacklist_check_ {nullptr};
     QTextEdit* remove_ta_edit_ {nullptr};
 
-    QCheckBox* remove_dbo_check_ {nullptr};
-    std::map<std::string, QCheckBox*> remove_dbo_checks_;
+    QCheckBox* remove_dbcont_check_ {nullptr};
+    std::map<std::string, QCheckBox*> remove_dbcont_checks_;
 
     QPushButton* run_button_{nullptr};
     QPushButton* cancel_button_{nullptr};

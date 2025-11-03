@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONPARSINGSCHEMA_H
-#define JSONPARSINGSCHEMA_H
+#pragma once
 
 #include <vector>
 #include <memory>
@@ -58,5 +57,3 @@ class JSONParsingSchema : public Configurable
   protected:
     virtual void checkSubConfigurables() {}
 };
-
-#endif  // JSONPARSINGSCHEMA_H

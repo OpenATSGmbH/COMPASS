@@ -260,13 +260,13 @@ bool RTCommandString::parse(boost::program_options::variables_map& vm,
     }
     catch (const std::exception& ex)
     {
-        logdbg << "Error parsing command: " << ex.what();
+        logerr << "error parsing command: " << ex.what();
         setErrorMsg("Parse error: " + QString(ex.what()));
         return false;
     }
     catch (...)
     {
-        logdbg << "Error parsing command: Unknown error";
+        logerr << "error parsing command: Unknown error";
         setErrorMsg("Parse error: Unknown error");
         return false;
     }
@@ -317,7 +317,7 @@ RTCommandString::IssueResult RTCommandString::issue() const
     //check command string validity
     if (!valid())
     {
-        logdbg << "RTCommandString::issue(): Command string not valid";
+        logdbg << "command string not valid";
         setResultCode(CmdErrorCode::Issue_CommandStringInvalid, "");
         return result;
     }
@@ -325,13 +325,13 @@ RTCommandString::IssueResult RTCommandString::issue() const
     const QString cmd_str  = cmd();
     const QString cmd_name = cmdName();
 
-    logdbg << "Command to process: " << cmd_str.toStdString();
-    logdbg << "Creating command template from name '" << cmd_name.toStdString() << "'";
+    logdbg << "command to process: " << cmd_str.toStdString();
+    logdbg << "creating command template from name '" << cmd_name.toStdString() << "'";
 
     //check if command is even registered
     if (!rtcommand::RTCommandRegistry::instance().hasCommand(cmd_name))
     {
-        logdbg << "RTCommandString::issue(): Command not registered";
+        logerr << "command not registered";
         setResultCode(CmdErrorCode::Issue_CommandNotFound, "");
         return result;
     }
@@ -340,7 +340,7 @@ RTCommandString::IssueResult RTCommandString::issue() const
     if (hasHelpOption())
     {
         //help option detected, return help command
-        logdbg << "Help option detected...";
+        logdbg << "help option detected";
 
         auto cmd_help = new RTCommandHelp;
         cmd_help->command = cmd_name;
@@ -355,7 +355,7 @@ RTCommandString::IssueResult RTCommandString::issue() const
     auto cmd_obj = rtcommand::RTCommandRegistry::instance().createCommandTemplate(cmd_name);
     if (!cmd_obj)
     {
-        logdbg << "RTCommandString::issue(): Registry returned nullptr";
+        logerr << "registry returned nullptr";
         setResultCode(CmdErrorCode::Issue_CommandCreationFailed, "");
         return result;
     }
@@ -363,17 +363,17 @@ RTCommandString::IssueResult RTCommandString::issue() const
     //check if command name matches
     if (cmd_obj->name() != cmd_name)
     {
-        logdbg << "RTCommandString::issue(): Issued command name mismatch";
+        logerr << "issued command name mismatch";
         setResultCode(CmdErrorCode::Issue_CommandStringMismatch, "");
         return result;
     }
 
-    logdbg << "Configuring command template...";
+    logdbg << "configuring command template...";
 
     //configure command
     if (!cmd_obj->configure(*this))
     {
-        logdbg << "RTCommandString::issue(): Command could not be configured";
+        logerr << "command could not be configured";
         setResultCode(cmd_obj->result().error.code, cmd_obj->result().error.message);
         return result;
     }

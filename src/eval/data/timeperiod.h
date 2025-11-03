@@ -23,7 +23,7 @@
 #include <boost/optional.hpp>
 
 #include <vector>
-#include <cassert>
+#include "traced_assert.h"
 
 #include <math.h>
 

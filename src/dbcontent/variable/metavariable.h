@@ -15,14 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_METAVARIABLE_H
-#define DBCONTENT_METAVARIABLE_H
+#pragma once
 
 #include "configurable.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
-#include "dbcontent/variable/variabledefinition.h"
-//#include "stringconv.h"
+
+#include "json.hpp"
 
 namespace dbContent
 {
@@ -44,17 +43,14 @@ public:
     const std::string& dataTypeString() const;
     Variable::Representation representation();
 
-    /// @brief Return if variable exist in DBContent
     bool existsIn(const std::string& dbcontent_name);
-    /// @brief Returns variable existing in DBContent
     Variable& getFor(const std::string& dbcontent_name);
-    /// @brief Return variable identifier in DBContent
     std::string getNameFor(const std::string& dbcontent_name);
     void set(Variable& var);
 
     void removeVariable(const std::string& dbcontent_name);
     /// @brief Sets sub-variable name for DBContent
-    void addVariable(const std::string& dbcontent_name, const std::string& dbovariable_name);
+    void addVariable(const std::string& dbcontent_name, const std::string& dbcontvariable_name);
 
     const std::map<std::string, Variable&>& variables() { return variables_; }
     bool uses(const Variable& variable);
@@ -75,13 +71,13 @@ public:
     void unlock();
     void lock();
 
-    void removeOutdatedVariables();
-
     bool hasDBContent() const;
 
 protected:
     std::string name_;
     std::string description_;
+
+    nlohmann::json dbcont_variables_; // dbcont name -> var name
 
     DBContentManager& object_manager_;
 
@@ -89,8 +85,7 @@ protected:
 
     bool locked_{false};
 
-    std::map<std::string, VariableDefinition*> definitions_; // dbo name -> def
-    std::map<std::string, Variable&> variables_; // dbo name -> var
+    std::map<std::string, Variable&> variables_; // dbcont name -> var
 
     virtual void checkSubConfigurables();
     void updateDescription();
@@ -99,5 +94,3 @@ protected:
 };
 
 }
-
-#endif  // DBCONTENT_METAVARIABLE_H

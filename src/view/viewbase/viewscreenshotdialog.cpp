@@ -132,7 +132,7 @@ ViewScreenshotDialog::ViewScreenshotDialog(View* view,
 :   QDialog(parent, f)
 ,   view_  (view     )
 {
-    assert(view_);
+    traced_assert(view_);
 
     generateScreenshots();
     createUI();
@@ -227,7 +227,7 @@ void ViewScreenshotDialog::createUI()
  */
 void ViewScreenshotDialog::generateScreenshots()
 {
-    assert(view_);
+    traced_assert(view_);
 
     auto createPreview = [ & ] (QImage& preview,
                                 const QImage& img)
@@ -284,7 +284,7 @@ void ViewScreenshotDialog::save()
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    bool ok = getScreenshot().save(fn);
+    bool ok = getScreenshot().save(fn, nullptr, 100);
 
     QApplication::restoreOverrideCursor();
 

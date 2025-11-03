@@ -68,8 +68,8 @@ public:
 
     bool hasValidGrid() const;
 
-    boost::optional<QRectF> getXYBounds(bool fix_small_ranges) const;
-    boost::optional<std::pair<double, double>> getZBounds(bool fix_small_ranges) const;
+    boost::optional<QRectF> getXYVariableBounds(bool fix_small_ranges) const;
+    boost::optional<std::pair<double, double>> getZVariableBounds(bool fix_small_ranges) const;
 
     QPixmap renderPixmap();
 
@@ -102,8 +102,8 @@ protected:
 
     virtual bool postLoadTrigger() override final;
     virtual void resetVariableDisplay() override final;
-    virtual bool updateVariableDisplay() override final;
-    virtual void updateFromAnnotations() override final;
+    virtual DrawState updateVariableDisplay() override final;
+    virtual bool updateFromAnnotations() override final;
 
     virtual void processStash(const VariableViewStash<double>& stash) override final;
     virtual void resetStashDependentData() override final;
@@ -115,9 +115,9 @@ private:
     void resetGridChart();
     void resetGridLayers();
 
-    bool updateGridChart();
+    DrawState updateGridChart();
     void updateRendering();
-    void updateChart(QtCharts::QChart* chart, bool has_data);
+    DrawState updateChart(QtCharts::QChart* chart);
 
     GridView* view_   = nullptr;
     

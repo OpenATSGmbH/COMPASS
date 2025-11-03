@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LISTBOXVIEWCONFIGWIDGET_H_
-#define LISTBOXVIEWCONFIGWIDGET_H_
+#pragma once
 
 #include "viewconfigwidget.h"
 //#include "dbcontent/variable/variable.h"
@@ -68,5 +67,3 @@ protected:
 
     dbContent::VariableOrderedSetWidget* set_config_widget_ {nullptr};
 };
-
-#endif /* LISTBOXVIEWCONFIGWIDGET_H_ */

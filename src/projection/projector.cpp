@@ -16,6 +16,7 @@
  */
 
 #include "projector.h"
+#include "traced_assert.h"
 
 #include <ogr_spatialref.h>
 
@@ -103,7 +104,7 @@ void FrameProjector::reset()
 */
 void FrameProjector::update(const QRectF& coord_frame)
 {
-    assert(!coord_frame.isEmpty());
+    traced_assert(!coord_frame.isEmpty());
 
     auto center = coord_frame.center();
 
@@ -137,7 +138,7 @@ void FrameProjector::update(double center_lat, double center_lon)
     //compute cartesian center of projection (!sometimes not mapped to (0,0)!)
     double cx_cart, cy_cart;
     project(cx_cart, cy_cart, center_lat, center_lon);
-    assert (sqrt(pow(cx_cart, 2)+pow(cy_cart,2)) < 1E-6);
+    traced_assert(sqrt(pow(cx_cart, 2)+pow(cy_cart,2)) < 1E-6);
 
     //center_cart_  = QPointF(cx_cart, cy_cart);
     center_wgs84_ = QPointF(center_lat, center_lon);
@@ -159,7 +160,7 @@ bool FrameProjector::project(double& x,
 
     double z;
 
-    assert (proj_);
+    traced_assert(proj_);
     proj_->Forward(lat, lon, 0.0, x, y, z);
 
     return true;
@@ -181,7 +182,7 @@ bool FrameProjector::unproject(double& lat,
 
     double h_back;
 
-    assert (proj_);
+    traced_assert(proj_);
 
     proj_->Reverse(x, y, 0.0, lat, lon, h_back);
 

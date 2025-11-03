@@ -18,6 +18,7 @@
 #include "colormap.h"
 #include "colorscales.h"
 #include "colorlegend.h"
+#include "traced_assert.h"
 
 #include "logger.h"
 
@@ -83,7 +84,7 @@ namespace
         else if (type == ColorMap::Type::Binary)
             num_colors = 2;
 
-        assert(num_colors >= 1);
+        traced_assert(num_colors >= 1);
 
         return num_colors;
     };
@@ -199,7 +200,7 @@ std::vector<QColor> ColorMap::sample(const std::vector<QColor>& samples,
                                      size_t n)
 {
     size_t n_samples = samples.size();
-    assert(n_samples >= 2);
+    traced_assert(n_samples >= 2);
 
     std::vector<Eigen::Vector3d> samples_01(n_samples);
     for (size_t i = 0; i < n_samples; ++i)
@@ -247,7 +248,7 @@ void ColorMap::generateScaleImage(QImage& img,
     img = QImage(w, h, QImage::Format_ARGB32);
 
     auto factors = interpFactors(w);
-    assert(factors.size() == (size_t)w);
+    traced_assert(factors.size() == (size_t)w);
 
     //@TODO: optimize
     for (int x = 0; x < w; ++x)
@@ -304,12 +305,12 @@ void ColorMap::create(const std::vector<QColor>& colors,
                       size_t steps,
                       const OValueRange& value_range)
 {
-    assert(type != Type::Binary        || colors.size() == 2);
-    assert(type != Type::Discrete      || colors.size() >= 1);
-    assert(type != Type::LinearRanges  || colors.size() >= 3);
-    assert(type != Type::LinearSamples || colors.size() >= 1);
+    traced_assert(type != Type::Binary        || colors.size() == 2);
+    traced_assert(type != Type::Discrete      || colors.size() >= 1);
+    traced_assert(type != Type::LinearRanges  || colors.size() >= 3);
+    traced_assert(type != Type::LinearSamples || colors.size() >= 1);
 
-    assert(!value_range.has_value() || value_range.value().first <= value_range.value().second);
+    traced_assert(!value_range.has_value() || value_range.value().first <= value_range.value().second);
 
     type_          = type;
     scale_         = scale;
@@ -339,7 +340,7 @@ void ColorMap::create(const QColor& color_min,
                       Type type,
                       const OValueRange& value_range)
 {
-    assert(n >= 1);
+    traced_assert(n >= 1);
 
     auto colors = ColorMap::sample(color_min, color_max, numColorsFromType(type, n));
     create(colors, type, ColorScale::Custom, n, value_range);
@@ -354,7 +355,7 @@ void ColorMap::create(const QColor& color_min,
                       Type type,
                       const OValueRange& value_range)
 {
-    assert(n >= 1);
+    traced_assert(n >= 1);
     
     auto colors = ColorMap::sample(color_min, color_mid, color_max, numColorsFromType(type, n));
     create(colors, type, ColorScale::Custom, n, value_range);
@@ -367,7 +368,7 @@ void ColorMap::create(ColorScale scale,
                       Type type,
                       const OValueRange& value_range)
 {
-    assert(n >= 1);
+    traced_assert(n >= 1);
 
     auto colors = ColorMap::sample(scale, numColorsFromType(type, n));
     create(colors, type, scale, n, value_range);
@@ -413,19 +414,19 @@ const QColor& ColorMap::specialColor(SpecialColor type) const
 size_t ColorMap::indexFromFactor(double t) const
 {
     //!discrete colormaps cannot be accessed by this method!
-    assert (type_ != Type::Discrete);
+    traced_assert(type_ != Type::Discrete);
 
     //handle binary case separately
     if (type_ == Type::Binary)
     {
-        assert(n_colors_ == 2);
+        traced_assert(n_colors_ == 2);
         return (t < 0.5 ? 0 : 1);
     }
 
     //linear colormap
-    assert(type_ == Type::LinearSamples || type_ == Type::LinearRanges);
-    assert(type_ != Type::LinearRanges  || n_colors_ >= 3);
-    assert(type_ != Type::LinearSamples || n_colors_ >= 1);
+    traced_assert(type_ == Type::LinearSamples || type_ == Type::LinearRanges);
+    traced_assert(type_ != Type::LinearRanges  || n_colors_ >= 3);
+    traced_assert(type_ != Type::LinearSamples || n_colors_ >= 1);
 
     size_t idx;
 
@@ -443,12 +444,12 @@ size_t ColorMap::indexFromFactor(double t) const
 
         if (idx > n_colors_ - 2)
         {
-            logerr << "ColorMap: indexFromFactor: idx " << idx << " > " << n_colors_ - 2
+            logerr << "idx " << idx << " > " << n_colors_ - 2
                    << " for t " << t;
             idx = n_colors_ - 2;
         }
 
-        assert(idx <= n_colors_ - 2);
+        traced_assert(idx <= n_colors_ - 2);
     }
     else // Type::LinearSamples
     {
@@ -469,12 +470,12 @@ size_t ColorMap::indexFromFactor(double t) const
 
         if (idx > n_colors_ - 2)
         {
-            logerr << "ColorMap: indexFromFactor: idx " << idx << " > " << n_colors_ - 2
+            logerr << "idx " << idx << " > " << n_colors_ - 2
                    << " for t " << t;
             idx = n_colors_ - 2;
         }
 
-        assert(idx <= n_colors_ - 2);
+        traced_assert(idx <= n_colors_ - 2);
     }
 
     return idx;
@@ -493,7 +494,7 @@ QColor ColorMap::sample(double t) const
 */
 QColor ColorMap::sampleValue(double v) const
 {
-    assert(canSampleValues());
+    traced_assert(canSampleValues());
 
     auto range = activeRange();
 
@@ -510,7 +511,7 @@ QColor ColorMap::sampleValue(double v) const
 */
 ColorMap::ValueRange ColorMap::activeRange() const
 {
-    assert(canSampleValues());
+    traced_assert(canSampleValues());
 
     double vmin = value_range_.value().first;
     double vmax = value_range_.value().second;

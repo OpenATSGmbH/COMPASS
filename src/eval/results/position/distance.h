@@ -38,6 +38,7 @@ public:
                            unsigned int num_no_ref,
                            unsigned int num_pos_outside, 
                            unsigned int num_pos_inside,
+                           unsigned int num_ref_inaccurate,
                            unsigned int num_comp_passed,
                            unsigned int num_comp_failed);
 
@@ -46,6 +47,8 @@ public:
 protected:
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
     virtual nlohmann::json::array_t targetTableValuesCustom() const override;
+    virtual std::string targetTableCustomSortColumn() const override;
+    virtual Qt::SortOrder targetTableSortOrder() const override  { return  Qt::SortOrder::DescendingOrder; }
     virtual std::vector<TargetInfo> targetInfos() const override;
     virtual std::vector<std::string> detailHeaders() const override;
     virtual nlohmann::json::array_t detailValues(const EvaluationDetail& detail,

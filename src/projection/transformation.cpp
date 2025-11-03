@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "transformation.h"
 #include "logger.h"
 
@@ -44,7 +61,7 @@ std::tuple<bool, double, double> Transformation::distanceCart (double lat1,
                                                                double lat2, 
                                                                double lon2)
 {
-    logdbg << "Transformation: distanceCart: lat1 " << lat1 << " lon1 " << lon1 << " lat2 " << lat2 << " lon2 " << lon2;
+    logdbg << "lat1 " << lat1 << " lon1 " << lon1 << " lat2 " << lat2 << " lon2 " << lon2;
 
     updateCenter(lat1, lon1);
 
@@ -70,7 +87,7 @@ std::tuple<bool, double, double> Transformation::distanceCart (double lat1,
 
     ret = std::tuple<bool, double, double>(true, x_pos2 - x_pos1, y_pos2 - y_pos1);
 
-    logdbg << "Transformation: distanceCart:"
+    logdbg << "start"
            << " p1 " << lat1 << " / " << lon1
            << " p2 " << lat2 << " / " << lon2 
            << " d " << x_pos2-x_pos1 << " / " << y_pos2-y_pos1;
@@ -126,7 +143,7 @@ std::tuple<bool, double, double> Transformation::wgsAddCartOffset (double lat1,
                                                                    double x_pos2, 
                                                                    double y_pos2)
 {
-    logdbg << "Transformation: wgsAddCartOffset: lat1 " << lat1 << " long1 " << lon1 << " x_pos2 " << x_pos2 << " y_pos2 " << y_pos2;
+    logdbg << "lat1 " << lat1 << " long1 " << lon1 << " x_pos2 " << x_pos2 << " y_pos2 " << y_pos2;
 
     updateCenter(lat1, lon1);
 
@@ -143,7 +160,7 @@ std::tuple<bool, double, double> Transformation::wgsAddCartOffset (double lat1,
     if (!ok)
         return ret;
 
-    logdbg << "Transformation: wgsAddCartOffset: x_pos1 " << x_pos1 << " y_pos1 " << y_pos1
+    logdbg << "x_pos1 " << x_pos1 << " y_pos1 " << y_pos1
            << " x_pos2 " << x_pos2 << " y_pos2 " << y_pos2;
 
     // add origin offset
@@ -216,7 +233,7 @@ FixedTransformation::~FixedTransformation() = default;
 */
 std::tuple<bool, double, double> FixedTransformation::distanceCart (double lat2, double lon2)
 {
-    logdbg << "FixedTransformation: distanceCart: lat2 " << lat2 << " long2 " << lon2;
+    logdbg << "lat2 " << lat2 << " long2 " << lon2;
 
     double x_pos2, y_pos2;
     bool ok;
@@ -240,7 +257,7 @@ std::tuple<bool, double, double> FixedTransformation::distanceCart (double lat2,
 
     ret = std::tuple<bool, double, double>(true, x_pos2, y_pos2);
 
-    logdbg << "Transformation: distanceCart: p1 "
+    logdbg << "p1 "
            << std::setprecision(14) << lat1_ << " / " << std::setprecision(14) << lon1_
            << " p2 "
            << std::setprecision(14) << lat2 << " / " << std::setprecision(14) << lon2
@@ -253,7 +270,7 @@ std::tuple<bool, double, double> FixedTransformation::distanceCart (double lat2,
 */
 std::tuple<bool, double, double> FixedTransformation::wgsAddCartOffset (double x_pos2, double y_pos2)
 {
-    logdbg << "FixedTransformation: wgsAddCartOffset: x_pos2 " << x_pos2 << " y_pos2 " << y_pos2;
+    logdbg << "x_pos2 " << x_pos2 << " y_pos2 " << y_pos2;
 
     bool ok;
     std::tuple<bool, double, double> ret {false, 0, 0};

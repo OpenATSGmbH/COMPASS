@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef UTNFILTER_H
-#define UTNFILTER_H
+#pragma once
 
 #include "dbfilter.h"
 
@@ -51,5 +50,3 @@ protected:
 
     bool updateUTNSFromStr(const std::string& values_str); // returns success
 };
-
-#endif // UTNFILTER_H

@@ -26,6 +26,8 @@
 #include "compass.h"
 #include "dbcontentmanager.h"
 
+#include "popupmenu.h"
+
 #include "logger.h"
 #include "stringconv.h"
 #include "stringmat.h"
@@ -45,8 +47,10 @@
 #include <QApplication>
 #include <QInputDialog>
 #include <QThread>
+#include <QScrollBar>
+#include <QToolBar>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <type_traits>
 #include <iostream>
 #include <fstream>
@@ -68,6 +72,7 @@ const std::string SectionContentTable::FieldColumnStyles  = "column_styles";
 const std::string SectionContentTable::FieldCellStyles    = "cell_styles";
 const std::string SectionContentTable::FieldShowTooltips  = "show_tooltips";
 const std::string SectionContentTable::FieldMaxRowCount   = "max_row_count";
+const std::string SectionContentTable::FieldColumnGroups  = "column_groups";
 
 const std::string SectionContentTable::FieldDocColumns  = "columns";
 const std::string SectionContentTable::FieldDocData     = "data";
@@ -80,6 +85,10 @@ const std::string SectionContentTable::FieldAnnoOnDemand      = "on_demand";
 const std::string SectionContentTable::FieldAnnoIndex         = "index";
 const std::string SectionContentTable::FieldAnnoStyle         = "style";
 
+const std::string SectionContentTable::FieldColGroupName          = "name";
+const std::string SectionContentTable::FieldColGroupColumns       = "column_indices";
+const std::string SectionContentTable::FieldColGroupEnabledOnInit = "enabled_on_init";
+
 const QColor SectionContentTable::ColorTextRed    = Colors::TextRed;
 const QColor SectionContentTable::ColorTextOrange = Colors::TextOrange;
 const QColor SectionContentTable::ColorTextGreen  = Colors::TextGreen;
@@ -90,6 +99,19 @@ const QColor SectionContentTable::ColorBGOrange   = Colors::BGOrange;
 const QColor SectionContentTable::ColorBGGreen    = Colors::BGGreen;
 const QColor SectionContentTable::ColorBGGray     = Colors::BGGray;
 const QColor SectionContentTable::ColorBGYellow   = Colors::BGYellow;
+
+const std::string SectionContentTable::ColorTextLatexRed    = Colors::TextLatexRed;
+const std::string SectionContentTable::ColorTextLatexOrange = Colors::TextLatexOrange;
+const std::string SectionContentTable::ColorTextLatexGreen  = Colors::TextLatexGreen;
+const std::string SectionContentTable::ColorTextLatexGray   = Colors::TextLatexGray;
+
+const std::string SectionContentTable::ColorBGLatexRed      = Colors::BGLatexRed;
+const std::string SectionContentTable::ColorBGLatexOrange   = Colors::BGLatexOrange;
+const std::string SectionContentTable::ColorBGLatexGreen    = Colors::BGLatexGreen;
+const std::string SectionContentTable::ColorBGLatexGray     = Colors::BGLatexGray;
+const std::string SectionContentTable::ColorBGLatexYellow   = Colors::BGLatexYellow;
+
+const double SectionContentTable::LatexIconWidth_cm = 0.5;
 
 /**
  */
@@ -102,13 +124,14 @@ SectionContentTable::SectionContentTable(unsigned int id,
                                          unsigned int sort_column,
                                          Qt::SortOrder sort_order)
 :   SectionContent(ContentType::Table, id, name, parent_section)
-,   num_columns_  (num_columns)
-,   headings_     (headings)
-,   column_styles_(num_columns, 0)
-,   column_flags_ (num_columns, 0)
-,   sortable_     (sortable)
-,   sort_column_  (sort_column)
-,   sort_order_   (sort_order)
+,   num_columns_      (num_columns)
+,   num_columns_proxy_(num_columns)
+,   headings_         (headings)
+,   column_styles_    (num_columns, 0)
+,   column_flags_     (num_columns, 0)
+,   sortable_         (sortable)
+,   sort_column_      (sort_column)
+,   sort_order_       (sort_order)
 {
 }
 
@@ -139,7 +162,7 @@ void SectionContentTable::addRow (const nlohmann::json::array_t& row,
                                   const QVariant& viewable_index,
                                   unsigned int row_style)
 {
-    assert (row.size() == num_columns_);
+    traced_assert(row.size() == num_columns_);
 
     rows_.push_back(row);
 
@@ -151,7 +174,7 @@ void SectionContentTable::addRow (const nlohmann::json::array_t& row,
     anno.on_demand      = viewable.on_demand;
     anno.style          = row_style;
 
-    logdbg<< "SectionContentTable " << name() << ": addRow: viewable has callback " << viewable.hasCallback();
+    logdbg<< "'" << name() << "': viewable has callback " << viewable.hasCallback();
 
     if (!viewable.on_demand && viewable.hasCallback())
     {
@@ -174,7 +197,7 @@ const nlohmann::json& SectionContentTable::getData(int row, int column) const
 const nlohmann::json& SectionContentTable::getData(int row, const std::string& col_name) const
 {
     int col = columnIndex(col_name);
-    assert(col >= 0);
+    traced_assert(col >= 0);
 
     return getData(row, col);
 }
@@ -259,8 +282,8 @@ unsigned int SectionContentTable::addFigure(const SectionContentViewable& viewab
  */
 SectionContentTableWidget* SectionContentTable::createTableWidget() const
 {
-    assert(!isLocked());
-    assert(!table_widget_);
+    traced_assert(!isLocked());
+    traced_assert(!table_widget_);
 
     SectionContentTable* tmp = const_cast<SectionContentTable*>(this); // hacky
     table_widget_ = new SectionContentTableWidget(tmp, 
@@ -274,7 +297,7 @@ SectionContentTableWidget* SectionContentTable::createTableWidget() const
  */
 const SectionContentTableWidget* SectionContentTable::tableWidget() const
 {
-    assert(table_widget_);
+    traced_assert(table_widget_);
     return table_widget_;
 }
 
@@ -282,7 +305,7 @@ const SectionContentTableWidget* SectionContentTable::tableWidget() const
  */
 SectionContentTableWidget* SectionContentTable::tableWidget()
 {
-    assert(table_widget_);
+    traced_assert(table_widget_);
     return table_widget_;
 }
 
@@ -318,9 +341,9 @@ std::string SectionContentTable::resourceExtension() const
 void SectionContentTable::addContentUI(QVBoxLayout* layout, 
                                        bool force_ui_reset)
 {
-    loginf << "SectionContentTable: addToLayout";
+    loginf;
 
-    assert (layout);
+    traced_assert(layout);
 
     //force recreation of table widget?
     if (force_ui_reset)
@@ -414,6 +437,9 @@ namespace
  */
 boost::optional<QColor> SectionContentTable::cellTextColor(unsigned int style)
 {
+    if (cellIsInactive(style))
+        return boost::optional<QColor>();
+    
     if (style & CellStyleTextColorRed)
         return ColorTextRed;
     else if (style & CellStyleTextColorOrange)
@@ -430,6 +456,9 @@ boost::optional<QColor> SectionContentTable::cellTextColor(unsigned int style)
  */
 boost::optional<QColor> SectionContentTable::cellBGColor(unsigned int style)
 {
+    if (cellIsInactive(style))
+        return ColorBGGray; 
+
     if (style & CellStyleBGColorRed)
         return ColorBGRed;
     else if (style & CellStyleBGColorOrange)
@@ -446,23 +475,90 @@ boost::optional<QColor> SectionContentTable::cellBGColor(unsigned int style)
 
 /**
  */
-boost::optional<QIcon> SectionContentTable::cellIcon(const nlohmann::json& data)
+std::string SectionContentTable::cellTextColorLatex(unsigned int style)
+{
+    if (cellIsInactive(style))
+        return ""; 
+
+    if (style & CellStyleTextColorRed)
+        return ColorTextLatexRed;
+    else if (style & CellStyleTextColorOrange)
+        return ColorTextLatexOrange;
+    else if (style & CellStyleTextColorGreen)
+        return ColorTextLatexGreen;
+    else if (style & CellStyleTextColorGray)
+        return ColorTextLatexGray;
+
+    return "";
+}
+
+/**
+ */
+std::string SectionContentTable::cellBGColorLatex(unsigned int style)
+{
+    if (cellIsInactive(style))
+        return ColorBGLatexGray; 
+    
+    if (style & CellStyleBGColorRed)
+        return ColorBGLatexRed;
+    else if (style & CellStyleBGColorOrange)
+        return ColorBGLatexOrange;
+    else if (style & CellStyleBGColorGreen)
+        return ColorBGLatexGreen;
+    else if (style & CellStyleBGColorGray)
+        return ColorBGLatexGray;
+    else if (style & CellStyleBGColorYellow)
+        return ColorBGLatexYellow;
+
+    return "";
+}
+
+/**
+ */
+boost::optional<std::pair<std::string, std::string>> SectionContentTable::cellIconFn(const nlohmann::json& data)
 {
     if (!data.is_string())
-        return boost::optional<QIcon>();
+        return boost::optional<std::pair<std::string, std::string>>();
 
-    std::string icon_name;
+    QString icon_string;
     
     try
     {
-        icon_name = data;
+        icon_string = QString::fromStdString(data.get<std::string>());
     }
     catch(...)
     {
-        return boost::optional<QIcon>();
+        return boost::optional<std::pair<std::string, std::string>>();
+    }
+
+    if (icon_string.isEmpty())
+        return boost::optional<std::pair<std::string, std::string>>();
+
+    std::string icon_fn  = icon_string.toStdString();
+    std::string icon_txt = "";
+
+    if (icon_string.contains(';'))
+    {
+        auto parts = icon_string.split(';');
+        if (parts.size() != 2)
+            return boost::optional<std::pair<std::string, std::string>>();
+
+        icon_fn  = parts.at(0).toStdString();
+        icon_txt = parts.at(1).toStdString(); 
     }
     
-    return Utils::Files::IconProvider::getIcon(icon_name);
+    return std::make_pair(icon_fn, icon_txt);
+}
+
+/**
+ */
+boost::optional<std::pair<QIcon, std::string>> SectionContentTable::cellIcon(const nlohmann::json& data)
+{
+    auto fn = SectionContentTable::cellIconFn(data);
+    if (!fn)
+        return boost::optional<std::pair<QIcon, std::string>>();
+
+    return std::make_pair(Utils::Files::IconProvider::getIcon(fn->first), fn->second);
 }
 
 /**
@@ -493,6 +589,13 @@ void SectionContentTable::cellFont(QFont& font, unsigned int style)
     font.setBold(style & CellStyleTextBold);
     font.setItalic(style & CellStyleTextItalic);
     font.setStrikeOut(style & CellStyleTextStrikeOut);
+}
+
+/**
+ */
+bool SectionContentTable::cellIsInactive(unsigned int style)
+{
+    return (style & CellStyleInactive) != 0;
 }
 
 /**
@@ -595,29 +698,34 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
+    traced_assert(index.row() >= 0);
+    traced_assert(index.row() < (int)rows_.size());
+    traced_assert(index.column() >= 0);
+    traced_assert(index.column() < (int)num_columns_);
+
+    return data(index.row(), index.column(), role);
+}
+
+/**
+ */
+QVariant SectionContentTable::data(int row, int col, int role) const
+{
     switch (role)
     {
         case Qt::DisplayRole:
         {
-            logdbg << "SectionContentTable: data: display role: row " << index.row() << " col " << index.column();
+            logdbg << "display role: row " << row << " col " << col;
 
-            assert (index.row() >= 0);
-            assert (index.row() < (int)rows_.size());
-            assert (index.column() < (int)num_columns_);
-
-            auto style = cellStyle(index.row(), index.column());
+            auto style = cellStyle(row, col);
 
             if (cellShowsText(style))
-                return qVariantFromJSON(rows_.at(index.row()).at(index.column()));
+                return qVariantFromJSON(rows_.at(row).at(col));
 
             return QVariant(); 
         }
         case Qt::BackgroundRole:
         {
-            assert (index.row() >= 0);
-            assert (index.row() < (int)rows_.size());
-
-            auto style = cellStyle(index.row(), index.column());
+            auto style = cellStyle(row, col);
 
             if (cellShowsText(style))
             {
@@ -630,11 +738,7 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
         }
         case Qt::ForegroundRole:
         {
-            assert (index.row() >= 0);
-            assert (index.row() < (int)rows_.size());
-            assert (index.column() < (int)num_columns_);
-
-            auto style = cellStyle(index.row(), index.column());
+            auto style = cellStyle(row, col);
 
             if (style != 0)
             {
@@ -648,7 +752,7 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
             if (cellShowsText(style) &&
                 taskResult()->type() == task::TaskResultType::Evaluation)
             {
-                const auto& data = rows_.at(index.row()).at(index.column());
+                const auto& data = rows_.at(row).at(col);
 
                 if (data.is_string())
                 {
@@ -674,25 +778,25 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
         }
         case Qt::DecorationRole:
         {
-            auto style = cellStyle(index.row(), index.column());
+            auto style = cellStyle(row, col);
 
             if (cellShowsIcon(style))
             {
-                const auto& j = rows_.at(index.row()).at(index.column());
+                const auto& j = rows_.at(row).at(col);
                 auto icon = cellIcon(j);
                 if (icon.has_value())
-                    return icon.value();
+                    return icon.value().first;
             }
 
             return QVariant();
         }
         case Qt::CheckStateRole:
         {
-            auto style = cellStyle(index.row(), index.column());
+            auto style = cellStyle(row, col);
 
             if (cellShowsCheckBox(style))
             {
-                const auto& j = rows_.at(index.row()).at(index.column());
+                const auto& j = rows_.at(row).at(col);
                 auto c = cellChecked(j);
                 if (c.has_value())
                     return c.value() ? Qt::Checked : Qt::Unchecked;
@@ -702,7 +806,7 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
         }
         case Qt::FontRole:
         {
-            auto style = cellStyle(index.row(), index.column());
+            auto style = cellStyle(row, col);
 
             if (cellShowsSpecialFont(style))
             {
@@ -718,35 +822,58 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
             if (show_tooltips_)
             {
                 auto tResult = taskResult();
-                if (tResult->hasCustomTooltip(this, (unsigned int)index.row(), (unsigned int)index.column()))
+                if (tResult->hasCustomTooltip(this, (unsigned int)row, (unsigned int)col))
                 {
-                    auto ttip = tResult->customTooltip(this, (unsigned int)index.row(), (unsigned int)index.column());
+                    // custom tooltips
+                    auto ttip = tResult->customTooltip(this, (unsigned int)row, (unsigned int)col);
                     if (!ttip.empty())
                         return QString::fromStdString(ttip);
+                }
+                else
+                {
+                    // default tooltips
+                    auto style = cellStyle(row, col);
+
+                    if (cellShowsIcon(style))
+                    {
+                        auto fn = cellIconFn(rows_.at(row).at(col));
+                        if (fn.has_value() && !fn.value().second.empty())
+                            return QString::fromStdString(fn->second);
+                    }
                 }
             }
 
             return QVariant();
+        }
+        case CellStyleRole:
+        {
+            return cellStyle(row, col);
         }
         default:
         {
             return QVariant();
         }
     }
+
+    return QVariant();
 }
 
 /**
  */
-Qt::ItemFlags SectionContentTable::flags(const QModelIndex &index) const
+std::pair<Qt::ItemFlags, bool> SectionContentTable::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return Qt::NoItemFlags;
+        return std::make_pair(Qt::NoItemFlags, false);
 
     auto style = cellStyle(index.row(), index.column());
-    if (style & CellStyleCheckable)
-        return Qt::ItemIsUserCheckable;
 
-    return Qt::NoItemFlags;
+    if ((style & CellStyleInactive) == 0)
+    {
+        if (style & CellStyleCheckable)
+            return std::make_pair(Qt::ItemIsUserCheckable, true);
+    }
+
+    return std::make_pair(Qt::NoItemFlags, true);
 }
 
 /**
@@ -772,33 +899,20 @@ const std::vector<std::string>& SectionContentTable::headings() const
 
 /**
  */
-unsigned int SectionContentTable::filteredRowCount() const
+void SectionContentTable::setColumnGroup(const std::string& name, 
+                                         const std::vector<int>& columns,
+                                         bool enabled)
 {
-    return getOrCreateTableWidget()->proxyModel()->rowCount();
-}
+    traced_assert(!table_widget_); //!no config of column groups after widget is created!
 
-/**
- */
-std::vector<std::string> SectionContentTable::sortedRowStrings(unsigned int row, bool latex) const
-{
-    return getOrCreateTableWidget()->sortedRowStrings(row, latex);
-}
-
-/**
- */
-SectionContentTable::ColumnGroup& SectionContentTable::setColumnGroup(const std::string& name, 
-                                                                      const std::vector<int>& columns,
-                                                                      bool enabled)
-{
     auto& col_group = column_groups_[ name ];
 
     col_group         = {};
+    col_group.name    = name;
     col_group.columns = columns;
     col_group.enabled = enabled;
     
-    updateGroupColumns(col_group);
-
-    return col_group;
+    updateGroupColumns();
 }
 
 /**
@@ -809,23 +923,49 @@ void SectionContentTable::enableColumnGroup(const std::string& name,
     auto& column_group = column_groups_.at(name);
     column_group.enabled = ok;
 
-    updateGroupColumns(column_group);
+    updateGroupColumns();
 }
 
 /**
  */
-void SectionContentTable::updateGroupColumns(const ColumnGroup& col_group)
+bool SectionContentTable::hasColumnGroup(const std::string& name) const
+{
+    return column_groups_.count(name) > 0;
+}
+
+/**
+ */
+void SectionContentTable::updateGroupColumns(bool update_widget)
+{
+    for (const auto& cg : column_groups_)
+        updateGroupColumns(cg.second, false);
+
+    num_columns_proxy_ = 0;
+    for (unsigned int c = 0; c < num_columns_; ++c)
+        if (columnVisible(c))
+            ++num_columns_proxy_;
+
+    traced_assert(num_columns_proxy_ <= num_columns_);
+
+    if (update_widget && table_widget_)
+        table_widget_->updateColumnVisibility();
+}
+
+/**
+ */
+void SectionContentTable::updateGroupColumns(const TableColumnGroup& col_group,
+                                             bool update_widget)
 {
     for (auto col : col_group.columns)
     {
-        auto& f = column_flags_.at(col);
+        auto& f = column_flags_.at((size_t)col);
         if (col_group.enabled)
             f &= ~ColumnHidden;
         else
             f |= ColumnHidden;
     }
 
-    if (table_widget_)
+    if (update_widget && table_widget_)
         table_widget_->updateColumnVisibility();
 }
 
@@ -840,7 +980,14 @@ bool SectionContentTable::columnGroupEnabled(const std::string& name) const
  */
 bool SectionContentTable::columnVisible(int column) const
 {
-    return (column_flags_.at(column) & ColumnHidden) == 0;
+    return (column_flags_.at((size_t)column) & ColumnHidden) == 0;
+}
+
+/**
+ */
+bool SectionContentTable::columnsHidden() const
+{
+    return num_columns_proxy_ < num_columns_;
 }
 
 /**
@@ -878,7 +1025,7 @@ bool SectionContentTable::showUnused() const
  */
 void SectionContentTable::showUnused(bool value)
 {
-    loginf << "SectionContentTable: showUnused: value " << value;
+    loginf << "value " << value;
 
     getOrCreateTableWidget()->showUnused(value);
 
@@ -889,7 +1036,7 @@ void SectionContentTable::showUnused(bool value)
  */
 void SectionContentTable::registerCallBack (const std::string& name, const std::function<void()>& func)
 {
-    assert (!callback_map_.count(name));
+    traced_assert(!callback_map_.count(name));
     callback_map_.emplace(name, func);
 }
 
@@ -897,15 +1044,20 @@ void SectionContentTable::registerCallBack (const std::string& name, const std::
  */
 void SectionContentTable::executeCallback(const std::string& name)
 {
-    assert (callback_map_.count(name));
+    traced_assert(callback_map_.count(name));
     callback_map_.at(name)();
 }
 
 /**
  */
-void SectionContentTable::clicked(unsigned int row)
+bool SectionContentTable::clicked(unsigned int row)
 {
     const auto& annotation = annotations_.at(row);
+
+    //always trigger a blocked load (to regain focus later on)
+    const bool BlockedReload = true;
+
+    bool reload_triggered = false;
 
     //generate on-demand viewable?
     if (annotation.on_demand)
@@ -918,17 +1070,23 @@ void SectionContentTable::clicked(unsigned int row)
 
             if (ok)
             {
-                auto content = viewable.viewable_func();
-                report_->setCurrentViewable(*content);
+                QApplication::setOverrideCursor(Qt::WaitCursor);
+                {
+                    auto content = viewable.viewable_func();
+                    report_->setCurrentViewable(*content, BlockedReload);
+
+                    reload_triggered = true;
+                }
+                QApplication::restoreOverrideCursor();
             }
             else
             {
                 report_->unsetCurrentViewable();
-                logerr << "SectionContentTable: clicked: on-demand viewable could not be retrieved";
+                logerr << "on-demand viewable could not be retrieved";
             }
         }
 
-        return;
+        return reload_triggered;
     }
 
     //obtain figure from annotation
@@ -937,7 +1095,7 @@ void SectionContentTable::clicked(unsigned int row)
 
     if (annotation.figure_id.has_value())
     {
-        loginf << "SectionContentTable: clicked: index has associated viewable via id " << annotation.figure_id.value();
+        loginf << "index has associated viewable via id " << annotation.figure_id.value();
         has_valid_link = true;
 
         //figure from content in parent section
@@ -946,7 +1104,7 @@ void SectionContentTable::clicked(unsigned int row)
     }
     else if (!annotation.section_link.empty() && !annotation.section_figure.empty())
     {
-        loginf << "SectionContentTable: clicked: index has associated viewable via" 
+        loginf << "index has associated viewable via" 
                << " section '" << annotation.section_link << "'"
                << " figure '" << annotation.section_figure << "'";
         has_valid_link = true;
@@ -983,13 +1141,19 @@ void SectionContentTable::clicked(unsigned int row)
 
             //show viewable (will now recompute internally if needed)
             //              (might get cancelled if the figure is locked)
-            figure->view();
+            QApplication::setOverrideCursor(Qt::WaitCursor);
+            {
+                reload_triggered = figure->view(BlockedReload);
+            }
+            QApplication::restoreOverrideCursor();
         }
         else
         {
-            logerr << "SectionContentTable: clicked: figure could not be retrieved";
+            logerr << "figure could not be retrieved";
         }
     }
+
+    return reload_triggered;
 }
 
 /**
@@ -1001,7 +1165,7 @@ void SectionContentTable::doubleClicked(unsigned int row)
     //link to other section stored in row?
     if (!annotation.section_link.empty())
     {
-        loginf << "SectionContentTable: doubleClicked: index has associated reference '"
+        loginf << "index has associated reference '"
                << annotation.section_link << "'";
 
         //jump to row link
@@ -1009,7 +1173,7 @@ void SectionContentTable::doubleClicked(unsigned int row)
     }
     else
     {
-        loginf << "SectionContentTable: doubleClicked: index has no associated reference";
+        loginf << "index has no associated reference";
     }
 }
 
@@ -1031,8 +1195,10 @@ void SectionContentTable::addActionsToMenu(QMenu* menu)
     //add general actions
 
     //@TODO: seems to be broken at the moment, fix functionality
-    //QAction* unused_action = menu->addAction("Toggle Show Unused");
-    //QObject::connect (unused_action, &QAction::triggered, [ this ] { this->toggleShowUnused(); });
+    QAction* unused_action = menu->addAction("Show Unused");
+    unused_action->setCheckable(true);
+    unused_action->setChecked(show_unused_);
+    QObject::connect (unused_action, &QAction::triggered, [ this ] { this->toggleShowUnused(); });
 
     QAction* copy_action = menu->addAction("Copy Content");
     QObject::connect (copy_action, &QAction::triggered, [ this ] { this->copyContent(); });
@@ -1064,59 +1230,47 @@ void SectionContentTable::toggleShowUnused()
  */
 void SectionContentTable::copyContent()
 {
-    loginf << "SectionContentTable: copyContent";
+    loginf;
 
     std::stringstream ss;
 
-    unsigned int num_cols = headings_.size();
+    auto proxy_headings = proxyHeadings();
+    unsigned int num_cols = proxy_headings.size();
 
     // headings
     for (unsigned int cnt=0; cnt < num_cols; ++cnt)
     {
         if (cnt == 0)
-            ss << headings_.at(cnt);
+            ss << proxy_headings.at(cnt);
         else
-            ss <<  ";" << headings_.at(cnt);
+            ss <<  ";" << proxy_headings.at(cnt);
     }
     ss << "\n";
 
-    auto proxy_model = getOrCreateTableWidget()->proxyModel();
+    unsigned int num_rows = numProxyRows();
 
-    unsigned int num_rows = proxy_model->rowCount();
-
-    std::vector<std::string> row_strings;
+    nlohmann::json row_data;
 
     for (unsigned int row=0; row < num_rows; ++row)
     {
-        row_strings = sortedRowStrings(row, false);
-        assert (row_strings.size() == num_cols);
+        row_data = exportProxyContent(row, ReportExportMode::CSV);
+        traced_assert(row_data.is_array());
+        traced_assert(row_data.size() == num_cols);
 
         for (unsigned int cnt=0; cnt < num_cols; ++cnt)
         {
+            const auto& d = row_data.at(cnt);
+            traced_assert(d.is_string());
+
             if (cnt == 0)
-                ss << row_strings.at(cnt);
+                ss << d.get<std::string>();
             else
-                ss <<  ";" << row_strings.at(cnt);
+                ss <<  ";" << d.get<std::string>();
         }
         ss << "\n";
     }
 
     QApplication::clipboard()->setText(ss.str().c_str());
-}
-
-/**
- */
-Utils::StringTable SectionContentTable::toStringTable() const
-{
-    return Utils::StringTable(getOrCreateTableWidget()->itemModel());
-}
-
-/**
- */
-nlohmann::json SectionContentTable::toJSONTable(bool rowwise,
-                                                const std::vector<int>& cols) const
-{
-    return toStringTable().toJSON(rowwise, cols);
 }
 
 /**
@@ -1138,6 +1292,20 @@ void SectionContentTable::toJSON_impl(nlohmann::json& j) const
 
     if (max_row_count_.has_value())
         j[ FieldMaxRowCount ] = max_row_count_.value();
+
+    //write column groups
+    auto j_col_groups = nlohmann::json::array();
+    for (const auto& col_group : column_groups_)
+    {
+        nlohmann::json j_group;
+
+        j_group[ FieldColGroupName          ] = col_group.second.name;
+        j_group[ FieldColGroupColumns       ] = col_group.second.columns;
+        j_group[ FieldColGroupEnabledOnInit ] = col_group.second.enabled_on_init;
+
+        j_col_groups.push_back(j_group);
+    }
+    j[ FieldColumnGroups ] = j_col_groups;
 
     //write content only if not on demand
     if (!isOnDemand())
@@ -1186,7 +1354,7 @@ bool SectionContentTable::fromJSON_impl(const nlohmann::json& j)
         !j.contains(FieldCellStyles)   ||
         !j.contains(FieldShowTooltips))
     {
-        logerr << "SectionContentTable: fromJSON: Error: Section content table does not obtain needed fields";
+        logerr << "section content table does not obtain needed fields";
         return false;
     }
 
@@ -1205,7 +1373,39 @@ bool SectionContentTable::fromJSON_impl(const nlohmann::json& j)
         max_row_count_ = v;
     }
 
-    num_columns_ = headings_.size();
+    if (j.contains(FieldColumnGroups))
+    {
+        //read in defined column groups
+        const auto& j_col_groups = j[ FieldColumnGroups ];
+        if (!j_col_groups.is_array())
+        {
+            logerr << "could not read column groups";
+            return false;
+        }
+
+        for (const auto& j_col_group : j_col_groups)
+        {
+            if (!j_col_group.is_object() ||
+                !j_col_group.contains(FieldColGroupName)    ||
+                !j_col_group.contains(FieldColGroupColumns) ||
+                !j_col_group.contains(FieldColGroupEnabledOnInit))
+            {
+                logerr << "could not read column group";
+                return false;
+            }
+
+            TableColumnGroup col_group;
+            col_group.name            = j_col_group[ FieldColGroupName          ];
+            col_group.columns         = j_col_group[ FieldColGroupColumns       ].get<std::vector<int>>();
+            col_group.enabled_on_init = j_col_group[ FieldColGroupEnabledOnInit ];
+            col_group.enabled         = col_group.enabled_on_init;
+
+            column_groups_[ col_group.name ] = col_group;
+        }
+    }
+
+    num_columns_       = headings_.size();
+    num_columns_proxy_ = headings_.size();
 
     //@TODO: maybe serialize these flags in the future
     column_flags_.assign(num_columns_, 0);
@@ -1215,7 +1415,7 @@ bool SectionContentTable::fromJSON_impl(const nlohmann::json& j)
     auto& j_annos = j[ FieldAnnotations ];
     if (!j_annos.is_array() || j_annos.size() != rows_.size())
     {
-        logerr << "SectionContentTable: fromJSON: Error: Annotation array invalid";
+        logerr << "annotation array invalid";
         return false;
     }
 
@@ -1226,7 +1426,7 @@ bool SectionContentTable::fromJSON_impl(const nlohmann::json& j)
             !j_anno.contains(FieldAnnoOnDemand)      ||
             !j_anno.contains(FieldAnnoStyle))
         {
-            logerr << "SectionContentTable: fromJSON: Error: Could not read annotation";
+            logerr << "could not read annotation";
             return false;
         }
 
@@ -1247,8 +1447,11 @@ bool SectionContentTable::fromJSON_impl(const nlohmann::json& j)
 
     cell_styles_ = j[ FieldCellStyles ].get<CellStyles>();
 
-    assert(rows_.size() == annotations_.size());
-    assert(num_columns_ == column_styles_.size());
+    traced_assert(rows_.size() == annotations_.size());
+    traced_assert(num_columns_ == column_styles_.size());
+
+    //run some updates
+    updateGroupColumns();
 
     return true;
 }
@@ -1256,15 +1459,20 @@ bool SectionContentTable::fromJSON_impl(const nlohmann::json& j)
 /**
  */
 Result SectionContentTable::toJSONDocument_impl(nlohmann::json& j,
-                                                const std::string* resource_dir) const
+                                                const std::string* resource_dir,
+                                                ReportExportMode export_style) const
 {
     //call base
-    auto r = SectionContent::toJSONDocument_impl(j, resource_dir);
+    auto r = SectionContent::toJSONDocument_impl(j, resource_dir, export_style);
     if (!r.ok())
         return r;
 
-    bool write_to_file = (ReportExporter::TableMaxRows    >= 0 && numRows()    > (size_t)ReportExporter::TableMaxRows   ) ||
-                         (ReportExporter::TableMaxColumns >= 0 && numColumns() > (size_t)ReportExporter::TableMaxColumns);
+    bool write_to_file = (ReportExporter::TableMaxRows    >= 0 && numProxyRows()    > (size_t)ReportExporter::TableMaxRows   ) ||
+                         (ReportExporter::TableMaxColumns >= 0 && numProxyColumns() > (size_t)ReportExporter::TableMaxColumns);
+
+    auto data = exportProxyContent(export_style);
+    if (!data.has_value())
+        return Result::failed("Could not prepare content '" + name() + "' for export");
 
     if (resource_dir && write_to_file)
     {
@@ -1273,8 +1481,8 @@ Result SectionContentTable::toJSONDocument_impl(nlohmann::json& j,
             return res;
 
         nlohmann::json j_ext;
-        j_ext[ FieldDocColumns ] = headings_;
-        j_ext[ FieldDocData    ] = rows_;
+        j_ext[ FieldDocColumns ] = proxyHeadings();
+        j_ext[ FieldDocData    ] = data.value();
 
         std::ofstream of(res.result().path);
         if (!of.is_open())
@@ -1291,10 +1499,334 @@ Result SectionContentTable::toJSONDocument_impl(nlohmann::json& j,
     else
     {
         j[ FieldDocColumns ] = headings_;
-        j[ FieldDocData    ] = rows_;
+        j[ FieldDocData    ] = data.value();
     }
 
     return Result::succeeded();
+}
+
+/**
+ */
+nlohmann::json SectionContentTable::jsonConfig() const
+{
+    if (table_widget_)
+        return table_widget_->jsonConfig();
+
+    return nlohmann::json();
+}
+
+/**
+ */
+bool SectionContentTable::configure(const nlohmann::json& j)
+{
+    if (!table_widget_)
+        return true; // no table widget, nothing to configure
+
+    return table_widget_->configure(j);
+}
+
+/**
+ * Exports a table cell to a certain format and returns it as a json object.
+ * Main method for preparing cell data for export.
+ * Allows fine-grained adjustments for specific export types,
+ * e.g. generation of latex special statements.
+ */
+nlohmann::json SectionContentTable::exportContent(unsigned int row, 
+                                                  unsigned int col,
+                                                  ReportExportMode mode,
+                                                  bool* ok) const
+{
+    if (ok)
+        *ok = false;
+
+    nlohmann::json j = rows_[ row ][ col ];
+
+    auto style = cellStyle((int)row, (int)col);
+
+    //@TODO: hack
+    if (j.is_string() && j.get<std::string>() == "Passed")
+        style |= CellStyleTextColorGreen;
+    if (j.is_string() && j.get<std::string>() == "Failed")
+        style |= CellStyleTextColorRed;
+
+    if (mode == ReportExportMode::Latex || 
+        mode == ReportExportMode::LatexPDF)
+    {
+        std::string s;
+
+        //cell export for latex
+        if (SectionContentTable::cellShowsIcon(style))
+        {
+            // generate latex icon
+            auto fn = SectionContentTable::cellIconFn(j);
+            if (!fn.has_value())
+                return {};
+
+            // check if icon exists
+            auto path = Utils::Files::getIconFilepath(fn.value().first, false);
+            if (!Utils::Files::fileExists(path))
+                return {};
+            
+            s = "\\includegraphics[width=" + std::to_string(LatexIconWidth_cm) + "cm]{" + fn.value().first + "}";
+        }
+        else if (cellShowsCheckBox(style))
+        {
+            // replace check state information with strings
+            auto c = cellChecked(j);
+            if (!c.has_value())
+                return {};
+            
+            s = c.value() ? "Yes" : "No";
+        }
+        else
+        {
+            // default latex export => convert displayed data to latex string
+            s = Utils::String::latexString(data((int)row, (int)col, Qt::DisplayRole).toString().toStdString());
+        }
+
+        // further format generated string depending on style flags
+
+        //handle special fonts
+        if (cellFontIsBold(style))
+            s = "\\textbf{" + s + "}";
+        else if (cellFontIsItalic(style))
+            s = "\\textit{" + s + "}";
+        //@TODO: strikeout text needs special latex package
+
+        //handle section links
+        const auto& slink = annotations_[ row ].section_link;
+        if (!slink.empty() && col == latex_ref_column_)
+        {
+            // \hyperref[sec:marker2]{SecondSection}
+            s = "\\hyperref[sec:" + slink + "]{" + s + "}";
+        }
+
+        //handle text coloring
+        auto col_txt = cellTextColorLatex(style);
+        if (!col_txt.empty())
+            s = "\\textcolor{" + col_txt + "}{" + s + "}";
+
+        //handle cell coloring
+        auto col_bg = cellBGColorLatex(style);
+        if (!col_bg.empty())
+            s = "\\cellcolor{" + col_bg + "}" + s;
+
+        j = s;
+    }
+    else if (mode == ReportExportMode::JSONFile || 
+             mode == ReportExportMode::JSONBlob)
+    {
+        //cell export for json
+        if (SectionContentTable::cellShowsIcon(style))
+        {
+            // replace internal icon information with replacement texts
+            auto fn = SectionContentTable::cellIconFn(j);
+            if (!fn.has_value())
+                return {};
+
+            j = fn.value().second;
+        }
+        else if (cellShowsCheckBox(style))
+        {
+            // replace check state information with strings
+            auto c = cellChecked(j);
+            if (!c.has_value())
+                return {};
+            
+            j = c.value() ? "Yes" : "No";
+        }
+
+        //else = just return data directly as json
+    }
+    else
+    {
+        std::string s;
+
+        //cell export for csv / default
+        if (SectionContentTable::cellShowsIcon(style))
+        {
+            // replace internal icon information with replacement texts
+            auto fn = SectionContentTable::cellIconFn(j);
+            if (!fn.has_value())
+                return {};
+
+            s = fn.value().second;
+        }
+        else if (cellShowsCheckBox(style))
+        {
+            // replace check state information with strings
+            auto c = cellChecked(j);
+            if (!c.has_value())
+                return {};
+            
+            s = c.value() ? "Yes" : "No";
+        }
+        else
+        {
+            // default text export => convert displayed data to string
+            s = data((int)row, (int)col, Qt::DisplayRole).toString().toStdString();
+        }
+
+        j = s;
+    }
+
+    if (ok)
+        *ok = true;
+
+    return j;
+}
+
+/**
+ */
+nlohmann::json SectionContentTable::exportContent(unsigned int row,
+                                                  ReportExportMode mode) const
+{
+    auto j_row = nlohmann::json::array();
+
+    bool ok;
+    for (unsigned int col = 0; col < num_columns_; ++col)
+    {
+        auto j_cell = exportContent(row, col, mode, &ok);
+        if (!ok)
+            return nlohmann::json();
+
+        j_row.push_back(j_cell);
+    }
+
+    return j_row;
+}
+
+/**
+ */
+boost::optional<std::vector<nlohmann::json>> SectionContentTable::exportContent(ReportExportMode mode) const
+{
+    std::vector<nlohmann::json> data;
+
+    size_t n = numRows();
+    data.reserve(n);
+
+    for (size_t r = 0; r < rows_.size(); ++r)
+    {
+        auto j_row = exportContent(r, mode);
+        if (j_row.is_null())
+            return boost::optional<std::vector<nlohmann::json>>();
+
+        traced_assert(j_row.is_array());
+
+        data.push_back(j_row);
+    }
+
+    return data;
+}
+
+/**
+ */
+nlohmann::json SectionContentTable::exportProxyContent(unsigned int row, 
+                                                       unsigned int col,
+                                                       ReportExportMode mode,
+                                                       bool* ok) const
+{
+    auto w = getOrCreateTableWidget();
+    traced_assert(w);
+
+    auto proxy_model = w->proxyModel();
+    traced_assert(proxy_model);
+
+    auto index = proxy_model->index(row, col);
+    traced_assert(index.isValid());
+
+    auto index_src = proxy_model->mapToSource(index);
+    traced_assert(index_src.isValid());
+
+    return exportContent(index_src.row(), index_src.column(), mode, ok);
+}
+
+/**
+ */
+nlohmann::json SectionContentTable::exportProxyContent(unsigned int row,
+                                                       ReportExportMode mode) const
+{
+    traced_assert(row >= 0);
+    traced_assert(row < numProxyRows());
+    traced_assert(row < numRows());
+
+    auto j_row = nlohmann::json::array();
+
+    bool cols_hidden = columnsHidden();
+
+    bool ok;
+    for (unsigned int col = 0; col < num_columns_; ++col)
+    {
+        if (cols_hidden && !columnVisible(col))
+            continue;
+
+        auto j_cell = exportProxyContent(row, col, mode, &ok);
+        if (!ok)
+        {
+            return nlohmann::json();
+        }
+
+        j_row.push_back(j_cell);
+    }
+
+    return j_row;
+}
+
+/**
+ */
+boost::optional<std::vector<nlohmann::json>> SectionContentTable::exportProxyContent(ReportExportMode mode) const
+{
+    auto num_rows = numProxyRows();
+    
+    std::vector<nlohmann::json> data;
+    data.reserve(num_rows);
+
+    for (unsigned int r = 0; r < num_rows; ++r)
+    {
+        auto j_row = exportProxyContent(r, mode);
+        if (j_row.is_null())
+            return boost::optional<std::vector<nlohmann::json>>();
+
+        traced_assert(j_row.is_array());
+
+        data.push_back(j_row);
+    }
+
+    return data;
+}
+
+/**
+ */
+unsigned int SectionContentTable::numProxyRows() const
+{
+    return getOrCreateTableWidget()->proxyModel()->rowCount();
+}
+
+/**
+ */
+unsigned int SectionContentTable::numProxyColumns () const
+{
+    return num_columns_proxy_;
+}
+
+/**
+ */
+std::vector<std::string> SectionContentTable::proxyHeadings() const
+{
+    if (column_groups_.empty())
+        return headings();
+
+    std::vector<std::string> proxy_headings;
+    proxy_headings.reserve(numProxyColumns());
+
+    int nc = numColumns();
+    for (int i = 0; i < nc; ++i)
+        if (columnVisible(i))
+            proxy_headings.push_back(headings_[ i ]);
+
+    traced_assert(proxy_headings.size() == numProxyColumns());
+
+    return proxy_headings;
 }
 
 /***************************************************************************************************
@@ -1307,7 +1839,7 @@ SectionContentTableModel::SectionContentTableModel(SectionContentTable* content_
 :   QAbstractItemModel(parent)
 ,   content_table_    (content_table)
 {
-    assert(content_table_);
+    traced_assert(content_table_);
 }
 
 /**
@@ -1323,7 +1855,7 @@ QVariant SectionContentTableModel::headerData(int section, Qt::Orientation orien
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < (int)content_table_->numColumns());
+        traced_assert(section < (int)content_table_->numColumns());
         return content_table_->headings().at(section).c_str();
     }
 
@@ -1362,8 +1894,17 @@ QModelIndex SectionContentTableModel::parent(const QModelIndex& index) const
  */
 Qt::ItemFlags SectionContentTableModel::flags(const QModelIndex &index) const
 {
-    auto f = QAbstractItemModel::flags(index);
-    f |= content_table_->flags(index);
+    if (!index.isValid())
+        return Qt::NoItemFlags;
+
+    //combine default flags with provided ones
+    auto fc = content_table_->flags(index);
+    auto f  = QAbstractItemModel::flags(index);
+    f |= fc.first;
+
+    //disable item?
+    if (!fc.second)
+        f &= ~Qt::ItemIsEnabled;
 
     return f;
 }
@@ -1403,6 +1944,12 @@ void SectionContentTableModel::executeAndReset(const std::function<void()>& func
 
 const int SectionContentTableWidget::DoubleClickCheckIntervalMSecs = 300;
 
+const std::string SectionContentTableWidget::FieldConfigSortColumn = SectionContentTable::FieldSortColumn;
+const std::string SectionContentTableWidget::FieldConfigSortOrder  = SectionContentTable::FieldSortOrder;
+const std::string SectionContentTableWidget::FieldConfigScrollPosV = "scroll_pos_v";
+const std::string SectionContentTableWidget::FieldConfigScrollPosH = "scroll_pos_h";
+const std::string SectionContentTableWidget::FieldColGroupStates   = "col_group_states";
+
 /**
  */
 SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* content_table, 
@@ -1412,22 +1959,39 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
                                                      QWidget* parent)
 :   QWidget       (parent       )
 ,   content_table_(content_table)
+,   sort_column_  (sort_column  )
+,   sort_order_   (sort_order   )
 {
-    assert(content_table_);
+    traced_assert(content_table_);
 
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
-    QHBoxLayout* upper_layout = new QHBoxLayout();
+    QHBoxLayout* upper_layout  = new QHBoxLayout();
 
     upper_layout->addWidget(new QLabel(("Table: " + content_table_->name()).c_str()));
     upper_layout->addStretch();
+    
+    const auto& col_groups = content_table->columnGroups();
 
-    options_menu_ = new QMenu(options_button_);
-    connect(options_menu_, &QMenu::aboutToShow, this, &SectionContentTableWidget::updateOptionsMenu);
+    if (!col_groups.empty())
+    {
+        col_group_toolbar_ = new QToolBar;
+        col_group_toolbar_->setIconSize(UI_ICON_SIZE);
 
-    options_button_ = new QPushButton("Options");
-    options_button_->setMenu(options_menu_);
+        upper_layout->addWidget(col_group_toolbar_);
+    }
+
+    upper_layout->addStretch();
+
+    options_button_ = new QPushButton;
+    options_button_->setStyleSheet("QPushButton::menu-indicator { image: none; }");
+    options_button_->setIcon(Utils::Files::IconProvider::getIcon("edit.png"));
+    options_button_->setFixedSize(UI_ICON_SIZE); 
+    options_button_->setFlat(UI_ICON_BUTTON_FLAT);
+
+    options_menu_.reset(new PopupMenu(options_button_));
+    options_menu_->setPreShowCallback([ = ] () { this->updateOptionsMenu(); });
 
     upper_layout->addWidget(options_button_);
 
@@ -1455,6 +2019,7 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
     table_view_->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     table_view_->setContextMenuPolicy(Qt::CustomContextMenu);
     table_view_->setWordWrap(true);
+    table_view_->setFocusPolicy(Qt::StrongFocus);
 
     table_view_->reset();
 
@@ -1466,12 +2031,19 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
             this, &SectionContentTableWidget::clicked);
     connect(table_view_, &QTableView::doubleClicked,
             this, &SectionContentTableWidget::doubleClicked);
-        
+
+    connect(table_view_->verticalScrollBar(), &QScrollBar::rangeChanged,
+            this, &SectionContentTableWidget::updateScrollBarV);
+    connect(table_view_->horizontalScrollBar(), &QScrollBar::rangeChanged,
+            this, &SectionContentTableWidget::updateScrollBarH);
+    
     //    if (num_columns_ > 5)
     //        table_view_->horizontalHeader()->setMaximumSectionSize(150);
     
     table_view_->resizeColumnsToContents();
     table_view_->resizeRowsToContents();
+    table_view_->verticalScrollBar()->installEventFilter(this);
+    table_view_->horizontalScrollBar()->installEventFilter(this);
 
     main_layout->addWidget(table_view_);
 
@@ -1479,6 +2051,8 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
     click_action_timer_.setInterval(DoubleClickCheckIntervalMSecs);
 
     QObject::connect(&click_action_timer_, &QTimer::timeout, this, &SectionContentTableWidget::performClickAction);
+
+    updateToolBar();
 }
 
 /**
@@ -1513,6 +2087,35 @@ void SectionContentTableWidget::updateColumnVisibility()
 {
     for (unsigned int c = 0; c < content_table_->numColumns(); ++c)
         table_view_->setColumnHidden(c, !content_table_->columnVisible(c));
+}
+
+/**
+ */
+void SectionContentTableWidget::updateToolBar()
+{
+    if (!col_group_toolbar_)
+        return;
+
+    col_group_toolbar_->clear();
+
+    const auto& col_groups = content_table_->columnGroups();
+
+    for (const auto& col_group : col_groups)
+    {
+        auto action = col_group_toolbar_->addAction(QString::fromStdString(col_group.first));
+        action->setCheckable(true);
+        action->setChecked(col_group.second.enabled);
+
+        std::string name          = col_group.first;
+        auto        content_table = content_table_;
+
+        auto cb = [ content_table, name ] (bool ok)
+        {
+            content_table->enableColumnGroup(name, ok);
+        };
+
+        connect(action, &QAction::toggled, cb);
+    }
 }
 
 /**
@@ -1562,14 +2165,14 @@ const QTableView* SectionContentTableWidget::tableView() const
  */
 int SectionContentTableWidget::fromProxy(int proxy_row) const
 {
-    assert (proxy_row < proxy_model_->rowCount());
-    assert (proxy_row < (int)content_table_->numRows());
+    traced_assert(proxy_row < proxy_model_->rowCount());
+    traced_assert(proxy_row < (int)content_table_->numRows());
 
     QModelIndex index = proxy_model_->index(proxy_row, 0);
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     unsigned int row_index = source_index.row();
 
@@ -1580,25 +2183,25 @@ int SectionContentTableWidget::fromProxy(int proxy_row) const
  */
 void SectionContentTableWidget::clicked(const QModelIndex& index)
 {
-    loginf << "SectionContentTableWidget: clicked";
+    loginf;
 
     if (!index.isValid())
     {
-        loginf << "SectionContentTableWidget: clicked: invalid index";
+        loginf << "invalid index";
         return;
     }
 
     if (QApplication::mouseButtons() & Qt::RightButton)
     {
-        loginf << "SectionContentTableWidget: clicked: RMB click ignored";
+        loginf << "RMB click ignored";
         return;
     }
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
-    assert (source_index.row() >= 0);
-    assert (source_index.row() < (int)content_table_->numRows());
+    traced_assert(source_index.row() >= 0);
+    traced_assert(source_index.row() < (int)content_table_->numRows());
 
     last_clicked_row_index_ = source_index.row();
 
@@ -1610,7 +2213,7 @@ void SectionContentTableWidget::clicked(const QModelIndex& index)
  */
 void SectionContentTableWidget::performClickAction()
 {
-    loginf << "SectionContentTableWidget: performClickAction";
+    loginf;
 
     //double click did not interrupt click action => perform
     if (!last_clicked_row_index_.has_value())
@@ -1619,32 +2222,39 @@ void SectionContentTableWidget::performClickAction()
     unsigned int row_index = last_clicked_row_index_.value();
     last_clicked_row_index_.reset();
 
-    //pass row to table
-    content_table_->clicked(row_index);
+    //pass row to table and potentially trigger a viewable
+    bool viewable_triggered = content_table_->clicked(row_index);
+
+    //regain focus lost during potential reload
+    if (viewable_triggered)
+    {
+        QApplication::processEvents();
+        table_view_->setFocus();
+    }
 }
 
 /**
  */
 void SectionContentTableWidget::doubleClicked(const QModelIndex& index)
 {
-    loginf << "SectionContentTableWidget: doubleClicked";
+    loginf;
 
     //double click detected => interrupt any previously triggered click action
     click_action_timer_.stop();
 
     if (!index.isValid())
     {
-        loginf << "SectionContentTableWidget: doubleClicked: invalid index";
+        loginf << "invalid index";
         return;
     }
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
-    assert (source_index.row() >= 0);
-    assert (source_index.row() < (int)content_table_->numRows());
+    traced_assert(source_index.row() >= 0);
+    traced_assert(source_index.row() < (int)content_table_->numRows());
 
-    loginf << "SectionContentTableWidget: doubleClicked: row " << source_index.row();
+    loginf << "row " << source_index.row();
 
     unsigned int row_index = source_index.row();
 
@@ -1656,19 +2266,19 @@ void SectionContentTableWidget::doubleClicked(const QModelIndex& index)
  */
 void SectionContentTableWidget::customContextMenu(const QPoint& p)
 {
-    logdbg << "SectionContentTableWidget: customContextMenu";
+    logdbg;
 
     QModelIndex index = table_view_->indexAt(p);
     if (!index.isValid())
         return;
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
-    loginf << "SectionContentTableWidget: customContextMenu: row " << index.row() << " src " << source_index.row();
+    loginf << "row " << index.row() << " src " << source_index.row();
 
-    assert (source_index.row() >= 0);
-    assert (source_index.row() < (int)content_table_->numRows());
+    traced_assert(source_index.row() >= 0);
+    traced_assert(source_index.row() < (int)content_table_->numRows());
 
     unsigned int row_index = source_index.row();
 
@@ -1680,42 +2290,210 @@ void SectionContentTableWidget::customContextMenu(const QPoint& p)
 
 /**
  */
-std::vector<std::string> SectionContentTableWidget::sortedRowStrings(unsigned int row, bool latex) const
+void SectionContentTableWidget::updateOptionsMenu()
 {
-    logdbg << "SectionContentTableWidget: sortedRowStrings: row " << row << " rows " << proxy_model_->rowCount()
-           << " data rows " << content_table_->numRows();
-    
-    assert ((int)row < proxy_model_->rowCount());
-    assert (row < content_table_->numRows());
+    if (!options_menu_ || 
+        !content_table_)
+        return;
 
-    std::vector<std::string> result;
+    options_menu_->clear();
+    content_table_->addActionsToMenu(options_menu_.get());
 
-    size_t nc = content_table_->numColumns();
+    const auto& col_groups = content_table_->columnGroups();
 
-    for (size_t col=0; col < nc; ++col)
+    if (col_groups.size() > 0)
     {
-        QModelIndex index = proxy_model_->index(row, col);
-        assert (index.isValid());
+        if (options_menu_->actions().count() > 0)
+            options_menu_->addSeparator();
 
-        // get string can convert to latex
-        if (latex)
-            result.push_back(Utils::String::latexString(proxy_model_->data(index).toString().toStdString()));
-        else
-            result.push_back(proxy_model_->data(index).toString().toStdString());
+        auto column_menu = options_menu_->addMenu("Edit Columns");
+
+        for (const auto& col_group : col_groups)
+        {
+            auto action = column_menu->addAction(QString::fromStdString(col_group.first));
+            action->setCheckable(true);
+            action->setChecked(col_group.second.enabled);
+
+            std::string group_name    = col_group.first;
+            auto        content_table = content_table_;
+
+            auto cb = [ this, content_table, group_name ] (bool ok)
+            {
+                content_table->enableColumnGroup(group_name, ok);
+                this->updateToolBar();
+            };
+
+            connect(action, &QAction::toggled, cb);
+        }
     }
-
-    return result;
 }
 
 /**
  */
-void SectionContentTableWidget::updateOptionsMenu()
+void SectionContentTableWidget::updateScrollBarV()
 {
-    if (options_menu_ && content_table_)
+    //loginf;
+
+    if (!content_table_->isComplete())
+        return;
+
+    //loginf << "applying new scroll limit: " 
+    //       << "v = " << (scroll_pos_v_.has_value() ? scroll_pos_v_.value() : -1);
+
+    //configure vertical scroll bar position
+    if (scroll_pos_v_.has_value() && scroll_pos_v_.value() > 0 && table_view_->verticalScrollBar()->isVisible())
     {
-        options_menu_->clear();
-        content_table_->addActionsToMenu(options_menu_);
+        loginf << "applying v limit " << scroll_pos_v_.value();
+        table_view_->verticalScrollBar()->setValue(scroll_pos_v_.value());
+        scroll_pos_v_.reset();
     }
+}
+
+/**
+ */
+void SectionContentTableWidget::updateScrollBarH()
+{
+    //loginf;
+
+    if (!content_table_->isComplete())
+        return;
+
+    //loginf << "applying new scroll limit: " 
+    //      << "h = " << (scroll_pos_h_.has_value() ? scroll_pos_h_.value() : -1);
+
+    //configure horizontal scroll bar position
+    if (scroll_pos_h_.has_value() && scroll_pos_h_.value() > 0 && table_view_->horizontalScrollBar()->isVisible())
+    {
+        loginf << "applying h limit " << scroll_pos_h_.value();
+        table_view_->horizontalScrollBar()->setValue(scroll_pos_h_.value());
+        scroll_pos_h_.reset();
+    }
+}
+
+/**
+ */
+int SectionContentTableWidget::scrollPosV() const
+{
+    if (table_view_ && table_view_->verticalScrollBar()->isVisible())
+        return table_view_->verticalScrollBar()->value();
+    
+    return -1;
+}
+
+/**
+ */
+int SectionContentTableWidget::scrollPosH() const
+{
+    if (table_view_ && table_view_->horizontalScrollBar()->isVisible())
+        return table_view_->horizontalScrollBar()->value();
+    
+    return -1;
+}
+
+/**
+ */
+bool SectionContentTableWidget::eventFilter(QObject *watched, QEvent *event)
+{
+    //react on showing the scroll bars
+    if (table_view_ && watched == table_view_->verticalScrollBar() && event->type() == QEvent::Show)
+        updateScrollBarV();
+    if (table_view_ && watched == table_view_->horizontalScrollBar() && event->type() == QEvent::Show)
+        updateScrollBarH();
+
+    return false;
+}
+
+/**
+ */
+nlohmann::json SectionContentTableWidget::jsonConfig() const
+{
+    if (!table_view_)
+        return nlohmann::json();
+
+    nlohmann::json j;
+
+    j[ FieldConfigSortOrder  ] = (sort_order_ == Qt::AscendingOrder ? "ascending" : "descending");
+    j[ FieldConfigSortColumn ] = sort_column_;
+    j[ FieldConfigScrollPosV ] = scrollPosV();
+    j[ FieldConfigScrollPosH ] = scrollPosH();
+
+    //store column group states
+    if (col_group_toolbar_)
+    {
+        int na = col_group_toolbar_->actions().count();
+
+        std::vector<bool> col_group_states(na);
+        for (int i = 0; i < na; ++i)
+            col_group_states[ i ] = col_group_toolbar_->actions().at(i)->isChecked();
+
+        j[ FieldColGroupStates ] = col_group_states;
+    }
+
+    return j;
+}
+
+/**
+ */
+bool SectionContentTableWidget::configure(const nlohmann::json& j)
+{
+    if (!table_view_)
+        return true; // no table view, nothing to configure
+
+    if (!j.contains(FieldConfigSortOrder) ||
+        !j.contains(FieldConfigSortColumn) ||
+        !j.contains(FieldConfigScrollPosV) ||
+        !j.contains(FieldConfigScrollPosH))
+    {
+        return false;
+    }
+
+    int           sort_column    = j[FieldConfigSortColumn];
+    std::string   sort_order_str = j[FieldConfigSortOrder];   
+    Qt::SortOrder sort_order     = (sort_order_str == "ascending" ? Qt::AscendingOrder : Qt::DescendingOrder);
+    int           scroll_pos_v   = j[FieldConfigScrollPosV];
+    int           scroll_pos_h   = j[FieldConfigScrollPosH];
+
+    //configure sorting
+    bool valid_sorting = sort_column >= 0 && sort_column < table_view_->model()->columnCount();
+    table_view_->setSortingEnabled(valid_sorting);
+    table_view_->sortByColumn(valid_sorting ? sort_column : -1, sort_order);
+
+    //configure vertical scroll bar position for later usage
+    if (scroll_pos_v >= 0)
+        scroll_pos_v_ = scroll_pos_v;
+
+    //configure horizontal scroll bar position for later usage
+    if (scroll_pos_h >= 0)
+        scroll_pos_h_ = scroll_pos_h;
+
+    //restore column group states
+    if (j.contains(FieldColGroupStates) && 
+        j.at(FieldColGroupStates).is_array() &&
+        col_group_toolbar_)
+    {
+        const auto& states = j.at(FieldColGroupStates);
+        int n = (int)states.size();
+
+        if (n != col_group_toolbar_->actions().count())
+            return false;
+
+        for (int i = 0; i < n; ++i)
+        {
+            std::string name = col_group_toolbar_->actions().at(i)->text().toStdString();
+            if (!content_table_->hasColumnGroup(name))
+                return false;
+
+            content_table_->enableColumnGroup(name, states.at(i).get<bool>());
+        }
+
+        updateToolBar();
+    }
+
+    //try update the scroll bars in case they are already ready
+    updateScrollBarV();
+    updateScrollBarH();
+
+    return true;
 }
 
 }

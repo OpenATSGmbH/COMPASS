@@ -30,7 +30,7 @@
 #include <QApplication>
 #include <QFileDialog>
 
-#include <cassert>
+#include "traced_assert.h"
 
 /**
  */
@@ -41,8 +41,8 @@ ViewToolWidget::ViewToolWidget(ViewWidget* view_widget,
 ,   view_widget_  (view_widget)
 ,   tool_switcher_(tool_switcher)
 {
-    assert(view_widget_);
-    assert(tool_switcher_);
+    traced_assert(view_widget_);
+    traced_assert(tool_switcher_);
 
     connect(tool_switcher_, &ViewToolSwitcher::toolChanged, this, &ViewToolWidget::toolSwitched);
 

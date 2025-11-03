@@ -93,7 +93,7 @@ Result ReportExporterJSON::exportSection_impl(Section& section,
     if (!res_json.ok())
         return res_json;
 
-    assert(res_json.result().is_object());
+    traced_assert(res_json.result().is_object());
 
     auto sec_json = res_json.result();
 
@@ -112,14 +112,14 @@ Result ReportExporterJSON::exportSection_impl(Section& section,
         if (it == json_sections_.end())
             return Result::failed("Section '" + section.name() + "' obtains no parent section in report");
 
-        assert(it->second);
-        assert(it->second->is_object());
+        traced_assert(it->second);
+        traced_assert(it->second->is_object());
 
         auto& parent_json = *it->second;
 
-        assert(parent_json.contains(Section::FieldSubSections));
+        traced_assert(parent_json.contains(Section::FieldSubSections));
         auto& subsections = parent_json[ Section::FieldSubSections ];
-        assert(subsections.is_array());
+        traced_assert(subsections.is_array());
 
         //add to parents subsections
         subsections.push_back(sec_json);
@@ -128,7 +128,7 @@ Result ReportExporterJSON::exportSection_impl(Section& section,
     }
     else
     {
-        assert(json_sections_.empty());
+        traced_assert(json_sections_.empty());
 
         //root section => init json data
         json_data_ = sec_json;
@@ -136,7 +136,7 @@ Result ReportExporterJSON::exportSection_impl(Section& section,
         jptr = &json_data_;
     }
 
-    assert(jptr);
+    traced_assert(jptr);
 
     //remember my section's json object
     json_sections_[ &section ] = jptr;
@@ -149,7 +149,7 @@ Result ReportExporterJSON::exportSection_impl(Section& section,
 Result ReportExporterJSON::exportContentToJSON(SectionContent& content, 
                                                bool is_root_section)
 {
-    //loginf << "ReportExporterJSON: exportContentToJSON";
+    //loginf;
 
     auto res_dir     = exportResourceDir();
     auto res_dir_ptr = exportCreatesResources() ? &res_dir : nullptr;
@@ -160,41 +160,41 @@ Result ReportExporterJSON::exportContentToJSON(SectionContent& content,
         return res_json;
 
     //contents might yield a single or multiple json content objects
-    assert(res_json.result().is_object() || res_json.result().is_array());
+    traced_assert(res_json.result().is_object() || res_json.result().is_array());
 
     auto parent = content.parentSection();
-    assert(parent);
+    traced_assert(parent);
 
     // try to find json section of parent
     auto it = json_sections_.find(parent);
     if (it == json_sections_.end())
         return Result::failed("Content '" + content.name() + "' obtains no parent section in report");
 
-    assert(it->second);
-    assert(it->second->is_object());
+    traced_assert(it->second);
+    traced_assert(it->second->is_object());
 
     auto& parent_json = *it->second;
 
-    assert(parent_json.contains(Section::FieldDocContents));
+    traced_assert(parent_json.contains(Section::FieldDocContents));
     auto& contents = parent_json[ Section::FieldDocContents ];
-    assert(contents.is_array());
+    traced_assert(contents.is_array());
 
     //add to parent section's contents
     if (res_json.result().is_object())
     {
-        //loginf << "Adding content to parent " << parent->name();
+        //loginf << "adding content to parent " << parent->name();
 
         //add single json content
         contents.push_back(res_json.result());
     }
     else // array
     {
-        //loginf << "Adding " << res_json.result().size() << " content(s) to parent " << parent->name();
+        //loginf << "adding " << res_json.result().size() << " content(s) to parent " << parent->name();
 
         //add multiple json contents
         for (const auto& it : res_json.result())
         {
-            assert(it.is_object());
+            traced_assert(it.is_object());
             contents.push_back(it);
         }
     }

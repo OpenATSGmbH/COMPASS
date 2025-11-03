@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWCONTAINERWIDGET_H_
-#define VIEWCONTAINERWIDGET_H_
+#pragma once
 
 #include <QWidget>
 
@@ -69,5 +68,3 @@ class ViewContainerWidget : public QWidget, public Configurable
 
     virtual void checkSubConfigurables();
 };
-
-#endif /* VIEWCONTAINERWIDGET_H_ */

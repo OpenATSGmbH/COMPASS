@@ -25,7 +25,7 @@
 ManageDBContentTask::ManageDBContentTask(const std::string& class_id,
                                          const std::string& instance_id, TaskManager& task_manager)
     : Task("ManageDBContentsTask", "Manage DBContents", task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_manage_dbojects.json")
+      Configurable(class_id, instance_id, &task_manager, "task_manage_dbcontjects.json")
 {
     tooltip_ =
         "Allows management of DBContents and is reserved for expert users. This task can not be run,"

@@ -37,7 +37,7 @@ BufferAccessor::BufferAccessor(const std::string& dbcontent_name,
 BufferAccessor::BufferAccessor(const std::shared_ptr<DBContentVariableLookup>& lookup)
 :   lookup_(lookup)
 {
-    assert(lookup_);
+    traced_assert(lookup_);
 }
 
 /**
@@ -53,7 +53,7 @@ void BufferAccessor::updateLookup(const DBContentManager& dbcontent_manager)
 
 unsigned int BufferAccessor::size() const
 {
-    assert (lookup_);
+    traced_assert(lookup_);
     return lookup_->size();
 }
 

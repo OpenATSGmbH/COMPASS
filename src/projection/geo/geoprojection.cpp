@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "geoprojection.h"
 #include "global.h"
 #include "logger.h"
@@ -45,7 +62,7 @@ void GeoProjection::addCoordinateSystem(unsigned int id, double latitude_deg, do
 
 ProjectionCoordinateSystemBase& GeoProjection::coordinateSystem(unsigned int id)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     return *coordinate_systems_.at(id).get();
 }
@@ -60,7 +77,7 @@ bool GeoProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sla
                                  bool has_baro_altitude, double baro_altitude_ft,
                                  double& latitude_deg, double& longitude_deg)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     double x_pos_m, y_pos_m;
     bool ret = coordinate_systems_.at(id)->polarSlantToCartesian(
@@ -81,7 +98,7 @@ bool GeoProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sla
 bool GeoProjection::wgs842PolarHorizontal(unsigned int id, double latitude_deg, double longitude_deg,
                                           double& azimuth_deg, double& ground_range_m)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     return coordinate_systems_.at(id)->wgs842PolarHorizontal(latitude_deg, longitude_deg,
                                                              azimuth_deg, ground_range_m);

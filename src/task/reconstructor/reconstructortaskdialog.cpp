@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "reconstructortaskdialog.h"
 #include "reconstructortask.h"
 #include "simplereconstructor.h"
@@ -169,9 +186,9 @@ void ReconstructorTaskDialog::showCurrentReconstructorWidget()
     const auto& reconst_str = task_.currentReconstructorStr();
     int idx = reconstructor_box_->findText(QString::fromStdString(reconst_str));
 
-    loginf << "ReconstructorTaskDialog: showCurrentReconstructorWidget: value " << idx;
+    loginf << "value " << idx;
 
-    assert(idx >= 0);
+    traced_assert(idx >= 0);
 
     reconstructor_widget_stack_->setCurrentIndex(idx);
 
@@ -180,14 +197,14 @@ void ReconstructorTaskDialog::showCurrentReconstructorWidget()
 
 void ReconstructorTaskDialog::updateButtons()
 {
-    assert (run_button_);
+    traced_assert(run_button_);
 
     run_button_->setDisabled(!task_.canRun());
 }
 
 void ReconstructorTaskDialog::reconstructorMethodChangedSlot(const QString& value)
 {
-    loginf << "ReconstructorTaskDialog: reconstructorMethodChangedSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     task_.currentReconstructorStr(value.toStdString());
 

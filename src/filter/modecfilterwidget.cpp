@@ -1,5 +1,21 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "modecfilterwidget.h"
-//#include "stringconv.h"
 #include "textfielddoublevalidator.h"
 #include "logger.h"
 #include "rangeedit.h"
@@ -53,9 +69,9 @@ void ModeCFilterWidget::update()
 {
     DBFilterWidget::update();
 
-    assert (min_value_edit_);
-    assert (max_value_edit_);
-    assert(null_check_);
+    traced_assert(min_value_edit_);
+    traced_assert(max_value_edit_);
+    traced_assert(null_check_);
 
     const QString r0 = QString::number(filter_.minValue(), 'f', Precision);
     const QString r1 = QString::number(filter_.maxValue(), 'f', Precision);
@@ -70,16 +86,16 @@ void ModeCFilterWidget::minValueEditedSlot(const QString& value)
 {
     if (!value.size())
     {
-        loginf << "ModeCFilterWidget: minValueEditedSlot: skipping empty string";
+        loginf << "skipping empty string";
         return;
     }
 
     bool ok;
 
     float value_float = value.toFloat(&ok);
-    assert (ok);
+    traced_assert(ok);
 
-    loginf << "ModeCFilterWidget: minValueEditedSlot: '" << value_float << "'";
+    loginf << "'" << value_float << "'";
 
     filter_.minValue(value_float);
 }
@@ -88,26 +104,26 @@ void ModeCFilterWidget::maxValueEditedSlot(const QString& value)
 {
     if (!value.size())
     {
-        loginf << "ModeCFilterWidget: maxValueEditedSlot: skipping empty string";
+        loginf << "skipping empty string";
         return;
     }
 
     bool ok;
 
     float value_float = value.toFloat(&ok);
-    assert (ok);
+    traced_assert(ok);
 
-    loginf << "ModeCFilterWidget: maxValueEditedSlot: '" << value_float << "'";
+    loginf << "'" << value_float << "'";
 
     filter_.maxValue(value_float);
 }
 
 void ModeCFilterWidget::nullWantedChangedSlot()
 {
-     assert(null_check_);
+     traced_assert(null_check_);
     bool wanted = null_check_->checkState() == Qt::Checked;
 
-    loginf << "ModeCFilterWidget: nullWantedChangedSlot: " << wanted;
+    loginf << "start" << wanted;
 
     filter_.nullWanted(wanted);
 }

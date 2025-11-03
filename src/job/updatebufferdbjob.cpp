@@ -27,23 +27,23 @@
 
 using namespace Utils::String;
 
-UpdateBufferDBJob::UpdateBufferDBJob(DBInterface& db_interface, DBContent& dbobject,
+UpdateBufferDBJob::UpdateBufferDBJob(DBInterface& db_interface, DBContent& dbcontbject,
                                      dbContent::Variable& key_var, std::shared_ptr<Buffer> buffer)
     : Job("UpdateBufferDBJob"),
       db_interface_(db_interface),
-      dbobject_(dbobject),
+      dbcontbject_(dbcontbject),
       key_var_(key_var),
       buffer_(buffer)
 {
-    assert(buffer_);
-    assert(dbobject_.existsInDB());
+    traced_assert(buffer_);
+    traced_assert(dbcontbject_.existsInDB());
 }
 
 UpdateBufferDBJob::~UpdateBufferDBJob() {}
 
 void UpdateBufferDBJob::run_impl()
 {
-    logdbg << "UpdateBufferDBJob: run: start";
+    logdbg;
 
     started_ = true;
 
@@ -54,7 +54,7 @@ void UpdateBufferDBJob::run_impl()
 
     unsigned int steps = buffer_->size() / 10000;
 
-    logdbg << "UpdateBufferDBJob: run: writing object " << dbobject_.name() << " key "
+    logdbg << "writing object " << dbcontbject_.name() << " key "
            << key_var_.name() << " size " << buffer_->size() << " steps " << steps;
 
     unsigned int index_from = 0;
@@ -68,10 +68,10 @@ void UpdateBufferDBJob::run_impl()
         if (index_to > buffer_->size() - 1)
             index_to = buffer_->size() - 1;
 
-        logdbg << "UpdateBufferDBJob: run: step " << cnt << " steps " << steps << " from "
+        logdbg << "step " << cnt << " steps " << steps << " from "
                << index_from << " to " << index_to;
 
-        db_interface_.updateBuffer(dbobject_.dbTableName(), key_var_.dbColumnName(),
+        db_interface_.updateBuffer(dbcontbject_.dbTableName(), key_var_.dbColumnName(),
                                    buffer_, index_from, index_to);
 
         emit updateProgressSignal(100.0 * index_to / buffer_->size());
@@ -83,7 +83,7 @@ void UpdateBufferDBJob::run_impl()
     boost::posix_time::time_duration diff = loading_stop_time_ - loading_start_time_;
     load_time = diff.total_milliseconds() / 1000.0;
 
-    logdbg << "UpdateBufferDBJob: run: " << dbobject_.name()
+    logdbg << "start" << dbcontbject_.name()
            << " write done (" << doubleToStringPrecision(load_time, 2) << " s).";
 
     done_ = true;

@@ -41,7 +41,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
 :   TabStyleViewConfigWidget(view_widget, parent)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     // config
     {
@@ -97,34 +97,34 @@ TableViewConfigWidget::~TableViewConfigWidget() = default;
 
 void TableViewConfigWidget::toggleShowOnlySeletedSlot()
 {
-    assert(only_selected_check_);
+    traced_assert(only_selected_check_);
     bool checked = only_selected_check_->checkState() == Qt::Checked;
-    loginf << "TableViewConfigWidget: toggleShowOnlySeletedSlot: setting to " << checked;
+    loginf << "setting to " << checked;
     view_->showOnlySelected(checked);
 }
 
 void TableViewConfigWidget::toggleUsePresentation()
 {
-    assert(presentation_check_);
+    traced_assert(presentation_check_);
     bool checked = presentation_check_->checkState() == Qt::Checked;
-    logdbg << "TableViewConfigWidget: toggleUsePresentation: setting use presentation to "
+    logdbg << "setting use presentation to "
            << checked;
     view_->usePresentation(checked);
 }
 
 void TableViewConfigWidget::toggleIgnoreNonTargetReports()
 {
-    assert(ignore_non_target_reports_check_);
+    traced_assert(ignore_non_target_reports_check_);
     bool checked = ignore_non_target_reports_check_->checkState() == Qt::Checked;
-    logdbg << "TableViewConfigWidget: toggleIgnoreNonTargetReports: setting to "
+    logdbg << "setting to "
            << checked;
     view_->ignoreNonTargetReports(checked);
 }
 
 void TableViewConfigWidget::exportSlot()
 {
-    logdbg << "TableViewConfigWidget: exportSlot";
-    assert(export_button_);
+    logdbg;
+    traced_assert(export_button_);
 
     export_button_->setDisabled(true);
     emit exportSignal();
@@ -132,7 +132,7 @@ void TableViewConfigWidget::exportSlot()
 
 void TableViewConfigWidget::exportDoneSlot(bool cancelled)
 {
-    assert(export_button_);
+    traced_assert(export_button_);
 
     export_button_->setDisabled(false);
 
@@ -146,7 +146,7 @@ void TableViewConfigWidget::exportDoneSlot(bool cancelled)
 
 void TableViewConfigWidget::configChanged()
 {
-    assert(view_);
+    traced_assert(view_);
 
     //update ui for var set
     //set_config_widget_->updateFromDataSource();

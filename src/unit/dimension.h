@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DIMENSION_H
-#define DIMENSION_H
+#pragma once
 
 #include "configurable.h"
 
@@ -44,5 +43,3 @@ class Dimension : public Configurable
 
     virtual void checkSubConfigurables() {}
 };
-
-#endif  // DIMENSION_H

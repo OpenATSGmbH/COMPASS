@@ -16,6 +16,7 @@
  */
 
 #include "dbcontent/variable/variableset.h"
+#include "traced_assert.h"
 
 #include <algorithm>
 
@@ -68,35 +69,9 @@ bool VariableSet::add(const VariableSet& set)
     return added;
 }
 
-// bool VariableSet::addOnly (VariableSet &set, const std::string &dbo_type)
-//{
-//  logdbg  << "VariableSet: addOnly: type " << dbo_type;
-//  std::vector <DBOVariable*> &setset = set.getSet();
-
-//  std::vector <DBOVariable*>::iterator it;
-//  bool added=false;
-
-//  for (it=setset.begin(); it != setset.end(); it++)
-//  {
-//    if (find (set_.begin(), set_.end(), *it) == set_.end())
-//    {
-//      //loginf  << "VariableSet: addOnly: new var";
-//      if ((*it)->existsIn(dbo_type))
-//      {
-//        logdbg  << "VariableSet: addOnly: pushback";
-//        set_.push_back ((*it)->getFor(dbo_type));
-//        changed_=true;
-//        added=true;
-//      }
-//    }
-//  }
-
-//  return added;
-//}
-
 void VariableSet::removeVariableAt(unsigned int index)
 {
-    assert(index < set_.size());
+    traced_assert(index < set_.size());
 
     set_.erase(set_.begin() + index);
 
@@ -108,29 +83,9 @@ void VariableSet::removeVariable(const Variable& var)
     set_.erase(std::remove(set_.begin(), set_.end(), &var), set_.end());
 }
 
-// VariableSet *VariableSet::getFor (const std::string &dbo_type)
-//{
-//  logdbg  << "VariableSet: getFor: type " << dbo_type;
-
-//  VariableSet *type_set = new VariableSet ();
-//  std::vector <DBOVariable*>::iterator it;
-
-//  for (it=set_.begin(); it != set_.end(); it++)
-//  {
-//    if ((*it)->existsIn(dbo_type))
-//    {
-//      logdbg  << "VariableSet: getFor: add";
-//      assert (!(*it)->getFor(dbo_type)->isMetaVariable());
-//      type_set->add ((*it)->getFor(dbo_type));
-//    }
-//  }
-
-//  return type_set;
-//}
-
 VariableSet& VariableSet::operator=(const VariableSet& source)
 {
-    logdbg << "VariableSet: copy constructor";
+    logdbg;
 
     if (this == &source)  // self assignment
         return *this;
@@ -139,7 +94,7 @@ VariableSet& VariableSet::operator=(const VariableSet& source)
 
     std::vector<Variable*>::const_iterator it;
 
-    logdbg << "VariableSet: copy constructor: copying " << source.set_.size() << " elements";
+    logdbg << "copying " << source.set_.size() << " elements";
 
     // do the copy
     for (it = source.set_.begin(); it != source.set_.end(); it++)
@@ -152,7 +107,7 @@ VariableSet& VariableSet::operator=(const VariableSet& source)
 
 Variable& VariableSet::getVariable(unsigned int index) const
 {
-    assert(index < set_.size());
+    traced_assert(index < set_.size());
     return *set_.at(index);
 }
 
@@ -178,20 +133,29 @@ bool VariableSet::intersect(VariableSet& set)
             set_.push_back(*it);
     }
 
-    logdbg << "VariableSet: intersect: size " << set_.size() << " other size "
+    logdbg << "size " << set_.size() << " other size "
            << set.getSet().size() << " done";
     return added;
 }
 
-void VariableSet::print()
+std::string VariableSet::str() const
 {
-    logdbg << "VariableSet: print: size" << set_.size() << " changed " << changed_;
-    std::vector<Variable*>::iterator it;
+    std::ostringstream out;
 
-    for (it = set_.begin(); it != set_.end(); it++)
+    for (auto& var_it : set_)
     {
-        (*it)->print();
+        if (out.str().size())
+            out << ", ";
+
+        out << var_it->str();
     }
+
+    return out.str();
+}
+
+void VariableSet::print() const
+{
+    loginf << str();
 }
 
 void VariableSet::clear()
@@ -218,7 +182,7 @@ bool VariableSet::hasDBColumnName(const std::string& db_column_name)
 
 unsigned int VariableSet::getVariableWithDBColumnName(const std::string& db_column_name)
 {
-    assert(hasDBColumnName(db_column_name));
+    traced_assert(hasDBColumnName(db_column_name));
 
     unsigned int cnt = 0;
     for (auto var_it : set_)
@@ -229,7 +193,7 @@ unsigned int VariableSet::getVariableWithDBColumnName(const std::string& db_colu
         ++cnt;
     }
 
-    assert(false);
+    traced_assert(false);
 }
 
 }

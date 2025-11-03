@@ -35,7 +35,6 @@
 #include "util/timeconv.h"
 #include "viewpoint_commands.h"
 #include "global.h"
-#include "files.h"
 
 #include "json.hpp"
 
@@ -45,7 +44,7 @@
 #include <QApplication>
 #include <QTabWidget>
 
-#include <cassert>
+#include "traced_assert.h"
 
 #define SCAN_PRESETS
 
@@ -56,7 +55,7 @@ using namespace std;
 ViewManager::ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
     : Configurable(class_id, instance_id, compass, "views.json"), compass_(*compass)
 {
-    logdbg << "ViewManager: constructor";
+    logdbg;
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
@@ -68,11 +67,11 @@ ViewManager::ViewManager(const std::string& class_id, const std::string& instanc
 
 void ViewManager::init(QTabWidget* main_tab_widget)
 {
-    logdbg << "ViewManager: init";
+    logdbg;
 
-    assert(main_tab_widget);
-    assert(!main_tab_widget_);
-    assert(!initialized_);
+    traced_assert(main_tab_widget);
+    traced_assert(!main_tab_widget_);
+    traced_assert(!initialized_);
 
     main_tab_widget_ = main_tab_widget;
 
@@ -86,7 +85,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     QApplication::restoreOverrideCursor();
 
-    assert(view_points_widget_);
+    traced_assert(view_points_widget_);
 
     FilterManager& filter_man = COMPASS::instance().filterManager();
 
@@ -106,7 +105,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 #ifdef SCAN_PRESETS
     //scan view presets
     if (!presets_.scanForPresets())
-        logwrn << "ViewManager: init: view presets could not be loaded";
+        logwrn << "view presets could not be loaded";
 #endif
 
     connect(&presets_, &ViewPresets::presetEdited, this, &ViewManager::presetEdited);
@@ -119,67 +118,69 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
 void ViewManager::loadViewPoints()
 {
-    assert (view_points_widget_);
+    traced_assert(view_points_widget_);
     view_points_widget_->loadViewPoints();
 }
 
 void ViewManager::close()
 {
-    loginf << "ViewManager: close";
+    logdbg;
     initialized_ = false;
 
-    logdbg << "ViewManager: close: deleting container widgets";
+    logdbg << "deleting container widgets";
     while (container_widgets_.size())
     {
         auto first_it = container_widgets_.begin();
-        logdbg << "ViewManager: close: deleting container widget " << first_it->first;
+        logdbg << "deleting container widget " << first_it->first;
         delete first_it->second; // deletes the respective view container, which removes itself from this
         container_widgets_.erase(first_it);
     }
 
-    logdbg << "ViewManager: close: deleting containers size " << containers_.size();
+    logdbg << "deleting containers size " << containers_.size();
     while (containers_.size())
     {
         auto first_it = containers_.begin();
-        logdbg << "ViewManager: close: deleting container " << first_it->first;
+        logdbg << "deleting container " << first_it->first;
         delete first_it->second;
         //containers_.erase(first_it);  // TODO CAUSES SEGFAULT, FIX THIS
     }
 
-    if (view_points_widget_)
-    {
+    // if (view_points_widget_)
+    // {
         //view_points_widget_->tableModel()->saveViewPoints();
-        delete view_points_widget_;
+        //delete view_points_widget_;
         view_points_widget_ = nullptr;
-    }
+    //}
 
     view_points_report_gen_ = nullptr;
 
-    loginf << "ViewManager: close: done";
+    logdbg << "done";
 }
 
 ViewManager::~ViewManager()
 {
-    logdbg << "ViewManager: destructor";
+    logdbg;
 
-    assert(!container_widgets_.size());
-    assert(!containers_.size());
-    assert(!initialized_);
+    traced_assert(!container_widgets_.size());
+    traced_assert(!containers_.size());
+    traced_assert(!initialized_);
+
+    view_points_widget_ = nullptr;
 }
 
 void ViewManager::generateSubConfigurable(const std::string& class_id,
                                           const std::string& instance_id)
 {
-    logdbg << "ViewManager: generateSubConfigurable: class_id " << class_id << " instance_id "
+    logdbg << "class_id " << class_id << " instance_id "
            << instance_id;
 
-    assert(initialized_);
+    traced_assert(initialized_);
 
     if (class_id == "ViewContainer")
     {
         ViewContainer* container =
                 new ViewContainer(class_id, instance_id, this, this, main_tab_widget_, 0);
-        assert(containers_.count(instance_id) == 0);
+        traced_assert(containers_.count(instance_id) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(instance_id, container));
 
         unsigned int number = String::getAppendedInt(instance_id);
@@ -190,10 +191,10 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     {
         ViewContainerWidget* container_widget =
                 new ViewContainerWidget(class_id, instance_id, this);
-        assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
+        traced_assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(
                                container_widget->viewContainer().instanceId(), &container_widget->viewContainer()));
-        assert(container_widgets_.count(instance_id) == 0);
+        traced_assert(container_widgets_.count(instance_id) == 0);
         container_widgets_.insert(
                     std::pair<std::string, ViewContainerWidget*>(instance_id, container_widget));
 
@@ -203,10 +204,10 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     }
     else if (class_id == "ViewPointsReportGenerator")
     {
-        assert (!view_points_report_gen_);
+        traced_assert(!view_points_report_gen_);
 
         view_points_report_gen_.reset(new ViewPointsReportGenerator(class_id, instance_id, *this));
-        assert (view_points_report_gen_);
+        traced_assert(view_points_report_gen_);
     }
     else
         throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_id " +
@@ -230,11 +231,11 @@ void ViewManager::checkSubConfigurables()
 
 void ViewManager::enableStoredReadSets()
 {
-    loginf << "ViewManager: enableStoredReadSets";
+    loginf;
 
     for (const auto& cont_it : COMPASS::instance().dbContentManager())
     {
-        logdbg << "ViewManager: enableStoredReadSets: stored readset for '" << cont_it.first << "'";
+        logdbg << "stored readset for '" << cont_it.first << "'";
         tmp_stored_readset_[cont_it.first] = getReadSet(cont_it.first);
     }
 
@@ -242,7 +243,7 @@ void ViewManager::enableStoredReadSets()
 }
 void ViewManager::disableStoredReadSets()
 {
-    loginf << "ViewManager: disableStoredReadSets";
+    loginf;
 
     use_tmp_stored_readset_ = false;
     tmp_stored_readset_.clear();
@@ -252,8 +253,8 @@ dbContent::VariableSet ViewManager::getReadSet(const std::string& dbcontent_name
 {
     if (use_tmp_stored_readset_)
     {
-        logdbg << "ViewManager: getReadSet: stored readset for '" << dbcontent_name << "'";
-        assert (tmp_stored_readset_.count(dbcontent_name));
+        logdbg << "stored readset for '" << dbcontent_name << "'";
+        traced_assert(tmp_stored_readset_.count(dbcontent_name));
         return tmp_stored_readset_.at(dbcontent_name);
     }
 
@@ -270,13 +271,13 @@ dbContent::VariableSet ViewManager::getReadSet(const std::string& dbcontent_name
 
 ViewPointsWidget* ViewManager::viewPointsWidget() const
 {
-    assert (view_points_widget_);
+    traced_assert(view_points_widget_);
     return view_points_widget_;
 }
 
 ViewPointsReportGenerator& ViewManager::viewPointsGenerator()
 {
-    assert (view_points_report_gen_);
+    traced_assert(view_points_report_gen_);
     return *view_points_report_gen_;
 }
 
@@ -296,16 +297,16 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
             db_interface.deleteAllViewPoints();
 
-        assert (json_obj.contains(ViewPoint::VP_COLLECTION_ARRAY_KEY));
+        traced_assert(json_obj.contains(ViewPoint::VP_COLLECTION_ARRAY_KEY));
         
         //add new ones
         json& view_points = json_obj.at(ViewPoint::VP_COLLECTION_ARRAY_KEY);
-        assert (view_points.size());
+        traced_assert(view_points.size());
 
         unsigned int id;
         for (auto& vp_it : view_points.get<json::array_t>())
         {
-            assert (vp_it.contains(ViewPoint::VP_ID_KEY));
+            traced_assert(vp_it.contains(ViewPoint::VP_ID_KEY));
 
             id = vp_it.at(ViewPoint::VP_ID_KEY);
 
@@ -318,7 +319,7 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         //reload viewpoints
         loadViewPoints();
 
-        loginf << "ViewManager::loadViewPoints: imported " << std::to_string(view_points.size()) << " view points";
+        loginf << "imported " << std::to_string(view_points.size()) << " view points";
     }
     catch (const std::exception& ex)
     {
@@ -348,7 +349,8 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
     viewPointsWidget()->addViewPoints(viewpoints);
 }
 
-void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable)
+void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
+                                       bool load_blocking)
 {
     if (current_viewable_)
         unsetCurrentViewPoint();
@@ -357,12 +359,15 @@ void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable)
 
     view_point_data_selected_ = false;
 
-    logdbg << "ViewManager: setCurrentViewPoint: setting current view point data: '"
+    logdbg << "setting current view point data: '"
     << viewable->data().dump(4) << "'";
 
     emit showViewPointSignal(current_viewable_);
 
-    COMPASS::instance().dbContentManager().load();
+    if (load_blocking)
+        COMPASS::instance().dbContentManager().loadBlocking();
+    else
+        COMPASS::instance().dbContentManager().load();
 }
 
 
@@ -380,25 +385,25 @@ void ViewManager::unsetCurrentViewPoint ()
 
 void ViewManager::doViewPointAfterLoad ()
 {
-    logdbg << "ViewManager: doViewPointAfterLoad";
+    logdbg;
 
     if (!current_viewable_)
     {
-        logdbg << "ViewManager: doViewPointAfterLoad: no viewable";
+        logdbg << "no viewable";
         return; // nothing to do
     }
 
     if (view_point_data_selected_)
     {
-        logdbg << "ViewManager: doViewPointAfterLoad: data already selected";
+        logdbg << "data already selected";
         return; // already done, this is a re-load
     }
 
-    assert (view_points_widget_);
+    traced_assert(view_points_widget_);
 
     const json& data = current_viewable_->data();
 
-    logdbg << "ViewManager: doViewPointAfterLoad: data '" << data.dump(4) << "'";
+    logdbg << "data '" << data.dump(4) << "'";
 
     bool vp_contains_timestamp = data.contains(ViewPoint::VP_TIMESTAMP_KEY);
     boost::posix_time::ptime vp_timestamp;
@@ -408,60 +413,52 @@ void ViewManager::doViewPointAfterLoad ()
 
     if (!vp_contains_timestamp)
     {
-        loginf << "ViewManager: doViewPointAfterLoad: no time given";
+        loginf << "no time given";
         return; // nothing to do
     }
     else
     {
-        assert (data.at(ViewPoint::VP_TIMESTAMP_KEY).is_string());
+        traced_assert(data.at(ViewPoint::VP_TIMESTAMP_KEY).is_string());
         vp_timestamp = Time::fromString(data.at(ViewPoint::VP_TIMESTAMP_KEY));
 
-        loginf << "ViewManager: doViewPointAfterLoad: time " << Time::toString(vp_timestamp);
+        loginf << "time " << Time::toString(vp_timestamp);
     }
 
     if (vp_contains_time_window)
     {
-        assert (data.at(ViewPoint::VP_TIME_WIN_KEY).is_number());
+        traced_assert(data.at(ViewPoint::VP_TIME_WIN_KEY).is_number());
         vp_time_window = data.at(ViewPoint::VP_TIME_WIN_KEY);
         vp_ts_min = vp_timestamp - Time::partialSeconds(vp_time_window / 2.0);
         vp_ts_max = vp_timestamp + Time::partialSeconds(vp_time_window / 2.0);
 
-        loginf << "ViewManager: doViewPointAfterLoad: time window min " << Time::toString(vp_ts_min)
+        loginf << "time window min " << Time::toString(vp_ts_min)
                << " max " << Time::toString(vp_ts_max);
     }
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     bool selection_changed = false;
-    for (auto& dbo_it : dbcont_man)
+    for (auto& dbcont_it : dbcont_man)
     {
-        std::string dbcontent_name = dbo_it.first;
+        std::string dbcontent_name = dbcont_it.first;
 
         if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
-//                 ||!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_)
-//                 || !dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_))
         {
-            logerr << "ViewManager: doViewPointAfterLoad: required variables missing in " << dbcontent_name;
+            logerr << "required variables missing in " << dbcontent_name;
             continue;
         }
 
         const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
-//        const dbContent::Variable& latitude_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
-//        const dbContent::Variable& longitude_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
 
-        if (dbcont_man.data().count(dbo_it.first))
+        if (dbcont_man.data().count(dbcont_it.first))
         {
-            std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbo_it.first);
+            std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-            assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
+            traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& tods = buffer->get<boost::posix_time::ptime>(ts_var.name());
-//            assert(buffer->has<double>(latitude_var.name()));
-//            NullableVector<double>& latitudes = buffer->get<double>(latitude_var.name());
-//            assert(buffer->has<double>(longitude_var.name()));
-//            NullableVector<double>& longitudes = buffer->get<double>(longitude_var.name());
 
             unsigned int buffer_size = buffer->size();
 
@@ -484,7 +481,7 @@ void ViewManager::doViewPointAfterLoad ()
                         selected_vec.set(cnt, true);
                         selection_changed = true;
 
-                        logdbg << "ViewManager: doViewPointAfterLoad: time " << timestamp << " selected ";
+                        logdbg << "time " << timestamp << " selected ";
                     }
                 }
                 else if (vp_contains_timestamp && timestamp == vp_timestamp)
@@ -500,38 +497,38 @@ void ViewManager::doViewPointAfterLoad ()
 
     if (selection_changed)
     {
-        loginf << "ViewManager: doViewPointAfterLoad: selection changed";
+        loginf << "selection changed";
         emit selectionChangedSignal();
     }
 }
 
 void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max)
 {
-    loginf << "ViewManager: selectTimeWindow: ts_min " << ts_min << " ts_max " << ts_max;
+    loginf << "ts_min " << ts_min << " ts_max " << ts_max;
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     bool selection_changed = false;
-    for (auto& dbo_it : dbcont_man)
+    for (auto& dbcont_it : dbcont_man)
     {
-        std::string dbcontent_name = dbo_it.first;
+        std::string dbcontent_name = dbcont_it.first;
 
         if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
         {
-            logerr << "ViewManager: selectTimeWindow: required variables missing, quitting";
+            logerr << "required variables missing, quitting";
             continue;
         }
 
         const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
 
-        if (dbcont_man.data().count(dbo_it.first))
+        if (dbcont_man.data().count(dbcont_it.first))
         {
-            std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbo_it.first);
+            std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-            assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
+            traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
 
             unsigned int buffer_size = buffer->size();
@@ -553,7 +550,7 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
                     selected_vec.set(cnt, true);
                     selection_changed = true;
 
-                    logdbg << "ViewManager: selectTimeWindow: time " << timestamp << " selected ";
+                    logdbg << "time " << timestamp << " selected ";
 
                 }
             }
@@ -564,14 +561,14 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
 
     if (selection_changed)
     {
-        loginf << "ViewManager: selectTimeWindow: selection changed";
+        loginf << "selection changed";
         emit selectionChangedSignal();
     }
 }
 
 void ViewManager::showMainViewContainerAddView()
 {
-    assert (containers_.count("ViewContainer0"));
+    traced_assert(containers_.count("ViewContainer0"));
     containers_.at("ViewContainer0")->showAddViewMenuSlot();
 }
 
@@ -606,13 +603,13 @@ std::string ViewManager::newViewInstanceId(const std::string& class_id)
 
 std::string ViewManager::newViewName(const std::string& class_id)
 {
-    assert (view_class_list_.count(class_id));
+    traced_assert(view_class_list_.count(class_id));
     return view_class_list_.at(class_id) + " " + to_string(newViewNumber(class_id));
 }
 
 void ViewManager::disableDataDistribution(bool value)
 {
-    loginf << "ViewManager: disableDataDistribution: value " << value;
+    loginf << "value " << value;
 
     disable_data_distribution_ = value;
 }
@@ -624,15 +621,15 @@ bool ViewManager::isProcessingData() const
 
 void ViewManager::resetToStartupConfiguration()
 {
-    loginf << "ViewManager: resetToStartupConfiguration";
+    loginf;
 
     enableStoredReadSets();
 
-    // logdbg << "ViewManager: resetToStartupConfiguration: deleting container widgets";
+    // logdbg << "deleting container widgets";
     // while (container_widgets_.size())
     // {
     //     auto first_it = container_widgets_.begin();
-    //     logdbg << "ViewManager: resetToStartupConfiguration: deleting container widget " << first_it->first;
+    //     logdbg << "deleting container widget " << first_it->first;
 
     //     first_it->second->setTmpDisableRemoveConfigOnDelete(true);
     //     delete first_it->second; // deletes the respective view container, which removes itself from this
@@ -640,18 +637,18 @@ void ViewManager::resetToStartupConfiguration()
     //     container_widgets_.erase(first_it);
     // }
 
-    // logdbg << "ViewManager: resetToStartupConfiguration: deleting containers size " << containers_.size();
+    // logdbg << "deleting containers size " << containers_.size();
     // while (containers_.size())
     // {
     //     auto first_it = containers_.begin();
-    //     logdbg << "ViewManager: resetToStartupConfiguration: deleting container " << first_it->first;
+    //     logdbg << "deleting container " << first_it->first;
 
     //     first_it->second->setTmpDisableRemoveConfigOnDelete(true);
     //     delete first_it->second;
     //     //containers_.erase(first_it);  // TODO CAUSES SEGFAULT, FIX THIS
     // }
 
-    logdbg << "ViewManager: resetToStartupConfiguration: resettings containers";
+    logdbg << "resettings containers";
 
     for (auto& cw : container_widgets_)
         cw.second->setVisible(false);
@@ -662,7 +659,7 @@ void ViewManager::resetToStartupConfiguration()
     for (auto& cw : container_widgets_)
         cw.second->setVisible(true);
 
-    //logdbg << "ViewManager: resetToStartupConfiguration: view points generator";
+    //logdbg << "view points generator";
     //view_points_report_gen_->setTmpDisableRemoveConfigOnDelete(true);
     //view_points_report_gen_ = nullptr;
 
@@ -678,14 +675,14 @@ bool ViewManager::isInitialized() const
 
 ViewContainerWidget* ViewManager::addNewContainerWidget()
 {
-    logdbg << "ViewManager: addNewContainerWidget";
+    logdbg;
     
     container_count_++;
     std::string container_widget_name = "ViewWindow" + std::to_string(container_count_);
 
     generateSubConfigurableFromConfig("ViewContainerWidget", container_widget_name);
 
-    assert(container_widgets_.count(container_widget_name) == 1);
+    traced_assert(container_widgets_.count(container_widget_name) == 1);
 
     return container_widgets_.at(container_widget_name);
 }
@@ -700,17 +697,17 @@ void ViewManager::clearDataInViews()
 
 void ViewManager::registerView(View* view)
 {
-    logdbg << "ViewManager: registerView";
-    assert(view);
-    assert(!isRegistered(view));
+    logdbg;
+    traced_assert(view);
+    traced_assert(!isRegistered(view));
     views_[view->instanceId()] = view;
 }
 
 void ViewManager::unregisterView(View* view)
 {
-    logdbg << "ViewManager: unregisterView " << view->getName().c_str();
-    assert(view);
-    assert(isRegistered(view));
+    logdbg << view->getName().c_str();
+    traced_assert(view);
+    traced_assert(isRegistered(view));
 
     std::map<std::string, View*>::iterator it;
 
@@ -720,8 +717,8 @@ void ViewManager::unregisterView(View* view)
 
 bool ViewManager::isRegistered(View* view)
 {
-    logdbg << "ViewManager: isRegistered";
-    assert(view);
+    logdbg;
+    traced_assert(view);
 
     std::map<std::string, View*>::iterator it;
 
@@ -734,7 +731,7 @@ void ViewManager::removeContainer(std::string instance_id)
 {
     std::map<std::string, ViewContainer*>::iterator it;
 
-    logdbg << "ViewManager: removeContainer: instance " << instance_id;
+    logdbg << "instance " << instance_id;
 
     it = containers_.find(instance_id);
 
@@ -752,7 +749,7 @@ void ViewManager::removeContainerWidget(std::string instance_id)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
 
-    logdbg << "ViewManager: removeContainerWidget: instance " << instance_id;
+    logdbg << "instance " << instance_id;
 
     it = container_widgets_.find(instance_id);
 
@@ -770,7 +767,7 @@ void ViewManager::deleteContainerWidget(std::string instance_id)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
 
-    logdbg << "ViewManager: deleteContainerWidget: instance " << instance_id;
+    logdbg << "instance " << instance_id;
 
     it = container_widgets_.find(instance_id);
 
@@ -795,13 +792,13 @@ void ViewManager::viewShutdown(View* view, const std::string& err)
 
 void ViewManager::selectionChangedSlot()
 {
-    loginf << "ViewManager: selectionChangedSlot";
+    loginf;
     emit selectionChangedSignal();
 }
 
 void ViewManager::databaseOpenedSlot()
 {
-    loginf << "ViewManager: databaseOpenedSlot";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->databaseOpened();
@@ -809,7 +806,7 @@ void ViewManager::databaseOpenedSlot()
 
 void ViewManager::databaseClosedSlot()
 {
-    loginf << "ViewManager: databaseClosedSlot";
+    loginf;
 
     unsetCurrentViewPoint();
     clearDataInViews();
@@ -826,7 +823,7 @@ void ViewManager::loadingStartedSlot()
     //reset reload flag
     reload_needed_ = false;
 
-    loginf << "ViewManager: loadingStartedSlot";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();
@@ -839,7 +836,7 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
     if (disable_data_distribution_)
         return;
 
-    logdbg << "ViewManager: loadedDataSlot: reset " << requires_reset;
+    logdbg << "reset " << requires_reset;
 
     processing_data_ = true;
 
@@ -851,21 +848,21 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
         tmp_time = microsec_clock::local_time();
         view_it.second->loadedData(data, requires_reset);
 
-        logdbg << "ViewManager: loadedDataSlot: " << view_it.first << " took "
+        logdbg << "start" << view_it.first << " took "
                << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
     }
 
     processing_data_ = false;
 
-    logdbg << "ViewManager: loadedDataSlot: done";
+    logdbg << "done";
 }
 
-void ViewManager::loadingDoneSlot() // emitted when all dbos have finished loading
+void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
 {
     if (disable_data_distribution_)
         return;
 
-    loginf << "ViewManager: loadingDoneSlot";
+    loginf;
 
     for (auto& view_it : views_)
         view_it.second->loadingDone();
@@ -873,7 +870,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbos have finished loadi
 
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
-    loginf << "ViewManager: appModeSwitchSlot: app_mode " << COMPASS::instance().appModeStr();
+    loginf << "app_mode " << COMPASS::instance().appModeStr();
 
     for (auto& view_it : views_)
     {
@@ -942,13 +939,13 @@ void ViewManager::notifyReloadStateChanged()
         if (!elem.second->reloadNeeded())
             continue;
 
-        logdbg << "ViewManager::notifyReloadStateChanged: view '" << elem.first << "' needs to reload";
+        logdbg << "view '" << elem.first << "' needs to reload";
 
         reload_needed = true;
         break;
     }
 
-    logdbg << "ViewManager::notifyReloadStateChanged: reload needed before: " << reload_needed_ << ", now: " << reload_needed;
+    logdbg << "reload needed before: " << reload_needed_ << ", now: " << reload_needed;
 
     //reload state has not changed? => just return
     if (reload_needed_ == reload_needed)
@@ -957,7 +954,7 @@ void ViewManager::notifyReloadStateChanged()
     //update global reload flag
     reload_needed_ = reload_needed;
 
-    logdbg << "ViewManager::notifyReloadStateChanged: emitting new reload state " << reload_needed_;
+    logdbg << "emitting new reload state " << reload_needed_;
 
     //inform views about changed reload state
     emit reloadStateChanged();

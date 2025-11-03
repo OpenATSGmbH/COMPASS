@@ -23,7 +23,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
-#include <cassert>
+#include "traced_assert.h"
 
 namespace EvaluationResultsReport
 {
@@ -40,7 +40,7 @@ void SectionContentText::addText (const string& text)
 
 void SectionContentText::addToLayout (QVBoxLayout* layout)
 {
-    assert (layout);
+    traced_assert(layout);
 
     for (auto& text : texts_)
     {
@@ -53,7 +53,7 @@ void SectionContentText::addToLayout (QVBoxLayout* layout)
 
 void SectionContentText::accept(LatexVisitor& v)
 {
-    loginf << "SectionContentText: accept";
+    loginf;
     v.visit(this);
 }
 

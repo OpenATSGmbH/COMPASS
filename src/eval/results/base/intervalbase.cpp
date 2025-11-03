@@ -36,7 +36,7 @@
 #include "viewpoint.h"
 #include "sectorlayer.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -72,12 +72,12 @@ SingleIntervalBase::SingleIntervalBase(const std::string& result_type,
 */
 boost::optional<double> SingleIntervalBase::computeResult_impl() const
 {
-    assert (missed_uis_ <= sum_uis_);
+    traced_assert(missed_uis_ <= sum_uis_);
 
     if (sum_uis_ == 0)
         return {};
 
-    logdbg << type() << ": updatePD: utn " << utn_ << " missed_uis " << missed_uis_ << " sum_uis " << sum_uis_;
+    logdbg << type() << ": utn " << utn_ << " missed_uis " << missed_uis_ << " sum_uis " << sum_uis_;
 
     return (1.0 - (double)missed_uis_ / (double)sum_uis_);
 }
@@ -167,7 +167,7 @@ void SingleIntervalBase::addAnnotationForDetail(nlohmann::json& annotations_json
     if (detail.numPositions() == 1)
         return;
 
-    assert (detail.numPositions() >= 2);
+    traced_assert(detail.numPositions() >= 2);
 
     auto anno_type = is_ok ? AnnotationArrayType::TypeOk : AnnotationArrayType::TypeError;
 
@@ -234,11 +234,11 @@ void JoinedIntervalBase::accumulateSingleResult(const std::shared_ptr<Single>& s
 */
 boost::optional<double> JoinedIntervalBase::computeResult_impl() const
 {
-    loginf << "JoinedIntervalBase: computeResult_impl:" << type()
+    loginf << "start" << type()
             << " sum_uis_ " << sum_uis_
             << " missed_uis_ " << missed_uis_;
 
-    assert (missed_uis_ <= sum_uis_);
+    traced_assert(missed_uis_ <= sum_uis_);
 
     if (sum_uis_ == 0)
         return {};

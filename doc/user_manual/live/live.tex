@@ -5,7 +5,7 @@ There exist 3 application modes:
 \begin{itemize}
 \item 'Offline': Default mode, for offline analysis
 \item 'Live: Running': Provides a live display of network data, while also importing the ASTERIX data into the database
-\item 'Live: Paused': Provides offline-like analysis, which caching ASTERIX network data and allows resuming into 'Live: Running' without loss of data
+\item 'Live: Paused': Provides offline-like analysis, while caching ASTERIX network data and allows resuming into 'Live: Running' without loss of data
 \end{itemize}
 \ \\
 
@@ -32,7 +32,7 @@ In Live mode, most application components are the same as in Offline mode (altho
 
 \section{Data Sources \& Processing}
 
-For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a define Line), the respective button is disabled (greyed out). If data is received over a line, it will be come active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green in current data was received during the last 2 update intervals. \\
+For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a define Line), the respective button is disabled (greyed out). If data is received over a line, it will become active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green if current data was received during the last 2 update intervals. \\
 
 The line button can also be toggled - if a bold border is shown the data from the respective line stored not only in the database but \textbf{also} in main memory (RAM). The most recent 5 minutes of data are kept in main memory (RAM), and can be visualized in the existing Views. \\
 
@@ -56,7 +56,7 @@ When clicking the \includegraphics[width=0.5cm,frame]{../../data/icons/right.png
 
 \subsection{Online/Offline Display}
 
-To indicite if the displayed data is the currently most recent or from a previous point in time, the Geographic View can display colored text (by default "Online" or "Offline"). After creation of the OSView and closing the application, this feature can be enabled using the configuration options listed in \nameref{sec:live_online_offline}.
+To indicate if the displayed data is the currently most recent or from a previous point in time, the Geographic View can display colored text (by default "Online" or "Offline"). After creation of the OSView and closing the application, this feature can be enabled using the configuration options listed in \nameref{sec:live_online_offline}.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
@@ -89,7 +89,7 @@ This feature can be configured using the configuration options listed in \namere
 
 \section{Long-Term Running}
 
-The application is optimized for long-term runnning, and can be run continuously. During Live mode, data older than 1 hour is removed from the database. \\
+The application is optimized for long-term running, and can be run continuously. During Live mode, data older than 1 hour is removed from the database. \\
 
 In this use case, usage of a rotating log file (as described in \nameref{sec:appendix_logging_rotate}) is recommended.
 

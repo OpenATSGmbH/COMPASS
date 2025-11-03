@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 
 PositionRadarRangeConfigWidget::PositionRadarRangeConfigWidget(PositionRadarRangeConfig& cfg)
-    : BaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
@@ -44,7 +44,7 @@ PositionRadarRangeConfigWidget::PositionRadarRangeConfigWidget(PositionRadarRang
 
 void PositionRadarRangeConfigWidget::thresholdValueEditSlot(QString value)
 {
-    loginf << "PositionRadarRangeConfigWidget: thresholdValueEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     double val = value.toDouble(&ok);
@@ -52,13 +52,13 @@ void PositionRadarRangeConfigWidget::thresholdValueEditSlot(QString value)
     if (ok)
         config().thresholdValue(val);
     else
-        loginf << "PositionRadarRangeConfigWidget: thresholdValueEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 PositionRadarRangeConfig& PositionRadarRangeConfigWidget::config()
 {
     PositionRadarRangeConfig* config = dynamic_cast<PositionRadarRangeConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

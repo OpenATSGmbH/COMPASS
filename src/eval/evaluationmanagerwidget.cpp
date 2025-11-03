@@ -163,7 +163,7 @@ void EvaluationManagerWidget::updateButtons()
  */
 void EvaluationManagerWidget::expandResults()
 {
-    assert (results_tab_widget_);
+    traced_assert(results_tab_widget_);
 
     results_tab_widget_->expand();
 }
@@ -174,8 +174,8 @@ void EvaluationManagerWidget::showResultId (const std::string& id,
                                             bool select_tab,
                                             bool show_figure)
 {
-    assert(tab_widget_);
-    assert (results_tab_widget_);
+    traced_assert(tab_widget_);
+    traced_assert(results_tab_widget_);
 
     if (select_tab) 
         tab_widget_->setCurrentWidget(results_tab_widget_.get());
@@ -187,7 +187,7 @@ void EvaluationManagerWidget::showResultId (const std::string& id,
  */
 void EvaluationManagerWidget::reshowLastResultId()
 {
-    assert (results_tab_widget_);
+    traced_assert(results_tab_widget_);
     results_tab_widget_->reshowLastId();
 }
 
@@ -195,25 +195,7 @@ void EvaluationManagerWidget::reshowLastResultId()
  */
 void EvaluationManagerWidget::generateReportSlot()
 {
-    loginf << "EvaluationManagerWidget: generateReportSlot";
+    loginf;
 
     eval_man_.generateReport();
-}
-
-/**
- */
-boost::optional<nlohmann::json> EvaluationManagerWidget::getTableData(const std::string& result_id, 
-                                                                      const std::string& table_id,
-                                                                      bool rowwise,
-                                                                      const std::vector<int>& cols) const
-{
-    //@TODO: solve this in a better way via task results
-    return boost::optional<nlohmann::json>();
-
-    // //retrieve special tables
-    // if (table_id == "Targets")
-    //     return eval_man_.calculator().data().getTableData(rowwise, cols);
-
-    // //retrieve result table
-    // return results_tab_widget_->getTableData(result_id, table_id, rowwise, cols);
 }

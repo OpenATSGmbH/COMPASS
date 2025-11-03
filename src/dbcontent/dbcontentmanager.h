@@ -1,4 +1,4 @@
-    /*
+/*
  * This file is part of OpenATS COMPASS.
  *
  * COMPASS is free software: you can redistribute it and/or modify
@@ -69,8 +69,8 @@ signals:
     // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
     // e.g. when data in the beginning was removed, or order of previously emitted data was changed, etc.
     void loadedDataSignal (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
-    void loadingDoneSignal(); // emitted when all dbos have finished loading
-    void insertDoneSignal(); // emitted when all dbos have finished loading
+    void loadingDoneSignal(); // emitted when all dbconts have finished loading
+    void insertDoneSignal(); // emitted when all dbconts have finished loading
 
 public:
     DBContentManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
@@ -91,6 +91,7 @@ public:
     unsigned int getMaxDBContentID();
     bool existsDBContentWithId (unsigned int id);
     const std::string& dbContentWithId (unsigned int id);
+    unsigned int dbContentId(const std::string& dbcont_name);
 
     bool existsMetaVariable(const std::string& var_name);
     dbContent::MetaVariable& metaVariable(const std::string& var_name);
@@ -101,13 +102,17 @@ public:
     bool usedInMetaVariable(const dbContent::Variable& variable);
     dbContent::MetaVariableConfigurationDialog* metaVariableConfigdialog();
 
-    void load(const std::string& custom_filter_clause="", bool measure_db_performance = false);
+    void load(const std::string& custom_filter_clause="", 
+              bool measure_db_performance = false,
+              const std::map<std::string, dbContent::VariableSet>* custom_read_set = nullptr);
     void loadBlocking(const std::string& custom_filter_clause="", 
                       bool measure_db_performance = false,
-                      unsigned int sleep_msecs = 1);
+                      unsigned int sleep_msecs = 1,
+                      const std::map<std::string, dbContent::VariableSet>* custom_read_set = nullptr);
+    
     void addLoadedData(std::map<std::string, std::shared_ptr<Buffer>> data);
     std::map<std::string, std::shared_ptr<Buffer>> loadedData();
-    void loadingDone(DBContent& object); // to be called by dbo when it's loading is finished
+    void loadingDone(DBContent& object); // to be called by dbcont when it's loading is finished
     bool loadInProgress() const;
     void clearData();
 
@@ -217,7 +222,7 @@ protected:
     COMPASS& compass_;
 
     std::unique_ptr<dbContent::TargetModel> target_model_;
-    std::unique_ptr<dbContent::TargetListWidget> target_list_widget_;
+    dbContent::TargetListWidget* target_list_widget_{nullptr}; // deleted by qt
 
     bool has_associations_{false};
     std::string associations_id_;

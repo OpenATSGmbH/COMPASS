@@ -55,7 +55,7 @@ CreateARTASAssociationsTaskWidget::CreateARTASAssociationsTaskWidget(
         // tracker data source
         grid->addWidget(new QLabel("CAT062 Data Source"), row_cnt, 0);
 
-        assert(COMPASS::instance().dbContentManager().existsDBContent("CAT062"));
+        traced_assert(COMPASS::instance().dbContentManager().existsDBContent("CAT062"));
 
         ds_combo_ = new DBDataSourceComboBox();
         ds_combo_->showDBContentOnly("CAT062");
@@ -186,13 +186,13 @@ CreateARTASAssociationsTaskWidget::~CreateARTASAssociationsTaskWidget() {}
 
 void CreateARTASAssociationsTaskWidget::currentDataSourceChangedSlot()
 {
-    assert(ds_combo_);
+    traced_assert(ds_combo_);
     task_.currentDataSourceName(ds_combo_->getDSName());
 }
 
 void CreateARTASAssociationsTaskWidget::currentDataSourceLineChangedSlot()
 {
-    assert(ds_line_combo_);
+    traced_assert(ds_line_combo_);
     task_.currentDataSourceLineID(ds_line_combo_->currentData().toUInt());
 }
 
@@ -210,7 +210,7 @@ void CreateARTASAssociationsTaskWidget::endTrackTimeEditSlot(QString value)
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.endTrackTime(val);
 }
 
@@ -218,7 +218,7 @@ void CreateARTASAssociationsTaskWidget::associationTimePastEditSlot(QString valu
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.associationTimePast(val);
 }
 
@@ -226,7 +226,7 @@ void CreateARTASAssociationsTaskWidget::associationTimeFutureEditSlot(QString va
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.associationTimeFuture(val);
 }
 
@@ -234,7 +234,7 @@ void CreateARTASAssociationsTaskWidget::missesAcceptableTimeEditSlot(QString val
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.missesAcceptableTime(val);
 }
 
@@ -242,7 +242,7 @@ void CreateARTASAssociationsTaskWidget::associationsDubiousDistantTimeEditSlot(Q
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.associationsDubiousDistantTime(val);
 }
 
@@ -250,7 +250,7 @@ void CreateARTASAssociationsTaskWidget::associationDubiousCloseTimePastEditSlot(
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.associationDubiousCloseTimePast(val);
 }
 
@@ -258,31 +258,31 @@ void CreateARTASAssociationsTaskWidget::associationDubiousCloseTimeFutureEditSlo
 {
     bool ok;
     float val = value.toFloat(&ok);
-    assert(ok);
+    traced_assert(ok);
     task_.associationDubiousCloseTimeFuture(val);
 }
 
 void CreateARTASAssociationsTaskWidget::anyTrackFlagChangedSlot()
 {
-    assert(ignore_track_end_associations_check_);
+    traced_assert(ignore_track_end_associations_check_);
     if ((ignore_track_end_associations_check_->checkState() == Qt::Checked) !=
             task_.ignoreTrackEndAssociations())
         task_.ignoreTrackEndAssociations(ignore_track_end_associations_check_->checkState() ==
                                          Qt::Checked);
 
-    assert(mark_track_end_associations_dubious_check_);
+    traced_assert(mark_track_end_associations_dubious_check_);
     if ((mark_track_end_associations_dubious_check_->checkState() == Qt::Checked) !=
             task_.markTrackEndAssociationsDubious())
         task_.markTrackEndAssociationsDubious(
                     mark_track_end_associations_dubious_check_->checkState() == Qt::Checked);
 
-    assert(ignore_track_coasting_associations_check_);
+    traced_assert(ignore_track_coasting_associations_check_);
     if ((ignore_track_coasting_associations_check_->checkState() == Qt::Checked) !=
             task_.ignoreTrackCoastingAssociations())
         task_.ignoreTrackCoastingAssociations(
                     ignore_track_coasting_associations_check_->checkState() == Qt::Checked);
 
-    assert(mark_track_coasting_associations_dubious_check_);
+    traced_assert(mark_track_coasting_associations_dubious_check_);
     if ((mark_track_coasting_associations_dubious_check_->checkState() == Qt::Checked) !=
             task_.markTrackCoastingAssociationsDubious())
         task_.markTrackCoastingAssociationsDubious(

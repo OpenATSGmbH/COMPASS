@@ -60,8 +60,8 @@ bool copyRecursively(const std::string& source_folder, const std::string& dest_f
 QStringList getFilesInDirectory(const std::string& path);
 QStringList getSubdirectories(const std::string& path);
 
-std::string getIconFilepath(const std::string& filename);
-std::string getImageFilepath(const std::string& filename);
+std::string getIconFilepath(const std::string& filename, bool verify = true);
+std::string getImageFilepath(const std::string& filename, bool verify = true);
 QIcon getIcon(const std::string& name, const QColor& color = QColor());
 
 void deleteFile(const std::string& filename);
@@ -76,6 +76,8 @@ bool createMissingDirectories(const std::string& path); // true if successful
 std::string replaceExtension(const std::string& path, const std::string& new_ext_plus_point);
 
 std::string normalizeFilename(const std::string& filename_without_ext, bool remove_special_chars);
+
+std::string join(const std::string& path0, const std::string& path1);
 
 class IconProvider {
 public:

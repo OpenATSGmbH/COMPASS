@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONDATAMAPPINGWIDGET_H
-#define JSONDATAMAPPINGWIDGET_H
+#pragma once
 
 #include <QWidget>
 
@@ -33,5 +32,3 @@ class JSONDataMappingWidget : public QWidget
   private:
     JSONDataMapping* mapping_{nullptr};
 };
-
-#endif  // JSONDATAMAPPINGWIDGET_H

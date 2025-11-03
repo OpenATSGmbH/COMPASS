@@ -246,7 +246,7 @@ ModeCCorrectPeriodConfig& ModeCCorrectPeriodConfigWidget::config()
 */
 void ModeCCorrectPeriodConfigWidget::distanceChanged(const QString& value)
 {
-    loginf << "ModeCCorrectPeriodConfigWidget: distanceChanged: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -254,7 +254,7 @@ void ModeCCorrectPeriodConfigWidget::distanceChanged(const QString& value)
     if (ok)
         config().maxDistanceFt(val);
     else
-        loginf << "ModeCCorrectPeriodConfigWidget: distanceChanged: invalid value";
+        loginf << "invalid value";
 }
 
 } // namespace EvaluationRequirement

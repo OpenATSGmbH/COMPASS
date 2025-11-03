@@ -33,6 +33,7 @@ namespace reconstruction
 struct Measurement;
 struct Uncertainty;
 struct KalmanUpdate;
+struct PredictionComparison;
 
 class KalmanProjectionHandler;
 
@@ -88,6 +89,14 @@ public:
                                          bool fix_estimate,
                                          bool* fixed = nullptr,
                                          const boost::optional<double>& Q_var = boost::optional<double>()) const;
+    kalman::KalmanError kalmanPredictionMM(kalman::ProbState& pred_mm,
+                                           const kalman::Vector& x_pred,
+                                           const kalman::Matrix& P_pred) const;
+    kalman::KalmanError comparePrediction(PredictionComparison& comparison,
+                                          const kalman::ProbState& pred_mm,
+                                          const Measurement& mm,
+                                          const reconstruction::Uncertainty& default_uncert,
+                                          int comparison_flags) const;
 
     //smooth kalman updates  
     bool smoothUpdates(std::vector<kalman::KalmanUpdate>& updates,

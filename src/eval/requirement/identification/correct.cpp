@@ -16,8 +16,8 @@
  */
 
 #include "eval/requirement/identification/correct.h"
-
 #include "eval/results/identification/correct.h"
+#include "eval/standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
@@ -47,7 +47,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
         const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
         const SectorLayer& sector_layer)
 {
-    logdbg << "EvaluationRequirementIdentification '" << name_ << "': evaluate: utn " << target_data.utn_;
+    logdbg << "'" << name_ << "': utn " << target_data.utn_;
 
     typedef EvaluationRequirementResult::SingleIdentificationCorrect Result;
     typedef EvaluationDetail                                         Detail;
@@ -55,7 +55,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
 
     if (target_data.isPrimaryOnly())
     {
-        logdbg << "EvaluationRequirementIdentification '" << name_ << "': evaluate: utn " << target_data.utn_
+        logdbg << "'" << name_ << "': utn " << target_data.utn_
                << " ignored since primary only";
 
         return make_shared<EvaluationRequirementResult::SingleIdentificationCorrect>(
@@ -63,7 +63,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                     calculator_, Details(), 0, 0, 0, 0, 0, 0, 0);
     }
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -298,14 +298,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                         num_correct, num_not_correct, comment);
     }
 
-    logdbg << "EvaluationRequirementIdentification '" << name_ << "': evaluate: utn " << target_data.utn_
+    logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " num_updates " << num_updates << " num_no_ref_pos " << num_no_ref_pos
            << " num_no_ref_id " << num_no_ref_id
            << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
            << " num_correct " << num_correct << " num_not_correct " << num_not_correct;
 
-    assert (num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
-    assert (num_pos_inside == num_no_ref_id+num_correct+num_not_correct);
+    traced_assert(num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos_inside == num_no_ref_id+num_correct+num_not_correct);
 
     return make_shared<EvaluationRequirementResult::SingleIdentificationCorrect>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,

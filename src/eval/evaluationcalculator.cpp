@@ -144,7 +144,7 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json&
         return ResultT<EvaluationCalculator*>::failed("Could not create calculator from stored config: Unknown error");
     }
 
-    assert(c);
+    traced_assert(c);
 
     if (c->canEvaluate().ok())
     {
@@ -153,7 +153,7 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json&
     }
 
     auto res = ResultT<EvaluationCalculator*>::succeeded(c);
-    assert(res.hasResult() && res.result());
+    traced_assert(res.hasResult() && res.result());
 
     return res;
 }
@@ -177,53 +177,53 @@ void EvaluationCalculator::readSettings()
     registerParameter("use_grp_in_sector", &settings_.use_grp_in_sector_, Settings().use_grp_in_sector_);
     registerParameter("use_requirement", &settings_.use_requirement_, Settings().use_requirement_);
 
-    registerParameter("max_ref_time_diff", &settings_.max_ref_time_diff_, Settings().max_ref_time_diff_);
+    // registerParameter("max_ref_time_diff", &settings_.max_ref_time_diff_, Settings().max_ref_time_diff_);
 
-    // load filter
-    registerParameter("use_load_filter", &settings_.use_load_filter_, Settings().use_load_filter_);
+    // // load filter
+    // registerParameter("use_load_filter", &settings_.use_load_filter_, Settings().use_load_filter_);
 
-    registerParameter("use_ref_traj_accuracy_filter_", &settings_.use_ref_traj_accuracy_filter_, Settings().use_ref_traj_accuracy_filter_);
-    registerParameter("ref_traj_minimum_accuracy", &settings_.ref_traj_minimum_accuracy_, Settings().ref_traj_minimum_accuracy_);
+    // registerParameter("use_ref_traj_accuracy_filter_", &settings_.use_ref_traj_accuracy_filter_, Settings().use_ref_traj_accuracy_filter_);
+    // registerParameter("ref_traj_minimum_accuracy", &settings_.ref_traj_minimum_accuracy_, Settings().ref_traj_minimum_accuracy_);
 
-    registerParameter("use_adsb_filter", &settings_.use_adsb_filter_, Settings().use_adsb_filter_);
-    registerParameter("use_v0", &settings_.use_v0_, Settings().use_v0_);
-    registerParameter("use_v1", &settings_.use_v1_, Settings().use_v1_);
-    registerParameter("use_v2", &settings_.use_v2_, Settings().use_v2_);
+    // registerParameter("use_adsb_filter", &settings_.use_adsb_filter_, Settings().use_adsb_filter_);
+    // registerParameter("use_v0", &settings_.use_v0_, Settings().use_v0_);
+    // registerParameter("use_v1", &settings_.use_v1_, Settings().use_v1_);
+    // registerParameter("use_v2", &settings_.use_v2_, Settings().use_v2_);
 
-    // nucp
-    registerParameter("use_min_nucp", &settings_.use_min_nucp_, Settings().use_min_nucp_);
-    registerParameter("min_nucp", &settings_.min_nucp_, Settings().min_nucp_);
+    // // nucp
+    // registerParameter("use_min_nucp", &settings_.use_min_nucp_, Settings().use_min_nucp_);
+    // registerParameter("min_nucp", &settings_.min_nucp_, Settings().min_nucp_);
 
-    registerParameter("use_max_nucp", &settings_.use_max_nucp_, Settings().use_max_nucp_);
-    registerParameter("max_nucp", &settings_.max_nucp_, Settings().max_nucp_);
+    // registerParameter("use_max_nucp", &settings_.use_max_nucp_, Settings().use_max_nucp_);
+    // registerParameter("max_nucp", &settings_.max_nucp_, Settings().max_nucp_);
 
-    // nic
-    registerParameter("use_min_nic", &settings_.use_min_nic_, Settings().use_min_nic_);
-    registerParameter("min_nic", &settings_.min_nic_, Settings().min_nic_);
+    // // nic
+    // registerParameter("use_min_nic", &settings_.use_min_nic_, Settings().use_min_nic_);
+    // registerParameter("min_nic", &settings_.min_nic_, Settings().min_nic_);
 
-    registerParameter("use_max_nic", &settings_.use_max_nic_, Settings().use_max_nic_);
-    registerParameter("max_nic", &settings_.max_nic_, Settings().max_nic_);
+    // registerParameter("use_max_nic", &settings_.use_max_nic_, Settings().use_max_nic_);
+    // registerParameter("max_nic", &settings_.max_nic_, Settings().max_nic_);
 
-    // nacp
-    registerParameter("use_min_nacp", &settings_.use_min_nacp_, Settings().use_min_nacp_);
-    registerParameter("min_nacp", &settings_.min_nacp_, Settings().min_nacp_);
+    // // nacp
+    // registerParameter("use_min_nacp", &settings_.use_min_nacp_, Settings().use_min_nacp_);
+    // registerParameter("min_nacp", &settings_.min_nacp_, Settings().min_nacp_);
 
-    registerParameter("use_max_nacp", &settings_.use_max_nacp_, Settings().use_max_nacp_);
-    registerParameter("max_nacp", &settings_.max_nacp_, Settings().max_nacp_);
+    // registerParameter("use_max_nacp", &settings_.use_max_nacp_, Settings().use_max_nacp_);
+    // registerParameter("max_nacp", &settings_.max_nacp_, Settings().max_nacp_);
 
-    // sil v1
-    registerParameter("use_min_sil_v1", &settings_.use_min_sil_v1_, Settings().use_min_sil_v1_);
-    registerParameter("min_sil_v1", &settings_.min_sil_v1_, Settings().min_sil_v1_);
+    // // sil v1
+    // registerParameter("use_min_sil_v1", &settings_.use_min_sil_v1_, Settings().use_min_sil_v1_);
+    // registerParameter("min_sil_v1", &settings_.min_sil_v1_, Settings().min_sil_v1_);
 
-    registerParameter("use_max_sil_v1", &settings_.use_max_sil_v1_, Settings().use_max_sil_v1_);
-    registerParameter("max_sil_v1", &settings_.max_sil_v1_, Settings().max_sil_v1_);
+    // registerParameter("use_max_sil_v1", &settings_.use_max_sil_v1_, Settings().use_max_sil_v1_);
+    // registerParameter("max_sil_v1", &settings_.max_sil_v1_, Settings().max_sil_v1_);
 
-    // sil v2
-    registerParameter("use_min_sil_v2", &settings_.use_min_sil_v2_, Settings().use_min_sil_v2_);
-    registerParameter("min_sil_v2", &settings_.min_sil_v2_, Settings().min_sil_v2_);
+    // // sil v2
+    // registerParameter("use_min_sil_v2", &settings_.use_min_sil_v2_, Settings().use_min_sil_v2_);
+    // registerParameter("min_sil_v2", &settings_.min_sil_v2_, Settings().min_sil_v2_);
 
-    registerParameter("use_max_sil_v2", &settings_.use_max_sil_v2_, Settings().use_max_sil_v2_);
-    registerParameter("max_sil_v2", &settings_.max_sil_v2_, Settings().max_sil_v2_);
+    // registerParameter("use_max_sil_v2", &settings_.use_max_sil_v2_, Settings().use_max_sil_v2_);
+    // registerParameter("max_sil_v2", &settings_.max_sil_v2_, Settings().max_sil_v2_);
 
     registerParameter("result_detail_zoom", &settings_.result_detail_zoom_, Settings().result_detail_zoom_);
 
@@ -253,9 +253,9 @@ void EvaluationCalculator::generateSubConfigurable(const std::string& class_id,
     if (class_id == "EvaluationStandard")
     {
         EvaluationStandard* standard = new EvaluationStandard(class_id, instance_id, *this);
-        logdbg << "EvaluationCalculator: generateSubConfigurable: adding standard " << standard->name();
+        logdbg << "adding standard " << standard->name();
 
-        assert(!hasStandard(standard->name()));
+        traced_assert(!hasStandard(standard->name()));
 
         standards_.push_back(std::unique_ptr<EvaluationStandard>(standard));
 
@@ -335,7 +335,7 @@ void EvaluationCalculator::reset()
  */
 void EvaluationCalculator::clearData()
 {
-    loginf << "EvaluationCalculator: clearLoadedDataAndResults";
+    loginf;
 
     data_->clear();
     results_gen_->clear();
@@ -355,9 +355,9 @@ Result EvaluationCalculator::evaluate(bool update_report,
                                       const std::vector<unsigned int>& utns,
                                       const std::vector<Evaluation::RequirementResultID>& requirements)
 {
-    loginf << "EvaluationCalculator: evaluate";
+    loginf;
 
-    assert(canEvaluate().ok());
+    traced_assert(canEvaluate().ok());
 
     //always load blocking for now
     const bool Blocking = true;
@@ -396,7 +396,7 @@ Result EvaluationCalculator::evaluate(bool update_report,
         }
         else
         {
-            assert(!active_load_connection_);
+            traced_assert(!active_load_connection_);
 
             QObject::connect(&eval_man_, &EvaluationManager::hasNewData, this, &EvaluationCalculator::loadingDone);
             active_load_connection_ = true;
@@ -415,7 +415,7 @@ Result EvaluationCalculator::evaluate(bool update_report,
  */
 Result EvaluationCalculator::loadingDone()
 {
-    loginf << "EvaluationCalculator: loadingDone";
+    loginf;
 
     if (active_load_connection_)
     {
@@ -447,7 +447,7 @@ Result EvaluationCalculator::loadingDone()
     //ready to evaluate?
     if (data_loaded_)
     {
-        loginf << "EvaluationCalculator: loadingDone: finalizing: has ref data " << has_ref_data << " has tst data " << has_tst_data;
+        loginf << "finalizing: has ref data " << has_ref_data << " has tst data " << has_tst_data;
 
         boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -456,10 +456,10 @@ Result EvaluationCalculator::loadingDone()
 
         boost::posix_time::time_duration time_diff =  boost::posix_time::microsec_clock::local_time() - start_time;
 
-        loginf << "EvaluationCalculator: loadingDone: finalize done "
+        loginf << "finalize done "
                 << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, true);
 
-        loginf << "EvaluationCalculator: loadingDone: starting to evaluate";
+        loginf << "starting to evaluate";
 
         return evaluateData();
     }
@@ -472,10 +472,10 @@ Result EvaluationCalculator::loadingDone()
  */
 Result EvaluationCalculator::evaluateData()
 {
-    loginf << "EvaluationCalculator: evaluateData";
+    loginf;
 
-    assert(data_loaded_);
-    assert(canEvaluate().ok());
+    traced_assert(data_loaded_);
+    traced_assert(canEvaluate().ok());
 
     Projection& projection = ProjectionManager::instance().currentProjection();
     projection.clearCoordinateSystems();
@@ -515,12 +515,12 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
     {
         ds_id = stoul(ds_it.first);
 
-        loginf << "EvaluationCalculator: usedDataSources: ref ds_id '" << ds_it.first << "' uint " << ds_id;
+        loginf << "ref ds_id '" << ds_it.first << "' uint " << ds_id;
 
         for (auto& line_it : line_ref_set)
-            loginf << "EvaluationCalculator: usedDataSources: ref line " << line_it;
+            loginf << "ref line " << line_it;
 
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         if (ds_it.second)
             data_sources.insert(make_pair(ds_id, line_ref_set));
@@ -532,12 +532,12 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
     {
         ds_id = stoul(ds_it.first);
 
-        loginf << "EvaluationCalculator: usedDataSources: tst ds_id '" << ds_it.first << "' uint " << ds_id;
+        loginf << "tst ds_id '" << ds_it.first << "' uint " << ds_id;
 
         for (auto& line_it : line_tst_set)
-            loginf << "EvaluationCalculator: usedDataSources: tst line " << line_it;
+            loginf << "tst line " << line_it;
 
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         if (ds_it.second)
         {
@@ -569,9 +569,9 @@ const std::string& EvaluationCalculator::minHeightFilterLayerName() const
  */
 void EvaluationCalculator::minHeightFilterLayerName(const std::string& layer_name)
 {
-    assert(layer_name.empty() || eval_man_.hasSectorLayer(layer_name));
+    traced_assert(layer_name.empty() || eval_man_.hasSectorLayer(layer_name));
 
-    loginf << "EvaluationCalculator: minHeightFilterLayerName: layer changed to "
+    loginf << "layer changed to "
            << (layer_name.empty() ? "null" : "'" + layer_name + "'");
 
     settings_.min_height_filter_layer_ = layer_name;
@@ -596,7 +596,7 @@ void EvaluationCalculator::checkMinHeightFilterValid()
 {
     if (!settings_.min_height_filter_layer_.empty() && !eval_man_.hasSectorLayer(settings_.min_height_filter_layer_))
     {
-        logerr << "EvaluationCalculator: checkMinHeightFilterValid: Layer '" << settings_.min_height_filter_layer_ << "'"
+        logerr << "Layer '" << settings_.min_height_filter_layer_ << "'"
                << " not present, resetting min height filter";
         
         settings_.min_height_filter_layer_ = "";
@@ -614,7 +614,7 @@ std::string EvaluationCalculator::dbContentNameRef() const
  */
 void EvaluationCalculator::dbContentNameRef(const std::string& name)
 {
-    loginf << "EvaluationCalculator: dbContentNameRef: name " << name;
+    loginf << "name " << name;
 
     settings_.dbcontent_name_ref_ = name;
 
@@ -656,7 +656,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
         unsigned int ds_id = stoul(ds_it.first);
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         if (ds_it.second)
             srcs.insert(ds_id);
@@ -680,7 +680,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
             continue;
 
         unsigned int ds_id = stoul(ds_it.first);
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         const auto& name = ds_man.dbDataSource(ds_id).name();
 
@@ -713,7 +713,7 @@ std::string EvaluationCalculator::dbContentNameTst() const
  */
 void EvaluationCalculator::dbContentNameTst(const std::string& name)
 {
-    loginf << "EvaluationCalculator: dbContentNameTst: name " << name;
+    loginf << "name " << name;
 
     settings_.dbcontent_name_tst_ = name;
 
@@ -754,7 +754,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
         unsigned int ds_id = stoul(ds_it.first);
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         if (ds_it.second)
             srcs.insert(ds_id);
@@ -778,7 +778,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
             continue;
 
         unsigned int ds_id = stoul(ds_it.first);
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         const auto& name = ds_man.dbDataSource(ds_id).name();
 
@@ -842,7 +842,7 @@ void EvaluationCalculator::currentStandardName(const std::string& current_standa
     settings_.current_standard_ = current_standard;
 
     if (settings_.current_standard_.size())
-        assert (hasStandard(settings_.current_standard_));
+        traced_assert(hasStandard(settings_.current_standard_));
 
     emit currentStandardChanged();
 }
@@ -851,10 +851,10 @@ void EvaluationCalculator::currentStandardName(const std::string& current_standa
  */
 void EvaluationCalculator::renameCurrentStandard (const std::string& new_name)
 {
-    loginf << "EvaluationCalculator: renameCurrentStandard: new name '" << new_name << "'";
+    loginf << "new name '" << new_name << "'";
 
-    assert (hasCurrentStandard());
-    assert (!hasStandard(new_name));
+    traced_assert(hasCurrentStandard());
+    traced_assert(!hasStandard(new_name));
 
     currentStandard().name(new_name);
     settings_.current_standard_ = new_name;
@@ -867,10 +867,10 @@ void EvaluationCalculator::renameCurrentStandard (const std::string& new_name)
  */
 void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
 {
-    loginf << "EvaluationCalculator: renameCurrentStandard: new name '" << new_name << "'";
+    loginf << "new name '" << new_name << "'";
 
-    assert (hasCurrentStandard());
-    assert (!hasStandard(new_name));
+    traced_assert(hasCurrentStandard());
+    traced_assert(!hasStandard(new_name));
 
     nlohmann::json data;
     data["parameters"]["name"] = new_name;
@@ -887,14 +887,14 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
  */
 EvaluationStandard& EvaluationCalculator::currentStandard()
 {
-    assert (hasCurrentStandard());
+    traced_assert(hasCurrentStandard());
 
     string name = settings_.current_standard_;
 
     auto iter = std::find_if(standards_.begin(), standards_.end(),
                              [&name](const unique_ptr<EvaluationStandard>& x) { return x->name() == name;});
 
-    assert (iter != standards_.end());
+    traced_assert(iter != standards_.end());
 
     return *iter->get();
 }
@@ -903,14 +903,14 @@ EvaluationStandard& EvaluationCalculator::currentStandard()
  */
 const EvaluationStandard& EvaluationCalculator::currentStandard() const
 {
-    assert (hasCurrentStandard());
+    traced_assert(hasCurrentStandard());
 
     string name = settings_.current_standard_;
 
     auto iter = std::find_if(standards_.begin(), standards_.end(),
                              [&name](const unique_ptr<EvaluationStandard>& x) { return x->name() == name;});
 
-    assert (iter != standards_.end());
+    traced_assert(iter != standards_.end());
 
     return *iter->get();
 }
@@ -929,9 +929,9 @@ bool EvaluationCalculator::hasStandard(const std::string& name) const
  */
 void EvaluationCalculator::addStandard(const std::string& name)
 {
-    loginf << "EvaluationCalculator: addStandard: name " << name;
+    loginf << "name " << name;
 
-    assert (!hasStandard(name));
+    traced_assert(!hasStandard(name));
 
     std::string instance = "EvaluationStandard" + name + "0";
 
@@ -949,16 +949,16 @@ void EvaluationCalculator::addStandard(const std::string& name)
  */
 void EvaluationCalculator::deleteCurrentStandard()
 {
-    loginf << "EvaluationCalculator: deleteCurrentStandard: name " << settings_.current_standard_;
+    loginf << "name " << settings_.current_standard_;
 
-    assert (hasCurrentStandard());
+    traced_assert(hasCurrentStandard());
 
     string name = settings_.current_standard_;
 
     auto iter = std::find_if(standards_.begin(), standards_.end(),
                              [&name](const unique_ptr<EvaluationStandard>& x) { return x->name() == name;});
 
-    assert (iter != standards_.end());
+    traced_assert(iter != standards_.end());
 
     standards_.erase(iter);
 
@@ -1055,7 +1055,7 @@ void EvaluationCalculator::updateSectorLayers()
  */
 void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
 {
-    loginf << "EvaluationCalculator: checkReferenceDataSources";
+    loginf;
 
     if (!hasValidReferenceDBContent())
         return;
@@ -1097,7 +1097,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
  */
 void EvaluationCalculator::checkTestDataSources(bool update_settings)
 {
-    loginf << "EvaluationCalculator: checkTestDataSources";
+    loginf;
 
     if (!hasValidTestDBContent())
         return;
@@ -1209,7 +1209,7 @@ EvaluationRequirementResult::Single* EvaluationCalculator::singleResult(const Ev
                 continue;
 
             auto single_ptr = dynamic_cast<EvaluationRequirementResult::Single*>(result.second.get());
-            assert(single_ptr);
+            traced_assert(single_ptr);
 
             if (!single_ptr->isResult(id) || single_ptr->utn() != utn)
                 continue;
@@ -1233,7 +1233,7 @@ EvaluationRequirementResult::Joined* EvaluationCalculator::joinedResult(const Ev
                 continue;
 
             auto joined_ptr = dynamic_cast<EvaluationRequirementResult::Joined*>(result.second.get());
-            assert(joined_ptr);
+            traced_assert(joined_ptr);
 
             if (!joined_ptr->isResult(id))
                 continue;
@@ -1283,50 +1283,52 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
         data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(sector_roi_->longitude_min);
     }
 
-    if (settings_.use_load_filter_)
-    {
-        if (settings_.use_ref_traj_accuracy_filter_)
-        {
-            data[ViewPoint::VP_FILTERS_KEY]["RefTraj Accuracy"]["Accuracy Minimum"] = to_string(settings_.ref_traj_minimum_accuracy_);
-        }
+    // if (settings_.use_ref_traj_accuracy_filter_)
+    // {
+    //     data[ViewPoint::VP_FILTERS_KEY]["RefTraj Accuracy"]["Accuracy Minimum"] =
+    //         to_string(settings_.ref_traj_minimum_accuracy_);
+    // }
 
-        if (settings_.use_adsb_filter_)
-        {
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
+    // if (settings_.use_adsb_filter_)
+    // {
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
 
-            // nucp
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
+    //     // nucp
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
 
-            // nic
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
+    //     // nic
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
 
-            // nacp
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
+    //     // nacp
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
 
-            // sil v1
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] = settings_.use_min_sil_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] = settings_.use_max_sil_v1_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
+    //     // sil v1
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
+    //         settings_.use_min_sil_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
+    //         settings_.use_max_sil_v1_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
 
-            // sil v2
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] = settings_.use_min_sil_v2_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] = settings_.use_max_sil_v2_;
-            data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
-        }
-    }
+    //     // sil v2
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
+    //         settings_.use_min_sil_v2_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
+    //         settings_.use_max_sil_v2_;
+    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
+    // }
 
     if (eval_man_.use_timestamp_filter_)
     {
@@ -1383,12 +1385,12 @@ std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEv
  */
 void EvaluationCalculator::showUTN (unsigned int utn)
 {
-    loginf << "EvaluationCalculator: showUTN: utn " << utn;
+    loginf << "utn " << utn;
 
     nlohmann::json data = getBaseViewableDataConfig();
     data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
-    loginf << "EvaluationCalculator: showUTN: showing";
+    loginf << "showing";
     eval_man_.setViewableDataConfig(data);
 }
 
@@ -1483,7 +1485,7 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
 const json::boolean_t& EvaluationCalculator::useGroupInSectorLayer(const std::string& sector_layer_name,
                                                                    const std::string& group_name) const
 {
-    assert (hasCurrentStandard());
+    traced_assert(hasCurrentStandard());
 
     nlohmann::json& use_grp_in_sector = const_cast<nlohmann::json&>(settings_.use_grp_in_sector_);
 
@@ -1502,9 +1504,9 @@ void EvaluationCalculator::useGroupInSectorLayer(const std::string& sector_layer
                                                  const std::string& group_name, 
                                                  bool value)
 {
-    assert (hasCurrentStandard());
+    traced_assert(hasCurrentStandard());
 
-    loginf << "EvaluationCalculator: useGroupInSector:"
+    loginf << "start"
            << " standard_name " << settings_.current_standard_
            << " sector_layer_name " << sector_layer_name
            << " group_name " << group_name 
@@ -1537,7 +1539,7 @@ void EvaluationCalculator::useRequirement(const std::string& standard_name,
                                           const std::string& req_name,
                                           bool value)
 {
-    loginf << "EvaluationCalculator: useRequirement:"
+    loginf << "start"
            << " standard_name " << standard_name
            << " group_name " << group_name 
            << " req_name " << req_name 
@@ -1550,7 +1552,7 @@ void EvaluationCalculator::useRequirement(const std::string& standard_name,
  */
 void EvaluationCalculator::updateSectorROI()
 {
-    loginf << "EvaluationCalculator: updateSectorROI";
+    loginf;
 
     sector_roi_.reset();
 
@@ -1618,7 +1620,7 @@ void EvaluationCalculator::updateSectorROI()
  */
 void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sources)
 {
-    loginf << "EvaluationCalculator: updateCompoundCoverage";
+    loginf;
 
     tst_srcs_coverage_->clear();
 
@@ -1626,7 +1628,7 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
     for (auto ds_id : tst_sources)
     {
-        assert (ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
         dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
 
@@ -1648,7 +1650,7 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
             if (range_max_set && ds.hasPosition())
             {
-                loginf << "EvaluationCalculator: updateCompoundCoverage: adding src " << ds.name()
+                loginf << "adding src " << ds.name()
                        << " range " << range_max * NM2M;
 
                 tst_srcs_coverage_->addRangeCircle(ds_id, ds.latitude(), ds.longitude(), range_max * NM2M);

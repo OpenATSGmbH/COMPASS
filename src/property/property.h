@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PROPERTY_H_
-#define PROPERTY_H_
+#pragma once
 
 #include <map>
 #include <vector>
@@ -93,5 +92,3 @@ protected:
     //    static const std::map<PropertyDataType, std::string> data_types_2_strings_;
     //    static const std::map<std::string, PropertyDataType> strings_2_data_types_;
 };
-
-#endif /* PROPERTY_H_ */

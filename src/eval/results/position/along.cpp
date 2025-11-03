@@ -16,10 +16,13 @@
  */
 
 #include "eval/results/position/along.h"
+#include "stringconv.h"
 
 #include "logger.h"
 
-#include <cassert>
+#include "traced_assert.h"
+
+using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
@@ -41,10 +44,12 @@ SinglePositionAlong::SinglePositionAlong(const std::string& result_id,
                                          unsigned int num_no_ref,
                                          unsigned int num_pos_outside,
                                          unsigned int num_pos_inside,
+                                         unsigned int num_ref_inaccurate,
                                          unsigned int num_value_ok,
                                          unsigned int num_value_nok)
 :   SinglePositionProbabilityBase("SinglePositionAlong", result_id, requirement, sector_layer, utn, target, calculator, details,
-                                  num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_value_ok, num_value_nok)
+                                  num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_ref_inaccurate,
+                                   num_value_ok, num_value_nok)
 {
     updateResult();
 }
@@ -81,8 +86,10 @@ std::vector<Single::TargetInfo> SinglePositionAlong::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                                    , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions"            , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"                      , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"                     , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                      , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_                   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "ALMin [m]"      , "Minimum of along-track error"                         , formatValue(accumulator_.min())    }, 
              { "ALMax [m]"      , "Maximum of along-track error"                         , formatValue(accumulator_.max())    },
              { "ALAvg [m]"      , "Average of along-track error"                         , formatValue(accumulator_.mean())   }, 
@@ -96,7 +103,7 @@ std::vector<Single::TargetInfo> SinglePositionAlong::targetInfos() const
 */
 std::vector<std::string> SinglePositionAlong::detailHeaders() const
 {
-    return { "ToD", "NoRef", "PosInside", "DAlong", "DAlongOK", "#ALOK", "#ALNOK", "Comment" };
+    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "DAlong", "DAlongOK", "#ALOK", "#ALNOK", "Comment" };
 }
 
 /**
@@ -109,6 +116,7 @@ nlohmann::json::array_t SinglePositionAlong::detailValues(const EvaluationDetail
     return { Utils::Time::toString(detail.timestamp()),
             !has_ref_pos,
              detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
+             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
              detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
@@ -136,8 +144,10 @@ std::vector<Joined::SectorInfo> JoinedPositionAlong::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                                    , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions"            , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"                      , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"                     , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"                      , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "ALMin [m]"      , "Minimum of along-track error"                         , formatValue(accumulator_.min())    }, 
              { "ALMax [m]"      , "Maximum of along-track error"                         , formatValue(accumulator_.max())    },
              { "ALAvg [m]"      , "Average of along-track error"                         , formatValue(accumulator_.mean())   }, 

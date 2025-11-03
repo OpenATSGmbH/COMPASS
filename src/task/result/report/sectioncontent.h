@@ -101,12 +101,7 @@ struct SectionContentViewable
 class SectionContent : public ReportItem
 {
 public:
-    enum class ContentType
-    {
-        Figure = 0,
-        Table,
-        Text
-    };
+    typedef SectionContentType ContentType;
 
     SectionContent(ContentType type,
                    unsigned int id,
@@ -176,7 +171,8 @@ protected:
     virtual void toJSON_impl(nlohmann::json& j) const override;
     virtual bool fromJSON_impl(const nlohmann::json& j) override;
     Result toJSONDocument_impl(nlohmann::json& j,
-                               const std::string* resource_dir) const override;
+                               const std::string* resource_dir,
+                               ReportExportMode export_style) const override;
 
     virtual bool loadOnDemand();
 

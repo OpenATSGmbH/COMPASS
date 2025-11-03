@@ -15,6 +15,10 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/intervalbase.h"
         "${CMAKE_CURRENT_LIST_DIR}/intervalbaseconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/intervalbaseconfigwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/positionbase.h"
+        "${CMAKE_CURRENT_LIST_DIR}/positionbaseconfig.h"
+        "${CMAKE_CURRENT_LIST_DIR}/positionbaseconfigwidget.h"
+
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/base.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/baseconfig.cpp"
@@ -25,4 +29,8 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/intervalbase.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/intervalbaseconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/intervalbaseconfigwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/positionbase.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/positionbaseconfig.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/positionbaseconfigwidget.cpp"
+
     )

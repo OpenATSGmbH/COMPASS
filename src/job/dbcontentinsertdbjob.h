@@ -20,7 +20,7 @@
 #include "job/job.h"
 
 #include <list>
-#include <cassert>
+#include "traced_assert.h"
 #include <map>
 #include <memory>
 #include <string>

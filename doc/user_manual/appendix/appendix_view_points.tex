@@ -3,7 +3,7 @@
 
 This section defines how the view point files have to be structured and written by view point generators (applications which generate such files). \\
 
-View point files are written in the JSON format, and includes a version number. The current version number is 0.2, the previous version 0.1 is \textbf{not} supported. \\
+View point files are written in the JSON format, and includes a version number. The current version number is 0.3, the previous versions 0.2, 0.1 are \textbf{not} supported. \\
 
 Please \textbf{note} that basic JSON format knowledge is required to understand the topics in this section. \\
 
@@ -37,17 +37,17 @@ The following content is commonly stored in a view point file:
   \end{itemize}
  \end{itemize}
 
-\subsection{Custom Attributes}
+\paragraph{Custom Attributes}
 \label{sec:view_points_custom_attributes} 
 
 The view point context, as well as view points, can contain additional information. For the context, this additional information is shown in the 'Import View Points' task and not stored. \\
 
 Additional data in each view point is read in as is, and persisted in the database. In the 'View Points' tab, all primitive variables (non-object, non-list) are shown as columns. \\
 
-Therefore, when generating view points, it might be useful to add such variables (e.g. for ordering according to error magnitude, priority etc.). This is recommended and will be supported further.
+Therefore, when generating view points, it might be useful to add such variables (e.g. for ordering according to error magnitude, priority etc.). This is recommended and will be supported further. \\
  
-\subsection{Version 0.2}
-
+\subsection{View Point Definition}
+ 
 The most simple example of a view points file is as follows:
 
 \lstset{
@@ -58,7 +58,7 @@ The most simple example of a view points file is as follows:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.2",
+    "content_version": "0.3",
     "view_points": [
         {
             "id": 1,
@@ -73,16 +73,16 @@ The most simple example of a view points file is as follows:
 
 There is an encompassing JSON object, which contains the view point context (object) and view points (list with one entry). \\
 
-\subsubsection{View Point Context}
+\subsection{View Point Context}
 
-The 'version' attribute is mandatory, and only version 0.2 is currently supported. \\
+The 'version' attribute is mandatory, and only version 0.3 is currently supported. \\
 
-In the context, optinally datasets can be added, which define related data to be imported.
+In the context, optionally datasets can be added, which define related data to be imported.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.2",
+    "content_version": "0.3",
     "view_point_context": {
         "datasets": [
             {
@@ -101,7 +101,7 @@ Several datasets are also possible:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.2",
+    "content_version": "0.3",
     "view_point_context": {
         "datasets": [
             {
@@ -132,7 +132,7 @@ Such an import without overrides can look as follows:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.2",
+    "content_version": "0.3",
     "view_point_context": {
         "datasets": [
             {
@@ -170,11 +170,11 @@ Exact definition:
 \end{center}
 %\ \\
 
-\subsubsection{View Point}
+\subsection{View Point List}
 
 View points are stored in the 'view\_points' attribute, which is a simple list. \\
 
-A view point only has to contain and 'id' and 'type' attribute, but additional attributes make it more meaninful.
+A view point only has to contain and 'id' and 'type' attribute, but additional attributes make it more meaningful.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -187,7 +187,7 @@ A view point only has to contain and 'id' and 'type' attribute, but additional a
             "position_longitude":12.2,
             "position_window_latitude":0.05,
             "position_window_longitude":0.02,
-            "time":666.0,
+            "timestamp":"2021-01-02 01:00:00.002",
             "time_window":4.0,
             "data_sources": [
                 [
@@ -243,7 +243,7 @@ In each View Point object, the following values can be defined:
     position\_longitude & Center position WGS-84 longitude, as number &    \\ \hline
     position\_window\_latitude & Geographic window size in WGS-84 latitude, as number &    \\ \hline
     position\_window\_longitude & Geographic window size in WGS-84 longitude, as number &    \\ \hline
-    time & Center time, as number in seconds &    \\ \hline
+    timestamp & Center timestamp, string in format "yyyy-MM-dd hh:mm:ss.zzz" &    \\ \hline
     time\_window & Time window size, as number in seconds &    \\ \hline
     data\_sources & List of data sources to load, with lists which lines to load &    \\ \hline
     data\_source\_types & List of DSTypes to load, as strings &    \\ \hline
@@ -256,7 +256,7 @@ In each View Point object, the following values can be defined:
 
 If the 'data\_sources', 'data\_source\_types' or 'filters' attribute are not defined, all data will be loaded.
 
-\subsubsection{View Point Filters}
+\subsection{View Point Filters}
 
 The 'filters' attribute contains a JSON object, where each filter name is used as a key, and the value is again an JSON object encompassing the filter conditions. Each filter condition value is a string, the same as a user would enter in the GUI.
 
@@ -359,7 +359,7 @@ For the 'Tracker Track Number' filter, the data source condition is identified b
 
 Please \textbf{note} that setting custom filters (created by the user) is also possible using view points. Please contact the author for further information.
 
-\subsubsection{View Point Annotations}
+\subsection{View Point Annotations}
 
 The 'annotations' attribute stores custom geometry information, which can be displayed in a Geographic View. \\
 
@@ -421,7 +421,7 @@ A listed annotation can be shown or hidden by using the checkbox next to it. \\
     \caption{View Point Annotations - Example} 
 \end{figure}
 
-\paragraph{Features} An annotation feature must always contain a unique "type" field
+\subsubsection{Features} An annotation feature must always contain a unique "type" field
 indicating its content, e.g. "points", "lines", etc. \\
 
 A feature optionally may also contain a custom "name".
@@ -442,7 +442,7 @@ Depending on its type a feature may contain additional fields. Examples for the 
 
 %TODO: List of explained features with links
 
-\paragraph{Points} The 'points' feature displays a set of coordinates using a specified symbol.
+\subsubsection{Points} The 'points' feature displays a set of coordinates using a specified symbol.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -473,7 +473,7 @@ Depending on its type a feature may contain additional fields. Examples for the 
     \caption{View Point Annotations - Points} 
 \end{figure}
 
-\paragraph{Lines} The 'lines' feature displays an array of lines. 
+\subsubsection{Lines} The 'lines' feature displays an array of lines. 
 Two consecutive coordinates form an individual line, which means that the size of the coordinate array needs to be even.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
@@ -506,7 +506,7 @@ Here $[45.0, 18.0]$ and $[45.0, 20.0]$ form one line, and $[48.0, 20.0]$ and $[4
     \caption{View Point Annotations - Lines} 
 \end{figure}
 
-\paragraph{Line Strings} The 'line\textunderscore string' feature displays a polygonal line connecting the provided coordinates.
+\subsubsection{Line Strings} The 'line\textunderscore string' feature displays a polygonal line connecting the provided coordinates.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -538,7 +538,7 @@ The displayed line connects the given coordinates, one after another.
     \caption{View Point Annotations - Line Strings} 
 \end{figure}
 
-\paragraph{Ellipses} The 'ellipses' feature displays accuracy information as ellipses at the provided locations.
+\subsubsection{Ellipses} The 'ellipses' feature displays accuracy information as ellipses at the provided locations.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -575,7 +575,7 @@ The 'sizes' of the ellipses are provided as value triples (Standard deviation X,
     \caption{View Point Annotations - Ellipses} 
 \end{figure}
 
-\paragraph{Text} The 'text' feature displays a text box at a provided coordinate.
+\subsubsection{Text} The 'text' feature displays a text box at a provided coordinate.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -603,7 +603,7 @@ The 'sizes' of the ellipses are provided as value triples (Standard deviation X,
 
 \textbf{Note} that coordinates always need to be provided as WGS84 latitude and longitude. \\
 
-\paragraph{GeoImage} The 'geoimage' feature displays image data with additional information about its geographic location.
+\subsubsection{GeoImage} The 'geoimage' feature displays image data with additional information about its geographic location.
 At the moment only GeoTIFF files are supported.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
@@ -629,7 +629,7 @@ At the moment only GeoTIFF files are supported.
 %    \caption{View Point Annotations - Text} 
 %\end{figure}
 
-\paragraph{Grid} The 'grid' feature displays custom grid data in a Grid View.
+\subsubsection{Grid} The 'grid' feature displays custom grid data in a Grid View.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -681,7 +681,7 @@ At the moment only GeoTIFF files are supported.
     \caption{View Point Annotations - Grid} 
 \end{figure}
 
-\paragraph{Histogram} The 'histogram' feature displays custom histogram data in a Histogram View. 
+\subsubsection{Histogram} The 'histogram' feature displays custom histogram data in a Histogram View. 
 Such a histogram may contain multiple data series of the same resolution, which can be
 displayed simultaneously in HistogramView.
 
@@ -750,7 +750,7 @@ displayed simultaneously in HistogramView.
     \caption{View Point Annotations - Histogram} 
 \end{figure}
 
-\paragraph{Scatter Series} The 'scatterseries' feature displays custom scatter data in a Scatterplot View. 
+\subsubsection{Scatter Series} The 'scatterseries' feature displays custom scatter data in a Scatterplot View. 
 The feature may contain multiple data series.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
@@ -795,7 +795,7 @@ The feature may contain multiple data series.
     \caption{View Point Annotations - Scatter Series} 
 \end{figure}
 
-\paragraph{Plot Metadata}
+\subsubsection{Plot Metadata}
 
 Some types of features represent displayable data for specific Views, e.g. the Histogram feature,
 which can be displayed specifically in a Histogram View. \\
@@ -826,7 +826,7 @@ metadata for displaying the item in such a view can be provided by the feature b
 
 See section \nameref{sec:plots} for more details.
 
-\paragraph{Showing Color Arrays} In all examples provided above, a single color has been used for the geometry stored in a feature.
+\subsubsection{Showing Color Arrays} In all examples provided above, a single color has been used for the geometry stored in a feature.
 In order to show each geometrical primitive in a separate color, the 'color' tag can be removed, and a 'colors' array provided instead.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
@@ -862,7 +862,7 @@ This example will result in each point to be displayed in a separate color.
 
 \textbf{Note}: A 'color' tag and a 'colors' array may not exist in a feature at the same time.
 
-\paragraph{Nesting Annotations} Annotations can be nested by providing them with their own 'annotations' array containing nested 
+\subsubsection{Nesting Annotations} Annotations can be nested by providing them with their own 'annotations' array containing nested 
 annotations, as shown in the example below. This mechanism can be used to form more complex annotations, which can be switched on and off 
 individually.
 
@@ -931,3 +931,576 @@ individually.
         \includegraphics[width=14cm]{figures/viewpoints_anno_example_nested.png}
     \caption{View Point Annotations - Nested Annotations} 
 \end{figure}
+
+\subsection{Example}
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+{
+    "content_type": "view_points",
+    "content_version": "0.3",
+    "view_point_context": {
+        "datasets": [
+            {
+            "filename": "/home/yourpath/radar1.ff",
+            "date": "2021-01-02"
+            },
+            {
+            "filename": "/home/yourpath/radar2.ff",
+            "date": "2021-01-02"
+            },
+            {
+            "filename": "/home/yourpath/tracker1.ff",
+            "date": "2021-01-02"
+            },
+            {
+            "filename": "/home/yourpath/adsb.ff",
+            "date": "2021-01-02"
+            },
+            {
+            "filename": "/home/yourpath/wam1.ff",
+            "date": "2021-01-02"
+            },
+            {
+            "filename": "//home/yourpath/wam2.ff",
+            "date": "2021-01-02"
+            },
+            {
+            "filename": "/home/yourpath/tracker2.ff",
+            "date": "2021-01-02",
+            "line_id": 1
+            }               
+        ]
+    },    
+    "view_points": 
+    [
+        {
+            "id": 1,
+            "name": "No Data",
+            "status": "open",
+            "data_source_types": [],
+            "type": "Example"
+        },
+        {
+            "id": 2,
+            "name": "All Data",
+            "status": "open",
+            "type": "Example"
+        },
+        {
+            "data_source_types": [
+                "Tracker"
+            ],
+            "filters": {
+                "Aircraft Address": {
+                    "Aircraft Address Values": "4408AE"
+                }
+            },
+            "id": 3,
+            "name": "Filtered 0x4408AE",
+            "position_latitude": 47.70846737222285,
+            "position_longitude": 16.185397891887238,
+            "position_window_latitude": 0.3,
+            "position_window_longitude": 0.3,
+            "timestamp":"2021-01-02 11:52:55.002",
+            "time_window":4.0,
+            "status": "open",
+            "type": "Target Issue 1"
+        },
+        {
+            "data_source_types": [
+                "Tracker"
+            ],
+            "filters": {
+                "Timestamp": {
+                    "Timestamp Maximum": "2021-01-02 11:59:00.000",
+                    "Timestamp Minimum": "2021-01-02 09:59:58.752"
+                },
+                "Tracker Track Number": {
+                    "Values": {
+                        "12990": {
+                            "0": "6630",
+                            "1": "5748"
+                        }
+                    }
+                }
+            },
+            "id": 4,
+            "name": "Filtered Track Numbers",
+            "position_latitude": 47.72314166553843,
+            "position_longitude": 16.216732317219545,
+            "position_window_latitude": 0.3,
+            "position_window_longitude": 0.3,
+            "timestamp":"2021-01-02 11:52:55.002",
+            "time_window":4.0,
+            "status": "open",
+            "type": "Target Issue 1"
+        },
+        {
+            "id": 5,
+            "name": "Annotation1",
+            "position_latitude": 45,
+            "position_longitude": 19,
+            "position_window_latitude": 10,
+            "position_window_longitude": 10,
+            "status": "open",
+            "data_source_types": [],
+            "type": "Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "Lines & Text",
+                    "symbol_color" : "#0000FF",
+                    "hidden": true,
+                    "features":
+                    [
+                        {
+                            "type": "line_string",
+                            "geometry" :
+                            {
+                                "coordinates": 
+                                [
+                                    [45.0, 18.0], [46.0, 19.0], [45.0, 20.0], [48.0, 20.0]
+                                ]
+                            },
+                            "properties":
+                            {
+                                "color": "#0000FF",
+                                "line_width": 1.5
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "Listen, strange women lyin in ponds distributin swords\n is no basis for a system of government.\nSupreme executive power derives from\n a mandate from the masses,\n not from some farcical aquatic ceremony.",
+                            "position": [48.0, 20.0],
+                            "properties":
+                            {
+                                "color": "#AA00FF",
+                                "direction": "right-up",
+                                "font_size": 12
+                            }
+                        }                        
+                    ]
+                },
+                {
+                    "name": "Lines & Ellipses & Points",
+                    "features":
+                    [
+                        {
+                            "type": "lines",
+                            "geometry":
+                            {
+                                "coordinates": 
+                                [
+                                    [45.0, 18.0], [45.0, 20.0], [48.0, 20.0], [46.0, 19.0]
+                                ]
+                            },
+                            "properties" :
+                            {
+                                "color": "#FFFFFF",
+                                "line_width": 3.5
+                            }
+                        },
+                        {
+                            "type": "lines",
+                            "geometry":
+                            {
+                                "coordinates": 
+                                [
+                                    [44.0, 14.0], [44.0, 16.0], [47.0, 16.0], [45.0, 15.0]
+                                ],
+                                "colors": [ "#AA00FF", "#AA66FF", "#AAAAFF", "#AAEEFF"]
+                            },
+                            "properties" :
+                            {
+                                "line_width": 2.7
+                            }
+                        },
+                        {
+                            "type": "ellipses",
+                            "geometry":
+                            {
+                                "coordinates": 
+                                [
+                                    [44.0, 14.0], [44.0, 16.0], [47.0, 16.0], [45.0, 15.0]
+                                ],
+                                "sizes": 
+                                [
+                                    [10000.0, 20000.0, 1500000], [20000.0, 30000.0, 300000000], [50000.0, 60000.0, 50000433], [80000.0, 90000.0, 2]
+                                ],
+                                "colors": [ "#AA00FF", "#AA66FF", "#AAAAFF", "#AAEEFF"]
+                            },
+                            "properties" :
+                            {
+                                "line_width": 2.7,
+                                "num_points": 32
+                            }
+                        },
+                        {
+                            "type": "points",
+                            "geometry" :
+                            {
+                                "coordinates": 
+                                [
+                                    [45.0, 18.0], [46.0, 19.0], [45.0, 20.0], [48.0, 20.0]
+                                ]
+                            },
+                            "properties":
+                            {
+                                "color": "#FF0000",
+                                "symbol": "square",
+                                "symbol_size": 24
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "name": "Annotation2",
+            "status": "open",
+            "data_source_types": [],
+            "position_latitude": 11,
+            "position_longitude": 21.5,
+            "position_window_latitude": 2,
+            "position_window_longitude": 2,
+            "type": "Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "Text",
+                    "features":
+                    [
+                        {
+                            "type": "text",
+                            "text": "Tis but a scratch!",
+                            "position": [12.0, 22.0],
+                            "properties":
+                            {
+                                "color": "#AA00FF",
+                                "direction": "left-up",
+                                "font_size": 10
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "A scratch? Your arms off!",
+                            "position": [11.0, 21.0],
+                            "properties":
+                            {
+                                "color": "#00FF00",
+                                "direction": "right-down",
+                                "font_size": 10
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "No, it isnt.",
+                            "position": [10.0, 22.0],
+                            "properties":
+                            {
+                                "color": "#AA00FF",
+                                "direction": "left-up",
+                                "font_size": 12
+                            }
+                        }                        
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "name": "NestedAnnotation",
+            "status": "open",
+            "position_latitude": 12,
+            "position_longitude": 22,
+            "position_window_latitude": 5,
+            "position_window_longitude": 5,
+            "data_source_types": [],
+            "type": "Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "Group1",
+                    "symbol_color" : "#0000FF",
+                    "annotations" :
+                    [
+                        {
+                            "name": "fred1",
+                            "symbol_color" : "#0000FF",
+                            "features":
+                            [
+                                {
+                                    "type": "text",
+                                    "text": "O Lord, bless this thy hand grenade,\n that with it thou mayst blow thine enemies to tiny bits,\n in thy mercy.",
+                                    "position": [12.0, 22.0],
+                                    "properties":
+                                    {
+                                        "color": "#0000FF",
+                                        "direction": "left-up",
+                                        "font_size": 12
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "Group2",
+                    "symbol_color" : "#FF00FF",
+                    "annotations" :
+                    [
+                        {
+                            "name": "fred2",
+                            "symbol_color" : "#FFFFFF",
+                            "features":
+                            [
+                                {
+                                    "type": "text",
+                                    "text": "First shalt thou take out the Holy Pin.\n Then shalt thou count to three, no more, no less.\n Three shall be the number thou shalt count,\n and the number of the counting shall be three.\n Four shalt thou not count, neither count thou two, \nexcepting that thou then proceed to three.\n\n Five is right out.\n\n Once the number three, being the third number,\n be reached, then lobbest thou thy Holy Hand Grenade of Antioch towards thy foe,\n who, being naughty in My sight, shall snuff it.",
+                                    "position": [11, 24.0],
+                                    "properties":
+                                    {
+                                        "color": "#FF00FF",
+                                        "direction": "left-down",
+                                        "font_size": 11
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }                
+            ]
+        },
+        {
+            "id": 8,
+            "name": "Grid Annotation",
+            "status": "open",
+            "data_source_types": [],
+            "type": "Grid Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "My Grid",
+                    "features":
+                    [
+                        {
+                            "type": "grid",
+                            "grid": 
+                            {
+                                "data": [ [0.0, 1.0, 2.0, 3.0], [4.0, 5.0, 6.0, 7.0], [8.0, 9.0, 10.0, 11.0], [12.0, 13.0, 14.0, 15.0] ],
+                                "name": "my grid layer",
+                                "num_cells_x": 4,
+                                "num_cells_y": 4,
+                                "reference": 
+                                {
+                                    "img_origin_x": 0.0,     
+                                    "img_origin_y": 0.0,     
+                                    "img_pixel_size_x": 1.0, 
+                                    "img_pixel_size_y": 1.0, 
+                                    "is_north_up": true,    
+                                    "srs": "wgs84",        
+                                    "srs_is_wkt": false  
+                                }
+                            },
+                            "plot_metadata": 
+                            {
+                                "plot_group": "",
+                                "subtitle": "Just a random grid",
+                                "title": "My Grid",
+                                "x_axis_label": "My X-Axis",
+                                "y_axis_label": "My Y-Axis"
+                            }
+                        }                
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "name": "Histogram Annotation",
+            "status": "open",
+            "data_source_types": [],
+            "type": "Histogram Annotation",
+            "annotations" :
+            [
+            {
+                    "name": "My Grid",
+                    "features":
+                    [
+                        {
+                            "type": "histogram",
+                            "histogram": 
+                            {
+                                "log_scale": true,
+                                "dataseries": 
+                                [
+                                    {
+                                        "name": "my data series",
+                                        "color": "#0000ff", 
+                                        "histogram": 
+                                        {
+                                            "bins": 
+                                            [
+                                                {
+                                                    "count": 1,           
+                                                    "label": "0.500000",   
+                                                    "label_max": "1.000000",
+                                                    "label_min": "0.000000"
+                                                },
+                                                {
+                                                    "count": 2,
+                                                    "label": "1.500000",
+                                                    "label_max": "2.000000",
+                                                    "label_min": "1.000000"
+                                                },
+                                                {
+                                                    "count": 3,
+                                                    "label": "2.500000",
+                                                    "label_max": "3.000000",
+                                                    "label_min": "2.000000"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            "plot_metadata": 
+                            {
+                                "plot_group": "Plot Group 1",
+                                "subtitle": "Just a random histogram",
+                                "title": "My Histogram",
+                                "x_axis_label": "My X-Axis",
+                                "y_axis_label": "My Y-Axis"
+                            }
+                        }         
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "name": "Scatterplot Annotation",
+            "status": "open",
+            "data_source_types": [],
+            "type": "Scatterplot Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "My Grid",
+                    "features":
+                    [
+                        {
+                            "type": "scatterseries",
+                            "scatterseries": 
+                            {
+                                "connection_lines": true,
+                                "dataseries": 
+                                [
+                                    {
+                                        "name": "my data series",
+                                        "color": "#0000ff",
+                                        "data_type_x": 0,
+                                        "data_type_y": 0,
+                                        "marker_size": 10.0,
+                                        "data": [[0.0, 0.0], [0.1, 0.1], [0.2, 0.2], [0.3, 0.3], [0.4, 0.4], [0.5, 0.5], [0.6, 0.6], [0.7, 0.7], [0.8, 0.8], [0.9, 0.9], [1.0, 1.0]]
+                                    }
+                                ]
+                            },
+                            "plot_metadata":
+                            {
+                                "plot_group": "",
+                                "subtitle": "Just a random scatter series",
+                                "title": "My Scatter Series",
+                                "x_axis_label": "My X-Axis",
+                                "y_axis_label": "My Y-Axis"
+                            }
+                        }      
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "name": "GeoImage Annotation",
+            "status": "open",
+            "position_latitude": 46.5608,
+            "position_longitude": -120.477,
+            "position_window_latitude": 10,
+            "position_window_longitude": 10,
+            "data_source_types": [],
+            "type": "GeoImage Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "My Grid",
+                    "features":
+                    [
+                        {
+                            "type": "geoimage",
+                            "source": 
+                            {
+                                "fn": "/home/sk/Downloads/Seattle/Seattle_SEC.tif"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "name": "GeoImage Annotation",
+            "status": "open",
+            "position_latitude": 46.5608,
+            "position_longitude": -120.477,
+            "position_window_latitude": 0.5,
+            "position_window_longitude": 0.5,
+            "data_source_types": [],
+            "type": "Zoomed GeoImage Annotation",
+            "annotations" :
+            [
+                {
+                    "name": "My Grid",
+                    "features":
+                    [
+                        {
+                            "type": "geoimage",
+                            "source": 
+                            {
+                                "fn": "/home/sk/Downloads/Seattle/Seattle_SEC.tif"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "name": "GeoImage Annotation",
+            "status": "open",
+            "position_latitude": 46.5608,
+            "position_longitude": -120.477,
+            "position_window_latitude": 0.2,
+            "position_window_longitude": 0.2,
+            "data_source_types": [],
+            "type": "Zoomed GeoImage Annotation2",
+            "annotations" :
+            [
+                {
+                    "name": "My Grid",
+                    "features":
+                    [
+                        {
+                            "type": "geoimage",
+                            "source": 
+                            {
+                                "fn": "/home/sk/Downloads/Seattle/Seattle_SEC.tif"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+
+\end{lstlisting}

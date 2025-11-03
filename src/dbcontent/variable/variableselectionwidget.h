@@ -86,7 +86,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     virtual QWidget* uiRerouteToNative() const override;
 
   private:
-    DBContentManager& dbo_man_;
+    DBContentManager& dbcont_man_;
 
     QLabel* object_label_{nullptr};
     QLabel* variable_label_{nullptr};

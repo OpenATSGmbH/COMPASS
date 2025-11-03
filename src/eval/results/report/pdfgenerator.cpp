@@ -68,7 +68,7 @@ PDFGeneratorDialog& PDFGenerator::dialog()
         //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&COMPASS::instance().dbInterface().connection());
         //assert (db_con);
         //@TODO: PWa: did not understand why we need to check the connection at this point?
-        assert(COMPASS::instance().dbInterface().ready());
+        traced_assert(COMPASS::instance().dbInterface().ready());
 
         string current_filename = COMPASS::instance().lastDbFilename();
 
@@ -77,7 +77,7 @@ PDFGeneratorDialog& PDFGenerator::dialog()
 
         report_path_ = Files::getDirectoryFromPath(current_filename)+"/eval_report_"
                     + sub_path + "/";
-        loginf << "PDFGenerator: dialog: report path '" << report_path_ << "'"
+        loginf << "report path '" << report_path_ << "'"
                << " filename '"  << report_filename_ << "'";
     }
 
@@ -94,9 +94,9 @@ bool PDFGenerator::pdfLatexFound() const
 
 void PDFGenerator::run ()
 {
-    loginf << "EvaluationResultsReportPDFGenerator: run";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->setRunning(true);
 
     const auto& eval_settings = calculator_.settings();
@@ -133,7 +133,7 @@ void PDFGenerator::run ()
 
         start_time = boost::posix_time::microsec_clock::local_time();
 
-        assert (calculator_.hasResults());
+        traced_assert(calculator_.hasResults());
         std::shared_ptr<Section> root_section = calculator_.resultsGenerator().resultsModel().rootItem()->rootSection();
 
         string status_str, elapsed_time_str, remaining_time_str;
@@ -160,11 +160,11 @@ void PDFGenerator::run ()
 
             if (cancel_)
             {
-                loginf << "EvaluationResultsReportPDFGenerator: run: cancel";
+                loginf << "cancel";
                 break;
             }
 
-            loginf << "EvaluationResultsReportPDFGenerator: run: section '" << sec_it->heading() << "'";
+            loginf << "section '" << sec_it->heading() << "'";
 
             sec_it->accept(visitor);
 
@@ -184,12 +184,12 @@ void PDFGenerator::run ()
 
                 remaining_time_str = String::timeStringFromDouble((num_sections-vp_cnt) * ms_per_sec / 1000.0, false);
 
-                loginf << "EvaluationResultsReportPDFGenerator: run: section " << sec_it->heading()
+                loginf << "section " << sec_it->heading()
                        << " done after " << elapsed_time_str << " remaining " << remaining_time_str;
             }
             else
             {
-                loginf << "EvaluationResultsReportPDFGenerator: run: section " << sec_it->heading()
+                loginf << "section " << sec_it->heading()
                        << " done after " << elapsed_time_str;
 
             }
@@ -226,17 +226,17 @@ void PDFGenerator::run ()
                 std::string command = "cd \""+report_path_+"\" && pdflatex --interaction=nonstopmode \""+report_filename_
                         +"\" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
 
-                loginf << "EvaluationResultsReportPDFGenerator: run: running pdflatex";
+                loginf << "running pdflatex";
                 dialog_->setStatus("Running pdflatex");
                 dialog_->setRemainingTime("");
 
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                loginf << "EvaluationResultsReportPDFGenerator: run: cmd '" << command << "'";
+                loginf << "cmd '" << command << "'";
 
                 command_out = System::exec(command);
 
-                logdbg << "EvaluationResultsReportPDFGenerator: run: cmd done";
+                logdbg << "cmd done";
 
                 // update status
                 stop_time = boost::posix_time::microsec_clock::local_time();
@@ -251,7 +251,7 @@ void PDFGenerator::run ()
                 while (run_cnt < 3 || (command_out.find("Rerun to get outlines right") != std::string::npos
                                        || command_out.find("Rerun to get cross-references right") != std::string::npos))
                 {
-                    loginf << "EvaluationResultsReportPDFGenerator: run: re-running pdflatex";
+                    loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");
 
                     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -263,12 +263,12 @@ void PDFGenerator::run ()
                     elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                     dialog_->setElapsedTime(elapsed_time_str);
 
-                    logdbg << "EvaluationResultsReportPDFGenerator: run: re-run done";
+                    logdbg << "re-run done";
 
                     ++run_cnt;
                 }
 
-                loginf << "EvaluationResultsReportPDFGenerator: run: result '" << command_out << "'";
+                loginf << "result '" << command_out << "'";
 
                 if (!command_out.size()) // no warnings
                 {
@@ -284,12 +284,12 @@ void PDFGenerator::run ()
                         {
                             String::replace(fullpath, ".tex", ".pdf");
 
-                            loginf << "EvaluationResultsReportPDFGenerator: run: opening '" << fullpath << "'";
+                            loginf << "opening '" << fullpath << "'";
 
                             QDesktopServices::openUrl(QUrl(fullpath.c_str()));
                         }
                         else
-                            logerr << "EvaluationResultsReportPDFGenerator: run: opening not possible since wrong file ending";
+                            logerr << "opening not possible since wrong file ending";
                     }
                 }
                 else // show warnings
@@ -311,7 +311,7 @@ void PDFGenerator::run ()
     }
     catch (exception& e)
     {
-        logwrn << "EvaluationResultsReportPDFGenerator: run: caught exception '" << e.what() << "'";
+        logwrn << "caught exception '" << e.what() << "'";
 
         dialog_->setProgress(0, 1, 0);
         dialog_->setStatus("Writing report failed");
@@ -333,7 +333,7 @@ void PDFGenerator::run ()
 
 void PDFGenerator::cancel ()
 {
-    loginf << "PDFGenerator: cancel";
+    loginf;
 
     cancel_ = true;
 
@@ -348,7 +348,7 @@ std::string PDFGenerator::reportPath() const
 
 void PDFGenerator::reportPath(const std::string& path)
 {
-    loginf << "PDFGenerator: reportPath: '" << path << "'";
+    loginf << "'" << path << "'";
     report_path_ = path;
 
     if (dialog_)
@@ -362,7 +362,7 @@ std::string PDFGenerator::reportFilename() const
 
 void PDFGenerator::reportFilename(const std::string& filename)
 {
-    loginf << "PDFGenerator: reportFilename: '" << filename << "'";
+    loginf << "'" << filename << "'";
     report_filename_ = filename;
 
     if (dialog_)
@@ -374,7 +374,7 @@ void PDFGenerator::reportPathAndFilename(const std::string& str)
     report_path_ = Files::getDirectoryFromPath(str) + "/";
     report_filename_ = Files::getFilenameFromPath(str);
 
-    loginf << "PDFGenerator: reportPathAndFilename: path '" << report_path_
+    loginf << "path '" << report_path_
            << "' filename '" << report_filename_ << "'";
 
     if (dialog_)

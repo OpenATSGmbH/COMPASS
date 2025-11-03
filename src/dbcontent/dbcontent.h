@@ -20,6 +20,7 @@
 #include "configurable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
+#include "traced_assert.h"
 
 #include <QObject>
 
@@ -166,6 +167,8 @@ public:
     static const Property meta_var_y_stddev_;
     static const Property meta_var_xy_cov_;
 
+    static const Property meta_var_max_stddev_xy;
+
     static const Property meta_var_latitude_stddev_;
     static const Property meta_var_longitude_stddev_;
     static const Property meta_var_latlon_cov_;
@@ -173,6 +176,8 @@ public:
     static const Property meta_var_climb_descent_;
     static const Property meta_var_rocd_;
     static const Property meta_var_spi_;
+
+    static const Property meta_var_message_type_;
 
     static const Property var_radar_range_;
     static const Property var_radar_azimuth_;
@@ -201,6 +206,7 @@ public:
     static const Property var_cat021_sgv_hgt_; // heading / ground track, deg, based on htt
     static const Property var_cat021_sgv_htt_; // heading 0 / ground track 1
     static const Property var_cat021_sgv_hrd_; // true north 0 / magnetic north 1
+    static const Property var_cat021_sgv_stp_; // true north 0 / magnetic north 1
 
     static const Property var_cat062_tris_;
     static const Property var_cat062_tri_recnums_;
@@ -224,6 +230,23 @@ public:
 
     static const Property var_cat063_sensor_sac_;
     static const Property var_cat063_sensor_sic_;
+
+    static const Property var_cat065_batch_number_;
+
+    // reftraj contrib
+    static const Property var_reftraj_contrib_adsb_age_;
+    static const Property var_reftraj_contrib_mlat_age_;
+    static const Property var_reftraj_contrib_radar_age_;
+    static const Property var_reftraj_contrib_tracker_age_;
+    static const Property var_reftraj_contrib_reftraj_age_;
+    static const Property var_reftraj_contrib_other_age_;
+
+    static const Property var_reftraj_contrib_sources_;
+    static const Property var_reftraj_contrib_sources_num_;
+
+    static const Property var_reftraj_update_age_primary_;
+    static const Property var_reftraj_update_age_modeac_;
+    static const Property var_reftraj_update_age_modes_;
 
     static const Property selected_var;
 
@@ -249,7 +272,7 @@ public:
     const std::string& name() const { return name_; }
     void name(const std::string& name)
     {
-        assert(name.size() > 0);
+        traced_assert(name.size() > 0);
         name_ = name;
     }
 
@@ -308,7 +331,8 @@ public:
 
     std::string dbTableName() const;
 
-    bool isStatusContent() const;
+    bool containsTargetReports() const;
+    bool containsStatusContent() const;
     bool isReferenceContent() const;
 
 protected:
@@ -325,7 +349,8 @@ protected:
     std::string  db_table_name_;
     std::string  ds_type_;
 
-    bool is_status_content_ {false};
+    bool contains_target_reports_ {false};
+    bool contains_status_content_ {false};
     bool is_reftraj_content_ {false};
 
     bool is_loadable_{false};  // loadable on its own

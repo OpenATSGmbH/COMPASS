@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONOBJECTPARSERWIDGET_H
-#define JSONOBJECTPARSERWIDGET_H
+#pragma once
 
 #include <QWidget>
 
@@ -72,5 +71,3 @@ class JSONObjectParserWidget : public QWidget
 
     void update();
 };
-
-#endif  // JSONOBJECTPARSERWIDGET_H

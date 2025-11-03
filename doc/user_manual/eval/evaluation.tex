@@ -138,37 +138,6 @@ All requirement mappings thus should be deselected for this layer (see figure be
   \caption{Minimum Height Filter}
 \end{figure}
 
-\subsection{Filter Tab}
-
-\begin{figure}[H]
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_filter.png}
-  \caption{Evaluation Filter tab}
-\end{figure}
-
-In the Filter tab, what data is loaded for evaluation can be filtered \\
-
-Below, the following elements exist:
-\begin{itemize}  
-\item 'Use Load Filter': Toggles usage of the load filter
-\item 'Use RefTraj Accuracy Filter: Toggles usage of the minimum accuracy filter for DBContent RefTraj
-\item 'Use ADS-B Filter: Toggles usage of the ADS-B filter
-\item 'Use v0: Toggles usage of MOPS Version 0
-\item 'Use Min NUCp: Toggles usage of the minimum NUCp value filter
-\item 'Use Max NUCp: Toggles usage of the maximum NUCp value filter
-\item 'Use v1: Toggles usage of MOPS Version 1
-\item 'Use v2: Toggles usage of MOPS Version 2
-\item 'Use Min NIC: Toggles usage of the minimum NIC value filter
-\item 'Use Max NIC: Toggles usage of the maximum NIC value filter
-\item 'Use Min NACp: Toggles usage of the minimum NACp value filter
-\item 'Use Max NACp: Toggles usage of the maximum NACp value filter
-\item 'Use Min SIL v1: Toggles usage of the minimum SIL v1 value filter
-\item 'Use Max SIL v1: Toggles usage of the maximum SIL v1 value filter
-\item 'Use Min SIL v2: Toggles usage of the minimum SIL v2 value filter
-\item 'Use Max SIL v2: Toggles usage of the maximum SIL v2 value filter
-\end{itemize}
-\ \\
-
 \subsection{Standard Tab}
 
 \begin{figure}[H]
@@ -183,12 +152,12 @@ Below, the following buttons exist:
 \begin{itemize}  
 \item Add: Add a new standard with a unique name
 \item Rename: Rename the current standard
-\item Copy: Copy the current standart to a new one
+\item Copy: Copy the current standard to a new one
 \item Remove: Delete current standard
 \end{itemize}
 \ \\
 
-At the bottom, the 'Reference Maximum Time Difference [s]' field can be edited to adjust the maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update peroid plus 1 second. \\
+At the bottom, the 'Reference Maximum Time Difference [s]' field can be edited to adjust the maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update period plus 1 second. \\
 
 Currently, the following standards are (partly) supported:
 \begin{itemize}  
@@ -203,7 +172,7 @@ Currently, the following standards are (partly) supported:
 Please note that, while the EUROCAE ED-117A has been tested using simulator data, the following limitations exist:
 \begin{itemize}  
 \item In the Stands area, the position accuracy should be calculated using a 5 second position averaging. This is currently not performed, since the averaging method is not specified, and is currently being discussed with users.
-\item Some MLAT sensors use a different update rate for non-moving targets. This is currently not regarded, since what constituates non-movement is not (generally) specified, and will lower the probability of detection. 
+\item Some MLAT sensors use a different update rate for non-moving targets. This is currently not regarded, since what constitutes non-movement is not (generally) specified, and will lower the probability of detection.
 \end{itemize}
 \ \\
 
@@ -309,7 +278,7 @@ For detailed information about each requirement please refer to section \nameref
 The following settings can be used to configure the content of the generated results:
 
 \begin{itemize}  
-\item Skip No Data Details: Skip per target report details of no evaluated data existsed (recomended)
+\item Skip No Data Details: Skip per target report details if no evaluated data existed (recommended)
 \item Split Results by MOPS Version: Split sector aggregations also by ADS-B MOPS Versions (unknown,V0,V1,V2)
 \item Split Results by Mode A/C Only and Mode S: Split sector aggregations also by Mode A/C Only and Mode S results
 %\item Show ADS-B Info: Show ADS-B MOPS Version in results target lists
@@ -319,60 +288,6 @@ The following settings can be used to configure the content of the generated res
 \item Grid Cells Y: Y-resolution of generated sector overview grids
 \end{itemize}
 \ \\
-
-% \subsection{Results Tab}
-
-% \begin{figure}[H]
-%   \hspace*{-2cm}
-%     \includegraphics[width=18cm,frame]{figures/eval_results_empty.png}
-%   \caption{Evaluation Results tab}
-% \end{figure}
-
-% Before the data was evaluated, the results are empty.\\
-
-% There are several levels of detail for the results, and each sub-result is shown in a tree-view on the left side, grouped into sections. Using this tree-view, the results can be "navigated", and the currently selected results contents are shown on the right side. \\
-
-% More details will be described in the following section \nameref{sec:eval_inspect}.
-
-% \section{Running}
-% \label{sec:eval_run} 
-
-% \subsection{Load Data}
-% \label{sec:eval_run_load} 
-
-% After the wanted configuration (in the Main tab) has been set, the 'Load Data' button can be clicked. This results in the reference/test data being loaded, after which a post-processing will be performed. \\
-
-% Please note that the post-processing step uses all available cores on the CPU.
-
-% \begin{figure}[H]
-%   \centering 
-%     \includegraphics[width=8cm]{figures/eval_post.png}
-%   \caption{Evaluation: Post-processing after loading}
-% \end{figure}
-
-% The post-processing pre-calculates only which reference target reports can be used for direct comparison for specific test target reports. \\
-
-% Therefore, please note that re-loading the data is only required when changes to the reference/test data settings in the Main tab have been made. Changing requirements or removing targets from evaluation does not require re-loading. \\
-
-% After the loading and the post-processing have been performed, all targets are shown in the Targets tab.
-
-% \begin{figure}[H]
-%   \hspace*{-2cm}
-%     \includegraphics[width=18cm,frame]{figures/eval_targets_loaded.png}
-%   \caption{Evaluation Targets tab after loading}
-% \end{figure}
-% \ \\
-
-% Please note that the difference to the main 'Targets' tab list consists in only evaluation targets being shown - i.e. only targets which are present in the currently selected reference / test data.
-
-% \subsection{Filtering Targets}
-% \label{sec:eval_filter_targets} 
-
-% The Targets tab is useful for removing certain targets from the evaluation ('Use' checkbox) and inspecting already removed ones. 
-
-% Single rows can be selected by clicking on them, which triggers a loading process showing this exact target (with all associated data) in the available Views. Please note that this does not require re-loading the evaluation data, but can be used at all times during the evaluation. \\
-
-% To remove targets with certain parameters (e.g. primary-only, black-whitelisting, always low Mode C, ...) please refer to section \nameref{sec:ui_target_filtering}.
 
 \subsection{Evaluation}
 \label{sec:eval_run_eval} 
@@ -393,48 +308,4 @@ Please note that the post-processing step uses all available cores on the CPU.
 
 \subfile{eval_inspect}
 \subfile{eval_targets}
-
-% \section{Generate Report}
-% \label{sec:eval_report}
-
-% Using the "Export PDF" button, a PDF can be generated. A PDF can only be generated if a Latex environment is installed on the workstation, as described in \nameref{sec:appendix_latex}.
-
-% \begin{figure}[H]
-%     \includegraphics[width=14cm]{figures/eval_report.png}
-%   \caption{Evaluation results: Generate report dialog}
-% \end{figure}
-
-% At the top, the following configuration options exist:
-
-% \begin{itemize}  
-% \item Report Path: Directory to which the report will be written.
-% \item Report Filename: Filename of the report, to be created in the report path. File extension must be '.tex'.
-% \item Change Location: Button to set the report path and filename.
-% \item Author: Author string, is added to the first page of the report.
-% \item Abstract: Abstract string, is added to the first page of the report.
-% \item Include Per-Target Details: Whether to include the per-target details.
-% \item Include Per-Target Target Report Details: Whether to include the per-target target report details.
-% \item Wait on Map Loading: When Geographic View screenshots are created, some maps require downloading terrain from the Internet.  This option enables to wait on completion of such activities, to generate high-quality screenshots. Disable only when operating on cached maps without an Internet connection.
-% \item Run PDFLatex: Automatically runs the pdflatex compile process, immediately creating a PDF after finished export. Is disabled if command could not be found.
-% \item Open Created PDF: Automatically opens the created PDF. Is disabled if pdflatex command could not be found.
-% \end{itemize}
-% \ \\
-
-% Please \textbf{note} that the two 'Include ... Details' options can produce very large PDF reports (10.000+ pages), and may even overload the Latex sub-system (will result in 'TeX capacity exceeded, sorry' error). It is therefore recommended to only activate these options for small datasets with very few sector layers. \\
-
-% The 'Run' button startes the export process. At the bottom, status information and a cancel button exists. \\
-
-% To run the export process, click the 'Run' button.
-
-% \begin{figure}[H]
-%     \includegraphics[width=14cm]{figures/eval_report_status.png}
-%   \caption{Evaluation results: Generate report in progress}
-% \end{figure}
-
-% If the export process was sucessful, the dialog is closed automatically. The report Latex file was written into the report directory, with screenshots in the 'screenshots' subfolder. If the respective options were set, a PDF was automatically generated and is opened using the default PDF application. \\
-
-% If a Latex error ocurred, a message box with the error message is shown. If the 'TeX capacity exceeded, sorry' error is shown, disable one or both of the 'Include ... Details' options.\\
-
-% Please note that the generated report can of course be edited by the user and re-generated using pdflatex, which allows for better customization options (adding e.g. details, corporate identity etc.).
-
 \subfile{eval_requirements}

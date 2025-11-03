@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#pragma once
 
 //#include <sys/sysinfo.h>
 //#include <stdint.h>
@@ -42,5 +41,3 @@ extern void printBacktrace();
 
 }  // namespace System
 }  // namespace Utils
-
-#endif  // SYSTEM_H

@@ -16,9 +16,10 @@ mkdir -p appimage/appdir/bin/
 mkdir -p appimage/appdir/lib/
 #cp /usr/lib/libcompass.a appimage/appdir/lib/
 
-cp -r /usr/lib/osgPlugins-3.6.5 appimage/appdir/lib/
-cp -r /usr/lib64/osgPlugins-3.6.5/ appimage/appdir/lib/
-cp /usr/lib64/libosgEarth* appimage/appdir/lib/
+cp -r /usr/lib/osgPlugins-3.6.5 appimage/appdir/lib/ 2>/dev/null || true
+cp -r /usr/lib/x86_64-linux-gnu/osgPlugins-3.6.5 appimage/appdir/lib/ 2>/dev/null || true
+cp -r /usr/lib64/osgPlugins-3.6.5/ appimage/appdir/lib/ 2>/dev/null || true
+cp /usr/lib64/libosgEarth* appimage/appdir/lib/ 2>/dev/null || true
 
 mkdir -p appimage/appdir/compass/
 cp -r data appimage/appdir/compass/
@@ -33,9 +34,8 @@ export DEPLOY_GTK_VERSION=3
 
 export NO_STRIP=1
 
-
 cd /app/workspace/compass/docker/linuxdeploy/
-./linuxdeploy-x86_64.AppImage --appdir /app/workspace/compass/appimage/appdir --executable /usr/bin/compass_client --desktop-file=/app/workspace/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file /app/workspace/compass/appimage/ats.png --output appimage
+./linuxdeploy-x86_64.AppImage --appdir /app/workspace/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=/app/workspace/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file /app/workspace/compass/appimage/ats.png --output appimage
 
 mv COMPASS-x86_64.AppImage /app/workspace/compass/COMPASS_$1-x86_64.AppImage
 

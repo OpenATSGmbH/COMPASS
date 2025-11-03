@@ -31,6 +31,7 @@
 #include "timeconv.h"
 #include "logger.h"
 #include "files.h"
+#include "asynctask.h"
 
 #include <boost/filesystem.hpp>
 
@@ -60,6 +61,63 @@ const std::string TaskResult::FieldHeaderUpdateState    = "update_state";
 const std::string TaskResult::FieldHeaderUpdateContents = "update_contents";
 const std::string TaskResult::FieldReport               = "report";
 const std::string TaskResult::FieldConfig               = "config";
+
+/************************************************************************************************
+ * TaskResultMetaData
+ ************************************************************************************************/
+
+const std::string TaskResultContentID::FieldSectionID = "content_section_id";
+const std::string TaskResultContentID::FieldName      = "content_name";
+const std::string TaskResultContentID::FieldType      = "content_type";
+
+/**
+ */
+nlohmann::json TaskResultContentID::toJSON() const
+{
+    nlohmann::json j;
+
+    j[ FieldSectionID ] = content_section_id;
+    j[ FieldName      ] = content_name;
+    j[ FieldType      ] = ResultReport::SectionContent::contentTypeAsString(content_type);
+
+    return j;
+}
+
+/**
+ */
+bool TaskResultContentID::fromJSON(const nlohmann::json& j)
+{
+    //legacy support for old content IDs
+    if (j.is_array())
+    {
+        if (j.size() != 2)
+            return false;
+
+        content_section_id = j[0].get<std::string>();
+        content_name       = j[1].get<std::string>();
+        content_type       = ResultReport::SectionContentType::Table; // only type possible in old content IDs
+
+        return true;
+    }
+
+    if (!j.is_object() ||
+        !j.contains(FieldSectionID) ||
+        !j.contains(FieldName)      ||
+        !j.contains(FieldType))
+        return false;
+
+    content_section_id = j[ FieldSectionID ];
+    content_name       = j[ FieldName      ];
+
+    std::string t_str = j[ FieldType ];
+    auto t = ResultReport::SectionContent::contentTypeFromString(t_str);
+    if (!t.has_value())
+        return false;
+
+    content_type = t.value();
+
+    return true;
+}
 
 /************************************************************************************************
  * TaskResultMetaData
@@ -114,7 +172,15 @@ nlohmann::json TaskResultHeader::toJSON() const
 
     j[ TaskResult::FieldMetaData             ] = metadata.toJSON();
     j[ TaskResult::FieldHeaderUpdateState    ] = update_state;
-    j[ TaskResult::FieldHeaderUpdateContents ] = update_contents;
+
+    nlohmann::json j_update_contents = nlohmann::json::array();
+    for (const auto& c : update_contents)
+    {
+        nlohmann::json j_content = c.toJSON();
+        j_update_contents.push_back(j_content);
+    }
+
+    j[ TaskResult::FieldHeaderUpdateContents ] = j_update_contents;
 
     return j;
 }
@@ -123,6 +189,8 @@ nlohmann::json TaskResultHeader::toJSON() const
  */
 bool TaskResultHeader::fromJSON(const nlohmann::json& j)
 {
+    logdbg << "header:\n" << j.dump(4);
+
     if (!j.is_object() ||
         !j.contains(TaskResult::FieldMetaData)             ||
         !j.contains(TaskResult::FieldHeaderUpdateState)    ||
@@ -132,8 +200,21 @@ bool TaskResultHeader::fromJSON(const nlohmann::json& j)
     if (!metadata.fromJSON(j[ TaskResult::FieldMetaData ]))
         return false;
 
-    update_state    = j[ TaskResult::FieldHeaderUpdateState    ];
-    update_contents = j[ TaskResult::FieldHeaderUpdateContents ].get<std::vector<std::pair<std::string, std::string>>>();
+    update_state    = j[ TaskResult::FieldHeaderUpdateState ];
+
+    if (!j[ TaskResult::FieldHeaderUpdateContents ].is_array())
+        return false;
+
+    const auto& j_update_contents = j[ TaskResult::FieldHeaderUpdateContents ]; 
+
+    for(const auto& j_content : j_update_contents)
+    {
+        TaskResultContentID c;
+        if (!c.fromJSON(j_content))
+            return false;
+        
+        update_contents.push_back(c);
+    }
 
     return true;
 }
@@ -206,7 +287,7 @@ TaskResultHeader TaskResult::header() const
  */
 const std::shared_ptr<ResultReport::Report>& TaskResult::report() const
 {
-    assert (report_);
+    traced_assert(report_);
     return report_;
 }
 
@@ -214,7 +295,7 @@ const std::shared_ptr<ResultReport::Report>& TaskResult::report() const
  */
 std::shared_ptr<ResultReport::Report>& TaskResult::report()
 {
-    assert (report_);
+    traced_assert(report_);
     return report_;
 }
 
@@ -272,8 +353,8 @@ void TaskResult::informUpdate(UpdateState state,
     if (update_state_ == UpdateState::ContentUpdateNeeded)
     {
         //add content info
-        assert(!cid.first.empty());
-        assert(!cid.second.empty());
+        traced_assert(!cid.content_section_id.empty());
+        traced_assert(!cid.content_name.empty());
 
         update_contents_.push_back(cid);
     }
@@ -345,22 +426,26 @@ Result TaskResult::update(bool restore_section,
     if (!r.ok())
         return r;
 
+    //store current section + settings
+    if (restore_section)
+        task_manager_.storeBackupSection();
+
     r = Result::succeeded();
     bool restore_needed = false;
 
     if (update_state_ == UpdateState::ContentUpdateNeeded)
     {
-        loginf << "TaskResult: update: running content update";
+        loginf << "running content update";
 
         for (const auto& c : update_contents_)
-            loginf << "   " << c.first << " " << c.second;
+            loginf << "   " << c.content_section_id << " " << c.content_name;
 
         //update specific contents
         r = updateContents(update_contents_);
     }
     else if (update_state_ != UpdateState::UpToDate)
     {
-        loginf << "TaskResult: update: running " 
+        loginf << "running " 
                << (update_state_ == UpdateState::PartialUpdateNeeded ? "partial" : "full") << " update";
 
         //partial and full update
@@ -373,7 +458,7 @@ Result TaskResult::update(bool restore_section,
     //update failed?
     if (!r.ok())
     {
-        logerr << "TaskResult: update: update failed: " << r.error();
+        logerr << "update failed: " << r.error();
         return r;
     }
 
@@ -402,56 +487,78 @@ Result TaskResult::updateContents(const std::vector<ContentID>& contents)
 }
 
 /**
+ * Updates a single content in the result.
+ */
+Result TaskResult::updateContent(const ContentID& c)
+{
+    if (!report_->hasSection(c.content_section_id))
+        return Result::failed("Unknown section '" + c.content_section_id + "'");
+
+    auto& section = report_->getSection(c.content_section_id);
+    auto  flags   = section.contentInfo(c.content_name, c.content_type);
+
+    //content must be available in section
+    if ((flags & ResultReport::Section::ContentInfoFlag::ContentAvailable) == 0)
+        return Result::failed("Unknown table content '" + c.content_name + "' in section '" + c.content_section_id + "'");
+
+    //not yet loaded from db? => no problem, nothing to update
+    if ((flags & ResultReport::Section::ContentInfoFlag::ContentLoaded) == 0)
+        return Result::succeeded();
+
+    //only on-demand contents allowed
+    if ((flags & ResultReport::Section::ContentInfoFlag::ContentOnDemand) == 0)
+        return Result::failed("Static table content '" + c.content_name + "' in section '" + c.content_section_id + "'");
+
+    //on-demand content not yet complete? => no problem, nothing to update
+    if ((flags & ResultReport::Section::ContentInfoFlag::ContentOnDemandComplete) == 0)
+        return Result::succeeded();
+
+    //update content
+    auto content_id = section.contentID(c.content_name, c.content_type);
+    auto content    = section.retrieveContent(content_id);
+    traced_assert(content);
+    traced_assert(content->isOnDemand());
+    traced_assert(content->isComplete());
+
+    if (!content->forceReload())
+        return Result::failed("Could not update content '" + c.content_name + "' in section '" + c.content_section_id + "'");
+
+    return Result::succeeded();
+}
+
+/**
  */
 Result TaskResult::updateContents_impl(const std::vector<ContentID>& contents)
 {
     Result r = Result::succeeded();
     
+    //default implementation: update all contents
     for (const auto& c : contents)
     {
-        if (!report_->hasSection(c.first))
+        auto rc = updateContent(c);
+        if (!rc.ok())
         {
-            r = Result::failed("Unknown section '" + c.first + "'");
+            r = rc;
             continue;
         }
-
-        auto& section = report_->getSection(c.first);
-        auto  flags   = section.contentInfo(c.second);
-
-        //content must be available in section
-        if ((flags & ResultReport::Section::ContentInfoFlag::ContentAvailable) == 0)
-        {
-            r = Result::failed("Unknown content '" + c.second + "' in section '" + c.first + "'");
-            continue;
-        }
-
-        //not yet loaded from db? => no problem, nothing to update
-        if ((flags & ResultReport::Section::ContentInfoFlag::ContentLoaded) == 0)
-            continue;
-
-        //only on-demand contents allowed
-        if ((flags & ResultReport::Section::ContentInfoFlag::ContentOnDemand) == 0)
-        {
-            r = Result::failed("Static content '" + c.second + "' in section '" + c.first + "'");
-            continue;
-        }
-
-        //on-demand content not yet complete? => no problem, nothing to update
-        if ((flags & ResultReport::Section::ContentInfoFlag::ContentOnDemandComplete) == 0)
-            continue;
-
-        //update content
-        auto content_id = section.contentID(c.second);
-        auto content    = section.retrieveContent(content_id);
-        assert(content);
-        assert(content->isOnDemand());
-        assert(content->isComplete());
-
-        if (!content->forceReload())
-            r = Result::failed("Could not update content '" + c.second + "' in section '" + c.first + "'");
     }
 
     return r;
+}
+
+/**
+ * Synchronizes the database result with current content of the result.
+ */
+void TaskResult::syncContent()
+{
+    auto cb = [ this ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
+    {
+        this->taskManager().resultContentChanged(*this);
+        return true;
+    };
+
+    AsyncFuncTask task(cb, "Updating Report", "Updating report", false);
+    task.runAsyncDialog();
 }
 
 /**
@@ -484,7 +591,6 @@ Result TaskResult::initResult()
 
     return Result::succeeded();
 }
-
 
 /**
  * Prepares the result for new content.
@@ -530,14 +636,14 @@ bool TaskResult::loadOnDemandContent(ResultReport::SectionContent* content) cons
     if (content->contentType() == ResultReport::SectionContent::ContentType::Figure)
     {
         auto c = dynamic_cast<ResultReport::SectionContentFigure*>(content);
-        assert(c);
+        traced_assert(c);
 
         return loadOnDemandFigure_impl(c);
     }
     else if (content->contentType() == ResultReport::SectionContent::ContentType::Table)
     {
         auto c = dynamic_cast<ResultReport::SectionContentTable*>(content);
-        assert(c);
+        traced_assert(c);
 
         return loadOnDemandTable_impl(c);
     }
@@ -568,7 +674,7 @@ bool TaskResult::customContextMenu(QMenu& menu,
                                    ResultReport::SectionContentTable* table, 
                                    unsigned int row)
 {
-    assert (table);
+    traced_assert(table);
 
     if (table->isLocked())
         return false;
@@ -583,7 +689,7 @@ bool TaskResult::customContextMenu(QMenu& menu,
 bool TaskResult::customMenu(QMenu& menu,
                             ResultReport::SectionContent* content)
 {
-    assert (content);
+    traced_assert(content);
 
     if (content->isLocked())
         return false;
@@ -599,7 +705,7 @@ void TaskResult::postprocessTable(ResultReport::SectionContentTable* table)
     if (table->isLocked())
         return;
 
-    assert (table);
+    traced_assert(table);
     postprocessTable_impl(table);
 }
 
@@ -609,7 +715,7 @@ bool TaskResult::hasCustomTooltip(const ResultReport::SectionContentTable* table
                                   unsigned int row,
                                   unsigned int col) const
 {
-    assert (table);
+    traced_assert(table);
 
     if (table->isLocked())
         return false;
@@ -623,8 +729,8 @@ std::string TaskResult::customTooltip(const ResultReport::SectionContentTable* t
                                       unsigned int row,
                                       unsigned int col) const
 {
-    assert (table);
-    assert (!table->isLocked());
+    traced_assert(table);
+    traced_assert(!table->isLocked());
     return customTooltip_impl(table, row, col);
 }
 
@@ -665,7 +771,7 @@ bool TaskResult::fromJSON(const nlohmann::json& j)
     task::TaskResultType stored_type = j[ FieldType ];
     if (stored_type != type())
     {
-        logerr << "TaskResult: fromJSON: Stored type " << stored_type
+        logerr << "stored type " << stored_type
                << " does not match result type " << type();
         return false;
     }
@@ -689,7 +795,7 @@ bool TaskResult::fromJSON(const nlohmann::json& j)
     auto init_res = initResult();
     if (!init_res.ok())
     {
-        logerr << "TaskResult: fromJSON: Initializing result failed: " << init_res.error();
+        logerr << "initializing result failed: " << init_res.error();
         return false;
     }
 
@@ -713,6 +819,20 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     figure.view();
 
+    //prepare views for rendering
+    for (auto& view_it : view_man.getViews())
+    {
+        //skip table views
+        if (view_it.second->classId() == "TableView")
+            continue;
+        
+        //enable export
+        if (view_it.second->hasScreenshotContent())
+        {
+            view_it.second->setExporting(true);
+        }
+    }
+
     while (dbcont_man.loadInProgress())
         QCoreApplication::processEvents();
 
@@ -727,13 +847,16 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         if (view_it.second->classId() == "TableView")
             continue;
         
-        //skip views which show no data
-        if (view_it.second->classId() != "GeographicView" && !view_it.second->showsData())
-            continue;
+        //skip views which show no content
+        if (view_it.second->hasScreenshotContent())
+        {
+            //render view and collect
+            auto img = view_it.second->renderData();
+            renderings.emplace_back(img, view_it.second->instanceId());
 
-        //render view and collect
-        auto img = view_it.second->renderData();
-        renderings.emplace_back(img, view_it.second->instanceId());
+            //disable export
+            view_it.second->setExporting(false);
+        }
     }
 
     return renderings;

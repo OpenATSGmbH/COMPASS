@@ -1,5 +1,23 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
+#include "traced_assert.h"
 #include "json.hpp"
 
 #include "logger.h"
@@ -129,46 +147,46 @@ public:
     {
         if (!emitter_specs_.count(toString(ecat)))
             logerr << "TargetBase:: checkEmitterSpecs: unknown ecat " << (unsigned int) ecat;
-        assert (emitter_specs_.count(toString(ecat)));
+        traced_assert(emitter_specs_.count(toString(ecat)));
         return true;
     }
 
     // Accessor helpers
     static double getAvgSize(Category ecat) {
 
-        //loginf << "getAvgSize " << (unsigned int) ecat << " str " << toString(ecat);
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("avg_size_m"));
+        //loginf << (unsigned int) ecat << " str " << toString(ecat);
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("avg_size_m"));
         return emitter_specs_.at(toString(ecat)).at("avg_size_m");
     }
 
     static double getMaxSpeedKnots(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("max_speed_knots"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("max_speed_knots"));
         return emitter_specs_.at(toString(ecat)).at("max_speed_knots");
     }
 
     static double getMaxAccel(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("max_accel_mps2"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("max_accel_mps2"));
         return emitter_specs_.at(toString(ecat)).at("max_accel_mps2");
     }
 
     static bool isGroundOnly(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("ground_only"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("ground_only"));
         return emitter_specs_.at(toString(ecat)).at("ground_only");
     }
 
     static double processNoiseFactorGround(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("process_noise_factor_ground"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("process_noise_factor_ground"));
         return emitter_specs_.at(toString(ecat)).at("process_noise_factor_ground");
     }
 
     static double processNoiseFactorAir(Category ecat) {
-        assert (checkEmitterSpecs(ecat));
-        assert (emitter_specs_.at(toString(ecat)).count("process_noise_factor_air"));
+        traced_assert(checkEmitterSpecs(ecat));
+        traced_assert(emitter_specs_.at(toString(ecat)).count("process_noise_factor_air"));
         return emitter_specs_.at(toString(ecat)).at("process_noise_factor_air");
     }
 

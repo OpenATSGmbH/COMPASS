@@ -64,7 +64,7 @@ JSONImportTaskWidget::JSONImportTaskWidget(JSONImportTask& task, QWidget* parent
 
 void JSONImportTaskWidget::addMainTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -212,7 +212,7 @@ void JSONImportTaskWidget::updateSourceLabel()
 
 void JSONImportTaskWidget::selectSchema(const std::string& schema_name)
 {
-    assert(task_.hasSchema(schema_name));
+    traced_assert(task_.hasSchema(schema_name));
     task_.currentSchemaName(schema_name);
 
     updateToCurrentSchema();
@@ -221,7 +221,7 @@ void JSONImportTaskWidget::selectSchema(const std::string& schema_name)
 
 void JSONImportTaskWidget::addSchemaSlot()
 {
-    loginf << "JSONImportTaskWidget: addSchemaSlot";
+    loginf;
 
     bool ok;
     QString text =
@@ -231,7 +231,7 @@ void JSONImportTaskWidget::addSchemaSlot()
     if (ok)
     {
         std::string name = text.toStdString();
-        loginf << "JSONImportTaskWidget: addSchemaSlot: name '" << name << "'";
+        loginf << "name '" << name << "'";
 
         if (!name.size())
         {
@@ -263,7 +263,7 @@ void JSONImportTaskWidget::addSchemaSlot()
 
 void JSONImportTaskWidget::removeSchemaSlot()
 {
-    loginf << "JSONImportTaskWidget: removeSchemaSlot";
+    loginf;
 
     if (!task_.currentSchemaName().size())
     {
@@ -280,9 +280,9 @@ void JSONImportTaskWidget::removeSchemaSlot()
 
 void JSONImportTaskWidget::selectedSchemaChangedSlot(const QString& text)
 {
-    loginf << "JSONImportTaskWidget: selectedSchemaChangedSlot: text " << text.toStdString();
+    loginf << "text " << text.toStdString();
 
-    assert(task_.hasSchema(text.toStdString()));
+    traced_assert(task_.hasSchema(text.toStdString()));
     task_.currentSchemaName(text.toStdString());
 
     updateToCurrentSchema();
@@ -290,7 +290,7 @@ void JSONImportTaskWidget::selectedSchemaChangedSlot(const QString& text)
 
 void JSONImportTaskWidget::updateSchemasBox()
 {
-    loginf << "JSONImportTaskWidget: updateSchemasBox";
+    loginf;
 
     schema_box_->clear();
 
@@ -353,7 +353,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
     if (ret == QDialog::Accepted)
     {
         std::string dbcontent_name = dialog.selectedObject();
-        loginf << "JSONImportTaskWidget: addObjectParserSlot: dbcontent_name "
+        loginf << "dbcontent_name "
                << dbcontent_name;
 
         shared_ptr<JSONParsingSchema> current = task_.currentJSONSchema();
@@ -378,16 +378,16 @@ void JSONImportTaskWidget::addObjectParserSlot()
 }
 void JSONImportTaskWidget::removeObjectParserSlot()
 {
-    loginf << "JSONImportTaskWidget: removeObjectParserSlot";
+    loginf;
 
     if (object_parser_box_->currentIndex() >= 0)
     {
         std::string name = object_parser_box_->currentText().toStdString();
 
-        assert(task_.hasCurrentSchema());
+        traced_assert(task_.hasCurrentSchema());
         shared_ptr<JSONParsingSchema> current = task_.currentJSONSchema();
 
-        assert(current->hasObjectParser(name));
+        traced_assert(current->hasObjectParser(name));
         current->removeParser(name);
 
         updateParserBox();
@@ -396,21 +396,21 @@ void JSONImportTaskWidget::removeObjectParserSlot()
 
 void JSONImportTaskWidget::selectedObjectParserSlot(const QString& text)
 {
-    loginf << "JSONImportTaskWidget: selectedObjectParserSlot: text " << text.toStdString();
+    loginf << "text " << text.toStdString();
 
     if (object_parser_widget_)
         while (object_parser_widget_->count() > 0)
             object_parser_widget_->removeWidget(object_parser_widget_->widget(0));
 
-    assert(object_parser_box_);
+    traced_assert(object_parser_box_);
 
     if (object_parser_box_->currentIndex() >= 0)
     {
         std::string name = object_parser_box_->currentText().toStdString();
 
-        assert(task_.hasCurrentSchema());
-        assert(task_.currentJSONSchema()->hasObjectParser(name));
-        assert(object_parser_widget_);
+        traced_assert(task_.hasCurrentSchema());
+        traced_assert(task_.currentJSONSchema()->hasObjectParser(name));
+        traced_assert(object_parser_widget_);
 
         if (object_parser_widget_->indexOf(task_.currentJSONSchema()->parser(name).widget()) < 0)
             object_parser_widget_->addWidget(task_.currentJSONSchema()->parser(name).widget());
@@ -424,15 +424,15 @@ void JSONImportTaskWidget::expertModeChangedSlot() {}
 
 void JSONImportTaskWidget::fileLineIDEditSlot(const QString& text)
 {
-    loginf << "JSONImportTaskWidget: fileLineIDEditSlot: value '" << text.toStdString() << "'";
+    loginf << "value '" << text.toStdString() << "'";
 
     bool ok;
 
     unsigned int line_id = text.toUInt(&ok);
 
-    assert (ok);
+    traced_assert(ok);
 
-    assert (line_id > 0 && line_id <= 4);
+    traced_assert(line_id > 0 && line_id <= 4);
 
     task_.fileLineID(line_id-1);
 }
@@ -441,14 +441,14 @@ void JSONImportTaskWidget::dateChangedSlot(QDate date)
 {
     string tmp = date.toString("yyyy-MM-dd").toStdString();
 
-    loginf << "ASTERIXImportTaskWidget: dateChangedSlot: " << tmp;
+    loginf << "start" << tmp;
 
     task_.date(Time::fromDateString(tmp));
 }
 
 void JSONImportTaskWidget::testImportSlot()
 {
-    loginf << "JSONImportTaskWidget: testImportSlot";
+    loginf;
 
     if (!task_.canImportFile())
     {
@@ -464,23 +464,23 @@ void JSONImportTaskWidget::testImportSlot()
 
 void JSONImportTaskWidget::runStarted()
 {
-    loginf << "JSONImportTaskWidget: runStarted";
+    loginf;
 
     test_button_->setDisabled(true);
 }
 
 void JSONImportTaskWidget::runDone()
 {
-    loginf << "JSONImportTaskWidget: runDone";
+    loginf;
 
     test_button_->setDisabled(false);
 }
 
 void JSONImportTaskWidget::updateParserBox()
 {
-    loginf << "JSONImportTaskWidget: updateParserBox";
+    loginf;
 
-    assert(object_parser_box_);
+    traced_assert(object_parser_box_);
     object_parser_box_->clear();
 
     if (task_.hasCurrentSchema())
@@ -488,7 +488,7 @@ void JSONImportTaskWidget::updateParserBox()
         if (task_.currentSchemaName() == "jASTERIX")
             return;
 
-        loginf << "JSONImportTaskWidget: updateParserBox: current schema " << task_.currentJSONSchema()->name();
+        loginf << "current schema " << task_.currentJSONSchema()->name();
 
         for (auto& parser_it : *task_.currentJSONSchema())
         {

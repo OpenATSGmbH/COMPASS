@@ -1,4 +1,3 @@
-#pragma once
 /*
  * This file is part of OpenATS COMPASS.
  *
@@ -15,6 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
 
 #include <QWidget>
 

@@ -1,9 +1,24 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "asterixjsonmappingjob.h"
 #include "asterixjsonparser.h"
 #include "buffer.h"
-//#include "dbcontent/dbcontent.h"
 #include "json_tools.h"
-//#include "jsonobjectparser.h"
 #include "logger.h"
 
 #include <exception>
@@ -24,17 +39,17 @@ ASTERIXJSONMappingJob::ASTERIXJSONMappingJob(std::vector<std::unique_ptr<nlohman
     data_record_keys_(data_record_keys),
     parsers_(parsers)
 {
-    logdbg << "ASTERIXJSONMappingJob: ctor";
+    logdbg;
 }
 
 ASTERIXJSONMappingJob::~ASTERIXJSONMappingJob()
 {
-    logdbg << "ASTERIXJSONMappingJob: dtor";
+    logdbg;
 }
 
 void ASTERIXJSONMappingJob::run_impl()
 {
-    logdbg << "ASTERIXJSONMappingJob: " << this << " run on thread " << QThread::currentThreadId() << " on cpu " << sched_getcpu();
+    logdbg << "run on thread " << QThread::currentThreadId() << " on cpu " << sched_getcpu();
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -59,15 +74,18 @@ void ASTERIXJSONMappingJob::run_impl()
         if (this->obsolete_)
             return;
 
+        if (record.count("error") && record.at("error") == true)
+            return; // skip target reports marked with errors            
+
         unsigned int category{0};
 
         if (!record.contains("category"))
         {
-            logerr << "ASTERIXJSONMappingJob: run: record without category '" << record.dump(4) << "', skipping";
+            logerr << "record without category '" << record.dump(4) << "', skipping";
             return;
         }
 
-        assert (record.contains("category"));
+        traced_assert(record.contains("category"));
 
         category = record.at("category");
 
@@ -81,25 +99,25 @@ void ASTERIXJSONMappingJob::run_impl()
 
         string dbcontent_name = parser->dbContentName();
 
-        logdbg << "ASTERIXJSONMappingJob: run: mapping json: cat " << category;
+        logdbg << "mapping json: cat " << category;
 
         std::shared_ptr<Buffer>& buffer = buffers_.at(dbcontent_name);
-        assert(buffer);
+        traced_assert(buffer);
 
         try
         {
-            logdbg << "ASTERIXJSONMappingJob: run: obj " << dbcontent_name << " parsing JSON";
+            logdbg << "obj " << dbcontent_name << " parsing JSON";
 
             parsed = parser->parseJSON(record, *buffer);
 
-            logdbg << "ASTERIXJSONMappingJob: run: obj " << dbcontent_name << " done";
+            logdbg << "obj " << dbcontent_name << " done";
 
             parsed_any |= parsed;
         }
         catch (exception& e)
         {
-            logerr << "ASTERIXJSONMappingJob: run: caught exception '" << e.what() << "' in \n'"
-                       << record.dump(4) << "' parser dbo " << dbcontent_name;
+            logerr << "caught exception '" << e.what() << "' in \n'"
+                       << record.dump(4) << "' parser dbcont " << dbcontent_name;
 
             ++num_errors_;
 
@@ -122,7 +140,7 @@ void ASTERIXJSONMappingJob::run_impl()
     {
         if (data_slice)
         {
-            logdbg << "ASTERIXJSONMappingJob: run: applying JSON function";
+            logdbg << "applying JSON function";
             JSON::applyFunctionToValues(*data_slice.get(), data_record_keys_, data_record_keys_.begin(),
                                         process_lambda, false);
         }
@@ -130,7 +148,7 @@ void ASTERIXJSONMappingJob::run_impl()
 
     std::map<std::string, std::shared_ptr<Buffer>> not_empty_buffers;
 
-    logdbg << "ASTERIXJSONMappingJob: run: counting buffer sizes";
+    logdbg << "counting buffer sizes";
     for (auto& buf_it : buffers_)
     {
         if (buf_it.second && buf_it.second->size())
@@ -148,12 +166,12 @@ void ASTERIXJSONMappingJob::run_impl()
     auto t_diff = boost::posix_time::microsec_clock::local_time() - start_time;
     float num_secs =  t_diff.total_milliseconds() ? t_diff.total_milliseconds() / 1000.0 : 10E-6;
 
-    logdbg << "ASTERIXJSONMappingJob: run: done: took "
+    logdbg << "done: took "
            << String::timeStringFromDouble(num_secs, true)
            << " full " << String::timeStringFromDouble(num_secs, true)
            << " " << ((float) num_created_+num_not_mapped_) / num_secs << " rec/s";
 
-    logdbg << "ASTERIXJSONMappingJob: run: done: mapped " << num_created_ << " skipped "
+    logdbg << "done: mapped " << num_created_ << " skipped "
            << num_not_mapped_;
 }
 

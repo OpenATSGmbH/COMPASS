@@ -43,6 +43,7 @@ extern std::string categoryString(unsigned int cat);
 extern std::string doubleToStringPrecision(double number, unsigned int precision);
 extern std::string doubleToStringNoScientific(double number);
 extern std::string percentToString(double number, unsigned int precision=2);
+extern std::string percentToStringProtected(double x, double y, unsigned int precision=2); // protected against y=0
 extern std::string boolToString(bool value);
 extern unsigned int intFromOctalString(std::string number);
 extern unsigned int intFromHexString(std::string number);

@@ -25,6 +25,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/rtcommand/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/reconstruction/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/fft/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/license/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/watchdog/CMakeLists.txt")
 
 include("${CMAKE_CURRENT_LIST_DIR}/test/CMakeLists.txt")
 

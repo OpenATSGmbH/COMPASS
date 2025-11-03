@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 
 PositionDistanceRMSConfigWidget::PositionDistanceRMSConfigWidget(PositionDistanceRMSConfig& cfg)
-    : BaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
@@ -45,7 +45,7 @@ PositionDistanceRMSConfigWidget::PositionDistanceRMSConfigWidget(PositionDistanc
 
 void PositionDistanceRMSConfigWidget::thresholdValueEditSlot(QString value)
 {
-    loginf << "PositionDistanceRMSConfigWidget: thresholdValueEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     double val = value.toDouble(&ok);
@@ -53,13 +53,13 @@ void PositionDistanceRMSConfigWidget::thresholdValueEditSlot(QString value)
     if (ok)
         config().thresholdValue(val);
     else
-        loginf << "PositionDistanceRMSConfigWidget: thresholdValueEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 PositionDistanceRMSConfig& PositionDistanceRMSConfigWidget::config()
 {
     PositionDistanceRMSConfig* config = dynamic_cast<PositionDistanceRMSConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

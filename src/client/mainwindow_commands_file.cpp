@@ -1,8 +1,26 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "mainwindow_commands_file.h"
 #include "mainwindow.h"
 #include "compass.h"
 #include "logger.h"
 #include "util/files.h"
+#include "traced_assert.h"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -56,7 +74,7 @@ bool RTCommandOpenDB::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->openExistingDB(filename_);
 
@@ -146,7 +164,7 @@ bool RTCommandOpenRecentDB::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->openExistingDB(fn);
 
@@ -199,7 +217,7 @@ bool RTCommandCreateDB::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->createDB(filename_);
 
@@ -244,7 +262,7 @@ bool RTCommandCloseDB::run_impl()
         return false;
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->closeDBSlot();
 
@@ -256,7 +274,7 @@ bool RTCommandCloseDB::run_impl()
 bool RTCommandQuit::run_impl()
 {
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     QTimer::singleShot(100, [main_window] () { main_window->quitSlot(); });
 

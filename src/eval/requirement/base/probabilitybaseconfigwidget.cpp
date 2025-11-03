@@ -30,7 +30,7 @@ namespace EvaluationRequirement {
 ProbabilityBaseConfigWidget::ProbabilityBaseConfigWidget(ProbabilityBaseConfig& cfg)
     : BaseConfigWidget(cfg)
 {
-    assert (form_layout_);
+    traced_assert(form_layout_);
 
     // prob
     prob_edit_ = new QLineEdit(QString::number(config().prob()));
@@ -50,7 +50,7 @@ ProbabilityBaseConfigWidget::ProbabilityBaseConfigWidget(ProbabilityBaseConfig& 
 
 void ProbabilityBaseConfigWidget::changedProbabilitySlot(const QString& value)
 {
-    loginf << "BaseConfigWidget: changedProbabilitySlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     double val = value.toDouble(&ok);
@@ -58,20 +58,20 @@ void ProbabilityBaseConfigWidget::changedProbabilitySlot(const QString& value)
     if (ok)
         config().prob(val);
     else
-        loginf << "BaseConfigWidget: changedProbabilitySlot: invalid value";
+        loginf << "invalid value";
 }
 
 void ProbabilityBaseConfigWidget::changedTypeSlot()
 {
-    assert (check_type_box_);
-    logdbg << "BaseConfigWidget: changedProbabilitySlot: value " << check_type_box_->getType();
+    traced_assert(check_type_box_);
+    logdbg << "value " << check_type_box_->getType();
     config().probCheckType(check_type_box_->getType());
 }
 
 ProbabilityBaseConfig& ProbabilityBaseConfigWidget::config()
 {
     ProbabilityBaseConfig* config = dynamic_cast<ProbabilityBaseConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

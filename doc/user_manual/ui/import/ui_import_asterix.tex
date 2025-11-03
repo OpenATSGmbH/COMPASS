@@ -6,7 +6,7 @@ This task allows importing of ASTERIX data recording files into the opened datab
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data.png}
   \caption{Import ASTERIX data}
 \end{figure}
 
@@ -20,7 +20,7 @@ There exist four tabs:
 \end{itemize}
 \ \\
 
-Please \textbf{note} that one or several files can be selected. Since all of the settings are general configuration, please only import several files if they can be imported with the same settings, and do several imports for non-matching files. \\
+Please \textbf{note} that one or several files can be selected. Since all of the settings are general configuration, please only import several files if they can be imported with the same settings, and do separate imports for non-matching files. \\
 
 The following framings are currently supported:
 
@@ -72,7 +72,7 @@ Below, the following items exist:
 \begin{itemize}
 \item Line ID: Line into which all data should be written
 \item UTC Day: Date of the recording (for all data)
-\item Reset Date Between Files: Use to import non-consecutive files with 24h timejumps
+\item Reset Date Between Files: Use to import non-consecutive files with 24h time jumps
 \item Ignore 24h Time Jumps: Do not detect 24h time jumps in input data - import everything into same date
 \item Debug in Console: Additional debugging information is output to the console, and the ASTERIX decoding is switched to single-threading for easier investigation
 \end{itemize}
@@ -80,7 +80,7 @@ Below, the following items exist:
 
 ASTERIX information (broadly speaking) does not include useful date information, only 'Time of Day' (ToD), which represents seconds since midnight. Thus, the date information must be derived from the ToD, e.g., by detecting a date rollover when a high time close to 23:59 resets to 00:00. \\
 
-Since ASTERIX ToDs do not always appear sequentially, this algorithm is not completely straight-forward, but allows for stable detection of 24h time jumps (unless disabled using checkbox). \\
+Since ASTERIX ToDs do not always appear sequentially, this algorithm is not completely straightforward, but allows for stable detection of 24h time jumps (unless disabled using checkbox). \\
 
 This works well when importing data from a single data source, e.g.:
 \begin{itemize}
@@ -96,7 +96,7 @@ However, it does not work well when importing 'mixed days' from different data s
 \end{itemize}
 \ \\
 
- In this case, a time-jump would be detected and MLAT would erroneously be imported as during as Day 2. For this reason, the 'Reset Date Between Files' option was added, force a reset to the specified UTC Day as start day for each file. \\
+ In this case, a time-jump would be detected and MLAT would erroneously be imported as during Day 2. For this reason, the 'Reset Date Between Files' option was added, force a reset to the specified UTC Day as start day for each file. \\
 
 
 \subsubsection{Decoder}
@@ -107,7 +107,7 @@ therefore changing the information displayed in the main tab.
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data_decoder.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data_decoder.png}
   \caption{Import ASTERIX data Decoder}
 \end{figure}
 
@@ -143,7 +143,7 @@ Using the 'Refresh' button, all of the jASTERIX definitions are re-loaded from h
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data_override.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data_override.png}
   \caption{Task: Import ASTERIX Data Override / Filter}
 \end{figure}
 
@@ -158,7 +158,8 @@ These features should only be used in very specific circumstances.
 \item Filters
 \begin{itemize}
 \item Filter Time of Day: Use minimum / maximum times, everything outside will be ignored
-\item Filter Position: Use minimum / maximum rectangle in latitude and longitude
+\item Filter Position Rectangle: Use minimum / maximum rectangle in latitude and longitude
+\item Filter Position Circle: Use center position latitude and longitude and range in nautical miles
 \item Filter Mode C: Use minimum / maximum rectangle in Mode C. Target reports without Mode C will not be filtered.
 \end{itemize}
 \item Obfuscate Secondary Information: Obfuscates main secondary information
@@ -181,7 +182,7 @@ Please also \textbf{note} that the obfuscation function only currently overrides
 \begin{figure}[H]
   \center
     \hspace*{-0.5cm}
-    \includegraphics[width=17cm]{figures/asterix_import_data_mappings.png}
+    \includegraphics[width=17cm,frame]{figures/asterix_import_data_mappings.png}
   \caption{Task: Import ASTERIX data mappings}
 \end{figure}
 
@@ -194,7 +195,7 @@ For the common user interaction is normally not recommended, but sometimes it mi
 
 \paragraph{Top Elements}
 
-Using the drop-down menu, the to-be-shown parser can be selected. The buttons allow for adding and removing ASTERIX JSON object parsers.
+Using the drop-down menu, the parser to be shown can be selected. The buttons allow for adding and removing ASTERIX JSON object parsers.
 
 \paragraph{Parser GUI Elements}
 
@@ -209,7 +210,7 @@ In the mappings list, the following columns are given:
 \end{itemize}
 \ \\
 
-Whenever a mapping is selected, the details are shown on the right hand side, providing information about the ASTERIX datum (based on the jASTERIX specifications) and the DBContent variable it is mapped to. 
+Whenever a mapping is selected, the details are shown on the right side, providing information about the ASTERIX data item (based on the jASTERIX specifications) and the DBContent variable it is mapped to. 
 Using the 'Show DBContent Variable' button the variable can be inspected in detail.
 
 \begin{figure}[H]
@@ -226,20 +227,20 @@ Using the 'Import' button the import task can be performed. During import a stat
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=14cm]{figures/asterix_import_data_status.png}
+    \includegraphics[width=14cm,frame]{figures/asterix_import_data_status.png}
   \caption{Import ASTERIX data status}
 \end{figure}
 
-If a decoding error occurs, a brief message box is shown, after which the application has to be closed. 
+If a decoding error occurs, an error is indicated in the status dialog, and a Task log error is created. 
 Please make sure that the correct framing and edition versions are selected, or contact the author for support if this does not resolve the issue. \\
 
 \paragraph{Comments}
-The time needed for the import strongly depends on the available CPU performance (multi-threading being very beneficial), but an import of 5 million target reports takes about 3:30 minutes on the author's hardware. \\
+The time needed for the import strongly depends on the available CPU performance (multithreading being very beneficial), but an import of 5 million target reports takes about 3:30 minutes on the author's hardware. \\
 
 The (truncated) timestamps of CAT001 are calculated in a simple algorithm based on the CAT002 messages from the same sensor, so their timestamp data is a bit unreliable, but exact enough for e.g. time window filtering. \\
 
 This task can be run several times, e.g. if multiple ASTERIX recordings from different data sources are to be imported. \\
 
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} the currently not all data fields (as shown in the JSON object parsers) are imported.\\
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that currently not all data fields (as shown in the JSON object parsers) are imported.\\
 
 

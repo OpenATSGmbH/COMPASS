@@ -19,6 +19,7 @@
 
 #include "eval/results/evaluationdetail.h"
 #include "eval/results/base/base.h"
+#include "traced_assert.h"
 
 namespace EvaluationRequirementResult
 {
@@ -137,7 +138,7 @@ public:
     EvaluationResultTemplates(const Base* result) 
     :   result_ (result )
     { 
-        assert(result_); 
+        traced_assert(result_); 
     }
     virtual ~EvaluationResultTemplates() = default;
 
@@ -148,7 +149,7 @@ public:
     template <typename T>
     std::vector<T> getValues(const ValueSource<T>& source) const
     {
-        assert(source.isValid());
+        traced_assert(source.isValid());
 
         std::vector<T> values;
         values.reserve(result_->totalNumDetails());
@@ -185,7 +186,7 @@ public:
     template <typename T>
     std::vector<boost::optional<T>> getOptionalValues(const ValueSource<T>& source) const
     {
-        assert(source.isValid());
+        traced_assert(source.isValid());
 
         std::vector<boost::optional<T>> values;
         values.reserve(result_->totalNumDetails());
@@ -218,7 +219,7 @@ public:
     template <typename T>
     std::vector<TimedValue<T>> getTimedValues(const ValueSource<T>& source) const
     {
-        assert(source.isValid());
+        traced_assert(source.isValid());
 
         std::vector<TimedValue<T>> values;
         values.reserve(result_->totalNumDetails());
@@ -274,7 +275,7 @@ public:
                                                    DetailValuePositionMode detail_pos_mode = DetailValuePositionMode::EventPosition,
                                                    std::vector<std::pair<size_t,size_t>>* detail_ranges = nullptr) const
     {
-        assert(source.isValid());
+        traced_assert(source.isValid());
 
         if (detail_ranges)
             detail_ranges->clear();
@@ -302,7 +303,7 @@ public:
                            int evt_ref_pos_idx)
         {
             int num_pos = (int)detail.numPositions();
-            assert(num_pos >= 1);
+            traced_assert(num_pos >= 1);
 
             //get detail value from source
             auto value = source.valueFromDetail(detail);
@@ -318,7 +319,7 @@ public:
                     detail_ranges->emplace_back(pos_values.size(), 1);
 
                 //!event position always needs to be available!
-                assert (evt_pos_idx <= num_pos);
+                traced_assert(evt_pos_idx <= num_pos);
 
                 const auto& pos = evt_pos_idx >= 0 ? detail.position(evt_pos_idx) : detail.lastPos();
                 

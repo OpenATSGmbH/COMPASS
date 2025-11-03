@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MANAGESECTORSTASK_H
-#define MANAGESECTORSTASK_H
+#pragma once
 
 #include "configurable.h"
 #include "task.h"
@@ -87,5 +86,3 @@ protected:
 
     void addSector (const std::string& sector_name, std::vector<std::pair<double,double>> points);
 };
-
-#endif // MANAGESECTORSTASK_H

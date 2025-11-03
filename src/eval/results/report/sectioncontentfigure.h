@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONRESULTSREPORTSECTIONCONTENTFIGURE_H
-#define EVALUATIONRESULTSREPORTSECTIONCONTENTFIGURE_H
+#pragma once
 
 #include "eval/results/report/sectioncontent.h"
 
@@ -56,4 +55,3 @@ protected:
 };
 
 }
-#endif // EVALUATIONRESULTSREPORTSECTIONCONTENTFIGURE_H

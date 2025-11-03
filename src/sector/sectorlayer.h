@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SECTORLAYER_H
-#define SECTORLAYER_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -56,6 +55,8 @@ public:
     virtual bool isInside(const dbContent::TargetPosition& pos,
                           bool has_ground_bit, 
                           bool ground_bit_set) const;
+    bool isInside(double latitude, double longitude, double delta_deg) const;
+    // ignores exclude sectors
 
     bool hasExclusionSector() const;
 
@@ -68,5 +69,3 @@ protected:
 
     unsigned int num_exclusion_sectors_ = 0;
 };
-
-#endif // SECTORLAYER_H

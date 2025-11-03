@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CREATEARTASASSOCIATIONSTASKWIDGET_H
-#define CREATEARTASASSOCIATIONSTASKWIDGET_H
+#pragma once
 
 #include <taskwidget.h>
 
@@ -82,5 +81,3 @@ protected:
     QCheckBox* ignore_track_coasting_associations_check_{nullptr};
     QCheckBox* mark_track_coasting_associations_dubious_check_{nullptr};
 };
-
-#endif  // CREATEARTASASSOCIATIONSTASKWIDGET_H

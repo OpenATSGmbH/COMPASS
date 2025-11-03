@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTIDENTIFICATIONCORRECTCONFIGWIDGET_H
-#define EVALUATIONREQUIREMENTIDENTIFICATIONCORRECTCONFIGWIDGET_H
+#pragma once
 
 #include "eval/requirement/base/probabilitybaseconfigwidget.h"
 
@@ -59,5 +58,3 @@ protected:
 };
 
 }
-
-#endif // EVALUATIONREQUIREMENTIDENTIFICATIONCORRECTCONFIGWIDGET_H

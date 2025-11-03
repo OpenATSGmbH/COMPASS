@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWSWIDGET_H_
-#define VIEWSWIDGET_H_
+#pragma once
 
 #include <QFrame>
 #include <QStringList>
@@ -58,5 +57,3 @@ class ViewManagerWidget : public QFrame
 //    QStringList view_class_list_;
     std::map<QAction*, std::pair<std::string, int> > add_template_actions_;
 };
-
-#endif /* VIEWSWIDGET_H_ */

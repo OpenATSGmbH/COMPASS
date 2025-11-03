@@ -20,7 +20,7 @@
 #include "property_templates.h"
 #include "propertylist.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 /**
  */
@@ -49,8 +49,8 @@ PropertyDataType DuckDBExecResult::dataTypeFromDuckDB(duckdb_type type)
     
     //@TODO: more types needed (how to handle types like 'list'?)
 
-    logerr << "DuckDBExecResult: dataTypeFromDuckDB: data type not implemented: " << type;
-    assert(false);
+    logerr << "data type not implemented: " << type;
+    traced_assert(false);
 
     return PropertyDataType::BOOL;
 }
@@ -75,7 +75,7 @@ DuckDBExecResult::~DuckDBExecResult()
  */
 bool DuckDBExecResult::hasError() const
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
     return result_error_;
 }
 
@@ -97,7 +97,7 @@ std::string DuckDBExecResult::errorString() const
  */
 boost::optional<PropertyList> DuckDBExecResult::propertyList() const
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
 
     if (hasError())
         return boost::optional<PropertyList>();
@@ -125,7 +125,7 @@ boost::optional<PropertyList> DuckDBExecResult::propertyList() const
  */
 boost::optional<size_t> DuckDBExecResult::numColumns() const
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
 
     if (hasError())
         return boost::optional<size_t>();
@@ -138,7 +138,7 @@ boost::optional<size_t> DuckDBExecResult::numColumns() const
  */
 boost::optional<size_t> DuckDBExecResult::numRows() const
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
 
     if (hasError())
         return boost::optional<size_t>();
@@ -162,18 +162,18 @@ bool DuckDBExecResult::toBuffer(Buffer& buffer,
                                 const boost::optional<size_t>& offset,
                                 const boost::optional<size_t>& max_entries)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
 
     const auto& properties = buffer.properties();
 
     auto nc = numColumns();
     auto nr = numRows();
-    assert(nc.has_value());
-    assert(nr.has_value());
+    traced_assert(nc.has_value());
+    traced_assert(nr.has_value());
 
     idx_t col_count = nc.value();
     idx_t row_count = nr.value();
-    assert(col_count == properties.size()); // result column count must match provided buffer
+    traced_assert(col_count == properties.size()); // result column count must match provided buffer
 
     #define UpdateFuncToBuffer(PDType, DType, Suffix)                      \
         bool is_null = duckdb_value_is_null(&result_, c, r);               \
@@ -184,8 +184,8 @@ bool DuckDBExecResult::toBuffer(Buffer& buffer,
         }
 
     #define NotFoundFuncToBuffer                                                                     \
-        logerr << "DuckDBExecResult: toBuffer: unknown property type " << Property::asString(dtype); \
-        assert(false);
+        logerr << "unknown property type " << Property::asString(dtype); \
+        traced_assert(false);
 
     size_t r0 = offset.has_value() ? offset.value() : 0;
     size_t r1 = std::min(row_count, max_entries.has_value() ? r0 + max_entries.value() : row_count);
@@ -258,12 +258,12 @@ bool DuckDBExecResult::hasChunk() const
 ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
                                               size_t max_entries)
 {
-    assert(result_valid_);
+    traced_assert(result_valid_);
 
     const auto& properties = buffer.properties();
     size_t np = properties.size();
 
-    // loginf << "DuckDBExecResult: readNextChunk: reading...";
+    // loginf << "reading...";
     // loginf << "   chunk idx:   " << chunk_idx_;
     // loginf << "   chunk rows:  " << chunk_num_rows_;
     // loginf << "   max entries: " << max_entries;
@@ -278,7 +278,7 @@ ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
     else
         fetchVectors(data_vectors, valid_vectors, np);
 
-    assert(chunk_.has_value());
+    traced_assert(chunk_.has_value());
 
     //already at end? => no more data
     if (!hasChunk())
@@ -299,8 +299,8 @@ ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
         readers[ c ] = cb;
 
     #define NotFoundFuncNextChunk                                                                         \
-        logerr << "DuckDBExecResult: readNextChunk: unknown property type " << Property::asString(dtype); \
-        assert(false);
+        logerr << "unknown property type " << Property::asString(dtype); \
+        traced_assert(false);
 
     std::vector<std::function<void(size_t, size_t)>> readers(np);
 
@@ -342,8 +342,8 @@ ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
         }
     }
 
-    assert(chunk_idx_ <= chunk_num_rows_);
-    assert(buf_idx <= max_entries);
+    traced_assert(chunk_idx_ <= chunk_num_rows_);
+    traced_assert(buf_idx <= max_entries);
 
     bool has_more = hasChunk();
 

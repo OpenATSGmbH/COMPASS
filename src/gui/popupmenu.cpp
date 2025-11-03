@@ -18,6 +18,7 @@
 #include "popupmenu.h"
 
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QDesktopWidget>
@@ -32,7 +33,7 @@ PopupMenu::PopupMenu(QAbstractButton* host,
 :   host_   (host   )
 ,   content_(content)
 {
-    assert(host_);
+    traced_assert(host_);
 
     if (content_)
     {
@@ -50,7 +51,7 @@ PopupMenu::PopupMenu(QAbstractButton* host,
     else
         configured = false;
     
-    assert(configured);
+    traced_assert(configured);
 }
 
 /**

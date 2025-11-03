@@ -71,7 +71,7 @@ bool LicenseManager::readLicenses()
     std::ifstream f(p.c_str());
     if (!f.is_open())
     {
-        logerr << "LicenseManager: readLicenses: license file could not be opened for reading";
+        logerr << "license file could not be opened for reading";
         return false;
     }
 
@@ -84,12 +84,12 @@ bool LicenseManager::readLicenses()
     } 
     catch(const std::exception& ex)
     {
-        logerr << "LicenseManager: readLicenses: license file could not be parsed: " << ex.what();
+        logerr << "license file could not be parsed: " << ex.what();
         return false;
     }
     catch(...)
     {
-        logerr << "LicenseManager: readLicenses: license file could not be parsed";
+        logerr << "license file could not be parsed";
         return false;
     }
 
@@ -98,21 +98,21 @@ bool LicenseManager::readLicenses()
     //needs to be a valid json object
     if (!j.is_object())
     {
-        logerr << "LicenseManager: readLicenses: license file invalid";
+        logerr << "license file invalid";
         return false;
     }
 
     //license array present?
     if (!j.contains("licenses"))
     {
-        logerr << "LicenseManager: readLicenses: license file invalid";
+        logerr << "license file invalid";
         return false;
     }
 
     const auto& jlicenses = j.at("licenses");
     if (!jlicenses.is_object())
     {
-        logerr << "LicenseManager: readLicenses: license file invalid";
+        logerr << "license file invalid";
         return false;
     }
 
@@ -121,16 +121,16 @@ bool LicenseManager::readLicenses()
     {
         std::string id = jl.key();
 
-        assert(licenses_.find(id) == licenses_.end());
+        traced_assert(licenses_.find(id) == licenses_.end());
 
         auto& l = licenses_[ id ];
 
         l.read(jl.value(), &id);
 
         if (l.state != license::License::State::Read)
-            logwrn << "LicenseManager: readLicenses: license '" << id << "' could not be read: " << l.error;
+            logwrn << "license '" << id << "' could not be read: " << l.error;
         else if (!l.isComplete())
-            logwrn << "LicenseManager: readLicenses: license '" << id << "' is incomplete";
+            logwrn << "license '" << id << "' is incomplete";
     }
 
     emit licensesChanged();
@@ -147,7 +147,7 @@ bool LicenseManager::writeLicenses() const
     if (!Utils::Files::directoryExists(LICENSE_SUBDIRECTORY) &&
         !Utils::Files::createMissingDirectories(LICENSE_SUBDIRECTORY))
     {
-        logerr << "LicenseManager: writeLicenses: license directory could not be created";
+        logerr << "license directory could not be created";
         return false;
     }
 
@@ -157,7 +157,7 @@ bool LicenseManager::writeLicenses() const
     std::ofstream f(p.c_str());
     if (!f.is_open())
     {
-        logerr << "LicenseManager: writeLicenses: license file inaccessible";
+        logerr << "license file inaccessible";
         return false;
     }
 
@@ -173,7 +173,7 @@ bool LicenseManager::writeLicenses() const
     for (const auto& l : licenses_)
     {
         if (!l.second.isComplete())
-            logwrn << "LicenseManager: writeLicenses: incomplete license of id '" << l.first << "' encountered";
+            logwrn << "incomplete license of id '" << l.first << "' encountered";
         
         jlicenses[ l.first ] = l.second.json_blob.is_object() ? l.second.json_blob : nlohmann::json::object();
     }
@@ -186,7 +186,7 @@ bool LicenseManager::writeLicenses() const
     //write failed?
     if (!f)
     {
-        logerr << "LicenseManager: writeLicenses: license file could not be written";
+        logerr << "license file could not be written";
         return false;
     }
 
@@ -291,7 +291,7 @@ bool LicenseManager::hasLicense(const std::string& id) const
 const license::License& LicenseManager::getLicense(const std::string& id) const
 {
     auto it = licenses_.find(id);
-    assert(it != licenses_.end());
+    traced_assert(it != licenses_.end());
     return it->second;
 }
 
@@ -307,7 +307,7 @@ const std::map<std::string, license::License>& LicenseManager::getLicenses() con
 bool LicenseManager::addLicense(const license::License& license, bool write_licenses)
 {
     //adding a license shall not overwrite existing ids
-    assert(!hasLicense(license.id));
+    traced_assert(!hasLicense(license.id));
 
     licenses_[ license.id ] = license;
 
@@ -339,7 +339,7 @@ bool LicenseManager::setLicense(const license::License& license, bool write_lice
 */
 bool LicenseManager::removeLicense(const std::string& id, bool write_licenses)
 {
-    assert(hasLicense(id));
+    traced_assert(hasLicense(id));
 
     licenses_.erase(id);
 

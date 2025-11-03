@@ -58,10 +58,12 @@ public:
 
     bool hasSection(const std::string& id) const;
     Section& getSection (const std::string& id); // bla:bla2
+    const Section& getSection (const std::string& id) const;
 
     std::vector<std::string> getReportSectionIDs(ReportExportMode* export_mode = nullptr) const;
 
-    void setCurrentViewable(const nlohmann::json::object_t& data);
+    void setCurrentViewable(const nlohmann::json::object_t& data, 
+                            bool load_blocking = false);
     void unsetCurrentViewable();
     void setCurrentSection(const std::string& section_name, bool show_figure = false);
     std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section, 
@@ -80,7 +82,8 @@ protected:
     void toJSON_impl(nlohmann::json& j) const override final;
     bool fromJSON_impl(const nlohmann::json& j) override final;
     Result toJSONDocument_impl(nlohmann::json& j, 
-                               const std::string* resource_dir) const override final;
+                               const std::string* resource_dir,
+                               ReportExportMode export_style) const override final;
 
     TaskResult* result_ = nullptr;
 

@@ -15,6 +15,7 @@
  */
 
 #include "histogram_raw.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -237,7 +238,7 @@ bool RawHistogramCollection::addDataSeries(const DataSeries& data_series)
 {
     bool bin_count_ok = (data_series_.empty() || data_series_.rbegin()->histogram.numBins() == data_series.histogram.numBins());
 
-    assert(bin_count_ok);
+    traced_assert(bin_count_ok);
 
     if (bin_count_ok)
         data_series_.push_back(data_series);

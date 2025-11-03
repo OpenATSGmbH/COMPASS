@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ADSBQUALITYFILTER_H
-#define ADSBQUALITYFILTER_H
+#pragma once
 
 #include "dbfilter.h"
 
@@ -32,7 +31,7 @@ public:
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
 
-    virtual bool filters(const std::string& dbcontent_name) override;
+    virtual bool filters(const std::string& dbcont_name) override;
     virtual void reset() override;
 
     virtual void saveViewPointConditions (nlohmann::json& filters) override;
@@ -150,5 +149,3 @@ protected:
     virtual void checkSubConfigurables();
     virtual DBFilterWidget* createWidget() override;
 };
-
-#endif // ADSBQUALITYFILTER_H

@@ -59,8 +59,8 @@ ViewPresets::ViewPresets() = default;
 */
 std::string ViewPresets::uniqueBasename(const Preset& preset) const
 {
-    assert(!preset.view.empty());
-    assert(!preset.name.empty());
+    traced_assert(!preset.view.empty());
+    traced_assert(!preset.name.empty());
 
     std::string view_preset_dir = viewPresetDir(preset);
     std::string fn_base         = PrefixPreset + Utils::Files::normalizeFilename(preset.name, true);
@@ -97,7 +97,7 @@ std::string ViewPresets::viewPresetBaseDir() const
 */
 std::string ViewPresets::viewPresetDir(const View* view) const
 {
-    assert(view);
+    traced_assert(view);
     return viewPresetBaseDir() + "/" + viewID(view);
 }
 
@@ -106,7 +106,7 @@ std::string ViewPresets::viewPresetDir(const View* view) const
 */
 std::string ViewPresets::viewPresetDir(const Preset& preset) const
 {
-    assert(!preset.view.empty());
+    traced_assert(!preset.view.empty());
     return viewPresetBaseDir() + "/" + preset.view;
 }
 
@@ -115,7 +115,7 @@ std::string ViewPresets::viewPresetDir(const Preset& preset) const
 */
 std::string ViewPresets::viewPresetFilename(const Preset& preset) const
 {
-    assert(!preset.filename.empty());
+    traced_assert(!preset.filename.empty());
     return preset.filename;
 }
 
@@ -166,7 +166,7 @@ bool ViewPresets::scanForPresets()
 
     if (!Utils::Files::directoryExists(preset_base_dir))
     {
-        logwrn << "ViewPresets: scanForPresets: view preset base directory not found";
+        logwrn << "view preset base directory not found";
         return true;
     }
 
@@ -200,27 +200,27 @@ bool ViewPresets::scanForPresets()
             
             if (!ok)
             {
-                logwrn << "ViewPresets: scanForPresets: Could not read preset '" << f.toStdString() << "'";
+                logwrn << "Could not read preset '" << f.toStdString() << "'";
                 continue;
             }
                 
             //view id must match preset view directory
             if (p.view != sub_dir.toStdString())
             {
-                logwrn << "ViewPresets: scanForPresets: Skipping preset '" << f.toStdString() << "' - bad preset configuration";
+                logwrn << "Skipping preset '" << f.toStdString() << "' - bad preset configuration";
                 continue;
             }
 
             //key must not exist
             Key key(p.view, p.name);
-            assert(presets_.count(key) == 0);
+            traced_assert(presets_.count(key) == 0);
 
             //store preset
             presets_[ key ] = p;
         }
     }
 
-    loginf << "ViewPresets: scanForPresets: read " << presets_.size() << " preset(s)";
+    loginf << "read " << presets_.size() << " preset(s)";
 
     return true;
 }
@@ -287,7 +287,7 @@ bool ViewPresets::readPreset(Preset& p, const std::string& fn)
     if (Utils::Files::fileExists(preview_path))
     {
         if (!p.preview.load(QString::fromStdString(preview_path)))
-            logwrn << "ViewPresets: readPreset: could not read preview image for preset '" << p.name << "'";
+            logwrn << "could not read preview image for preset '" << p.name << "'";
     }
 
     return true;
@@ -315,8 +315,8 @@ bool ViewPresets::writePreview(const Preset& preset) const
 */
 bool ViewPresets::writePreset(const Preset& preset) const
 {
-    assert(!preset.filename.empty());
-    assert(!preset.view.empty());
+    traced_assert(!preset.filename.empty());
+    traced_assert(!preset.view.empty());
 
     nlohmann::json obj;
     obj[ TagView        ] = preset.view;
@@ -348,7 +348,7 @@ bool ViewPresets::writePreset(const Preset& preset) const
 
     //try to write preview image
     if (!preset.preview.isNull() && !writePreview(preset))
-        logwrn << "ViewPresets: writePreset: preview image for view preset '" << preset.name << "' could not be written";
+        logwrn << "preview image for view preset '" << preset.name << "' could not be written";
 
     //write json content
     std::string content = obj.dump(4);
@@ -375,8 +375,8 @@ bool ViewPresets::createPreset(const View* view,
                                const PresetMetadata& metadata,
                                bool create_preview)
 {
-    assert(view);
-    assert(!name.empty());
+    traced_assert(view);
+    traced_assert(!name.empty());
 
     //config preset
     Preset p;
@@ -407,7 +407,7 @@ bool ViewPresets::createPreset(const Preset& preset, const View* view)
  */
 bool ViewPresets::createPreset(const Preset& preset, const View* view, bool signal_changes)
 {
-    assert(!preset.name.empty());
+    traced_assert(!preset.name.empty());
 
     Preset p = preset;
 
@@ -419,10 +419,10 @@ bool ViewPresets::createPreset(const Preset& preset, const View* view, bool sign
     if (view)
         p.view = viewID(view);
 
-    assert(!p.view.empty());
+    traced_assert(!p.view.empty());
 
     auto key = p.key();
-    assert(presets_.count(key) == 0);
+    traced_assert(presets_.count(key) == 0);
 
     //create unique filename
     p.filename = uniqueBasename(p) + ExtPreset;
@@ -430,7 +430,7 @@ bool ViewPresets::createPreset(const Preset& preset, const View* view, bool sign
     //try to write
     if (!writePreset(p))
     {
-        logwrn << "ViewPresets: createPreset: could not write view preset '" << p.name << "'";
+        logwrn << "could not write view preset '" << p.name << "'";
         return false;
     }
 
@@ -461,14 +461,14 @@ void ViewPresets::removePreset(const Key& key, const View* view)
  */
 void ViewPresets::removePreset(const Key& key, const View* view, bool signal_changes)
 {
-    assert(presets_.count(key) > 0);
+    traced_assert(presets_.count(key) > 0);
 
     const auto& preset = presets_.at(key);
 
     std::string preset_path  = viewPresetPath(preset);
     std::string preview_path = previewPath(preset);
 
-    assert(Utils::Files::fileExists(preset_path));
+    traced_assert(Utils::Files::fileExists(preset_path));
 
     //delete preview if exists
     if (Utils::Files::fileExists(preview_path))
@@ -503,8 +503,8 @@ bool ViewPresets::renamePreset(const Key& key, const std::string& new_name, cons
  */
 bool ViewPresets::renamePreset(const Key& key, const std::string& new_name, const View* view, bool signal_changes)
 {
-    assert(presets_.count(key) > 0);
-    assert(!new_name.empty() && new_name != key.second);
+    traced_assert(presets_.count(key) > 0);
+    traced_assert(!new_name.empty() && new_name != key.second);
 
     //copy preset and set new name
     Preset preset = presets_.at(key);
@@ -544,8 +544,8 @@ bool ViewPresets::copyPreset(const Key& key,
                              const View* view, 
                              bool signal_changes)
 {
-    assert(presets_.count(key) > 0);
-    assert(!new_name.empty() && new_name != key.second);
+    traced_assert(presets_.count(key) > 0);
+    traced_assert(!new_name.empty() && new_name != key.second);
 
     //copy preset and change name
     Preset preset = presets_.at(key);
@@ -595,7 +595,7 @@ bool ViewPresets::updatePreset(const Key& key,
                                bool update_preview, 
                                bool signal_changes)
 {
-    assert(presets_.count(key) > 0);
+    traced_assert(presets_.count(key) > 0);
 
     auto& preset_cur = presets_.at(key);
 
@@ -623,15 +623,15 @@ bool ViewPresets::updatePreset(const Key& key,
     {
         if (update_config_from_view)
         {
-            assert(view);
-            assert(viewID(view) == preset_cur.view);
+            traced_assert(view);
+            traced_assert(viewID(view) == preset_cur.view);
 
             //view provided => update to view config
             config_changed = updatePresetConfig(preset_cur, view, update_preview);
         }
         else if (preset && !preset->view_config.is_null())
         {
-            assert(preset_cur.view == preset->view);
+            traced_assert(preset_cur.view == preset->view);
 
             config_changed = preset_cur.view_config != preset->view_config;
 
@@ -675,13 +675,13 @@ bool ViewPresets::updatePreset(const Key& key,
  */
 bool ViewPresets::writePreset(const Key& key) const
 {
-    assert(presets_.count(key) != 0);
+    traced_assert(presets_.count(key) != 0);
 
     const Preset& p = presets_.at(key);
 
     if (!writePreset(p))
     {
-        logwrn << "ViewPresets: writePreset: could not write view preset '" << key.second << "'";
+        logwrn << "could not write view preset '" << key.second << "'";
         return false;
     }
 
@@ -706,7 +706,7 @@ void ViewPresets::updatePresetStamp(Preset& preset)
  */
 QImage ViewPresets::renderPreview(const View* view)
 {
-    assert(view);
+    traced_assert(view);
     
     auto preview = view->renderData();
     return preview.scaled(PreviewMaxSize, PreviewMaxSize, Qt::AspectRatioMode::KeepAspectRatio);
@@ -719,8 +719,8 @@ QImage ViewPresets::renderPreview(const View* view)
  */
 bool ViewPresets::updatePresetConfig(Preset& preset, const View* view, bool update_preview)
 {
-    assert(view);
-    assert(preset.view.empty() || viewID(view) == preset.view);
+    traced_assert(view);
+    traced_assert(preset.view.empty() || viewID(view) == preset.view);
 
     //collect json config
     nlohmann::json new_cfg;
@@ -750,7 +750,7 @@ bool ViewPresets::keyValid(const Key& key)
 */
 bool ViewPresets::keyIsView(const Key& key, const View* view)
 {
-    assert(view);
+    traced_assert(view);
     return (viewID(view) == key.first);
 }
 
@@ -773,7 +773,7 @@ ViewPresets::Presets& ViewPresets::presets()
  */
 std::vector<ViewPresets::Key> ViewPresets::keysFor(const View* view) const
 {
-    assert(view);
+    traced_assert(view);
 
     std::vector<Key> keys;
 
@@ -804,7 +804,7 @@ std::vector<ViewPresets::Key> ViewPresets::keysFor(const std::string& category) 
 std::vector<ViewPresets::Key> ViewPresets::keysFor(const View* view, 
                                                    const std::string& category) const
 {
-    assert(view);
+    traced_assert(view);
 
     std::vector<Key> keys;
 
@@ -833,7 +833,7 @@ std::vector<std::string> ViewPresets::categories() const
  */
 std::vector<std::string> ViewPresets::categories(const View* view) const
 {
-    assert(view);
+    traced_assert(view);
 
     std::set<std::string> categories;
 
@@ -848,7 +848,7 @@ std::vector<std::string> ViewPresets::categories(const View* view) const
 */
 bool ViewPresets::hasPreset(const View* view, const std::string& name) const
 {
-    assert(view);
+    traced_assert(view);
 
     return hasPreset(Key(viewID(view), name));
 }

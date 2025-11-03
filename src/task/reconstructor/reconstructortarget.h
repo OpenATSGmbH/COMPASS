@@ -1,9 +1,27 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include "dbcontent/target/targetreportdefs.h"
 #include "projection/transformation.h"
 #include "reconstruction_defs.h"
 #include "reconstructorbase.h"
+#include "referencecalculatordefs.h"
 #include "targetbase.h"
 
 #include <boost/date_time/posix_time/ptime.hpp>
@@ -41,6 +59,29 @@ struct AltitudeState
     float alt_baro_ft;
 };
 
+struct ContributingSourcesInfo
+{
+    boost::posix_time::ptime timestamp_;
+    
+    std::vector<unsigned long> rec_nums_;
+
+    boost::optional<float> adsb_age_;
+    boost::optional<float> mlat_age_;
+    boost::optional<float> radar_age_;
+    boost::optional<float> reftraj_age_;
+    boost::optional<float> tracker_age_;
+    boost::optional<float> other_age_;
+
+    boost::optional<float> primary_age_;
+    boost::optional<float> mode_ac_age_;
+    boost::optional<float> modes_age_;
+
+    void add(const dbContent::targetReport::ReconstructorInfo& tr, bool add_to_rec_nums);
+    void increaseTimeTo(boost::posix_time::ptime new_timestamp);
+
+    nlohmann::json contributions(ReconstructorBase& reconstructor) const;
+};
+
 class ReconstructorTarget : public TargetBase
 {
 public:
@@ -48,6 +89,11 @@ public:
     {
         void reset()
         {
+            num_standing_adsb               = 0;
+            num_standing_adsb_updates_min   = std::numeric_limits<size_t>::max();
+            num_standing_adsb_updates_max   = 0;
+            num_standing_adsb_updates_total = 0;
+
             num_chain_added                   = 0;
             num_chain_updates                 = 0;
             num_chain_updates_valid           = 0;
@@ -79,7 +125,36 @@ public:
             num_rec_smooth_steps_failed     = 0;
             num_rec_smooth_target_failed    = 0;
             num_rec_interp_failed           = 0;
+
+            num_sec_unassoc           = 0;
+            num_po_unassoc            = 0;
+            num_sec_reassociated      = 0;
+            num_po_reassociated       = 0;
+            num_jpda_runs             = 0;
+            num_jpda_success          = 0;
+            num_jpda_failed           = 0;
+            num_jpda_runs_greedy      = 0;
+            num_jpda_hyp_max          = 0;
+            num_jpda_mms_max          = 0;
+            num_jpda_assignments      = 0;
+            num_jpda_clutters         = 0;
+            num_jpda_tentatives       = 0;
+            jpda_assignment_ratio_sum = 0.0;
+
+            num_tentative_created             = 0;
+            num_tentative_terminated          = 0;
+            num_tentative_terminated_coasting = 0;
+            num_tentative_terminated_low_prob = 0;
+            num_tentative_confirmed           = 0;
+            num_tentative_remaining           = 0;
+            num_tentative_tr_reassoc          = 0;
+            num_tentative_tr_lost             = 0;
         }
+
+        size_t num_standing_adsb               = 0;
+        size_t num_standing_adsb_updates_min   = std::numeric_limits<size_t>::max();
+        size_t num_standing_adsb_updates_max   = 0;
+        size_t num_standing_adsb_updates_total = 0;
 
         size_t num_chain_checked                 = 0;
         size_t num_chain_skipped_preempt         = 0;
@@ -118,6 +193,30 @@ public:
         size_t num_rec_smooth_steps_failed     = 0;
         size_t num_rec_smooth_target_failed    = 0;
         size_t num_rec_interp_failed           = 0;
+
+        size_t num_sec_unassoc           = 0;
+        size_t num_po_unassoc            = 0;
+        size_t num_sec_reassociated      = 0;
+        size_t num_po_reassociated       = 0;
+        size_t num_jpda_runs             = 0;
+        size_t num_jpda_success          = 0;
+        size_t num_jpda_failed           = 0;
+        size_t num_jpda_runs_greedy      = 0;
+        size_t num_jpda_hyp_max          = 0;
+        size_t num_jpda_mms_max          = 0;
+        size_t num_jpda_assignments      = 0;
+        size_t num_jpda_clutters         = 0;
+        size_t num_jpda_tentatives       = 0;
+        double jpda_assignment_ratio_sum = 0.0;
+
+        size_t num_tentative_created             = 0;
+        size_t num_tentative_terminated          = 0;
+        size_t num_tentative_terminated_coasting = 0;
+        size_t num_tentative_terminated_low_prob = 0;
+        size_t num_tentative_confirmed           = 0;
+        size_t num_tentative_remaining           = 0;
+        size_t num_tentative_tr_reassoc          = 0;
+        size_t num_tentative_tr_lost             = 0;
     };
 
     struct InterpOptions
@@ -150,6 +249,29 @@ public:
         unsigned long init_rec_num_ = 0;
 
         bool debug_ = false;
+    };
+
+    /**
+     * Describes a currently standing ADSB update.
+     */
+    struct StandingADSBTarget
+    {
+        StandingADSBTarget() = default;
+        StandingADSBTarget(const dbContent::targetReport::ReconstructorInfo& tr) { init(tr); }
+
+        void init(const dbContent::targetReport::ReconstructorInfo& tr);
+        bool needsUpdate(const boost::posix_time::ptime& ts) const;
+        bool isOutdated() const;
+        void addUpdate();
+
+        static boost::posix_time::time_duration TimeIncrement;
+        static unsigned int                     MaxUpdates;
+
+        unsigned long            rec_num;         // record number of first standing update
+        boost::posix_time::ptime ts_init;         // timestamp at initialization
+        boost::posix_time::ptime ts_last_update;  // timestamp of last added standing update
+        boost::posix_time::ptime ts_next_update;  // timestamp of next standing update
+        unsigned int             num_updated = 0; // number of already added standing updates
     };
 
     typedef std::pair<dbContent::targetReport::ReconstructorInfo*,
@@ -210,8 +332,10 @@ public:
     std::map<std::string, unsigned int> adsb_mops_count_; // mops str -> count
 
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
+    std::multimap<boost::posix_time::ptime, unsigned long> reference_tr_usages_;
+    std::map<boost::posix_time::ptime, ContributingSourcesInfo> references_tr_contributions_;
 
-    boost::posix_time::ptime ts_prev_;
+    boost::posix_time::ptime ref_ts_prev_;
     bool has_prev_v_ {false};
     double v_x_prev_, v_y_prev_;
 
@@ -220,10 +344,12 @@ public:
 
     mutable Transformation trafo_;
 
-    void addTargetReport (unsigned long rec_num,
-                         bool add_to_tracker = true);
-    void addTargetReports (const ReconstructorTarget& other,
-                          bool add_to_tracker = true);
+    bool created_from_tentative_ = false;
+    bool contains_tentative_     = false;
+
+    void addTargetReport (unsigned long rec_num);
+    void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
+    void addTargetReports (const ReconstructorTarget& other);
 
     unsigned int numAssociated() const;
     unsigned long lastAssociated() const;
@@ -349,10 +475,14 @@ public:
     bool canPredict(boost::posix_time::ptime ts) const;
     bool hasChainState(boost::posix_time::ptime ts) const;
     bool predictPositionClose(boost::posix_time::ptime ts, double lat, double lon) const;
-    bool predict(reconstruction::Measurement& mm, 
+    bool predict(reconstruction::Measurement* mm,
+                 kalman::GeoProbState* gp_state,
+                 kalman::GeoProbState* gp_state_mm,
                  const boost::posix_time::ptime& ts,
                  reconstruction::PredictionStats* stats = nullptr) const;
-    bool predictMT(reconstruction::Measurement& mm, 
+    bool predictMT(reconstruction::Measurement* mm,
+                   kalman::GeoProbState* gp_state,
+                   kalman::GeoProbState* gp_state_mm,
                    const boost::posix_time::ptime& ts,
                    unsigned int thread_id,
                    reconstruction::PredictionStats* stats = nullptr) const;
@@ -361,10 +491,14 @@ public:
                        reconstruction::PredictionStats* stats = nullptr) const;
     // hp: plz rework to tr -> posix timestamp, mm to targetreportdefs structs pos, posacc, maybe by return
 
+    bool hasChain() const;
     const reconstruction::KalmanChain& getChain() const;
 
     //    bool hasADSBMOPSVersion();
     //    std::set<unsigned int> getADSBMOPSVersions();
+
+    bool createdFromTentative() const;
+    bool containsTentative() const;
 
     static GlobalStats& globalStats() { return global_stats_; }
     static void addUpdateToGlobalStats(const reconstruction::UpdateStats& s);
@@ -394,11 +528,19 @@ protected:
 
     nlohmann::json adsb_info_json_;
 
+    boost::optional<StandingADSBTarget> standing_adsb_target_;
+
     static GlobalStats global_stats_;
+
     bool hasTracker() const;
     void reinitTracker();
     //void reinitChain();
+
+    TargetReportAddResult addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+                                            bool reestimate = true,
+                                            reconstruction::UpdateStats* stats = nullptr);
     TargetReportAddResult addToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+                                       const boost::posix_time::ptime& ts,
                                        bool reestimate = true,
                                        reconstruction::UpdateStats* stats = nullptr);
 
@@ -409,9 +551,9 @@ protected:
     bool checkChainBeforeAdd(const dbContent::targetReport::ReconstructorInfo& tr,
                              std::pair<int, int>& idxs_remove) const;
 
-    TargetReportAddResult addTargetReport (unsigned long rec_num,
-                                           bool add_to_tracker,
-                                           bool reestimate);
+    TargetReportAddResult addTargetReportInternal (unsigned long rec_num,
+                                                   bool add_to_tracker, // false if internal re-add
+                                                   bool reestimate);
 
     TargetReportSkipResult skipTargetReport (const dbContent::targetReport::ReconstructorInfo& tr,
                                             const InfoValidFunc& tr_valid_func = InfoValidFunc()) const;

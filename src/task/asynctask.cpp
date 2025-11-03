@@ -26,7 +26,7 @@
 #include <QApplication>
 
 #include <future>
-#include <cassert>
+#include "traced_assert.h"
 
 /************************************************************************************
  * AsyncTask
@@ -97,6 +97,10 @@ void AsyncTask::run()
         return;
     }
 
+    //finish any unfinished progress (for optics)
+    if (task_progress_.progress() > 0 && !task_progress_.isFinished())
+        task_progress_wrapper_.setFinished(true);
+
     setState(AsyncTaskState::State::Done);
 }
 
@@ -126,7 +130,7 @@ bool AsyncTask::runAsyncDialog(bool auto_close,
             }
             catch (const std::exception& e)
             {
-                logerr << "AsyncTask: runAsyncDialog: exception '" << e.what() << "'";
+                logerr << "exception '" << e.what() << "'";
                 throw e;
             }
         });
@@ -155,7 +159,7 @@ bool AsyncTask::runAsync()
             }
             catch (const std::exception& e)
             {
-                logerr << "AsyncTask: runAsyncDialog: exception '" << e.what() << "'";
+                logerr << "exception '" << e.what() << "'";
                 throw e;
             }
         });
@@ -232,7 +236,7 @@ AsyncTaskDialog::AsyncTaskDialog(AsyncTask* task,
 ,   task_      (task      )
 ,   auto_close_(auto_close)
 {
-    assert(task);
+    traced_assert(task);
 
     setWindowTitle(task_->title());
     setMinimumWidth(500);

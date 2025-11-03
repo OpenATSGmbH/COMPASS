@@ -18,6 +18,7 @@
 #pragma once
 
 #include "task/result/report/report.h"
+#include "task/result/report/reportdefs.h"
 #include "task/taskdefs.h"
 
 #include "json_fwd.hpp"
@@ -45,6 +46,30 @@ class QMenu;
 
 /**
  */
+struct TaskResultContentID
+{
+    TaskResultContentID() = default;
+    TaskResultContentID(const std::string& section_id,
+                        const std::string& name,
+                        ResultReport::SectionContentType type)
+    :   content_section_id(section_id),
+        content_name      (name),
+        content_type      (type) {}
+
+    nlohmann::json toJSON() const;
+    bool fromJSON(const nlohmann::json& j);
+
+    static const std::string FieldSectionID;
+    static const std::string FieldName;
+    static const std::string FieldType;
+
+    std::string                      content_section_id;
+    std::string                      content_name;
+    ResultReport::SectionContentType content_type;
+};
+
+/**
+ */
 struct TaskResultMetaData
 {
     TaskResultMetaData() = default;
@@ -63,8 +88,8 @@ struct TaskResultMetaData
 */
 struct TaskResultHeader
 {
-    typedef task::UpdateState                   UpdateState;
-    typedef std::pair<std::string, std::string> ContentID;
+    typedef task::UpdateState   UpdateState;
+    typedef TaskResultContentID ContentID;
 
     TaskResultHeader() = default;
     virtual ~TaskResultHeader() = default;
@@ -84,8 +109,8 @@ class TaskResult
     friend class TaskManager; // to change id if required
 
 public:
+    typedef TaskResultContentID                           ContentID;
     typedef std::shared_ptr<ResultReport::SectionContent> ContentPtr;
-    typedef std::pair<std::string, std::string>           ContentID;
     typedef task::UpdateState                             UpdateState;
 
     TaskResult(unsigned int id, 
@@ -184,6 +209,9 @@ protected:
 
     Result initResult();
     Result updateContents(const std::vector<ContentID>& contents);
+    Result updateContent(const ContentID& c);
+
+    void syncContent();
 
     //reimplement for custom result clearing
     virtual void clear_impl() {}

@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "dbcontent/label/labeldswidget.h"
 #include "compass.h"
 #include "datasourcemanager.h"
@@ -59,7 +76,7 @@ void LabelDSWidget::forceUpdateList()
 
 void LabelDSWidget::updateListSlot()
 {
-    logdbg << "LabelDSWidget: updateListSlot";
+    logdbg;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -71,7 +88,7 @@ void LabelDSWidget::updateListSlot()
     if (old_sources_ == current_sources)
         return;
 
-    assert(ds_grid_);
+    traced_assert(ds_grid_);
 
     QLayoutItem* child;
     while (!ds_grid_->isEmpty() && (child = ds_grid_->takeAt(0)) != nullptr)
@@ -139,12 +156,12 @@ void LabelDSWidget::updateListSlot()
 void LabelDSWidget::sourceClickedSlot()
 {
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
-    assert(widget);
+    traced_assert(widget);
 
     QVariant ds_id_var = widget->property("ds_id");
     unsigned int ds_id = ds_id_var.value<unsigned int>();
 
-    loginf << "LabelDSWidget: sourceClickedSlot: ds_id " << ds_id;
+    loginf << "ds_id " << ds_id;
 
     if (label_generator_.labelWanted(ds_id))
         label_generator_.removeLabelDSID(ds_id);
@@ -155,15 +172,15 @@ void LabelDSWidget::sourceClickedSlot()
 void LabelDSWidget::changeLineSlot()
 {
     QPushButton* widget = static_cast<QPushButton*>(sender());
-    assert(widget);
+    traced_assert(widget);
 
     QVariant ds_id_var = widget->property("ds_id");
     unsigned int ds_id = ds_id_var.value<unsigned int>();
 
-    loginf << "LabelDSWidget: changeLineSlot: ds_id " << ds_id;
+    loginf << "ds_id " << ds_id;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
-    assert (ds_man.hasDBDataSource(ds_id));
+    traced_assert(ds_man.hasDBDataSource(ds_id));
 
     dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
 
@@ -186,12 +203,12 @@ void LabelDSWidget::changeLineSlot()
 void LabelDSWidget::changeDirectionSlot()
 {
     QPushButton* widget = static_cast<QPushButton*>(sender());
-    assert(widget);
+    traced_assert(widget);
 
     QVariant ds_id_var = widget->property("ds_id");
     unsigned int ds_id = ds_id_var.value<unsigned int>();
 
-    loginf << "LabelDSWidget: changeDirectionSlot: ds_id " << ds_id;
+    loginf << "ds_id " << ds_id;
 
     QMenu menu;
 
@@ -241,14 +258,14 @@ void LabelDSWidget::selectDirectionSlot()
 
     QVariant dir_var = sender()->property("direction");
     unsigned int dir = dir_var.value<unsigned int>();
-    assert (dir <= 3);
+    traced_assert(dir <= 3);
 
-    loginf << "LabelDSWidget: selectDirectionSlot: ds_id " << ds_id << " dir " << dir;
+    loginf << "ds_id " << ds_id << " dir " << dir;
 
     LabelDirection direction = LabelDirection(dir);
     label_generator_.labelDirection(ds_id, direction);
 
-    assert (direction_buttons_.count(ds_id));
+    traced_assert(direction_buttons_.count(ds_id));
     direction_buttons_.at(ds_id)->setIcon(iconForDirection(direction));
 }
 
@@ -259,13 +276,13 @@ void LabelDSWidget::selectLineSlot()
 
     QVariant line_var = sender()->property("line");
     unsigned int line = line_var.value<unsigned int>();
-    assert (line <= 3);
+    traced_assert(line <= 3);
 
-    loginf << "LabelDSWidget: selectLineSlot: ds_id " << ds_id << " line " << line;
+    loginf << "ds_id " << ds_id << " line " << line;
 
     label_generator_.labelLine(ds_id, line);
 
-    assert (line_buttons_.count(ds_id));
+    traced_assert(line_buttons_.count(ds_id));
     line_buttons_.at(ds_id)->setText(String::lineStrFrom(line).c_str());
 }
 

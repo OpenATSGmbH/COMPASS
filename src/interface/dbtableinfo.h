@@ -19,6 +19,7 @@
 
 #include "property.h"
 #include "propertylist.h"
+#include "traced_assert.h"
 
 #include <map>
 #include <string>
@@ -82,7 +83,7 @@ public:
      */
     PropertyDataType propertyType() const
     { 
-        assert(type_prop_.has_value());
+        traced_assert(type_prop_.has_value());
         return type_prop_.value();
     }
 
@@ -97,7 +98,7 @@ public:
      */
     const std::string& dbType() const 
     {
-        assert(type_db_.has_value());
+        traced_assert(type_db_.has_value());
         return type_db_.value();
     }
 
@@ -138,7 +139,7 @@ public:
     const DBTableColumnInfo& column(const std::string& name) const 
     { 
         auto it = column_map_.find(name);
-        assert(it != column_map_.end());
+        traced_assert(it != column_map_.end());
 
         return columns_.at(it->second);
     }
@@ -151,7 +152,7 @@ public:
                    bool null_allowed,
                    const std::string& comment)
     {
-        assert(column_map_.count(name) == 0);
+        traced_assert(column_map_.count(name) == 0);
         size_t idx = columns_.size();
         columns_.push_back(DBTableColumnInfo(name, type, key, null_allowed, comment));
         column_map_[ name ] = idx;
@@ -166,7 +167,7 @@ public:
                    const std::string& comment,
                    bool precise_db_types = true)
     {
-        assert(column_map_.count(name) == 0);
+        traced_assert(column_map_.count(name) == 0);
         size_t idx = columns_.size();
         columns_.push_back(DBTableColumnInfo(name, type, key, null_allowed, comment, precise_db_types));
         column_map_[ name ] = idx;

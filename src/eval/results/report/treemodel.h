@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONRESULTSREPORTTREEMODEL_H
-#define EVALUATIONRESULTSREPORTTREEMODEL_H
+#pragma once
 
 #include <QAbstractItemModel>
 #include <QModelIndex>
@@ -63,5 +62,3 @@ namespace EvaluationResultsReport
     };
 
 }
-
-#endif // EVALUATIONRESULTSREPORTTREEMODEL_H

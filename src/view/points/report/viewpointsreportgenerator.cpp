@@ -74,7 +74,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
 
     report_filename_ = "report.tex";
 
-    loginf << "ViewPointsReportGenerator: constructor: report path '" << report_path_ << "'"
+    loginf << "report path '" << report_path_ << "'"
            << " filename '"  << report_filename_ << "'";
 
     registerParameter("export_all_unsorted", &export_all_unsorted_, false);
@@ -120,14 +120,13 @@ ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()
 
 void ViewPointsReportGenerator::run ()
 {
-    loginf << "ViewPointsReportGenerator: run";
+    loginf;
 
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->setRunning(true);
 
     try
     {
-
         LatexDocument doc (report_path_, report_filename_);
         doc.title("OpenATS COMPASS View Points Report");
 
@@ -155,9 +154,9 @@ void ViewPointsReportGenerator::run ()
         start_time = boost::posix_time::microsec_clock::local_time();
 
         ViewPointsWidget* vp_widget = view_manager_.viewPointsWidget();
-        assert (vp_widget);
+        traced_assert(vp_widget);
         ViewPointsTableModel* table_model = vp_widget->tableModel();
-        assert (table_model);
+        traced_assert(table_model);
 
         std::vector<unsigned int> vp_ids;
 
@@ -184,14 +183,14 @@ void ViewPointsReportGenerator::run ()
 
             if (cancel_)
             {
-                loginf << "ViewPointsReportGenerator: run: cancel";
+                loginf << "cancel";
                 break;
             }
 
-            assert (table_model->hasViewPoint(vp_id));
+            traced_assert(table_model->hasViewPoint(vp_id));
             const ViewPoint& view_point = table_model->viewPoint(vp_id);
 
-            loginf << "ViewPointsReportGenerator: run: setting vp " << vp_id;
+            loginf << "setting vp " << vp_id;
             view_manager_.setCurrentViewPoint(&view_point);
 
             while (dbcont_man.loadInProgress())
@@ -221,14 +220,13 @@ void ViewPointsReportGenerator::run ()
 
                 remaining_time_str = String::timeStringFromDouble((vp_size-vp_cnt) * ms_per_vp / 1000.0, false);
 
-                loginf << "ViewPointsReportGenerator: run: setting vp " << vp_id
+                loginf << "setting vp " << vp_id
                        << " done after " << elapsed_time_str << " remaining " << remaining_time_str;
             }
             else
             {
-                loginf << "ViewPointsReportGenerator: run: setting vp " << vp_id
+                loginf << "setting vp " << vp_id
                        << " done after " << elapsed_time_str;
-
             }
 
             dialog_->setElapsedTime(elapsed_time_str);
@@ -263,17 +261,17 @@ void ViewPointsReportGenerator::run ()
                 std::string command = "cd "+report_path_+" && pdflatex --interaction=nonstopmode "+report_filename_
                         +" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
 
-                loginf << "ViewPointsReportGenerator: run: running pdflatex";
+                loginf << "running pdflatex";
                 dialog_->setStatus("Running pdflatex");
                 dialog_->setRemainingTime("");
 
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                logdbg << "ViewPointsReportGenerator: run: cmd '" << command << "'";
+                logdbg << "cmd '" << command << "'";
 
                 command_out = System::exec(command);
 
-                logdbg << "ViewPointsReportGenerator: run: cmd done";
+                logdbg << "cmd done";
 
                 // update status
                 stop_time = boost::posix_time::microsec_clock::local_time();
@@ -286,7 +284,7 @@ void ViewPointsReportGenerator::run ()
                 while (command_out.find("Rerun to get outlines right") != std::string::npos
                        || command_out.find("Rerun to get cross-references right") != std::string::npos)
                 {
-                    loginf << "ViewPointsReportGenerator: run: re-running pdflatex";
+                    loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");
 
                     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -298,10 +296,10 @@ void ViewPointsReportGenerator::run ()
                     elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                     dialog_->setElapsedTime(elapsed_time_str);
 
-                    logdbg << "ViewPointsReportGenerator: run: re-run done";
+                    logdbg << "re-run done";
                 }
 
-                loginf << "ViewPointsReportGenerator: run: result '" << command_out << "'";
+                loginf << "result '" << command_out << "'";
 
                 if (!command_out.size()) // no warnings
                 {
@@ -317,12 +315,12 @@ void ViewPointsReportGenerator::run ()
                         {
                             String::replace(fullpath, ".tex", ".pdf");
 
-                            loginf << "ViewPointsReportGenerator: run: opening '" << fullpath << "'";
+                            loginf << "opening '" << fullpath << "'";
 
                             QDesktopServices::openUrl(QUrl(fullpath.c_str()));
                         }
                         else
-                            logerr << "ViewPointsReportGenerator: run: opening not possible since wrong file ending";
+                            logerr << "opening not possible since wrong file ending";
                     }
                 }
                 else // show warnings
@@ -358,7 +356,7 @@ void ViewPointsReportGenerator::run ()
     }
     catch (exception& e)
     {
-        logwrn << "ViewPointsReportGenerator: run: caught exception '" << e.what() << "'";
+        logwrn << "caught exception '" << e.what() << "'";
 
         dialog_->setProgress(0, 1, 0);
         dialog_->setStatus("Writing report failed");
@@ -380,7 +378,7 @@ void ViewPointsReportGenerator::run ()
 
 void ViewPointsReportGenerator::cancel ()
 {
-    loginf << "ViewPointsReportGenerator: cancel";
+    loginf;
 
     cancel_ = true;
 
@@ -395,7 +393,7 @@ std::string ViewPointsReportGenerator::reportPath() const
 
 void ViewPointsReportGenerator::reportPath(const std::string& path)
 {
-    loginf << "ViewPointsReportGenerator: reportPath: '" << path << "'";
+    loginf << "'" << path << "'";
     report_path_ = path;
 
     if (dialog_)
@@ -409,7 +407,7 @@ std::string ViewPointsReportGenerator::reportFilename() const
 
 void ViewPointsReportGenerator::reportFilename(const std::string& filename)
 {
-    loginf << "ViewPointsReportGenerator: reportFilename: '" << filename << "'";
+    loginf << "'" << filename << "'";
     report_filename_ = filename;
 
     if (dialog_)
@@ -421,7 +419,7 @@ void ViewPointsReportGenerator::reportPathAndFilename(const std::string& str)
     report_path_ = Files::getDirectoryFromPath(str) + "/";
     report_filename_ = Files::getFilenameFromPath(str);
 
-    loginf << "ViewPointsReportGenerator: reportPathAndFilename: path '" << report_path_
+    loginf << "path '" << report_path_
            << "' filename '" << report_filename_ << "'";
 
     if (dialog_)

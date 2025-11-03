@@ -62,39 +62,23 @@ ViewPointsImportTask::~ViewPointsImportTask()
 {
 }
 
-ViewPointsImportTaskDialog* ViewPointsImportTask::dialog()
+void ViewPointsImportTask::showDialog()
 {
-    if (!dialog_)
-    {
-        dialog_.reset(new ViewPointsImportTaskDialog(*this));
+    ViewPointsImportTaskDialog dialog (*this);
 
-        connect(dialog_.get(), &ViewPointsImportTaskDialog::importSignal,
-                this, &ViewPointsImportTask::dialogImportSlot);
-
-        connect(dialog_.get(), &ViewPointsImportTaskDialog::cancelSignal,
-                this, &ViewPointsImportTask::dialogCancelSlot);
-    }
-
-    assert(dialog_);
-    return dialog_.get();
-
-}
-
-void ViewPointsImportTask::dialogImportSlot()
-{
-    assert (canRun());
-
-    assert (dialog_);
-    dialog_->hide();
-
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+    
+    traced_assert(canRun());
     run();
 }
 
-void ViewPointsImportTask::dialogCancelSlot()
-{
-    assert (dialog_);
-    dialog_->hide();
-}
+// void ViewPointsImportTask::dialogImportSlot()
+// {
+//     traced_assert(canRun());
+
+//     run();
+// }
 
 void ViewPointsImportTask::generateSubConfigurable(const std::string& class_id,
                                                    const std::string& instance_id)
@@ -108,9 +92,6 @@ void ViewPointsImportTask::importFilename(const std::string& filename)
     current_filename_ = filename;
 
     parseCurrentFile();
-
-    if (dialog_)
-        dialog_->updateText();
 }
 
 std::string ViewPointsImportTask::currentError() const
@@ -120,7 +101,7 @@ std::string ViewPointsImportTask::currentError() const
 
 void ViewPointsImportTask::parseCurrentFile ()
 {
-    loginf << "ViewPointsImportTask: parseCurrentFile: file '" << current_filename_ << "'";
+    loginf << "file '" << current_filename_ << "'";
 
     current_error_ = "";
 
@@ -129,7 +110,7 @@ void ViewPointsImportTask::parseCurrentFile ()
     if (!Files::fileExists(current_filename_))
     {
         current_error_ = "file '" + current_filename_ + "' does not exist";
-        logerr << "ViewPointsImportTask: parseCurrentFile: " << current_error_;
+        logerr << "start" << current_error_;
         return;
     }
 
@@ -144,15 +125,15 @@ void ViewPointsImportTask::parseCurrentFile ()
     catch (exception& e)
     {
         current_error_ = "parsing file '" + current_filename_ + "' resulted in error '" + e.what() + "'";
-        logerr << "ViewPointsImportTask: parseCurrentFile: " << current_error_;
+        logerr << "start" << current_error_;
     }
 
-    loginf << "ViewPointsImportTask: parseCurrentFile: done";
+    loginf << "done";
 }
 
 void ViewPointsImportTask::checkParsedData ()
 {
-    loginf << "ViewPointsImportTask: checkParsedData";
+    loginf;
 
     std::string err;
     if (!ViewPoint::isValidJSON(current_data_, current_filename_, &err, true))
@@ -171,9 +152,9 @@ bool ViewPointsImportTask::canRun()
 
 void ViewPointsImportTask::run()
 {
-    loginf << "ViewPointsImportTask: import";
+    loginf;
 
-    assert (canImport()); // checked file content, version etc
+    traced_assert(canImport()); // checked file content, version etc
     done_ = false;
     stopped_ = false;
 
@@ -191,11 +172,11 @@ void ViewPointsImportTask::run()
 
         if (reply == QMessageBox::Yes)
         {
-            loginf << "ViewPointsImportTask: import: deleting all view points";
+            loginf << "deleting all view points";
         }
         else
         {
-            loginf << "ViewPointsImportTask: import: aborted";
+            loginf << "aborted";
 
             done_ = true;
             return;
@@ -230,7 +211,7 @@ void ViewPointsImportTask::run()
 
                 std::string filename = ds_it.at(ViewPoint::VP_CONTEXT_DATASET_FILENAME_KEY);
 
-                loginf << "ViewPointsImportTask: import: importing dataset file '" << filename << "'";
+                loginf << "importing dataset file '" << filename << "'";
 
                 if (!Files::fileExists(filename))
                 {
@@ -239,7 +220,7 @@ void ViewPointsImportTask::run()
 
                     filename = dir+"/"+file;
 
-                    assert (Files::fileExists(filename));
+                    traced_assert(Files::fileExists(filename));
                 }
 
                 ASTERIXImportTask& task = task_manager_.asterixImporterTask();
@@ -249,18 +230,18 @@ void ViewPointsImportTask::run()
                 // line
                 if (ds_it.contains("line_id"))
                 {
-                    assert (ds_it.at("line_id").is_number_unsigned());
+                    traced_assert(ds_it.at("line_id").is_number_unsigned());
                     line_id = ds_it.at("line_id");
 
                     task.settings().file_line_id_ = line_id;
 
-                    loginf << "ViewPointsImportTask: import: line_id " << line_id;
+                    loginf << "line_id " << line_id;
                 }
 
 
                 if (ds_it.contains("time_offset"))
                 {
-                    assert (ds_it.at("time_offset").is_number());
+                    traced_assert(ds_it.at("time_offset").is_number());
 
                     float tod_offset = ds_it.at("time_offset");
 
@@ -269,17 +250,17 @@ void ViewPointsImportTask::run()
                 }
                 else
                 {
-                    loginf << "ViewPointsImportTask: import: override information not set";
+                    loginf << "override information not set";
                     task.settings().override_tod_active_ = false;
                     task.settings().override_tod_offset_ = 0;
                 }
 
                 if (ds_it.contains("date"))
                 {
-                    assert (ds_it.at("date").is_string());
+                    traced_assert(ds_it.at("date").is_string());
                     string date_str = ds_it.at("date");
 
-                    loginf << "ViewPointsImportTask: import: date " << date_str;
+                    loginf << "date " << date_str;
 
                     boost::posix_time::ptime date = Time::fromDateString(date_str);
 
@@ -288,11 +269,11 @@ void ViewPointsImportTask::run()
 
                 task.source().setSourceType(ASTERIXImportSource::SourceType::FileASTERIX, {filename}); //line_id);
 
-                assert(task.canRun());
+                traced_assert(task.canRun());
                 task.allowUserInteractions(false);
 
                 //widget->runCurrentTaskSlot();
-                loginf << "ViewPointsImportTask: import: running task";
+                loginf << "running task";
                 task.run();
 
                 while (!task.done())
@@ -301,7 +282,7 @@ void ViewPointsImportTask::run()
                     QThread::msleep(1);
                 }
 
-                loginf << "ViewPointsImportTask: import: importing dataset file '" << filename << "' done";
+                loginf << "importing dataset file '" << filename << "' done";
 
             }
 
@@ -317,7 +298,7 @@ void ViewPointsImportTask::run()
 
     emit doneSignal();
 
-    loginf << "ViewPointsImportTask: done";
+    loginf;
 }
 void ViewPointsImportTask::stop()
 {

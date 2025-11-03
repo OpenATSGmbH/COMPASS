@@ -44,6 +44,9 @@ public:
     virtual ReportItem* parentItem();
     virtual const ReportItem* parentItem() const;
 
+    virtual nlohmann::json jsonConfig() const { return nlohmann::json(); }
+    virtual bool configure(const nlohmann::json& j) { return false; }
+
     const std::string& name() const;
     const std::string& id() const;
 
@@ -58,7 +61,8 @@ public:
     nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& j);
 
-    ResultT<nlohmann::json> toJSONDocument(const std::string* resource_dir = nullptr) const;
+    ResultT<nlohmann::json> toJSONDocument(const std::string* resource_dir = nullptr,
+                                           ReportExportMode export_style = ReportExportMode::JSONFile) const;
 
     static const std::string FieldName;
     static const std::string FieldID;
@@ -70,7 +74,8 @@ protected:
     virtual bool fromJSON_impl(const nlohmann::json& j) = 0;
 
     virtual Result toJSONDocument_impl(nlohmann::json& j,
-                                       const std::string* temp_dir) const = 0;
+                                       const std::string* temp_dir,
+                                       ReportExportMode export_style) const = 0;
 
     ReportItem* parent_item_ = nullptr;
 

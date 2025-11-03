@@ -70,7 +70,7 @@ EvaluationData::EvaluationData(EvaluationCalculator& calculator,
  */
 void EvaluationData::setBuffers(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    loginf << "EvaluationData: setBuffers";
+    loginf;
 
     accessor_->clear();
     accessor_->add(buffers);
@@ -80,103 +80,115 @@ void EvaluationData::setBuffers(std::map<std::string, std::shared_ptr<Buffer>> b
  */
 void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsigned int line_id)
 {
-    loginf << "EvaluationData: addReferenceData: dbcontent " << dbcontent_name;
+    loginf << "dbcontent " << dbcontent_name;
 
     if (!dbcont_man_.hasAssociations())
     {
-        logwrn << "EvaluationData: addReferenceData: dbcontent has no associations";
+        logwrn << "dbcontent has no associations";
 
         return;
     }
 
     ref_line_id_ = line_id;
-    assert (ref_line_id_ <= 3);
+    traced_assert(ref_line_id_ <= 3);
 
     set<unsigned int> active_srcs = calculator_.activeDataSourcesRef();
     bool use_active_srcs = (calculator_.dbContentNameRef() == calculator_.dbContentNameTst());
+    
+    double min_std_dev_xy = calculator_.currentStandard().referenceMinAccuracy();
+
     unsigned int num_skipped {0};
 
-    if (accessor_->hasMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_))
+    traced_assert(accessor_->hasMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_));
+    traced_assert(accessor_->hasMetaVar<double>(dbcontent_name, DBContent::meta_var_max_stddev_xy));
+
+    NullableVector<ptime>& ts_vec =
+        accessor_->getMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_);
+    NullableVector<unsigned int>& ds_ids =
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_);
+    NullableVector<unsigned int>& line_ids =
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_);
+    NullableVector<unsigned int>& utn_vec =
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_);
+
+    NullableVector<double>& max_stddev_xy_vec =
+        accessor_->getMetaVar<double>(dbcontent_name, DBContent::meta_var_max_stddev_xy);
+
+    unsigned int buffer_size = ts_vec.contentSize();
+
+    ptime timestamp;
+    // vector<unsigned int> utn_vec;
+
+    unsigned int utn;
+
+    loginf << "adding target data";
+    loginf << "use_active_srcs " << use_active_srcs
+           << " active_srcs " << String::compress(active_srcs, ',');
+
+    for (unsigned int cnt = 0; cnt < buffer_size; ++cnt)
     {
-        NullableVector<ptime>& ts_vec = accessor_->getMetaVar<ptime>(
-                    dbcontent_name, DBContent::meta_var_timestamp_);
-        NullableVector<unsigned int>& ds_ids = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_ds_id_);
-        NullableVector<unsigned int>& line_ids = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_line_id_);
-        NullableVector<unsigned int>& utn_vec = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_utn_);
+        traced_assert(!ds_ids.isNull(cnt));
 
-        unsigned int buffer_size = ts_vec.contentSize();
-
-        ptime timestamp;
-        //vector<unsigned int> utn_vec;
-
-        unsigned int utn;
-
-        loginf << "EvaluationData: addReferenceData: adding target data";
-        loginf << "EvaluationData: addReferenceData: use_active_srcs " << use_active_srcs;
-
-        for (auto ds_id : active_srcs)
-            loginf << "EvaluationData: addReferenceData: " << ds_id;
-
-        for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
+        if (use_active_srcs &&
+            !active_srcs.count(ds_ids.get(cnt)))  // skip those entries not for tst src
         {
-            assert (!ds_ids.isNull(cnt));
-
-            if (use_active_srcs && !active_srcs.count(ds_ids.get(cnt))) // skip those entries not for tst src
-            {
-                ++num_skipped;
-                continue;
-            }
-
-            assert (!line_ids.isNull(cnt));
-
-            if (line_ids.get(cnt) != ref_line_id_)
-            {
-                ++num_skipped;
-                continue;
-            }
-
-            if (ts_vec.isNull(cnt))
-            {
-                ++num_skipped;
-                continue;
-            }
-
-            timestamp = ts_vec.get(cnt);
-
-            if (utn_vec.isNull(cnt))
-            {
-                ++unassociated_ref_cnt_;
-                continue;
-            }
-
-            utn = utn_vec.get(cnt);
-            if (!dbcont_man_.existsTarget(utn))
-            {
-                logerr << "EvaluationData: addReferenceData: ignoring unknown utn " << utn;
-                continue;
-            }
-
-            if (!hasTargetData(utn))
-                target_data_.emplace_back(utn, *this, accessor_, calculator_, eval_man_, dbcont_man_);
-
-            assert (hasTargetData(utn));
-
-            auto tr_tag_it = target_data_.get<target_tag>().find(utn);
-            auto index_it = target_data_.project<0>(tr_tag_it); // get iterator for random access
-
-            target_data_.modify(index_it, [timestamp, cnt](EvaluationTargetData& t) { t.addRefIndex(timestamp, cnt); });
-
-            ++associated_ref_cnt_;
+            ++num_skipped;
+            continue;
         }
+
+        traced_assert(!line_ids.isNull(cnt));
+
+        if (line_ids.get(cnt) != ref_line_id_)
+        {
+            ++num_skipped;
+            continue;
+        }
+
+        if (ts_vec.isNull(cnt))
+        {
+            ++num_skipped;
+            continue;
+        }
+
+        timestamp = ts_vec.get(cnt);
+
+        if (utn_vec.isNull(cnt))
+        {
+            ++unassociated_ref_cnt_;
+            continue;
+        }
+
+        utn = utn_vec.get(cnt);
+        if (!dbcont_man_.existsTarget(utn))
+        {
+            logerr << "ignoring unknown utn " << utn;
+            continue;
+        }
+
+        if (!max_stddev_xy_vec.isNull(cnt) && max_stddev_xy_vec.get(cnt) > min_std_dev_xy)
+        {
+            ++num_skipped;
+            continue;
+        }
+
+        if (!hasTargetData(utn))
+            target_data_.emplace_back(utn, *this, accessor_, calculator_, eval_man_, dbcont_man_);
+
+        traced_assert(hasTargetData(utn));
+
+        auto tr_tag_it = target_data_.get<target_tag>().find(utn);
+        auto index_it = target_data_.project<0>(tr_tag_it);  // get iterator for random access
+
+        target_data_.modify(
+            index_it, [timestamp, cnt](EvaluationTargetData& t) { t.addRefIndex(timestamp, cnt); });
+
+        ++associated_ref_cnt_;
     }
 
-    loginf << "EvaluationData: addReferenceData: num targets " << target_data_.size()
+    loginf << "num targets " << target_data_.size()
            << " ref associated cnt " << associated_ref_cnt_ << " unassoc " << unassociated_ref_cnt_
            << " num_skipped " << num_skipped;
 }
@@ -185,16 +197,16 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
  */
 void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned int line_id)
 {
-    loginf << "EvaluationData: addTestData: dbcontent " << dbcontent_name;
+    loginf << "dbcontent " << dbcontent_name;
 
     if (!dbcont_man_.hasAssociations())
     {
-        logwrn << "EvaluationData: addTestData: dbcontent has no associations";
+        logwrn << "dbcontent has no associations";
         return;
     }
 
     tst_line_id_ = line_id;
-    assert (tst_line_id_ <= 3);
+    traced_assert(tst_line_id_ <= 3);
 
     set<unsigned int> active_srcs = calculator_.activeDataSourcesTst();
     bool use_active_srcs = (calculator_.dbContentNameRef() == calculator_.dbContentNameTst());
@@ -221,16 +233,14 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
 
         unsigned int utn;
 
-        loginf << "EvaluationData: addTestData: adding target data";
+        loginf << "adding target data";
 
-        loginf << "EvaluationData: addTestData: use_active_srcs " << use_active_srcs;
-
-        for (auto ds_id : active_srcs)
-            loginf << "EvaluationData: addTestData: " << ds_id;
+        loginf << "use_active_srcs " << use_active_srcs << " active_srcs "
+               << String::compress(active_srcs, ',');
 
         for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
         {
-            assert (!ds_ids.isNull(cnt));
+            traced_assert(!ds_ids.isNull(cnt));
 
             if (use_active_srcs && !active_srcs.count(ds_ids.get(cnt))) // skip those entries not for tst src
             {
@@ -238,7 +248,7 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
                 continue;
             }
 
-            assert (!line_ids.isNull(cnt));
+            traced_assert(!line_ids.isNull(cnt));
 
             if (line_ids.get(cnt) != tst_line_id_)
             {
@@ -263,14 +273,14 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
             utn = utn_vec.get(cnt);
             if (!dbcont_man_.existsTarget(utn))
             {
-                logerr << "EvaluationData: addTestData: ignoring unknown utn " << utn;
+                logerr << "ignoring unknown utn " << utn;
                 continue;
             }
 
             if (!hasTargetData(utn))
                 target_data_.emplace_back(utn, *this, accessor_, calculator_, eval_man_, dbcont_man_);
 
-            assert (hasTargetData(utn));
+            traced_assert(hasTargetData(utn));
 
             auto tr_tag_it = target_data_.get<target_tag>().find(utn);
             auto index_it = target_data_.project<0>(tr_tag_it); // get iterator for random access
@@ -281,7 +291,7 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
         }
     }
 
-    loginf << "EvaluationData: addTestData: num targets " << target_data_.size()
+    loginf << "num targets " << target_data_.size()
            << " tst associated cnt " << associated_tst_cnt_ << " unassoc " << unassociated_tst_cnt_
            << " num_skipped " << num_skipped;
 }
@@ -290,9 +300,9 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
  */
 void EvaluationData::finalize ()
 {
-    loginf << "EvaluationData: finalize";
+    loginf;
 
-    assert (!finalized_);
+    traced_assert(!finalized_);
 
     unsigned int num_targets = target_data_.size();
 
@@ -304,16 +314,22 @@ void EvaluationData::finalize ()
 
     if (!num_targets)
     {
-        logerr << "EvaluationData: finalize: no targets loaded";
+        logerr << "no targets loaded";
     }
     else
     {
         auto task = [&] (int cnt) { target_data_[cnt].finalize(); return true; };
 
         Utils::Async::waitDialogAsyncArray(task, (int) num_targets, "Finalizing data");
+
+        // single thread for testing
+        // for (unsigned int cnt=0; cnt < num_targets; cnt++)
+        //     task(cnt);
     }
 
     finalized_ = true;
+
+    loginf << "done";
 }
 
 /**
@@ -335,7 +351,7 @@ bool EvaluationData::hasTargetData (unsigned int utn)
  */
 const EvaluationTargetData& EvaluationData::targetData(unsigned int utn)
 {
-    assert (hasTargetData(utn));
+    traced_assert(hasTargetData(utn));
 
     return *target_data_.get<target_tag>().find(utn);
 }
@@ -369,8 +385,8 @@ void EvaluationData::clear()
 //     {
 //         if (index.column() == 0)  // selected special case
 //         {
-//             assert (index.row() >= 0);
-//             assert (index.row() < (int)target_data_.size());
+//             traced_assert(index.row() >= 0);
+//             traced_assert(index.row() < (int)target_data_.size());
 
 //             const EvaluationTargetData& target = target_data_.at(index.row());
 
@@ -384,12 +400,12 @@ void EvaluationData::clear()
 //     }
 //     case Qt::BackgroundRole:
 //     {
-//         assert (index.row() >= 0);
-//         assert (index.row() < (int)target_data_.size());
+//         traced_assert(index.row() >= 0);
+//         traced_assert(index.row() < (int)target_data_.size());
 
 //         const EvaluationTargetData& target = target_data_.at(index.row());
 
-//         assert (index.column() < table_columns_.size());
+//         traced_assert(index.column() < table_columns_.size());
 //         std::string col_name = table_columns_.at(index.column()).toStdString();
 
 //         if (!dbcont_man_.utnUseEval(target.utn_))
@@ -409,16 +425,16 @@ void EvaluationData::clear()
 //     case Qt::DisplayRole:
 //     case Qt::EditRole:
 //     {
-//         logdbg << "EvaluationData: data: display role: row " << index.row() << " col " << index.column();
+//         logdbg << "display role: row " << index.row() << " col " << index.column();
 
-//         assert (index.row() >= 0);
-//         assert (index.row() < (int)target_data_.size());
+//         traced_assert(index.row() >= 0);
+//         traced_assert(index.row() < (int)target_data_.size());
 
 //         const EvaluationTargetData& target = target_data_.at(index.row());
 
-//         logdbg << "EvaluationData: data: got utn " << target.utn_;
+//         logdbg << "got utn " << target.utn_;
 
-//         assert (index.column() < table_columns_.size());
+//         traced_assert(index.column() < table_columns_.size());
 //         std::string col_name = table_columns_.at(index.column()).toStdString();
 
 //         if (col_name == "Use")
@@ -484,8 +500,8 @@ void EvaluationData::clear()
 //     {
 //         if (index.column() == 0)
 //         {
-//             assert (index.row() >= 0);
-//             assert (index.row() < (int)target_data_.size());
+//             traced_assert(index.row() >= 0);
+//             traced_assert(index.row() < (int)target_data_.size());
 
 //             const EvaluationTargetData& target = target_data_.at(index.row());
 
@@ -493,8 +509,8 @@ void EvaluationData::clear()
 //         }
 //         else if (index.column() == 2) // comment
 //         {
-//             assert (index.row() >= 0);
-//             assert (index.row() < (int)target_data_.size());
+//             traced_assert(index.row() >= 0);
+//             traced_assert(index.row() < (int)target_data_.size());
 
 //             const EvaluationTargetData& target = target_data_.at(index.row());
 //             return ("comment_"+to_string(target.utn_)).c_str();
@@ -502,16 +518,16 @@ void EvaluationData::clear()
 //     }
 //     case Qt::ToolTipRole:
 //     {
-//         logdbg << "EvaluationData: data: tooltip role: row " << index.row() << " col " << index.column();
+//         logdbg << "tooltip role: row " << index.row() << " col " << index.column();
 
-//         assert (index.row() >= 0);
-//         assert (index.row() < (int)target_data_.size());
+//         traced_assert(index.row() >= 0);
+//         traced_assert(index.row() < (int)target_data_.size());
 
 //         const EvaluationTargetData& target = target_data_.at(index.row());
 
-//         logdbg << "EvaluationData: data: got utn " << target.utn_;
+//         logdbg << "got utn " << target.utn_;
 
-//         assert (index.column() < table_columns_.size());
+//         traced_assert(index.column() < table_columns_.size());
 //         std::string col_name = table_columns_.at(index.column()).toStdString();
 
 //         if (col_name == "Interest")
@@ -533,13 +549,13 @@ void EvaluationData::clear()
 
 //     if (role == Qt::CheckStateRole && index.column() == 0)
 //     {
-//         assert (index.row() >= 0);
-//         assert (index.row() < (int)target_data_.size());
+//         traced_assert(index.row() >= 0);
+//         traced_assert(index.row() < (int)target_data_.size());
 
 //         auto it = target_data_.begin()+index.row();
 
 //         bool checked = (Qt::CheckState)value.toInt() == Qt::Checked;
-//         loginf << "EvaluationData: setData: utn " << it->utn_ <<" check state " << checked;
+//         loginf << "utn " << it->utn_ <<" check state " << checked;
 
 //         dbcont_man_.utnUseEval(it->utn_, checked);
 
@@ -548,8 +564,8 @@ void EvaluationData::clear()
 //     }
 //     else if (role == Qt::EditRole && index.column() == 2) // comment
 //     {
-//         assert (index.row() >= 0);
-//         assert (index.row() < (int)target_data_.size());
+//         traced_assert(index.row() >= 0);
+//         traced_assert(index.row() < (int)target_data_.size());
 
 //         auto it = target_data_.begin()+index.row();
 
@@ -588,6 +604,11 @@ void EvaluationData::addToReport(std::shared_ptr<ResultReport::Report> report) c
     table.setLockStateSafe(); // can be reloaded and exported in lock state
     table.enableTooltips();   // shows custom tooltips
     table.setMaxRowCount(-1); // override row count
+
+    //setup column groups
+    table.setColumnGroup("Duration", duration_columns_, false);
+    table.setColumnGroup("Mode S"  , mode_s_columns_  , true );
+    table.setColumnGroup("Mode A/C", mode_ac_columns_ , false);
 }
 
 /**
@@ -626,7 +647,7 @@ std::pair<nlohmann::json, unsigned int> EvaluationData::rawCellData(const Evalua
     switch (column)
     {
         case ColUse:
-            return std::make_pair(dbContent::TargetModel::iconForTarget(target), 0);
+            return std::make_pair(dbContent::TargetModel::iconForTarget(target, true), 0);
         case ColUTN: 
             return std::make_pair(target.utn_, 0);
         case ColComment:

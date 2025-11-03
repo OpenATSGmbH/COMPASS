@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "asterixjsonparser.h"
 
 #include "compass.h"
@@ -5,12 +22,9 @@
 #include "configuration.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-//#include "stringconv.h"
-//#include "unit.h"
-//#include "unitmanager.h"
-//#include "util/json.h"
 #include "asteriximporttask.h"
 #include "files.h"
+#include "traced_assert.h"
 
 #include <QTableView>
 
@@ -36,14 +50,14 @@ ASTERIXJSONParser::ASTERIXJSONParser(const std::string& class_id, const std::str
     registerParameter("category", &category_, 0u);
     registerParameter("db_content_name", &db_content_name_, std::string());
 
-    assert(db_content_name_.size());
+    traced_assert(db_content_name_.size());
 
     if (!name_.size())
         name_ = db_content_name_;
 
-    assert(name_.size());
+    traced_assert(name_.size());
 
-    assert (task_.jASTERIX()->hasCategory(category_));
+    traced_assert(task_.jASTERIX()->hasCategory(category_));
     item_info_ = task_.jASTERIX()->category(category_)->itemInfo();
 
     createSubConfigurables();
@@ -69,7 +83,7 @@ void ASTERIXJSONParser::generateSubConfigurable(const std::string& class_id,
 
 void ASTERIXJSONParser::doMappingChecks()
 {
-    loginf << "ASTERIXJSONParser: doMappingChecks";
+    loginf;
 
     beginResetModel();
 
@@ -96,13 +110,13 @@ void ASTERIXJSONParser::doMappingChecks()
             not_added_json_keys_.push_back(info_it.first);
     }
 
-    // update not mapped dbo vars
-    not_added_dbo_variables_.clear();
+    // update not mapped dbcont vars
+    not_added_dbcont_variables_.clear();
 
-    for (auto& dbovar_it : dbContent().variables())
+    for (auto& dbcontvar_it : dbContent().variables())
     {
-        if (!hasDBContentVariableMapped(dbovar_it.first))
-            not_added_dbo_variables_.push_back(dbovar_it.first);
+        if (!hasDBContentVariableMapped(dbcontvar_it.first))
+            not_added_dbcont_variables_.push_back(dbcontvar_it.first);
     }
 
     mapping_checks_dirty_ = false;
@@ -112,7 +126,7 @@ void ASTERIXJSONParser::doMappingChecks()
 
 unsigned int ASTERIXJSONParser::totalEntrySize () const
 {
-    return data_mappings_.size() + not_added_json_keys_.size() + not_added_dbo_variables_.size();
+    return data_mappings_.size() + not_added_json_keys_.size() + not_added_dbcont_variables_.size();
 }
 
 bool ASTERIXJSONParser::existsJSONKeyInCATInfo(const std::string& key)
@@ -131,7 +145,7 @@ bool ASTERIXJSONParser::hasDBContentVariableMapped (const std::string& var_name)
 {
     return std::find_if(data_mappings_.begin(), data_mappings_.end(),
                         [var_name](const unique_ptr<JSONDataMapping>& mapping) -> bool {
-        return mapping->dboVariableName() == var_name; }) != data_mappings_.end();
+        return mapping->dbcontVariableName() == var_name; }) != data_mappings_.end();
 }
 
 bool ASTERIXJSONParser::hasJSONKeyInMapping (const std::string& key)
@@ -143,36 +157,36 @@ bool ASTERIXJSONParser::hasJSONKeyInMapping (const std::string& key)
 
 unsigned int ASTERIXJSONParser::indexOfJSONKeyInMapping (const std::string& key)
 {
-    assert (hasJSONKeyInMapping(key));
+    traced_assert(hasJSONKeyInMapping(key));
 
     auto iter = std::find_if(data_mappings_.begin(), data_mappings_.end(),
                              [key](const unique_ptr<JSONDataMapping>& mapping) -> bool {
         return mapping->jsonKey() == key; });
 
-    assert (iter != data_mappings_.end());
+    traced_assert(iter != data_mappings_.end());
 
     unsigned int pos = iter - data_mappings_.begin();
 
-    assert (pos < data_mappings_.size());
+    traced_assert(pos < data_mappings_.size());
 
     return pos;
 }
 
 void ASTERIXJSONParser::selectMapping (unsigned int index)
 {
-    loginf << "ASTERIXJSONParser: selectMapping: index " << index;
+    loginf << "index " << index;
 
     emit modelRowChanged(index);
 }
 
 void ASTERIXJSONParser::selectUnmappedDBContentVariable (const std::string& name)
 {
-    auto iter = find(not_added_dbo_variables_.begin(), not_added_dbo_variables_.end(), name);
-    assert (iter != not_added_dbo_variables_.end());
+    auto iter = find(not_added_dbcont_variables_.begin(), not_added_dbcont_variables_.end(), name);
+    traced_assert(iter != not_added_dbcont_variables_.end());
 
-    unsigned int pos = iter - not_added_dbo_variables_.begin();
+    unsigned int pos = iter - not_added_dbcont_variables_.begin();
 
-    assert (pos < not_added_dbo_variables_.size());
+    traced_assert(pos < not_added_dbcont_variables_.size());
 
     unsigned int index = data_mappings_.size() + not_added_json_keys_.size() + pos;
 
@@ -181,7 +195,7 @@ void ASTERIXJSONParser::selectUnmappedDBContentVariable (const std::string& name
 
 //void ASTERIXJSONParser::updateToChangedIndex (unsigned int row_index)
 //{
-//    assert (row_index < totalEntrySize());
+//    traced_assert(row_index < totalEntrySize());
 //    emit dataChanged(index(row_index, 0), index(row_index, table_columns_.size()-1));
 //}
 
@@ -197,37 +211,37 @@ ASTERIXJSONParser::EntryType ASTERIXJSONParser::entryType (unsigned int index) c
 
     index -= not_added_json_keys_.size();
 
-    assert (index < not_added_dbo_variables_.size());
+    traced_assert(index < not_added_dbcont_variables_.size());
 
     return ASTERIXJSONParser::EntryType::UnmappedDBContentVariable;
 }
 
 JSONDataMapping& ASTERIXJSONParser::mapping (unsigned int index)
 {
-    assert (entryType(index) == ASTERIXJSONParser::EntryType::ExistingMapping);
+    traced_assert(entryType(index) == ASTERIXJSONParser::EntryType::ExistingMapping);
 
-    assert (data_mappings_.at(index));
+    traced_assert(data_mappings_.at(index));
     return *data_mappings_.at(index);
 }
 
 const JSONDataMapping& ASTERIXJSONParser::mapping (unsigned int index) const
 {
-    assert (entryType(index) == ASTERIXJSONParser::EntryType::ExistingMapping);
+    traced_assert(entryType(index) == ASTERIXJSONParser::EntryType::ExistingMapping);
 
-    assert (data_mappings_.at(index));
+    traced_assert(data_mappings_.at(index));
     return *data_mappings_.at(index);
 }
 
 const std::string& ASTERIXJSONParser::unmappedJSONKey (unsigned int index) const
 {
-    assert (entryType(index) == ASTERIXJSONParser::EntryType::UnmappedJSONKey);
+    traced_assert(entryType(index) == ASTERIXJSONParser::EntryType::UnmappedJSONKey);
     return not_added_json_keys_.at(index - data_mappings_.size());
 }
 
 const std::string& ASTERIXJSONParser::unmappedDBContentVariable (unsigned int index) const
 {
-    assert (entryType(index) == ASTERIXJSONParser::EntryType::UnmappedDBContentVariable);
-    return not_added_dbo_variables_.at(index - data_mappings_.size() - not_added_json_keys_.size());
+    traced_assert(entryType(index) == ASTERIXJSONParser::EntryType::UnmappedDBContentVariable);
+    return not_added_dbcont_variables_.at(index - data_mappings_.size() - not_added_json_keys_.size());
 }
 
 const jASTERIX::CategoryItemInfo& ASTERIXJSONParser::categoryItemInfo() const
@@ -246,14 +260,14 @@ DBContent& ASTERIXJSONParser::dbContent() const
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
-        throw runtime_error ("ASTERIXJSONParser: dbObject: dbobject '" + db_content_name_+ "' does not exist");
+        throw runtime_error ("ASTERIXJSONParser: dbObject: dbcontbject '" + db_content_name_+ "' does not exist");
     else
         return dbcont_man.dbContent(db_content_name_);
 }
 
 void ASTERIXJSONParser::initialize()
 {
-    logdbg << "ASTERIXJSONParser: initialize: name " << name_;
+    logdbg2 << "name " << name_;
 
     if (!initialized_)
     {
@@ -261,7 +275,7 @@ void ASTERIXJSONParser::initialize()
         {
             if (!mapping->active())
             {
-                assert(!mapping->mandatory());
+                traced_assert(!mapping->mandatory());
                 continue;
             }
 
@@ -280,13 +294,13 @@ void ASTERIXJSONParser::initialize()
 
 std::shared_ptr<Buffer> ASTERIXJSONParser::getNewBuffer() const
 {
-    assert(initialized_);
+    traced_assert(initialized_);
     return std::make_shared<Buffer>(list_, db_content_name_);
 }
 
 void ASTERIXJSONParser::appendVariablesToBuffer(Buffer& buffer) const
 {
-    assert(initialized_);
+    traced_assert(initialized_);
 
     for (auto& p_it : list_.properties())
     {
@@ -299,14 +313,14 @@ void ASTERIXJSONParser::appendVariablesToBuffer(Buffer& buffer) const
 
 bool ASTERIXJSONParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
 {
-    assert(initialized_);
+    traced_assert(initialized_);
 
     size_t row_cnt = buffer.size();
 
     bool parsed_any = false;
 
-    logdbg << "ASTERIXJSONParser: parseJSON: single target report";
-    assert(j.is_object());
+    logdbg2 << "single target report";
+    traced_assert(j.is_object());
 
     parsed_any = parseTargetReport(j, buffer, row_cnt);
 
@@ -315,11 +329,11 @@ bool ASTERIXJSONParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
 
 void ASTERIXJSONParser::createMappingStubs(nlohmann::json& j)
 {
-    assert(initialized_);
+    traced_assert(initialized_);
 
 
-    logdbg << "ASTERIXJSONParser: createMappingStubs: single target report";
-    assert(j.is_object());
+    logdbg2 << "single target report";
+    traced_assert(j.is_object());
 
     createMappingsFromTargetReport(j);
 
@@ -338,11 +352,11 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
     {
         if (!map_it->active())
         {
-            assert(!map_it->mandatory());
+            traced_assert(!map_it->mandatory());
             continue;
         }
 
-        // logdbg << "setting data mapping key " << data_it.jsonKey();
+        // logdbg2 << "setting data mapping key " << data_it.jsonKey();
 
         try
         {
@@ -354,9 +368,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             {
             case PropertyDataType::BOOL:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: bool " << current_var_name
+                logdbg2 << "bool " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<bool>(current_var_name));
+                traced_assert(buffer.has<bool>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<bool>(current_var_name), row_cnt);
 
@@ -364,9 +378,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::CHAR:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: char " << current_var_name
+                logdbg2 << "char " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<char>(current_var_name));
+                traced_assert(buffer.has<char>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<char>(current_var_name), row_cnt);
 
@@ -374,9 +388,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::UCHAR:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: uchar " << current_var_name
+                logdbg2 << "uchar " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<unsigned char>(current_var_name));
+                traced_assert(buffer.has<unsigned char>(current_var_name));
                 mandatory_missing = map_it->findAndSetValue(
                             tr, buffer.get<unsigned char>(current_var_name), row_cnt);
 
@@ -384,9 +398,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::INT:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: int " << current_var_name
+                logdbg2 << "int " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<int>(current_var_name));
+                traced_assert(buffer.has<int>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<int>(current_var_name), row_cnt);
 
@@ -394,9 +408,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::UINT:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: uint " << current_var_name
+                logdbg2 << "uint " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<unsigned int>(current_var_name));
+                traced_assert(buffer.has<unsigned int>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<unsigned int>(current_var_name), row_cnt);
 
@@ -404,9 +418,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::LONGINT:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: long " << current_var_name
+                logdbg2 << "long " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<long int>(current_var_name));
+                traced_assert(buffer.has<long int>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<long int>(current_var_name), row_cnt);
 
@@ -414,9 +428,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::ULONGINT:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: ulong " << current_var_name
+                logdbg2 << "ulong " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<unsigned long>(current_var_name));
+                traced_assert(buffer.has<unsigned long>(current_var_name));
                 mandatory_missing = map_it->findAndSetValue(
                             tr, buffer.get<unsigned long>(current_var_name), row_cnt);
 
@@ -424,9 +438,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::FLOAT:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: float " << current_var_name
+                logdbg2 << "float " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<float>(current_var_name));
+                traced_assert(buffer.has<float>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<float>(current_var_name), row_cnt);
 
@@ -434,9 +448,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::DOUBLE:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: double " << current_var_name
+                logdbg2 << "double " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<double>(current_var_name));
+                traced_assert(buffer.has<double>(current_var_name));
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<double>(current_var_name), row_cnt);
 
@@ -444,9 +458,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::STRING:
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: string " << current_var_name
+                logdbg2 << "string " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<std::string>(current_var_name));
+                traced_assert(buffer.has<std::string>(current_var_name));
 
                 mandatory_missing =
                         map_it->findAndSetValue(tr, buffer.get<std::string>(current_var_name), row_cnt);
@@ -455,9 +469,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::JSON: // only to be used for lists
             {
-                logdbg << "ASTERIXJSONParser: parseTargetReport: json " << current_var_name
+                logdbg2 << "json " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                assert(buffer.has<json>(current_var_name));
+                traced_assert(buffer.has<json>(current_var_name));
 //                mandatory_missing =
 //                        map_it->findAndSetValue(tr, buffer.get<json>(current_var_name), row_cnt);
 
@@ -467,7 +481,7 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             }
             case PropertyDataType::TIMESTAMP: // not possible for timestamp
             default:
-                logerr << "ASTERIXJSONParser: parseTargetReport: impossible for property type "
+                logerr << "impossible for property type "
                          << Property::asString(data_type);
                 throw std::runtime_error(
                             "JsonMapping: parseTargetReport: impossible property type " +
@@ -477,7 +491,7 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
         }
         catch (exception& e)
         {
-            logerr << "ASTERIXJSONParser: parseTargetReport: caught exception '" << e.what() << "' in \n'"
+            logerr << "caught exception '" << e.what() << "' in \n'"
                      << tr.dump(4) << "' mapping " << map_it->jsonKey();
             throw e;
         }
@@ -485,7 +499,7 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
         if (mandatory_missing)
         {
             // TODO make configurable
-            logdbg << "ASTERIXJSONParser '" << name_ << "': parseTargetReport: mandatory variable '"
+            logdbg2 << "'" << name_ << "': mandatory variable '"
                      << current_var_name << "' missing in: \n"
                      << tr.dump(4);
             break;
@@ -544,7 +558,7 @@ void ASTERIXJSONParser::checkIfKeysExistsInMappings(const std::string& location,
         return;
     }
 
-    // loginf << "ASTERIXJSONParser: checkIfKeysExistsInMappings: checking key '" << location << "'";
+    // loginf << "checking key '" << location << "'";
 
     bool found = false;
 
@@ -567,7 +581,7 @@ void ASTERIXJSONParser::checkIfKeysExistsInMappings(const std::string& location,
 
     if (!found)
     {
-        loginf << "ASTERIXJSONParser: checkIfKeysExistsInMappings: creating new mapping for dbo "
+        loginf << "creating new mapping for dbcont "
                  << db_content_name_ << "'" << location << "' type " << j.type_name() << " value "
                  << j.dump() << " in array " << is_in_array;
 
@@ -592,28 +606,28 @@ bool ASTERIXJSONParser::hasMapping(unsigned int index) const
 }
 void ASTERIXJSONParser::removeMapping(unsigned int index)
 {
-    assert(hasMapping(index));
+    traced_assert(hasMapping(index));
 
     std::unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index);
 
-    loginf << "ASTERIXJSONParser: removeMapping: index " << index << " key " << mapping->jsonKey()
+    loginf << "index " << index << " key " << mapping->jsonKey()
            << " instance " << mapping->instanceId();
 
-    logdbg << "ASTERIXJSONParser: removeMapping: size " << data_mappings_.size();
+    logdbg2 << "size " << data_mappings_.size();
 
     if (mapping->active() && mapping->initialized() && mapping->hasVariable())
     {
-        if (list_.hasProperty(mapping->dboVariableName()))
+        if (list_.hasProperty(mapping->dbcontVariableName()))
             list_.removeProperty(mapping->variable().name());
 
         if (var_list_.hasVariable(mapping->variable()))
             var_list_.removeVariable(mapping->variable());
     }
 
-    logdbg << "ASTERIXJSONParser: removeMapping: removing";
+    logdbg2 << "removing";
     data_mappings_.erase(data_mappings_.begin() + index);
 
-    logdbg << "ASTERIXJSONParser: removeMapping: size " << data_mappings_.size();
+    logdbg2 << "size " << data_mappings_.size();
 }
 
 const dbContent::VariableSet& ASTERIXJSONParser::variableList() const { return var_list_; }
@@ -669,31 +683,31 @@ unsigned int ASTERIXJSONParser::category() const
 
 int ASTERIXJSONParser::rowCount(const QModelIndex& parent) const
 {
-    assert (!mapping_checks_dirty_);
+    traced_assert(!mapping_checks_dirty_);
 
     return totalEntrySize();
 }
 
 int ASTERIXJSONParser::columnCount(const QModelIndex& parent) const
 {
-    assert (!mapping_checks_dirty_);
+    traced_assert(!mapping_checks_dirty_);
 
     return table_columns_.size();
 }
 
 QVariant ASTERIXJSONParser::data(const QModelIndex& index, int role) const
 {
-    assert (!mapping_checks_dirty_);
+    traced_assert(!mapping_checks_dirty_);
 
     if (!index.isValid())
         return QVariant();
 
-    assert (index.row() >= 0);
+    traced_assert(index.row() >= 0);
     unsigned int row = index.row();
 
-    assert (row < totalEntrySize());
+    traced_assert(row < totalEntrySize());
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
     std::string col_name = table_columns_.at(index.column()).toStdString();
 
     ASTERIXJSONParser::EntryType entry_type = entryType(row);
@@ -715,20 +729,20 @@ QVariant ASTERIXJSONParser::data(const QModelIndex& index, int role) const
     case Qt::DisplayRole:
         //case Qt::EditRole:
     {
-        logdbg << "ASTERIXJSONParser: data: display role: row " << index.row() << " col " << index.column();
+        logdbg2 << "display role: row " << index.row() << " col " << index.column();
 
         if (entry_type == ASTERIXJSONParser::EntryType::ExistingMapping)
         {
             const JSONDataMapping& current_mapping = mapping(row);
 
-            logdbg << "ASTERIXJSONParser: data: got json key " << current_mapping.jsonKey();
+            logdbg2 << "got json key " << current_mapping.jsonKey();
 
             if (col_name == "Active")
                 return QVariant();
             else if (col_name == "JSON Key")
                 return current_mapping.jsonKey().c_str();
             else if (col_name == "DBContent Variable")
-                return current_mapping.dboVariableName().c_str();
+                return current_mapping.dbcontVariableName().c_str();
             else
                 return QVariant();
         }
@@ -755,7 +769,7 @@ QVariant ASTERIXJSONParser::data(const QModelIndex& index, int role) const
         {
             const std::unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index.row());
 
-            logdbg << "ASTERIXJSONParser: data: got json key " << mapping->jsonKey();
+            logdbg2 << "got json key " << mapping->jsonKey();
 
             if (col_name == "JSON Key")
             {
@@ -798,8 +812,8 @@ bool ASTERIXJSONParser::setData(const QModelIndex& index, const QVariant& value,
     {
         unsigned int row = index.row();
 
-        assert (row < totalEntrySize());
-        assert (entryType(row) == EntryType::ExistingMapping);
+        traced_assert(row < totalEntrySize());
+        traced_assert(entryType(row) == EntryType::ExistingMapping);
         mapping(row).active(!mapping(row).active());
 
         emit rowContentChangedSignal(row);
@@ -812,7 +826,7 @@ QVariant ASTERIXJSONParser::headerData(int section, Qt::Orientation orientation,
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -840,10 +854,10 @@ Qt::ItemFlags ASTERIXJSONParser::flags(const QModelIndex& index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     unsigned int row = index.row();
-    assert (row < totalEntrySize());
+    traced_assert(row < totalEntrySize());
 
     if (index.column() == 0 && entryType(row) == EntryType::ExistingMapping)
     {

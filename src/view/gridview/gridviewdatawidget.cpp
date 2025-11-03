@@ -20,6 +20,9 @@
 #include "gridview.h"
 #include "gridviewchart.h"
 #include "grid2d.h"
+#include "grid2dlayer.h"
+#include "grid2drendersettings.h"
+#include "grid2dlayerrenderer.h"
 
 #include "viewvariable.h"
 #include "viewpointgenerator.h"
@@ -56,7 +59,7 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 :   VariableViewStashDataWidget(view_widget, view_widget->getView(), false, parent, f)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     main_layout_ = new QHBoxLayout();
     main_layout_->setMargin(0);
@@ -80,7 +83,7 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 */
 GridViewDataWidget::~GridViewDataWidget()
 {
-    logdbg << "GridViewDataWidget: dtor";
+    logdbg;
 }
 
 /**
@@ -147,7 +150,7 @@ void GridViewDataWidget::resetStashDependentData()
 
 /**
 */
-bool GridViewDataWidget::updateVariableDisplay() 
+ViewDataWidget::DrawState GridViewDataWidget::updateVariableDisplay() 
 {
     return updateGridChart();
 }
@@ -156,7 +159,7 @@ bool GridViewDataWidget::updateVariableDisplay()
 */
 void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 {
-    loginf << "GridViewDataWidget: processStash";
+    loginf;
 
     const auto& data_ranges = getStash().dataRanges();
 
@@ -173,16 +176,16 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     if (!has_data)
         return;
 
-    auto bounds = getXYBounds(true);
+    auto bounds = getXYVariableBounds(true);
     if (!bounds.has_value() || bounds->isEmpty())
     {
-        loginf << "GridViewDataWidget: processStash: bounds empty, skipping...";
+        loginf << "bounds empty, skipping...";
         return;
     }
-    assert(bounds->isValid());
+    traced_assert(bounds->isValid());
 
-    auto z_bounds = getZBounds(false);
-    assert(z_bounds.has_value());
+    auto z_bounds = getZVariableBounds(false);
+    traced_assert(z_bounds.has_value());
 
     const auto& settings = view_->settings();
 
@@ -194,11 +197,11 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     bool ok = grid_->create(bounds.value(), res, "wgs84", true, &err);
 
     if (!ok)
-        logerr << "GridViewDataWidget: processStash: creation of grid failed: " << err;
+        logerr << "creation of grid failed: " << err;
 
-    assert(ok);
+    traced_assert(ok);
 
-    loginf << "GridViewDataWidget: processStash: Created grid of " << grid_->numCellsX() << "x" << grid_->numCellsY();
+    loginf << "created grid of " << grid_->numCellsX() << "x" << grid_->numCellsY();
 
     size_t num_null_values = 0;
 
@@ -208,10 +211,10 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
         const auto& y_values = dbc_values.second.variable_stashes[ 1 ].values;
         const auto& z_values = dbc_values.second.variable_stashes[ 2 ].values;
 
-        assert(x_values.size() == y_values.size() &&
+        traced_assert(x_values.size() == y_values.size() &&
                y_values.size() == z_values.size());
 
-        loginf << "GridViewDataWidget: processStash: dbcontent " << dbc_values.first
+        loginf << "dbcontent " << dbc_values.first
                << " #x " << x_values.size()
                << " #y " << y_values.size()
                << " #z " << z_values.size();
@@ -228,16 +231,16 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
     addNullCount(num_null_values);
 
-    loginf << "GridViewDataWidget: processStash:"
+    loginf << "start"
            << " added " << grid_->numAdded() 
            << " oor "   << grid_->numOutOfRange() 
            << " inf "   << grid_->numInf();
 
-    loginf << "GridViewDataWidget: processStash: getting layer";
+    loginf << "getting layer";
 
     auto layer_name = grid2d::valueTypeToString((grid2d::ValueType)settings.value_type);
 
-    loginf << "GridViewDataWidget: processStash: value type = " << layer_name;
+    loginf << "value type = " << layer_name;
 
     grid_->addToLayers(grid_layers_, layer_name, (grid2d::ValueType)settings.value_type);
 
@@ -248,25 +251,25 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
     if (range.has_value())
     {
-        loginf << "GridViewDataWidget: processStash: grid range min " << range->first << " max " << range->second;
+        loginf << "grid range min " << range->first << " max " << range->second;
 
         grid_value_min_ = range->first;
         grid_value_max_ = range->second;
 
-        assert(grid_value_min_.value() <= grid_value_max_.value());
+        traced_assert(grid_value_min_.value() <= grid_value_max_.value());
     }
 
-    loginf << "GridViewDataWidget: processStash: done, generated " << grid_layers_.numLayers() << " layers";
+    loginf << "done, generated " << grid_layers_.numLayers() << " layers";
 }
 
 /**
 */
-void GridViewDataWidget::updateFromAnnotations()
+bool GridViewDataWidget::updateFromAnnotations()
 {
-    loginf << "GridViewDataWidget: updateFromAnnotations";
+    loginf;
 
     if (!view_->hasCurrentAnnotation())
-        return;
+        return false;
 
     const auto& anno = view_->currentAnnotation();
 
@@ -277,20 +280,20 @@ void GridViewDataWidget::updateFromAnnotations()
     const auto& feature = anno.feature_json;
 
     if (!feature.is_object() || !feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid))
-        return;
+        return false;
 
     std::unique_ptr<Grid2DLayer> layer(new Grid2DLayer);
     if (!layer->fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ]))
     {
-        logerr << "GridViewDataWidget: updateFromAnnotations: could not read grid layer";
-        return;
+        logerr << "could not read grid layer";
+        return false;
     }
 
     if (layer->data.cols() < 1 || 
         layer->data.rows() < 1)
     {
-        logerr << "GridViewDataWidget: updateFromAnnotations: grid layer empty";
-        return;
+        logerr << "grid layer empty";
+        return false;
     }
     
     grid_layers_.addLayer(std::move(layer));
@@ -302,17 +305,17 @@ void GridViewDataWidget::updateFromAnnotations()
 
     if (range.has_value())
     {
-        loginf << "GridViewDataWidget: updateFromAnnotations: grid range min " << range->first << " max " << range->second;
+        loginf << "grid range min " << range->first << " max " << range->second;
 
         grid_value_min_ = range->first;
         grid_value_max_ = range->second;
 
-        assert(grid_value_min_.value() <= grid_value_max_.value());
+        traced_assert(grid_value_min_.value() <= grid_value_max_.value());
     }
 
-    
+    loginf << "done, generated " << grid_layers_.numLayers() << " layers";
 
-    loginf << "GridViewDataWidget: updateFromAnnotations: done, generated " << grid_layers_.numLayers() << " layers";
+    return true;
 }
 
 /**
@@ -358,42 +361,42 @@ GridViewDataTool GridViewDataWidget::selectedTool() const
 */
 QPixmap GridViewDataWidget::renderPixmap()
 {
-    assert (grid_chart_);
+    traced_assert(grid_chart_);
     return grid_chart_->grab();
 }
 
 /**
 */
-boost::optional<QRectF> GridViewDataWidget::getXYBounds(bool fix_small_ranges) const
+boost::optional<QRectF> GridViewDataWidget::getXYVariableBounds(bool fix_small_ranges) const
 {
-    return getPlanarBounds(0, 1, false, fix_small_ranges);
+    return getPlanarVariableBounds(0, 1, false, fix_small_ranges);
 }
 
 /**
 */
-boost::optional<std::pair<double, double>> GridViewDataWidget::getZBounds(bool fix_small_ranges) const
+boost::optional<std::pair<double, double>> GridViewDataWidget::getZVariableBounds(bool fix_small_ranges) const
 {
-    return getBounds(2, false, fix_small_ranges);
+    return getVariableBounds(2, false, fix_small_ranges);
 }
 
 /**
 */
 void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
 {
-    loginf << "GridViewDataWidget: rectangleSelectedSlot";
+    loginf;
 
     if (grid_chart_ && grid_chart_->chart())
     {
         if (selected_tool_ == GV_ZOOM_RECT_TOOL)
         {
-            loginf << "GridViewDataWidget: rectangleSelectedSlot: zoom";
+            loginf << "zoom";
 
             //TODO: prevent from going nuts when zero rect is passed!
             grid_chart_->zoom(p1, p2);
         }
         else if (selected_tool_ == GV_SELECT_TOOL)
         {
-            loginf << "GridViewDataWidget: rectangleSelectedSlot: select";
+            loginf << "select";
 
             selectData(std::min(p1.x(), p2.x()), std::max(p1.x(), p2.x()), std::min(p1.y(), p2.y()), std::max(p1.y(), p2.y()), 0, 1);
         }
@@ -410,11 +413,11 @@ void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
 */
 void GridViewDataWidget::invertSelectionSlot()
 {
-    loginf << "GridViewDataWidget: invertSelectionSlot";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -433,11 +436,11 @@ void GridViewDataWidget::invertSelectionSlot()
 */
 void GridViewDataWidget::clearSelectionSlot()
 {
-    loginf << "GridViewDataWidget: clearSelectionSlot";
+    loginf;
 
     for (auto& buf_it : viewData())
     {
-        assert (buf_it.second->has<bool>(DBContent::selected_var.name()));
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
@@ -451,7 +454,7 @@ void GridViewDataWidget::clearSelectionSlot()
 */
 void GridViewDataWidget::resetZoomSlot()
 {
-    loginf << "GridViewDataWidget: resetZoomSlot";
+    loginf;
 
     if (grid_chart_)
         grid_chart_->resetZoom();
@@ -460,18 +463,13 @@ void GridViewDataWidget::resetZoomSlot()
 
 /**
 */
-bool GridViewDataWidget::updateGridChart()
+ViewDataWidget::DrawState GridViewDataWidget::updateGridChart()
 {
-    bool has_data = (grid_layers_.numLayers() > 0 && variablesOk());
-
     resetGridChart();
     updateRendering();
 
-    if (grid_rendering_.isNull() || grid_roi_.isEmpty())
-        has_data = false;
-
     QtCharts::QChart* chart = new QtCharts::QChart();
-    updateChart(chart, has_data);
+    auto draw_state = updateChart(chart);
     
     grid_chart_.reset(new QtCharts::GridViewChart(this, chart));
     grid_chart_->setObjectName("chart_view");
@@ -497,14 +495,14 @@ bool GridViewDataWidget::updateGridChart()
         legend_->setVisible(true);
     }
 
-    return has_data;
+    return draw_state;
 }
 
 /**
 */
 void GridViewDataWidget::updateRendering()
 {
-    loginf << "GridViewDataWidget: updateRendering: rendering";
+    loginf << "rendering";
 
     custom_range_invalid_ = false;
     colormap_.reset();
@@ -516,7 +514,7 @@ void GridViewDataWidget::updateRendering()
     const auto& layer    = grid_layers_.layer(0);
     const auto& settings = view_->settings();
 
-    loginf << "GridViewDataWidget: updateRendering: input range " 
+    loginf << "input range " 
            << "min = " 
            << (grid_value_min_.has_value() ? std::to_string(grid_value_min_.value()) : "undef") << " "
            << "max = " 
@@ -543,14 +541,14 @@ void GridViewDataWidget::updateRendering()
             {
                 range.first = vmin.value();
 
-                if (vmin.value() > grid_value_max_)
+                if (vmin.value() > grid_value_max_.value())
                     range.second = vmin.value();
             }
             else if (vmax.has_value() && !vmin.has_value())
             {
                 range.second = vmax.value();
 
-                if (vmax.value() < grid_value_min_)
+                if (vmax.value() < grid_value_min_.value())
                     range.first = vmax.value();
             }
             else
@@ -559,7 +557,7 @@ void GridViewDataWidget::updateRendering()
             }
         }
 
-        loginf << "GridViewDataWidget: updateRendering: combined range min = " << range.first << " max = " << range.second;
+        loginf << "combined range min = " << range.first << " max = " << range.second;
 
         auto dtype = view_->currentLegendDataType();
 
@@ -569,7 +567,7 @@ void GridViewDataWidget::updateRendering()
                                                                       range.second, 
                                                                       settings.render_color_num_steps);
 
-        loginf << "GridViewDataWidget: updateRendering: suggested color steps = " << num_steps;
+        loginf << "suggested color steps = " << num_steps;
 
         //create color map
         if (num_steps == 1)
@@ -611,8 +609,17 @@ void GridViewDataWidget::updateRendering()
 
 /**
 */
-void GridViewDataWidget::updateChart(QtCharts::QChart* chart, bool has_data)
+ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* chart)
 {
+    bool has_valid_grid_data = grid_layers_.numLayers() > 0 &&
+                               !grid_rendering_.isNull() && 
+                               !grid_roi_.isEmpty();
+    
+    
+    bool has_data = has_valid_grid_data && (variablesOk() || view_->showsAnnotation());
+
+    auto draw_state = ViewDataWidget::DrawState::NotDrawn;
+
     chart->layout()->setContentsMargins(0, 0, 0, 0);
     chart->setBackgroundRoundness(0);
     chart->setDropShadowEnabled(false);
@@ -624,15 +631,15 @@ void GridViewDataWidget::updateChart(QtCharts::QChart* chart, bool has_data)
         chart->createDefaultAxes();
 
         //config x axis
-        loginf << "GridViewDataWidget: updateDataSeries: title x ' "
+        loginf << "title x ' "
                << view_->variable(0).description() << "'";
-        assert (chart->axes(Qt::Horizontal).size() == 1);
+        traced_assert(chart->axes(Qt::Horizontal).size() == 1);
         chart->axes(Qt::Horizontal).at(0)->setTitleText(x_axis_name_.c_str());
 
         //config y axis
-        loginf << "GridViewDataWidget: updateDataSeries: title y ' "
+        loginf << "title y ' "
                << view_->variable(1).description() << "'";
-        assert (chart->axes(Qt::Vertical).size() == 1);
+        traced_assert(chart->axes(Qt::Vertical).size() == 1);
         chart->axes(Qt::Vertical).at(0)->setTitleText(y_axis_name_.c_str());
     };
 
@@ -652,6 +659,8 @@ void GridViewDataWidget::updateChart(QtCharts::QChart* chart, bool has_data)
         chart->addSeries(series);
 
         createAxes();
+
+        draw_state = ViewDataWidget::DrawState::DrawnContent;
     }
     else
     {
@@ -670,9 +679,13 @@ void GridViewDataWidget::updateChart(QtCharts::QChart* chart, bool has_data)
         chart->axes(Qt::Vertical).at(0)->setLabelsVisible(false);
         chart->axes(Qt::Vertical).at(0)->setGridLineVisible(false);
         chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
+
+        draw_state = ViewDataWidget::DrawState::Drawn;
     }
 
     chart->update();
+
+    return draw_state;
 }
 
 /**
@@ -686,8 +699,8 @@ void GridViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "num_selected"] = getStash().selected_count_;
     info[ "num_nan"     ] = getStash().nan_value_count_;
 
-    auto xy_bounds    = getXYBounds(false);
-    auto z_bounds     = getZBounds(false);
+    auto xy_bounds    = getXYVariableBounds(false);
+    auto z_bounds     = getZVariableBounds(false);
     bool bounds_valid = xy_bounds.has_value() && xy_bounds->isValid() && z_bounds.has_value();
 
     info[ "data_bounds_valid" ] = bounds_valid;
@@ -723,6 +736,6 @@ boost::optional<std::pair<QImage, RasterReference>> GridViewDataWidget::currentG
 */
 const ColorLegend& GridViewDataWidget::currentLegend() const
 {
-    assert(legend_);
+    traced_assert(legend_);
     return legend_->currentLegend();
 }

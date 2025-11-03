@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "reconstructortaskanalysiswidget.h"
 #include "reconstructortask.h"
 #include "stringconv.h"
@@ -27,6 +44,8 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     QFormLayout* combo_layout = new QFormLayout;
     //combo_layout->setMargin(0);
     combo_layout->setFormAlignment(Qt::AlignRight | Qt::AlignTop);
+
+    //debug options
 
     debug_check_ = new QCheckBox ();
     connect(debug_check_, &QCheckBox::clicked,
@@ -73,6 +92,42 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     if (probimm_reconst_ && add_debug_stuff)
         combo_layout->addRow("Debug Outlier Detection", debug_outliers_check_);
 
+    debug_reference_calculation_check_ = new QCheckBox();
+    connect(debug_reference_calculation_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_reference_calculation_ = ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug Reference Calculation", debug_reference_calculation_check_);
+
+    debug_kalman_chains_check_ = new QCheckBox();
+    connect(debug_kalman_chains_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_kalman_chains_= ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug Kalman Chains", debug_kalman_chains_check_);
+
+    debug_jpda_check_ = new QCheckBox();
+    connect(debug_jpda_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_jpda_= ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug JPDA", debug_jpda_check_);
+
+    debug_tentative_targets_check_ = new QCheckBox();
+    connect(debug_tentative_targets_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_tentative_targets_= ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Debug Tentative Targets", debug_tentative_targets_check_);
+
+    debug_write_reconstruction_viewpoints_check_ = new QCheckBox();
+    connect(debug_write_reconstruction_viewpoints_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().debug_write_reconstruction_viewpoints_ = ok; });
+
+    if (add_debug_stuff)
+        combo_layout->addRow("Write Debug Reconstruction View Points", debug_write_reconstruction_viewpoints_check_);
+
+    //analyse options
 
     analyze_check_= new QCheckBox();
     connect(analyze_check_, &QCheckBox::clicked,
@@ -118,28 +173,56 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     if (probimm_reconst_)
         combo_layout->addRow("Analyse Geo.Altitude Correction", analyze_geo_altitude_correction_check_);
 
-    // reference stuff
+    // statistics options
 
-    debug_reference_calculation_check_ = new QCheckBox();
-    connect(debug_reference_calculation_check_, &QCheckBox::clicked,
-            this, [ = ] (bool ok) { task_.debugSettings().debug_reference_calculation_ = ok; });
+    stats_check_ = new QCheckBox();
+    connect(stats_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_ = ok; });
 
-    if (add_debug_stuff)
-        combo_layout->addRow("Debug Reference Calculation", debug_reference_calculation_check_);
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Statistics", stats_check_);
 
-    debug_kalman_chains_check_ = new QCheckBox();
-    connect(debug_kalman_chains_check_, &QCheckBox::clicked,
-            this, [ = ] (bool ok) { task_.debugSettings().debug_kalman_chains_= ok; });
+    stats_reference_calculation_check_ = new QCheckBox();
+    connect(stats_reference_calculation_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_reference_calculation_ = ok; });
 
-    if (add_debug_stuff)
-        combo_layout->addRow("Debug Kalman Chains", debug_kalman_chains_check_);
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Reference Calculation Statistics", stats_reference_calculation_check_);
 
-    debug_write_reconstruction_viewpoints_check_ = new QCheckBox();
-    connect(debug_write_reconstruction_viewpoints_check_, &QCheckBox::clicked,
-            this, [ = ] (bool ok) { task_.debugSettings().debug_write_reconstruction_viewpoints_ = ok; });
+    stats_kalman_chains_check_ = new QCheckBox();
+    connect(stats_kalman_chains_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_kalman_chains_ = ok; });
 
-    if (add_debug_stuff)
-        combo_layout->addRow("Write Debug Reconstruction View Points", debug_write_reconstruction_viewpoints_check_);
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Kalman Chains Statistics", stats_kalman_chains_check_);
+
+    stats_jpda_check_ = new QCheckBox();
+    connect(stats_jpda_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_jpda_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect JPDA Statistics", stats_jpda_check_);
+
+    stats_tentative_targets_check_ = new QCheckBox();
+    connect(stats_tentative_targets_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_tentative_targets_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Tentative Target Statistics", stats_tentative_targets_check_);
+
+    stats_adsb_check_ = new QCheckBox();
+    connect(stats_adsb_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_adsb_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect ADSB Target Statistics", stats_adsb_check_);
+
+    stats_association_check_ = new QCheckBox();
+    connect(stats_association_check_, &QCheckBox::clicked,
+            this, [ = ] (bool ok) { task_.debugSettings().stats_association_ = ok; });
+
+    if (probimm_reconst_)
+        combo_layout->addRow("Collect Association Statistics", stats_association_check_);
 
     setLayout(combo_layout);
 
@@ -152,7 +235,7 @@ ReconstructorTaskAnalysisWidget::~ReconstructorTaskAnalysisWidget()
 
 void ReconstructorTaskAnalysisWidget::updateValues()
 {
-    loginf << "ReconstructorTaskDebugWidget: updateValues";
+    loginf;
 
     bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
 
@@ -171,72 +254,99 @@ void ReconstructorTaskAnalysisWidget::updateValues()
         task_.debugSettings().debug_write_reconstruction_viewpoints_ = false;
     }
 
-    assert (debug_check_);
+    traced_assert(debug_check_);
     debug_check_->setChecked(task_.debugSettings().debug_);
 
-    assert (utns_edit_);
+    traced_assert(utns_edit_);
     utns_edit_->setText(String::compress(task_.debugSettings().debug_utns_, ',').c_str());
 
-    assert (rec_nums_edit_);
+    traced_assert(rec_nums_edit_);
     rec_nums_edit_->setText(String::compress(task_.debugSettings().debug_rec_nums_, ',').c_str());
 
-    assert (timestamp_min_edit_);
+    traced_assert(timestamp_min_edit_);
     if (!task_.debugSettings().debug_timestamp_min_.is_not_a_date_time())
         timestamp_min_edit_->setText(QString::fromStdString(
             Utils::Time::toString(task_.debugSettings().debug_timestamp_min_)));
     else
         timestamp_min_edit_->setText("");
 
-    assert (timestamp_max_edit_);
+    traced_assert(timestamp_max_edit_);
     if (!task_.debugSettings().debug_timestamp_max_.is_not_a_date_time())
         timestamp_max_edit_->setText(QString::fromStdString(
             Utils::Time::toString(task_.debugSettings().debug_timestamp_max_)));
     else
         timestamp_max_edit_->setText("");
 
-    assert (debug_association_check_);
+    traced_assert(debug_association_check_);
     debug_association_check_->setChecked(task_.debugSettings().debug_association_);
 
-    assert (debug_outliers_check_);
+    traced_assert(debug_outliers_check_);
     debug_outliers_check_->setChecked(task_.debugSettings().debug_outlier_detection_);
 
-    assert (analyze_check_);
+    traced_assert(debug_reference_calculation_check_);
+    debug_reference_calculation_check_->setChecked(task_.debugSettings().debug_reference_calculation_);
+
+    traced_assert(debug_kalman_chains_check_);
+    debug_kalman_chains_check_->setChecked(task_.debugSettings().debug_kalman_chains_);
+
+    traced_assert(debug_jpda_check_);
+    debug_jpda_check_->setChecked(task_.debugSettings().debug_jpda_);
+
+    traced_assert(debug_tentative_targets_check_);
+    debug_tentative_targets_check_->setChecked(task_.debugSettings().debug_tentative_targets_);
+
+    traced_assert(debug_write_reconstruction_viewpoints_check_);
+    debug_write_reconstruction_viewpoints_check_->setChecked(
+        task_.debugSettings().debug_write_reconstruction_viewpoints_);
+
+    traced_assert(analyze_check_);
     analyze_check_->setChecked(task_.debugSettings().analyze_);
 
-    assert (analyze_association_check_);
+    traced_assert(analyze_association_check_);
     analyze_association_check_->setChecked(task_.debugSettings().analyze_association_);
 
-    assert (analyze_outliers_check_);
+    traced_assert(analyze_outliers_check_);
     analyze_outliers_check_->setChecked(task_.debugSettings().analyze_outlier_detection_);
     analyze_outliers_check_->setDisabled(true);
 
     // acc est
 
-    assert (analyze_accuracy_est_check_);
+    traced_assert(analyze_accuracy_est_check_);
     analyze_accuracy_est_check_->setChecked(task_.debugSettings().analyze_accuracy_estimation_);
 
-    assert (analyze_bias_correction_check_);
+    traced_assert(analyze_bias_correction_check_);
     analyze_bias_correction_check_->setChecked(task_.debugSettings().analyze_bias_correction_);
 
-    assert (analyze_geo_altitude_correction_check_);
+    traced_assert(analyze_geo_altitude_correction_check_);
     analyze_geo_altitude_correction_check_->setChecked(task_.debugSettings().analyze_geo_altitude_correction_);
 
-    // reference stuff
+    // stats
 
-    assert (debug_reference_calculation_check_);
-    debug_reference_calculation_check_->setChecked(task_.debugSettings().debug_reference_calculation_);
+    traced_assert(stats_check_);
+    stats_check_->setChecked(task_.debugSettings().stats_);
 
-    assert (debug_kalman_chains_check_);
-    debug_kalman_chains_check_->setChecked(task_.debugSettings().debug_kalman_chains_);
+    traced_assert(stats_reference_calculation_check_);
+    stats_reference_calculation_check_->setChecked(task_.debugSettings().stats_reference_calculation_);
 
-    assert (debug_write_reconstruction_viewpoints_check_);
-    debug_write_reconstruction_viewpoints_check_->setChecked(
-        task_.debugSettings().debug_write_reconstruction_viewpoints_);
+    traced_assert(stats_kalman_chains_check_);
+    stats_kalman_chains_check_->setChecked(task_.debugSettings().stats_kalman_chains_);
+
+    traced_assert(stats_jpda_check_);
+    stats_jpda_check_->setChecked(task_.debugSettings().stats_jpda_);
+
+    traced_assert(stats_tentative_targets_check_);
+    stats_tentative_targets_check_->setChecked(task_.debugSettings().stats_tentative_targets_);
+
+    traced_assert(stats_adsb_check_);
+    stats_adsb_check_->setChecked(task_.debugSettings().stats_adsb_);
+
+    traced_assert(stats_association_check_);
+    stats_association_check_->setChecked(task_.debugSettings().stats_association_);
 }
 
 void ReconstructorTaskAnalysisWidget::utnsChangedSlot(const QString& value)
 {
-    loginf << "ReconstructorTaskDebugWidget: utnsChangedSlot: value '" << value.toStdString() << "'";
+    loginf << "value '" << value.toStdString() << "'";
 
     set<unsigned int> values_tmp;
     vector<string> split_str = String::split(value.toStdString(), ',');
@@ -249,7 +359,7 @@ void ReconstructorTaskAnalysisWidget::utnsChangedSlot(const QString& value)
 
         if (!ok)
         {
-            logerr << "ReconstructorTaskDebugWidget: utnsChangedSlot: utn '" << tmp_str << "' not valid";
+            logerr << "utn '" << tmp_str << "' not valid";
             break;
         }
 
@@ -261,7 +371,7 @@ void ReconstructorTaskAnalysisWidget::utnsChangedSlot(const QString& value)
 
 void ReconstructorTaskAnalysisWidget::recNumsChangedSlot(const QString& value)
 {
-    loginf << "ReconstructorTaskDebugWidget: recNumsChangedSlot: value '" << value.toStdString() << "'";
+    loginf << "value '" << value.toStdString() << "'";
 
     set<unsigned long> values_tmp;
     vector<string> split_str = String::split(value.toStdString(), ',');
@@ -274,7 +384,7 @@ void ReconstructorTaskAnalysisWidget::recNumsChangedSlot(const QString& value)
 
         if (!ok)
         {
-            logerr << "ReconstructorTaskDebugWidget: utnsChangedSlot: utn '" << tmp_str << "' not valid";
+            logerr << "utn '" << tmp_str << "' not valid";
             break;
         }
 
@@ -307,13 +417,13 @@ void ReconstructorTaskAnalysisWidget::timestampsChanged()
     task_.debugSettings().debug_timestamp_min_ = ts_min.has_value() ? ts_min.value() : boost::posix_time::ptime();
 
     if (ts_min.has_value())
-        loginf << "ReconstructorTaskDebugWidget: timestampsChanged: set ts min to "
+        loginf << "set ts min to "
                << Utils::Time::toString(ts_min.value());
 
     auto ts_max = checkTimestamp(timestamp_max_edit_);
     task_.debugSettings().debug_timestamp_max_ = ts_max.has_value() ? ts_max.value() : boost::posix_time::ptime();
 
     if (ts_max.has_value())
-        loginf << "ReconstructorTaskDebugWidget: timestampsChanged: set ts max to "
+        loginf << "set ts max to "
                << Utils::Time::toString(ts_max.value());
 }

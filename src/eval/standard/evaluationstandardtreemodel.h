@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONSTANDARDTREEMODEL_H
-#define EVALUATIONSTANDARDTREEMODEL_H
+#pragma once
 
 #include <QAbstractItemModel>
 #include <QModelIndex>
@@ -55,5 +54,3 @@ private:
 
     EvaluationStandardTreeItem* root_item_;
 };
-
-#endif // EVALUATIONSTANDARDTREEMODEL_H

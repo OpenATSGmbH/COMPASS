@@ -1,9 +1,26 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "evaluationdialog.h"
 #include "evaluationcalculator.h"
 #include "evaluationsettings.h"
 #include "evaluationmaintabwidget.h"
-#include "evaluationfiltertabwidget.h"
+//#include "evaluationfiltertabwidget.h"
 #include "evaluationstandardtabwidget.h"
 #include "evaluationreporttabwidget.h"
 #include "evaluationdatasourcewidget.h"
@@ -39,8 +56,8 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator)
     main_tab_widget_.reset(new EvaluationMainTabWidget(calculator_, *this));
     tab_widget->addTab(main_tab_widget_.get(), "Main");
 
-    filter_widget_.reset(new EvaluationFilterTabWidget(calculator_));
-    tab_widget->addTab(filter_widget_.get(), "Filter");
+    // filter_widget_.reset(new EvaluationFilterTabWidget(calculator_));
+    // tab_widget->addTab(filter_widget_.get(), "Filter");
 
     std_tab_widget_.reset(new EvaluationStandardTabWidget(calculator_));
     tab_widget->addTab(std_tab_widget_.get(), "Standard");
@@ -80,7 +97,7 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator)
     updateDataSources();
     updateSectors();
     updateButtons();
-    updateFilterWidget();
+    //updateFilterWidget();
 }
 
 /**
@@ -107,17 +124,17 @@ void EvaluationDialog::updateSectors()
 
 /**
  */
-void EvaluationDialog::updateFilterWidget()
-{
-    assert (filter_widget_);
-    filter_widget_->update();
-}
+// void EvaluationDialog::updateFilterWidget()
+// {
+//     traced_assert(filter_widget_);
+//     filter_widget_->update();
+// }
 
 /**
  */
 void EvaluationDialog::updateButtons()
 {
-    assert (run_button_);
+    traced_assert(run_button_);
 
     auto r = calculator_.canEvaluate();
 

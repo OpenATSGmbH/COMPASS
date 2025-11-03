@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "dbcontent/variable/variablecreatedialog.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
@@ -154,9 +171,9 @@ std::string VariableCreateDialog::dbColumnName() const
 
 void VariableCreateDialog::nameChangedSlot(const QString& name)
 {
-    loginf << "VariableCreateDialog: nameChangedSlot: name '" << name.toStdString() << "'";
+    loginf << "name '" << name.toStdString() << "'";
 
-    assert (db_column_edit_);
+    traced_assert(db_column_edit_);
 
     name_ = name.toStdString();
 
@@ -183,16 +200,16 @@ void VariableCreateDialog::shortNameChangedSlot(const QString& name)
 
 void VariableCreateDialog::commentChangedSlot()
 {
-    assert (description_edit_);
+    traced_assert(description_edit_);
 
     description_ = description_edit_->document()->toPlainText().toStdString();
 }
 
 void VariableCreateDialog::dbColumnChangedSlot(const QString& name)
 {
-    loginf << "VariableCreateDialog: dbColumnChangedSlot: name '" << name.toStdString() << "'";
+    loginf << "name '" << name.toStdString() << "'";
 
-    assert (db_column_edit_);
+    traced_assert(db_column_edit_);
 
     db_column_name_ = name.toStdString();
 
@@ -212,9 +229,9 @@ void VariableCreateDialog::dbColumnChangedSlot(const QString& name)
 
 void VariableCreateDialog::checkSettings()
 {
-    assert (name_edit_);
-    assert (db_column_edit_);
-    assert (ok_button_);
+    traced_assert(name_edit_);
+    traced_assert(db_column_edit_);
+    traced_assert(ok_button_);
 
     // check name
     string name_quicktip;

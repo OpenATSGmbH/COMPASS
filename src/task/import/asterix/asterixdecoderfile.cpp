@@ -16,11 +16,15 @@
  */
 
 #include "asterixdecoderfile.h"
+
+#include "asynctask.h"
+
 #include "compass.h"
 #include "logger.h"
-
 #include "files.h"
 #include "stringconv.h"
+
+#include <boost/filesystem/path.hpp>
 
 const std::vector<std::string> ASTERIXDecoderFile::SupportedArchives = { ".zip", ".gz", ".tgz", ".tar" };
 
@@ -35,7 +39,7 @@ ASTERIXDecoderFile::ASTERIXDecoderFile(ASTERIXImportSource::SourceType source_ty
 :   ASTERIXDecoderBase(source, settings)
 ,   source_type_      (source_type)
 {
-    assert(source_.isFileType() && source_.sourceType() == fileSourceType());
+    traced_assert(source_.isFileType() && source_.sourceType() == fileSourceType());
 }
 
 /**
@@ -81,7 +85,7 @@ bool ASTERIXDecoderFile::atEnd() const
 */
 void ASTERIXDecoderFile::processCurrentFile()
 {
-    assert(!atEnd());
+    traced_assert(!atEnd());
 
     auto& current_file = source_.file_infos_.at(current_file_idx_);
 
@@ -109,7 +113,7 @@ void ASTERIXDecoderFile::processCurrentFile()
         COMPASS::instance().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' decode error '" << e.what() << "'";
 
-        logerr << "ASTERIXDecoderFile: processCurrentFile: decode error '" << e.what() << "'";
+        logerr << "decode error '" << e.what() << "'";
         logError(e.what());
     }
     catch(...)
@@ -117,7 +121,7 @@ void ASTERIXDecoderFile::processCurrentFile()
         COMPASS::instance().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' unknown decode error";
 
-        logerr << "ASTERIXDecoderFile: processCurrentFile: unknown decode error";
+        logerr << "unknown decode error";
         logError("Unknown decode error");
     }
 }
@@ -158,18 +162,51 @@ bool ASTERIXDecoderFile::canDecode_impl() const
 
 /**
  */
-void ASTERIXDecoderFile::checkDecoding_impl(bool force_recompute) const
+void ASTERIXDecoderFile::checkDecoding_impl(bool force_recompute, AsyncTaskProgressWrapper* progress) const
 {
-    //run decode check on all files
+    //run file check on all files
+    if (progress)
+        progress->setMessage("Running preliminary file check...", false, true);
+
     for (auto& fi : source_.file_infos_)
-        checkDecoding(fi, force_recompute);
+    {
+        checkFile(fi, force_recompute, false);
+    }
+
+    //run decode check on all files
+    if (progress) 
+    {
+        progress->setMessage("Checking file decoding...", false, true);
+
+        int num_steps = 0;
+        for (const auto& fi : source_.file_infos_)
+        {
+            if (fi.decoding_tested && !force_recompute)
+                continue;
+            if (fi.hasError())
+                continue;
+
+            num_steps += (fi.hasSections() ? (int)fi.sections.size() : 1);
+        }
+
+        //only set steps if we have more than 1 thing to do, otherwise use busy progress
+        if (num_steps > 1)
+            progress->setSteps(0, num_steps, true, true);
+    }
+
+    for (auto& fi : source_.file_infos_)
+    {
+        checkDecoding(fi, force_recompute, progress);
+    }
 }
 
 /**
  * Checks if a file can be decoded.
 */
-void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
-                                       bool force_recompute) const
+void ASTERIXDecoderFile::checkFile(ASTERIXImportFileInfo& file_info,
+                                   bool force_recompute,
+                                   bool check_decoding,
+                                   AsyncTaskProgressWrapper* progress) const
 {
     if (file_info.decoding_tested && !force_recompute)
         return;
@@ -210,29 +247,68 @@ void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
     {
         file_info.error.errtype = ASTERIXImportFileError::ErrorType::CouldNotParse;
         file_info.error.errinfo = error;
+
+        loginf << "error: " << file_info.error.errinfo;
+
         return;
     }
+
+    if (check_decoding)
+        checkDecoding(file_info, force_recompute, progress);
+}
+
+/**
+ * Checks if a file can be decoded.
+*/
+void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
+                                       bool force_recompute,
+                                       AsyncTaskProgressWrapper* progress) const
+{
+    //had an error during file check? => do not check decoding
+    if (file_info.hasError())
+        return;
+    
+    if (file_info.decoding_tested && !force_recompute)
+        return;
 
     //if file has subsections check decoding for each of them...
     if (file_info.hasSections())
     {
         for (size_t i = 0; i < file_info.sections.size(); ++i)
         {
-            bool section_ok = checkDecoding(file_info, (int)i, file_info.sections[ i ].error);
+            if (progress) 
+            {
+                std::string msg = "Checking decoding of file '" + boost::filesystem::path(file_info.filename).filename().string() + "' section " + std::to_string(i + 1);
+                progress->setMessage(msg, false, true);
+            }
 
+            bool section_ok = checkDecoding(file_info, (int)i, file_info.sections[ i ].contentinfo, file_info.sections[ i ].error);
+            
             //set section to unused?
             if (!section_ok)
                 file_info.sections[ i ].used = false;
+
+            if (progress) 
+                progress->increment(1, true);
         }
         return;
     }
 
+    if (progress) 
+    {
+        std::string msg = "Checking decoding of file '" + boost::filesystem::path(file_info.filename).filename().string() + "'";
+        progress->setMessage(msg, false, true);
+    }
+
     //... otherwise check decoding on complete file
-    bool file_dec_ok = checkDecoding(file_info, -1, file_info.error);
+    bool file_dec_ok = checkDecoding(file_info, -1, file_info.contentinfo, file_info.error);
 
     //set file to unused?
     if (!file_dec_ok)
         file_info.used = false;
+
+    if (progress) 
+        progress->increment(1, true);
 }
 
 /**
@@ -241,6 +317,7 @@ void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
 */
 bool ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info, 
                                        int section_idx, 
+                                       std::string& contentinfo,
                                        ASTERIXImportFileError& error) const
 {
     bool ok = false;
@@ -249,7 +326,7 @@ bool ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
     try
     {
         //invoke derived
-        ok = checkDecoding(file_info, section_idx, err_msg);
+        ok = checkDecoding(file_info, section_idx, contentinfo, err_msg);
     }
     catch(const std::exception& e)
     {
@@ -333,7 +410,15 @@ std::string ASTERIXDecoderFile::statusInfoString() const
         size_fmt << std::fixed << std::setprecision(2) << mb;
 
         // Decoded‐status cell
-        std::string status_cell = file_info.fileProcessed() ? "Done" : "";
+        std::string status_cell;
+        
+        if (file_info.filename == getCurrentFilename())
+            status_cell = "Decoding";
+        else if (file_info.fileProcessed())
+            status_cell = "Done";
+
+        if (file_info.hasError())
+            status_cell += "<br> <b><font color=\"red\">(errors detected)</font></b>";
 
         // One row per file
         html << "<tr>"
@@ -370,6 +455,32 @@ std::string ASTERIXDecoderFile::statusInfoString() const
          << "</table>";
 
     return html.str();
+}
+
+/**
+*/
+std::vector<std::string> ASTERIXDecoderFile::errors() const
+{
+    auto errors = ASTERIXDecoderBase::errors();
+
+    const auto& file_infos = source_.files();
+    for (const auto& file_info : file_infos)
+    {
+        // Skip unused files
+        if (!file_info.used)
+            continue;
+
+        auto fn = boost::filesystem::path(file_info.filename).filename().string();
+
+        if (file_info.hasError())
+            errors.push_back("File '" + fn + "'" + (file_info.error.errinfo.empty() ? " obtains errors" : ": " + file_info.error.errinfo));
+        
+        for (const auto& s : file_info.sections)
+            if (s.used && s.error.hasError())
+                errors.push_back("File '" + fn + "' Section '" + s.description + "': " + s.error.errinfo);
+    }
+
+    return errors;
 }
 
 /**

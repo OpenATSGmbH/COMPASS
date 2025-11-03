@@ -160,17 +160,20 @@ FilterEditWidget::FilterEditWidget(DBFilter* filter, QWidget* parent)
     setLayout(layout);
 }
 
-FilterEditWidget::~FilterEditWidget() { logdbg << "FilterEditWidget: destructor"; }
+FilterEditWidget::~FilterEditWidget() 
+{
+     logdbg; 
+}
 
 void FilterEditWidget::addCondition()
 {
-    assert(filter_);
-    assert(filter_name_);
-    assert(condition_variable_widget_);
-    assert(condition_combo_);
-    assert(condition_absolute_);
-    assert(condition_value_);
-    assert(condition_reset_combo_);
+    traced_assert(filter_);
+    traced_assert(filter_name_);
+    traced_assert(condition_variable_widget_);
+    traced_assert(condition_combo_);
+    traced_assert(condition_absolute_);
+    traced_assert(condition_value_);
+    traced_assert(condition_reset_combo_);
 
     std::string filter_name = filter_name_->text().toStdString();
     std::string operator_str = condition_combo_->currentText().toStdString();
@@ -206,8 +209,8 @@ void FilterEditWidget::addCondition()
 void FilterEditWidget::deleteCondition()
 {
     QPushButton* button = (QPushButton*)sender();
-    assert(conditions_delete_buttons_.find(button) != conditions_delete_buttons_.end());
-    assert(filter_);
+    traced_assert(conditions_delete_buttons_.find(button) != conditions_delete_buttons_.end());
+    traced_assert(filter_);
     filter_->deleteCondition(conditions_delete_buttons_[button]);
     filter_->widget()->updateChildWidget();
 
@@ -216,8 +219,8 @@ void FilterEditWidget::deleteCondition()
 
 void FilterEditWidget::updateConditionsGrid()
 {
-    assert(filter_);
-    assert(conditions_grid_);
+    traced_assert(filter_);
+    traced_assert(conditions_grid_);
 
     QLayoutItem* child;
     while (!conditions_grid_->isEmpty() && (child = conditions_grid_->takeAt(0)) != nullptr)
@@ -252,7 +255,7 @@ void FilterEditWidget::updateConditionsGrid()
 
     //  QLabel *unit_label = new QLabel ("Unit");
     //  unit_label->setFont (font_bold);
-    //  dbovars_grid_->addWidget (unit_label, 0, 5);
+    //  dbcontvars_grid_->addWidget (unit_label, 0, 5);
 
     std::vector<DBFilterCondition*>& conditions = filter_->getConditions();
 
@@ -272,7 +275,7 @@ void FilterEditWidget::updateConditionsGrid()
 
         TODO_ASSERT
 
-//        DBOVariableSelectionWidget* var_select = new DBOVariableSelectionWidget(true);
+//        DBContVariableSelectionWidget* var_select = new DBContVariableSelectionWidget(true);
 //        var_select->selectedVariable(*(*it)->getVariable());
 //        conditions_grid_->addWidget(var_select, row, 1);
 //        connect(var_select, SIGNAL(selectionChanged()), this, SLOT(changedConditionVariable()));
@@ -301,15 +304,15 @@ void FilterEditWidget::updateConditionsGrid()
         conditions_grid_->addWidget(resetbox, row, 4);
 
         //    PropertyDataTypeComboBox *type = new PropertyDataTypeComboBox (it->second);
-        //    dbo_vars_grid_data_type_boxes_[type] = it->second;
-        //    dbovars_grid_->addWidget (type, row, 3);
+        //    dbcont_vars_grid_data_type_boxes_[type] = it->second;
+        //    dbcontvars_grid_->addWidget (type, row, 3);
         //
         //    StringRepresentationComboBox *repr = new StringRepresentationComboBox (it->second);
-        //    dbo_vars_grid_representation_boxes_[repr] = it->second;
-        //    dbovars_grid_->addWidget (repr, row, 4);
+        //    dbcont_vars_grid_representation_boxes_[repr] = it->second;
+        //    dbcontvars_grid_->addWidget (repr, row, 4);
         //
         //    UnitSelectionWidget *unit_sel = new UnitSelectionWidget
-        //    (it->second->getUnitDimension(), it->second->getUnitUnit()); dbovars_grid_->addWidget
+        //    (it->second->getUnitDimension(), it->second->getUnitUnit()); dbcontvars_grid_->addWidget
         //    (unit_sel, row, 5);
         //
         //    unsigned col=6;
@@ -319,7 +322,7 @@ void FilterEditWidget::updateConditionsGrid()
         //        continue;
         //
         //      DBTableColumnComboBox *box = new DBTableColumnComboBox (sit->second->getName(),
-        //      metas[sit->second->getName()], it->second); dbovars_grid_->addWidget (box, row,
+        //      metas[sit->second->getName()], it->second); dbcontvars_grid_->addWidget (box, row,
         //      col); col++;
         //    }
         row++;
@@ -328,14 +331,14 @@ void FilterEditWidget::updateConditionsGrid()
 
 void FilterEditWidget::changedName()
 {
-    assert(filter_name_);
+    traced_assert(filter_name_);
     filter_->setName(filter_name_->text().toStdString());
 }
 
 void FilterEditWidget::changedConditionVariable()
 {
-//    DBOVariableSelectionWidget* source = (DBOVariableSelectionWidget*)sender();
-//    assert(conditions_variable_selects_.find(source) != conditions_variable_selects_.end());
+//    DBContVariableSelectionWidget* source = (DBContVariableSelectionWidget*)sender();
+//    traced_assert(conditions_variable_selects_.find(source) != conditions_variable_selects_.end());
 //    conditions_variable_selects_[source]->setVariable(&source->selectedVariable());
 
     TODO_ASSERT
@@ -344,20 +347,20 @@ void FilterEditWidget::changedConditionVariable()
 void FilterEditWidget::changedABS()
 {
     QCheckBox* source = (QCheckBox*)sender();
-    assert(conditions_abs_checkboxes_.find(source) != conditions_abs_checkboxes_.end());
+    traced_assert(conditions_abs_checkboxes_.find(source) != conditions_abs_checkboxes_.end());
     conditions_abs_checkboxes_[source]->setAbsoluteValue(source->checkState() == Qt::Checked);
 }
 
 void FilterEditWidget::changedOperator()
 {
     FilterConditionOperatorComboBox* source = (FilterConditionOperatorComboBox*)sender();
-    assert(conditions_operator_combos_.find(source) != conditions_operator_combos_.end());
+    traced_assert(conditions_operator_combos_.find(source) != conditions_operator_combos_.end());
     conditions_operator_combos_[source]->setOperator(source->currentText().toStdString());
 }
 
 void FilterEditWidget::changedResetValue()
 {
     FilterConditionResetValueComboBox* source = (FilterConditionResetValueComboBox*)sender();
-    assert(conditions_reset_value_combos_.find(source) != conditions_reset_value_combos_.end());
+    traced_assert(conditions_reset_value_combos_.find(source) != conditions_reset_value_combos_.end());
     conditions_reset_value_combos_[source]->setResetValue(source->currentText().toStdString());
 }

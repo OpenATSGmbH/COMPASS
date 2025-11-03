@@ -62,6 +62,7 @@ public:
 protected:
     Result update_impl(UpdateState state) override final;
     Result canUpdate_impl(UpdateState state) const override final;
+    Result updateContents_impl(const std::vector<ContentID>& contents) override final;
 
     Result initResult_impl() override final;
     Result prepareResult_impl() override final;

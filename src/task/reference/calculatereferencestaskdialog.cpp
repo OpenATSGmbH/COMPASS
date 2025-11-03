@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "calculatereferencestaskdialog.h"
 #include "calculatereferencestask.h"
@@ -650,8 +667,8 @@ void CalculateReferencesTaskDialog::writeOptions()
 
     bool ok;
     unsigned int line_id = ds_line_box_->currentText().toUInt(&ok);
-    assert (ok);
-    assert (line_id > 0 && line_id <= 4);
+    traced_assert(ok);
+    traced_assert(line_id > 0 && line_id <= 4);
 
     task_.settings().ds_line = line_id-1;
 }
@@ -686,11 +703,11 @@ QWidget* CalculateReferencesTaskDialog::addScrollArea(QWidget* w) const
 
 void CalculateReferencesTaskDialog::updateSourcesWidgets()
 {
-    assert (tracker_sources_);
+    traced_assert(tracker_sources_);
     tracker_sources_->updateSelected(task_.trackerDataSources());
     tracker_sources_->setEnabled(task_.useTrackerData());
 
-    assert (adsb_sources_);
+    traced_assert(adsb_sources_);
     adsb_sources_->updateSelected(task_.adsbDataSources());
     adsb_sources_->setEnabled(task_.useADSBData());
 
@@ -698,7 +715,7 @@ void CalculateReferencesTaskDialog::updateSourcesWidgets()
 
 void CalculateReferencesTaskDialog::updateButtons()
 {
-    assert (run_button_);
+    traced_assert(run_button_);
 
     run_button_->setDisabled(!task_.canRun());
 }
@@ -721,7 +738,7 @@ void CalculateReferencesTaskDialog::cancelClickedSlot()
 
 void CalculateReferencesTaskDialog::toggleTrackerSourcesSlot()
 {
-    assert (use_tracker_check_);
+    traced_assert(use_tracker_check_);
     task_.useTrackerData(use_tracker_check_->isChecked());
 
     updateSourcesWidgets();
@@ -738,7 +755,7 @@ void CalculateReferencesTaskDialog::trackerSourcesChangedSlot(std::map<std::stri
 
 void CalculateReferencesTaskDialog::toggleADSBSourcesSlot()
 {
-    assert (use_adsb_check_);
+    traced_assert(use_adsb_check_);
     task_.useADSBData(use_adsb_check_->isChecked());
 
     updateSourcesWidgets();

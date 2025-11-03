@@ -16,8 +16,9 @@
  */
 
 #include "eval/requirement/generic/generic.h"
-
+#include "eval/standard/evaluationstandard.h"
 #include "eval/results/generic/generic.h"
+#include "eval/standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
@@ -66,9 +67,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
         const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
         const SectorLayer& sector_layer)
 {
-    logdbg << "EvaluationRequirementGenericInteger '" << name_ << "': evaluate: utn " << target_data.utn_;
+    logdbg << "'" << name_ << "': utn " << target_data.utn_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -226,15 +227,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
                       num_unknown, num_correct, num_false, comment);
     }
 
-    logdbg << "EvaluationRequirementGenericInteger '" << name_ << "': evaluate: utn " << target_data.utn_
+    logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " num_updates " << num_updates << " num_no_ref_pos " << num_no_ref_pos
            << " num_no_ref_val " << num_no_ref_val
            << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
            << " num_unknown " << num_unknown << " num_correct " << num_correct
            << " num_false " << num_false;
 
-    assert (num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
-    assert (num_pos_inside == num_no_ref_val+num_unknown+num_correct+num_false);
+    traced_assert(num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos_inside == num_no_ref_val+num_unknown+num_correct+num_false);
 
     return make_shared<EvaluationRequirementResult::SingleGeneric>(
                 result_type_, "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
@@ -256,9 +257,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
     const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
     const SectorLayer& sector_layer)
 {
-    logdbg << "EvaluationRequirementGenericDouble '" << name_ << "': evaluate: utn " << target_data.utn_;
+    logdbg << "'" << name_ << "': utn " << target_data.utn_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -416,15 +417,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
                       num_unknown, num_correct, num_false, comment);
     }
 
-    logdbg << "EvaluationRequirementGenericDouble '" << name_ << "': evaluate: utn " << target_data.utn_
+    logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " num_updates " << num_updates << " num_no_ref_pos " << num_no_ref_pos
            << " num_no_ref_val " << num_no_ref_val
            << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
            << " num_unknown " << num_unknown << " num_correct " << num_correct
            << " num_false " << num_false;
 
-    assert (num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
-    assert (num_pos_inside == num_no_ref_val+num_unknown+num_correct+num_false);
+    traced_assert(num_updates - num_no_ref_pos == num_pos_inside + num_pos_outside);
+    traced_assert(num_pos_inside == num_no_ref_val+num_unknown+num_correct+num_false);
 
     return make_shared<EvaluationRequirementResult::SingleGeneric>(
         result_type_, "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,

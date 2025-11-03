@@ -16,14 +16,14 @@
  */
 
 #include "datatypeformatselectionwidget.h"
-
+#include "traced_assert.h"
 #include "logger.h"
 
 DataTypeFormatSelectionWidget::DataTypeFormatSelectionWidget(std::string& data_type_str,
                                                              Format& format)
     : QPushButton(), data_type_str_(&data_type_str), format_(&format)
 {
-    logdbg << "DataTypeFormatSelectionWidget: constructor";
+    logdbg;
 
     pointers_set_ = true;
 
@@ -76,7 +76,7 @@ void DataTypeFormatSelectionWidget::DataTypeFormatSelectionWidget::clear()
 
 void DataTypeFormatSelectionWidget::showValues()
 {
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     if (data_type_str_->size() && format_->size())
         setText(QString::fromStdString(*data_type_str_ + ":" + *format_));
@@ -86,23 +86,23 @@ void DataTypeFormatSelectionWidget::showValues()
 
 void DataTypeFormatSelectionWidget::createMenu()
 {
-    logdbg << "DataTypeFormatSelectionWidget: createMenu";
+    logdbg;
 
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     menu_.reset(new QMenu());
 
     for (auto dt_it : format_->getAllFormatOptions())
     {
-        logdbg << "DataTypeFormatSelectionWidget: createMenu: dt "
+        logdbg << "dt "
                << static_cast<unsigned>(dt_it.first);
         std::string data_type_str = Property::asString(dt_it.first);
-        logdbg << "DataTypeFormatSelectionWidget: createMenu: dt str " << data_type_str;
+        logdbg << "dt str " << data_type_str;
         QMenu* m2 = menu_->addMenu(QString::fromStdString(data_type_str));
 
         for (auto ft_it : dt_it.second)
         {
-            logdbg << "DataTypeFormatSelectionWidget: createMenu: format " << ft_it;
+            logdbg << "format " << ft_it;
             QAction* action = m2->addAction(QString::fromStdString(ft_it));
 
             QVariantMap vmap;
@@ -114,24 +114,24 @@ void DataTypeFormatSelectionWidget::createMenu()
 
     connect(menu_.get(), &QMenu::triggered, this, &DataTypeFormatSelectionWidget::triggerSlot);
 
-    logdbg << "DataTypeFormatSelectionWidget: createMenu: end";
+    logdbg << "end";
 }
 
 void DataTypeFormatSelectionWidget::showMenuSlot()
 {
-    logdbg << "DataTypeFormatSelectionWidget: showMenuSlot";
+    logdbg;
 
-    assert (pointers_set_);
-    assert (menu_);
+    traced_assert(pointers_set_);
+    traced_assert(menu_);
 
     menu_->exec(QCursor::pos());
 }
 
 void DataTypeFormatSelectionWidget::triggerSlot(QAction* action)
 {
-    loginf << "DataTypeFormatSelectionWidget: triggerSlot";
+    loginf;
 
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     QVariantMap vmap = action->data().toMap();
     std::string data_type_str, format_str;
@@ -142,7 +142,7 @@ void DataTypeFormatSelectionWidget::triggerSlot(QAction* action)
         format_str = vmap.begin().value().toString().toStdString();
     }
 
-    loginf << "DataTypeFormatSelectionWidget: triggerSlot: got data type '" << data_type_str
+    loginf << "got data type '" << data_type_str
            << "' format '" << format_str << "'";
 
     if (data_type_str.size() && format_str.size())

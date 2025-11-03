@@ -31,6 +31,7 @@
 #include <QSettings>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QFormLayout>
 
 using namespace std;
 
@@ -44,8 +45,6 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
 
     connect (&standard_, &EvaluationStandard::configChangedSignal,
             this, &EvaluationStandardWidget::standardConfigChangedSlot);
-
-    //QHBoxLayout* req_layout = new QHBoxLayout();
 
     tree_view_.reset(new QTreeView());
     tree_view_->setModel(&standard_model_);
@@ -88,7 +87,6 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
     setContentsMargins(0, 0, 0, 0);
     setLayout(main_layout);
 
-
     // menu creation
     {
         QAction* add_action = menu_.addAction("Add Group");
@@ -98,7 +96,7 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
 
 EvaluationStandardWidget::~EvaluationStandardWidget()
 {
-    assert (splitter_);
+    traced_assert(splitter_);
 
     QSettings settings("COMPASS", ("EvalStandardWidget"+standard_.name()).c_str());
     settings.setValue("splitterSizes", splitter_->saveState());
@@ -111,18 +109,18 @@ EvaluationStandardTreeModel& EvaluationStandardWidget::model()
 
 void EvaluationStandardWidget::showContextMenu(const QPoint& pos)
 {
-    assert(tree_view_);
+    traced_assert(tree_view_);
 
     QModelIndex index = tree_view_->indexAt(pos);
     if (!index.isValid())
         return;
 
     EvaluationStandardTreeItem* item = static_cast<EvaluationStandardTreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     if (dynamic_cast<EvaluationStandard*>(item))
     {
-        loginf << "EvaluationStandardWidget: showContextMenu: got standard";
+        loginf << "got standard";
 
         //EvaluationStandard* std = dynamic_cast<EvaluationStandard*>(item);
         showMenu();
@@ -130,10 +128,10 @@ void EvaluationStandardWidget::showContextMenu(const QPoint& pos)
     }
     else if (dynamic_cast<Group*>(item))
     {
-        loginf << "EvaluationStandardWidget: showContextMenu: got group";
+        loginf << "got group";
 
         Group* group = dynamic_cast<Group*>(item);
-        assert (group);
+        traced_assert(group);
         showGroupMenu(*group);
     }
 }
@@ -148,23 +146,23 @@ void EvaluationStandardWidget::standardConfigChangedSlot()
 void EvaluationStandardWidget::itemClickedSlot(const QModelIndex& index)
 {
     EvaluationStandardTreeItem* item = static_cast<EvaluationStandardTreeItem*>(index.internalPointer());
-    assert (item);
+    traced_assert(item);
 
     if (dynamic_cast<EvaluationStandard*>(item))
     {
-        loginf << "EvaluationStandardWidget: itemClickedSlot: got standard";
+        loginf << "got standard";
 
-        showRequirementWidget(nullptr);
+        showRequirementWidget(createMainWidget());
     }
     else if (dynamic_cast<Group*>(item))
     {
-        loginf << "EvaluationStandardWidget: itemClickedSlot: got group";
+        loginf << "got group";
 
         showRequirementWidget(nullptr);
     }
     else if (dynamic_cast<EvaluationRequirement::BaseConfig*>(item))
     {
-        loginf << "EvaluationStandardWidget: itemClickedSlot: got config";
+        loginf << "got config";
 
         EvaluationRequirement::BaseConfig* config =
                 dynamic_cast<EvaluationRequirement::BaseConfig*>(item);
@@ -172,12 +170,12 @@ void EvaluationStandardWidget::itemClickedSlot(const QModelIndex& index)
         showRequirementWidget(config->widget());
     }
     else
-        assert (false);
+        traced_assert(false);
 }
 
 void EvaluationStandardWidget::addGroupSlot()
 {
-    loginf << "EvaluationStandardWidget " << standard_.name() << ": addGroupSlot";
+    loginf << standard_.name();
 
     bool ok;
     QString text =
@@ -211,33 +209,25 @@ void EvaluationStandardWidget::addGroupSlot()
         model().endReset();
         expandAll();
 
-        loginf << "EvaluationRequirementGroup " << standard_.name() << ": addGroupSlot: added " << name;
+        loginf << standard_.name() << ": added " << name;
     }
 }
 
 void EvaluationStandardWidget::deleteGroupSlot(Group& group)
 {
-    loginf << "EvaluationRequirementGroup " << group.name() << ": deleteGroupSlot";
+    loginf << "standard " << standard_.name() << " group " << group.name();
+
+    model().beginReset();
 
     standard_.removeGroup (group.name());
 
-    // if (widget_)
-    //     endModelReset();
+    model().endReset();
+    expandAll();
 }
 
-void EvaluationStandardWidget::addRequirementSlot(Group& group)
+void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_id)
 {
-    loginf << "EvaluationRequirementGroup " << group.name() << ": addRequirementSlot";
-
-    QAction* action = dynamic_cast<QAction*>(QObject::sender());
-    assert (action);
-
-    QVariant data = action->data();
-    assert (data.isValid());
-
-    string class_id = data.toString().toStdString();
-
-    loginf << "EvaluationRequirementGroup " << group.name() << ": addRequirementSlot: class_id " << class_id;
+    loginf << standard_.name() << ": class_id " << class_id;
 
     bool ok;
     QString text =
@@ -282,7 +272,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group)
     if (!text.isEmpty())
         req_short_name = text.toStdString();
 
-    loginf << "EvaluationRequirementGroup " << group.name() << ": addRequirementSlot: class_id " << class_id
+    loginf << group.name() << ": class_id " << class_id
            << " req_name '" << req_name << "' req_short_name '" << req_short_name << "'";
 
     if (req_name.size() && req_short_name.size())
@@ -305,15 +295,16 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group)
 
 void EvaluationStandardWidget::deleteRequirementSlot(Group& group, EvaluationRequirement::BaseConfig& req)
 {
-    loginf << "EvaluationRequirementGroup " << group.name() << ": deleteRequirementSlot";
+    loginf << group.name();
 
-    QAction* action = dynamic_cast<QAction*>(QObject::sender());
-    assert (action);
+    // QAction* action = dynamic_cast<QAction*>(QObject::sender());
+    // traced_assert(action);
 
-    QVariant data = action->data();
-    assert (data.isValid());
+    //QVariant data = action->data();
+    //traced_assert(data.isValid());
 
-    string name = data.toString().toStdString();
+    //string name = data.toString().toStdString();
+    string name = req.name();
 
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(nullptr, "Delete Requirement", ("Confirm to delete requirement '"+name+"'").c_str(),
@@ -336,7 +327,7 @@ void EvaluationStandardWidget::expandAll()
 
 void EvaluationStandardWidget::showRequirementWidget(QWidget* widget)
 {
-    assert(requirements_widget_);
+    traced_assert(requirements_widget_);
 
     if (!widget)
     {
@@ -374,9 +365,9 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
 
         for (auto& req_it : Group::requirement_type_mapping_)
         {
-            QAction* action = req_menu->addAction(req_it.second.c_str());
-            action->setData(req_it.first.c_str());
-            connect(action, &QAction::triggered, [this,&group]() {this->addRequirementSlot(group);});
+            std::string class_id = req_it.first;
+            QAction* action = req_menu->addAction(class_id.c_str());
+            connect(action, &QAction::triggered, [this,&group,class_id]() {this->addRequirementSlot(group, class_id);});
         }
 
         {
@@ -385,7 +376,6 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
             for (auto& cfg_it : group.configs())
             {
                 QAction* action = del_menu->addAction(cfg_it->name().c_str());
-                action->setData(cfg_it->name().c_str());
                 connect(action, &QAction::triggered, [this,&cfg_it,&group]() {
                     this->deleteRequirementSlot(group, *cfg_it.get());});
             }
@@ -409,4 +399,58 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
     }
 
     menu.exec(QCursor::pos());
+}
+
+
+QWidget* EvaluationStandardWidget::createMainWidget()
+{
+    QWidget* widget = new QWidget();
+
+    QFormLayout* layout = new QFormLayout();
+
+    // max ref time diff
+    QLineEdit* ref_max_time_diff_edit =
+        new QLineEdit(QString::number(standard_.referenceMaxTimeDiff()));
+    ref_max_time_diff_edit->setValidator(new QDoubleValidator(0.1, 30.0, 2, this));
+    connect(ref_max_time_diff_edit, &QLineEdit::textEdited, 
+        this, &EvaluationStandardWidget::refMaxTimeDiffEditSlot);
+
+    layout->addRow("Reference Maximum Time Difference [s]", ref_max_time_diff_edit);
+
+    QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
+    ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
+    connect(ref_min_acc_edit, &QLineEdit::textEdited, 
+        this, &EvaluationStandardWidget::refMinAccEditSlot);
+
+    layout->addRow("Reference Minimum Accuracy [m]", ref_min_acc_edit);
+
+    widget->setLayout(layout);
+
+    return widget;
+}
+
+void EvaluationStandardWidget::refMaxTimeDiffEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        standard_.referenceMaxTimeDiff(val);
+    else
+        loginf << "invalid value";
+}
+
+void EvaluationStandardWidget::refMinAccEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        standard_.referenceMinAccuracy(val);
+    else
+        loginf << "invalid value";
 }

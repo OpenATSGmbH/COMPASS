@@ -24,6 +24,9 @@
 
 #include "view/gridview/grid2d.h"
 #include "view/gridview/grid2dlayer.h"
+#include "view/gridview/grid2drendersettings.h"
+#include "view/gridview/grid2dlayerrenderer.h"
+
 #include "view/points/viewpointgenerator.h"
 
 #include "evaluationcalculator.h"
@@ -82,10 +85,10 @@ public:
     */
     std::unique_ptr<ViewPointGenFeature> createFeature_impl(const Base* result) const override final
     {
-        assert(isValid());
-        assert(converter_);
+        traced_assert(isValid());
+        traced_assert(converter_);
 
-        loginf << "FeatureDefinitionGridBase: createFeature_impl: creating grid...";
+        loginf << "creating grid...";
 
         //create suitably sized grid
         QRectF roi = gridBounds(result->sectorLayer(), {});
@@ -101,9 +104,9 @@ public:
         bool grid_ok = grid.create(roi, resolution, "wgs84", true);
 
         //!shall not fail! (otherwise sector bounds might be strange)
-        assert(grid_ok);
+        traced_assert(grid_ok);
 
-        loginf << "FeatureDefinitionGridBase: createFeature_impl: filling grid...";
+        loginf << "filling grid...";
 
         //generate grid layers
         Grid2DLayers layers;
@@ -167,11 +170,11 @@ public:
             render_settings_map[ ds.series_name ] = render_settings;
         }
 
-        loginf << "FeatureDefinitionGridBase: createFeature_impl: creating features...";
+        loginf << "creating features...";
 
         if (layers.numLayers() < 1)
         {
-            loginf << "FeatureDefinitionGridBase: createFeature_impl: no layers created, skipping...";
+            loginf << "no layers created, skipping...";
             return {};
         }
 
@@ -182,7 +185,7 @@ public:
         if (generate_geoimage_)
         {
             //get render settings
-            assert(render_settings_map.count(layer->name));
+            traced_assert(render_settings_map.count(layer->name));
             const auto& rs = render_settings_map.at(layer->name);
 
             //render layer
@@ -217,7 +220,7 @@ protected:
                                const Grid2DRenderSettings& rsettings)
     {
         //@TODO: if we had an annotation feature which could hold multiple grid layers we could remove this assert...
-        assert(data_series_.empty());
+        traced_assert(data_series_.empty());
 
         GridDataSeries ds;
 

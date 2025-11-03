@@ -29,8 +29,8 @@ DBContentVariableLookup::DBContentVariableLookup(const std::string& dbcontent_na
 :   dbcontent_name_(dbcontent_name)
 ,   buffer_        (buffer        )
 {
-    assert(buffer_);
-    assert(!dbcontent_name_.empty());
+    traced_assert(buffer_);
+    traced_assert(!dbcontent_name_.empty());
 }
 
 /**

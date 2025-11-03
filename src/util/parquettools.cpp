@@ -110,7 +110,7 @@ bool ParquetWriter::createArrowArray(std::shared_ptr<arrow::Array>& array,
     const Property* property = property_index.has_value() ? &buffer.properties().properties().at(property_index.value()) : nullptr;
     auto property_dtype = property ? property->dataType() : dtype;
 
-    assert(property_dtype == dtype);
+    traced_assert(property_dtype == dtype);
 
     size_t n = buffer.size();
 
@@ -387,18 +387,18 @@ bool ParquetWriter::createArrowArray(std::shared_ptr<arrow::Array>& array,
         }
         else
         {
-            logerr << "bufferPropertyToArrowArray: writing buffer property failed: unknown property";
+            logerr << "writing buffer property failed: unknown property";
             return false;
         }
     }
     catch (const std::exception& ex)
     {
-        logerr << "bufferPropertyToArrowArray: writing buffer property failed: " << ex.what();
+        logerr << "writing buffer property failed: " << ex.what();
         return false;
     }
     catch(...)
     {
-        logerr << "bufferPropertyToArrowArray: writing buffer property failed: unknown error";
+        logerr << "writing buffer property failed: unknown error";
         return false;
     }
 
@@ -491,7 +491,7 @@ bool ParquetWriter::writeBufferToParquet(const DBContent& dbcontent,
     if (!Utils::Files::directoryExists(parquet_path) &&
         !Utils::Files::createMissingDirectories(parquet_path))
     {
-        logerr << "writeBufferToParquet: could not create parquet path at " << parquet_path;
+        logerr << "could not create parquet path at " << parquet_path;
         return false;
     }
 
@@ -531,7 +531,7 @@ bool ParquetWriter::writeBufferToParquet(const DBContent& dbcontent,
     auto result = writer.writer->WriteTable(*table, 64 * 1024 * 1024);
     if (!result.ok())
     {
-        logerr << "writeBufferToParquet: could not write table " << dbcontent.name() << ": " << result.message();
+        logerr << "could not write table " << dbcontent.name() << ": " << result.message();
         return false;
     }
 
@@ -601,7 +601,7 @@ ParquetWriter::TableWriter& ParquetWriter::getOrCreateTableWriter(const std::str
     auto writer_props = createDefaultWriterProps();
 
     auto writer = createWriter(fn, schema, writer_props, false);
-    assert(writer);
+    traced_assert(writer);
 
     auto& tw = table_writers_[ fn ];
     tw.schema       = schema;

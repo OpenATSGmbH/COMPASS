@@ -80,13 +80,13 @@ ManageSectorsTaskDialog* ManageSectorsTask::dialog()
                 this, &ManageSectorsTask::dialogDoneSlot);
     }
 
-    assert(dialog_);
+    traced_assert(dialog_);
     return dialog_.get();
 }
 
 void ManageSectorsTask::dialogDoneSlot()
 {
-    assert (dialog_);
+    traced_assert(dialog_);
     dialog_->hide();
 
     emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
@@ -100,7 +100,7 @@ void ManageSectorsTask::generateSubConfigurable(const std::string& class_id,
 
 bool ManageSectorsTask::hasFile(const std::string& filename) const
 {
-    logdbg << "ManageSectorsTask: hasFile: filename '" << filename
+    logdbg << "filename '" << filename
            << "' file_list_ '" << file_list_.dump(2) << "'";
 
     vector<string> tmp_list = file_list_.get<std::vector<string>>();
@@ -115,7 +115,7 @@ std::vector<std::string> ManageSectorsTask::fileList() const
 
 void ManageSectorsTask::addFile(const std::string& filename)
 {
-    loginf << "ManageSectorsTask: addFile: filename '" << filename << "'";
+    loginf << "filename '" << filename << "'";
 
     if (file_list_.count(filename) != 0)
         throw std::invalid_argument("ManageSectorsTask: addFile: name '" + filename +
@@ -124,7 +124,7 @@ void ManageSectorsTask::addFile(const std::string& filename)
     vector<string> tmp_list = file_list_.get<std::vector<string>>();
     if (find(tmp_list.begin(), tmp_list.end(), filename) == tmp_list.end())
     {
-        loginf << "ManageSectorsTask: addFile: adding filename '" << filename << "'";
+        loginf << "adding filename '" << filename << "'";
 
         tmp_list.push_back(filename);
 
@@ -133,7 +133,7 @@ void ManageSectorsTask::addFile(const std::string& filename)
         file_list_ = tmp_list;
     }
 
-    loginf << "ManageSectorsTask: addFile: filenames '" << file_list_.dump(2) << "'";
+    loginf << "filenames '" << file_list_.dump(2) << "'";
 
     current_filename_ = filename;
     parseCurrentFile(false);
@@ -144,10 +144,10 @@ void ManageSectorsTask::addFile(const std::string& filename)
 
 void ManageSectorsTask::removeCurrentFilename()
 {
-    loginf << "ManageSectorsTask: removeCurrentFilename: filename '" << current_filename_ << "'";
+    loginf << "filename '" << current_filename_ << "'";
 
-    assert(current_filename_.size());
-    assert(hasFile(current_filename_));
+    traced_assert(current_filename_.size());
+    traced_assert(hasFile(current_filename_));
 
     if (file_list_.count(current_filename_) != 1)
         throw std::invalid_argument("ManageSectorsTask: removeCurrentFilename: name '" +
@@ -165,7 +165,7 @@ void ManageSectorsTask::removeCurrentFilename()
 
 void ManageSectorsTask::removeAllFiles ()
 {
-    loginf << "ManageSectorsTask: removeAllFiles";
+    loginf;
 
     file_list_.clear();
     current_filename_ = "";
@@ -179,7 +179,7 @@ void ManageSectorsTask::removeAllFiles ()
 
 void ManageSectorsTask::currentFilename(const std::string& filename)
 {
-    loginf << "ManageSectorsTask: currentFilename: filename '" << filename << "'";
+    loginf << "filename '" << filename << "'";
 
     current_filename_ = filename;
 
@@ -209,7 +209,7 @@ bool ManageSectorsTask::canImportFile()
 
     if (!Files::fileExists(current_filename_))
     {
-        loginf << "ManageSectorsTask: canImportFile: not possible since file '"
+        loginf << "not possible since file '"
                << current_filename_ << "'does not exist";
         return false;
     }
@@ -219,11 +219,11 @@ bool ManageSectorsTask::canImportFile()
 
 void ManageSectorsTask::importFile (const std::string& layer_name, bool exclude, QColor color)
 {
-    assert (canImportFile());
+    traced_assert(canImportFile());
 
     if (!found_sectors_num_)
     {
-        loginf << "ManageSectorsTask: importFile: not possible since no data found";
+        loginf << "not possible since no data found";
 
         QMessageBox msgBox;
         msgBox.setText("Import not possible since no data was found.");
@@ -246,13 +246,13 @@ void ManageSectorsTask::importFile (const std::string& layer_name, bool exclude,
     if (allow_user_interactions_)
         msgBox.exec();
 
-    loginf << "ManageSectorsTask: importFile: done";
+    loginf << "done";
 }
 
 
 void ManageSectorsTask::parseCurrentFile (bool import)
 {
-    loginf << "ManageSectorsTask: parseCurrentFile: file '" << current_filename_ << "' import " << import;
+    loginf << "file '" << current_filename_ << "' import " << import;
 
     found_sectors_num_ = 0;
     parse_message_ = "";
@@ -265,7 +265,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
 
     if(data_set == NULL)
     {
-        logwrn << "ManageSectorsTask: parseCurrentFile: open failed";
+        logwrn << "open failed";
         parse_message_ = "file '"+current_filename_+"' open failed.";
         return;
     }
@@ -275,9 +275,9 @@ void ManageSectorsTask::parseCurrentFile (bool import)
     for (int layer_cnt=0; layer_cnt < data_set->GetLayerCount(); ++layer_cnt) // OGRLayer*
     {
         layer = data_set->GetLayer(layer_cnt);
-        assert (layer);
+        traced_assert(layer);
 
-        logdbg << "ManageSectorsTask: parseCurrentFile: found sector name '" << layer->GetName() << "'";
+        logdbg << "found sector name '" << layer->GetName() << "'";
         std::string sector_name = layer->GetName();
 
         OGRFeature* feature = nullptr;
@@ -288,45 +288,45 @@ void ManageSectorsTask::parseCurrentFile (bool import)
 
             if (!feature) // TODO solve this
             {
-                logwrn << "ManageSectorsTask: parseCurrentFile: non-feature at cnt " << feature_cnt;
+                logwrn << "non-feature at cnt " << feature_cnt;
                 continue;
             }
 
-            assert (feature);
+            traced_assert(feature);
 
-            logdbg << "ManageSectorsTask: parseCurrentFile: found feature '"
+            logdbg << "found feature '"
                    << feature->GetDefnRef()->GetName() << "'";
 
             //std::string feature_name = feature->GetDefnRef()->GetName();
 
             OGRFeatureDefn* feature_def = layer->GetLayerDefn();
-            assert (feature_def);
+            traced_assert(feature_def);
             int field_cnt;
 
             for (field_cnt = 0; field_cnt < feature_def->GetFieldCount(); field_cnt++)
             {
                 OGRFieldDefn* field_def = feature_def->GetFieldDefn(field_cnt);
-                assert (field_def);
+                traced_assert(field_def);
 
                 switch(field_def->GetType())
                 {
                     case OFTInteger:
-                        logdbg << "ManageSectorsTask: parseCurrentFile: int " << feature->GetFieldAsInteger(field_cnt);
+                        logdbg << "int " << feature->GetFieldAsInteger(field_cnt);
                         break;
                     case OFTInteger64:
-                        logdbg << "ManageSectorsTask: parseCurrentFile: int64 "
+                        logdbg << "int64 "
                                << feature->GetFieldAsInteger64(field_cnt);
                         //printf( CPL_FRMT_GIB ",", oField.GetInteger64() );
                         break;
                     case OFTReal:
-                        logdbg << "ManageSectorsTask: parseCurrentFile: double " << feature->GetFieldAsDouble(field_cnt);
+                        logdbg << "double " << feature->GetFieldAsDouble(field_cnt);
                         break;
                     case OFTString:
-                        logdbg << "ManageSectorsTask: parseCurrentFile: string '"
+                        logdbg << "string '"
                                << feature->GetFieldAsString(field_cnt) << "'";
                         break;
                     default:
-                        logdbg << "ManageSectorsTask: parseCurrentFile: default " << feature->GetFieldAsString(field_cnt);
+                        logdbg << "default " << feature->GetFieldAsString(field_cnt);
                         break;
                 }
             }
@@ -350,7 +350,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
                     && geometry->getGeometryType() != wkbMultiPolygon
                     && geometry->getGeometryType() != wkbMultiPolygon25D)
                 {
-                    loginf << "ManageSectorsTask: parseCurrentFile skipping unsupported geometry name "
+                    loginf << "skipping unsupported geometry name "
                            << geometry->getGeometryName()
                            << " type " << geometry->getGeometryType();
                     continue;
@@ -359,36 +359,36 @@ void ManageSectorsTask::parseCurrentFile (bool import)
                 if(wkbFlatten(geometry->getGeometryType()) == wkbPolygon)
                 {
                     OGRPolygon* polygon = dynamic_cast<OGRPolygon*>(geometry);
-                    assert (polygon);
+                    traced_assert(polygon);
 
                     addPolygon(sector_name, *polygon, import);
                 }
                 else if (wkbFlatten(geometry->getGeometryType()) == wkbMultiPolygon)
                 {
                     OGRMultiPolygon* multi_polygon = dynamic_cast<OGRMultiPolygon*>(geometry);
-                    assert (multi_polygon);
+                    traced_assert(multi_polygon);
 
                     OGRGeometry* sub_geometry;
 
                     for (int poly_cnt=0; poly_cnt < multi_polygon->getNumGeometries(); ++poly_cnt)
                     {
                         sub_geometry = multi_polygon->getGeometryRef(poly_cnt);
-                        assert (sub_geometry);
+                        traced_assert(sub_geometry);
 
                         if (wkbFlatten(sub_geometry->getGeometryType()) == wkbPolygon)
                         {
                             OGRPolygon* sub_polygon = dynamic_cast<OGRPolygon*>(sub_geometry);
-                            assert (sub_polygon);
+                            traced_assert(sub_polygon);
 
                             addPolygon(sector_name, *sub_polygon, import);
                         }
                         else
-                            logdbg << "ManageSectorsTask: parseCurrentFile: no polygon in multipolygon found";
+                            logdbg << "no polygon in multipolygon found";
                     }
                 }
                 else
                 {
-                    logdbg << "ManageSectorsTask: parseCurrentFile: no geometry found";
+                    logdbg << "no geometry found";
                 }
             }
         }
@@ -396,17 +396,20 @@ void ManageSectorsTask::parseCurrentFile (bool import)
 
     GDALClose(data_set);
 
+    if (import)
+        emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
+
     if (dialog_)
         dialog_->updateParseMessage();
 }
 
 void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& polygon, bool import)
 {
-    logdbg << "ManageSectorsTask: addPolygon: sector_name '" << sector_name
+    logdbg << "sector_name '" << sector_name
            << "' polygon '" << polygon.getGeometryName() << "'";
 
     OGRLinearRing* ring = polygon.getExteriorRing();
-    assert (ring);
+    traced_assert(ring);
 
     if (import)
     {
@@ -415,7 +418,7 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
-             assert (ring);
+             traced_assert(ring);
              addLinearRing(sector_name+to_string(COMPASS::instance().evaluationManager().getMaxSectorId()+1), *ring, import);
          }
     }
@@ -426,7 +429,7 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
-             assert (ring);
+             traced_assert(ring);
              addLinearRing(sector_name, *ring, import);
          }
     }
@@ -434,7 +437,7 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
 
 void ManageSectorsTask::addLinearRing (const std::string& sector_name, OGRLinearRing& ring, bool import)
 {
-    logdbg<< "ManageSectorsTask: addLinearRing: layer '" << layer_name_ << "' sector_name '" << sector_name;
+    logdbg << "layer '" << layer_name_ << "' sector_name '" << sector_name;
 
     vector<pair<double,double>> points;
 
@@ -443,9 +446,9 @@ void ManageSectorsTask::addLinearRing (const std::string& sector_name, OGRLinear
     for (int point_cnt=0; point_cnt < ring.getNumPoints(); ++point_cnt)
     {
         ring.getPoint(point_cnt, &point);
-        assert (!point.IsEmpty());
+        traced_assert(!point.IsEmpty());
 
-        logdbg << "ManageSectorsTask: addLinearRing: point lat " << point.getY()
+        logdbg << "point lat " << point.getY()
                << " lon " << point.getX() << " z " << point.getZ();
 
         points.push_back({point.getY(), point.getX()});
@@ -464,19 +467,19 @@ void ManageSectorsTask::addLinearRing (const std::string& sector_name, OGRLinear
         ++found_sectors_num_;
 
         if (import)
-            addSector (sector_name, move(points));
+            addSector (sector_name, std::move(points));
     }
 }
 
 void ManageSectorsTask::addSector (const std::string& sector_name, std::vector<std::pair<double,double>> points)
 {
-    loginf << "ManageSectorsTask: addSector: layer '" << layer_name_ << "' name '" << sector_name
+    loginf << "layer '" << layer_name_ << "' name '" << sector_name
            << "' num points " << points.size();
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
-    assert (!eval_man.hasSector(sector_name, layer_name_));
+    traced_assert(!eval_man.hasSector(sector_name, layer_name_));
 
-    loginf << "ManageSectorsTask: addSector: adding layer '" << layer_name_ << "' name '" << sector_name;
+    loginf << "adding layer '" << layer_name_ << "' name '" << sector_name;
     eval_man.createNewSector(sector_name, layer_name_, exclude_, color_, points);
 }

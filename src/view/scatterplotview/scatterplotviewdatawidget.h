@@ -87,8 +87,8 @@ protected:
 
     virtual bool postLoadTrigger() override final;
     virtual void resetVariableDisplay() override final;
-    virtual bool updateVariableDisplay() override final;
-    virtual void updateFromAnnotations() override final;
+    virtual DrawState updateVariableDisplay() override final;
+    virtual bool updateFromAnnotations() override final;
 
     virtual void processStash(const VariableViewStash<double>& stash) override final;
     virtual void resetStashDependentData() override final;
@@ -100,12 +100,13 @@ protected:
 private:
     void updateDateTimeInfoFromVariables();
 
-    bool updateChart();
+    DrawState updateChart();
+    DrawState updateDataSeries(QtCharts::QChart* chart);
 
-    void updateDataSeries(QtCharts::QChart* chart);
     void resetSeries();
     void correctSeriesDateTime(ScatterSeriesCollection& collection);
     void setAxisRange(QtCharts::QAbstractAxis* axis, double vmin, double vmax);
+    boost::optional<std::pair<double, double>> getAxisRange(QtCharts::QAbstractAxis* axis) const;
 
     ScatterPlotView*           view_       {nullptr};
     ScatterPlotViewDataSource* data_source_{nullptr};

@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONDISTANCECONFIGWIDGET_H
-#define EVALUATIONREQUIREMENTPOSITIONDISTANCECONFIGWIDGET_H
+#pragma once
 
-#include "eval/requirement/base/probabilitybaseconfigwidget.h"
+#include "eval/requirement/base/positionbaseconfigwidget.h"
 
 class ComparisonTypeComboBox;
 
@@ -31,7 +30,7 @@ namespace EvaluationRequirement
 {
     class PositionDistanceConfig;
 
-    class PositionDistanceConfigWidget : public ProbabilityBaseConfigWidget
+    class PositionDistanceConfigWidget : public PositionBaseConfigWidget
     {
         Q_OBJECT
 
@@ -52,5 +51,3 @@ namespace EvaluationRequirement
     };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONDISTANCECONFIGWIDGET_H

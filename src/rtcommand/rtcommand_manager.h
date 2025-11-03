@@ -1,5 +1,21 @@
-#ifndef RTCOMMANDRECEIVER_H
-#define RTCOMMANDRECEIVER_H
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
 
 #include "configurable.h"
 #include "singleton.h"
@@ -60,6 +76,7 @@ public:
 
     virtual ~RTCommandManager();
 
+    void startCommandProcessing(); // only process command after start has been called
     void shutdown();
 
     static RTCommandManager& instance()
@@ -69,6 +86,7 @@ public:
     }
 
     rtcommand::IssueInfo addCommand(const std::string& cmd_str, CommandId* id = nullptr);
+    void addCommandFromConsole(const std::string& cmd_str); // throws on failure
 
     void clearBacklog();
     std::vector<std::string> commandBacklog() const;
@@ -78,8 +96,9 @@ signals:
     void shellCommandProcessed(const QString& msg, const QString& data, bool is_error);
 
 protected:
-    volatile bool stop_requested_;
-    volatile bool stopped_;
+    volatile bool started_ {false};
+    volatile bool stop_requested_ {false};
+    volatile bool stopped_ {false};
 
     std::unique_ptr<TCPServer> server_;
     unsigned int port_num_ {27960};
@@ -108,5 +127,3 @@ private:
 
     nlohmann::json command_backlog_;
 };
-
-#endif // RTCOMMANDRECEIVER_H

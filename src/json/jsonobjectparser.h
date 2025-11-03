@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONOBJECTPARSER_H
-#define JSONOBJECTPARSER_H
+#pragma once
 
 #include "configurable.h"
 //#include "dbcontent/variable/variable.h"
@@ -138,5 +137,3 @@ private:
   protected:
     virtual void checkSubConfigurables() {}
 };
-
-#endif  // JSONOBJECTPARSER_H

@@ -84,9 +84,10 @@ private:
     std::string evaluation_parameters_;
     bool evaluate_run_filter_ {false};
     bool evaluate_ {false};
-    std::string export_eval_report_filename_;
-
-    std::string max_fps_;
+    
+    std::string export_report_name_; // 'EUROCAE ED-87E Evaluation'
+    std::string export_report_directory_;
+    std::string export_report_mode_{"PDF"}; // JSON','Latex','PDF'
 
     bool no_config_save_ {false};
 
@@ -95,6 +96,11 @@ private:
     bool quit_ {false};
 
     bool expert_mode_ {false};
+
+    bool do_assert_ {false};
+    bool do_throw_ {false};
+    bool do_numerical_crash_ {false};
+    bool do_segfault_ {false};
 
     void checkAndSetupConfig();
 

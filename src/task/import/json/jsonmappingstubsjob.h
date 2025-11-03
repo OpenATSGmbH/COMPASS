@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONMAPPINGSTUBSJOB_H
-#define JSONMAPPINGSTUBSJOB_H
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -44,5 +43,3 @@ class JSONMappingStubsJob : public Job
     const std::vector<std::string> data_record_keys_;
     std::map<std::string, JSONObjectParser>& parsers_;
 };
-
-#endif  // JSONMAPPINGSTUBSJOB_H

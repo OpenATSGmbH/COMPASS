@@ -87,13 +87,13 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                                           const std::vector<Evaluation::RequirementResultID>& requirements,
                                           bool update_report)
 {
-    assert (calculator_.dataLoaded());
-    assert (calculator_.sectorsLoaded());
+    traced_assert(calculator_.dataLoaded());
+    traced_assert(calculator_.sectorsLoaded());
 
     const auto& eval_settings = calculator_.settings();
     auto&       data          = calculator_.data();
 
-    loginf << "EvaluationResultsGenerator: evaluate:"
+    loginf << "start"
            << " skip_no_data_details " << eval_settings.report_skip_no_data_details_
            << " split_results_by_mops " << eval_settings.report_split_results_by_mops_
            << " report_split_results_by_aconly_ms " << eval_settings.report_split_results_by_aconly_ms_;
@@ -150,10 +150,10 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
     for (auto& target_data_it : data)
     {
         if (!dbcont_man.existsTarget(target_data_it.utn_))
-            logerr << "EvaluationResultsGenerator: evaluate: unknown utn " << target_data_it.utn_;
+            logerr << "unknown utn " << target_data_it.utn_;
 
-        assert (dbcont_man.existsTarget(target_data_it.utn_));
-        assert (data.hasTargetData(target_data_it.utn_));
+        traced_assert(dbcont_man.existsTarget(target_data_it.utn_));
+        traced_assert(data.hasTargetData(target_data_it.utn_));
 
         //utn list is provided => skip utns not in list
         if (!utn_set.empty() && !utn_set.count(target_data_it.utn_))
@@ -178,7 +178,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
     {
         const string& sector_layer_name = sec_it->name();
 
-        loginf << "EvaluationResultsGenerator: evaluate: sector layer " << sector_layer_name;
+        loginf << "sector layer " << sector_layer_name;
 
         for (auto& req_group_it : standard)
         {
@@ -190,7 +190,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
             if (!calculator_.useGroupInSectorLayer(sector_layer_name, requirement_group_name))
                 continue; // skip if not used
 
-            loginf << "EvaluationResultsGenerator: evaluate: sector layer " << sector_layer_name
+            loginf << "sector layer " << sector_layer_name
                    << " group " << requirement_group_name;
 
             for (auto& req_cfg_it : *req_group_it)
@@ -213,7 +213,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                             continue;
                 }
 
-                loginf << "EvaluationResultsGenerator: evaluate:"
+                loginf << "start"
                        << " sector layer " << sector_layer_name
                        << " group " << requirement_group_name
                        << " req '" << req_cfg_it->name() << "'";
@@ -238,14 +238,14 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 bool single_thread = false;
 
 //                int num_threads = oneapi::tbb::info::default_concurrency();
-//                loginf << "EvaluateTask: execute: starting, num_threads " << num_threads;
+//                loginf << "starting, num_threads " << num_threads;
 
                 std::future<void> pending_future = std::async(std::launch::async, [&] {
 
                     try
                     {
                         unsigned int num_utns = used_utns.size();
-                        assert (done_flags.size() == num_utns);
+                        traced_assert(done_flags.size() == num_utns);
 
                         if (single_thread)
                         {
@@ -266,13 +266,13 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                         }
 
                         for(unsigned int utn_cnt=0; utn_cnt < num_utns; ++utn_cnt)
-                            assert (results[utn_cnt]);
+                            traced_assert(results[utn_cnt]);
 
                         task_done = true;
                     }
                     catch (const std::exception& e)
                     {
-                        logerr << "EvaluationResultsGenerator: evaluate: exception '" << e.what() << "'";
+                        logerr << "exception '" << e.what() << "'";
                         throw e;
                     }
 
@@ -287,7 +287,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                 Async::waitAndProcessEventsFor(50);
 
-                logdbg << "EvaluationResultsGenerator: evaluate: waiting on group " << req_group_it->name()
+                logdbg << "waiting on group " << req_group_it->name()
                        << " req '" << req_cfg_it->name() << "'";
 
                 while (!task_done)
@@ -369,7 +369,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                         else if (result_it->target()->isModeACOnly())
                             subresult_str = "Mode A/C";
                         else
-                            assert (result_it->target()->isPrimaryOnly());
+                            traced_assert(result_it->target()->isPrimaryOnly());
 
                         if (!extra_results_sums.count(subresult_str+" Sum"))
                             extra_results_sums[subresult_str+" Sum"] =
@@ -381,9 +381,9 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                 if (result_sum)
                 {
-                    loginf << "EvaluationResultsGenerator: evaluate: adding result '" << result_sum->reqGrpId()
+                    loginf << "adding result '" << result_sum->reqGrpId()
                            << "' id '" << result_sum->resultId() << "'";
-                    assert (!results_[result_sum->reqGrpId()].count(result_sum->resultId()));
+                    traced_assert(!results_[result_sum->reqGrpId()].count(result_sum->resultId()));
 
                     //update now => here we still have all details for the joined viewable
                     result_sum->updateToChanges(true);
@@ -394,11 +394,11 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                 for (auto& mops_res_it : extra_results_sums) // add extra results generated by splits
                 {
-                    loginf << "EvaluationResultsGenerator: evaluate: adding extra result '"
+                    loginf << "adding extra result '"
                            << mops_res_it.second->reqGrpId()
                            << "' id '" << mops_res_it.second->resultId() << "'";
 
-                    assert (!results_[mops_res_it.second->reqGrpId()].count(mops_res_it.second->resultId()));
+                    traced_assert(!results_[mops_res_it.second->reqGrpId()].count(mops_res_it.second->resultId()));
 
                     //update now => here we still have all details for the joined viewable
                     mops_res_it.second->updateToChanges(true);
@@ -411,7 +411,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 for (auto& result_it : results)
                     result_it->purgeStoredDetails();
 
-                assert (eval_cnt <= num_req_evals);
+                traced_assert(eval_cnt <= num_req_evals);
                 eval_cnt = results_vec_.size();
             }
         }
@@ -426,19 +426,19 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
     time_diff      = elapsed_time - start_time;
     elapsed_time_s = time_diff.total_milliseconds() / 1000.0;
 
-    loginf << "EvaluationResultsGenerator: evaluate: data done " << String::timeStringFromDouble(elapsed_time_s, true);
+    loginf << "data done " << String::timeStringFromDouble(elapsed_time_s, true);
 
     // 00:06:22.852 with no parallel
 
     //@TODO?
     //emit eval_calc_.resultsChangedSignal();
 
-    loginf << "EvaluationResultsGenerator: evaluate: generating results";
+    loginf << "generating results";
 
     // generating results GUI
     //generateResultsReportGUI();
 
-    loginf << "EvaluationResultsGenerator: evaluate: done " << String::timeStringFromDouble(elapsed_time_s, true);
+    loginf << "done " << String::timeStringFromDouble(elapsed_time_s, true);
 
     QApplication::restoreOverrideCursor();
 }
@@ -458,7 +458,7 @@ void EvaluationResultsGenerator::clear()
  */
 void EvaluationResultsGenerator::generateResultsReportGUI()
 {
-    loginf << "EvaluationResultsGenerator: generateResultsReportGUI";
+    loginf;
 
     boost::posix_time::ptime loading_start_time;
     boost::posix_time::ptime loading_stop_time;
@@ -481,7 +481,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     auto& report = task_manager.currentReport();
 
     EvaluationTaskResult* eval_result = dynamic_cast<EvaluationTaskResult*>(result.get());
-    assert(eval_result);
+    traced_assert(eval_result);
 
     //store eval config
     nlohmann::json config;
@@ -502,7 +502,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     gen_table.addRow({"Application Version", "Application Version", VERSION});
     gen_table.addRow({"DB", "Database Name", COMPASS::instance().lastDbFilename()});
 
-    assert (calculator_.hasCurrentStandard());
+    traced_assert(calculator_.hasCurrentStandard());
     gen_table.addRow({"Standard", "Standard name", calculator_.currentStandardName()});
 
     // add used sensors
@@ -527,6 +527,8 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     // generate results
 
+    loginf << "Adding joined results...";
+
     // first add all joined
     for (auto& result_it : results_vec_)
     {
@@ -537,12 +539,13 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
         }
     }
 
-    // then all singles
+    loginf << "Adding single results...";
 
+    // then all singles
     unsigned int cnt = 0;
     for (auto& result_it : results_vec_)
     {
-        if (result_it->isSingle() && result_it->use())
+        if (result_it->isSingle())
         {
             if (cnt % 100 == 0)
                 QCoreApplication::processEvents();
@@ -553,8 +556,12 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
         }
     }
 
+    loginf << "Adding targets...";
+
     // generate target section
     addTargetSection(report);
+
+    loginf << "Adding non-results content...";
 
     // generate non-result details
     addNonResultsContent(report);
@@ -568,14 +575,16 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     auto& target_sec = report->getSection(EvalSectionID::targetID());
     target_sec.enableExports(false);
 
+    loginf << "Storing targets...";
+
     // store targets to result
     eval_result->setTargets(calculator_.data().toTargets());
 
-    loginf << "EvaluationResultsGenerator: generateResultsReportGUI: storing results...";
+    loginf << "storing results...";
 
     task_manager.endTaskResultWriting(true);
 
-    loginf << "EvaluationResultsGenerator: generateResultsReportGUI: results stored";
+    loginf << "results stored";
 
     loading_stop_time = boost::posix_time::microsec_clock::local_time();
 
@@ -585,7 +594,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     dlg.close();
 
-    loginf << "EvaluationResultsGenerator: generateResultsReportGUI: done "
+    loginf << "done "
            << String::timeStringFromDouble(load_time, true);
 }
 
@@ -594,7 +603,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 void EvaluationResultsGenerator::updateToChanges(bool reset_viewable, 
                                                  bool update_report)
 {
-    loginf << "EvaluationResultsGenerator: updateToChanges: reset_viewable " << reset_viewable;
+    loginf << "reset_viewable " << reset_viewable;
 
     //update data to changes (target usage, reset interest factors etc.)
     calculator_.data().updateToChanges();
@@ -609,7 +618,7 @@ void EvaluationResultsGenerator::updateToChanges(bool reset_viewable,
             shared_ptr<EvaluationRequirementResult::Single> result =
                 static_pointer_cast<EvaluationRequirementResult::Single>(result_it);
 
-            assert (result);
+            traced_assert(result);
             result->updateUseFromTarget();
         }
     }
@@ -622,7 +631,7 @@ void EvaluationResultsGenerator::updateToChanges(bool reset_viewable,
             shared_ptr<EvaluationRequirementResult::Joined> result =
                 static_pointer_cast<EvaluationRequirementResult::Joined>(result_it);
 
-            assert (result);
+            traced_assert(result);
             result->updateToChanges(reset_viewable);
         }
     }
@@ -651,6 +660,6 @@ void EvaluationResultsGenerator::addTargetSection(const std::shared_ptr<ResultRe
 void EvaluationResultsGenerator::addNonResultsContent (const std::shared_ptr<ResultReport::Report>& report)
 {
     // standard
-    assert (calculator_.hasCurrentStandard());
+    traced_assert(calculator_.hasCurrentStandard());
     calculator_.currentStandard().addToReport(report);
 }

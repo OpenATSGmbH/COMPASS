@@ -111,7 +111,7 @@ protected:
             if (ok)
                 scanned_contents.push_back(elem.first);
             else
-                logdbg << "HistogramGeneratorBuffer: generateHistograms_impl: could not scan buffer of DBContent " << elem.first;
+                logdbg << "could not scan buffer of DBContent " << elem.first;
         }
 
         //no data range available -> no good
@@ -120,11 +120,11 @@ protected:
 
         auto range = histogram_init_.getRange();
 
-        logdbg << "HistogramGeneratorBuffer: generateHistograms_impl: RANGE: min = " << range->first << ", max = " << range->second;
+        logdbg << "range: min = " << range->first << ", max = " << range->second;
 
         auto config = histogram_init_.generateConfiguration();
 
-        logdbg << "HistogramGeneratorBuffer: generateHistograms_impl: CONFIG: num bins = " << config.num_bins << ", sorted = " << config.sorted_bins << ", type = " << (int)config.type;
+        logdbg << "config: num bins = " << config.num_bins << ", sorted = " << config.sorted_bins << ", type = " << (int)config.type;
 
         //init needed histograms
         for (const auto& db_content : scanned_contents)
@@ -142,28 +142,28 @@ protected:
      */
     virtual bool refill_impl() override final
     {
-        logdbg << "HistogramGeneratorBuffer: refill_impl";
+        logdbg;
 
         //reinit intermediate data
 
-        logdbg << "HistogramGeneratorBuffer: refill_impl: intermediate data";
+        logdbg << "intermediate data";
         initIntermediateData();
 
         //add all buffers
         for (auto& elem : *currentData())
         {
-            logdbg << "HistogramGeneratorBuffer: refill_impl: addBuffer " << elem.first;
+            logdbg << "add buffer " << elem.first;
 
             bool ok = addBuffer(elem.first, *elem.second);
 
             if (!ok)
-                logdbg << "HistogramGeneratorBuffer: refill_impl: could not add buffer of dbcontent " << elem.first;
+                logdbg << "could not add buffer of dbcontent " << elem.first;
         }
 
         intermediate_data_.buffer_nan_count  = histogram_init_.numNanValues();
         intermediate_data_.buffer_null_count = histogram_init_.numNullValues();
 
-        logdbg << "HistogramGeneratorBuffer: refill_impl: done";
+        logdbg << "done";
 
         return true;
     }
@@ -199,7 +199,7 @@ protected:
         unsigned int data_size = data.contentSize();
 
         //selected vector?
-        assert (buffer.has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
 
         unsigned int select_cnt = 0;
@@ -245,7 +245,7 @@ protected:
                 ++select_cnt;
         }
 
-        loginf << "HistogramGeneratorT: selectBuffer: content = " << db_content << ", selected " << select_cnt;
+        loginf << "content = " << db_content << ", selected " << select_cnt;
 
         return true;
     }
@@ -284,7 +284,7 @@ private:
      */
     void initIntermediateData()
     {
-        logdbg << "HistogramGeneratorBufferT: initIntermediateData";
+        logdbg;
 
         //reset existing histogram bins
         for (auto& elem : histograms_)
@@ -292,21 +292,21 @@ private:
 
         intermediate_data_ = {};
 
-        logdbg << "HistogramGeneratorBufferT: initIntermediateData: doing histograms";
+        logdbg << "doing histograms";
 
         for (auto& elem : histograms_)
         {
-            logdbg << "HistogramGeneratorBufferT: initIntermediateData: histograms " << elem.first;
+            logdbg << "histograms " << elem.first;
 
             auto& d = intermediate_data_.content_data[ elem.first ];
             d.init(elem.second.numBins());
 
-            logdbg << "HistogramGeneratorBufferT: initIntermediateData: bins";
+            logdbg << "bins";
 
             d.bins_are_sorted     = elem.second.configuration().sorted_bins;
             d.bins_are_categories = elem.second.configuration().type == HistogramConfig::Type::Category;
 
-            logdbg << "HistogramGeneratorBufferT: initIntermediateData: labels";
+            logdbg << "labels";
 
             //generate labels
             for (size_t i = 0; i < elem.second.numBins(); ++i)
@@ -315,7 +315,7 @@ private:
             }
         }
 
-        logdbg << "HistogramGeneratorBufferT: initIntermediateData: done";
+        logdbg << "done";
     }
 
     /**
@@ -323,7 +323,7 @@ private:
      */
     BinLabels labelsForBin(int bin) const
     {
-        logdbg << "HistogramGeneratorBufferT: labelsForBin: bin " << bin;
+        logdbg << "bin " << bin;
 
         if (bin < 0 || histograms_.empty())
             return {};
@@ -370,7 +370,7 @@ private:
 
         NullableVector<T>& data = buffer.get<T>(current_var_name);
 
-        //loginf << "HistogramGeneratorBuffer: scanBuffer: Scanning buffer of dbc " << db_content << " size = " << data.size();
+        //loginf << "Scanning buffer of dbc " << db_content << " size = " << data.size();
         
         if (!histogram_init_.scan(data))
             return false;
@@ -407,7 +407,7 @@ private:
         NullableVector<T>& data = buffer.get<T>(current_var_name);
         unsigned int data_size = data.contentSize();
 
-        assert (buffer.has<bool>(DBContent::selected_var.name()));
+        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
         NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
 
         auto& histogram = histograms_[ db_content ];

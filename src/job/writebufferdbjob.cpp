@@ -28,21 +28,21 @@ WriteBufferDBJob::WriteBufferDBJob(JobOrderer* orderer, boost::function<void(Job
                                    DBInterface* db_interface, Buffer* buffer)
     : DBJob(orderer, done_function, obsolete_function, db_interface), buffer_(buffer)
 {
-    assert(buffer_);
+    traced_assert(buffer_);
 }
 
 WriteBufferDBJob::~WriteBufferDBJob() {}
 
 void WriteBufferDBJob::execute()
 {
-    logdbg << "WriteBufferDBJob: execute: start";
+    logdbg;
 
     boost::posix_time::ptime loading_start_time_;
     boost::posix_time::ptime loading_stop_time_;
 
     loading_start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    logdbg << "WriteBufferDBJob: execute: writing type " << buffer_->getDBOType() << " size "
+    logdbg << "writing type " << buffer_->getDBContType() << " size "
            << buffer_->getSize();
     db_interface_->writeBuffer(buffer_);
 
@@ -52,7 +52,7 @@ void WriteBufferDBJob::execute()
     boost::posix_time::time_duration diff = loading_stop_time_ - loading_start_time_;
     load_time = diff.total_milliseconds() / 1000.0;
 
-    logdbg << "WriteBufferDBJob: execute: buffer write done (" << doubleToString(load_time)
+    logdbg << "buffer write done (" << doubleToString(load_time)
            << " s).";
     done_ = true;
 }

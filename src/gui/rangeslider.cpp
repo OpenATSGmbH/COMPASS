@@ -1,14 +1,19 @@
 /*
- * rangeslider.cpp
+ * This file is part of OpenATS COMPASS.
  *
- *  Created on: Aug 11, 2022
- *      Author: mcphatty
- * 
- * Adapted from
- * https://bitbucket.org/libqxt/libqxt/wiki/Home
- * https://bitbucket.org/libqxt/libqxt/src/master/src/widgets/qxtspanslider.cpp
- */
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
 
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "rangeslider_p.h"
 
@@ -94,14 +99,14 @@ void RangeSliderPrivate::setupPainter(QPainter* painter, Qt::Orientation orienta
 {
     QColor highlight = qxt_p().palette().color(QPalette::Highlight);
     QLinearGradient gradient(x1, y1, x2, y2);
-    gradient.setColorAt(0, highlight.dark(120));
-    gradient.setColorAt(1, highlight.light(108));
+    gradient.setColorAt(0, highlight.darker(120));
+    gradient.setColorAt(1, highlight.lighter(108));
     painter->setBrush(gradient);
 
     if (orientation == Qt::Horizontal)
-        painter->setPen(QPen(highlight.dark(130), 0));
+        painter->setPen(QPen(highlight.darker(130), 0));
     else
-        painter->setPen(QPen(highlight.dark(150), 0));
+        painter->setPen(QPen(highlight.darker(150), 0));
 }
 
 void RangeSliderPrivate::drawSpan(QStylePainter* painter, const QRect& rect) const
@@ -118,7 +123,7 @@ void RangeSliderPrivate::drawSpan(QStylePainter* painter, const QRect& rect) con
         groove.adjust(0, 0, 0, -1);
 
     // pen & brush
-    painter->setPen(QPen(p->palette().color(QPalette::Dark).light(110), 0));
+    painter->setPen(QPen(p->palette().color(QPalette::Dark).lighter(110), 0));
     if (opt.orientation == Qt::Horizontal)
         setupPainter(painter, opt.orientation, groove.center().x(), groove.top(), groove.center().x(), groove.bottom());
     else

@@ -1,7 +1,7 @@
 \section{General Aspects}
-COMPASS is a highly specialized surveillance data processing framework with a strong focus on high-performance and a low memory footprint to enable the processing of large quantities of data. Surveillance data is fetched from a database (limited by a filter system), then processed and displayed using so-called Views (specific visualizations of the result set).\\
+COMPASS is a highly specialized surveillance data processing framework with a strong focus on high performance and a low memory footprint to enable the processing of large quantities of data. Surveillance data is fetched from a database (limited by a filter system), then processed and displayed using so-called Views (specific visualizations of the result set).\\
 
-As storage medium a database is used, in particular the DuckDB system, which is a lightweight and efficient database and allows copying/sharing database as single file containers. \\
+As storage medium a database is used, in particular the DuckDB system, which is a lightweight and efficient database and allows copying/sharing databases as single file containers. \\
 
 There are two application modes: \textbf{Offline} and \textbf{Live}. In Offline mode an offline recording can be imported and larger amounts of data can be inspected and evaluated. 
 In Live mode data can be read directly from network interfaces, inserted into the database, and immediately displayed to show the current airspace situation. \\
@@ -9,4 +9,4 @@ In Live mode data can be read directly from network interfaces, inserted into th
 After a previously generated database is opened, data can be loaded using a database query. A filter configuration may restrict the loaded data to a result set. 
 Such a result set is displayed for analysis using the various existing Views.\\
 
-Each View defines which contents of the database are required to fulfill its purpose, and only such parts are loaded.  During a loading process from the database, subsets of the query result are immediately added to the current result set and all views are updated.  
+Each View defines which content of the database is required to fulfill its purpose, and only such parts are loaded. During a loading process from the database, subsets of the query result are immediately added to the current result set and all views are updated.

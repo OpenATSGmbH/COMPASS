@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONACROSSCONFIG_H
-#define EVALUATIONREQUIREMENTPOSITIONACROSSCONFIG_H
+#pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "eval/requirement/base/positionbaseconfig.h"
 
 class Group;
 class EvaluationStandard;
@@ -31,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionAcrossConfig : public ProbabilityBaseConfig
+class PositionAcrossConfig : public PositionBaseConfig
 {
 public:
     PositionAcrossConfig(const std::string& class_id, const std::string& instance_id,
@@ -52,5 +51,3 @@ protected:
 };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONACROSSCONFIG_H

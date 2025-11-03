@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FILTERCONDITIONOPERATORCOMBOBOX_H_
-#define FILTERCONDITIONOPERATORCOMBOBOX_H_
+#pragma once
 
 #include <QComboBox>
 #include <QList>
@@ -58,5 +57,3 @@ class FilterConditionOperatorComboBox : public QComboBox
     }
     virtual ~FilterConditionOperatorComboBox() {}
 };
-
-#endif /* FILTERCONDITIONOPERATORCOMBOBOX_H_ */

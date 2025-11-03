@@ -26,7 +26,7 @@
 DuckDBPrepare::DuckDBPrepare(duckdb_connection connection) 
 :   connection_(connection) 
 {
-    assert(connection_);
+    traced_assert(connection_);
 }
 
 /**
@@ -90,12 +90,12 @@ bool DuckDBPrepare::executeBinds_impl()
  */
 bool DuckDBPrepare::execute_impl(const ExecOptions* options, DBResult* result)
 {
-    assert(result);
+    traced_assert(result);
 
     bool fetch_buffer = result && result->buffer() != nullptr;
 
     auto exec_result = executeDuckDB();
-    assert(exec_result);
+    traced_assert(exec_result);
 
     if (exec_result->hasError())
     {
@@ -222,7 +222,7 @@ bool DuckDBPrepare::bind_timestamp_impl(size_t idx, const boost::posix_time::pti
 std::shared_ptr<DuckDBExecResult> DuckDBScopedPrepare::executeDuckDB()
 {
     auto prepare = dynamic_cast<DuckDBPrepare*>(db_prepare_.get());
-    assert(prepare);
+    traced_assert(prepare);
 
     return prepare->executeDuckDB();
 }

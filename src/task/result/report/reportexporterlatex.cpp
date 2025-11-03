@@ -32,6 +32,7 @@
 #include "files.h"
 #include "stringconv.h"
 #include "util/system.h"
+#include "asynctask.h"
 
 #include <fstream>
 
@@ -164,13 +165,13 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
 
     auto& latex_section = latex_doc_->getSection(it->second);
 
-    std::vector<std::string> headings = table.headings();
+    std::vector<std::string> headings = table.proxyHeadings();
     unsigned int num_cols = headings.size();
 
     for (unsigned int cnt=0; cnt < num_cols; ++cnt) // latexify headings
         headings[ cnt ] = Utils::String::latexString(headings[ cnt ]);
 
-    assert (num_cols);
+    traced_assert(num_cols);
 
     //configure wide table settings
     bool wide_table = false;
@@ -187,8 +188,8 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
     else // from settings
         max_row_count = s.latex_table_max_rows;
 
-    unsigned int num_rows = table.filteredRowCount();
-    std::vector<std::string> row_strings;
+    unsigned int num_rows = table.numProxyRows();
+    nlohmann::json row_data;
     std::string ref;
 
     // split all too long tables with internal max row override into subtables
@@ -218,7 +219,7 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
             }
 
             //create new table
-            assert (!latex_section.hasTable(table_name_cur));
+            traced_assert(!latex_section.hasTable(table_name_cur));
 
             latex_section.addTable(table_name_cur, num_cols, headings, "", false);
             current_table = &latex_section.getTable(table_name_cur);
@@ -227,51 +228,60 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
             current_table->setWideTable(wide_table);
         }
 
-        row_strings = table.sortedRowStrings(row);
-        assert (row_strings.size() == num_cols);
+        row_data = table.exportProxyContent(row, ReportExportMode::Latex);
+        if (!row_data.is_array() || row_data.size() != num_cols)
+            return Result::failed("Content '" + table.name() + "' could not be prepared for export @row" + std::to_string(row)); 
 
-        if (wide_table) // truncate texts
-        {
-            for (unsigned int cnt=0; cnt < num_cols; ++cnt)
-            {
-                if (cnt > 2 && 
-                    s.latex_table_max_col_width >= 0 &&  
-                    row_strings[cnt].size() > (size_t)s.latex_table_max_col_width)
-                {
-                    std::string::size_type space_pos = row_strings[cnt].rfind(' ', (size_t)s.latex_table_max_col_width);
-                    std::string::size_type comma_pos = row_strings[cnt].rfind(',', (size_t)s.latex_table_max_col_width);
+        traced_assert(row_data.is_array());
+        traced_assert(row_data.size() == num_cols);
 
-                    if (space_pos == std::string::npos)
-                    {
-                        if (comma_pos == std::string::npos)
-                        {
-                            break; // no 64-bit-or-less substring
-                        }
-                        else
-                        {
-                            row_strings[cnt] = row_strings[ cnt ].substr(0, comma_pos) + "...";
-                        }
-                    }
-                    else
-                    {
-                        row_strings[cnt] = row_strings[ cnt ].substr(0, space_pos) + "...";
-                    }
-                }
-            }
-        }
-
-        if (table.hasReference(row)) // \hyperref[sec:marker2]{SecondSection}
-        {
-            ref = table.reference(row);
-            row_strings[0] = "\\hyperref[sec:" + ref + "]{" + row_strings.at(0) + "}";
-        }
+        std::vector<std::string> row_strings(num_cols);
 
         for (unsigned int cnt=0; cnt < num_cols; ++cnt)
         {
-            if (row_strings[cnt] == "true" || row_strings[cnt] == "Passed")
-                row_strings[cnt] = "\\textcolor{darkgreen}{"+row_strings[cnt]+"}";
-            else if (row_strings[cnt] == "false" || row_strings[cnt] == "Failed")
-                row_strings[cnt] = "\\textcolor{red}{"+row_strings[cnt]+"}";
+            traced_assert(row_data.at(cnt).is_string());
+            row_strings[cnt] = row_data.at(cnt).get<std::string>();
+
+            auto& str = row_strings[cnt];
+
+            bool command_handled = false;
+
+            //handle special commands
+            if (str.size() > 0 && str[ 0 ] == '\\')
+            {
+                auto res = handleLatexCommand(str);
+                if (!res.ok())
+                    return Result::failed("Content '" + table.name() + "' obtains invalid command: " + res.error()); 
+
+                command_handled = res.result() == LatexCmdResult::Handled;
+            }
+
+            //limit too long columns
+            if (wide_table &&
+                !command_handled &&
+                cnt > 2 && 
+                s.latex_table_max_col_width >= 0 &&  
+                str.size() > (size_t)s.latex_table_max_col_width)
+            {
+                std::string::size_type space_pos = str.rfind(' ', (size_t)s.latex_table_max_col_width);
+                std::string::size_type comma_pos = str.rfind(',', (size_t)s.latex_table_max_col_width);
+
+                if (space_pos == std::string::npos)
+                {
+                    if (comma_pos == std::string::npos)
+                    {
+                        // no 64-bit-or-less substring
+                    }
+                    else
+                    {
+                        str = str.substr(0, comma_pos) + "...";
+                    }
+                }
+                else
+                {
+                    str = str.substr(0, space_pos) + "...";
+                }
+            }
         }
 
         //add row to current table
@@ -279,6 +289,48 @@ Result ReportExporterLatex::exportTable_impl(SectionContentTable& table,
     }
 
     return Result::succeeded();
+}
+
+/**
+ */
+ResultT<ReportExporterLatex::LatexCmdResult> ReportExporterLatex::handleLatexCommand(std::string& cmd) const
+{
+    const std::string IncludeGraphics = "\\includegraphics";
+
+    //handle graphics
+    auto gfx_idx = cmd.find(IncludeGraphics);
+    if (gfx_idx != std::string::npos)
+    {
+        auto gfx_fn0 = cmd.find('{', gfx_idx + IncludeGraphics.size());
+        auto gfx_fn1 = cmd.find('}', gfx_idx + IncludeGraphics.size());
+
+        if (gfx_fn0 == std::string::npos ||
+            gfx_fn1 == std::string::npos ||
+            gfx_fn0 >= gfx_fn1)
+            return Result::failed("Command obtains badly configured icons");
+
+        gfx_fn0 += 1;
+        auto len = gfx_fn1 - gfx_fn0;
+
+        std::string fn   = cmd.substr(gfx_fn0, len);
+        std::string path = Utils::Files::getIconFilepath(fn, false);
+
+        if (fn.empty() || !Utils::Files::fileExists(path))
+            return Result::failed("Command obtains missing icons");
+
+        std::string icon_path_rel = storeFile(ResourceDir::Icons, path);
+        if (icon_path_rel.empty())
+            return Result::failed("Could not store icon");
+
+        std::string part0 = cmd.substr(0, gfx_fn0);
+        std::string part1 = cmd.substr(gfx_fn1, std::string::npos);
+
+        cmd = part0 + icon_path_rel + part1;
+
+        return ResultT<LatexCmdResult>::succeeded(LatexCmdResult::Handled);
+    }
+
+    return ResultT<LatexCmdResult>::succeeded(LatexCmdResult::Skipped);
 }
 
 /**
@@ -302,21 +354,35 @@ Result ReportExporterLatex::exportText_impl(SectionContentText& text,
  */
 Result ReportExporterLatex::writePDF() const
 {
-    assert(latex_doc_);
+    traced_assert(latex_doc_);
 
     std::string command_out;
     std::string command = "cd \"" + latex_doc_->path() + "\" && pdflatex --interaction=nonstopmode \"" + latex_doc_->filename()
             + "\" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
 
-    loginf << "ReportExporterLatex: writePDF: running pdflatex";
+    loginf << "running pdflatex";
+
+    auto runPDFLatex = [ & ] ()
+    {
+        auto cb = [ & ] (const AsyncTaskState& state, AsyncTaskProgressWrapper& progress)
+        {
+            command_out = Utils::System::exec(command);
+
+            return Result::succeeded();
+        };
+
+        AsyncFuncTask task(cb, "Finalizing Report", "Finalizing report...", false);
+        task.runAsync();
+    };
 
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-    loginf << "ReportExporterLatex: writePDF: cmd '" << command << "'";
+    loginf << "cmd '" << command << "'";
 
-    command_out = Utils::System::exec(command);
+    //initial run
+    runPDFLatex();
 
-    logdbg << "ReportExporterLatex: writePDF: cmd done";
+    logdbg << "cmd done";
 
     const auto& s = settings();
 
@@ -327,30 +393,31 @@ Result ReportExporterLatex::writePDF() const
            (command_out.find("Rerun to get outlines right"        ) != std::string::npos) || 
            (command_out.find("Rerun to get cross-references right") != std::string::npos))
     {
-        loginf << "ReportExporterLatex: writePDF: re-running pdflatex";
+        loginf << "re-running pdflatex";
         
-        command_out = Utils::System::exec(command);
+        //re-run
+        runPDFLatex();
 
-        logdbg << "ReportExporterLatex: writePDF: re-run done";
+        logdbg << "re-run done";
 
         ++run_cnt;
     }
 
-    loginf << "ReportExporterLatex: writePDF: result '" << command_out << "'";
+    loginf << "result '" << command_out << "'";
 
     if (command_out.size())
         return Result::failed("PDF Latex failed with warnings:\n\n" + std::string(command_out.c_str()));
 
     if (settings().open_created_file && hasInteraction())
     {
-        std::string fullpath = exportResourceDir() + "/" + exportFilename();
+        std::string fullpath = (boost::filesystem::path(exportResourceDir()) / boost::filesystem::path(exportFilename())).string();
         if (Utils::String::hasEnding(fullpath, ".tex"))
             Utils::String::replace(fullpath, ".tex", ".pdf");
 
-        loginf << "ReportExporterLatex: writePDF: opening '" << fullpath << "'";
+        loginf << "opening '" << fullpath << "'";
 
         if (!QDesktopServices::openUrl(QUrl(fullpath.c_str())))
-            logerr << "ReportExporterLatex: writePDF: could not open created file";
+            logerr << "could not open created file";
     }
 
     return Result::succeeded();

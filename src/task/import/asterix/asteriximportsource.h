@@ -70,6 +70,8 @@ struct ASTERIXImportFileSection
     std::string            id;                   // id to identify this section in a file
     int                    idx = -1;             // index to identify this section in a file
     std::string            description;          // textual description for display purpose
+    std::string            info;                 // additional textual information
+    std::string            contentinfo;          // information about the content
     std::vector<char>      raw_data;             // raw data (possibly only a part of the total data)
     size_t                 total_size_bytes = 0; // total size of this section in bytes
     
@@ -100,6 +102,7 @@ struct ASTERIXImportFileInfo
 
     std::string            filename;
     //unsigned int         line_id = 0; // TODO rework
+    std::string            contentinfo;
 
     Sections                sections;
     boost::optional<size_t> total_size_bytes;

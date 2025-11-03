@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TASKWIDGET_H
-#define TASKWIDGET_H
+#pragma once
 
 #include <QWidget>
 
@@ -33,5 +32,3 @@ class TaskWidget : public QWidget
         setContentsMargins(0, 0, 0, 0);
     }
 };
-
-#endif  // TASKWIDGET_H

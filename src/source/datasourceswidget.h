@@ -17,17 +17,13 @@
 
 #pragma once
 
-#include "toolboxwidget.h"
 
 #include <QMenu>
 #include <QPushButton>
 #include <QTreeWidgetItem>
 
-#include <map>
-
 class DataSourceManager;
 
-class QLabel;
 class QTreeWidget;
 
 namespace dbContent
@@ -164,25 +160,24 @@ private:
     const dbContent::DBDataSource* ds_ = nullptr;
 };
 
+class QHBoxLayout;
+
 /**
  */
-class DataSourcesWidget : public ToolBoxWidget
+class DataSourcesWidget : public QWidget
 {
     Q_OBJECT
-public:
-    DataSourcesWidget(DataSourceManager& ds_man);
-    virtual ~DataSourcesWidget();
 
-    //ToolBoxWidget
-    QIcon toolIcon() const override final;
-    std::string toolName() const override final;
-    std::string toolInfo() const override final;
-    std::vector<std::string> toolLabels() const override final;
-    toolbox::ScreenRatio defaultScreenRatio() const override final;
-    void addToConfigMenu(QMenu* menu) override final; 
-    void addToToolBar(QToolBar* tool_bar) override final; 
-    void loadingStarted() override final;
-    void loadingDone() override final;
+public slots:
+    // Add this slot
+    void onItemSelectionChanged();
+
+signals:
+    void dataSourceSelectedSignal(unsigned int ds_id);
+
+public:
+    DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man);
+    virtual ~DataSourcesWidget();
 
     void updateContent(bool recreate_required = false);
 
@@ -197,7 +192,26 @@ public:
 
     DataSourceManager& dsManager() { return ds_man_; }
 
+    void addActionsToConfigMenu(QMenu* menu);
+
     static const int LineButtonSize;
+
+protected:
+    bool can_show_counts_;
+    DataSourceManager& ds_man_;
+
+    QHBoxLayout* top_layout_ {nullptr};
+    QTreeWidget* tree_widget_ {nullptr};
+
+    void selectAllDSTypes();
+    void deselectAllDSTypes();
+    void selectAllDataSources();
+    void deselectAllDataSources();
+    void selectDSTypeSpecificDataSources();
+    void deselectDSTypeSpecificDataSources();
+    void deselectAllLines();
+    void selectSpecificLines();
+    void toogleShowCounts();
 
 private:
     friend class DataSourcesWidgetItem;
@@ -221,23 +235,5 @@ private:
     void lineChanged(unsigned int ds_id, unsigned int ds_line, bool use);
 
     void updateAllContent();
-    void updateAdditionalInfo();
 
-    void selectAllDSTypes();
-    void deselectAllDSTypes();
-    void selectAllDataSources();
-    void deselectAllDataSources();
-    void selectDSTypeSpecificDataSources();
-    void deselectDSTypeSpecificDataSources();
-    void deselectAllLines();
-    void selectSpecificLines();
-    void toogleShowCounts();
-
-    DataSourceManager& ds_man_;
-
-    QLabel* ts_min_label_{nullptr};
-    QLabel* ts_max_label_{nullptr};
-    QLabel* associations_label_{nullptr};
-
-    QTreeWidget* tree_widget_ = nullptr;
 };

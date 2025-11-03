@@ -15,20 +15,57 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-
 #include "client.h"
+#include "compass.h"
+#include "logger.h"
+#include "msghandler.h"
 
 #include <QThread>
+#include <QTimer>
 
 #include <osgEarth/Registry>
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/stacktrace.hpp>
+
+#include <iostream>
+#include <signal.h>
+
 using namespace std;
+
+void signalHandler(int signum) 
+{
+    std::cerr << "Caught signal " << signum << std::endl;
+
+    // invoke the default handler and process the signal
+    signal(signum, SIG_DFL);
+    raise(signum);
+}
 
 int main(int argc, char** argv)
 {
     try
     {
+        signal(SIGSEGV, signalHandler);
+        signal(SIGABRT, signalHandler);
+        signal(SIGTERM, signalHandler);
+        
+        const bool is_app_image = getenv("APPDIR") != nullptr;
+
+        if (!is_app_image)
+        {
+            //localbuild => switch to xcb if on wayland (and not specified otherwise)
+            if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) 
+            {
+                const char *session = qgetenv("XDG_SESSION_TYPE").constData();
+                if (session && QString::fromLocal8Bit(session) == "wayland")
+                {
+                    std::cout << "setting platform to xcb" << std::endl; 
+                    qputenv("QT_QPA_PLATFORM", "xcb");
+                }
+            }
+        }
+
         // Enable Qt high-DPI scaling
         QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
@@ -46,7 +83,19 @@ int main(int argc, char** argv)
         // note: do not use COMPASS::instance functions here
 
         if (!client.run())
+        {
+            // // process events a bit to allow for correct cleanup
+            // auto start_time = boost::posix_time::microsec_clock::local_time();
+            // while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
+            //         < 50)
+            // {
+            //     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            //     QThread::msleep(1);
+            // }
+            COMPASS::instance().shutdown();
+
             return -1;
+        }
 
         return client.exec();
     }

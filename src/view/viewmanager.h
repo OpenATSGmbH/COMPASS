@@ -63,7 +63,7 @@ class ViewManager : public QObject, public Configurable
     // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
     // e.g. when data in the beginning was removed, or order of previously emitted data was changed, etc.
     void loadedDataSlot (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
-    void loadingDoneSlot(); // emitted when all dbos have finished loading
+    void loadingDoneSlot(); // emitted when all dbconts have finished loading
 
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
@@ -125,7 +125,8 @@ class ViewManager : public QObject, public Configurable
     void clearViewPoints();
     void addViewPoints(const std::vector <nlohmann::json>& viewpoints);
 
-    void setCurrentViewPoint (const ViewableDataConfig* viewable);
+    void setCurrentViewPoint (const ViewableDataConfig* viewable, 
+                              bool load_blocking = false);
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 

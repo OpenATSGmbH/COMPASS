@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "datasourcecreatedialog.h"
 #include "datasourcemanager.h"
 #include "dstypeselectioncombobox.h"
@@ -74,7 +91,7 @@ DataSourceCreateDialog::~DataSourceCreateDialog()
 void DataSourceCreateDialog::dsTypeEditedSlot(const QString& value)
 {
     ds_type_ = value.toStdString();
-    loginf << "DataSourceEditWidget: dsTypeEditedSlot: " << ds_type_;
+    loginf << "start" << ds_type_;
 
     checkInput();
 }
@@ -83,7 +100,7 @@ void DataSourceCreateDialog::sacEditedSlot(const QString& value_str)
 {
     sac_ = value_str.toUInt();
 
-    loginf << "DataSourceEditWidget: sacEditedSlot: " << sac_;
+    loginf << "start" << sac_;
 
     checkInput();
 }
@@ -91,7 +108,7 @@ void DataSourceCreateDialog::sicEditedSlot(const QString& value_str)
 {
     sic_ = value_str.toUInt();
 
-    loginf << "DataSourceEditWidget: sacEditedSlot: " << sic_;
+    loginf << "start" << sic_;
 
     checkInput();
 }
@@ -112,7 +129,7 @@ void DataSourceCreateDialog::doneClickedSlot()
 
 void DataSourceCreateDialog::checkInput()
 {
-    assert (done_button_);
+    traced_assert(done_button_);
 
     if (!ds_type_.size())
     {

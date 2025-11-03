@@ -163,7 +163,7 @@ void FilterGeneratorWidget::createGUIElements()
 
 //void FilterGeneratorWidget::loadMin()
 //{
-//    assert(condition_variable_widget_);
+//    traced_assert(condition_variable_widget_);
 
 //    std::string value;
 //    if (condition_variable_widget_->hasVariable())
@@ -185,7 +185,7 @@ void FilterGeneratorWidget::createGUIElements()
 //}
 //void FilterGeneratorWidget::loadMax()
 //{
-//    assert(condition_variable_widget_);
+//    traced_assert(condition_variable_widget_);
 
 //    std::string value;
 //    if (condition_variable_widget_->hasVariable())
@@ -208,8 +208,8 @@ void FilterGeneratorWidget::createGUIElements()
 
 void FilterGeneratorWidget::addCondition()
 {
-    assert(condition_variable_widget_);
-    assert(condition_combo_);
+    traced_assert(condition_variable_widget_);
+    traced_assert(condition_combo_);
 
     ConditionTemplate data_condition;
 
@@ -217,14 +217,14 @@ void FilterGeneratorWidget::addCondition()
     {
         const dbContent::Variable& var = condition_variable_widget_->selectedVariable();
         data_condition.variable_name_ = var.name();
-        data_condition.variable_dbo_type_ = var.dbContentName();
+        data_condition.variable_dbcont_name_ = var.dbContentName();
     }
     else
     {
-        assert(condition_variable_widget_->hasMetaVariable());
+        traced_assert(condition_variable_widget_->hasMetaVariable());
         dbContent::MetaVariable& var = condition_variable_widget_->selectedMetaVariable();
         data_condition.variable_name_ = var.name();
-        data_condition.variable_dbo_type_ = META_OBJECT_NAME;
+        data_condition.variable_dbcont_name_ = META_OBJECT_NAME;
     }
 
     data_condition.absolute_value_ = condition_absolute_->checkState() == Qt::Checked;
@@ -239,7 +239,7 @@ void FilterGeneratorWidget::addCondition()
 
 void FilterGeneratorWidget::updateWidgetList()
 {
-    assert(conditions_list_);
+    traced_assert(conditions_list_);
     conditions_list_->clear();
 
     for (unsigned int cnt = 0; cnt < data_conditions_.size(); cnt++)
@@ -258,7 +258,7 @@ void FilterGeneratorWidget::closeEvent(QCloseEvent* event) { emit filterWidgetAc
 
 void FilterGeneratorWidget::accept()
 {
-    loginf << "FilterGeneratorWidget: accept";
+    loginf;
 
     std::string filter_name = filter_name_->text().toStdString();
 
@@ -269,13 +269,13 @@ void FilterGeneratorWidget::accept()
         ConditionTemplate& data_condition = data_conditions_.at(cnt);
         std::string condition_name = filter_name + "Condition" + std::to_string(cnt);
 
-        loginf << "FilterGeneratorWidget: accept: creating condition with operator '"
+        loginf << "creating condition with operator '"
                << data_condition.operator_ << "'";
 
         Configuration& condition_configuration = configuration->addNewSubConfiguration("DBFilterCondition", condition_name);
         condition_configuration.addParameter<std::string>("operator", data_condition.operator_);
         condition_configuration.addParameter<std::string>("variable_name", data_condition.variable_name_);
-        condition_configuration.addParameter<std::string>("variable_dbcontent_name", data_condition.variable_dbo_type_);
+        condition_configuration.addParameter<std::string>("variable_dbcontent_name", data_condition.variable_dbcont_name_);
         condition_configuration.addParameter<bool>("absolute_value", data_condition.absolute_value_);
         condition_configuration.addParameter<std::string>("value", data_condition.value_);
 

@@ -91,7 +91,7 @@ Group::Group(const std::string& class_id, const std::string& instance_id,
     registerParameter("name", &name_, std::string());
     registerParameter("use", &use_, true);
 
-    assert (name_.size());
+    traced_assert(name_.size());
 
     createSubConfigurables();
 }
@@ -123,9 +123,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ExtraDataConfig* config =
                 new EvaluationRequirement::ExtraDataConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementExtraTrackConfig")
@@ -133,9 +133,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ExtraTrackConfig* config =
                 new EvaluationRequirement::ExtraTrackConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementDubiousTrackConfig")
@@ -143,9 +143,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::DubiousTrackConfig* config =
                 new EvaluationRequirement::DubiousTrackConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementDubiousTargetConfig")
@@ -153,9 +153,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::DubiousTargetConfig* config =
                 new EvaluationRequirement::DubiousTargetConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementDetectionConfig")
@@ -163,9 +163,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::DetectionConfig* config =
                 new EvaluationRequirement::DetectionConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionDistanceConfig")
@@ -173,9 +173,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionDistanceConfig* config =
                 new EvaluationRequirement::PositionDistanceConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionDistanceRMSConfig")
@@ -183,9 +183,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionDistanceRMSConfig* config =
                 new EvaluationRequirement::PositionDistanceRMSConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionRadarRangeConfig")
@@ -193,9 +193,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionRadarRangeConfig* config =
                 new EvaluationRequirement::PositionRadarRangeConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionRadarAzimuthConfig")
@@ -203,9 +203,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionRadarAzimuthConfig* config =
                 new EvaluationRequirement::PositionRadarAzimuthConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionAlongConfig")
@@ -213,9 +213,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionAlongConfig* config =
                 new EvaluationRequirement::PositionAlongConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionAcrossConfig")
@@ -223,9 +223,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionAcrossConfig* config =
                 new EvaluationRequirement::PositionAcrossConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementPositionLatencyConfig")
@@ -233,9 +233,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::PositionLatencyConfig* config =
                 new EvaluationRequirement::PositionLatencyConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementSpeedConfig")
@@ -243,9 +243,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::SpeedConfig* config =
                 new EvaluationRequirement::SpeedConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementTrackAngleConfig")
@@ -253,9 +253,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::TrackAngleConfig* config =
                 new EvaluationRequirement::TrackAngleConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementIdentificationCorrectConfig")
@@ -263,9 +263,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::IdentificationCorrectConfig* config =
                 new EvaluationRequirement::IdentificationCorrectConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementIdentificationFalseConfig")
@@ -273,9 +273,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::IdentificationFalseConfig* config =
                 new EvaluationRequirement::IdentificationFalseConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementIdentificationCorrectPeriodConfig")
@@ -283,9 +283,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::IdentificationCorrectPeriodConfig* config =
                 new EvaluationRequirement::IdentificationCorrectPeriodConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementModeAPresentConfig")
@@ -293,9 +293,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ModeAPresentConfig* config =
                 new EvaluationRequirement::ModeAPresentConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementModeAFalseConfig")
@@ -303,9 +303,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ModeAFalseConfig* config =
                 new EvaluationRequirement::ModeAFalseConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementModeCPresentConfig")
@@ -313,9 +313,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ModeCPresentConfig* config =
                 new EvaluationRequirement::ModeCPresentConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementModeCCorrectConfig")
@@ -323,9 +323,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ModeCCorrectConfig* config =
                 new EvaluationRequirement::ModeCCorrectConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementModeCFalseConfig")
@@ -333,9 +333,9 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ModeCFalseConfig* config =
                 new EvaluationRequirement::ModeCFalseConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementModeCCorrectPeriodConfig")
@@ -343,63 +343,63 @@ void Group::generateSubConfigurable(const std::string& class_id,
         EvaluationRequirement::ModeCCorrectPeriodConfig* config =
                 new EvaluationRequirement::ModeCCorrectPeriodConfig(
                     class_id, instance_id, *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementMoMLongAccConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
                 class_id, instance_id, "MomLongAccCorrect", *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementMoMTransAccConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
             class_id, instance_id, "MomTransAccCorrect", *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementMoMVertRateConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
             class_id, instance_id, "MomVertRateCorrect", *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementCoastingCorrectConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
             class_id, instance_id, "CoastingCorrect", *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementROCDCorrectConfig")
     {
         EvaluationRequirement::GenericDoubleConfig* config = new EvaluationRequirement::GenericDoubleConfig(
             class_id, instance_id, "ROCDCorrect", *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else if (class_id == "EvaluationRequirementAccelerationCorrectConfig")
     {
         EvaluationRequirement::GenericDoubleConfig* config = new EvaluationRequirement::GenericDoubleConfig(
             class_id, instance_id, "AccelerationCorrect", *this, standard_, calculator_);
-        logdbg << "EvaluationRequirementGroup: generateSubConfigurable: adding config " << config->name();
+        logdbg << "adding config " << config->name();
 
-        assert(!hasRequirementConfig(config->name()));
+        traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else
@@ -423,10 +423,10 @@ bool Group::hasRequirementConfig (const std::string& name)
 
 void Group::addRequirementConfig (const std::string& class_id, const std::string& name, const std::string& short_name)
 {
-    loginf << "EvaluationRequirementGroup: addRequirementConfig: class_id " << class_id << " name " << name
+    loginf << "class_id " << class_id << " name " << name
            << " short_name " << short_name;
 
-    assert (!hasRequirementConfig(name));
+    traced_assert(!hasRequirementConfig(name));
 
     std::string instance = class_id + name + "0";
 
@@ -438,14 +438,14 @@ void Group::addRequirementConfig (const std::string& class_id, const std::string
 
     sortConfigs();
 
-    assert (hasRequirementConfig(name));
+    traced_assert(hasRequirementConfig(name));
 
     emit configsChangedSignal();
 }
 
 EvaluationRequirement::BaseConfig& Group::requirementConfig (const std::string& name)
 {
-    assert (hasRequirementConfig(name));
+    traced_assert(hasRequirementConfig(name));
 
     auto iter = std::find_if(configs_.begin(), configs_.end(),
                              [&name](const unique_ptr<EvaluationRequirement::BaseConfig>& x) { return x->name() == name;});
@@ -455,12 +455,12 @@ EvaluationRequirement::BaseConfig& Group::requirementConfig (const std::string& 
 
 void Group::removeRequirementConfig (const std::string& name)
 {
-    assert (hasRequirementConfig(name));
+    traced_assert(hasRequirementConfig(name));
 
     auto iter = std::find_if(configs_.begin(), configs_.end(),
                              [&name](const unique_ptr<EvaluationRequirement::BaseConfig>& x) { return x->name() == name;});
 
-    assert (iter != configs_.end());
+    traced_assert(iter != configs_.end());
 
     configs_.erase(iter);
 
@@ -474,7 +474,7 @@ void Group::checkSubConfigurables()
 
 EvaluationStandardTreeItem* Group::child(int row)
 {
-    if (row < 0 || row >= configs_.size())
+    if (row < 0 || row >= static_cast<int>(configs_.size()))
         return nullptr;
 
     return configs_.at(row).get();
@@ -492,7 +492,7 @@ int Group::columnCount() const
 
 QVariant Group::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return name_.c_str();
 }

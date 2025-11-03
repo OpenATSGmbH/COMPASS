@@ -1,0 +1,143 @@
+\subsection{Extra Data}
+\label{sec:eval_req_extra_data} 
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \includegraphics[width=14cm,frame]{figures/eval_req_extra_data.png}
+  \caption{Evaluation Extra Data requirement}
+\end{figure}
+
+The 'Extra Data' requirement is a recommended addition to the 'Detection' requirement, while not mandated by any standard known to the author. \\
+
+While the 'Detection' requirement detects "missing" test data, it ignores test data for which no reference exist - which might indicate issues in the reference data which might be of interest in the evaluation. \\
+
+The 'Extra Data' requirement detects "extra" test data, i.e. test data for which no reference exists (and fulfills possible constraints), and calculates the number of extra target reports. Based on the number of target reports which are extra, and the number of target reports which are also detection by the reference, the Probability of Extra (PEx) data is calculated. The PEx must be less or equal than the defined 'Probability' for the requirement to pass. \\
+
+\begin{itemize}  
+\item Probability [1]: Probability of extra data
+\item Probability Check Type: $\leq$
+\item Minimum Duration [s]: Minimum track duration, requirement result is ignored if less
+\item Minimum Number of Updates [s]: Minimum number of extra target reports, requirement result is ignored if less
+\item Ignore Primary Only: Requirement result is ignored if target is primary only (has no secondary attributes, also not in reference)
+\end{itemize}
+
+\subsubsection{Result Values}
+
+\paragraph{Sector}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Sector Layer & Name of the sector layer & fir\_cut\_sim  \\ \hline
+    Reqirement Group & Name of the requirement group & Mandatory  \\ \hline
+    Requirement & Name of the requirement & Extra Data  \\ \hline 
+    Num Results & Total number of results & 728 \\ \hline
+    Num Usable Results & Number of usable results & 250 \\ \hline
+    Num Unusable Results & Number of unusable results & 478 \\ \hline
+    \#Check. & Number of checked test updates & 131343 \\ \hline
+    \#OK. & Number of OK test updates & 109622 \\ \hline
+    \#Extra & Number of extra test updates & 21721 \\ \hline
+    PEx [\%] & Probability of extra test update & 16.54 \\ \hline
+    Condition &  & <= 3.00 \\ \hline
+    Condition Fulfilled &  & Failed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+Also, a table is given for all single targets, sorted by PEx.
+
+\paragraph{Single Target}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Ref [1] & Number of reference updates & 157 \\ \hline
+    \#Tst [1] & Number of test updates & 614 \\ \hline
+    Ign. & Ignore target & false \\ \hline
+    \#Check. & Number of checked test updates & 590 \\ \hline
+    \#OK. & Number of OK test updates & 329 \\ \hline
+    \#Extra & Number of extra test updates & 261 \\ \hline
+    PEx [\%] & Probability of update with extra data & 44.24 \\ \hline
+    Condition &  & <= 3.00 \\ \hline
+    Condition Fulfilled &  & Failed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+\subsection{Extra Track}
+\label{sec:eval_req_extra_track} 
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \includegraphics[width=14cm,frame]{figures/eval_req_extra_track.png}
+  \caption{Evaluation Extra Track requirement}
+\end{figure}
+
+The 'Extra Track' requirement is useful for Tracker evaluation, and detects if more than one test track exist for a target. \\
+
+First the time period of each track (by ocurrance of track number, with a maximum time difference of 5 minutes) is calculated. Then, for each test target report, it is checked if multiple track number periods match, and counted as extra update if there are more than 1. Based on the number of target reports which are extra, and the number of target reports which are also detection by the reference, the Probability of Extra (PEx) data is calculated. The PEx must be less or equal than the defined 'Probability' for the requirement to pass. \\
+
+\begin{itemize}  
+\item Probability [1]: Probability of extra data
+\item Probability Check Type: $\leq$
+\item Minimum Duration [s]: Minimum track duration, requirement result is ignored if less
+\item Minimum Number of Updates [s]: Minimum number of extra target reports, requirement result is ignored if less
+\item Ignore Primary Only: Requirement result is ignored if target is primary only (has no secondary attributes, also not in reference)
+\end{itemize}
+\ \\
+
+Please note that currently, in the case of multiple tracks existing at the same time, the requirement does not decided which track is correct and which one is extra, therefore all target reports are counted as being extra. \\
+
+\subsubsection{Result Values}
+
+\paragraph{Sector}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Sector Layer & Name of the sector layer & fir\_cut\_sim \\ \hline
+    Reqirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement & Name of the requirement & Extra Track \\ \hline
+    Num Results & Total number of results & 728 \\ \hline
+    Num Usable Results & Number of usable results & 110 \\ \hline
+    Num Unusable Results & Number of unusable results & 618 \\ \hline
+    \#Check. & Number of checked test track updates & 56106 \\ \hline
+    \#OK. & Number of OK test track updates & 56106 \\ \hline
+    \#Extra & Number of extra test track updates & 0 \\ \hline
+    PEx [\%] & Probability of update with extra track & 0.00 \\ \hline
+    Condition &  & <= 0.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+Also, a table is given for all single targets, sorted by PEx.
+
+\paragraph{Single Target}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Tst [1] & Number of test updates & 566 \\ \hline
+    Ign. & Ignore target & false \\ \hline
+    \#Check. & Number of checked test track updates & 327 \\ \hline
+    \#OK. & Number of OK test track updates & 327 \\ \hline
+    \#Extra & Number of extra test track updates & 0 \\ \hline
+    PEx [\%] & Probability of update with extra track & 0 \\ \hline
+    Condition &  & <= 0.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}

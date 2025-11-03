@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LATEXCONTENT_H
-#define LATEXCONTENT_H
+#pragma once
 
 #include <string>
 #include <memory>
@@ -42,5 +41,3 @@ protected:
     LatexTable* findTable (const std::string& name); // nullptr if not found
     LatexImage* findImage (const std::string& filename); // nullptr if not found
 };
-
-#endif // LATEXCONTENT_H

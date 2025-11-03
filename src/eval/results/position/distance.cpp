@@ -16,8 +16,13 @@
  */
 
 #include "eval/results/position/distance.h"
+#include "eval/requirement/position/distance.h"
+#include "stringconv.h"
 
 #include "logger.h"
+#include "traced_assert.h"
+
+using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
@@ -35,10 +40,11 @@ SinglePositionDistance::SinglePositionDistance(const std::string& result_id,
                                                unsigned int num_no_ref,
                                                unsigned int num_pos_outside,
                                                unsigned int num_pos_inside,
+                                               unsigned int num_ref_inaccurate,
                                                unsigned int num_comp_passed,
                                                unsigned int num_comp_failed)
 :   SinglePositionProbabilityBase("SinglePositionDistance", result_id, requirement, sector_layer, utn, target, calculator, details,
-                                  num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_comp_passed, num_comp_failed)
+                                  num_pos, num_no_ref,num_pos_outside, num_pos_inside, num_ref_inaccurate, num_comp_passed, num_comp_failed)
 {
     updateResult();
 }
@@ -68,14 +74,28 @@ nlohmann::json::array_t SinglePositionDistance::targetTableValuesCustom() const
              num_passed_ }; 
 }
 
+std::string SinglePositionDistance::targetTableCustomSortColumn() const 
+{
+    const EvaluationRequirement::PositionDistance* req = 
+    dynamic_cast<const EvaluationRequirement::PositionDistance*>(requirement().get());
+    traced_assert(req);
+
+    if (req->failedValuesOfInterest())
+        return "#CF";
+    else
+        return "#CP";
+};
+
 /**
 */
 std::vector<Single::TargetInfo> SinglePositionDistance::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 
@@ -89,7 +109,7 @@ std::vector<Single::TargetInfo> SinglePositionDistance::targetInfos() const
 */
 std::vector<std::string> SinglePositionDistance::detailHeaders() const
 {
-    return { "ToD", "NoRef", "PosInside", "Distance", "CP", "#CF", "#CP", "Comment" };
+    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Distance", "CP", "#CF", "#CP", "Comment" };
 }
 
 /**
@@ -102,6 +122,7 @@ nlohmann::json::array_t SinglePositionDistance::detailValues(const EvaluationDet
     return { Utils::Time::toString(detail.timestamp()),
             !has_ref_pos,
              detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
+             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
              detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
              detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
@@ -129,8 +150,10 @@ std::vector<Joined::SectorInfo> JoinedPositionDistance::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                        , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference positions", num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#PosOutside [1]", "Number of updates outside sector"         , num_pos_outside_                   }, 
+             { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
+             { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
+             { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
              { "DMin [m]"       , "Minimum of distance"                      , formatValue(accumulator_.min())    }, 
              { "DMax [m]"       , "Maximum of distance"                      , formatValue(accumulator_.max())    },
              { "DAvg [m]"       , "Average of distance"                      , formatValue(accumulator_.mean())   }, 

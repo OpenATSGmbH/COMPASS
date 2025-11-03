@@ -16,6 +16,7 @@
  */
 
 #include "duckdbappender.h"
+#include "traced_assert.h"
 
 #include "logger.h"
 
@@ -53,13 +54,13 @@ bool DuckDBScopedAppender::valid() const
  */
 size_t DuckDBScopedAppender::endRow()
 {
-    assert(ok_);
+    traced_assert(ok_);
 
     auto state = duckdb_appender_end_row(appender_);
 
     if (state != DuckDBSuccess)
-        logerr << "DuckDBScopedAppender: endRow: failed: " << duckdb_appender_error(appender_);
-    assert(state == DuckDBSuccess);
+        logerr << "failed: " << duckdb_appender_error(appender_);
+    traced_assert(state == DuckDBSuccess);
 
     size_t last_appended = appended_;
     appended_ = 0;
@@ -71,7 +72,7 @@ size_t DuckDBScopedAppender::endRow()
  */
 bool DuckDBScopedAppender::flush()
 {
-    assert(ok_);
+    traced_assert(ok_);
     return duckdb_appender_flush(appender_) == DuckDBSuccess;
 }
 
@@ -79,7 +80,7 @@ bool DuckDBScopedAppender::flush()
  */
 size_t DuckDBScopedAppender::columnCount() const
 {
-    assert(ok_);
+    traced_assert(ok_);
     return duckdb_appender_column_count(appender_);
 }
 
@@ -87,6 +88,6 @@ size_t DuckDBScopedAppender::columnCount() const
  */
 std::string DuckDBScopedAppender::lastAppenderError() const
 {
-    assert(ok_);
+    traced_assert(ok_);
     return std::string(duckdb_appender_error(appender_));
 }

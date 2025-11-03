@@ -50,6 +50,7 @@ extern boost::posix_time::time_duration partialSeconds(double seconds, bool igno
 extern double partialSeconds(const boost::posix_time::time_duration& seconds);
 
 extern QDateTime qtFrom (const boost::posix_time::ptime& value, bool include_ms=true);
+extern boost::posix_time::ptime truncateToFullSeconds(const boost::posix_time::ptime& timestamp);
 
 }  // namespace Time
 

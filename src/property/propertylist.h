@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PROPERTYLIST_H_
-#define PROPERTYLIST_H_
+#pragma once
 
 #include <vector>
 
@@ -99,5 +98,3 @@ class PropertyList
     /// @brief Return number of properties in list
     unsigned int size() const { return properties_.size(); }
 };
-
-#endif /* PROPERTYLIST_H_ */

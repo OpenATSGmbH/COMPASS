@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef READJSONFILEPARTJOB_H
-#define READJSONFILEPARTJOB_H
+#pragma once
 
 #include <fstream>
 #include <sstream>
@@ -80,5 +79,3 @@ class ReadJSONFileJob : public Job
 
     void cleanCommas();
 };
-
-#endif  // READJSONFILEPARTJOB_H

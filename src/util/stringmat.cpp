@@ -60,7 +60,7 @@ void StringMatrix::clear()
 */
 std::string* StringMatrix::rowPtr(size_t row)
 {
-    assert(row < nrows_);
+    traced_assert(row < nrows_);
     return data_.data() + row * ncols_;
 }
 
@@ -68,7 +68,7 @@ std::string* StringMatrix::rowPtr(size_t row)
 */
 const std::string* StringMatrix::rowPtr(size_t row) const
 {
-    assert(row < nrows_);
+    traced_assert(row < nrows_);
     return data_.data() + row * ncols_;
 }
 
@@ -110,7 +110,7 @@ void StringMatrix::setData(const std::vector<std::vector<std::string>>& data)
 
     for (size_t row = 0; row < nrows_; ++row)
     {
-        assert(data[ row ].size() == ncols_);
+        traced_assert(data[ row ].size() == ncols_);
         data_.insert(data_.end(), data[ row ].begin(), data[ row ].end());
     }
 }
@@ -228,7 +228,7 @@ bool StringMatrix::fromJSON(const nlohmann::json& obj)
 */
 size_t StringMatrix::index(size_t row, size_t col) const
 {
-    assert(row < nrows_ && col < ncols_);
+    traced_assert(row < nrows_ && col < ncols_);
     return row * ncols_ + col;
 }
 
@@ -276,7 +276,7 @@ void StringTable::setData(const std::vector<std::string>& header,
                           size_t rows, 
                           size_t cols)
 {
-    assert(header.size() == cols);
+    traced_assert(header.size() == cols);
 
     data_.setData(data, rows, cols);
 
@@ -290,7 +290,7 @@ void StringTable::setData(const std::vector<std::string>& header,
 {
     data_.setData(data);
 
-    assert(header_.size() == data_.numCols());
+    traced_assert(header_.size() == data_.numCols());
 
     header_ = header;
 }

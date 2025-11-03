@@ -16,6 +16,7 @@
  */
 
 #include "json_tools.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 
@@ -64,7 +65,7 @@ bool canFindKey(const nlohmann::json& j, const std::vector<std::string>& keys)
 
 const nlohmann::json& findKey(const nlohmann::json& j, const std::vector<std::string>& keys)
 {
-    assert(keys.size());
+    traced_assert(keys.size());
     std::vector<std::string>::const_iterator last_key = keys.end() - 1;
 
     const nlohmann::json* val_ptr = &j;
@@ -95,7 +96,7 @@ const nlohmann::json& findParentKey(const nlohmann::json& j, const std::vector<s
 {
     const nlohmann::json* val_ptr = &j;
 
-    assert(keys.size() > 1);
+    traced_assert(keys.size() > 1);
     std::vector<std::string>::const_iterator second_to_last_key = keys.end() - 2;
 
     for (auto sub_it = keys.begin(); sub_it != keys.end(); ++sub_it)
@@ -118,7 +119,7 @@ const nlohmann::json& findParentKey(const nlohmann::json& j, const std::vector<s
             throw std::runtime_error("Utils: JSON: findParentKey: key '" + *sub_it + "' not found");
     }
 
-    assert(val_ptr);
+    traced_assert(val_ptr);
     return *val_ptr;
 }
 
@@ -126,13 +127,13 @@ void applyFunctionToValues(nlohmann::json& j, const std::vector<std::string>& ke
                            std::vector<std::string>::const_iterator current_key_it,
                            std::function<void(nlohmann::json&)> function, bool required)
 {
-    //            loginf << "Utils: JSON: applyFunctionToValues: current_key '" << *current_key_it
+    //            loginf << "current_key '" << *current_key_it
     //            << "' data '"
     //                   << j.dump(4) << "'";
 
     if (current_key_it == keys.end())  // no more keys
     {
-        // loginf << "Utils: JSON: applyFunctionToValues: applying to '" << j.dump(4) << "'";
+        // loginf << "applying to '" << j.dump(4) << "'";
         function(j);
         return;
     }
@@ -141,17 +142,17 @@ void applyFunctionToValues(nlohmann::json& j, const std::vector<std::string>& ke
 
     if (j.contains(*current_key_it))
     {
-        // loginf << "Utils: JSON: applyFunctionToValues: contains";
+        // loginf;
         nlohmann::json& value = j.at(*current_key_it);
 
         if (value.is_object())
         {
-            // loginf << "Utils: JSON: applyFunctionToValues: recursing into object";
+            // loginf << "recursing into object";
             applyFunctionToValues(value, keys, current_key_it + 1, function, required);
         }
         else if (value.is_array())
         {
-            // loginf << "Utils: JSON: applyFunctionToValues: recursing into array";
+            // loginf << "recursing into array";
 
             for (auto& value_it : value)
                 applyFunctionToValues(value_it, keys, current_key_it + 1, function, required);
@@ -167,7 +168,7 @@ void applyFunctionToValues(nlohmann::json& j, const std::vector<std::string>& ke
     }
     else
     {
-        // loginf << "Utils: JSON: applyFunctionToValues: not contained";
+        // loginf << "not contained";
 
         if (required)
             throw std::runtime_error("Utils: String: applyFunctionToValues: key '" +

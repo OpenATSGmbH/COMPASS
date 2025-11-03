@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "targetreportchain.h"
 #include "targetposition.h"
 #include "targetvelocity.h"
@@ -145,7 +162,7 @@ bool Chain::hasModeC() const
 
 float Chain::modeCMin() const
 {
-    assert (has_mode_c_);
+    traced_assert(has_mode_c_);
     return mode_c_min_;
 }
 
@@ -159,7 +176,7 @@ std::string Chain::modeCMinStr() const
 
 float Chain::modeCMax() const
 {
-    assert (has_mode_c_);
+    traced_assert(has_mode_c_);
     return mode_c_max_;
 }
 
@@ -183,25 +200,25 @@ const Chain::IndexMap& Chain::timestampIndexes() const
 
 double Chain::latitudeMin() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return latitude_min_;
 }
 
 double Chain::latitudeMax() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return latitude_max_;
 }
 
 double Chain::longitudeMin() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return longitude_min_;
 }
 
 double Chain::longitudeMax() const
 {
-    assert (has_pos_);
+    traced_assert(has_pos_);
     return longitude_max_;
 }
 
@@ -216,9 +233,9 @@ Chain::DataID Chain::dataID(const boost::posix_time::ptime& timestamp) const
 
     auto range = index_map.equal_range(timestamp);
 
-    assert(range.first != index_map.end());
+    traced_assert(range.first != index_map.end());
 
-    assert(range.first->second.idx_internal < index_map.size());
+    traced_assert(range.first->second.idx_internal < index_map.size());
 
     return DataID(timestamp).addIndex(range.first->second);
 }
@@ -228,7 +245,7 @@ std::vector<DataID> Chain::dataIDsBetween(const boost::posix_time::ptime& timest
                                           bool include_t0,
                                           bool include_t1) const
 {
-    assert(timestamp0 <= timestamp1);
+    traced_assert(timestamp0 <= timestamp1);
     auto it_start = timestamp_index_lookup_.lower_bound(timestamp0);
 
     if (it_start == timestamp_index_lookup_.end())
@@ -257,7 +274,7 @@ unsigned int Chain::dsID(const DataID& id) const
     NullableVector<unsigned int>& dsid_vec =
             accessor_->getMetaVar<unsigned int>(dbcontent_name_, DBContent::meta_var_ds_id_);
 
-    assert (!dsid_vec.isNull(index_ext));
+    traced_assert(!dsid_vec.isNull(index_ext));
 
     return dsid_vec.get(index_ext);
 }
@@ -266,7 +283,7 @@ dbContent::TargetPosition Chain::pos(const DataID& id) const
 {
     auto timestamp = timestampFromDataID(id);
 
-    assert (timestamp_index_lookup_.count(timestamp));
+    traced_assert(timestamp_index_lookup_.count(timestamp));
 
     auto index = indexFromDataID(id);
 
@@ -287,8 +304,8 @@ dbContent::TargetPosition Chain::pos(const DataID& id) const
         altitude_secondary_vec = &accessor_->getVar<float>(dbcontent_name_, DBContent::var_cat062_baro_alt_);
     }
 
-    assert (!latitude_vec.isNull(index_ext));
-    assert (!longitude_vec.isNull(index_ext));
+    traced_assert(!latitude_vec.isNull(index_ext));
+    traced_assert(!longitude_vec.isNull(index_ext));
 
     pos.latitude_  = latitude_vec.get(index_ext);
     pos.longitude_ = longitude_vec.get(index_ext);
@@ -378,8 +395,8 @@ boost::optional<dbContent::TargetVelocity> Chain::speed(const DataID& id) const
     if (speed_vec.isNull(index_ext) || track_angle_vec.isNull(index_ext))
         return {};
 
-    assert (!speed_vec.isNull(index_ext));
-    assert (!track_angle_vec.isNull(index_ext));
+    traced_assert(!speed_vec.isNull(index_ext));
+    traced_assert(!track_angle_vec.isNull(index_ext));
 
     dbContent::TargetVelocity spd;
 
@@ -409,7 +426,7 @@ boost::optional<std::string> Chain::acid(const DataID& id) const
     if (callsign_vec.isNull(index_ext))
         return {};
 
-    assert (!callsign_vec.isNull(index_ext));
+    traced_assert(!callsign_vec.isNull(index_ext));
 
     return boost::trim_copy(callsign_vec.get(index_ext)); // remove spaces
 }
@@ -442,7 +459,7 @@ boost::optional<unsigned int> Chain::modeA(const DataID& id, bool ignore_invalid
             return {};
     }
 
-    assert (!modea_vec.isNull(index_ext));
+    traced_assert(!modea_vec.isNull(index_ext));
 
     return modea_vec.get(index_ext);
 }
@@ -682,7 +699,7 @@ boost::optional<unsigned char> Chain::trackCoasting(const DataID& id) const
 std::pair<bool, float> Chain::estimateAltitude (const boost::posix_time::ptime& timestamp,
                                                 unsigned int index_internal) const
 {
-    assert(index_internal < indexes_.size());
+    traced_assert(index_internal < indexes_.size());
 
     NullableVector<float>& altitude_vec = accessor_->getMetaVar<float>(dbcontent_name_, DBContent::meta_var_mc_);
     NullableVector<ptime>& ts_vec = accessor_->getMetaVar<ptime>(dbcontent_name_, DBContent::meta_var_timestamp_);
@@ -762,7 +779,7 @@ std::pair<bool, float> Chain::estimateAltitude (const boost::posix_time::ptime& 
 
         if (timestamp_after <= timestamp_prev || timestamp_prev >= timestamp)
         {
-            logerr << "Chain: estimateRefAltitude: ts_prev " << Time::toString(timestamp_prev)
+            logerr << "ts_prev " << Time::toString(timestamp_prev)
                    << " ts " << Time::toString(timestamp) << " ts_after " << Time::toString(timestamp_after);
 
             return {false, 0}; // should never happen
@@ -791,12 +808,12 @@ std::pair<bool, float> Chain::estimateAltitude (const boost::posix_time::ptime& 
 
 Index Chain::indexFromDataID(const DataID& id) const
 {
-    assert(id.valid());
+    traced_assert(id.valid());
 
     if (!id.hasIndex())
     {
         auto id_ret = dataID(id.timestamp());
-        assert(id_ret.valid());
+        traced_assert(id_ret.valid());
 
         return id_ret.index();
     }
@@ -806,7 +823,7 @@ Index Chain::indexFromDataID(const DataID& id) const
 
 boost::posix_time::ptime Chain::timestampFromDataID(const DataID& id) const
 {
-    assert(id.valid());
+    traced_assert(id.valid());
     return id.timestamp();
 }
 
@@ -839,7 +856,7 @@ DataMapping Chain::calculateDataMapping(ptime timestamp) const
 
     if (lb_it != timestamp_index_lookup_.end()) // upper tod found
     {
-        assert (lb_it->first >= timestamp);
+        traced_assert(lb_it->first >= timestamp);
 
         // save upper value
         ret.has_ref2_ = true;
@@ -863,7 +880,7 @@ DataMapping Chain::calculateDataMapping(ptime timestamp) const
 
         if (lb_it != timestamp_index_lookup_.end() && lb_it->first != ret.timestamp_ref2_) // lower tod found
         {
-            assert (timestamp >= lb_it->first);
+            traced_assert(timestamp >= lb_it->first);
 
             // add lower value
             ret.has_ref1_ = true;
@@ -931,9 +948,9 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
     boost::optional<double> rocd1, rocd2;
     double delta_rocd;
 
-    logdbg << "Chain: addPositionsSpeedsToMapping: d_t " << d_t;
+    logdbg << "d_t " << d_t;
 
-    assert (d_t > 0);
+    traced_assert(d_t > 0);
 
     if (pos1->latitude_ == pos2->latitude_ && pos1->longitude_ == pos2->longitude_) // same pos
     {
@@ -947,13 +964,13 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
     {
         if (lower_ts == upper_ts) // same time
         {
-            logwrn << "Chain: addPositionsSpeedsToMapping: ref has same time twice";
+            logwrn << "ref has same time twice";
         }
         else
         {
-            logdbg << "Chain: addPositionsSpeedsToMapping: pos1 "
+            logdbg << "pos1 "
                    << pos1->latitude_ << ", " << pos1->longitude_;
-            logdbg << "Chain: addPositionsSpeedsToMapping: pos2 "
+            logdbg << "pos2 "
                    << pos2->latitude_ << ", " << pos2->longitude_;
 
             bool ok;
@@ -962,16 +979,16 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
             tie(ok, x_pos, y_pos) = trafo_.distanceCart(
                         pos1->latitude_, pos1->longitude_, pos2->latitude_, pos2->longitude_);
 
-            //                logdbg << "Chain: addRefPositiosToMapping: geo2cart";
+            //                logdbg << "geo2cart";
             //                bool ret = ogr_geo2cart->Transform(1, &x_pos, &y_pos); // wgs84 to cartesian offsets
             if (!ok)
             {
-                logerr << "Chain: addPositionsSpeedsToMapping: error with latitude " << pos2->latitude_
+                logerr << "error with latitude " << pos2->latitude_
                        << " longitude " << pos2->longitude_;
             }
             else // calculate interpolated position
             {
-                logdbg << "Chain: addPositionsSpeedsToMapping: offsets x " << fixed << x_pos
+                logdbg << "offsets x " << fixed << x_pos
                        << " y " << fixed << y_pos << " dist " << fixed << sqrt(pow(x_pos,2)+pow(y_pos,2));
 
                 // double x_pos_orig = x_pos;
@@ -979,24 +996,24 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
 
                 double v_x = x_pos/d_t;
                 double v_y = y_pos/d_t;
-                logdbg << "Chain: addPositionsSpeedsToMapping: v_x " << v_x << " v_y " << v_y;
+                logdbg << "v_x " << v_x << " v_y " << v_y;
 
                 float d_t2 = Time::partialSeconds(mapping.timestamp_ - lower_ts);
-                logdbg << "Chain: addPositionsSpeedsToMapping: d_t2 " << d_t2;
+                logdbg << "d_t2 " << d_t2;
 
-                assert (d_t2 >= 0);
+                traced_assert(d_t2 >= 0);
 
                 x_pos = v_x * d_t2;
                 y_pos = v_y * d_t2;
 
-                logdbg << "Chain: addPositionsSpeedsToMapping: interpolated offsets x "
+                logdbg << "interpolated offsets x "
                        << x_pos << " y " << y_pos;
 
                 tie (ok, x_pos, y_pos) = trafo_.wgsAddCartOffset(pos1->latitude_, pos1->longitude_, x_pos, y_pos);
 
                 // x_pos long, y_pos lat
 
-                logdbg << "Chain: addPositionsSpeedsToMapping: interpolated lat "
+                logdbg << "interpolated lat "
                        << x_pos << " long " << y_pos;
 
                 // calculate altitude
@@ -1020,7 +1037,7 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
                     altitude = pos1->altitude_ + v_alt*d_t2;
                 }
 
-                logdbg << "Chain: addPositionsSpeedsToMapping: pos1 has alt "
+                logdbg << "pos1 has alt "
                        << pos1->has_altitude_ << " alt " << pos1->altitude_
                        << " pos2 has alt " << pos2->has_altitude_ << " alt " << pos2->altitude_
                        << " interpolated has alt " << has_altitude << " alt " << altitude;
@@ -1104,7 +1121,7 @@ DataMappingTimes Chain::findDataMappingTimes(ptime timestamp_ref) const // ref t
 
     if (lb_it != timestamp_index_lookup_.end()) // upper tod found
     {
-        assert (lb_it->first >= timestamp_ref);
+        traced_assert(lb_it->first >= timestamp_ref);
 
         // save upper value
         ret.has_other2_ = true;
@@ -1127,7 +1144,7 @@ DataMappingTimes Chain::findDataMappingTimes(ptime timestamp_ref) const // ref t
 
         if (lb_it != timestamp_index_lookup_.end() && lb_it->first != ret.timestamp_other2_) // lower tod found
         {
-            assert (timestamp_ref >= lb_it->first);
+            traced_assert(timestamp_ref >= lb_it->first);
 
             // add lower value
             ret.has_other1_ = true;
@@ -1147,7 +1164,7 @@ DataMappingTimes Chain::findDataMappingTimes(ptime timestamp_ref) const // ref t
 
 void Chain::setIgnoredPositions(std::vector<bool> ignored_positions)
 {
-    assert (indexes_.size() == ignored_positions.size());
+    traced_assert(indexes_.size() == ignored_positions.size());
 
     ignored_positions_ = ignored_positions;
 }
@@ -1159,7 +1176,7 @@ bool Chain::ignorePosition(const DataID& id) const
 
     auto index  = indexFromDataID(id);
 
-    assert (index.idx_internal < ignored_positions_->size());
+    traced_assert(index.idx_internal < ignored_positions_->size());
 
     return ignored_positions_->at(index.idx_internal);
 }
@@ -1215,12 +1232,12 @@ void Chain::updateACIDs() const
     if (timestamp_index_lookup_.size())
     {
         NullableVector<string>& value_vec = accessor_->getMetaVar<string>(dbcontent_name_, DBContent::meta_var_acid_);
-        map<string, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
+        map<boost::optional<string>, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
 
         for (auto& val_it : distinct_values)
         {
-            if (!acids_.count(String::trim(val_it.first)))
-                acids_.insert(String::trim(val_it.first));
+            if (val_it.first && !acids_.count(String::trim(*val_it.first)))
+                acids_.insert(String::trim(*val_it.first));
         }
     }
 }
@@ -1233,12 +1250,12 @@ void Chain::updateACADs() const
     {
         NullableVector<unsigned int>& value_vec = accessor_->getMetaVar<unsigned int>(
                     dbcontent_name_, DBContent::meta_var_acad_);
-        map<unsigned int, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
+        map<boost::optional<unsigned int>, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
 
         for (auto& val_it : distinct_values)
         {
-            if (!acads_.count(val_it.first))
-                acads_.insert(val_it.first);
+            if (val_it.first && !acads_.count(*val_it.first))
+                acads_.insert(*val_it.first);
         }
     }
 
@@ -1246,7 +1263,7 @@ void Chain::updateACADs() const
 
 void Chain::updateModeACodes() const
 {
-    logdbg << "Chain: updateModeACodes";
+    logdbg;
 
     mode_a_codes_.clear();
 
@@ -1254,27 +1271,27 @@ void Chain::updateModeACodes() const
     {
         NullableVector<unsigned int>& mode_a_codes = accessor_->getMetaVar<unsigned int>(
                     dbcontent_name_, DBContent::meta_var_m3a_);
-        map<unsigned int, vector<unsigned int>> distinct_codes = mode_a_codes.distinctValuesWithIndexes(indexes_);
+        map<boost::optional<unsigned int>, vector<unsigned int>> distinct_codes = mode_a_codes.distinctValuesWithIndexes(indexes_);
         //unsigned int null_cnt = mode_a_codes.nullValueIndexes(ref_rec_nums_).size();
 
         for (auto& ma_it : distinct_codes)
         {
-            if (!mode_a_codes_.count(ma_it.first))
+            if (ma_it.first && !mode_a_codes_.count(*ma_it.first))
             {
-                logdbg << "Chain: updateModeACodes: new ref m3a "
-                       << String::octStringFromInt(ma_it.first, 4, '0');
-                mode_a_codes_.insert(ma_it.first);
+                logdbg << "new ref m3a "
+                       << String::octStringFromInt(*ma_it.first, 4, '0');
+                mode_a_codes_.insert(*ma_it.first);
             }
         }
     }
 
 
-    logdbg << "Chain: updateModeACodes: num codes " << mode_a_codes_.size();
+    logdbg << "num codes " << mode_a_codes_.size();
 }
 
 void Chain::updateModeCMinMax() const
 {
-    logdbg << "Chain: updateModeC";
+    logdbg;
 
     // garbled, valid flags?
 
@@ -1329,8 +1346,8 @@ void Chain::updatePositionMinMax() const
 
         for (auto ind_it : indexes_)
         {
-            assert (!lats.isNull(ind_it));
-            assert (!longs.isNull(ind_it));
+            traced_assert(!lats.isNull(ind_it));
+            traced_assert(!longs.isNull(ind_it));
 
             if (!has_pos_)
             {

@@ -88,7 +88,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
                                                                              std::shared_ptr<Base> instance,
                                                                              const SectorLayer& sector_layer)
 {
-    logdbg << "EvaluationRequirementDubiousTrack '" << name_ << "': evaluate: utn " << target_data.utn_
+    logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " mark_primary_only " << mark_primary_only_ << " prob " << threshold()
            << " use_min_updates " << use_min_updates_ << " min_updates " << min_updates_
            << " use_min_duration " << use_min_duration_ << " min_duration " << min_duration_;
@@ -127,9 +127,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
     // check for single source only
     if (eval_only_single_ds_id_)
     {
-        assert (false); // TODO
+        traced_assert(false); // TODO
 
-        bool can_check = true;
+        //bool can_check = true;
 
         //        if (!target_data.canCheckTstMultipleSources())
         //        {
@@ -208,7 +208,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
         // find corresponding track
         if (tracks.count(*track_num)) // exists
         {
-            assert (timestamp >= tracks.at(*track_num).tod_end);
+            traced_assert(timestamp >= tracks.at(*track_num).tod_end);
 
             if (timestamp - tracks.at(*track_num).tod_end > seconds(300)) // time gap too large, new track
             {
@@ -224,7 +224,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
                            std::forward_as_tuple(*track_num, timestamp));
         }
 
-        assert (tracks.count(*track_num));
+        traced_assert(tracks.count(*track_num));
 
         auto& current_detail = tracks.at(*track_num);
 
@@ -246,7 +246,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
         else
         {
             current_detail.tod_end = timestamp;
-            assert (current_detail.tod_end >= current_detail.tod_begin);
+            traced_assert(current_detail.tod_end >= current_detail.tod_begin);
             current_detail.duration = current_detail.tod_end - current_detail.tod_begin;
 
             current_detail.pos_last = tst_pos;
@@ -353,7 +353,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
 
             if (has_last_tod)
             {
-                assert (update.timestamp() >= last_tod);
+                traced_assert(update.timestamp() >= last_tod);
                 time_diff = Time::partialSeconds(update.timestamp() - last_tod);
 
                 if (!do_not_evaluate_target && time_diff >= minimum_comparison_time_

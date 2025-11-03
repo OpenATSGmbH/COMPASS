@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWWIDGET_H
-#define VIEWWIDGET_H
+#pragma once
 
 #include <memory>
 
@@ -128,10 +127,10 @@ public:
     void appModeSwitch(AppMode app_mode);
     void configChanged();
 
-    ViewDataWidget* getViewDataWidget() { assert(data_widget_); return data_widget_; }
-    const ViewDataWidget* getViewDataWidget() const { assert(data_widget_); return data_widget_; }
-    ViewConfigWidget* getViewConfigWidget() { assert(config_widget_); return config_widget_; }
-    const ViewConfigWidget* getViewConfigWidget() const { assert(config_widget_); return config_widget_; }
+    ViewDataWidget* getViewDataWidget() { traced_assert(data_widget_); return data_widget_; }
+    const ViewDataWidget* getViewDataWidget() const { traced_assert(data_widget_); return data_widget_; }
+    ViewConfigWidget* getViewConfigWidget() { traced_assert(config_widget_); return config_widget_; }
+    const ViewConfigWidget* getViewConfigWidget() const { traced_assert(config_widget_); return config_widget_; }
 
     std::string loadedMessage() const;
 
@@ -156,12 +155,12 @@ public:
     static const int ConfigWidgetStretch;
 
 protected:
-    ViewToolWidget* getViewToolWidget() { assert(tool_widget_); return tool_widget_; }
-    const ViewToolWidget* getViewToolWidget() const { assert(tool_widget_); return tool_widget_; }
-    ViewToolSwitcher* getViewToolSwitcher() { assert(tool_switcher_); return tool_switcher_.get(); }
-    const ViewToolSwitcher* getViewToolSwitcher() const { assert(tool_switcher_); return tool_switcher_.get(); }
-    ViewLoadStateWidget* getViewLoadStateWidget() { assert(state_widget_); return state_widget_; }
-    const ViewLoadStateWidget* getViewLoadStateWidget() const { assert(state_widget_); return state_widget_; }
+    ViewToolWidget* getViewToolWidget() { traced_assert(tool_widget_); return tool_widget_; }
+    const ViewToolWidget* getViewToolWidget() const { traced_assert(tool_widget_); return tool_widget_; }
+    ViewToolSwitcher* getViewToolSwitcher() { traced_assert(tool_switcher_); return tool_switcher_.get(); }
+    const ViewToolSwitcher* getViewToolSwitcher() const { traced_assert(tool_switcher_); return tool_switcher_.get(); }
+    ViewLoadStateWidget* getViewLoadStateWidget() { traced_assert(state_widget_); return state_widget_; }
+    const ViewLoadStateWidget* getViewLoadStateWidget() const { traced_assert(state_widget_); return state_widget_; }
     ViewPresetWidget* getViewPresetWidget() { return preset_widget_; }
     const ViewPresetWidget* getViewPresetWidget() const { return preset_widget_; }
     ViewInfoWidget* getViewInfoWidget() { return info_widget_; }
@@ -222,5 +221,3 @@ private:
 
     bool init_ = false;
 };
-
-#endif  // VIEWWIDGET_H

@@ -34,7 +34,8 @@ struct pcap;
 class PacketSniffer
 {
 public:
-    typedef std::tuple<std::string, unsigned int, std::string, unsigned int> Signature;
+    // ip protocol | ip version | source_ip | source_port | destination_ip | destination_port
+    typedef std::tuple<uint8_t, unsigned int, std::string, unsigned int, std::string, unsigned int> Signature;
 
     /**
      * Accumulated packet data.
@@ -45,6 +46,8 @@ public:
         {
             return (packets > 0 && size > 0 && data.size() > 0);
         }
+
+        std::string info() const;
 
         size_t              packets = 0; // number of packets added
         size_t              size    = 0; // size of added packets
@@ -121,6 +124,15 @@ public:
         PerSignature      // accumulate packet data in per-signature data structs
     };
 
+    enum class SignatureMode
+    {
+        UDPBroadcast = 0, // signature for udp broadcast (dst_ip, dst_port)
+        UDPMulticast,     // signature for udp multicast (dst_ip, dst_port)
+        UDPUnicast,       // signature for udp unicast (src_ip, dst_ip, dst_port)
+        TCP,              // signature for tcp (src_ip, src_port, dst_ip, dst_port)
+        Auto              // determine suitable signature from packet information
+    };
+
     enum class Error
     {
         NoError = 0,
@@ -132,7 +144,8 @@ public:
     */
     struct ReadConfig
     {
-        ReadStyle read_style = PacketSniffer::ReadStyle::Accumulate;
+        ReadStyle     read_style     = PacketSniffer::ReadStyle::Accumulate;
+        SignatureMode signature_mode = PacketSniffer::SignatureMode::Auto;
 
         BasicFilter  chunk_filter;    // filter used to determine if the current data chunk has ended
         PacketFilter packet_filter;   // filter used to skip whole packets
@@ -173,14 +186,36 @@ public:
     std::pair<size_t, std::set<int>> unknownLinkTypes() const;
     std::pair<size_t, std::set<int>> unknownEthernetTypes() const;
     std::pair<size_t, std::set<int>> unknownIPProtocols() const;
+    void printUnknowns() const;
 
     bool hasUnknownPacketHeaders() const;
 
-    static std::string signatureToString(const Signature& sig);
-    static Signature signatureFromString(const std::string& str);
+    static bool ipIsMulticast(const std::string& ip, unsigned int ip_version, bool* ok = nullptr);
+    static bool ipIsBroadcast(const std::string& ip, unsigned int ip_version, bool* ok = nullptr);
+    static Signature signatureForMode(uint8_t ip_protocol,
+                                      unsigned int ip_version,
+                                      const std::string& src_ip,
+                                      unsigned int src_port,
+                                      const std::string& dst_ip,
+                                      unsigned int dst_port,
+                                      SignatureMode mode);
+    static SignatureMode determinePacketSignatureMode(const std::string& src_ip,
+                                                      unsigned int src_port,
+                                                      uint8_t ip_protocol, 
+                                                      unsigned int ip_version);
+    static bool signatureSourceIPSet(const Signature& signature);
+    static bool signatureSourcePortSet(const Signature& signature);
+    static std::string ipProtocolInfoToString(uint8_t ip_protocol,
+                                              unsigned int ip_version);
+    static std::pair<uint8_t, unsigned int> ipProtocolInfoFromString(const std::string& s);
+    static std::string signatureToString(const Signature& signature);
+    static Signature signatureFromString(const std::string& signature);
 
-    static const std::string SignatureStringSeparator;
-    static const std::string SignatureIPPortSeparator;
+    static const std::string  SignatureStringSeparator;
+    static const std::string  SignatureStringSeparatorAddresses;
+    static const std::string  SignatureIPPortSeparator;
+    static const std::string  SignaturePlaceholder;
+    static const unsigned int UnspecifiedPort;
 
 private:
     void digestPCAPEtherPacket(int ether_type, 
@@ -188,10 +223,19 @@ private:
                                const u_char* packet, 
                                unsigned long data_offs,
                                const ReadConfig& read_config);
+    Signature signatureForPacket(const std::string& src_ip,
+                                 unsigned int src_port,
+                                 const std::string& dst_ip,
+                                 unsigned int dst_port,
+                                 uint8_t ip_protocol,
+                                 unsigned int ip_version,
+                                 const ReadConfig& read_config) const;
     void addPacket(const std::string& src_ip,
                    unsigned int src_port,
                    const std::string& dst_ip,
                    unsigned int dst_port,
+                   uint8_t ip_protocol,
+                   unsigned int ip_version,
                    u_char* data,
                    size_t data_len,
                    const ReadConfig& read_config);

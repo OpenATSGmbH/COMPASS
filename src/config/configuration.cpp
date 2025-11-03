@@ -20,6 +20,7 @@
 #include "files.h"
 #include "logger.h"
 #include "stringconv.h"
+#include "traced_assert.h"
 
 #include <fstream>
 #include <typeinfo>
@@ -36,13 +37,13 @@ const std::string Configuration::InstanceID           = "instance_id";
 const std::string Configuration::ClassID              = "class_id";
 const std::string Configuration::SubConfigFilePath    = "path";
 
-namespace
-{
-    std::string instanceIDFromUniqueName(const std::string& class_id, const std::string& unique_name)
-    {
-        return class_id + " " + unique_name;
-    }
-}
+// namespace
+// {
+//     std::string instanceIDFromUniqueName(const std::string& class_id, const std::string& unique_name)
+//     {
+//         return class_id + " " + unique_name;
+//     }
+// }
 
 /*
  *  Initializes members
@@ -57,9 +58,9 @@ Configuration::Configuration(const std::string& class_id,
     instance_id_(instance_id),
     configuration_filename_(configuration_filename)
 {
-    logdbg << "Configuration: constructor: class " << class_id_ << " instance " << instance_id_;
-    assert(class_id_.size() != 0);
-    assert(instance_id.size() != 0);
+    logdbg << "class " << class_id_ << " instance " << instance_id_;
+    traced_assert(class_id_.size() != 0);
+    traced_assert(instance_id.size() != 0);
 }
 
 /**
@@ -70,8 +71,8 @@ Configuration::Configuration(const std::string& class_id)
 :   class_id_            (class_id)
 ,   create_instance_name_(true    )
 {
-    logdbg << "Configuration: constructor: class " << class_id_;
-    assert(class_id_.size() != 0);
+    logdbg << "class " << class_id_;
+    traced_assert(class_id_.size() != 0);
 }
 
 /**
@@ -140,7 +141,7 @@ Configuration::Ptr Configuration::create(const std::string& class_id,
  */
 void Configuration::resetToDefault()
 {
-    logdbg << "Configuration: resetToDefault: " << instance_id_;
+    logdbg << "start" << instance_id_;
 
     for (auto it = parameters_.begin(); it != parameters_.end(); it++)
         it->second->resetToDefault();
@@ -197,7 +198,7 @@ template <typename T>
 T Configuration::parameterValueFromConfig(const std::string& parameter_id) const
 {
     //check parameterInConfig(parameter_id) beforehand in order to prevent this
-    assert(parameterInConfig(parameter_id));
+    traced_assert(parameterInConfig(parameter_id));
 
     return ConfigurableParameterT<T>::valueFromJSON(org_config_parameters_.at(parameter_id));
 }
@@ -208,10 +209,10 @@ T Configuration::parameterValueFromConfig(const std::string& parameter_id) const
 template <typename T>
 void Configuration::registerParameter(const std::string& parameter_id, T* pointer, const T& default_value)
 {
-    logdbg << "Configuration " << instance_id_ << ": registerParameter: " << parameter_id;
+    logdbg << instance_id_ << ": parameter_id " << parameter_id;
 
     //pointer should be valid
-    assert(pointer);
+    traced_assert(pointer);
 
     //parameter not existing yet?
     if (!hasParameter(parameter_id))
@@ -229,14 +230,12 @@ void Configuration::registerParameter(const std::string& parameter_id, T* pointe
 
     //get existing parameter as type
     ConfigurableParameterT<T>* param = parameters_.at(parameter_id)->as<T>();
-    assert(param);
+    traced_assert(param);
 
     //update existing parameter
     param->update(pointer, default_value, true);
 
     used_ = true;
-
-    logdbg << "Configuration " << instance_id_ << ": registerParameter " << parameter_id << ": " << param->getParameterType() << " value is " << *param->getStoredPointer();
 }
 
 /**
@@ -245,13 +244,13 @@ void Configuration::registerParameter(const std::string& parameter_id, T* pointe
 template <typename T>
 void Configuration::addParameter(const std::string& parameter_id, const T& default_value)
 {
-    logdbg << "Configuration: addParameter: parameter " << parameter_id << " default " << default_value;
+    logdbg << "parameter " << parameter_id << " default " << default_value;
         
     //parameter already existing?
     if (hasParameter(parameter_id))
     {
         //@TODO: maybe assert on this?
-        logwrn << "Configuration " << instance_id_ << ": addParameter: " << parameter_id << " already exists";
+        logwrn << instance_id_ << ": " << parameter_id << " already exists";
         return;
     }
 
@@ -267,14 +266,14 @@ void Configuration::addParameter(const std::string& parameter_id, const T& defau
 template <typename T>
 void Configuration::updateParameterPointer(const std::string& parameter_id, T* pointer)
 {
-    logdbg << "Configuration " << instance_id_ << ": updateParameterPointer: " << parameter_id;
+    logdbg << instance_id_ << ": parameter_id " << parameter_id;
 
-    assert(pointer);
-    assert(hasParameter(parameter_id));
+    traced_assert(pointer);
+    traced_assert(hasParameter(parameter_id));
 
     //get parameter as type
     auto param = parameters_.at(parameter_id)->as<T>();
-    assert(param);
+    traced_assert(param);
 
     //update pointer
     param->update(pointer);
@@ -294,7 +293,7 @@ void Configuration::getParameter(const std::string& parameter_id, T& value) cons
 
     //get parameter as type
     auto param = parameters_.at(parameter_id)->as<T>();
-    assert(param);
+    traced_assert(param);
     
     //different to ConfigurationParameterT::getParameterValue() we really retrieve the pointer value here,
     //so make sure it is set and throw if this is not the case.
@@ -320,11 +319,11 @@ T Configuration::getParameterConfigValue(const std::string& parameter_id) const
         return parameterValueFromConfig<T>(parameter_id);
     }
 
-    assert(has_param);
+    traced_assert(has_param);
     
     //get stored parameter as type
     auto param = parameters_.at(parameter_id)->as<T>();
-    assert(param);
+    traced_assert(param);
 
     //retrieve config value from registered parameter
     return param->getConfigValue();
@@ -335,14 +334,14 @@ T Configuration::getParameterConfigValue(const std::string& parameter_id) const
  */
 void Configuration::parseJSONConfigFile()
 {
-    assert(hasConfigurationFilename());
+    traced_assert(hasConfigurationFilename());
 
     std::string file_path = CURRENT_CONF_DIRECTORY + configuration_filename_;
 
     Files::verifyFileExists(file_path);
 
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-           << ": parseJSONConfigFile: opening file '" << file_path << "'";
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_
+           << ": opening file '" << file_path << "'";
 
     std::ifstream config_file(file_path, std::ifstream::in);
 
@@ -357,7 +356,7 @@ void Configuration::parseJSONConfigFile()
     catch (json::exception& e)
     {
         logerr << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-               << ": parseJSONConfigFile: could not load file '" << file_path << "'";
+               << ": could not load file '" << file_path << "'";
         throw e;
     }
 }
@@ -367,7 +366,7 @@ void Configuration::parseJSONConfigFile()
  */
 void Configuration::parseJSONConfig(const nlohmann::json& config)
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_ << ": parseJSONConfig";
+     logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
 
     auto cb_params          = [ this ] (const nlohmann::json& config) { this->parseJSONParameters(config); };
     auto cb_subconfigs      = [ this ] (const nlohmann::json& config) { this->parseJSONSubConfigs(config); };
@@ -386,7 +385,7 @@ void Configuration::parseJSONConfig(const nlohmann::json& config,
                                     const std::function<void(const nlohmann::json&)>& parse_sub_configs_cb,
                                     const std::function<void(const std::string&, const std::string&, const std::string&)>& parse_sub_config_files_cb)
 {
-    assert(config.is_object());
+    traced_assert(config.is_object());
 
     for (auto& it : config.items())
     {
@@ -395,7 +394,7 @@ void Configuration::parseJSONConfig(const nlohmann::json& config,
 
         if (it.key() == ParameterSection)
         {
-            assert(it.value().is_object());
+            traced_assert(it.value().is_object());
 
             //parse parameters
             parse_parameters_cb(it.value());
@@ -406,19 +405,19 @@ void Configuration::parseJSONConfig(const nlohmann::json& config,
             std::string instance_id;
             std::string path;
 
-            assert(it.value().is_array());
+            traced_assert(it.value().is_array());
 
             for (auto& file_cfg_it : it.value().get<json::array_t>())
             {
-                assert(file_cfg_it.contains(ClassID));
-                assert(file_cfg_it.contains(InstanceID));
-                assert(file_cfg_it.contains(SubConfigFilePath));
+                traced_assert(file_cfg_it.contains(ClassID));
+                traced_assert(file_cfg_it.contains(InstanceID));
+                traced_assert(file_cfg_it.contains(SubConfigFilePath));
 
                 class_id    = file_cfg_it.at(ClassID);
                 instance_id = file_cfg_it.at(InstanceID);
                 path        = file_cfg_it.at(SubConfigFilePath);
 
-                assert(class_id.size() && instance_id.size() && path.size());
+                traced_assert(class_id.size() && instance_id.size() && path.size());
 
                 //parse subconfig file
                 parse_sub_config_files_cb(class_id, instance_id, path);
@@ -426,7 +425,7 @@ void Configuration::parseJSONConfig(const nlohmann::json& config,
         }
         else if (it.key() == SubConfigSection)
         {
-            assert(it.value().is_object());
+            traced_assert(it.value().is_object());
 
             //parse subconfigs
             parse_sub_configs_cb(it.value());
@@ -447,17 +446,12 @@ void Configuration::parseJSONSubConfigFile(const std::string& class_id,
                                            const std::string& instance_id, 
                                            const std::string& path)
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-           << ": parseJSONSubConfigFile: class_id " << class_id << " instance_id " << instance_id
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_
            << " path '" << path << "'";
 
     SubConfigKey key(class_id, instance_id);
-    assert(sub_configurations_.find(key) == sub_configurations_.end());  // should not exist
+    traced_assert(sub_configurations_.find(key) == sub_configurations_.end());  // should not exist
 
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-           << ": parseJSONSubConfigFile: creating new configuration for class " << class_id
-           << " instance " << instance_id;
-    
     //create new configuration for subconfig
     auto ptr = new Configuration(class_id, instance_id);
     sub_configurations_.insert(std::make_pair(key, std::unique_ptr<Configuration>(ptr)));
@@ -472,16 +466,15 @@ void Configuration::parseJSONSubConfigFile(const std::string& class_id,
  */
 void Configuration::overrideJSONParameters(nlohmann::json& parameters_config)
 {
-    loginf << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-           << ": overrideJSONParameters";
+    loginf << "class_id " << class_id_ << " instance_id " << instance_id_;
 
     // is object
-    assert(parameters_config.is_object());
+    traced_assert(parameters_config.is_object());
 
     // store parameters in local json config
     for (auto& it : parameters_config.items())
     {
-        loginf << "Configuration: overrideJSONParameters: overriding '" << it.key()
+        loginf << "overriding '" << it.key()
                << "' with '" << it.value().dump(0) << "'";
 
         //overwrite key with new value
@@ -494,13 +487,12 @@ void Configuration::overrideJSONParameters(nlohmann::json& parameters_config)
  */
 void Configuration::parseJSONParameters(const nlohmann::json& parameters_config)
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-           << ": parseJSONParameters";
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
 
     auto cb = [ & ] (const std::string& key, const nlohmann::json& value)
     {
         //assert(value.is_primitive());
-        assert(!org_config_parameters_.contains(key));
+        traced_assert(!org_config_parameters_.contains(key));
 
         // logdbg << "param key " << key << " value '" << value << "'";
 
@@ -516,7 +508,7 @@ void Configuration::parseJSONParameters(const nlohmann::json& parameters_config,
                                         const std::function<void(const std::string&, const nlohmann::json&)>& parse_param_cb)
 {
     // is object
-    assert(parameters_config.is_object());
+    traced_assert(parameters_config.is_object());
 
     // store parameters in local json config
     for (auto& it : parameters_config.items())
@@ -528,20 +520,19 @@ void Configuration::parseJSONParameters(const nlohmann::json& parameters_config,
 */
 void Configuration::parseJSONSubConfigs(const nlohmann::json& sub_configs_config)
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-           << ": parseJSONSubConfigs";
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
 
     auto cb = [ & ] (const SubConfigKey& key, const nlohmann::json& value)
     {
-        //        assert (!org_config_sub_configs_.contains(it.key()));
+        //        traced_assert(!org_config_sub_configs_.contains(it.key()));
         //        loginf << "sub-config key " << it.key();
         //        org_config_sub_configs_[it.key()] = std::move(it.value()); // move out, might
         //        be big
 
-        assert(sub_configurations_.find(key) == sub_configurations_.end());  // should not exist
+        traced_assert(sub_configurations_.find(key) == sub_configurations_.end());  // should not exist
 
-        logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-               << ": parseJSONSubConfigs: creating new configuration for class " << key.first
+        logdbg << "class_id " << class_id_ << " instance_id " << instance_id_
+               << ": creating new configuration for class " << key.first
                << " instance " << key.second;
 
         //create new configuration for sub config
@@ -561,7 +552,7 @@ void Configuration::parseJSONSubConfigs(const nlohmann::json& sub_configs_config
                                         const std::function<void(const SubConfigKey&, const nlohmann::json&)>& parse_subconfig_cb)
 {
     // is object
-    assert(sub_configs_config.is_object());
+    traced_assert(sub_configs_config.is_object());
 
     std::string class_id;
     std::string instance_id;
@@ -569,12 +560,12 @@ void Configuration::parseJSONSubConfigs(const nlohmann::json& sub_configs_config
     // sub-configs in member
     for (auto& sub_cfg_class_it : sub_configs_config.items())
     {
-        assert(sub_cfg_class_it.value().is_object());
+        traced_assert(sub_cfg_class_it.value().is_object());
         class_id = sub_cfg_class_it.key();
 
         for (auto& sub_cfg_instance_it : sub_cfg_class_it.value().items())
         {
-            assert(sub_cfg_instance_it.value().is_object());
+            traced_assert(sub_cfg_instance_it.value().is_object());
             instance_id = sub_cfg_instance_it.key();
 
             SubConfigKey key(class_id, instance_id);
@@ -590,9 +581,9 @@ void Configuration::parseJSONSubConfigs(const nlohmann::json& sub_configs_config
 void Configuration::writeJSON(nlohmann::json& parent_json, 
                               JSONExportType export_type) const
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_ << ": writeJSON";
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
 
-    assert(instance_id_.size() != 0);
+    traced_assert(instance_id_.size() != 0);
 
     json config;  // my config
     generateJSON(config, export_type);
@@ -601,8 +592,8 @@ void Configuration::writeJSON(nlohmann::json& parent_json,
     {
         std::string file_path = CURRENT_CONF_DIRECTORY + configuration_filename_;
 
-        logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_
-               << ": writeJSON: saving sub-configuration file '" << file_path << "'";
+        logdbg << "class_id " << class_id_ << " instance_id " << instance_id_
+               << ": saving sub-configuration file '" << file_path << "'";
         // Files::verifyFileExists(file_path);
 
         // save file
@@ -612,7 +603,7 @@ void Configuration::writeJSON(nlohmann::json& parent_json,
         if (!parent_json.contains(SubConfigFileSection))
             parent_json[SubConfigFileSection] = json::array();
 
-        assert(parent_json[SubConfigFileSection].is_array());
+        traced_assert(parent_json[SubConfigFileSection].is_array());
 
         json sub_file_json = json::object();
         sub_file_json[ClassID] = class_id_;
@@ -633,7 +624,7 @@ void Configuration::writeJSON(nlohmann::json& parent_json,
 void Configuration::generateJSON(nlohmann::json& target, 
                                  JSONExportType export_type) const
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_ << ": generateJSON: writing into '" << target.dump(4) << "'";
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_ << ": writing into '" << target.dump(4) << "'";
 
     json& param_config = target[ParameterSection];
 
@@ -655,8 +646,8 @@ void Configuration::generateJSON(nlohmann::json& target,
         if (export_filters_paramid && !export_filters_paramid->empty() && export_filters_paramid->count(par_it.second->getParameterId()) > 0)
             continue;
 
-        logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_ << ": generateJSON: writing '" << par_it.second->getParameterId() << "'";
-        // assert (!param_config.contains(par_it.second.getParameterId()));
+        logdbg << "class_id " << class_id_ << " instance_id " << instance_id_ << ": writing '" << par_it.second->getParameterId() << "'";
+        // traced_assert(!param_config.contains(par_it.second.getParameterId()));
 
         par_it.second->toJSON(param_config);
     }
@@ -676,7 +667,7 @@ void Configuration::generateJSON(nlohmann::json& target,
  */
 void Configuration::setConfigurationFilename(const std::string& configuration_filename)
 {
-    assert(!configuration_filename.empty());
+    traced_assert(!configuration_filename.empty());
 
     configuration_filename_ = configuration_filename;
 }
@@ -694,7 +685,7 @@ bool Configuration::hasConfigurationFilename() const
  */
 const std::string& Configuration::getConfigurationFilename() const
 {
-    assert(hasConfigurationFilename());
+    traced_assert(hasConfigurationFilename());
     return configuration_filename_;
 }
 
@@ -721,10 +712,10 @@ bool Configuration::hasSubConfiguration(const SubConfigKey& key) const
 Configuration& Configuration::addNewSubConfiguration(const std::string& class_id,
                                                      const std::string& instance_id)
 {
-    assert(instance_id.size() != 0);
+    traced_assert(instance_id.size() != 0);
 
     SubConfigKey key(class_id, instance_id);
-    assert(!hasSubConfiguration(key));
+    traced_assert(!hasSubConfiguration(key));
 
     auto ptr = new Configuration(class_id, instance_id);
     sub_configurations_.insert(std::make_pair(key, std::unique_ptr<Configuration>(ptr)));
@@ -751,7 +742,7 @@ Configuration& Configuration::addNewSubConfiguration(const std::string& class_id
 Configuration& Configuration::addNewSubConfiguration(const std::string& class_id)
 {
     auto instance_id = newInstanceID(class_id);
-    assert(instance_id.size() != 0);
+    traced_assert(instance_id.size() != 0);
 
     //add instance
     return addNewSubConfiguration(class_id, instance_id);
@@ -762,8 +753,8 @@ Configuration& Configuration::addNewSubConfiguration(const std::string& class_id
  */
 Configuration& Configuration::addNewSubConfiguration(std::unique_ptr<Configuration>&& configuration)
 {
-    assert(configuration);
-    assert(configuration->create_instance_name_ || !instance_id_.empty());
+    traced_assert(configuration);
+    traced_assert(configuration->create_instance_name_ || !instance_id_.empty());
 
     //create a new unique instance name for the given configuration?
     if (configuration->create_instance_name_)
@@ -771,15 +762,15 @@ Configuration& Configuration::addNewSubConfiguration(std::unique_ptr<Configurati
         configuration->instance_id_          = newInstanceID(configuration->getClassId());
         configuration->create_instance_name_ = false;
 
-        logdbg << "Configuration: addNewSubConfiguration: created instance " << configuration->instance_id_;
+        logdbg << "created instance " << configuration->instance_id_;
     }
 
-    //logdbg << "Configuration::addNewSubConfiguration: Adding group of class " 
+    //logdbg << "adding group of class " 
     //       << configuration->getClassId() << " instance " << configuration->getInstanceId();
 
     //key unique?
     SubConfigKey key(configuration->getClassId(), configuration->getInstanceId());
-    assert(!hasSubConfiguration(key));
+    traced_assert(!hasSubConfiguration(key));
 
     //add to sub-configurations
     sub_configurations_.insert(std::make_pair(key, std::move(configuration)));
@@ -794,7 +785,7 @@ Configuration& Configuration::getSubConfiguration(const std::string& class_id,
                                                   const std::string& instance_id) const
 {
     SubConfigKey key(class_id, instance_id);
-    assert(hasSubConfiguration(key));
+    traced_assert(hasSubConfiguration(key));
 
     return *sub_configurations_.at(key);
 }
@@ -810,14 +801,14 @@ Configuration& Configuration::getOrCreateSubConfiguration(const std::string& cla
     //non-existent => create new one
     if (!hasSubConfiguration(key))
     {
-        logdbg << "Configuration instance " << instance_id_
-               << ": getOrCreateSubConfiguration: creating new (empty) configuration for class " << class_id
+        logdbg << "instance " << instance_id_
+               << ": creating new (empty) configuration for class " << class_id
                << " instance " << instance_id;
         
         addNewSubConfiguration(class_id, instance_id);
     }
 
-    assert(hasSubConfiguration(key));
+    traced_assert(hasSubConfiguration(key));
 
     return *sub_configurations_.at(key);
 }
@@ -828,13 +819,13 @@ Configuration& Configuration::getOrCreateSubConfiguration(const std::string& cla
 void Configuration::removeSubConfiguration(const std::string& class_id,
                                            const std::string& instance_id)
 {
-    logdbg << "Configuration: removeSubConfiguration: me " << class_id_ << " " << instance_id_ << " you " << class_id << " " << instance_id;
+    logdbg << "this " << class_id_ << " " << instance_id_ << " other " << class_id << " " << instance_id;
 
     SubConfigKey key(class_id, instance_id);
 
     if (!hasSubConfiguration(key))
     {
-        logerr << "Configuration: removeSubConfiguration: class_id_ " << class_id_
+        logerr << "class_id_ " << class_id_
                << " instance_id_ " << instance_id_ << ": sub class_id " << class_id
                << " instance_id " << instance_id << " not found";
         return;
@@ -848,7 +839,7 @@ void Configuration::removeSubConfiguration(const std::string& class_id,
  */
 void Configuration::removeSubConfigurations(const std::string& class_id)
 {
-    logdbg << "Configuration: removeSubConfigurations: me " << class_id_;
+    logdbg << "this " << class_id_;
 
     std::vector<SubConfigKey> to_be_removed;
 
@@ -922,7 +913,7 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
                                                                              bool assert_on_error,
                                                                              bool run_precheck)
 {
-    logdbg << "Configuration class_id " << class_id_ << " instance_id " << instance_id_ << ": reconfigure";
+    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
 
     if (missing_subconfig_keys)
         missing_subconfig_keys->clear();
@@ -936,27 +927,27 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
 
     auto logErrorSubConfig = [ & ] (const SubConfigKey& key, bool creation_failed)
     {
-        logerr << "Configuration: reconfigure: sub-config " << key.first << "." << key.second 
+        logerr << "sub-config " << key.first << "." << key.second 
                << " not found in config " << this->class_id_ << "." << this->instance_id_ 
                << (creation_failed ? " and could not be created" : "");
     };
 
     auto logErrorParam = [ & ] (const std::string& name, bool creation_failed)
     {
-        logerr << "Configuration: reconfigure: param " << name 
+        logerr << "param " << name 
                << " not found in config " << this->class_id_ << "." << this->instance_id_
                << (creation_failed ? " and could not be created" : "");
     };
 
     auto logWarningSubConfig = [ & ] (const SubConfigKey& key)
     {
-        logwrn << "Configuration: reconfigure: sub-config " << key.first << "." << key.second 
+        logwrn << "sub-config " << key.first << "." << key.second 
                << " not found in config " << this->class_id_ << "." << this->instance_id_ << ", skipping";
     };
 
     auto logWarningParam = [ & ] (const std::string& name)
     {
-        logwrn << "Configuration: reconfigure: param " << name 
+        logwrn << "param " << name 
                << " not found in config " << this->class_id_ << "." << this->instance_id_ << ", skipping";
     };
 
@@ -1012,7 +1003,7 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
                                                                                                MissingKeyType::Missing));
             //assert for error tracking?
             if (assert_on_error)
-                assert(has_param);
+                traced_assert(has_param);
 
             return;
         }
@@ -1095,7 +1086,7 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
 
             //assert for error tracking?
             if (assert_on_error)
-                assert(has_subconfig);
+                traced_assert(has_subconfig);
 
             return;
         }
@@ -1104,7 +1095,7 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
         Configurable* sub_configurable = nullptr;
         if (configurable)
         {
-            assert(configurable->hasSubConfigurable(key.first, key.second));
+            traced_assert(configurable->hasSubConfigurable(key.first, key.second));
             sub_configurable = &configurable->getChild(key.first, key.second);
         }
 
@@ -1156,7 +1147,7 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
 void Configuration::setParameterFromJSON(const std::string& parameter_id, const nlohmann::json& value)
 {
     //needs to be registered
-    assert(hasParameter(parameter_id));
+    traced_assert(hasParameter(parameter_id));
 
     parameters_.at(parameter_id)->setValue(value);
 }
@@ -1214,7 +1205,7 @@ const std::set<std::string>* Configuration::jsonExportFilters(JSONExportType exp
 //    template_flag_ = template_flag;
 //    template_name_ = template_name;
 
-//    loginf << "Configuration: setTemplate: " << class_id_ << " instance " << instance_id_ << "
+//    loginf << "start" << class_id_ << " instance " << instance_id_ << "
 //    flag " << template_flag
 //           << " name " << template_name;
 
@@ -1228,7 +1219,7 @@ const std::set<std::string>* Configuration::jsonExportFilters(JSONExportType exp
 // void Configuration::addSubTemplate (Configuration* configuration, const std::string&
 // template_name)
 //{
-//    assert (getSubTemplateNameFree(template_name));
+//    traced_assert(getSubTemplateNameFree(template_name));
 //    configuration_templates_.insert (std::pair<std::string, Configuration> (template_name,*
 //    configuration)); configuration_templates_.at(template_name).setTemplate(true, template_name);
 //    delete configuration;

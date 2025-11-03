@@ -103,21 +103,6 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
     if (calculator_.hasCurrentStandard())
         updateStandardWidget();
 
-    // some cfg
-    {
-        QFormLayout* form_layout = new QFormLayout();
-
-        // max ref time diff
-        max_ref_time_diff_edit_ = new QLineEdit(QString::number(calculator_.settings().max_ref_time_diff_));
-        max_ref_time_diff_edit_->setValidator(new QDoubleValidator(0.0, 30.0, 2, this));
-        connect(max_ref_time_diff_edit_, &QLineEdit::textEdited,
-                this, &EvaluationStandardTabWidget::maxRefTimeDiffEditSlot);
-
-        form_layout->addRow("Reference Maximum Time Difference [s]", max_ref_time_diff_edit_);
-
-        main_layout->addLayout(form_layout);
-    }
-
     // connections
     connect (&calculator_, &EvaluationCalculator::standardsChanged,
              this, &EvaluationStandardTabWidget::changedStandardsSlot);
@@ -132,9 +117,9 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
  */
 void EvaluationStandardTabWidget::changedStandardsSlot()
 {
-    loginf << "EvaluationStandardTabWidget: changedStandardsSlot";
+    loginf;
 
-    assert (standard_box_);
+    traced_assert(standard_box_);
     standard_box_->updateStandards();
 }
 
@@ -142,9 +127,9 @@ void EvaluationStandardTabWidget::changedStandardsSlot()
  */
 void EvaluationStandardTabWidget::changedCurrentStandardSlot()
 {
-    loginf << "EvaluationStandardTabWidget: changedCurrentStandardSlot";
+    loginf;
 
-    assert (standard_box_);
+    traced_assert(standard_box_);
     standard_box_->setStandardName(calculator_.currentStandardName());
 
     updateButtons();
@@ -155,7 +140,7 @@ void EvaluationStandardTabWidget::changedCurrentStandardSlot()
  */
 void EvaluationStandardTabWidget::addStandardSlot ()
 {
-    loginf << "EvaluationStandardTabWidget: addStandardSlot";
+    loginf;
 
     bool ok;
     QString text =
@@ -190,7 +175,7 @@ void EvaluationStandardTabWidget::addStandardSlot ()
  */
 void EvaluationStandardTabWidget::renameStandardSlot ()
 {
-    loginf << "EvaluationStandardTabWidget: renameStandardSlot";
+    loginf;
 
     bool ok;
     QString text =
@@ -226,7 +211,7 @@ void EvaluationStandardTabWidget::renameStandardSlot ()
  */
 void EvaluationStandardTabWidget::copyStandardSlot ()
 {
-    loginf << "EvaluationStandardTabWidget: copyStandardSlot";
+    loginf;
 
     bool ok;
     QString text =
@@ -261,9 +246,9 @@ void EvaluationStandardTabWidget::copyStandardSlot ()
  */
 void EvaluationStandardTabWidget::removeStandardSlot ()
 {
-    loginf << "EvaluationStandardTabWidget: removeStandardSlot";
+    loginf;
 
-    assert (calculator_.hasCurrentStandard());
+    traced_assert(calculator_.hasCurrentStandard());
     calculator_.deleteCurrentStandard();
 }
 
@@ -271,13 +256,13 @@ void EvaluationStandardTabWidget::removeStandardSlot ()
  */
 void EvaluationStandardTabWidget::updateButtons()
 {
-    assert (add_button_);
+    traced_assert(add_button_);
     add_button_->setDisabled(false);
-    assert (rename_button_);
+    traced_assert(rename_button_);
     rename_button_->setEnabled(calculator_.hasCurrentStandard());
-    assert (copy_button_);
+    traced_assert(copy_button_);
     copy_button_->setEnabled(calculator_.hasCurrentStandard());
-    assert (remove_button_);
+    traced_assert(remove_button_);
     remove_button_->setEnabled(calculator_.hasCurrentStandard());
 }
 
@@ -285,7 +270,7 @@ void EvaluationStandardTabWidget::updateButtons()
  */
 void EvaluationStandardTabWidget::updateStandardWidget()
 {
-    // assert(standards_widget_);
+    // traced_assert(standards_widget_);
 
     // string standard_name = calculator_.currentStandardName();
 
@@ -307,7 +292,7 @@ void EvaluationStandardTabWidget::updateStandardWidget()
 
     // standards_widget_->setCurrentWidget(standard.widget());
 
-    assert (standards_layout_);
+    traced_assert(standards_layout_);
     QLayoutItem* item;
     while ((item = standards_layout_->takeAt(0)) != nullptr)
     {
@@ -326,19 +311,4 @@ void EvaluationStandardTabWidget::updateStandardWidget()
 
         standards_layout_->addWidget(widget);
     }
-}
-
-/**
- */
-void EvaluationStandardTabWidget::maxRefTimeDiffEditSlot(QString value)
-{
-    loginf << "EvaluationStandardTabWidget: maxRefTimeDiffEditSlot: value " << value.toStdString();
-
-    bool ok;
-    float val = value.toFloat(&ok);
-
-    if (ok)
-        calculator_.settings().max_ref_time_diff_ = val;
-    else
-        loginf << "EvaluationStandardTabWidget: maxRefTimeDiffEditSlot: invalid value";
 }

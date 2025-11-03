@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "dbcontent/variable/metavariableconfigurationdialog.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/metavariabledetailwidget.h"
@@ -18,8 +35,8 @@ using namespace std;
 namespace dbContent
 {
 
-MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManager& dbo_man)
-    : QDialog(), dbo_man_(dbo_man)
+MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManager& dbcont_man)
+    : QDialog(), dbcont_man_(dbcont_man)
 {
     if (COMPASS::instance().expertMode())
         setWindowTitle("Configure Meta Variables");
@@ -51,7 +68,7 @@ MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManage
 
     splitter_->addWidget(list_widget_);
 
-    detail_widget_ = new MetaVariableDetailWidget(dbo_man_);
+    detail_widget_ = new MetaVariableDetailWidget(dbcont_man_);
 
     splitter_->addWidget(detail_widget_);
     splitter_->restoreState(settings.value("mainSplitterSizes").toByteArray());
@@ -100,11 +117,11 @@ MetaVariableConfigurationDialog::~MetaVariableConfigurationDialog()
 
 void MetaVariableConfigurationDialog::updateList()
 {
-    assert (list_widget_);
+    traced_assert(list_widget_);
     list_widget_->clear();
 
     unsigned int row_cnt = 0;
-    for (auto& met_it : dbo_man_.metaVariables())
+    for (auto& met_it : dbcont_man_.metaVariables())
     {
         QListWidgetItem* item = new QListWidgetItem(met_it.first.c_str());
         list_widget_->insertItem(row_cnt, item);
@@ -114,14 +131,14 @@ void MetaVariableConfigurationDialog::updateList()
 
 void MetaVariableConfigurationDialog::selectMetaVariable (const std::string& name)
 {
-    assert (list_widget_->findItems(name.c_str(), Qt::MatchExactly).size() == 1);
+    traced_assert(list_widget_->findItems(name.c_str(), Qt::MatchExactly).size() == 1);
     list_widget_->setCurrentItem(list_widget_->findItems(name.c_str(), Qt::MatchExactly).at(0));
 }
 
 
 void MetaVariableConfigurationDialog::clearDetails()
 {
-    assert (detail_widget_);
+    traced_assert(detail_widget_);
     detail_widget_->clear();
 }
 
@@ -129,9 +146,9 @@ void MetaVariableConfigurationDialog::itemSelectedSlot(const QString& text)
 {
     string item_name = text.toStdString();
 
-    loginf << "MetaVariableConfigurationDialog: itemSelectedSlot: item '" << item_name << "'";
+    loginf << "item '" << item_name << "'";
 
-    assert (detail_widget_);
+    traced_assert(detail_widget_);
 
     if (!item_name.size())
     {
@@ -139,32 +156,32 @@ void MetaVariableConfigurationDialog::itemSelectedSlot(const QString& text)
     }
     else
     {
-        assert (dbo_man_.existsMetaVariable(item_name));
-        detail_widget_->show(dbo_man_.metaVariable(item_name));
+        traced_assert(dbcont_man_.existsMetaVariable(item_name));
+        detail_widget_->show(dbcont_man_.metaVariable(item_name));
     }
 }
 
 void MetaVariableConfigurationDialog::addAllMetaVariablesSlot()
 {
-    std::vector<std::string> found_dbos;
+    std::vector<std::string> found_dbconts;
 
     bool changed = false;
 
-    for (auto& obj_it : dbo_man_)
+    for (auto& obj_it : dbcont_man_)
     {
         for (auto& var_it : obj_it.second->variables())
         {
-            if (dbo_man_.usedInMetaVariable(*var_it.second.get()))
+            if (dbcont_man_.usedInMetaVariable(*var_it.second.get()))
             {
-                loginf << "MetaVariableConfigurationDialog: addAllMetaVariablesSlot: not adding dbovariable "
+                logdbg << "not adding dbcontvariable "
                        << var_it.first << " since already used";
                 continue;
             }
 
-            found_dbos.clear();
-            found_dbos.push_back(obj_it.first);  // original object
+            found_dbconts.clear();
+            found_dbconts.push_back(obj_it.first);  // original object
 
-            for (auto& obj_it2 : dbo_man_)
+            for (auto& obj_it2 : dbcont_man_)
             {
                 if (obj_it == obj_it2)
                     continue;
@@ -172,16 +189,15 @@ void MetaVariableConfigurationDialog::addAllMetaVariablesSlot()
                 if (obj_it2.second->hasVariable(var_it.first) &&
                         var_it.second->dataType() == obj_it2.second->variable(var_it.first).dataType())
                 {
-                    found_dbos.push_back(obj_it2.first);
+                    found_dbconts.push_back(obj_it2.first);
                 }
             }
 
-            if (found_dbos.size() > 1)
+            if (found_dbconts.size() > 1)
             {
-                if (!dbo_man_.existsMetaVariable(var_it.first))
+                if (!dbcont_man_.existsMetaVariable(var_it.first))
                 {
-                    loginf
-                            << "MetaVariableConfigurationDialog: addAllMetaVariablesSlot: adding meta variable "
+                    loginf << "adding meta variable "
                         << var_it.first;
 
                     std::string instance = "MetaVariable" + var_it.first + "0";
@@ -189,20 +205,18 @@ void MetaVariableConfigurationDialog::addAllMetaVariablesSlot()
                     auto config = Configuration::create("MetaVariable", instance);
                     config->addParameter<std::string>("name", var_it.first);
 
-                    dbo_man_.generateSubConfigurableFromConfig(std::move(config));
+                    dbcont_man_.generateSubConfigurableFromConfig(std::move(config));
                 }
 
-                assert(dbo_man_.existsMetaVariable(var_it.first));
-                MetaVariable& meta_var = dbo_man_.metaVariable(var_it.first);
+                traced_assert(dbcont_man_.existsMetaVariable(var_it.first));
+                MetaVariable& meta_var = dbcont_man_.metaVariable(var_it.first);
 
-                for (auto dbo_it2 = found_dbos.begin(); dbo_it2 != found_dbos.end(); dbo_it2++)
+                for (auto dbcont_it2 = found_dbconts.begin(); dbcont_it2 != found_dbconts.end(); dbcont_it2++)
                 {
-                    if (!meta_var.existsIn(*dbo_it2))
+                    if (!meta_var.existsIn(*dbcont_it2))
                     {
-                        loginf << "MetaVariableConfigurationDialog: addAllMetaVariablesSlot: adding meta "
-                                  "variable "
-                               << var_it.first << " dbo variable " << var_it.first;
-                        meta_var.addVariable(*dbo_it2, var_it.first);
+                        loginf << "adding meta variable " << var_it.first << " dbcont variable " << var_it.first;
+                        meta_var.addVariable(*dbcont_it2, var_it.first);
                     }
                 }
 

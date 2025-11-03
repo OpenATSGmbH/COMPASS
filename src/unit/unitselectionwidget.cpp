@@ -25,7 +25,7 @@
 UnitSelectionWidget::UnitSelectionWidget(std::string& dimension, std::string& unit)
     : QPushButton(), dimension_(&dimension), unit_(&unit)
 {
-    logdbg << "UnitSelectionWidget: constructor";
+    logdbg;
 
     pointers_set_ = true;
 
@@ -58,12 +58,12 @@ void UnitSelectionWidget::createMenu()
 
         if (units.size() > 0)
         {
-            //      loginf  << "UnitSelectionWidget: createMenu: unit " << it->first;
+            //      loginf << "unit " << it->first;
             QMenu* m2 = menu_.addMenu(QString::fromStdString(it.first));
 
             for (auto& it2 : units)
             {
-                //        loginf  << "UnitSelectionWidget: createMenu: unitunit " << unitit->first;
+                //        loginf << "unitunit " << unitit->first;
                 QAction* action = m2->addAction(QString::fromStdString(it2.first));
 
                 QVariantMap vmap;
@@ -106,16 +106,16 @@ void UnitSelectionWidget::clear()
 
 void UnitSelectionWidget::showMenuSlot()
 {
-    loginf << "UnitSelectionWidget: showMenuSlot";
+    loginf;
 
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     menu_.exec(QCursor::pos());
 }
 
 void UnitSelectionWidget::triggerSlot(QAction* action)
 {
-    assert (pointers_set_);
+    traced_assert(pointers_set_);
 
     QVariantMap vmap = action->data().toMap();
     std::string dimension, unit;
@@ -126,7 +126,7 @@ void UnitSelectionWidget::triggerSlot(QAction* action)
         unit = vmap.begin().key().toStdString();
     }
 
-    loginf << "UnitSelectionWidget: triggerSlot: got dimension " << dimension << " unit " << unit;
+    loginf << "got dimension " << dimension << " unit " << unit;
 
     *dimension_ = dimension;
     *unit_ = unit;

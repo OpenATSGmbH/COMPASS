@@ -39,7 +39,7 @@ BaseConfigWidget::BaseConfigWidget(BaseConfig& cfg)
 
     form_layout_ = new QFormLayout();
 
-    assert (Group::requirement_type_mapping_.count(config_.classId()));
+    traced_assert(Group::requirement_type_mapping_.count(config_.classId()));
     form_layout_->addRow("Requirement Type",
                          new QLabel(Group::requirement_type_mapping_.at(config_.classId()).c_str()));
 
@@ -80,43 +80,43 @@ BaseConfigWidget::~BaseConfigWidget()
 void BaseConfigWidget::changedNameSlot()
 {
     QLineEdit* edit = dynamic_cast<QLineEdit*>(sender());
-    assert (edit);
+    traced_assert(edit);
 
     string value_str = edit->text().toStdString();
 
-    loginf << "BaseConfigWidget: changedNameSlot: name '" << value_str << "'";
+    loginf << "name '" << value_str << "'";
 
     if (value_str.size())
     {
         config_.name(value_str);
     }
     else
-        logerr << "BaseConfigWidget: changedNameSlot: impossible name '" << value_str << "'";
+        logerr << "impossible name '" << value_str << "'";
 }
 
 void BaseConfigWidget::changedShortNameSlot()
 {
     QLineEdit* edit = dynamic_cast<QLineEdit*>(sender());
-    assert (edit);
+    traced_assert(edit);
 
     string value_str = edit->text().toStdString();
 
-    loginf << "BaseConfigWidget: changedShortNameSlot: name '" << value_str << "'";
+    loginf << "name '" << value_str << "'";
 
     if (value_str.size())
         config_.shortName(value_str);
     else
-        logerr << "BaseConfigWidget: changedShortNameSlot: impossible name '" << value_str << "'";
+        logerr << "impossible name '" << value_str << "'";
 }
 
 void BaseConfigWidget::changedCommentSlot()
 {
     QPlainTextEdit* edit = dynamic_cast<QPlainTextEdit*>(sender());
-    assert (edit);
+    traced_assert(edit);
 
     string value_str = edit->toPlainText().toStdString();
 
-    logdbg << "BaseConfigWidget: changedCommentSlot: comment '" << value_str << "'";
+    logdbg << "comment '" << value_str << "'";
 
     config_.comment(value_str);
 }

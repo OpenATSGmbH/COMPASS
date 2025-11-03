@@ -43,8 +43,6 @@ namespace dbContent
     class VariableSet;
 }
 
-class DBOVariableSet;
-
 class QMessageBox;
 
 class JSONImportTask : public Task, public Configurable

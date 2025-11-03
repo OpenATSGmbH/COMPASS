@@ -16,11 +16,11 @@
  */
 
 #include "targetreportaccessor.h"
-#include "dbcontent/variable/metavariable.h"
 #include "dbcontent.h"
 #include "dbcontentmanager.h"
 #include "compass.h"
 #include "global.h"
+#include "accuracy.h"
 
 #include "targetreportdefs.h"
 
@@ -124,13 +124,13 @@ void TargetReportAccessor::cacheVectors()
 
     //general
     meta_timestamp_vec_ = metaVarVector<boost::posix_time::ptime>(DBContent::meta_var_timestamp_);
-    assert (meta_timestamp_vec_);
+    traced_assert(meta_timestamp_vec_);
     meta_rec_num_vec_   = metaVarVector<unsigned long>(DBContent::meta_var_rec_num_);
-    assert (meta_rec_num_vec_);
+    traced_assert(meta_rec_num_vec_);
     meta_ds_id_vec_     = metaVarVector<unsigned int>(DBContent::meta_var_ds_id_);
-    assert (meta_ds_id_vec_);
+    traced_assert(meta_ds_id_vec_);
     meta_line_id_vec_   = metaVarVector<unsigned int>(DBContent::meta_var_line_id_);
-    assert (meta_line_id_vec_);
+    traced_assert(meta_line_id_vec_);
 
     meta_acad_vec_      = metaVarVector<unsigned int>(DBContent::meta_var_acad_);
     meta_acid_vec_      = metaVarVector<std::string>(DBContent::meta_var_acid_);
@@ -309,14 +309,8 @@ boost::optional<targetReport::PositionAccuracy> TargetReportAccessor::positionAc
             return {}; // unknown mops version
         }
 
-        float conversion_factor = 2.5f;  // Default for NACp >= 9.
-
-        if (qi_epu < 9)
-            conversion_factor = 2.0f;
-
-        // Assuming an isotropic Gaussian error, the standard deviation (σ)
-        // is approximated by dividing the 95% bound (EPU) by the conversion factor.
-        float sigma = qi_epu / conversion_factor;
+        // EPU is the 95% horizontal error radius (R95). For a 2-D isotropic error (Rayleigh), R95≈2.45σ, so σ≈EPU/2.45
+        float sigma = qi_epu / 2.45;
 
         x_stddev = sigma;
         y_stddev = sigma;
@@ -355,10 +349,12 @@ boost::optional<targetReport::PositionAccuracy> TargetReportAccessor::positionAc
             //         xy_cov =  std::pow(xy_cov, 2);
             // }
         }
+        double x_stddev = meta_pos_std_dev_x_m_vec_->get(index);
+        double y_stddev = meta_pos_std_dev_y_m_vec_->get(index);
 
-        return targetReport::PositionAccuracy(meta_pos_std_dev_x_m_vec_->get(index),
-                                              meta_pos_std_dev_y_m_vec_->get(index),
-                                              xy_cov);
+        Utils::Accuracy::checkMaxCovariance(x_stddev, y_stddev, xy_cov);
+
+        return targetReport::PositionAccuracy(x_stddev, y_stddev, xy_cov);
     }
 
     //not implemented for dbcontent

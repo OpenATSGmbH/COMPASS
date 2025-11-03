@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "timestampfilterwidget.h"
 #include "timeconv.h"
 #include "logger.h"
@@ -37,14 +54,14 @@ TimestampFilterWidget::~TimestampFilterWidget()
 
 void TimestampFilterWidget::update()
 {
-    loginf << "TimestampFilterWidget: update";
+    loginf;
 
     update_active_ = true;
 
     DBFilterWidget::update();
 
-    assert (min_edit_);
-    assert (max_edit_);
+    traced_assert(min_edit_);
+    traced_assert(max_edit_);
 
     min_edit_->setDateTime(QDateTime::fromString(Time::toString(filter_.minValue()).c_str(),
                                                  Time::QT_DATETIME_FORMAT.c_str()));
@@ -60,7 +77,7 @@ void TimestampFilterWidget::minDateTimeChanged(const QDateTime& datetime)
     if (update_active_)
         return;
 
-    loginf << "TimestampFilterWidget: minDateTimeChanged: value "
+    loginf << "value "
            << datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString();
 
     filter_.minValue(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()), false);
@@ -71,7 +88,7 @@ void TimestampFilterWidget::maxDateTimeChanged(const QDateTime& datetime)
     if (update_active_)
         return;
 
-    loginf << "TimestampFilterWidget: maxDateTimeChanged: value "
+    loginf << "value "
            << datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString();
 
     filter_.maxValue(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()), false);

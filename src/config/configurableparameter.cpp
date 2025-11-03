@@ -16,6 +16,7 @@
  */
 
 #include "configurableparameter.h"
+#include "traced_assert.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -204,7 +205,7 @@ void ConfigurableParameterT<T>::update(T* pointer,
                                        const T& default_value, 
                                        bool update_pointer)
 {
-    assert(pointer);
+    traced_assert(pointer);
 
     pointer_       = pointer;
     config_value_  = config_value;
@@ -221,7 +222,7 @@ void ConfigurableParameterT<T>::update(T* pointer,
                                        const T& default_value, 
                                        bool update_pointer)
 {
-    assert(pointer);
+    traced_assert(pointer);
 
     pointer_       = pointer;
     default_value_ = default_value;
@@ -235,7 +236,7 @@ void ConfigurableParameterT<T>::update(T* pointer,
 template <typename T>
 void ConfigurableParameterT<T>::update(T* pointer)
 {
-    assert(pointer);
+    traced_assert(pointer);
 
     pointer_ = pointer;
 }
@@ -246,7 +247,7 @@ void ConfigurableParameterT<T>::update(T* pointer)
 template <typename T>
 void ConfigurableParameterT<T>::setValue(const nlohmann::json& json_value)
 {
-    assert(hasStoredPointer());
+    traced_assert(hasStoredPointer());
 
     *pointer_ = valueFromJSON(json_value);
 }
@@ -300,7 +301,7 @@ T ConfigurableParameterT<T>::valueFromJSON(const nlohmann::json& json_value)
     catch(...)
     {
         //bad conversion
-        assert(false);
+        traced_assert(false);
     }
     
     return value;

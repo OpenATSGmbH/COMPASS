@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SCATTERPLOTVIEWDATASOURCE_H_
-#define SCATTERPLOTVIEWDATASOURCE_H_
+#pragma once
 
 #include <QObject>
 
@@ -48,7 +47,7 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()
     {
-        assert(set_);
+        traced_assert(set_);
         return set_;
     }
 
@@ -62,12 +61,10 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
     /// Selected DBContent records
     //ViewSelectionEntries& selection_entries_;
 
-    std::vector<std::pair<std::string, std::string>> temporary_added_variables_; // not persisted, DBO->varname
+    std::vector<std::pair<std::string, std::string>> temporary_added_variables_; // not persisted, DBCont->varname
 
     virtual void checkSubConfigurables();
 
     bool addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set, true of added
     void removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set
 };
-
-#endif /* SCATTERPLOTVIEWDATASOURCE_H_ */

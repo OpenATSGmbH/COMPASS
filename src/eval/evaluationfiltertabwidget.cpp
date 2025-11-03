@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "evaluationfiltertabwidget.h"
 #include "evaluationmanager.h"
 #include "textfielddoublevalidator.h"
@@ -145,7 +162,7 @@ EvaluationFilterTabWidget::EvaluationFilterTabWidget(EvaluationCalculator& calcu
  */
 void EvaluationFilterTabWidget::toggleUseFiltersSlot()
 {
-    assert (use_filter_check_);
+    traced_assert(use_filter_check_);
     calculator_.settings().use_load_filter_ = use_filter_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -157,7 +174,7 @@ void EvaluationFilterTabWidget::toggleUseFiltersSlot()
  */
 void EvaluationFilterTabWidget::toggleUseRefTrajAccuracySlot()
 {
-    assert (use_reftraj_acc_check_);
+    traced_assert(use_reftraj_acc_check_);
     calculator_.settings().use_ref_traj_accuracy_filter_ = use_reftraj_acc_check_->checkState() == Qt::Checked;
 }
 
@@ -171,7 +188,7 @@ void EvaluationFilterTabWidget::minRefTrajAccuracyEditedSlot (const QString& tex
     val = text.toFloat(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: minRefTrajAccuracyEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().ref_traj_minimum_accuracy_ = val;
 }
@@ -180,7 +197,7 @@ void EvaluationFilterTabWidget::minRefTrajAccuracyEditedSlot (const QString& tex
  */
 void EvaluationFilterTabWidget::toggleUseADSBSlot()
 {
-    assert (use_adsb_check_);
+    traced_assert(use_adsb_check_);
     calculator_.settings().use_adsb_filter_ = use_adsb_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -190,7 +207,7 @@ void EvaluationFilterTabWidget::toggleUseADSBSlot()
  */
 void EvaluationFilterTabWidget::toggleUseV0Slot()
 {
-    assert (use_v0_check_);
+    traced_assert(use_v0_check_);
     calculator_.settings().use_v0_ = use_v0_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -200,7 +217,7 @@ void EvaluationFilterTabWidget::toggleUseV0Slot()
  */
 void EvaluationFilterTabWidget::toggleUseV1Slot()
 {
-    assert (use_v1_check_);
+    traced_assert(use_v1_check_);
     calculator_.settings().use_v1_ = use_v1_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -210,7 +227,7 @@ void EvaluationFilterTabWidget::toggleUseV1Slot()
  */
 void EvaluationFilterTabWidget::toggleUseV2Slot()
 {
-    assert (use_v2_check_);
+    traced_assert(use_v2_check_);
     calculator_.settings().use_v2_ = use_v2_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -220,7 +237,7 @@ void EvaluationFilterTabWidget::toggleUseV2Slot()
  */
 void EvaluationFilterTabWidget::toggleUseMinNUCPSlot()
 {
-    assert (use_min_nucp_check_);
+    traced_assert(use_min_nucp_check_);
     calculator_.settings().use_min_nucp_ = use_min_nucp_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -236,7 +253,7 @@ void EvaluationFilterTabWidget::minNUCPEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: minNUCPEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().min_nucp_ = val;
 }
@@ -245,7 +262,7 @@ void EvaluationFilterTabWidget::minNUCPEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMinNICSlot()
 {
-    assert (use_min_nic_check_);
+    traced_assert(use_min_nic_check_);
     calculator_.settings().use_min_nic_ = use_min_nic_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -261,7 +278,7 @@ void EvaluationFilterTabWidget::minNICEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: minNICEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().min_nic_ = val;
 }
@@ -270,7 +287,7 @@ void EvaluationFilterTabWidget::minNICEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMinNACpSlot()
 {
-    assert (use_min_nacp_check_);
+    traced_assert(use_min_nacp_check_);
     calculator_.settings().use_min_nacp_ = use_min_nacp_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -286,7 +303,7 @@ void EvaluationFilterTabWidget::minNACPEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: minNACPEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().min_nacp_ = val;
 }
@@ -295,7 +312,7 @@ void EvaluationFilterTabWidget::minNACPEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMinSILv1Slot()
 {
-    assert (use_min_sil_v1_check_);
+    traced_assert(use_min_sil_v1_check_);
     calculator_.settings().use_min_sil_v1_ = use_min_sil_v1_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -311,7 +328,7 @@ void EvaluationFilterTabWidget::minSILv1PEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: minSILv1PEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().min_sil_v1_ = val;
 }
@@ -320,7 +337,7 @@ void EvaluationFilterTabWidget::minSILv1PEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMinSILv2Slot()
 {
-    assert (use_min_sil_v2_check_);
+    traced_assert(use_min_sil_v2_check_);
     calculator_.settings().use_min_sil_v2_ = use_min_sil_v2_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -336,7 +353,7 @@ void EvaluationFilterTabWidget::minSILv2PEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: minSILv2PEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().min_sil_v2_ = val;
 }
@@ -345,7 +362,7 @@ void EvaluationFilterTabWidget::minSILv2PEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMaxNUCPSlot()
 {
-    assert (use_max_nucp_check_);
+    traced_assert(use_max_nucp_check_);
     calculator_.settings().use_max_nucp_ = use_max_nucp_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -361,7 +378,7 @@ void EvaluationFilterTabWidget::maxNUCPEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: maxNUCPEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().max_nucp_ = val;
 }
@@ -370,7 +387,7 @@ void EvaluationFilterTabWidget::maxNUCPEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMaxNICSlot()
 {
-    assert (use_max_nic_check_);
+    traced_assert(use_max_nic_check_);
     calculator_.settings().use_max_nic_ = use_max_nic_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -386,7 +403,7 @@ void EvaluationFilterTabWidget::maxNICEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: maxNICEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().max_nic_ = val;
 }
@@ -395,7 +412,7 @@ void EvaluationFilterTabWidget::maxNICEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMaxNACpSlot()
 {
-    assert (use_max_nacp_check_);
+    traced_assert(use_max_nacp_check_);
     calculator_.settings().use_max_nacp_ = use_max_nacp_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -411,7 +428,7 @@ void EvaluationFilterTabWidget::maxNACPEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: maxNACPEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().max_nacp_ = val;
 }
@@ -420,7 +437,7 @@ void EvaluationFilterTabWidget::maxNACPEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMaxSILv1Slot()
 {
-    assert (use_max_sil_v1_check_);
+    traced_assert(use_max_sil_v1_check_);
     calculator_.settings().use_max_sil_v1_ = use_max_sil_v1_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -436,7 +453,7 @@ void EvaluationFilterTabWidget::maxSILv1PEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: maxSILv1PEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().max_sil_v1_ = val;
 }
@@ -445,7 +462,7 @@ void EvaluationFilterTabWidget::maxSILv1PEditedSlot (const QString& text)
  */
 void EvaluationFilterTabWidget::toggleUseMaxSILv2Slot()
 {
-    assert (use_max_sil_v2_check_);
+    traced_assert(use_max_sil_v2_check_);
     calculator_.settings().use_max_sil_v2_ = use_max_sil_v2_check_->checkState() == Qt::Checked;
 
     updateValues();
@@ -461,7 +478,7 @@ void EvaluationFilterTabWidget::maxSILv2PEditedSlot (const QString& text)
     val = text.toUInt(&ok);
 
     if (!ok)
-        logwrn << "EvaluationFilterTabWidget: maxSILv2PEditedSlot: unable to parse value '" << text.toStdString() << "'";
+        logwrn << "unable to parse value '" << text.toStdString() << "'";
     else
         calculator_.settings().max_sil_v2_ = val;
 }
@@ -474,16 +491,16 @@ void EvaluationFilterTabWidget::updateValues()
 
     bool use_filter = eval_settings.use_load_filter_;
 
-    assert (use_filter_check_);
+    traced_assert(use_filter_check_);
     use_filter_check_->setChecked(eval_settings.use_load_filter_);
 
     // reftraj
 
-    assert(use_reftraj_acc_check_);
+    traced_assert(use_reftraj_acc_check_);
     use_reftraj_acc_check_->setChecked(eval_settings.use_ref_traj_accuracy_filter_);
     use_reftraj_acc_check_->setEnabled(use_filter);
 
-    assert (min_reftraj_acc_edit_);
+    traced_assert(min_reftraj_acc_edit_);
     min_reftraj_acc_edit_->setText(QString::number(eval_settings.ref_traj_minimum_accuracy_));
     min_reftraj_acc_edit_->setEnabled(use_filter && eval_settings.use_ref_traj_accuracy_filter_);
 
@@ -491,97 +508,97 @@ void EvaluationFilterTabWidget::updateValues()
 
     bool use_adsb_filter = use_filter && eval_settings.use_adsb_filter_;
 
-    assert (use_adsb_check_);
+    traced_assert(use_adsb_check_);
     use_adsb_check_->setChecked(eval_settings.use_adsb_filter_);
     use_adsb_check_->setEnabled(use_filter);
 
     // v0
-    assert (use_v0_check_);
+    traced_assert(use_v0_check_);
     use_v0_check_->setChecked(eval_settings.use_v0_);
     use_v0_check_->setEnabled(use_adsb_filter);
 
     // nucp
-    assert (use_min_nucp_check_);
+    traced_assert(use_min_nucp_check_);
     use_min_nucp_check_->setChecked(eval_settings.use_min_nucp_);
     use_min_nucp_check_->setEnabled(use_adsb_filter && eval_settings.use_v0_);
-    assert (min_nucp_edit_);
+    traced_assert(min_nucp_edit_);
     min_nucp_edit_->setText(QString::number(eval_settings.min_nucp_));
     min_nucp_edit_->setEnabled(use_adsb_filter && eval_settings.use_min_nucp_ && eval_settings.use_v0_);
 
-    assert (use_max_nucp_check_);
+    traced_assert(use_max_nucp_check_);
     use_max_nucp_check_->setChecked(eval_settings.use_max_nucp_);
     use_max_nucp_check_->setEnabled(use_adsb_filter && eval_settings.use_v0_);
-    assert (max_nucp_edit_);
+    traced_assert(max_nucp_edit_);
     max_nucp_edit_->setText(QString::number(eval_settings.max_nucp_));
     max_nucp_edit_->setEnabled(use_adsb_filter && eval_settings.use_max_nucp_ && eval_settings.use_v0_);
 
     // v1
-    assert (use_v1_check_);
+    traced_assert(use_v1_check_);
     use_v1_check_->setChecked(eval_settings.use_v1_);
     use_v1_check_->setEnabled(use_adsb_filter);
-    assert (use_v2_check_);
+    traced_assert(use_v2_check_);
     use_v2_check_->setChecked(eval_settings.use_v2_);
     use_v2_check_->setEnabled(use_adsb_filter);
 
     bool use_v12 = eval_settings.use_v1_ || eval_settings.use_v2_;
 
     // nic
-    assert (use_min_nic_check_);
+    traced_assert(use_min_nic_check_);
     use_min_nic_check_->setChecked(eval_settings.use_min_nic_);
     use_min_nic_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (min_nic_edit_);
+    traced_assert(min_nic_edit_);
     min_nic_edit_->setText(QString::number(eval_settings.min_nic_));
     min_nic_edit_->setEnabled(use_adsb_filter && eval_settings.use_min_nic_ && use_v12);
 
-    assert (use_max_nic_check_);
+    traced_assert(use_max_nic_check_);
     use_max_nic_check_->setChecked(eval_settings.use_max_nic_);
     use_max_nic_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (max_nic_edit_);
+    traced_assert(max_nic_edit_);
     max_nic_edit_->setText(QString::number(eval_settings.max_nic_));
     max_nic_edit_->setEnabled(use_adsb_filter && eval_settings.use_max_nic_ && use_v12);
 
     // nacp
-    assert (use_min_nacp_check_);
+    traced_assert(use_min_nacp_check_);
     use_min_nacp_check_->setChecked(eval_settings.use_min_nacp_);
     use_min_nacp_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (min_nacp_edit_);
+    traced_assert(min_nacp_edit_);
     min_nacp_edit_->setText(QString::number(eval_settings.min_nacp_));
     min_nacp_edit_->setEnabled(use_adsb_filter && eval_settings.use_min_nacp_ && use_v12);
 
-    assert (use_max_nacp_check_);
+    traced_assert(use_max_nacp_check_);
     use_max_nacp_check_->setChecked(eval_settings.use_max_nacp_);
     use_max_nacp_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (max_nacp_edit_);
+    traced_assert(max_nacp_edit_);
     max_nacp_edit_->setText(QString::number(eval_settings.max_nacp_));
     max_nacp_edit_->setEnabled(use_adsb_filter && eval_settings.use_max_nacp_ && use_v12);
 
     // sil v1
-    assert (use_min_sil_v1_check_);
+    traced_assert(use_min_sil_v1_check_);
     use_min_sil_v1_check_->setChecked(eval_settings.use_min_sil_v1_);
     use_min_sil_v1_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (min_sil_v1_edit_);
+    traced_assert(min_sil_v1_edit_);
     min_sil_v1_edit_->setText(QString::number(eval_settings.min_sil_v1_));
     min_sil_v1_edit_->setEnabled(use_adsb_filter && eval_settings.use_min_sil_v1_ && use_v12);
 
-    assert (use_max_sil_v1_check_);
+    traced_assert(use_max_sil_v1_check_);
     use_max_sil_v1_check_->setChecked(eval_settings.use_max_sil_v1_);
     use_max_sil_v1_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (max_sil_v1_edit_);
+    traced_assert(max_sil_v1_edit_);
     max_sil_v1_edit_->setText(QString::number(eval_settings.max_sil_v1_));
     max_sil_v1_edit_->setEnabled(use_adsb_filter && eval_settings.use_max_sil_v1_ && use_v12);
 
     // sil v2
-    assert (use_min_sil_v2_check_);
+    traced_assert(use_min_sil_v2_check_);
     use_min_sil_v2_check_->setChecked(eval_settings.use_min_sil_v2_);
     use_min_sil_v2_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (min_sil_v2_edit_);
+    traced_assert(min_sil_v2_edit_);
     min_sil_v2_edit_->setText(QString::number(eval_settings.min_sil_v2_));
     min_sil_v2_edit_->setEnabled(use_adsb_filter && eval_settings.use_min_sil_v2_ && use_v12);
 
-    assert (use_max_sil_v2_check_);
+    traced_assert(use_max_sil_v2_check_);
     use_max_sil_v2_check_->setChecked(eval_settings.use_max_sil_v2_);
     use_max_sil_v2_check_->setEnabled(use_adsb_filter && use_v12);
-    assert (max_sil_v2_edit_);
+    traced_assert(max_sil_v2_edit_);
     max_sil_v2_edit_->setText(QString::number(eval_settings.max_sil_v2_));
     max_sil_v2_edit_->setEnabled(use_adsb_filter && eval_settings.use_max_sil_v2_ && use_v12);
 }

@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONACROSSCONFIGWIDGET_H
-#define EVALUATIONREQUIREMENTPOSITIONACROSSCONFIGWIDGET_H
+#pragma once
 
-#include "eval/requirement/base/probabilitybaseconfigwidget.h"
+#include "eval/requirement/base/positionbaseconfigwidget.h"
 
 class QLineEdit;
 class QCheckBox;
@@ -29,7 +28,7 @@ namespace EvaluationRequirement
 {
     class PositionAcrossConfig;
 
-    class PositionAcrossConfigWidget : public ProbabilityBaseConfigWidget
+    class PositionAcrossConfigWidget : public PositionBaseConfigWidget
     {
         Q_OBJECT
 
@@ -46,5 +45,3 @@ namespace EvaluationRequirement
     };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONACROSSCONFIGWIDGET_H

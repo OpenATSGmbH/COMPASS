@@ -50,6 +50,8 @@ class ReportExporter : public QObject
 {
     Q_OBJECT
 public:
+    typedef std::pair<std::string, SectionContentType> Content;
+
     ReportExporter(const ReportExport* report_export,
                    const std::string& export_fn,
                    const std::string& export_resource_dir,
@@ -60,12 +62,15 @@ public:
 
     ResultT<nlohmann::json> exportReport(TaskResult& result,
                                          const std::string& section = "",
-                                         const std::string& content = "");
+                                         const Content& content = Content("", SectionContentType::Table));
 
     virtual ReportExportMode exportMode() const = 0;
 
     size_t numSectionsTotal() const { return num_sections_total_; }
     size_t numSectionsExported() const { return num_sections_exported_; }
+
+    double progress() const;
+
     const std::string& status() const { return status_; }
     bool isDone() const { return done_; }
 
@@ -74,6 +79,7 @@ public:
 
     static const std::string ResourceFolderScreenshots;
     static const std::string ResourceFolderTables;
+    static const std::string ResourceFolderIcons;
 
     static const std::string ExportImageFormat;
     static const std::string ExportTableFormat;
@@ -104,12 +110,16 @@ protected:
     virtual bool exportCreatesInMemoryData() const { return false; } 
     virtual bool exportNeedsRootSection() const { return false; }
 
+    virtual double finalizeFactor() const { return 0.01; }
+
     const std::string& exportFilename() const { return export_fn_; }
     const std::string& exportResourceDir() const { return export_resource_dir_; }
     std::string exportPath() const;
     bool hasInteraction() const { return interaction_mode_; }
 
     void setStatus(const std::string& status);
+
+    std::string storeFile(ResourceDir dir, const std::string& fn) const;
 
 private:
     Result initExport(TaskResult& result);
@@ -133,10 +143,12 @@ private:
 
     Section* current_content_section_ = nullptr;
 
-    size_t      num_sections_total_    = 0;
-    size_t      num_sections_exported_ = 0;
-    bool        done_                  = false;
-    std::string status_;
+    size_t                                     num_sections_total_    = 0;
+    size_t                                     num_sections_exported_ = 0;
+    std::map<SectionContentType, unsigned int> num_contents_total_;
+    std::map<SectionContentType, unsigned int> num_contents_exported_;
+    bool                                       done_                  = false;
+    std::string                                status_;
 };
 
 } // namespace ResultReport

@@ -19,6 +19,7 @@
 #include "spline_interpolator.h"
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
+#include "reconstructortarget.h"
 #include "targetreportdefs.h"
 
 #include "kalman_estimator.h"
@@ -30,6 +31,14 @@
 #include "scatterseries.h"
 #include "grid2d.h"
 #include "grid2dlayer.h"
+
+#include "compass.h"
+#include "taskmanager.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttable.h"
+#include "task/result/report/sectioncontentfigure.h"
+#include "task/result/report/sectioncontenttext.h"
 
 #include "util/timeconv.h"
 #include "util/number.h"
@@ -140,19 +149,21 @@ void ReferenceCalculator::prepareForCurrentSlice()
         }
         else 
         {
-            // target still exists, remove updates
+            // target still exists => remove updates out of join region
             auto it = std::remove_if(ref_it->second.updates.begin(),
                                      ref_it->second.updates.end(),
                                      [ & ] (const kalman::KalmanUpdate& update) { return update.t <  ThresRemove ||
                                                                                          update.t >= ThresJoin; });
             ref_it->second.updates.erase(it, ref_it->second.updates.end());
 
+            // remove smooth updates out of join region
             auto it_s = std::remove_if(ref_it->second.updates_smooth.begin(),
                                        ref_it->second.updates_smooth.end(),
                                        [ & ] (const kalman::KalmanUpdate& update) { return update.t <  ThresRemove ||
                                                                                            update.t >= ThresJoin; });
             ref_it->second.updates_smooth.erase(it_s, ref_it->second.updates_smooth.end());
 
+            // remove input infos out of join region
             auto& input_infos = ref_it->second.input_infos;
             for (auto first = input_infos.begin(), last = input_infos.end(); first != last;)
             {
@@ -161,6 +172,13 @@ void ReferenceCalculator::prepareForCurrentSlice()
                 else
                     ++first;
             }
+
+            // remove target report usage flags out of join region out of join region
+            auto it_u = std::remove_if(ref_it->second.measurement_contributions.begin(),
+                                       ref_it->second.measurement_contributions.end(),
+                                       [ & ] (const reconstruction::MMContribution& usage) { return usage.t <  ThresRemove ||
+                                                                                             usage.t >= ThresJoin; });
+            ref_it->second.measurement_contributions.erase(it_u, ref_it->second.measurement_contributions.end());
 
             ++ref_it;
         }
@@ -174,7 +192,7 @@ void ReferenceCalculator::prepareForCurrentSlice()
  */
 void ReferenceCalculator::reset()
 {
-    loginf << "ReferenceCalculator: reset";
+    loginf;
 
     references_.clear();
     interp_options_.clear();
@@ -211,7 +229,7 @@ void ReferenceCalculator::updateInterpOptions()
  */
 bool ReferenceCalculator::computeReferences()
 {
-    loginf << "ReferenceCalculator: computeReferences";
+    loginf;
 
     resetDataStructs();
 
@@ -262,7 +280,7 @@ void ReferenceCalculator::generateLineMeasurements(const dbContent::Reconstructo
 
     std::vector<reconstruction::Measurement> line_measurements;
 
-    assert (reconstructor_.acc_estimator_);
+    traced_assert(reconstructor_.acc_estimator_);
 
     for (const auto& elem : target_reports)
     {
@@ -305,7 +323,7 @@ void ReferenceCalculator::addMeasurements(unsigned int utn,
 
     //final check on available source ids
     for (const auto& mm : utn_ref.measurements)
-        assert(mm.source_id.has_value());
+        traced_assert(mm.source_id.has_value());
 }
 
 /**
@@ -316,6 +334,10 @@ void ReferenceCalculator::preprocessMeasurements(unsigned int dbcontent_id,
     //interpolate if options are set for dbcontent
     if (interp_options_.count(dbcontent_id))
         interpolateMeasurements(measurements, interp_options_.at(dbcontent_id));
+
+    //track stoped adsb targets 
+    if (settings_.track_stopped_adsb && dbcontent_id == 21)
+        addStoppedADSBMeasurements(measurements);
 }
 
 namespace
@@ -327,8 +349,19 @@ bool mmSortPred(const reconstruction::Measurement& mm0,
     if (mm0.t != mm1.t)
         return mm0.t < mm1.t;
 
-    //otherwise sort by source at least
-    return mm0.source_id < mm1.source_id;
+    //otherwise sort by source id
+    if (mm0.source_id.value() != mm1.source_id.value())
+        return mm0.source_id < mm1.source_id;
+
+    //time and source id are the same => must be interpolated
+    traced_assert(mm0.mm_interp && mm1.mm_interp);
+
+    //otherwise non-interpolated first
+    if (mm0.mm_interp != mm1.mm_interp)
+        return mm0.mm_interp < mm1.mm_interp;
+
+    //otherwise first interpolated first
+    return mm0.mm_interp_first > mm1.mm_interp_first;
 }
 }
 
@@ -363,6 +396,54 @@ void ReferenceCalculator::interpolateMeasurements(Measurements& measurements,
 
 /**
  */
+void ReferenceCalculator::addStoppedADSBMeasurements(Measurements& measurements) const
+{
+    size_t n = measurements.size();
+    if (n == 0)
+        return;
+
+    Measurements measurements_mod;
+    measurements_mod.reserve(n);
+
+    dbContent::ReconstructorTarget::StandingADSBTarget st;
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        const auto& mm  = measurements[ i ];
+        const auto  mm1 = i == n - 1 ? nullptr : &measurements[ i + 1 ];
+
+        measurements_mod.push_back(mm);
+
+        // not in stopped state? => just continue
+        if (!mm.stopped)
+            continue;
+
+        //updates are added up to next adsb measurement or up to slice end
+        boost::posix_time::ptime ts_next = mm1 ? mm1->t : reconstructor_.currentSlice().next_slice_begin_;
+        if (mm1)
+            ts_next = mm1->t;
+
+        auto tr = reconstructor_.getInfo(mm.source_id.value());
+        traced_assert(tr);
+
+        st.init(*tr);
+
+        auto mm_cpy = mm;
+
+        while (st.needsUpdate(ts_next))
+        {
+            mm_cpy.t = st.ts_next_update;
+            measurements_mod.push_back(mm_cpy);
+
+            st.addUpdate();
+        }
+    }
+
+    measurements = measurements_mod;
+}
+
+/**
+ */
 void ReferenceCalculator::reconstructMeasurements()
 {
     if (references_.empty())
@@ -376,7 +457,7 @@ void ReferenceCalculator::reconstructMeasurements()
 
     unsigned int num_targets = refs.size();
 
-    loginf << "ReferenceCalculator: reconstructMeasurements: reconstructing " << num_targets
+    loginf << "reconstructing " << num_targets
            << " target(s) " << (settings_.multithreading ? "multithreaded" : "") << "...";
 
     //compute references in parallel
@@ -395,7 +476,7 @@ void ReferenceCalculator::reconstructMeasurements()
         }
     }
 
-    loginf << "ReferenceCalculator: reconstructMeasurements: done";
+    loginf << "done";
 }
 
 /**
@@ -451,7 +532,7 @@ ReferenceCalculator::InitRecResult ReferenceCalculator::initReconstruction(Targe
         refs.init_update = *refs.updates.rbegin();
 
         //first measurement of new slice must be after the last slice's last update
-        assert(refs.init_update->t <= refs.measurements[ refs.start_index.value() ].t);
+        traced_assert(refs.init_update->t <= refs.measurements[ refs.start_index.value() ].t);
     }
 
     return InitRecResult::Success;
@@ -480,7 +561,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         loginf << "    init update:   " << (refs.init_update.has_value() ? "yes" : "no");
     }
 
-    assert(refs.start_index.has_value());
+    traced_assert(refs.start_index.has_value());
 
     //if (refs.utn == 21)
     //    writeTargetData(refs, "/home/mcphatty/track_utn21.json");
@@ -503,6 +584,43 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
+    std::set<unsigned long> usage_used_recnums;
+    for (const auto& usage : refs.measurement_contributions)
+        if (usage.interpolated || usage.stopped)
+            usage_used_recnums.insert(usage.rec_num);
+
+    auto addContribution = [ & ] (const reconstruction::Measurement& mm)
+    {
+        auto t  = mm.t;
+        auto id = mm.source_id.value();
+
+        if (mm.mm_interp || mm.stopped)
+        {
+            //check if rec num has already been added (e.g. because of interpolation)
+            if (usage_used_recnums.count(id))
+                return;
+
+            //register rec num
+            usage_used_recnums.insert(id);
+
+            //get original timestamp of target report
+            auto tr_info = reconstructor_.getInfo(id);
+            traced_assert(tr_info);
+
+            t = tr_info->timestamp_;
+        }
+        
+        //add contribution
+        reconstruction::MMContribution contrib;
+        contrib.rec_num            = id;
+        contrib.t                  = t;
+        contrib.interpolated       = mm.mm_interp;
+        contrib.interpolated_first = mm.mm_interp_first;
+        contrib.stopped            = mm.stopped;
+
+        refs.measurement_contributions.emplace_back(contrib);
+    };
+
     auto collectUpdate = [ & ] (const kalman::KalmanUpdate& update, 
                                 const reconstruction::Measurement& mm,
                                 unsigned int mm_idx,
@@ -510,6 +628,9 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
     {
         refs.updates.push_back(update);
         refs.updates.back().Q_var_interp = mm.Q_var_interp;
+
+        //collect contribution of measurement resulting in valid kalman update
+        addContribution(mm);
 
         if (debug_target)
         {
@@ -522,7 +643,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
         if (debug)
         {
-            loginf << "ReferenceCalculator: reconstructMeasurements: Debugging recnum " << mm.source_id.value() 
+            loginf << "Debugging recnum " << mm.source_id.value() 
                    << " @t " << Utils::Time::toString(mm.t) 
                    << " interp " << mm.mm_interp;
             refs.updates.back().debugUpdate();
@@ -568,7 +689,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
 
         //reinit kalman with first measurement
         estimator.kalmanInit(update, mm0);
-        assert(update.valid);
+        traced_assert(update.valid);
 
         collectUpdate(update, mm0, refs.start_index.value(), debug_mm);
 
@@ -584,12 +705,28 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         if (mm.pos_acc_corrected)
             ++refs.num_updates_ccoeff_corr;
 
+        if (debug_mm && reconstructor_.isLastRunInSlice())
+        {
+            ReferenceCalculatorTargetReferences::DebugEvent evt;
+            evt.rec_num = mm.source_id.value();
+            evt.ts      = mm.t;
+
+            refs.debug_events_.push_back(evt);
+        }
+
         if (debug_mm)
         {
-            loginf << "[ Debugging UTN " << refs.utn << " ID " << mm.source_id.value() << " TS " << Utils::Time::toString(mm.t) << " ]\n\n"
-                   << " * Before State:               \n\n" << estimator.asString()                             << "\n\n"
-                   << " * Before State as Measurement:\n\n" << estimator.currentStateAsMeasurement().asString() << "\n\n"
-                   << " * Measurement:                \n\n" << mm.asString()                                    << "\n\n";
+            std::stringstream ss;
+            ss << "[ Debugging UTN " << refs.utn << " ID " << mm.source_id.value() << " TS " << Utils::Time::toString(mm.t) << " ]\n\n"
+               << " * Before State:               \n\n" << estimator.asString()                             << "\n\n"
+               << " * Before State as Measurement:\n\n" << estimator.currentStateAsMeasurement().asString() << "\n\n"
+               << " * Measurement:                \n\n" << mm.asString()                                    << "\n\n";
+
+            auto s = ss.str();
+            loginf << s;
+
+            if (reconstructor_.isLastRunInSlice())
+                refs.debug_events_.back().info += s;
         }
 
         //do kalman step
@@ -599,19 +736,26 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         {
             const auto& step_info = estimator.stepInfo();
 
-            loginf << "Step Result:        " << (int)step_info.result;
-            loginf << "Kalman Error:       " << (int)step_info.kalman_error;
-            loginf << "Reinit After Fail:  " << step_info.reinit_after_fail;
-            loginf << "Projection Changed: " << step_info.proj_changed << "\n";
+            std::stringstream ss;
+            ss << "Step Result:        " << (int)step_info.result;
+            ss << "Kalman Error:       " << (int)step_info.kalman_error;
+            ss << "Reinit After Fail:  " << step_info.reinit_after_fail;
+            ss << "Projection Changed: " << step_info.proj_changed << "\n";
 
-            loginf << " * After State:                \n\n" << estimator.asString()                             << "\n\n"
-                   << " * After State as Measurement: \n\n" << estimator.currentStateAsMeasurement().asString() << "\n";
+            ss << " * After State:                \n\n" << estimator.asString()                             << "\n\n"
+               << " * After State as Measurement: \n\n" << estimator.currentStateAsMeasurement().asString() << "\n";
+
+            auto s = ss.str();
+            loginf << s;
+
+            if (reconstructor_.isLastRunInSlice())
+                refs.debug_events_.back().info += s;
         }
 
         //check result
         if (res == reconstruction::KalmanEstimator::StepResult::Success)
         {
-            assert(update.valid);
+            traced_assert(update.valid);
 
             const auto& step_info = estimator.stepInfo();
 
@@ -632,7 +776,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         }
         else if (res == reconstruction::KalmanEstimator::StepResult::FailStepTooSmall)
         {
-            assert(!update.valid);
+            traced_assert(!update.valid);
 
             if (debug_target)
                 skipped_updates.push_back(estimator.currentPositionWGS84());
@@ -641,7 +785,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         }
         else if (res == reconstruction::KalmanEstimator::StepResult::FailKalmanError)
         {
-            assert(!update.valid);
+            traced_assert(!update.valid);
 
             if (debug_target)
                 failed_updates.push_back(estimator.currentPositionWGS84());
@@ -651,15 +795,21 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
             const auto& step_info = estimator.stepInfo();
 
             if (step_info.kalman_error == kalman::KalmanError::Numeric)
+            {
                 ++refs.num_updates_failed_numeric;
+            }
             else if (step_info.kalman_error == kalman::KalmanError::InvalidState)
+            {
                 ++refs.num_updates_failed_badstate;
+            }
             else
+            {
                 ++refs.num_updates_failed_other;
+            }
         }
         else
         {
-            assert(!update.valid);
+            traced_assert(!update.valid);
 
             ++refs.num_updates_failed;
             ++refs.num_updates_failed_other;
@@ -707,10 +857,11 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                           kalman::SmoothFailStrategy::SetInvalid,
                                           debug_target ? &rts_debug_infos : nullptr);
         //assert(ok);
-        assert(updates.size() == refs.updates.size());
+        traced_assert(updates.size() == refs.updates.size());
 
         if (!ok)
         {
+            //revert to unsmoothed updates
             updates = refs.updates;
             ++refs.num_smoothing_failed;
         }
@@ -732,9 +883,13 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
         for (size_t i = n_before; i < n_updates; ++i)
         {
             if (updates[ i ].valid)
+            {
                 refs.updates_smooth.push_back(updates[ i ]);
+            }
             else
+            {
                 ++refs.num_smooth_steps_failed;
+            }
         }
 
         updates = refs.updates_smooth;
@@ -818,7 +973,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
     bool debug_target  = general_debug && reconstructor_.task().debugSettings().debugUTN(refs.utn);
 
     if(settings_.activeVerbosity() > 0 || debug_target) 
-        loginf << "ReferenceCalculator: reconstructMeasurements [UTN = " << refs.utn << "]";
+        loginf << "[UTN = " << refs.utn << "]";
 
     std::vector<kalman::KalmanUpdate> updates;
 
@@ -827,7 +982,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
     estimator.settings() = settings_.kalmanEstimatorSettings();
 
 #if USE_EXPERIMENTAL_SOURCE == false
-    assert(settings_.kalman_type_final == kalman::KalmanType::UMKalman2D);
+    traced_assert(settings_.kalman_type_final == kalman::KalmanType::UMKalman2D);
 #endif
 
     estimator.init(settings_.kalman_type_final);
@@ -860,7 +1015,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
 
     //@TODO: remove check
     for (const auto& u : updates)
-        assert(u.source_id.has_value());
+        traced_assert(u.source_id.has_value());
 
     //resample?
     if (settings_.resample_result)
@@ -913,17 +1068,24 @@ void ReferenceCalculator::updateReferences()
 {
     for (auto& ref : references_)
     {
-        assert(reconstructor_.targets_container_.targets_.count(ref.first));
+        traced_assert(reconstructor_.targets_container_.targets_.count(ref.first));
 
         auto& target = reconstructor_.targets_container_.targets_.at(ref.first);
-        //target.references_ = std::move(ref.second.references);
 
         target.references_.clear();
+        target.reference_tr_usages_.clear();
 
+        //store references to target
         for (auto& ref_it : ref.second.references)
             target.references_[ref_it.t] = ref_it;
 
         ref.second.references.clear();
+
+        std::set<unsigned long> rec_nums;
+
+        //store target report usages to target
+        for (auto& tru_it : ref.second.measurement_contributions)
+            target.reference_tr_usages_.insert(std::make_pair(tru_it.t, tru_it.rec_num));
 
         dbContent::ReconstructorTarget::globalStats().num_rec_updates                 += ref.second.num_updates;
         dbContent::ReconstructorTarget::globalStats().num_rec_updates_ccoeff_corr     += ref.second.num_updates_ccoeff_corr;
@@ -1002,50 +1164,145 @@ bool ReferenceCalculator::writeTargetData(TargetReferences& refs,
 
 /**
 */
+bool ReferenceCalculator::debuggingEnabled() const
+{
+    const auto& debug_settings = reconstructor_.task().debugSettings();
+    return debug_settings.debug_ &&
+           debug_settings.debug_reference_calculation_;
+}
+
+/**
+*/
+bool ReferenceCalculator::debugTarget(unsigned int utn) const
+{
+    return debuggingEnabled() && reconstructor_.task().debugSettings().debugUTN(utn);
+}
+
+/**
+*/
+bool ReferenceCalculator::debugMM(unsigned int utn, const reconstruction::Measurement& mm) const
+{
+    const auto& debug_settings = reconstructor_.task().debugSettings();
+    bool debug_target = debugTarget(utn);
+    bool debug_mm     = debug_target && debug_settings.debug_rec_nums_.count(mm.source_id.value());
+
+    if (debug_target && !debug_settings.debug_timestamp_min_.is_not_a_date_time() && mm.t >= debug_settings.debug_timestamp_min_
+                     && !debug_settings.debug_timestamp_max_.is_not_a_date_time() && mm.t <= debug_settings.debug_timestamp_max_)
+    {
+        debug_mm = true;
+    }
+
+    return debug_mm;
+}
+
+/**
+*/
 bool ReferenceCalculator::shallAddAnnotationData() const
 {
     //add only if in last iteration
-    return reconstructor_.isLastRunInSlice();
+    return reconstructor_.isLastRunInSlice() && reconstructor_.task().debugSettings().debug_write_reconstruction_viewpoints_;
 }
 
 /**
 */
 void ReferenceCalculator::createAnnotations()
 {
-    loginf << "ReferenceCalculator: createAnnotations: Creating annotations from " << references_.size() << " reference(s)";
+    loginf << "creating annotations from " << references_.size() << " reference(s)";
 
     if (references_.empty())
         return;
 
-    std::vector<TargetReferences*>       refs;
-    std::vector<ViewPointGenAnnotation*> annotations;
+    std::vector<TargetReferences*>               refs;
+    std::vector<std::unique_ptr<ViewPointGenVP>> viewpoints;
+    std::vector<ViewPointGenAnnotation*>         annotations;
 
     const auto& task = reconstructor_.task();
 
     for (auto& ref : references_)
     {
-        if (!ref.second.annotations.hasAnnotations())
+        if (!debugTarget(ref.second.utn))
             continue;
 
-        loginf << "ReferenceCalculator: createAnnotations: Creating annotation for UTN " << ref.second.utn;
+        std::unique_ptr<ViewPointGenVP> vp;
+        ViewPointGenAnnotation* anno = nullptr;
 
-        auto vp   = task.getDebugViewpointForUTN(ref.second.utn);
-        auto anno = vp->annotations().getOrCreateAnnotation("Final Reconstruction");
+        if (ref.second.annotations.hasAnnotations())
+        {
+            vp   = task.getDebugViewpointForUTN(ref.second.utn);
+            anno = vp->annotations().getOrCreateAnnotation("Final Reconstruction");
+        }
         
         refs.push_back(&ref.second);
+        viewpoints.push_back(std::move(vp));
         annotations.push_back(anno);
     }
 
     unsigned int num_targets = refs.size();
 
-    loginf << "ReferenceCalculator: createAnnotations: creating annotations in parallel for " << refs.size() << " target(s)";
+    loginf << "creating annotations in parallel for " << refs.size() << " target(s)";
 
     tbb::parallel_for(uint(0), num_targets, [&](unsigned int tgt_cnt)
     {
         const auto& r = *refs[ tgt_cnt ];
 
-        r.annotations.createAnnotations(annotations[ tgt_cnt ]);
+        if (annotations[ tgt_cnt ])
+            r.annotations.createAnnotations(annotations[ tgt_cnt ]);
     });
+
+    if (num_targets > 0)
+    {
+        auto& report           = COMPASS::instance().taskManager().currentReport();
+        auto& section_ref_calc = report->getSection("Reference Calculation");
+
+        std::vector<std::string> headings = { "UTN" };
+
+        auto& debug_utn_table = section_ref_calc.addTable("Debug UTNs", headings.size(), headings);
+
+        for (unsigned int i = 0; i < num_targets; ++i)
+        {
+            const auto& ref = refs[ i ];
+
+            auto& section_utn = section_ref_calc.addSubSection("UTN " + std::to_string(ref->utn));
+
+            std::string fig_link = "";
+            auto& vp = viewpoints[ i ];
+            if (vp)
+            {
+                vp->autoDetectROI();
+
+                nlohmann::json j_viewable;
+                vp->toJSON(j_viewable);
+
+                auto& fig = section_utn.addFigure("Debug Annotations", ResultReport::SectionContentViewable(j_viewable));
+
+                fig_link = fig.name();
+            }
+
+            if (!ref->debug_events_.empty())
+            {
+                auto& debug_evt_table = section_utn.addTable("Debug Events", 2u, {"Record Number", "Timestamp"});
+
+                for (const auto& evt : ref->debug_events_)
+                {
+                    auto& evt_sec = section_utn.addSubSection(Utils::Time::toString(evt.ts) + " " + std::to_string(evt.rec_num));
+
+                    auto& evt_txt = evt_sec.addText("Debug Event");
+                    evt_txt.addText(evt.info);
+
+                    auto j_row = nlohmann::json::array();
+                    j_row.push_back(evt.rec_num);
+                    j_row.push_back(Utils::Time::toString(evt.ts));
+
+                    debug_evt_table.addRow(j_row, ResultReport::SectionContentViewable(), evt_sec.id());
+                }
+            }
+
+            auto j_row = nlohmann::json::array();
+            j_row.push_back(ref->utn);
+
+            debug_utn_table.addRow(j_row, ResultReport::SectionContentViewable(), section_utn.id(), fig_link);
+        }
+    }
 }
 
 #if 0

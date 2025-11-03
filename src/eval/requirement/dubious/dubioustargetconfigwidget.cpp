@@ -168,7 +168,7 @@ DubiousTargetConfigWidget::DubiousTargetConfigWidget(DubiousTargetConfig& cfg)
 
 void DubiousTargetConfigWidget::minCompTimeEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: minCompTimeEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -176,12 +176,12 @@ void DubiousTargetConfigWidget::minCompTimeEditSlot(QString value)
     if (ok)
         config().minimumComparisonTime(val);
     else
-        loginf << "DubiousTargetConfigWidget: minCompTimeEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::maxCompTimeEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: maxCompTimeEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -189,15 +189,15 @@ void DubiousTargetConfigWidget::maxCompTimeEditSlot(QString value)
     if (ok)
         config().maximumComparisonTime(val);
     else
-        loginf << "DubiousTargetConfigWidget: maxCompTimeEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 
 void DubiousTargetConfigWidget::toggleMarkPrimaryOnlySlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleMarkPrimaryOnlySlot";
+    loginf;
 
-    assert (mark_primary_only_check_);
+    traced_assert(mark_primary_only_check_);
     config().markPrimaryOnly(mark_primary_only_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -205,9 +205,9 @@ void DubiousTargetConfigWidget::toggleMarkPrimaryOnlySlot()
 
 void DubiousTargetConfigWidget::toggleUseMinUpdatesSlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleUseMinUpdatesSlot";
+    loginf;
 
-    assert (use_min_updates_check_);
+    traced_assert(use_min_updates_check_);
     config().useMinUpdates(use_min_updates_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -215,7 +215,7 @@ void DubiousTargetConfigWidget::toggleUseMinUpdatesSlot()
 
 void DubiousTargetConfigWidget::minUpdatesEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: minUpdatesEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     unsigned int val = value.toUInt(&ok);
@@ -223,14 +223,14 @@ void DubiousTargetConfigWidget::minUpdatesEditSlot(QString value)
     if (ok)
         config().minUpdates(val);
     else
-        loginf << "DubiousTargetConfigWidget: thresholdPercentEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::toggleUseMinDurationSlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleUseMinDurationSlot";
+    loginf;
 
-    assert (use_min_duration_check_);
+    traced_assert(use_min_duration_check_);
     config().useMinDuration(use_min_duration_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -238,7 +238,7 @@ void DubiousTargetConfigWidget::toggleUseMinDurationSlot()
 
 void DubiousTargetConfigWidget::minDurationEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: minDurationEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -246,14 +246,14 @@ void DubiousTargetConfigWidget::minDurationEditSlot(QString value)
     if (ok)
         config().minDuration(val);
     else
-        loginf << "DubiousTargetConfigWidget: minDurationEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::toggleUseMaxGroundspeedSlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleUseMaxGroundspeedSlot";
+    loginf;
 
-    assert (use_max_groundspeed_check_);
+    traced_assert(use_max_groundspeed_check_);
     config().useMaxGroundspeed(use_max_groundspeed_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -261,7 +261,7 @@ void DubiousTargetConfigWidget::toggleUseMaxGroundspeedSlot()
 
 void DubiousTargetConfigWidget::maxGroundspeedEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: maxGroundspeedEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -269,14 +269,14 @@ void DubiousTargetConfigWidget::maxGroundspeedEditSlot(QString value)
     if (ok)
         config().maxGroundspeedKts(val);
     else
-        loginf << "DubiousTargetConfigWidget: maxGroundspeedEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::toggleUseMaxAccelerationSlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleUseMaxAccelerationSlot";
+    loginf;
 
-    assert (use_max_acceleration_check_);
+    traced_assert(use_max_acceleration_check_);
     config().useMaxAcceleration(use_max_acceleration_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -284,7 +284,7 @@ void DubiousTargetConfigWidget::toggleUseMaxAccelerationSlot()
 
 void DubiousTargetConfigWidget::maxAccelerationEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: maxAccelerationEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -292,14 +292,14 @@ void DubiousTargetConfigWidget::maxAccelerationEditSlot(QString value)
     if (ok)
         config().maxAcceleration(val);
     else
-        loginf << "DubiousTargetConfigWidget: maxAccelerationEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::toggleUseMaxTurnrateSlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleUseMaxTurnrateSlot";
+    loginf;
 
-    assert (use_max_turnrate_check_);
+    traced_assert(use_max_turnrate_check_);
     config().useMaxTurnrate(use_max_turnrate_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -307,7 +307,7 @@ void DubiousTargetConfigWidget::toggleUseMaxTurnrateSlot()
 
 void DubiousTargetConfigWidget::maxTurnrateEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: maxTurnrateEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -315,14 +315,14 @@ void DubiousTargetConfigWidget::maxTurnrateEditSlot(QString value)
     if (ok)
         config().maxTurnrate(val);
     else
-        loginf << "DubiousTargetConfigWidget: maxTurnrateEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::toggleUseMaxROCDSlot()
 {
-    loginf << "DubiousTargetConfigWidget: toggleUseMaxROCDeSlot";
+    loginf;
 
-    assert (use_max_rocd_check_);
+    traced_assert(use_max_rocd_check_);
     config().useMaxROCD(use_max_rocd_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -330,7 +330,7 @@ void DubiousTargetConfigWidget::toggleUseMaxROCDSlot()
 
 void DubiousTargetConfigWidget::maxROCDEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: maxROCDEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -338,12 +338,12 @@ void DubiousTargetConfigWidget::maxROCDEditSlot(QString value)
     if (ok)
         config().maxROCD(val);
     else
-        loginf << "DubiousTargetConfigWidget: maxROCDEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DubiousTargetConfigWidget::dubiousProbEditSlot(QString value)
 {
-    loginf << "DubiousTargetConfigWidget: dubiousProbEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -351,36 +351,36 @@ void DubiousTargetConfigWidget::dubiousProbEditSlot(QString value)
     if (ok)
         config().dubiousProb(val);
     else
-        loginf << "DubiousTargetConfigWidget: dubiousProbEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 
 DubiousTargetConfig& DubiousTargetConfigWidget::config()
 {
     DubiousTargetConfig* config = dynamic_cast<DubiousTargetConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
 
 void DubiousTargetConfigWidget::updateActive()
 {
-    assert (min_updates_edit_);
+    traced_assert(min_updates_edit_);
     min_updates_edit_->setEnabled(config().useMinUpdates());
 
-    assert (min_duration_edit_);
+    traced_assert(min_duration_edit_);
     min_duration_edit_->setEnabled(config().useMinDuration());
 
-    assert (max_groundspeed_kts_edit_);
+    traced_assert(max_groundspeed_kts_edit_);
     max_groundspeed_kts_edit_->setEnabled(config().useMaxGroundspeed());
 
-    assert (max_acceleration_edit_);
+    traced_assert(max_acceleration_edit_);
     max_acceleration_edit_->setEnabled(config().useMaxAcceleration());
 
-    assert (max_turnrate_edit_);
+    traced_assert(max_turnrate_edit_);
     max_turnrate_edit_->setEnabled(config().useMaxTurnrate());
 
-    assert (max_rocd_edit_);
+    traced_assert(max_rocd_edit_);
     max_rocd_edit_->setEnabled(config().useMaxROCD());
 }
 

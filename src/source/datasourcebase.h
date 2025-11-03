@@ -1,5 +1,21 @@
-#ifndef DBCONTENT_DATASOURCEBASE_H
-#define DBCONTENT_DATASOURCEBASE_H
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
 
 #include <json.hpp>
 #include "datasourcelineinfo.h"
@@ -9,13 +25,23 @@
 namespace dbContent
 {
 
+enum class DataSourceType
+{
+    ADSB,
+    MLAT,
+    Radar,
+    Tracker,
+    RefTraj,
+    Other
+};
+
 class DataSourceBase
 {
 public:
     enum class DetectionType
     {
-        PrimaryOnlyGround,
-        PrimaryOnlyAir,
+        Undefined,
+        PrimaryOnly,
         ModeAC,
         ModeACCombined,
         ModeS,
@@ -23,6 +49,11 @@ public:
     };
 
     static const std::string DetectionKey;
+    static const std::string GroundOnlyKey;
+    static const std::string IgnoreRadarAzmRngKey;
+
+    static const std::string PDKey;
+    static const std::string ClutterRateKey;
 
     static const std::string PSRIRMinKey;
     static const std::string PSRIRMaxKey;
@@ -66,6 +97,9 @@ public:
     DetectionType detectionType() const;
     void detectionType(DetectionType type);
 
+    bool groundOnly() const;
+    void groundOnly(bool value);
+
     bool hasUpdateInterval() const;
     void removeUpdateInterval();
     void updateInterval (float value);
@@ -82,6 +116,23 @@ public:
     void altitude (double value);
     double altitude () const;
 
+    // radar stuff
+    bool isPrimaryRadar() const;
+
+    bool ignoreRadarAzmRange() const;
+    void ignoreRadarAzmRange(bool value);
+
+    bool hasProbabilityOfDetection () const;
+    void probabilityOfDetection (double value);
+    double probabilityOfDetection () const;
+
+    bool hasClutterRate () const;
+    void clutterRate (double value);
+    double clutterRate () const;
+
+    bool hasArea() const;
+    double getArea() const; //m^2
+
     bool hasRadarRanges() const;
     void addRadarRanges();
     std::map<std::string, double> radarRanges() const;
@@ -93,6 +144,7 @@ public:
     std::map<std::string, double> radarAccuracies() const;
     void radarAccuracy (const std::string& key, const double value);
 
+    // network stuff
     bool hasNetworkLines() const;
     void addNetworkLines();
     std::map<std::string, std::shared_ptr<DataSourceLineInfo>> networkLines() const;
@@ -130,5 +182,3 @@ protected:
 };
 
 }
-
-#endif // DBCONTENT_DATASOURCEBASE_H

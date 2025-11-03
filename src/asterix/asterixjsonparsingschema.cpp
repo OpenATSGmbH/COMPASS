@@ -1,5 +1,23 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "asterixjsonparsingschema.h"
 #include "asteriximporttask.h"
+#include "traced_assert.h"
 
 ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(const std::string& class_id, const std::string& instance_id,
                                                    ASTERIXImportTask& task)
@@ -7,7 +25,7 @@ ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(const std::string& class_id, 
 {
     registerParameter<std::string>("name", &name_, "");
 
-    assert(name_.size());
+    traced_assert(name_.size());
 
     createSubConfigurables();
 }
@@ -40,9 +58,9 @@ void ASTERIXJSONParsingSchema::generateSubConfigurable(const std::string& class_
         if (sub_config.hasParameterConfigValue("category"))
             category = sub_config.getParameterConfigValue<unsigned int>("category");
 
-        assert(parsers_.find(category) == parsers_.end());
+        traced_assert(parsers_.find(category) == parsers_.end());
 
-        logdbg << "ASTERIXJSONParsingSchema: generateSubConfigurable: generating schema " << instance_id
+        logdbg << "generating schema " << instance_id
                << " for cat  " << category;
 
         parsers_[category].reset(new ASTERIXJSONParser(class_id, instance_id, this, task_));
@@ -60,13 +78,13 @@ void ASTERIXJSONParsingSchema::name(const std::string& name) { name_ = name; }
 
 ASTERIXJSONParser& ASTERIXJSONParsingSchema::parser(unsigned int category)
 {
-    assert(hasObjectParser(category));
+    traced_assert(hasObjectParser(category));
     return *parsers_.at(category).get();
 }
 
 void ASTERIXJSONParsingSchema::removeParser(unsigned int category)
 {
-    assert(hasObjectParser(category));
+    traced_assert(hasObjectParser(category));
     parsers_.erase(category);
 }
 

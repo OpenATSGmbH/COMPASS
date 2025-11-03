@@ -30,7 +30,7 @@ namespace reconstruction
 KalmanProjectionHandler::KalmanProjectionHandler()
 :   proj_(new FrameProjector)
 {
-    assert(proj_);
+    traced_assert(proj_);
 }
 
 /**
@@ -53,9 +53,9 @@ void KalmanProjectionHandler::initProjection(double lat,
 {
     //update to measurement location
     proj_->update(lat, lon);
-    assert(proj_->valid());
+    traced_assert(proj_->valid());
 
-    //loginf << "KalmanProjectionHandler: initProjection: " << proj_->centerLat() << "," << proj_->centerLon() << " (" << proj_->centerCart().x() << "," << proj_->centerCart().y() << ")";
+    //loginf << "start" << proj_->centerLat() << "," << proj_->centerLon() << " (" << proj_->centerCart().x() << "," << proj_->centerCart().y() << ")";
 }
 
 /**
@@ -84,7 +84,7 @@ void KalmanProjectionHandler::unproject(double& lat,
     if (proj_center)
     {
         proj_->update(proj_center->x(), proj_center->y());
-        assert(proj_->valid());
+        traced_assert(proj_->valid());
     }
     proj_->unproject(lat, lon, x, y);
 }
@@ -99,7 +99,7 @@ void KalmanProjectionHandler::unproject(double& lat,
 //     if (settings_.map_proj_mode == MapProjectionMode::MapProjectNone)
 //         return;
 
-//     assert(references.size() == proj_centers.size());
+//     traced_assert(references.size() == proj_centers.size());
 
 //     for (size_t i = 0; i < references.size(); ++i)
 //         unproject(references[ i ].lat, references[ i ].lon, references[ i ].x, references[ i ].y, proj_centers[ i ]);
@@ -246,7 +246,7 @@ void KalmanProjectionHandler::xReprojected(kalman::Vector& x_repr,
                                            const Eigen::Vector2d& proj_center_new,
                                            size_t* num_proj_center_changed)
 {
-    assert(proj_);
+    traced_assert(proj_);
 
     x_repr = x;
 

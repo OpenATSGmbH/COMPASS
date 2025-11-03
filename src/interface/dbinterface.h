@@ -210,6 +210,7 @@ public:
                         bool cleanup_db_if_needed,
                         bool* deleted = nullptr);
     Result updateResultHeader(const TaskResult& result);
+    Result updateResultContent(const TaskResult& result);
     ResultT<std::vector<std::shared_ptr<TaskResult>>> loadResults();
     ResultT<std::shared_ptr<ResultReport::SectionContent>> loadContent(ResultReport::Section* section, unsigned int content_id);
 

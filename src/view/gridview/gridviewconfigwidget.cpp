@@ -67,7 +67,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     auto config_layout = configLayout();
 
@@ -82,7 +82,16 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 
     connect(value_type_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &GridViewConfigWidget::valueTypeChanged);
 
-    layout->addRow("Value Type:", value_type_combo_);
+    value_type_placeh_label_ = new QLabel("-");
+    value_type_placeh_label_->setVisible(false);
+
+    QHBoxLayout* value_type_layout = new QHBoxLayout;
+    value_type_layout->setContentsMargins(0, 0, 0, 0);
+    value_type_layout->setSpacing(0);
+    value_type_layout->addWidget(value_type_combo_);
+    value_type_layout->addWidget(value_type_placeh_label_);
+
+    layout->addRow("Value Type:", value_type_layout);
 
     grid_resolution_box_ = new QSpinBox;
     grid_resolution_box_->setMinimum(1);
@@ -93,7 +102,16 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 
     connect(grid_resolution_box_, QOverload<int>::of(&QSpinBox::valueChanged), this, &GridViewConfigWidget::gridResolutionChanged);
 
-    layout->addRow("Grid Resolution:", grid_resolution_box_);
+    grid_resolution_placeh_label_ = new QLabel("-");
+    grid_resolution_placeh_label_->setVisible(false);   
+
+    QHBoxLayout* grid_resolution_layout = new QHBoxLayout;
+    grid_resolution_layout->setContentsMargins(0, 0, 0, 0);
+    grid_resolution_layout->setSpacing(0);
+    grid_resolution_layout->addWidget(grid_resolution_box_);
+    grid_resolution_layout->addWidget(grid_resolution_placeh_label_);
+
+    layout->addRow("Grid Resolution:", grid_resolution_layout);
 
     color_selection_ = new ColorScaleSelection;
 
@@ -163,6 +181,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     updateConfig();
     updateExport();
     updateDistributedVariable();
+    updateUIFromSource();
 
     //showSwitch(0, true);
 }
@@ -175,7 +194,7 @@ GridViewConfigWidget::~GridViewConfigWidget() = default;
 */
 void GridViewConfigWidget::attachExportMenu()
 {
-    assert(export_button_);
+    traced_assert(export_button_);
 
     //attach export menu
     QMenu* menu = new QMenu(export_button_);
@@ -215,7 +234,9 @@ void GridViewConfigWidget::variableChangedEvent(int idx)
 */
 void GridViewConfigWidget::dataSourceChangedEvent()
 {
+    updateVariableDataType();
     updateExport();
+    updateUIFromSource();
 }
 
 /**
@@ -242,10 +263,10 @@ void GridViewConfigWidget::loadingDone()
 */
 void GridViewConfigWidget::updateExport()
 {
-    assert(view_);
+    traced_assert(view_);
 
     auto const_view = dynamic_cast<const GridView*>(view_);
-    assert(const_view);
+    traced_assert(const_view);
 
     //no valid grid no export
     if (!const_view->isInit() || !const_view->getDataWidget()->hasValidGrid())
@@ -271,7 +292,7 @@ void GridViewConfigWidget::updateExport()
         auto var_sel_x = variableSelection(0);
         auto var_sel_y = variableSelection(1);
 
-        assert(var_sel_x && var_sel_y);
+        traced_assert(var_sel_x && var_sel_y);
 
         auto& dbc_man = COMPASS::instance().dbContentManager();
 
@@ -399,7 +420,7 @@ void GridViewConfigWidget::updateDistributedVariable()
 
     if (var_empty)
     {
-        loginf << "GridViewConfigWidget: updateDistributedVariable: setting distributed variable to empty";
+        loginf << "setting distributed variable to empty";
 
         value_type_combo_->blockSignals(true);
         value_type_combo_->setCurrentIndex(value_type_combo_->findData(QVariant((int)grid2d::ValueType::ValueTypeCountValid)));
@@ -427,12 +448,25 @@ void GridViewConfigWidget::updateVariableDataType()
 
 /**
 */
+void GridViewConfigWidget::updateUIFromSource()
+{
+    bool shows_anno = showsAnnotation();
+
+    grid_resolution_box_->setVisible(!shows_anno);
+    grid_resolution_placeh_label_->setVisible(shows_anno);
+
+    value_type_combo_->setVisible(!shows_anno);
+    value_type_placeh_label_->setVisible(shows_anno);
+}
+
+/**
+*/
 void GridViewConfigWidget::checkRanges()
 {
-    assert(view_);
+    traced_assert(view_);
 
     auto const_view = dynamic_cast<const GridView*>(view_);
-    assert(const_view);
+    traced_assert(const_view);
 
     range_info_label_->setText("");
 
@@ -556,8 +590,8 @@ void GridViewConfigWidget::exportToGeographicView()
     if (!export_config.has_value())
         return;
 
-    assert(export_config->view);
-    assert(!export_config->item_name.empty());
+    traced_assert(export_config->view);
+    traced_assert(!export_config->item_name.empty());
 
     ViewPointGenAnnotation anno(export_config->item_name);
 

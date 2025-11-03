@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "datasourcesconfigurationdialog.h"
 #include "datasourcetablemodel.h"
 #include "datasourceeditwidget.h"
@@ -67,7 +84,17 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
     table_view_->resizeRowsToContents();
     top_layout->addWidget(table_view_);
 
-    edit_widget_ = new DataSourceEditWidget (ds_man_, *this);
+    std::function<void(unsigned int)> update_ds_func =
+        [this] (unsigned int ds_id) { table_model_->updateDataSource(ds_id); };
+
+    std::function<void(unsigned int)> delete_ds_func = [this](unsigned int ds_id)
+    {
+        table_model_->beginModelReset();
+        ds_man_.deleteConfigDataSource(ds_id);
+        table_model_->endModelReset();
+    };
+
+    edit_widget_ = new DataSourceEditWidget (true, ds_man_, update_ds_func, delete_ds_func);
     top_layout->addWidget(edit_widget_);
 
     main_layout->addLayout(top_layout);
@@ -118,28 +145,13 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
     setLayout(main_layout);
 }
 
-void DataSourcesConfigurationDialog::updateDataSource(unsigned int ds_id)
-{
-    table_model_->updateDataSource(ds_id);
-}
-
-void DataSourcesConfigurationDialog::beginResetModel()
-{
-    table_model_->beginModelReset();
-}
-
-void DataSourcesConfigurationDialog::endResetModel()
-{
-    table_model_->endModelReset();
-}
-
 void DataSourcesConfigurationDialog::currentRowChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-    assert (edit_widget_);
+    traced_assert(edit_widget_);
 
     if (!current.isValid())
     {
-        loginf << "DataSourcesConfigurationDialog: currentRowChanged: invalid index";
+        loginf << "invalid index";
 
         edit_widget_->clear();
 
@@ -147,18 +159,18 @@ void DataSourcesConfigurationDialog::currentRowChanged(const QModelIndex& curren
     }
 
     auto const source_index = proxy_model_->mapToSource(current);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
     unsigned int id = table_model_->getIdOf(source_index);
 
-    loginf << "DataSourcesConfigurationDialog: currentRowChanged: current id " << id;
+    loginf << "current id " << id;
 
     edit_widget_->showID(id);
 }
 
 void DataSourcesConfigurationDialog::newDSClickedSlot()
 {
-    loginf << "DataSourcesConfigurationDialog: newDSClickedSlot";
+    loginf;
 
     create_dialog_.reset(new DataSourceCreateDialog(*this, ds_man_));
     connect(create_dialog_.get(), &DataSourceCreateDialog::doneSignal,
@@ -169,9 +181,9 @@ void DataSourcesConfigurationDialog::newDSClickedSlot()
 
 void DataSourcesConfigurationDialog::newDSDoneSlot()
 {
-    loginf << "DataSourcesConfigurationDialog: newDSDoneSlot";
+    loginf;
 
-    assert (create_dialog_);
+    traced_assert(create_dialog_);
 
     if (!create_dialog_->cancelled())
     {
@@ -180,25 +192,25 @@ void DataSourcesConfigurationDialog::newDSDoneSlot()
         unsigned int sac = create_dialog_->sac();
         unsigned int sic = create_dialog_->sic();
 
-        loginf << "DataSourcesConfigurationDialog: newDSDoneSlot: ds_type " << ds_type
+        loginf << "ds_type " << ds_type
                << " sac " << sac << " sic " << sic;
 
         unsigned int ds_id = Number::dsIdFrom(sac, sic);
 
-        assert (!ds_man_.hasConfigDataSource(ds_id));
+        traced_assert(!ds_man_.hasConfigDataSource(ds_id));
 
-        beginResetModel();
+        table_model_->beginModelReset();
 
         ds_man_.createConfigDataSource(ds_id);
-        assert (ds_man_.hasConfigDataSource(ds_id));
+        traced_assert(ds_man_.hasConfigDataSource(ds_id));
         ds_man_.configDataSource(ds_id).dsType(ds_type);
 
-        endResetModel();
+        table_model_->endModelReset();
 
         auto const model_index = table_model_->dataSourceIndex(ds_id);
 
         auto const source_index = proxy_model_->mapFromSource(model_index);
-        assert (source_index.isValid());
+        traced_assert(source_index.isValid());
 
         table_view_->selectRow(source_index.row());
     }
@@ -209,7 +221,7 @@ void DataSourcesConfigurationDialog::newDSDoneSlot()
 
 void DataSourcesConfigurationDialog::importClickedSlot()
 {
-    loginf << "DataSourcesConfigurationDialog: importClickedSlot";
+    loginf;
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import Data Sources",
@@ -238,7 +250,7 @@ void DataSourcesConfigurationDialog::deleteAllClickedSlot()
 
     if (reply == QMessageBox::Yes)
     {
-        loginf << "DataSourcesConfigurationDialog: deleteAllClickedSlot: deletion confirmed";
+        loginf << "deletion confirmed";
 
         table_model_->beginModelReset();
 
@@ -251,7 +263,7 @@ void DataSourcesConfigurationDialog::deleteAllClickedSlot()
 
 void DataSourcesConfigurationDialog::exportClickedSlot()
 {
-    loginf << "DataSourcesConfigurationDialog: exportClickedSlot";
+    loginf;
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export Data Sources as JSON",
@@ -259,7 +271,7 @@ void DataSourcesConfigurationDialog::exportClickedSlot()
 
     if (filename.size() > 0)
     {
-        loginf << "DataSourcesConfigurationDialog: exportClickedSlot: file '" << filename << "'";
+        loginf << "file '" << filename << "'";
 
         ds_man_.exportDataSources(filename);
     }

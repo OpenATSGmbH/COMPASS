@@ -122,14 +122,17 @@ public:
                                              task::TaskResultType type);
 
     void resultHeaderChanged(const TaskResult& result);
+    void resultContentChanged(const TaskResult& result);
     
-    void setViewableDataConfig(const nlohmann::json::object_t& data);
+    void setViewableDataConfig(const nlohmann::json::object_t& data,
+                               bool load_blocking = false);
     void unsetViewableDataConfig();
 
     std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section, 
                                                               unsigned int content_id,
                                                               bool show_dialog = false) const;
 
+    void storeBackupSection();
     void restoreBackupSection();
 
     static const bool CleanupDBIfNeeded;
@@ -159,7 +162,7 @@ protected:
 
     std::map<std::string, Task*> tasks_;
 
-    std::unique_ptr<TaskResultsWidget> widget_;
+    TaskResultsWidget* widget_{nullptr}; // deleted by qt
 
     std::map<unsigned int, std::shared_ptr<TaskResult>> results_; // id -> result
     std::shared_ptr<TaskResult> current_result_;

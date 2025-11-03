@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FORMATSELECTIONWIDGET_H
-#define FORMATSELECTIONWIDGET_H
+#pragma once
 
 #include <QMenu>
 #include <QPushButton>
@@ -54,5 +53,3 @@ class FormatSelectionWidget : public QPushButton
 
     void createMenu();
 };
-
-#endif  // FORMATSELECTIONWIDGET_H

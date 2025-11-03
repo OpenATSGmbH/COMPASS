@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of OpenATS COMPASS.
  *
  * COMPASS is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ EvaluationTarget::EvaluationTarget(unsigned int utn,
     {
         bool ok = readInterestFactors(interest_factors_, info.at(KEY_INTEREST_FACTORS));
         if (!ok)
-            logerr << "EvaluationTarget: EvaluationTarget: could not read interest factors from target info";
+            logerr << "could not read interest factors from target info";
     }
 }
 

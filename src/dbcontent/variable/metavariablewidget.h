@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_METAVARIABLEWIDGET_H_
-#define DBCONTENT_METAVARIABLEWIDGET_H_
+#pragma once
 
 #include <QWidget>
 #include <map>
@@ -68,5 +67,3 @@ class MetaVariableWidget : public QWidget
 };
 
 }
-
-#endif /* DBCONTENT_METAVARIABLEWIDGET_H_ */

@@ -31,12 +31,12 @@ namespace EvaluationRequirement
 {
 
 PositionLatencyConfigWidget::PositionLatencyConfigWidget(PositionLatencyConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of acceptable position latency");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // max dist
     max_abs_value_edit_ = new QLineEdit(String::timeStringFromDouble(config().maxAbsValue()).c_str());
@@ -49,7 +49,7 @@ PositionLatencyConfigWidget::PositionLatencyConfigWidget(PositionLatencyConfig& 
 
 void PositionLatencyConfigWidget::maxAbsValueEditSlot(QString value)
 {
-    loginf << "PositionLatencyConfigWidget: maxAbsValueEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = String::timeFromString(value.toStdString(), &ok);
@@ -59,13 +59,13 @@ void PositionLatencyConfigWidget::maxAbsValueEditSlot(QString value)
         config().maxAbsValue(val);
     }
     else
-        loginf << "PositionLatencyConfigWidget: maxAbsValueEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 PositionLatencyConfig& PositionLatencyConfigWidget::config()
 {
     PositionLatencyConfig* config = dynamic_cast<PositionLatencyConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

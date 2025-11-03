@@ -47,10 +47,10 @@ public:
 
     std::string getConditionResultNameShort() const override final;
     std::string getConditionResultName() const override final;
-    std::string getConditionUnits() const override final;
+    std::string getConditionUnits() const override;
 
-    virtual std::string probabilityName() const = 0;
     virtual std::string probabilityNameShort() const = 0;
+    virtual std::string probabilityName() const = 0;
 
 protected:
     double convertValueToResult(double value) const override final;

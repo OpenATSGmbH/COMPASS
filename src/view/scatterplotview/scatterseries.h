@@ -44,6 +44,7 @@ struct ScatterSeries
     nlohmann::json toJSON(bool binary) const;
 
     boost::optional<QRectF> getDataBounds() const;
+    size_t numPoints() const;
 
     std::vector<Eigen::Vector2d> points;
     DataType                     data_type_x = DataTypeFloatingPoint;
@@ -79,6 +80,7 @@ public:
                        double marker_size = 8.0);
 
     size_t numDataSeries() const;
+    size_t numPoints(bool visible_series_only = false) const;
 
     const std::map<std::string, DataSeries>& dataSeries() const;
     std::map<std::string, DataSeries>& dataSeries();
@@ -92,7 +94,7 @@ public:
     bool fromJSON(const nlohmann::json& data);
     nlohmann::json toJSON(bool binary = false) const;
 
-    boost::optional<QRectF> getDataBounds() const;
+    boost::optional<QRectF> getDataBounds(bool visible_series_only = false) const;
 
     static const std::string TagDataSeries;
     static const std::string TagConnectionLines;

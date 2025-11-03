@@ -32,28 +32,28 @@ using namespace dbContent;
 
 AllBufferCSVExportJob::AllBufferCSVExportJob(
     std::map<std::string, std::shared_ptr<Buffer>> buffers, VariableOrderedSet* read_set,
-    std::map<unsigned int, std::string> number_to_dbo,
+    std::map<unsigned int, std::string> number_to_dbcont,
     const std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
     const std::string& file_name, bool overwrite, bool only_selected, bool use_presentation)
     : Job("AllBufferCSVExportJob"),
       buffers_(buffers),
       read_set_(read_set),
-      number_to_dbo_(number_to_dbo),
+      number_to_dbcont_(number_to_dbcont),
       row_indexes_(row_indexes),
       file_name_(file_name),
       overwrite_(overwrite),
       only_selected_(only_selected),
       use_presentation_(use_presentation)
 {
-    assert(read_set_);
-    assert(file_name_.size());
+    traced_assert(read_set_);
+    traced_assert(file_name_.size());
 }
 
 AllBufferCSVExportJob::~AllBufferCSVExportJob() {}
 
 void AllBufferCSVExportJob::run_impl()
 {
-    logdbg << "AllBufferCSVExportJob: execute: start";
+    logdbg;
     started_ = true;
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
@@ -67,7 +67,7 @@ void AllBufferCSVExportJob::run_impl()
 
     if (output_file)
     {
-        unsigned int dbo_num;
+        unsigned int dbcont_num;
         unsigned int buffer_index;
 
         unsigned int read_set_size = read_set_->getSize();
@@ -86,7 +86,7 @@ void AllBufferCSVExportJob::run_impl()
 
         for (size_t col = 0; col < read_set_size; col++)
         {
-            ss << ";" << read_set_->variableDefinition(col).first;
+            ss << ";" << read_set_->variableDefinition(col).second;
         }
         output_file << ss.str() << "\n";
 
@@ -96,21 +96,21 @@ void AllBufferCSVExportJob::run_impl()
         for (auto& row_index_it : row_indexes_)
         {
             // set up everything to access the data
-            dbo_num = row_index_it.first;
+            dbcont_num = row_index_it.first;
             buffer_index = row_index_it.second;
 
-            assert(number_to_dbo_.count(dbo_num) == 1);
-            dbcontent_name = number_to_dbo_.at(dbo_num);
+            traced_assert(number_to_dbcont_.count(dbcont_num) == 1);
+            dbcontent_name = number_to_dbcont_.at(dbcont_num);
 
-            assert(buffers_.count(dbcontent_name) == 1);
+            traced_assert(buffers_.count(dbcontent_name) == 1);
             buffer = buffers_.at(dbcontent_name);
 
-            assert(buffer_index < buffer->size());
+            traced_assert(buffer_index < buffer->size());
 
-            assert(buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
 
-            assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+            traced_assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
             //NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(DBContent::meta_var_rec_num_.name());
 
             // check if skipped because not selected
@@ -127,7 +127,7 @@ void AllBufferCSVExportJob::run_impl()
             else
                 ss << selected_vec.get(buffer_index) << ";";
 
-            ss << dbcontent_name;  // set dboname
+            ss << dbcontent_name;  // set dbcontname
 
             for (unsigned int col = 0; col < read_set_size; ++col)
             {
@@ -138,7 +138,7 @@ void AllBufferCSVExportJob::run_impl()
                 // check if data & variables exist
                 if (variable_dbcontent_name == META_OBJECT_NAME)
                 {
-                    assert(manager.existsMetaVariable(variable_name));
+                    traced_assert(manager.existsMetaVariable(variable_name));
                     if (!manager.metaVariable(variable_name)
                              .existsIn(dbcontent_name))  // not data if not exist
                     {
@@ -148,14 +148,14 @@ void AllBufferCSVExportJob::run_impl()
                 }
                 else
                 {
-                    if (dbcontent_name != variable_dbcontent_name)  // check if other dbo
+                    if (dbcontent_name != variable_dbcontent_name)  // check if other dbcont
                     {
                         ss << ";";
                         continue;
                     }
 
-                    assert(manager.existsDBContent(dbcontent_name));
-                    assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
+                    traced_assert(manager.existsDBContent(dbcontent_name));
+                    traced_assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
                 }
 
                 Variable& variable = (variable_dbcontent_name == META_OBJECT_NAME)
@@ -393,11 +393,11 @@ void AllBufferCSVExportJob::run_impl()
     }
     else
     {
-        logerr << "AllBufferCSVExportJob: runFailure opening " << file_name_;
+        logerr << "failure opening " << file_name_;
     }
 
     done_ = true;
 
-    logdbg << "AllBufferCSVExportJob: execute: done";
+    logdbg << "done";
     return;
 }

@@ -34,6 +34,8 @@
 #include "json.hpp"
 #include "util/tbbhack.h"
 
+#include "traced_assert.h"
+
 #include <QApplication>
 #include <QMessageBox>
 #include <QSurfaceFormat>
@@ -132,6 +134,8 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     cout << "COMPASSClient: qt platform in use " << QGuiApplication::platformName().toStdString() << endl;
 
     po::options_description desc("Allowed options");
+    po::options_description hidden_options("Hidden options");
+
     desc.add_options()("help", "produce help message")
         ("reset,r", po::bool_switch(&config_and_data_copy_wanted_) ,"reset user configuration and data")
         ("override_cfg_path", po::value<std::string>(&override_cfg_path_),
@@ -170,17 +174,15 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
          "ignore future timestamps during ASTERIX network import'")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
-         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'")
+         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
          "sets ASTERIX decoder config using JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
          " (including one pair of single quotes)")
         ("import_asterix_parameters", po::value<std::string>(&import_asterix_parameters_),
          "ASTERIX import parameters as JSON string, e.g. ''{\"filter_modec_active\": true,\"filter_modec_max\": 50000.0,\"filter_modec_min\": -10000.0}'' (including one pair of single quotes)")
-
+        
         ("import_json", po::value<std::string>(&import_json_filename_),
          "imports JSON file with given filename, e.g. '/data/file1.json'")
-        //            ("json_schema", po::value<std::string>(&import_json_schema),
-        //             "JSON file import schema, e.g. 'jASTERIX', 'OpenSkyNetwork', 'ADSBExchange', 'SDDL'")
         ("import_gps_trail", po::value<std::string>(&import_gps_trail_filename_),
          "imports gps trail NMEA with given filename, e.g. '/data/file2.txt'")
         ("import_gps_parameters", po::value<std::string>(&import_gps_parameters_),
@@ -199,18 +201,40 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("evaluation_parameters", po::value<std::string>(&evaluation_parameters_),
          "evaluation parameters as JSON string, e.g. ''{\"current_standard\": \"test\", \"dbcontent_name_ref\": \"CAT062\", \"dbcontent_name_tst\": \"CAT020\"}'' (including one pair of single quotes)")
         ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "run evaluation filter before evaluation")
-        ("export_eval_report", po::value<std::string>(&export_eval_report_filename_),
-         "export evaluation report after start with given filename, e.g. '/data/eval_db2/report.tex")
-        ("max_fps", po::value<std::string>(&max_fps_), "maximum fps for display in GeographicView'")
-        ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
+        
+        ("export_report", po::value<std::string>(&export_report_name_), "report name to export, e.g. 'EUROCAE ED-87E Evaluation', PDF per default")
+        ("export_report_directory", po::value<std::string>(&export_report_directory_), "export directory, e.g. '/data/report2/'")
+        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'JSON','Latex','PDF'")
+        
+         ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
         ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
         ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
-        ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps");
+        ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
+        ;
+
+    // add hidden options
+    hidden_options.add_options()
+        ("assert", po::bool_switch(&do_assert_), "")
+        ("throw", po::bool_switch(&do_throw_), "")
+        ("numerical_crash", po::bool_switch(&do_numerical_crash_), "")
+        ("segfault", po::bool_switch(&do_segfault_), "")
+        ;
+
+    // Print full command line for debugging
+    cout << "COMPASSClient: command line: ";
+    for (int i = 0; i < argc; ++i) {
+        cout << "'" << argv[i] << "'";
+        if (i < argc - 1) cout << " ";
+    }
+    cout << endl;
 
     try
     {
+        po::options_description all_options;
+        all_options.add(desc).add(hidden_options);
+
         po::variables_map vm;
-        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::store(po::parse_command_line(argc, argv, all_options), vm);
         po::notify(vm);
 
         if (vm.count("help"))
@@ -231,6 +255,25 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     // check if more than 1 ASTERIX import operations are defined
     unsigned int import_count = 0;
 
+    if (do_assert_)
+        traced_assert(!do_assert_);
+
+    if (do_throw_)
+        throw std::runtime_error("error of interest");
+
+    if (do_numerical_crash_)
+    {
+        int crash = 0/0;  // Integer division by zero
+        double crash2 = std::sqrt(-1.0);  // NaN
+        double crash3 = std::log(0.0);    // -Infinity
+    }
+
+    if (do_segfault_)
+    {
+        int* ptr = nullptr;
+        *ptr = 42;  // Classic segfault
+    }
+
     if (import_asterix_network_) import_count++;
     if (!import_asterix_filename_.empty()) import_count++;
     if (!import_asterix_filenames_.empty()) import_count++;
@@ -239,7 +282,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
     if (import_count > 1)
     {
-        logerr << "COMPASSClient: unable run multiple ASTERIX import operations at the same time";
+        logerr << "unable run multiple ASTERIX import operations at the same time";
         return;
     }
 
@@ -248,7 +291,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
     //    if (import_json_filename.size() && !import_json_schema.size())
     //    {
-    //        loginf << "COMPASSClient: schema name must be set for JSON import";
+    //        loginf << "schema name must be set for JSON import";
     //        return;
     //    }
 
@@ -266,7 +309,7 @@ bool Client::run ()
 
     num_threads = tbb::task_scheduler_init::default_num_threads();;
 
-    loginf << "COMPASSClient: started with " << num_threads << " threads (tbb old)";
+    loginf << "started with " << num_threads << " threads (tbb old)";
     tbb::task_scheduler_init init {num_threads};
 
 #else
@@ -274,10 +317,10 @@ bool Client::run ()
 
     tbb::global_control global_limit(tbb::global_control::max_allowed_parallelism, num_threads);
 
-    loginf << "COMPASSClient: started with " << num_threads << " threads";
+    loginf << "started with " << num_threads << " threads";
 #endif
 
-    loginf << "COMPASSClient: qt ideal thread count " << QThread::idealThreadCount()
+    loginf << "qt ideal thread count " << QThread::idealThreadCount()
            << " max thread count " << QThreadPool::globalInstance()->maxThreadCount()
            << " setting num_threads " << num_threads;
 
@@ -317,7 +360,7 @@ bool Client::run ()
         RTCommandManager::open_port_ = true; // has to be done before COMPASS ctor is called
     }
 
-    loginf << "COMPASSClient: creating COMPASS instance...";
+    loginf << "creating COMPASS instance...";
 
     //!this should be the first call to COMPASS instance!
     try
@@ -374,7 +417,7 @@ bool Client::run ()
     }
     catch(const std::exception& e)
     {
-        logerr << "COMPASSClient: creating COMPASS instance failed: " << e.what();
+        logerr << "creating COMPASS instance failed: " << e.what();
         quit_requested_ = true;
         System::printBacktrace();
 
@@ -382,24 +425,37 @@ bool Client::run ()
     }
     catch(...)
     {
-        logerr << "COMPASSClient: creating COMPASS instance failed: unknown error";
+        logerr << "creating COMPASS instance failed: unknown error";
         quit_requested_ = true;
         return false;
     }
     
-    loginf << "COMPASSClient: created COMPASS instance";
+    loginf << "created COMPASS instance";
 
     if (expert_mode_)
         COMPASS::instance().expertMode(true);
 
-    if (max_fps_.size())
-        COMPASS::instance().maxFPS(stoul(max_fps_));
-
     MainWindow& main_window = COMPASS::instance().mainWindow();
     splash.raise();
 
+    start_time = boost::posix_time::microsec_clock::local_time();
+    while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
+            < 10)
+    {
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        QThread::msleep(1);
+    }
+
     main_window.show();
     splash.raise();
+
+    start_time = boost::posix_time::microsec_clock::local_time();
+    while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
+            < 10)
+    {
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        QThread::msleep(1);
+    }
 
     splash.finish(&main_window);
 
@@ -408,196 +464,204 @@ bool Client::run ()
     if (no_config_save_)
         main_window.disableConfigurationSaving();
 
-    if (create_new_db_filename_.size())
-        rt_man.addCommand("create_db "+create_new_db_filename_);
-
-    if (open_db_filename_.size())
-        rt_man.addCommand("open_db "+open_db_filename_);
-
-    if (import_data_sources_filename_.size())
-        rt_man.addCommand("import_data_sources "+import_data_sources_filename_);
-
-    if (import_view_points_filename_.size())
-        rt_man.addCommand("import_view_points "+import_view_points_filename_);
-
-    TaskManager& task_man = COMPASS::instance().taskManager();
-
     try
     {
+        if (create_new_db_filename_.size())
+            rt_man.addCommandFromConsole("create_db " + create_new_db_filename_);
+
+        if (open_db_filename_.size())
+            rt_man.addCommandFromConsole("open_db " + open_db_filename_);
+
+        if (import_data_sources_filename_.size())
+            rt_man.addCommandFromConsole("import_data_sources " + import_data_sources_filename_);
+
+        if (import_view_points_filename_.size())
+            rt_man.addCommandFromConsole("import_view_points " + import_view_points_filename_);
+
+        TaskManager& task_man = COMPASS::instance().taskManager();
+
         if (asterix_decoder_cfg.size())
             task_man.asterixImporterTask().asterixDecoderConfig(asterix_decoder_cfg);
+
+        if (import_asterix_filename_.size())
+        {
+            string cmd = "import_asterix_file " + import_asterix_filename_;
+
+            if (asterix_framing.size() && asterix_framing != "none")
+                cmd += " --framing " + asterix_framing;
+
+            if (import_asterix_file_line_.size())
+                cmd += " --line " + import_asterix_file_line_;
+            else
+                cmd += " --line L1";
+
+            if (import_asterix_date_.size())
+                cmd += " --date " + import_asterix_date_;
+
+            if (import_asterix_file_time_offset_.size())
+                cmd += " --time_offset " + import_asterix_file_time_offset_;
+
+            if (import_asterix_ignore_time_jumps_)
+                cmd += " --ignore_time_jumps";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (import_asterix_filenames_.size())
+        {
+            string cmd = "import_asterix_files '" + import_asterix_filenames_ + "'";
+
+            if (asterix_framing.size())
+                cmd += " --framing " + asterix_framing;
+
+            if (import_asterix_file_line_.size())
+                cmd += " --line " + import_asterix_file_line_;
+            else
+                cmd += " --line L1";
+
+            if (import_asterix_date_.size())
+                cmd += " --date " + import_asterix_date_;
+
+            if (import_asterix_file_time_offset_.size())
+                cmd += " --time_offset " + import_asterix_file_time_offset_;
+
+            if (import_asterix_ignore_time_jumps_)
+                cmd += " --ignore_time_jumps";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (import_asterix_pcap_filename_.size())
+        {
+            string cmd = "import_asterix_pcap_file " + import_asterix_pcap_filename_;
+
+            if (import_asterix_file_line_.size())
+                cmd += " --line " + import_asterix_file_line_;
+            else
+                cmd += " --line L1";
+
+            if (import_asterix_date_.size())
+                cmd += " --date " + import_asterix_date_;
+
+            if (import_asterix_file_time_offset_.size())
+                cmd += " --time_offset " + import_asterix_file_time_offset_;
+
+            if (import_asterix_ignore_time_jumps_)
+                cmd += " --ignore_time_jumps";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (import_asterix_pcap_filenames_.size())
+        {
+            string cmd = "import_asterix_pcap_files '" + import_asterix_pcap_filenames_ + "'";
+
+            if (import_asterix_file_line_.size())
+                cmd += " --line " + import_asterix_file_line_;
+            else
+                cmd += " --line L1";
+
+            if (import_asterix_date_.size())
+                cmd += " --date " + import_asterix_date_;
+
+            if (import_asterix_file_time_offset_.size())
+                cmd += " --time_offset " + import_asterix_file_time_offset_;
+
+            if (import_asterix_ignore_time_jumps_)
+                cmd += " --ignore_time_jumps";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (import_asterix_network_)
+        {
+            string cmd = "import_asterix_network";
+
+            if (import_asterix_network_time_offset_.size())
+                cmd += " --time_offset " + import_asterix_network_time_offset_;
+
+            if (import_asterix_network_max_lines_ != -1)
+            {
+                if (import_asterix_network_max_lines_ < 1 || import_asterix_network_max_lines_ > 4)
+                    throw runtime_error(
+                        "COMPASSClient: number of maximum network lines must be between 1 and 4");
+
+                cmd += " --max_lines " + to_string(import_asterix_network_max_lines_);
+            }
+
+            if (import_asterix_network_ignore_future_ts_)
+                cmd += " --ignore_future_ts";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (import_json_filename_.size())
+            rt_man.addCommandFromConsole("import_json " + import_json_filename_);
+
+        if (import_gps_trail_filename_.size())
+            rt_man.addCommandFromConsole("import_gps_trail " + import_gps_trail_filename_);
+
+        if (import_sectors_filename_.size())
+            rt_man.addCommandFromConsole("import_sectors_json " + import_sectors_filename_);
+
+        if (calculate_radar_plot_positions_)
+            rt_man.addCommandFromConsole("calculate_radar_plot_positions");
+
+        if (calculate_artas_tr_usage_)
+            rt_man.addCommandFromConsole("calculate_artas_tr_usage");
+
+        if (reconstruct_references_)
+            rt_man.addCommandFromConsole("reconstruct_references");
+
+        if (load_data_)
+            rt_man.addCommandFromConsole("load_data");
+
+        if (export_view_points_report_filename_.size())
+            rt_man.addCommandFromConsole("export_view_points_report " +
+                                         export_view_points_report_filename_);
+
+        if (evaluate_)
+        {
+            string cmd = "evaluate";
+
+            if (evaluate_run_filter_)
+                cmd += " --run_filter";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (export_report_name_.size())
+        {
+            string cmd = "export_report --report '"+export_report_name_+"'";
+
+            if (export_report_directory_.size())
+                cmd += " --dir "+export_report_directory_;
+
+            cmd += " --mode "+export_report_mode_; // default value PDF always set
+
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (quit_)
+            rt_man.addCommandFromConsole("quit");
+
+        rt_man.startCommandProcessing();
+
+        // finally => set compass as running
+        COMPASS::instance().setAppState(AppState::Running);
+
+        return true;
     }
     catch (exception& e)
     {
-        logerr << "COMPASSClient: setting ASTERIX options resulted in error: " << e.what();
-        quit_requested_ = true;
+        logerr << "error: " << e.what();
         return false;
     }
-
-    if (import_asterix_filename_.size())
-    {
-        string cmd = "import_asterix_file "+import_asterix_filename_;
-
-        if (asterix_framing.size() && asterix_framing != "none")
-            cmd += " --framing "+asterix_framing;
-        else
-            cmd += " --framing none";
-
-        if (import_asterix_file_line_.size())
-            cmd += " --line "+import_asterix_file_line_;
-        else
-            cmd += " --line L1";
-
-        if (import_asterix_date_.size())
-            cmd += " --date "+import_asterix_date_;
-
-        if (import_asterix_file_time_offset_.size())
-            cmd += " --time_offset "+import_asterix_file_time_offset_;
-
-        if (import_asterix_ignore_time_jumps_)
-            cmd += " --ignore_time_jumps";
-
-        rt_man.addCommand(cmd);
-    }
-
-    if (import_asterix_filenames_.size())
-    {
-        string cmd = "import_asterix_files '"+import_asterix_filenames_+"'";
-
-        if (asterix_framing.size() && asterix_framing != "none")
-            cmd += " --framing "+asterix_framing;
-        else
-            cmd += " --framing none";
-
-        if (import_asterix_file_line_.size())
-            cmd += " --line "+import_asterix_file_line_;
-        else
-            cmd += " --line L1";
-
-        if (import_asterix_date_.size())
-            cmd += " --date "+import_asterix_date_;
-
-        if (import_asterix_file_time_offset_.size())
-            cmd += " --time_offset "+import_asterix_file_time_offset_;
-
-        if (import_asterix_ignore_time_jumps_)
-            cmd += " --ignore_time_jumps";
-
-        rt_man.addCommand(cmd);
-    }
-
-    if (import_asterix_pcap_filename_.size())
-    {
-        string cmd = "import_asterix_pcap_file "+import_asterix_pcap_filename_;
-
-        if (import_asterix_file_line_.size())
-            cmd += " --line "+import_asterix_file_line_;
-        else
-            cmd += " --line L1";
-
-        if (import_asterix_date_.size())
-            cmd += " --date "+import_asterix_date_;
-
-        if (import_asterix_file_time_offset_.size())
-            cmd += " --time_offset "+import_asterix_file_time_offset_;
-
-        if (import_asterix_ignore_time_jumps_)
-            cmd += " --ignore_time_jumps";
-
-        rt_man.addCommand(cmd);
-    }
-
-    if (import_asterix_pcap_filenames_.size())
-    {
-        string cmd = "import_asterix_pcap_files '"+import_asterix_pcap_filenames_+"'";
-
-        if (import_asterix_file_line_.size())
-            cmd += " --line "+import_asterix_file_line_;
-        else
-            cmd += " --line L1";
-
-        if (import_asterix_date_.size())
-            cmd += " --date "+import_asterix_date_;
-
-        if (import_asterix_file_time_offset_.size())
-            cmd += " --time_offset "+import_asterix_file_time_offset_;
-
-        if (import_asterix_ignore_time_jumps_)
-            cmd += " --ignore_time_jumps";
-
-        rt_man.addCommand(cmd);
-    }
-
-    if (import_asterix_network_)
-    {
-        string cmd = "import_asterix_network";
-
-        if (import_asterix_network_time_offset_.size())
-            cmd += " --time_offset "+import_asterix_network_time_offset_;
-
-        if (import_asterix_network_max_lines_ != -1)
-        {
-            if (import_asterix_network_max_lines_ < 1 || import_asterix_network_max_lines_ > 4)
-                throw runtime_error("COMPASSClient: number of maximum network lines must be between 1 and 4");
-
-            cmd += " --max_lines "+to_string(import_asterix_network_max_lines_);
-        }
-
-        if (import_asterix_network_ignore_future_ts_)
-            cmd += " --ignore_future_ts";
-
-        rt_man.addCommand(cmd);
-    }
-
-    if (import_json_filename_.size())
-        rt_man.addCommand("import_json "+import_json_filename_);
-
-    if (import_gps_trail_filename_.size())
-        rt_man.addCommand("import_gps_trail "+import_gps_trail_filename_);
-
-    if (import_sectors_filename_.size())
-        rt_man.addCommand("import_sectors_json "+import_sectors_filename_);
-
-    if (calculate_radar_plot_positions_)
-        rt_man.addCommand("calculate_radar_plot_positions");
-
-    if (calculate_artas_tr_usage_)
-        rt_man.addCommand("calculate_artas_tr_usage");
-
-    if (reconstruct_references_)
-        rt_man.addCommand("reconstruct_references");
-
-    if (load_data_)
-        rt_man.addCommand("load_data");
-
-    if (export_view_points_report_filename_.size())
-        rt_man.addCommand("export_view_points_report "+export_view_points_report_filename_);
-
-    if (evaluate_)
-    {
-        string cmd = "evaluate";
-
-        if (evaluate_run_filter_)
-            cmd += " --run_filter";
-
-        rt_man.addCommand(cmd);
-    }
-
-    if (export_eval_report_filename_.size())
-        rt_man.addCommand("export_eval_report "+export_eval_report_filename_);
-
-    if (quit_)
-        rt_man.addCommand("quit");
-
-    //finally => set compass as running
-    COMPASS::instance().setAppState(AppState::Running);
-
-    return true;
 }
 
 Client::~Client()
 {
-    loginf << "Client: destructor";
+    logdbg;
 }
 
 bool Client::notify(QObject* receiver, QEvent* event)
@@ -608,14 +672,19 @@ bool Client::notify(QObject* receiver, QEvent* event)
     }
     catch (exception& e)
     {
-        logerr << "COMPASSClient: Exception thrown: " << e.what();
-        // assert (false);
-        QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", QString(e.what()));
+        std::string msg = "Unhandled exception '" + std::string(e.what()) + "'";
+        traced_assert_msg(false, msg.c_str());
+
+        // traced_assert(false);
+        //QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", QString(e.what()));
     }
     catch (...)
     {
-        // assert (false);
-        QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", "Unknown exception");
+        std::string msg = "Unhandled exception";
+        traced_assert_msg(false, msg.c_str());
+
+        // traced_assert(false);
+        //QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", "Unknown exception");
     }
     return false;
 }
@@ -639,7 +708,7 @@ void Client::checkAndSetupConfig()
         {
             cout << "COMPASSClient: assuming fuse environment in '" << appdir << "'" << endl;
             assert(appdir);
-            assert (Files::directoryExists(appdir));
+            assert(Files::directoryExists(appdir));
 
             system_install_path_ = string(appdir) + "/compass/";
 
@@ -691,30 +760,30 @@ void Client::checkAndSetupConfig()
         cout << "COMPASSClient: initializing logger using '" << log_config_path << "'" << endl;
         Logger::getInstance().init(log_config_path, enable_event_log_);
 
-        loginf << "COMPASSClient: startup version " << VERSION;
+        loginf << "startup version " << VERSION;
         string config_version = config.getString("version");
-        loginf << "COMPASSClient: configuration version " << config_version;
+        loginf << "configuration version " << config_version;
 
         ConfigurationManager::getInstance().init(config.getString("main_configuration_file"));
 
         if (import_asterix_parameters_.size())
         {
-            loginf << "COMPASSClient: overriding ASTERIX import parameters";
+            loginf << "overriding ASTERIX import parameters";
             using namespace nlohmann;
 
             try {
                 json json_config = json::parse(import_asterix_parameters_);
 
-                assert (ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
                     "COMPASS", "COMPASS0"));
                 Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
                     "COMPASS", "COMPASS0");
 
-                assert (compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
+                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
                 Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
                     "TaskManager", "TaskManager0");
 
-                assert (task_man_config.hasSubConfiguration("ASTERIXImportTask", "ASTERIXImportTask0"));
+                traced_assert(task_man_config.hasSubConfiguration("ASTERIXImportTask", "ASTERIXImportTask0"));
                 Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
                     "ASTERIXImportTask", "ASTERIXImportTask0");
 
@@ -722,29 +791,29 @@ void Client::checkAndSetupConfig()
             }
             catch (exception& e)
             {
-                logerr << "COMPASSClient: JSON parse error in '" << import_asterix_parameters_ << "'";
+                logerr << "JSON parse error in '" << import_asterix_parameters_ << "'";
                 throw e;
             }
         }
 
         if (import_gps_parameters_.size())
         {
-            loginf << "COMPASSClient: overriding gps import parameters";
+            loginf << "overriding gps import parameters";
             using namespace nlohmann;
 
             try {
                 json json_config = json::parse(import_gps_parameters_);
 
-                assert (ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
                     "COMPASS", "COMPASS0"));
                 Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
                     "COMPASS", "COMPASS0");
 
-                assert (compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
+                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
                 Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
                     "TaskManager", "TaskManager0");
 
-                assert (task_man_config.hasSubConfiguration("GPSTrailImportTask", "GPSTrailImportTask0"));
+                traced_assert(task_man_config.hasSubConfiguration("GPSTrailImportTask", "GPSTrailImportTask0"));
                 Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
                     "GPSTrailImportTask", "GPSTrailImportTask0");
 
@@ -752,29 +821,29 @@ void Client::checkAndSetupConfig()
             }
             catch (exception& e)
             {
-                logerr << "COMPASSClient: JSON parse error in '" << import_gps_parameters_ << "'";
+                logerr << "JSON parse error in '" << import_gps_parameters_ << "'";
                 throw e;
             }
         }
 
         if (evaluation_parameters_.size())
         {
-            loginf << "COMPASSClient: overriding evaluation parameters";
+            loginf << "overriding evaluation parameters";
             using namespace nlohmann;
 
             try {
                 json json_config = json::parse(evaluation_parameters_);
 
-                assert (ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
                     "COMPASS", "COMPASS0"));
                 Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
                     "COMPASS", "COMPASS0");
 
-                assert (compass_config.hasSubConfiguration("EvaluationManager", "EvaluationManager0"));
+                traced_assert(compass_config.hasSubConfiguration("EvaluationManager", "EvaluationManager0"));
                 Configuration& eval_man_config = compass_config.getOrCreateSubConfiguration(
                     "EvaluationManager", "EvaluationManager0");
 
-                assert (eval_man_config.hasSubConfiguration("EvaluationCalculator", "EvaluationCalculator0"));
+                traced_assert(eval_man_config.hasSubConfiguration("EvaluationCalculator", "EvaluationCalculator0"));
                 Configuration& eval_calc_config = eval_man_config.getOrCreateSubConfiguration(
                     "EvaluationCalculator", "EvaluationCalculator0");
 
@@ -782,25 +851,25 @@ void Client::checkAndSetupConfig()
             }
             catch (exception& e)
             {
-                logerr << "COMPASSClient: JSON parse error in '" << evaluation_parameters_ << "'";
+                logerr << "JSON parse error in '" << evaluation_parameters_ << "'";
                 throw e;
             }
         }
     }
     catch (exception& ex)
     {
-        logerr << "COMPASSClient: Caught Exception '" << ex.what() << "'";
-        logerr.flush();
-        // assert (false);
+        logerr << "caught exception '" << ex.what() << "'";
+        //logerr.flush();
+        // traced_assert(false);
 
         quit_requested_ = true;
         return;
     }
     catch (...)
     {
-        logerr << "COMPASSClient: Caught Exception";
-        logerr.flush();
-        // assert (false);
+        logerr << "caught exception";
+        //logerr.flush();
+        // traced_assert(false);
 
         quit_requested_ = true;
         return;
@@ -864,7 +933,7 @@ void Client::checkNeededActions()
         if (String::compareVersions(VERSION, config_version) != 0)
             cerr << "COMPASSClient: app version '" << VERSION << "' config version " << config_version << "'" << endl;
 
-        assert (String::compareVersions(VERSION, config_version) == 0);  // must be same
+        assert(String::compareVersions(VERSION, config_version) == 0);  // must be same
         return; // nothing to do
     }
     else
@@ -934,7 +1003,7 @@ void Client::copyConfigurationAndData()
         cout << "COMPASSClient: creating GDAL cache directory '" << OSGEARTH_CACHE_SUBDIRECTORY
              << "'";
         Files::createMissingDirectories(OSGEARTH_CACHE_SUBDIRECTORY);
-        assert (Files::directoryExists(OSGEARTH_CACHE_SUBDIRECTORY));
+        assert(Files::directoryExists(OSGEARTH_CACHE_SUBDIRECTORY));
     }
 
     cout << "COMPASSClient: copying files from system installation from '" << system_install_path_

@@ -62,8 +62,9 @@ protected:
     virtual void updateData_impl(bool requires_reset) override;
     virtual void clearData_impl() override;
     virtual void clearIntermediateRedrawData_impl() override;
-    virtual bool redrawData_impl(bool recompute) override;
+    virtual DrawState redrawData_impl(bool recompute) override;
     virtual void liveReload_impl() override;
+    virtual bool hasAnnotations_impl() const override { return false; }
 
     void viewInfoJSON_impl(nlohmann::json& info) const override;
 

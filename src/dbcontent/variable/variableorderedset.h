@@ -15,13 +15,10 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_VARIABLEORDEREDSET_H_
-#define DBCONTENT_VARIABLEORDEREDSET_H_
+#pragma once
 
 #include "configurable.h"
 #include "dbcontent/variable/variable.h"
-#include "dbcontent/variable/variabledefinition.h"
-//#include "propertylist.h"
 
 namespace dbContent
 {
@@ -60,20 +57,15 @@ class VariableOrderedSet : public QObject, public Configurable
     void removeVariable(const Variable& variable);
     void removeMetaVariable(const MetaVariable& variable);
 
-    /// @brief Decreases position of a variable at a given index
     void moveVariableUp(unsigned int index);
-    /// @brief Increases positions of a variable at a given index
     void moveVariableDown(unsigned int index);
 
-    /// @brief Returns if variable is in set
     bool hasVariable(const Variable& variable) const;
     bool hasMetaVariable(const MetaVariable& variable) const;
-    /// @brief Returns if variable is in set
-    bool hasVariable(const std::string& dbo_type, const std::string& name) const;
+    bool hasVariable(const std::string& dbcont_name, const std::string& name) const;
     unsigned int getIndexFor(const std::string& dbcontent_name, const std::string var_name);
 
     VariableSet getFor(const std::string& dbcontent_name);
-    //VariableSet getExistingInDBFor(const std::string& dbcontent_name);
 
     std::vector<std::pair<std::string,std::string>> definitions() const;
     std::pair<std::string,std::string> variableDefinition(unsigned int index) const;
@@ -91,5 +83,3 @@ class VariableOrderedSet : public QObject, public Configurable
 };
 
 }
-
-#endif /* DBCONTENT_VARIABLEORDEREDSET_H_ */

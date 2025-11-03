@@ -17,7 +17,7 @@
 
 #include "eval/requirement/position/acrossconfigwidget.h"
 #include "eval/requirement/position/acrossconfig.h"
-//#include "textfielddoublevalidator.h"
+
 #include "logger.h"
 
 #include <QLineEdit>
@@ -29,12 +29,12 @@ namespace EvaluationRequirement
 {
 
 PositionAcrossConfigWidget::PositionAcrossConfigWidget(PositionAcrossConfig& cfg)
-    : ProbabilityBaseConfigWidget(cfg)
+    : PositionBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of acceptable across-track position");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // max dist
     max_abs_value_edit_ = new QLineEdit(QString::number(config().maxAbsValue()));
@@ -49,7 +49,7 @@ PositionAcrossConfigWidget::PositionAcrossConfigWidget(PositionAcrossConfig& cfg
 
 void PositionAcrossConfigWidget::maxAbsValueEditSlot(QString value)
 {
-    loginf << "PositionAcrossConfigWidget: maxAbsValueEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -57,13 +57,13 @@ void PositionAcrossConfigWidget::maxAbsValueEditSlot(QString value)
     if (ok)
         config().maxAbsValue(val);
     else
-        loginf << "PositionAcrossConfigWidget: maxDistanceEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 PositionAcrossConfig& PositionAcrossConfigWidget::config()
 {
     PositionAcrossConfig* config = dynamic_cast<PositionAcrossConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

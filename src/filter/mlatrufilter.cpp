@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "mlatrufilter.h"
 #include "compass.h"
 #include "mlatrufilterwidget.h"
@@ -33,17 +50,17 @@ bool MLATRUFilter::filters(const std::string& dbcontent_name)
 
 std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "MLATRUFilter: getConditionString: dbo " << dbcontent_name << " active " << active_;
+    logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        assert (dbcontent_name == "CAT020");
+        traced_assert(dbcontent_name == "CAT020");
 
         DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
-        assert (dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_));
+        traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_));
         std::string dbcol_name =
             dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_).dbColumnName();
 
@@ -89,7 +106,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
         first = false;
     }
 
-    logerr << "MLATRUFilter: getConditionString: here '" << ss.str() << "'";
+    logerr << "here '" << ss.str() << "'";
 
     return ss.str();
 }
@@ -97,14 +114,14 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 void MLATRUFilter::generateSubConfigurable(const std::string& class_id,
                                            const std::string& instance_id)
 {
-    logdbg << "MLATRUFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("MLATRUFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 void MLATRUFilter::checkSubConfigurables()
 {
-    logdbg << "MLATRUFilter: checkSubConfigurables";
+    logdbg;
 
 }
 
@@ -122,9 +139,9 @@ void MLATRUFilter::reset()
 
 void MLATRUFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -133,12 +150,12 @@ void MLATRUFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("rus"));
+    traced_assert(filter.contains("rus"));
     rus_str_ = filter.at("rus");
 
     updateRUsFromStr(rus_str_);
@@ -188,7 +205,7 @@ bool MLATRUFilter::updateRUsFromStr(const std::string& values_str)
 
         if (!ok)
         {
-            logerr << "MLATRUFilter: updateRUsFromStr: utn '" << tmp_str << "' not valid";
+            logerr << "utn '" << tmp_str << "' not valid";
             break;
         }
 

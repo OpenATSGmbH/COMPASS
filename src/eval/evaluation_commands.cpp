@@ -65,7 +65,7 @@ bool RTCommandEvaluate::run_impl()
         return false;
     }
 
-    loginf << "RTCommandEvaluate: run_impl: loading evaluation data";
+    loginf << "loading evaluation data";
 
     auto res = eval_man.evaluate(false);
     if (!res.ok())

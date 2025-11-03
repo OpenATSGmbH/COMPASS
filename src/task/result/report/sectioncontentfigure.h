@@ -61,7 +61,7 @@ public:
     virtual void addContentUI(QVBoxLayout* layout,
                               bool force_ui_reset) override;
 
-    void view () const;
+    bool view (bool load_blocking = false) const;
     void executeRenderDelay() const;
 
     FigureType figureType() const { return fig_type_; }
@@ -86,7 +86,8 @@ protected:
     void toJSON_impl(nlohmann::json& j) const override final;
     bool fromJSON_impl(const nlohmann::json& j) override final;
     Result toJSONDocument_impl(nlohmann::json& j,
-                               const std::string* resource_dir) const override final;
+                               const std::string* resource_dir,
+                               ReportExportMode export_style) const override final;
 
     FigureType  fig_type_          = FigureType::Section;
     std::string caption_;

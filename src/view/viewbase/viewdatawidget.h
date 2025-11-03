@@ -46,6 +46,13 @@ class ViewDataWidget : public QWidget, public ViewComponent
 {
     Q_OBJECT
 public:
+    enum class DrawState
+    {
+        NotDrawn,    // not drawn yet
+        Drawn,       // drawn, but no content
+        DrawnContent // drawn with content
+    };
+
     typedef std::map<std::string, std::shared_ptr<Buffer>> BufferData;
 
     ViewDataWidget(ViewWidget* view_widget, QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
@@ -57,12 +64,22 @@ public:
     void loadingDone();
     void updateData(const BufferData& buffer_data, bool requires_reset);
     void clearData();
-    bool redrawData(bool recompute, bool notify = false);
+    DrawState redrawData(bool recompute, bool notify = false);
     void liveReload();
 
     bool hasData() const;
+    bool hasAnnotations() const;
+    bool hasContent() const;
+    bool hasVisibleContent() const;
+    bool isDrawn() const;
+    bool isContentDrawn() const;
+
+    virtual void isExporting(bool ok) { is_exporting_ = ok; }
+    bool isExporting() const { return is_exporting_; }
+
+    virtual bool hasScreenshotContent() const;
+
     unsigned int loadedDataCount();
-    bool showsData() const;
 
     bool isVariableSetLoaded() const;
 
@@ -108,8 +125,9 @@ protected:
     virtual void updateData_impl(bool requires_reset) = 0; //implements behavior at receiving new data
     virtual void clearData_impl() = 0;                     //implements clearing all view data
     virtual void clearIntermediateRedrawData_impl() = 0;   //implements clearing of any data collected during redraw
-    virtual bool redrawData_impl(bool recompute) = 0;      //implements redrawing the display (and possibly needed computations), and returns if the redraw succeeded
+    virtual DrawState redrawData_impl(bool recompute) = 0; //implements redrawing the display (and possibly needed computations), and returns the new draw state
     virtual void liveReload_impl() = 0;                    //implements data reload during live running mode
+    virtual bool hasAnnotations_impl() const = 0;          //implements checking if the view has any annotations
 
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
 
@@ -117,6 +135,8 @@ protected:
     void addNanCount(size_t n);
 
     void endTool();
+
+    void setDrawState(DrawState state) { draw_state_ = state; }
 
     const BufferData& viewData() const { return data_; }
     BufferData& viewData() { return data_; } //exposed because of selection
@@ -133,7 +153,9 @@ private:
     ViewToolSwitcher* tool_switcher_ = nullptr;
 
     BufferData data_;
-    bool       drawn_ = false;
+    DrawState  draw_state_ = DrawState::NotDrawn;
+
+    bool is_exporting_ = false;
 
     std::map<std::string, QColor> dbc_colors_;
 

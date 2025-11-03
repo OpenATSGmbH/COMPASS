@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONRESULTSREPORTROOTITEM_H
-#define EVALUATIONRESULTSREPORTROOTITEM_H
+#pragma once
 
 #include "eval/results/report/treeitem.h"
 
@@ -52,5 +51,3 @@ namespace EvaluationResultsReport
     };
 
 }
-
-#endif // EVALUATIONRESULTSREPORTROOTITEM_H

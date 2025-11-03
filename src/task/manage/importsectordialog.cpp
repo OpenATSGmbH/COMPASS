@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "importsectordialog.h"
 #include "logger.h"
 
@@ -11,7 +28,7 @@
 #include <QColorDialog>
 #include <QApplication>
 
-#include <cassert>
+#include "traced_assert.h"
 
 ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
                                        QWidget* parent, Qt::WindowFlags f)
@@ -84,13 +101,13 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
 
 std::string ImportSectorDialog::layerName()
 {
-    assert (layer_name_edit_edit_);
+    traced_assert(layer_name_edit_edit_);
     return layer_name_edit_edit_->text().toStdString();
 }
 
 bool ImportSectorDialog::exclude ()
 {
-    assert (exclude_check_);
+    traced_assert(exclude_check_);
     return exclude_check_->checkState() == Qt::Checked;
 }
 
@@ -106,10 +123,10 @@ void ImportSectorDialog::colorSlot()
 
     if (color.isValid())
     {
-        loginf << "ImportSectorDialog: colorSlot: color " << color.name().toStdString();
+        loginf << "color " << color.name().toStdString();
         color_ = color;
 
-        assert (color_button_);
+        traced_assert(color_button_);
 
         QPalette pal = color_button_->palette();
         pal.setColor(QPalette::Button, color_);

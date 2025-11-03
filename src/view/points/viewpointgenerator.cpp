@@ -18,9 +18,14 @@
 #include "viewpointgenerator.h"
 #include "viewpoint.h"
 
+#include "geotiff.h"
+
+#include "global.h"
+
 #include "util/stringconv.h"
 
 #include <QBuffer>
+#include <QImageReader>
 
 /********************************************************************************
  * ViewPointGenFilters
@@ -226,10 +231,33 @@ void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write
 nlohmann::json& ViewPointGenFeaturePointGeometry::getCoordinatesJSON(nlohmann::json& feature_json)
 {
     //check validity first
-    assert (feature_json.count(FeatureFieldNameGeom));
-    assert (feature_json[ FeatureFieldNameGeom ].count(FeatureFieldNameCoords));
+    traced_assert(feature_json.count(FeatureFieldNameGeom));
+    traced_assert(feature_json[ FeatureFieldNameGeom ].count(FeatureFieldNameCoords));
 
     return feature_json.at(FeatureFieldNameGeom).at(FeatureFieldNameCoords);
+}
+
+/**
+*/
+QRectF ViewPointGenFeaturePointGeometry::roi() const
+{
+    if (positions_.empty())
+        return QRectF();
+
+    double xmin = std::numeric_limits<double>::max();
+    double ymin = std::numeric_limits<double>::max();
+    double xmax = std::numeric_limits<double>::lowest();
+    double ymax = std::numeric_limits<double>::lowest();
+
+    for (const auto& pos : positions_)
+    {
+        if (pos.x() < xmin) xmin = pos.x();
+        if (pos.y() < ymin) ymin = pos.y();
+        if (pos.x() > xmax) xmax = pos.x();
+        if (pos.y() > ymax) ymax = pos.y();
+    }
+
+    return QRectF(xmin, ymin, xmax - xmin, ymax - ymin);
 }
 
 /********************************************************************************
@@ -500,6 +528,13 @@ void ViewPointGenFeatureText::toJSON_impl(nlohmann::json& j, bool write_binary_i
     j[FeatureFieldNameProps] = props;
 }
 
+/**
+*/
+QRectF ViewPointGenFeatureText::roi() const
+{
+    return QRectF(x_ - 1e-06, y_ - 1e-06, 2e-06, 2e-06);
+}
+
 /********************************************************************************
  * ViewPointGenFeatureGeoImage
  ********************************************************************************/
@@ -612,7 +647,7 @@ std::string ViewPointGenFeatureGeoImage::imageToByteStringWithMetadata(const QIm
     ba.append((const char*)&format, sizeof(int));
     
     //add image data
-    ba.append((const char*)img.bits(), img.byteCount());
+    ba.append((const char*)img.bits(), img.sizeInBytes());
 
     //code base 64
     QString byte_str(ba.toBase64());
@@ -644,19 +679,46 @@ QImage ViewPointGenFeatureGeoImage::byteStringWithMetadataToImage(const std::str
     return QImage((const uchar*)data, *w, *h, *stride, (QImage::Format)(*format)).copy();
 }
 
+/**
+*/
+QRectF ViewPointGenFeatureGeoImage::roi() const
+{
+    QSize size = data_.isNull() ? (!fn_.empty() ? QImageReader(QString::fromStdString(fn_)).size() : QSize()) : data_.size();
+    if (size.isNull())
+        return QRectF();
+
+    if (!ref_.srs.empty())
+    {
+        //get extents from reference + image size
+        return ref_.getROI(size.width(), size.height());
+    }
+    else if (!fn_.empty())
+    {
+        //get extents from image file (if possible)
+        auto info = GeoTIFF::getInfo(fn_);
+        if (info.isValid())
+            return info.roiAsWGS84();
+    }
+
+    return QRectF();
+}
+
 /********************************************************************************
  * ViewPointGenFeatureGrid
  ********************************************************************************/
 
-const std::string ViewPointGenFeatureGrid::FeatureName              = "grid";
-const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameGrid = "grid";
+const std::string ViewPointGenFeatureGrid::FeatureName                        = "grid";
+const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameGrid           = "grid";
+const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings = "render_settings";
 
 /**
 */
 ViewPointGenFeatureGrid::ViewPointGenFeatureGrid(const Grid2DLayer& grid,
+                                                 const boost::optional<Grid2DRenderSettings>& render_settings,
                                                  const boost::optional<PlotMetadata>& metadata)
 :   ViewPointGenFeature(FeatureName)
-,   grid_(grid)
+,   grid_           (grid           )
+,   render_settings_(render_settings)
 {
     plot_metadata_ = metadata;
 }
@@ -666,6 +728,16 @@ ViewPointGenFeatureGrid::ViewPointGenFeatureGrid(const Grid2DLayer& grid,
 void ViewPointGenFeatureGrid::toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const
 {
     j[FeatureGridFieldNameGrid] = grid_.toJSON(write_binary_if_possible);
+
+    if (render_settings_.has_value())
+        j[FeatureGridFieldNameRenderSettings] = render_settings_.value().toJSON();
+}
+
+/**
+*/
+QRectF ViewPointGenFeatureGrid::roi() const
+{
+    return grid_.ref.getROI(grid_.data.cols(), grid_.data.rows());
 }
 
 /********************************************************************************
@@ -795,7 +867,7 @@ void ViewPointGenAnnotation::setSymbolColor(const QColor& color)
 */
 void ViewPointGenAnnotation::addFeature(std::unique_ptr<ViewPointGenFeature>&& feat)
 {
-    assert(feat);
+    traced_assert(feat);
 
     feat_map_[ feat->name() ] = features_.size();
     features_.push_back(std::move(feat));
@@ -805,7 +877,7 @@ void ViewPointGenAnnotation::addFeature(std::unique_ptr<ViewPointGenFeature>&& f
 */
 void ViewPointGenAnnotation::addFeature(ViewPointGenFeature* feat)
 {
-    assert(feat);
+    traced_assert(feat);
 
     feat_map_[ feat->name() ] = features_.size();
     features_.emplace_back(feat);
@@ -855,7 +927,7 @@ ViewPointGenAnnotation* ViewPointGenAnnotation::addAnnotation(const std::string&
 */
 void ViewPointGenAnnotation::addAnnotation(std::unique_ptr<ViewPointGenAnnotation>&& a)
 {
-    assert(a);
+    traced_assert(a);
 
     anno_map_[ a->name() ] = annotations_.size();
     annotations_.push_back(std::move(a));
@@ -883,7 +955,7 @@ bool ViewPointGenAnnotation::hasAnnotation(const std::string& name) const
 ViewPointGenAnnotation* ViewPointGenAnnotation::annotation(const std::string& name) const
 {
     auto it = anno_map_.find(name);
-    assert(it != anno_map_.end());
+    traced_assert(it != anno_map_.end());
 
     return annotations_.at(it->second).get();
 }
@@ -944,8 +1016,8 @@ void ViewPointGenAnnotation::print(std::ostream& strm, const std::string& prefix
 */
 nlohmann::json& ViewPointGenAnnotation::getFeaturesJSON(nlohmann::json& annotation_json)
 {
-    assert (annotation_json.contains(AnnotationFieldFeatures));
-    assert (annotation_json.at(AnnotationFieldFeatures).is_array());
+    traced_assert(annotation_json.contains(AnnotationFieldFeatures));
+    traced_assert(annotation_json.at(AnnotationFieldFeatures).is_array());
 
     return annotation_json.at(AnnotationFieldFeatures);
 }
@@ -956,9 +1028,9 @@ nlohmann::json& ViewPointGenAnnotation::getFeatureJSON(nlohmann::json& annotatio
 {
     auto& feat_arr = ViewPointGenAnnotation::getFeaturesJSON(annotation_json);
 
-    assert (feat_arr.is_array());
-    assert (idx < feat_arr.size());
-    assert (feat_arr.at(idx).is_object());
+    traced_assert(feat_arr.is_array());
+    traced_assert(idx < feat_arr.size());
+    traced_assert(feat_arr.at(idx).is_object());
 
     return feat_arr.at(idx);
 }
@@ -967,10 +1039,25 @@ nlohmann::json& ViewPointGenAnnotation::getFeatureJSON(nlohmann::json& annotatio
 */
 nlohmann::json& ViewPointGenAnnotation::getChildrenJSON(nlohmann::json& annotation_json)
 {
-    assert (annotation_json.contains(AnnotationFieldAnnotations));
-    assert (annotation_json.at(AnnotationFieldAnnotations).is_array());
+    traced_assert(annotation_json.contains(AnnotationFieldAnnotations));
+    traced_assert(annotation_json.at(AnnotationFieldAnnotations).is_array());
 
     return annotation_json.at(AnnotationFieldAnnotations);
+}
+
+/**
+*/
+QRectF ViewPointGenAnnotation::roi() const
+{
+    QRectF r;
+
+    for (const auto& a : annotations_)
+        r = r.united(a->roi());
+
+    for (const auto& f : features_)
+        r = r.united(f->roi());
+
+    return r;
 }
 
 /********************************************************************************
@@ -990,7 +1077,7 @@ ViewPointGenAnnotation* ViewPointGenAnnotations::addAnnotation(const std::string
 */
 void ViewPointGenAnnotations::addAnnotation(std::unique_ptr<ViewPointGenAnnotation>&& a)
 {
-    assert(a);
+    traced_assert(a);
 
     anno_map_[ a->name() ] = annotations_.size();
     annotations_.push_back(std::move(a));
@@ -1018,7 +1105,7 @@ bool ViewPointGenAnnotations::hasAnnotation(const std::string& name) const
 ViewPointGenAnnotation* ViewPointGenAnnotations::annotation(const std::string& name) const
 {
     auto it = anno_map_.find(name);
-    assert(it != anno_map_.end());
+    traced_assert(it != anno_map_.end());
 
     return annotations_.at(it->second).get();
 }
@@ -1044,6 +1131,17 @@ void ViewPointGenAnnotations::print(std::ostream& strm, const std::string& prefi
 {
     for (const auto& a : annotations_)
         a->print(strm, prefix);
+}
+
+/**
+*/
+QRectF ViewPointGenAnnotations::roi() const
+{
+    QRectF r;
+    for (const auto& a : annotations_)
+        r = r.united(a->roi());
+
+    return r;
 }
 
 /********************************************************************************
@@ -1119,8 +1217,8 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
 
     if (!roi_.isEmpty())
     {
-        j[ViewPointFieldPosLat] = roi_.x();
-        j[ViewPointFieldPosLon] = roi_.y();
+        j[ViewPointFieldPosLat] = roi_.center().x();
+        j[ViewPointFieldPosLon] = roi_.center().y();
         j[ViewPointFieldWinLat] = roi_.width();
         j[ViewPointFieldWinLon] = roi_.height();
     }
@@ -1189,19 +1287,19 @@ namespace
 {
     /**
     */
-    void appendID(std::string& id, const std::string& id_to_add, const std::string& sep)
-    {
-        if (id_to_add.empty())
-            return;
+    // void appendID(std::string& id, const std::string& id_to_add, const std::string& sep)
+    // {
+    //     if (id_to_add.empty())
+    //         return;
 
-        if (id.empty())
-        {
-            id = id_to_add;
-            return;
-        }
+    //     if (id.empty())
+    //     {
+    //         id = id_to_add;
+    //         return;
+    //     }
 
-        id += sep + id_to_add;
-    }
+    //     id += sep + id_to_add;
+    // }
 
     /**
     */
@@ -1299,7 +1397,24 @@ std::vector<ViewPointGenVP::JSONFeature> ViewPointGenVP::scanForFeatures(const n
     return features;
 }
 
+/**
+*/
+void ViewPointGenVP::autoDetectROI()
+{
+    roi_ = QRectF();
 
+    auto anno_roi = annotations_.roi();
+    if (anno_roi.isEmpty() || anno_roi.isNull())
+        return;
+
+    double x0 = anno_roi.left();
+    double y0 = anno_roi.top();
+
+    double dx = anno_roi.width()  * 0.05;
+    double dy = anno_roi.height() * 0.05;
+
+    roi_ = QRectF(x0 - dx, y0 - dy, anno_roi.width() + dx * 2, anno_roi.height() + dy * 2);
+}
 
 /********************************************************************************
  * ViewPointGenerator

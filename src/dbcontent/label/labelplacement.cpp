@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "labelplacement.h"
 #include "labelplacement_force.h"
@@ -18,7 +35,7 @@
 #include <QDoubleSpinBox>
 #include <QLabel>
 #include <QTimer>
-#include <QTime>
+#include <QElapsedTimer>
 
 /**
  */
@@ -422,8 +439,8 @@ void LabelPlacementEngine::runTest(const std::vector<TestLabel>& test_labels,
         //place labels automatically if desired
         if (mode >= 0)
         {
-            QTime t;
-            t.restart();
+            QElapsedTimer t;
+            t.start();
 
             LabelPlacementEngine::Method    method    = (LabelPlacementEngine::Method)mode;
             label_placement::ForceDirection force_dir = (label_placement::ForceDirection)forceDirCombo->currentData().toInt();
@@ -465,7 +482,7 @@ void LabelPlacementEngine::runTest(const std::vector<TestLabel>& test_labels,
                 l.label.y = l_opt.y;
             }
 
-            loginf << "LabelPlacementEngine: runTest: Auto placement of labels in " << t.restart();
+            loginf << "auto placement of labels in " << t.elapsed() << "ms";
         }
         
         renderTestFrame(img, labels, config);
@@ -473,7 +490,7 @@ void LabelPlacementEngine::runTest(const std::vector<TestLabel>& test_labels,
         //show new canva
         label->setPixmap(QPixmap::fromImage(img));
 
-        loginf << "LabelPlacementEngine: runTest: UPDATE! " << label->width() << "x" << label->height();
+        loginf << "update " << label->width() << "x" << label->height();
     };
 
     //run update every 1s

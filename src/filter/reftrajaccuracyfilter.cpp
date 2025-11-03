@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "reftrajaccuracyfilter.h"
 #include "compass.h"
 #include "reftrajaccuracyfilterwidget.h"
@@ -34,7 +51,7 @@ bool RefTrajAccuracyFilter::filters(const std::string& dbcontent_name)
 
 std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "RefTrajAccuracyFilter: getConditionString: " << dbcontent_name << " active " << active_;
+    logdbg << "start" << dbcontent_name << " active " << active_;
 
     if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
         return "";
@@ -60,14 +77,14 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
         first = false;
     }
 
-    loginf << "RefTrajAccuracyFilter: getConditionString: here '" << ss.str() << "'";
+    loginf << "here '" << ss.str() << "'";
 
     return ss.str();
 }
 
 void RefTrajAccuracyFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
 {
-    logdbg << "RefTrajAccuracyFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("RefTrajAccuracyFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
@@ -80,7 +97,7 @@ DBFilterWidget* RefTrajAccuracyFilter::createWidget()
 
 void RefTrajAccuracyFilter::checkSubConfigurables()
 {
-    logdbg << "RefTrajAccuracyFilter: checkSubConfigurables";
+    logdbg;
 }
 
 
@@ -91,9 +108,9 @@ void RefTrajAccuracyFilter::reset()
 
 void RefTrajAccuracyFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -102,12 +119,12 @@ void RefTrajAccuracyFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void RefTrajAccuracyFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Accuracy Minimum"));
+    traced_assert(filter.contains("Accuracy Minimum"));
     string value = filter.at("Accuracy Minimum");
     min_value_ = std::stod(value);
 

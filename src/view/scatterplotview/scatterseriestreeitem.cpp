@@ -1,10 +1,27 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "scatterseriestreeitem.h"
 #include "scatterseriesmodel.h"
 #include "logger.h"
 
 #include <QApplication>
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -19,7 +36,7 @@ ScatterSeriesTreeItemDelegate::ScatterSeriesTreeItemDelegate(QObject* parent) : 
 void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                 const QModelIndex& index) const
 {
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: r " << index.row() << " c " << index.column();
+    logdbg << "r " << index.row() << " c " << index.column();
 
     if (index.column() == 1)  // only do custom painting in column 0
     {
@@ -35,7 +52,7 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-    assert(item);
+    traced_assert(item);
 
     QRect r = option.rect;  // getting the rect of the cell
     int x, y, w, h;
@@ -62,29 +79,20 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
         x += w + space;
     }
 
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: 1";
-
     QStyleOptionButton button;
     button.rect = QRect(x, y, w, h);
     button.state = QStyle::State_Enabled;
     button.features = QStyleOptionButton::None;
 
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: 2";
-
     QIcon icon = qvariant_cast<QIcon>(index.data(ScatterSeriesModel::DataRole::IconRole));
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: 2b";
     button.icon = icon;
     button.iconSize = QSize(w - space, h - space);
 
     QApplication::style()->drawControl(QStyle::CE_PushButton, &button, painter);
 
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: 3";
-
     QString headerText = qvariant_cast<QString>(index.data(0));
 
     QSize iconsize(w, h);
-
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: 4";
 
     QRect headerRect = option.rect;
     QRect iconRect(0, 0, w, h);
@@ -100,11 +108,9 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
     text_option.setWrapMode(QTextOption::WordWrap);
     painter->drawText(headerRect, headerText, text_option);
 
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: 5";
-
     painter->restore();
 
-    logdbg << "ScatterSeriesTreeItemDelegate: paint: done";
+    logdbg << "done";
 }
 
 bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
@@ -115,7 +121,7 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
 
     if (event->type() == QEvent::MouseButtonRelease)
     {
-        logdbg << "ScatterSeriesTreeItemDelegate: editorEvent: release";
+        logdbg << "release";
 
         QMouseEvent* e = (QMouseEvent*)event;
         int clickX = e->x();
@@ -132,13 +138,13 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
         h = fm.height();  // button height
 
         ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-        assert(item);
+        traced_assert(item);
 
         if (item->canHide())
         {
             if (clickX > x && clickX < x + w && clickY > y && clickY < y + h)
             {
-                logdbg << "ScatterSeriesTreeItemDelegate: editorEvent: checkbox";
+                logdbg << "checkbox";
                 item->hide(!item->hidden()); // , true
 
                 return true;
@@ -149,10 +155,10 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
 
         if (clickX > x && clickX < x + w && clickY > y && clickY < y + h)
         {
-            logdbg << "ScatterSeriesTreeItemDelegate: editorEvent: button";
+            logdbg << "button";
             if (item->hasMenu())
             {
-                logdbg << "ScatterSeriesTreeItemDelegate: editorEvent:menu at x " << e->globalX() << " y "
+                logdbg << "menu at x " << e->globalX() << " y "
                        << e->globalY();
 
                 item->execMenu(QPoint(e->globalX(), e->globalY()));
@@ -186,18 +192,18 @@ ScatterSeriesTreeItem::~ScatterSeriesTreeItem()
 
 void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 {
-    logdbg << "ScatterSeriesTreeItem " << name_ << ": appendChild: " << item->name();
+    logdbg << item->name();
 
-    assert (!child_items_.count(item->name()));
+    traced_assert(!child_items_.count(item->name()));
 
     child_items_[item->name()].reset(item);
 }
 
 // void ScatterSeriesTreeItem::removeChild(ScatterSeriesTreeItem* item)
 // {
-//     logdbg << "ScatterSeriesTreeItem " << name_ << ": removeChild: " << item->name();
+//     logdbg << item->name();
 //     auto it = std::find(child_items_.begin(), child_items_.end(), item);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it != child_items_.end())
 //         child_items_.erase(it);
@@ -212,7 +218,7 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // void ScatterSeriesTreeItem::moveChildUp(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it != child_items_.begin())
 //         std::iter_swap(it, it - 1);
@@ -220,7 +226,7 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // void ScatterSeriesTreeItem::moveChildDown(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it + 1 != child_items_.end())
 //         std::iter_swap(it, it + 1);
@@ -228,14 +234,14 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 // void ScatterSeriesTreeItem::moveChildToBegin(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     std::rotate(child_items_.begin(), it, it + 1);
 // }
 // void ScatterSeriesTreeItem::moveChildToEnd(ScatterSeriesTreeItem* child)
 // {
 //     auto it = std::find(child_items_.begin(), child_items_.end(), child);
-//     assert(it != child_items_.end());
+//     traced_assert(it != child_items_.end());
 
 //     if (it == child_items_.end() - 1)
 //         return;
@@ -245,23 +251,23 @@ void ScatterSeriesTreeItem::appendChild(ScatterSeriesTreeItem* item)
 
 // void ScatterSeriesTreeItem::moveUp()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 //     parent_item_->moveChildUp(this);
 // }
 // void ScatterSeriesTreeItem::moveDown()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 //     parent_item_->moveChildDown(this);
 // }
 // void ScatterSeriesTreeItem::moveToBegin()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 
 //     parent_item_->moveChildToBegin(this);
 // }
 // void ScatterSeriesTreeItem::moveToEnd()
 // {
-//     assert(parent_item_);
+//     traced_assert(parent_item_);
 //     parent_item_->moveChildToEnd(this);
 // }
 
@@ -280,7 +286,7 @@ unsigned int ScatterSeriesTreeItem::getIndexOf(ScatterSeriesTreeItem* child)
                            [child](const std::pair<const std::string, std::unique_ptr<ScatterSeriesTreeItem>>& x)
                            { return x.second.get() == child;});
 
-    assert(it != child_items_.end());
+    traced_assert(it != child_items_.end());
 
     return distance(child_items_.begin(), it);
 }
@@ -292,19 +298,19 @@ void ScatterSeriesTreeItem::clear()
 
 ScatterSeriesTreeItem* ScatterSeriesTreeItem::child(int row)
 {
-    assert(row >= 0);
-    assert((unsigned int)row < child_items_.size());
+    traced_assert(row >= 0);
+    traced_assert((unsigned int)row < child_items_.size());
 
     auto it = std::next(child_items_.begin(), row);
-    assert (it != child_items_.end());
+    traced_assert(it != child_items_.end());
 
-    logdbg << "ScatterSeriesTreeItem " << name_ << ": child: " << it->second->name();
+    logdbg  << "child: " << it->second->name();
     return it->second.get();
 }
 
 int ScatterSeriesTreeItem::childCount() const
 {
-    logdbg << "ScatterSeriesTreeItem " << name_ << ": childCount: " << child_items_.size();
+    logdbg << "count " << child_items_.size();
     return child_items_.size();
 }
 
@@ -325,7 +331,7 @@ QVariant ScatterSeriesTreeItem::data(int column) const
             return QVariant();
     }
     else
-        assert(false);
+        traced_assert(false);
 }
 
 QVariant ScatterSeriesTreeItem::icon() const
@@ -348,7 +354,7 @@ int ScatterSeriesTreeItem::row() const
 
 void ScatterSeriesTreeItem::hide(bool value)
 {
-    loginf << "ScatterSeriesTreeItem: hide: " << name_ << " hidden " << value;
+    loginf << "start" << name_ << " hidden " << value;
 
     hidden_ = value;
 

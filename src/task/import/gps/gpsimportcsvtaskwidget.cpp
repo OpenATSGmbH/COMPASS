@@ -60,7 +60,7 @@ GPSImportCSVTaskWidget::GPSImportCSVTaskWidget(GPSImportCSVTask& task, QWidget* 
 
 void GPSImportCSVTaskWidget::addMainTab()
 {
-    assert(tab_widget_);
+    traced_assert(tab_widget_);
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -198,7 +198,7 @@ GPSImportCSVTaskWidget::~GPSImportCSVTaskWidget() {}
 
 void GPSImportCSVTaskWidget::selectFile(const std::string& filename)
 {
-    assert(file_label_);
+    traced_assert(file_label_);
     file_label_->setText(task_.importFilename().c_str());
 
     updateText();
@@ -206,7 +206,7 @@ void GPSImportCSVTaskWidget::selectFile(const std::string& filename)
 
 void GPSImportCSVTaskWidget::sacEditedSlot(const QString& value)
 {
-    assert (sac_edit_);
+    traced_assert(sac_edit_);
 
     TextFieldDoubleValidator::displayValidityAsColor(sac_edit_);
 
@@ -216,7 +216,7 @@ void GPSImportCSVTaskWidget::sacEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::sicEditedSlot(const QString& value)
 {
-    assert (sic_edit_);
+    traced_assert(sic_edit_);
 
     TextFieldDoubleValidator::displayValidityAsColor(sic_edit_);
 
@@ -226,13 +226,13 @@ void GPSImportCSVTaskWidget::sicEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::nameEditedSlot(const QString& value)
 {
-    assert (name_edit_);
+    traced_assert(name_edit_);
     task_.dsName(name_edit_->text().toStdString());
 }
 
 void GPSImportCSVTaskWidget::todOffsetEditedSlot(const QString& value)
 {
-    assert (tod_offset_edit_);
+    traced_assert(tod_offset_edit_);
 
     TextFieldDoubleValidator::displayValidityAsColor(tod_offset_edit_);
 
@@ -242,17 +242,17 @@ void GPSImportCSVTaskWidget::todOffsetEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::mode3ACheckedSlot()
 {
-    loginf << "GPSImportCSVTaskWidget: mode3ACheckedSlot";
+    loginf;
 
-    assert (set_mode_3a_code_check_);
+    traced_assert(set_mode_3a_code_check_);
     task_.setMode3aCode(set_mode_3a_code_check_->checkState() == Qt::Checked);
 }
 
 void GPSImportCSVTaskWidget::mode3AEditedSlot(const QString& value)
 {
-    loginf << "GPSImportCSVTaskWidget: mode3AEditedSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
-    assert (mode_3a_code_edit_);
+    traced_assert(mode_3a_code_edit_);
 
     if (mode_3a_code_edit_->hasAcceptableInput())
         task_.mode3aCode(String::intFromOctalString(value.toStdString()));
@@ -260,17 +260,17 @@ void GPSImportCSVTaskWidget::mode3AEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::targetAddressCheckedSlot()
 {
-    loginf << "GPSImportCSVTaskWidget: targetAddressCheckedSlot";
+    loginf;
 
-    assert (set_target_address_check_);
+    traced_assert(set_target_address_check_);
     task_.setTargetAddress(set_target_address_check_->checkState() == Qt::Checked);
 }
 
 void GPSImportCSVTaskWidget::targetAddressEditedSlot(const QString& value)
 {
-    loginf << "GPSImportCSVTaskWidget: targetAddressEditedSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
-    assert (target_address_edit_);
+    traced_assert(target_address_edit_);
 
     if (target_address_edit_->hasAcceptableInput())
         task_.targetAddress(String::intFromHexString(value.toStdString()));
@@ -278,15 +278,15 @@ void GPSImportCSVTaskWidget::targetAddressEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::callsignCheckedSlot()
 {
-    loginf << "GPSImportCSVTaskWidget: callsignCheckedSlot";
+    loginf;
 
-    assert (set_callsign_check_);
+    traced_assert(set_callsign_check_);
     task_.setCallsign(set_callsign_check_->checkState() == Qt::Checked);
 }
 
 void GPSImportCSVTaskWidget::callsignEditedSlot(const QString& value)
 {
-    loginf << "GPSImportCSVTaskWidget: callsignEditedSlot: value '" << value.toStdString() << "'";
+    loginf << "value '" << value.toStdString() << "'";
 
     QString upper_value = value.toUpper();
 
@@ -297,47 +297,47 @@ void GPSImportCSVTaskWidget::callsignEditedSlot(const QString& value)
 
 void GPSImportCSVTaskWidget::lineIDEditSlot(const QString& text)
 {
-    loginf << "GPSImportCSVTaskWidget: lineIDEditSlot: value '" << text.toStdString() << "'";
+    loginf << "value '" << text.toStdString() << "'";
 
     bool ok;
 
     unsigned int line_id = text.toUInt(&ok);
 
-    assert (ok);
+    traced_assert(ok);
 
-    assert (line_id > 0 && line_id <= 4);
+    traced_assert(line_id > 0 && line_id <= 4);
 
     task_.lineID(line_id-1);
 }
 
 void GPSImportCSVTaskWidget::updateConfig ()
 {
-    assert (sac_edit_);
+    traced_assert(sac_edit_);
     sac_edit_->setText(QString::number(task_.dsSAC()));
 
-    assert (sic_edit_);
+    traced_assert(sic_edit_);
     sic_edit_->setText(QString::number(task_.dsSIC()));
 
-    assert (name_edit_);
+    traced_assert(name_edit_);
     name_edit_->setText(task_.dsName().c_str());
 
-    assert (tod_offset_edit_);
+    traced_assert(tod_offset_edit_);
     tod_offset_edit_->setText(QString::number(task_.todOffset()));
 
-    assert (set_mode_3a_code_check_);
+    traced_assert(set_mode_3a_code_check_);
     set_mode_3a_code_check_->setChecked(task_.setMode3aCode());
 
-    assert (mode_3a_code_edit_);
+    traced_assert(mode_3a_code_edit_);
     mode_3a_code_edit_->setText(String::octStringFromInt(task_.mode3aCode()).c_str());
 
-    assert (set_target_address_check_);
+    traced_assert(set_target_address_check_);
     set_target_address_check_->setChecked(task_.setTargetAddress());
-    assert (target_address_edit_);
+    traced_assert(target_address_edit_);
     target_address_edit_->setText(String::hexStringFromInt(task_.targetAddress()).c_str());
 
-    assert (set_callsign_check_);
+    traced_assert(set_callsign_check_);
     set_callsign_check_->setChecked(task_.setCallsign());
-    assert (callsign_edit_);
+    traced_assert(callsign_edit_);
     callsign_edit_->setText(task_.callsign().c_str());
 }
 
@@ -345,23 +345,23 @@ void GPSImportCSVTaskWidget::expertModeChangedSlot() {}
 
 //void GPSImportCSVTaskWidget::runStarted()
 //{
-//    loginf << "GPSImportCSVTaskWidget: runStarted";
+//    loginf;
 
 //    //test_button_->setDisabled(true);
 //}
 
 //void GPSImportCSVTaskWidget::runDone()
 //{
-//    loginf << "GPSImportCSVTaskWidget: runDone";
+//    loginf;
 
 //    //test_button_->setDisabled(false);
 //}
 
 void GPSImportCSVTaskWidget::updateText ()
 {
-    loginf << "ViewPointsImportTaskWidget: updateText";
+    loginf;
 
-    assert (text_edit_);
+    traced_assert(text_edit_);
 
     stringstream ss;
 
@@ -382,7 +382,7 @@ void GPSImportCSVTaskWidget::updateText ()
     //    {
     //        const nlohmann::json& data = task_.currentData();
 
-    //        assert (data.contains("view_point_context"));
+    //        traced_assert(data.contains("view_point_context"));
 
     //        context_edit_->setText(data.at("view_point_context").dump(4).c_str());
 

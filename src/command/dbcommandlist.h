@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCOMMANDLIST_H_
-#define DBCOMMANDLIST_H_
+#pragma once
 
 #include "propertylist.h"
 
@@ -51,7 +50,7 @@ class DBCommandList
     /// @brief Returns command string at index i
     const std::string& getCommandString(unsigned int i) const
     {
-        assert(i < commands_.size());
+        traced_assert(i < commands_.size());
         return commands_.at(i);
     }
     /// @brief Returns number of commands
@@ -71,5 +70,3 @@ class DBCommandList
     /// PropertyList of the expected returned data
     PropertyList result_list_;
 };
-
-#endif /* DBCOMMANDLIST_H_ */

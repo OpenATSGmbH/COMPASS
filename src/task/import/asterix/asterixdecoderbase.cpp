@@ -23,6 +23,8 @@
 #include "asterixnetworkdecoder.h"
 #include "asteriximporttask.h"
 
+#include "asynctask.h"
+
 #include "compass.h"
 #include "taskmanager.h"
 
@@ -35,10 +37,10 @@ ASTERIXDecoderBase::ASTERIXDecoderBase(ASTERIXImportSource& source,
 :   source_(source)
 {
     task_ = &COMPASS::instance().taskManager().asterixImporterTask();
-    assert(task_);
+    traced_assert(task_);
 
     settings_ = settings ? settings : &task_->settings();
-    assert(settings_);
+    traced_assert(settings_);
 }
 
 /**
@@ -76,14 +78,14 @@ Checks if the decoder can decode the currently set import source.
 @param force_recompute If true the information needed to decide if decode is valid or not is recomputed
 (e.g. by decoding a small portion of the source data).
 */
-bool ASTERIXDecoderBase::canDecode(bool force_recompute) const
+bool ASTERIXDecoderBase::canDecode(bool force_recompute, AsyncTaskProgressWrapper* progress) const
 {
     //cannot run => cannot decode
     if (!canRun())
         return false;
 
     //refresh decoding info
-    checkDecoding(force_recompute);
+    checkDecoding(force_recompute, progress);
 
     //decide if decoding is possible
     return canDecode_impl();
@@ -94,9 +96,9 @@ Refreshes internal information about decoding the currently set import source.
 @param force_recompute If true this information is always recomputed, otherwise
 cached values might be used.
 */
-void ASTERIXDecoderBase::checkDecoding(bool force_recompute) const
+void ASTERIXDecoderBase::checkDecoding(bool force_recompute, AsyncTaskProgressWrapper* progress) const
 {
-    checkDecoding_impl(force_recompute);
+    checkDecoding_impl(force_recompute, progress);
 }
 
 /**
@@ -124,6 +126,18 @@ std::string ASTERIXDecoderBase::errorMessage() const
 }
 
 /**
+ */
+std::vector<std::string> ASTERIXDecoderBase::errors() const
+{
+    std::vector<std::string> errors;
+
+    if (error())
+        errors.push_back("General decoder error: " + (errorMessage().empty() ? "Unknown error" : errorMessage()));
+
+    return errors;
+}
+
+/**
  * Stores the given error and increments the error count.
 */
 void ASTERIXDecoderBase::logError(const std::string& err)
@@ -140,10 +154,10 @@ void ASTERIXDecoderBase::logError(const std::string& err)
 */
 void ASTERIXDecoderBase::start(ASTERIXDecodeJob* job)
 {
-    assert (!running_);
+    traced_assert(!running_);
 
     //need a job
-    assert(job);
+    traced_assert(job);
     job_ = job;
 
     //remember start time

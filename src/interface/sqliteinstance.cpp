@@ -25,7 +25,7 @@
 SQLiteInstance::SQLiteInstance(DBInterface* interface)
 :   DBInstance(interface)
 {
-    loginf << "SQLiteInstance: constructor: SQLITE_VERSION " << SQLITE_VERSION;
+    loginf << "SQLITE_VERSION " << SQLITE_VERSION;
 }
 
 /**
@@ -39,7 +39,7 @@ SQLiteInstance::~SQLiteInstance()
  */
 Result SQLiteInstance::open_impl(const std::string& file_name)
 {
-    loginf << "SQLiteConnection: connect_impl: '" << file_name << "'";
+    loginf << "'" << file_name << "'";
 
     int result = sqlite3_open_v2(file_name.c_str(), &db_handle_,
                                  SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);

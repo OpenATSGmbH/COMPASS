@@ -72,6 +72,7 @@ protected:
     void updateDistributedVariable();
     void updateVariableDataType();
     void updateExport();
+    void updateUIFromSource();
     void checkRanges();
 
     std::string exportName() const;
@@ -80,15 +81,16 @@ protected:
 
     GridView* view_ = nullptr;
 
-    QComboBox*           value_type_combo_    = nullptr;
-    QLabel*              value_type_label_    = nullptr;
-    QSpinBox*            grid_resolution_box_ = nullptr;
-    ColorScaleSelection* color_selection_     = nullptr;
-    QSpinBox*            color_steps_box_     = nullptr;
-    PropertyValueEdit*   color_value_min_box_ = nullptr;
-    PropertyValueEdit*   color_value_max_box_ = nullptr;
-    QPushButton*         reset_min_button_    = nullptr;
-    QPushButton*         reset_max_button_    = nullptr;
-    QPushButton*         export_button_       = nullptr;
-    QLabel*              range_info_label_    = nullptr;
+    QComboBox*           value_type_combo_             = nullptr;
+    QLabel*              value_type_placeh_label_      = nullptr;
+    QSpinBox*            grid_resolution_box_          = nullptr;
+    QLabel*              grid_resolution_placeh_label_ = nullptr;
+    ColorScaleSelection* color_selection_              = nullptr;
+    QSpinBox*            color_steps_box_              = nullptr;
+    PropertyValueEdit*   color_value_min_box_          = nullptr;
+    PropertyValueEdit*   color_value_max_box_          = nullptr;
+    QPushButton*         reset_min_button_             = nullptr;
+    QPushButton*         reset_max_button_             = nullptr;
+    QPushButton*         export_button_                = nullptr;
+    QLabel*              range_info_label_             = nullptr;
 };

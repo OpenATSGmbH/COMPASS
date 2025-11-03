@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_VARIABLEWIDGET_H_
-#define DBCONTENT_VARIABLEWIDGET_H_
+#pragma once
 
 #include <QWidget>
 
@@ -42,12 +41,12 @@ class VariableWidget : public QWidget
     Q_OBJECT
 
   signals:
-    void dboVariableChangedSignal();
+    void dbcontVariableChangedSignal();
 
   public slots:
-    /// @brief Changes DBO name
+    /// @brief Changes DBCont name
     void editNameSlot();
-    /// @brief Changes DBO info
+    /// @brief Changes DBCont info
     void editDescriptionSlot();
     //void editDataTypeSlot();
 
@@ -70,9 +69,9 @@ class VariableWidget : public QWidget
 
     bool locked_{false};
 
-    /// @brief DBOVariable name
+    /// @brief DBContVariable name
     QLineEdit* name_edit_{nullptr};
-    /// @brief DBOVariable info
+    /// @brief DBContVariable info
     QLineEdit* description_edit_{nullptr};
     VariableDataTypeComboBox* type_combo_{nullptr};
     StringRepresentationComboBox* representation_box_{nullptr};
@@ -80,5 +79,3 @@ class VariableWidget : public QWidget
 };
 
 }
-
-#endif /* DBCONTENT_VARIABLEWIDGET_H_ */

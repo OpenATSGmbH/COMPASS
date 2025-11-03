@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "trackertracknumberfilter.h"
 #include "trackertracknumberfilterwidget.h"
 #include "compass.h"
@@ -34,17 +51,17 @@ bool TrackerTrackNumberFilter::filters(const std::string& dbcontent_name)
 
 std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "TrackerTrackNumberFilter: getConditionString: dbo " << dbcontent_name << " active " << active_;
+    logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
     if (dbcontent_name != "CAT062")
         return "";
 
     stringstream ss;
 
-    assert (COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_ds_id_.name()).existsIn(dbcontent_name));
 
-    assert (COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_track_num_.name()).existsIn(dbcontent_name));
 
     // ds_id -> line_id -> values
@@ -92,7 +109,7 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
         first = false;
     }
 
-    loginf << "TrackerTrackNumberFilter: getConditionString: here '" << ss.str() << "'";
+    loginf << "here '" << ss.str() << "'";
 
     return ss.str();
 }
@@ -100,7 +117,7 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
 void TrackerTrackNumberFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
 {
-    logdbg << "TrackerTrackNumberFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("TrackerTrackNumberFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
@@ -113,33 +130,33 @@ DBFilterWidget* TrackerTrackNumberFilter::createWidget()
 
 void TrackerTrackNumberFilter::checkSubConfigurables()
 {
-    logdbg << "TrackerTrackNumberFilter: checkSubConfigurables";
+    logdbg;
 }
 
 
 void TrackerTrackNumberFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
 
     json& filter = filters.at(name_);
 
-    assert (!filter.contains("Values"));
+    traced_assert(!filter.contains("Values"));
     filter["Values"] = getActiveTrackerTrackNumsStr();
 }
 
 void TrackerTrackNumberFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    logdbg << "TrackerTrackNumberFilter: loadViewPointConditions: filter '" << filters.dump(4) << "'";
+    logdbg << "filter '" << filters.dump(4) << "'";
 
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Values"));
+    traced_assert(filter.contains("Values"));
 
     std::map<std::string, std::map<std::string, std::string>> vp_values =
             filter.at("Values").get<std::map<std::string, std::map<std::string, std::string>>>();
@@ -161,7 +178,7 @@ void TrackerTrackNumberFilter::loadViewPointConditions (const nlohmann::json& fi
 
 void TrackerTrackNumberFilter::setTrackerTrackNum(unsigned int ds_id, unsigned int line_id, const std::string& value)
 {
-    loginf << "TrackerTrackNumberFilter: setTrackerTrackNum: ds_id " << ds_id
+    loginf << "ds_id " << ds_id
            << " line_id " << line_id << " value '" << value << "'";
 
     if (!tracker_track_nums_.contains(to_string(ds_id)))
@@ -247,7 +264,7 @@ std::map<std::string, std::map<std::string, std::string>> TrackerTrackNumberFilt
 
 void TrackerTrackNumberFilter::updateDataSourcesSlot()
 {
-    loginf << "TrackerTrackNumberFilter: updateDataSourcesSlot";
+    loginf;
 
     if (widget_)
         widget_->update();

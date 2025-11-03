@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "fftmanager.h"
 #include "configurationfft.h"
 #include "fftsconfigurationdialog.h"
@@ -33,7 +50,7 @@ FFTManager::FFTManager(const std::string& class_id, const std::string& instance_
 
 FFTManager::~FFTManager()
 {
-    loginf << "FFTManager: dtor";
+    logdbg;
 }
 
 void FFTManager::generateSubConfigurable(const std::string& class_id,
@@ -42,10 +59,10 @@ void FFTManager::generateSubConfigurable(const std::string& class_id,
     if (class_id == "ConfigurationFFT")
     {
         unique_ptr<ConfigurationFFT> fft {new ConfigurationFFT(class_id, instance_id, *this)};
-        loginf << "FFTManager: generateSubConfigurable: adding config fft "
+        loginf << "adding config fft "
                << fft->name();
 
-        assert (!hasConfigFFT(fft->name()));
+        traced_assert(!hasConfigFFT(fft->name()));
         config_ffts_.emplace_back(std::move(fft));
     }
     else
@@ -62,7 +79,7 @@ bool FFTManager::hasConfigFFT (const std::string& name)
 
 void FFTManager::createConfigFFT(const std::string& name)
 {
-    assert (!hasConfigFFT(name));
+    traced_assert(!hasConfigFFT(name));
 
     auto new_cfg = Configuration::create("ConfigurationFFT");
 
@@ -75,7 +92,7 @@ void FFTManager::createConfigFFT(const std::string& name)
 
 void FFTManager::deleteFFT(const std::string& name)
 {
-    loginf << "FFTManager: deleteFFT: name " << name;
+    loginf << "name " << name;
 
     if (hasConfigFFT(name))
     {
@@ -104,7 +121,7 @@ void FFTManager::deleteFFT(const std::string& name)
 
 ConfigurationFFT& FFTManager::configFFT (const std::string& name)
 {
-    assert (hasConfigFFT(name));
+    traced_assert(hasConfigFFT(name));
 
     return *find_if(config_ffts_.begin(), config_ffts_.end(),
                     [name] (const std::unique_ptr<ConfigurationFFT>& s)
@@ -139,7 +156,7 @@ bool FFTManager::hasDBFFT(const string& name)
 
 DBFFT& FFTManager::dbFFT(const std::string& name)
 {
-    assert (hasDBFFT(name));
+    traced_assert(hasDBFFT(name));
 
     return *find_if(db_ffts_.begin(), db_ffts_.end(),
                     [name] (const std::unique_ptr<DBFFT>& s)
@@ -156,13 +173,13 @@ bool FFTManager::canAddNewFFTFromConfig (const std::string& name)
 
 void FFTManager::addNewFFT (const std::string& name, bool emit_signal)
 {
-    logdbg << "FFTManager: addNewFFT: name " << name;
+    logdbg << "name " << name;
 
-    assert (!hasDBFFT(name));
+    traced_assert(!hasDBFFT(name));
 
     if (hasConfigFFT(name))
     {
-        logdbg << "FFTManager: addNewFFT: name " << name << " from config";
+        logdbg << "name " << name << " from config";
 
         ConfigurationFFT& cfg_fft = configFFT(name);
 
@@ -171,7 +188,7 @@ void FFTManager::addNewFFT (const std::string& name, bool emit_signal)
     }
     else
     {
-        logdbg << "FFTManager: addNewFFT: name " << name << " create new";
+        logdbg << "name " << name << " create new";
 
         createConfigFFT(name);
 
@@ -182,28 +199,28 @@ void FFTManager::addNewFFT (const std::string& name, bool emit_signal)
     }
 
     sortDBFFTs();
-    assert (hasDBFFT(name));
+    traced_assert(hasDBFFT(name));
     updateFFTNamesAll();
 
     if (emit_signal)
         emit fftsChangedSignal();
 
-    loginf << "FFTManager: addNewFFT: name " << name << " done";
+    loginf << "name " << name << " done";
 }
 
 void FFTManager::addNewFFT (const std::string& name, nlohmann::json info, bool emit_signal)
 {
-    loginf << "FFTManager: addNewFFT: name " << name << " with info";
+    loginf << "name " << name << " with info";
 
-    assert (!hasConfigFFT(name));
-    assert (!hasDBFFT(name));
+    traced_assert(!hasConfigFFT(name));
+    traced_assert(!hasDBFFT(name));
 
     createConfigFFT(name);
     ConfigurationFFT& cfg_fft = configFFT(name);
     cfg_fft.info(info);
 
-    assert (hasConfigFFT(name));
-    assert (canAddNewFFTFromConfig(name));
+    traced_assert(hasConfigFFT(name));
+    traced_assert(canAddNewFFTFromConfig(name));
 
     db_ffts_.emplace_back(std::move(cfg_fft.getAsNewDBFFT()));
 
@@ -228,7 +245,7 @@ void FFTManager::checkSubConfigurables() {}
 
 void FFTManager::databaseOpenedSlot()
 {
-    loginf << "FFTManager: databaseOpenedSlot";
+    loginf;
 
     loadDBFFTs();
 
@@ -253,7 +270,7 @@ void FFTManager::databaseClosedSlot()
 
 void FFTManager::configurationDialogDoneSlot()
 {
-    loginf << "FFTManager: configurationDialogDoneSlot";
+    loginf;
 
     config_dialog_->hide();
     config_dialog_ = nullptr;
@@ -263,17 +280,17 @@ void FFTManager::configurationDialogDoneSlot()
 
 void FFTManager::saveDBFFTs()
 {
-    loginf << "FFTManager: saveDBFFTs";
+    loginf;
 
     DBInterface& db_interface = COMPASS::instance().dbInterface();
 
-    assert(db_interface.ready());
+    traced_assert(db_interface.ready());
     db_interface.saveFFTs(db_ffts_);
 }
 
 void FFTManager::exportFFTs(const std::string& filename)
 {
-    loginf << "FFTManager: exportFFTs: filename '" << filename << "'";
+    loginf << "filename '" << filename << "'";
 
     json data;
 
@@ -302,7 +319,7 @@ void FFTManager::exportFFTs(const std::string& filename)
 
 void FFTManager::importFFTs(const std::string& filename)
 {
-    loginf << "FFTManager: importFFTs: filename '" << filename << "'";
+    loginf << "filename '" << filename << "'";
 
     try
     {
@@ -329,8 +346,8 @@ void FFTManager::importFFTs(const std::string& filename)
 
         for (auto& j_fft_it : j.at("ffts").get<json::array_t>())
         {
-            assert(j_fft_it.contains("name"));
-            assert(j_fft_it.contains("info"));
+            traced_assert(j_fft_it.contains("name"));
+            traced_assert(j_fft_it.contains("info"));
 
             string name = j_fft_it.at("name");
 
@@ -339,7 +356,7 @@ void FFTManager::importFFTs(const std::string& filename)
     }
     catch (json::exception& e)
     {
-        logerr << "FFTManager: importFFTs: could not load file '"
+        logerr << "could not load file '"
                << filename << "', exception '" << e.what() << "'";
         throw e;
     }
@@ -423,7 +440,7 @@ std::pair<bool, float> FFTManager::isFromFFT(
 
 void FFTManager::loadDBFFTs()
 {
-    assert (!db_ffts_.size());
+    traced_assert(!db_ffts_.size());
 
     DBInterface& db_interface = COMPASS::instance().dbInterface();
 
@@ -440,7 +457,7 @@ void FFTManager::loadDBFFTs()
     {
         if (!hasDBFFT(cfg_fft_it->name()) && canAddNewFFTFromConfig(cfg_fft_it->name()))
         {
-            loginf << "FFTManager: loadDBFFTs: creating db fft '" << cfg_fft_it->name() << "'";
+            loginf << "creating db fft '" << cfg_fft_it->name() << "'";
 
             addNewFFT(cfg_fft_it->name(), false); // creates from config if possible
             new_created = true;
@@ -456,10 +473,10 @@ void FFTManager::loadDBFFTs()
         string fft_name = db_fft_it->name();
         if (!hasConfigFFT(fft_name)) // create
         {
-            loginf << "FFTManager: loadDBFFTs: creating cfg fft '" << fft_name << "'";
+            loginf << "creating cfg fft '" << fft_name << "'";
 
             createConfigFFT(fft_name);
-            assert (hasConfigFFT(fft_name));
+            traced_assert(hasConfigFFT(fft_name));
             configFFT(fft_name).info(db_fft_it->info());
         }
     }

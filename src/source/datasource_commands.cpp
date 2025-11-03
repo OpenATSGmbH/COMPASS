@@ -95,7 +95,7 @@ RTCommandSetDataSources::RTCommandSetDataSources()
 
 bool RTCommandSetDataSources::run_impl()
 {
-    loginf << "RTCommandSetDataSources: run_impl: ds_json_str_ '" << ds_json_str_ << "'";
+    loginf << "ds_json_str_ '" << ds_json_str_ << "'";
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -107,7 +107,7 @@ bool RTCommandSetDataSources::run_impl()
     }
     catch (exception& e)
     {
-        logerr << "RTCommandSetDataSources: run_impl: JSON parse error '" << e.what() << "'";
+        logerr << "JSON parse error '" << e.what() << "'";
         setResultMessage(string("JSON parse error '") + e.what() + "'");
         return false;
     }

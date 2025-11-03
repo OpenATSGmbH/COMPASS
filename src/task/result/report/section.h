@@ -80,7 +80,7 @@ public:
 
     bool hasSubSection (const std::string& heading);
     Section& getSubSection (const std::string& heading);
-    void addSubSection (const std::string& heading);
+    Section& addSubSection (const std::string& heading);
     std::vector<std::shared_ptr<Section>> subSections(bool recursive) const;
     std::string relativeID(const std::string& id) const;
 
@@ -109,19 +109,20 @@ public:
                                      const SectionContentViewable& viewable);
     std::vector<SectionContentFigure*> getFigures();
     size_t numFigures() const;
+    
+    bool hasAnyContent(const std::string& name) const;
+    bool hasContent(const std::string& name, SectionContentType type) const;
 
-    bool hasContent(const std::string& name) const;
-    unsigned int contentInfo(const std::string& name) const;
-    unsigned int contentID(const std::string& name) const;
+    unsigned int contentInfo(const std::string& name, SectionContentType type) const;
+    unsigned int contentID(const std::string& name, SectionContentType type) const;
 
     std::shared_ptr<SectionContent> retrieveContent(unsigned int id,
                                                     bool show_dialog = false) const;
 
-    unsigned int numSections() const;
-    unsigned int numSections(const std::function<bool(const Section&)>& func) const;
-    void addSectionsFlat (std::vector<std::shared_ptr<Section>>& result, 
-                          bool include_target_details,
-                          bool report_skip_targets_wo_issues);
+    unsigned int totalNumSections() const;
+    unsigned int totalNumSections(const std::function<bool(const Section&)>& func) const;
+    std::map<SectionContentType, unsigned int> totalNumContents() const;
+    std::map<SectionContentType, unsigned int> totalNumContents(const std::function<bool(const Section&)>& func_section) const;
 
     std::vector<std::shared_ptr<SectionContent>> sectionContent(bool with_hidden_content = false) const;
     std::vector<std::shared_ptr<SectionContent>> recursiveContent(bool with_hidden_content = false) const;
@@ -134,6 +135,9 @@ public:
 
     Report* report() { return report_; }
     const Report* report() const { return report_; }
+
+    nlohmann::json jsonConfig() const;
+    bool configure(const nlohmann::json& j);
 
     static const std::string DBTableName;
     static const Property    DBColumnSectionID;
@@ -152,6 +156,11 @@ public:
 
     static const std::string FieldDocContents;
 
+    static const std::string FieldConfigContentConfigs;
+    static const std::string FieldConfigContentID;
+    static const std::string FieldConfigContentType;
+    static const std::string FieldConfigContentConfig;
+
     static void setCurrentContentID(unsigned int id);
 
 protected:
@@ -162,14 +171,14 @@ protected:
     void toJSON_impl(nlohmann::json& j) const override final;
     bool fromJSON_impl(const nlohmann::json& j) override final;
     Result toJSONDocument_impl(nlohmann::json& j, 
-                               const std::string* resource_dir) const override final;
+                               const std::string* resource_dir,
+                               ReportExportMode export_style) const override final;
 
     Section* findSubSection (const std::string& heading); // nullptr if not found
-    boost::optional<size_t> findContent(const std::string& name, SectionContent::ContentType type) const;
-    boost::optional<size_t> findContent(const std::string& name) const;
-    std::vector<size_t> findContents(SectionContent::ContentType type) const;
-    bool hasContent(const std::string& name, SectionContent::ContentType type) const;
-    size_t numContents(SectionContent::ContentType type) const;
+    boost::optional<size_t> findContent(const std::string& name, SectionContentType type) const;
+    boost::optional<size_t> findAnyContent(const std::string& name) const;
+    std::vector<size_t> findContents(SectionContentType type) const;
+    size_t numContents(SectionContentType type) const;
 
     void createContentWidget(bool preload_ondemand_contents);
     void recreateContentUI(bool force_ui_reset, 

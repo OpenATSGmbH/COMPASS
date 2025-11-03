@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWPOINTSREPORTGENERATORDIALOG_H
-#define VIEWPOINTSREPORTGENERATORDIALOG_H
+#pragma once
 
 #include <QDialog>
 
@@ -96,5 +95,3 @@ protected:
 
     QPushButton* quit_button_{nullptr};
 };
-
-#endif // VIEWPOINTSREPORTGENERATORDIALOG_H

@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "evaluationtargetfilterdialog.h"
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -138,17 +155,17 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
 
     config_layout->addRow("\tTarget Addresses (hex)", remove_ta_edit_);
 
-    // dbos
-    remove_dbo_check_ = new QCheckBox();
-    remove_dbo_check_->setChecked(target_filter_.removeNotDetectedDBContents());
-    connect(remove_dbo_check_, &QCheckBox::clicked, this,
+    // dbconts
+    remove_dbcont_check_ = new QCheckBox();
+    remove_dbcont_check_->setChecked(target_filter_.removeNotDetectedDBContents());
+    connect(remove_dbcont_check_, &QCheckBox::clicked, this,
             &EvaluationTargetFilterDialog::removeDBContentsSlot);
 
-    config_layout->addRow("Remove By Non-Detection in DBContent", remove_dbo_check_);
+    config_layout->addRow("Remove By Non-Detection in DBContent", remove_dbcont_check_);
 
     for (auto& dbcont_it : COMPASS::instance().dbContentManager())
     {
-        if (dbcont_it.second->isStatusContent())
+        if (dbcont_it.second->containsStatusContent())
             continue;
 
         QCheckBox* tmp = new QCheckBox();
@@ -190,7 +207,7 @@ void EvaluationTargetFilterDialog::removeShortTargetsSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeSTMinUpdatesEditedSlot()
 {
-    assert (remove_st_min_updates_edit_);
+    traced_assert(remove_st_min_updates_edit_);
     QString text = remove_st_min_updates_edit_->text();
 
     bool ok;
@@ -199,13 +216,13 @@ void EvaluationTargetFilterDialog::removeSTMinUpdatesEditedSlot()
     if (ok)
         target_filter_.removeShortTargetsMinUpdates(value);
     else
-        logwrn << "EvaluationTargetFilterDialog: removeSTMinUpdatesEditedSlot: conversion of text '"
+        logwrn << "conversion of text '"
                << text.toStdString() << "' failed";
 }
 
 void EvaluationTargetFilterDialog::removeSTMinDurationEditedSlot()
 {
-    assert (remove_st_min_duration_edit_);
+    traced_assert(remove_st_min_duration_edit_);
     QString text = remove_st_min_duration_edit_->text();
 
     bool ok;
@@ -214,7 +231,7 @@ void EvaluationTargetFilterDialog::removeSTMinDurationEditedSlot()
     if (ok)
         target_filter_.removeShortTargetsMinDuration(value);
     else
-        logwrn << "EvaluationTargetFilterDialog: removeSTMinDurationEditedSlot: conversion of text '"
+        logwrn << "conversion of text '"
                << text.toStdString() << "' failed";
 }
 
@@ -240,7 +257,7 @@ void EvaluationTargetFilterDialog::removeModeABlackListSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeModeAValuesSlot()
 {
-    assert (remove_mode_a_edit_);
+    traced_assert(remove_mode_a_edit_);
     target_filter_.filterModeACodeValues(remove_mode_a_edit_->document()->toPlainText().toStdString());
 }
 
@@ -251,7 +268,7 @@ void EvaluationTargetFilterDialog::removeModeCSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeModeCMinValueSlot()
 {
-    assert (remove_mode_c_min_edit_);
+    traced_assert(remove_mode_c_min_edit_);
     target_filter_.removeModeCMinValue(remove_mode_c_min_edit_->document()->toPlainText().toFloat());
 }
 
@@ -267,7 +284,7 @@ void EvaluationTargetFilterDialog::removeTABlackListSlot(bool checked)
 
 void EvaluationTargetFilterDialog::removeTAValuesSlot()
 {
-    assert (remove_ta_edit_);
+    traced_assert(remove_ta_edit_);
     target_filter_.filterTargetAddressValues(remove_ta_edit_->document()->toPlainText().toStdString());
 }
 
@@ -279,10 +296,10 @@ void EvaluationTargetFilterDialog::removeDBContentsSlot(bool checked)
 void EvaluationTargetFilterDialog::removeSpecificDBContentsSlot(bool checked)
 {
     QCheckBox* tmp = dynamic_cast<QCheckBox*>(sender());
-    assert (tmp);
+    traced_assert(tmp);
 
     QVariant data = tmp->property("dbcontent_name");
-    assert (data.isValid());
+    traced_assert(data.isValid());
 
     string dbcontent_name = data.toString().toStdString();
 

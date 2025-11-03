@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "source/dbdatasource.h"
 #include "source/dbdatasourcewidget.h"
 #include "source/configurationdatasource.h"
@@ -113,6 +130,17 @@ std::map<std::string, unsigned int> DBDataSource::numInsertedSummedLinesMap() co
     return line_sum_map;
 }
 
+std::set<std::string>  DBDataSource::insertedDBContents() const
+{
+    std::set<std::string> dbcontents;
+
+    // db_content -> line id -> count
+    for (auto& db_cont_it : num_inserted_)
+        dbcontents.insert(db_cont_it.first);
+
+    return dbcontents;
+}
+
 void DBDataSource::addNumInserted(const std::string& db_content, unsigned int line_id, unsigned int num)
 {
     num_inserted_[db_content][line_id] += num;
@@ -201,7 +229,7 @@ bool DBDataSource::hasAnyNumLoaded () const // for any DBContent, line
 
 unsigned int DBDataSource::getFirstLoadedLine() // for any DBContent
 {
-    assert (hasAnyNumLoaded());
+    traced_assert(hasAnyNumLoaded());
 
     for (auto& loaded_it : num_loaded_)
     {
@@ -212,7 +240,7 @@ unsigned int DBDataSource::getFirstLoadedLine() // for any DBContent
         }
     }
 
-    assert (false); // should never happen
+    traced_assert(false); // should never happen
 }
 
 void DBDataSource::clearNumLoaded()
@@ -237,7 +265,7 @@ bool DBDataSource::loadingWanted() const
 
 void DBDataSource::loadingWanted(bool loading_wanted)
 {
-    logdbg << "DBDataSource: loadingWanted: ds " << name_ << " wanted " << loading_wanted;
+    logdbg << "ds " << name_ << " wanted " << loading_wanted;
 
     loading_wanted_ = loading_wanted;
 }
@@ -281,13 +309,13 @@ void DBDataSource::enableAllLines()
 
 void DBDataSource::lineLoadingWanted(unsigned int line_id, bool wanted)
 {
-    assert (line_id <= 4);
+    traced_assert(line_id <= 4);
     line_loading_wanted_[line_id] = wanted;
 }
 
 bool DBDataSource::lineLoadingWanted(unsigned int line_id) const
 {
-    assert (line_id <= 4);
+    traced_assert(line_id <= 4);
 
     if (line_loading_wanted_.count(line_id))
         return line_loading_wanted_.at(line_id);
@@ -311,7 +339,7 @@ std::set<unsigned int> DBDataSource::getLoadingWantedLines() const
 //    if (!widget_)
 //        widget_.reset(new DBDataSourceWidget(*this));
 
-//    assert (widget_);
+//    traced_assert(widget_);
 //    return widget_.get();
 //}
 
@@ -327,7 +355,7 @@ void DBDataSource::maxTimestamp(unsigned int line, boost::posix_time::ptime valu
 
 boost::posix_time::ptime DBDataSource::maxTimestamp(unsigned int line) const
 {
-    assert (hasMaxTimestamp(line));
+    traced_assert(hasMaxTimestamp(line));
     return Time::fromLong(max_line_tods_.at(line));
 }
 
@@ -341,12 +369,12 @@ bool DBDataSource::hasLiveData(unsigned int line, boost::posix_time::ptime curre
         ret = false;
 
 //    if (hasMaxTimestamp(line))
-//        loginf << "DBDataSource: hasLiveData: name " << name_ << " current_ts " << Time::toString(current_ts)
+//        loginf << "name " << name_ << " current_ts " << Time::toString(current_ts)
 //               << " hasMax " << hasMaxTimestamp(line) << " hasUI " << hasUpdateInterval()
 //               << " maxTS " << Time::toString(maxTimestamp(line))
 //               << " diff " << Time::toString(current_ts - maxTimestamp(line)) << " ret " << ret;
 //    else
-//        loginf << "DBDataSource: hasLiveData: name " << name_ << " no maxTS";
+//        loginf << "name " << name_ << " no maxTS";
 
     return ret;
 }

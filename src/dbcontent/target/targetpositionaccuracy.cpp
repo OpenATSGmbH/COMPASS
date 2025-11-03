@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "targetpositionaccuracy.h"
 #include "dbcontent/dbcontentaccessor.h"
 #include "dbcontent/dbcontent.h"
@@ -79,7 +96,7 @@ boost::optional<TargetPositionAccuracy> getRadarPositionAccuracy(
     boost::optional<TargetPositionAccuracy> ret;
 
     // TODO, not yet implemented
-    assert (false);
+    traced_assert(false);
 
     return ret;
 }
@@ -112,7 +129,7 @@ boost::optional<TargetPositionAccuracy> getADSBPositionAccuracy(
 
     if (mops_version == 0)
     {
-        assert (!nucp_nic_vec.isNull(index));
+        traced_assert(!nucp_nic_vec.isNull(index));
 
         nuc_p = nucp_nic_vec.get(index);
 
@@ -124,7 +141,7 @@ boost::optional<TargetPositionAccuracy> getADSBPositionAccuracy(
     }
     else if (mops_version == 1 || mops_version == 2)
     {
-        assert (!nac_p_vec.isNull(index));
+        traced_assert(!nac_p_vec.isNull(index));
 
         nac_p = nac_p_vec.get(index);
 

@@ -45,7 +45,10 @@ EvaluationStandard::EvaluationStandard(const std::string& class_id,
 {
     registerParameter("name", &name_, std::string());
 
-    assert (name_.size());
+    registerParameter("reference_max_time_diff", &reference_max_time_diff_, reference_max_time_diff_);
+    registerParameter("reference_min_accuracy", &reference_min_accuracy_, reference_min_accuracy_);
+
+    traced_assert(name_.size());
 
     createSubConfigurables();
 }
@@ -61,9 +64,9 @@ void EvaluationStandard::generateSubConfigurable(const std::string& class_id,
     {
         Group* group = new Group(class_id, instance_id, *this, calculator_);
 
-        logdbg << "EvaluationStandard: generateSubConfigurable: adding group " << group->name();
+        logdbg << "adding group " << group->name();
 
-        assert (!hasGroup(group->name()));
+        traced_assert(!hasGroup(group->name()));
 
         groups_.emplace_back(group);
 
@@ -90,7 +93,7 @@ bool EvaluationStandard::hasGroup (const std::string& name)
 
 void EvaluationStandard::addGroup (const std::string& name)
 {
-    assert (!hasGroup(name));
+    traced_assert(!hasGroup(name));
 
     // if (widget_)
     //     beginModelReset();
@@ -102,7 +105,7 @@ void EvaluationStandard::addGroup (const std::string& name)
 
     generateSubConfigurableFromConfig(std::move(config));
 
-    assert (hasGroup(name));
+    traced_assert(hasGroup(name));
 
     // if (widget_)
     //     endModelReset();
@@ -110,24 +113,24 @@ void EvaluationStandard::addGroup (const std::string& name)
 
 Group& EvaluationStandard::group (const std::string& name)
 {
-    assert (hasGroup(name));
+    traced_assert(hasGroup(name));
 
     auto iter = std::find_if(groups_.begin(), groups_.end(),
                              [&name](const unique_ptr<Group>& x) { return x->name() == name;});
 
-    assert (iter != groups_.end());
+    traced_assert(iter != groups_.end());
 
     return *iter->get();
 }
 
 void EvaluationStandard::removeGroup (const std::string& name)
 {
-    assert (hasGroup(name));
+    traced_assert(hasGroup(name));
 
     auto iter = std::find_if(groups_.begin(), groups_.end(),
                              [&name](const unique_ptr<Group>& x) { return x->name() == name;});
 
-    assert (iter != groups_.end());
+    traced_assert(iter != groups_.end());
 
     groups_.erase(iter);
 
@@ -153,7 +156,7 @@ EvaluationStandardTreeItem* EvaluationStandard::child(int row)
 
     std::advance(group_it, row);
 
-    assert (group_it != groups_.end());
+    traced_assert(group_it != groups_.end());
 
     return group_it->get();
 }
@@ -170,7 +173,7 @@ int EvaluationStandard::columnCount() const
 
 QVariant EvaluationStandard::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return name_.c_str();
 }
@@ -205,7 +208,7 @@ void EvaluationStandard::name(const std::string &name)
 
 void EvaluationStandard::groupsChangedSlot()
 {
-    loginf << "EvaluationStandard: groupsChangedSlot";
+    loginf;
 
     emit configChangedSignal();
 }

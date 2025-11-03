@@ -49,7 +49,7 @@ void UTNFilterWidget::update()
 {
     DBFilterWidget::update();
 
-    assert (value_edit_);
+    traced_assert(value_edit_);
 
     value_edit_->setText(filter_.utns().c_str());
 }
@@ -58,7 +58,7 @@ void UTNFilterWidget::valueEditedSlot(const QString& value)
 {
     string value_str = value.toStdString();
 
-    loginf << "UTNFilterWidget: valueEditedSlot: '" << value_str << "'";
+    loginf << "'" << value_str << "'";
 
     filter_.utns(value_str);
 }

@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CREATEARTASASSOCIATIONSTASK_H
-#define CREATEARTASASSOCIATIONSTASK_H
+#pragma once
 
 #include "configurable.h"
 #include "createartasassociationsjob.h"
@@ -46,7 +45,6 @@ class CreateARTASAssociationsTask : public Task, public Configurable
 
 public slots:
     void dialogRunSlot();
-    void dialogCancelSlot();
 
     void createDoneSlot();
     void createObsoleteSlot();
@@ -100,7 +98,7 @@ public:
                                 TaskManager& task_manager);
     virtual ~CreateARTASAssociationsTask();
 
-    CreateARTASAssociationsTaskDialog* dialog();
+    void showDialog();
 
     std::string currentDataSourceName() const;
     void currentDataSourceName(const std::string& currentDataSourceName);
@@ -160,16 +158,12 @@ protected:
 
     std::map<std::string, std::shared_ptr<Buffer>> data_;
 
-    std::unique_ptr<CreateARTASAssociationsTaskDialog> dialog_;
-
     std::unique_ptr<CreateARTASAssociationsStatusDialog> status_dialog_{nullptr};
 
-    bool dbo_loading_done_{false};
+    bool dbcont_loading_done_{false};
 
     std::shared_ptr<CreateARTASAssociationsJob> create_job_;
     bool create_job_done_{false};
 
     dbContent::VariableSet getReadSetFor(const std::string& dbcontent_name);
 };
-
-#endif  // CREATEARTASASSOCIATIONSTASK_H

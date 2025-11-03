@@ -165,8 +165,8 @@ public:
     ,   connection_(connection)
     ,   destroyer_ (destroyer )
     {
-        assert(instance_  );
-        assert(connection_);
+        traced_assert(instance_  );
+        traced_assert(connection_);
     }
 
     DBConnectionWrapper(const std::string& error)
@@ -184,9 +184,9 @@ public:
 
     DBConnection& connection()
     { 
-        assert(!hasError());
-        assert(!isEmpty() );
-        assert(connection_);
+        traced_assert(!hasError());
+        traced_assert(!isEmpty() );
+        traced_assert(connection_);
 
         return *connection_; 
     }

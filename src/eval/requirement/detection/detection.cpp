@@ -16,8 +16,8 @@
  */
 
 #include "eval/requirement/detection/detection.h"
-
 #include "eval/results/detection/detection.h"
+#include "eval/standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "evaluationdetail.h"
@@ -52,7 +52,7 @@ Detection::Detection(const std::string& name,
                      bool invert_prob,
                      bool use_miss_tolerance, 
                      float miss_tolerance_s, 
-                     bool hold_for_any_target)
+                     bool hold_for_any_target, bool ignore_primary_only)
     : ProbabilityBase     (name, short_name, group_name, prob, prob_check_type, invert_prob, calculator, hold_for_any_target),
     update_interval_s_  (update_interval_s),
     use_min_gap_length_ (use_min_gap_length),
@@ -60,7 +60,8 @@ Detection::Detection(const std::string& name,
     use_max_gap_length_ (use_max_gap_length),
     max_gap_length_s_   (max_gap_length_s),
     use_miss_tolerance_ (use_miss_tolerance),
-    miss_tolerance_s_   (miss_tolerance_s)
+    miss_tolerance_s_   (miss_tolerance_s),
+    ignore_primary_only_(ignore_primary_only)
 {
 }
 
@@ -120,6 +121,11 @@ float Detection::missThreshold() const
     return use_miss_tolerance_ ? update_interval_s_+miss_tolerance_s_ : update_interval_s_;
 }
 
+bool Detection::ignorePrimaryOnly() const
+{
+    return ignore_primary_only_;
+}
+
 /**
 */
 std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const EvaluationTargetData& target_data, 
@@ -129,11 +135,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     bool debug = false; //target_data.utn_ == 613;
 
     if (debug)
-        loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+        loginf << "'" << name_ << ": utn " << target_data.utn_
                << " update_interval " << update_interval_s_ << " prob " << threshold()
                << " use_miss_tolerance " << use_miss_tolerance_ << " miss_tolerance " << miss_tolerance_s_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     // create ref time periods
     TimePeriodCollection ref_periods;
@@ -184,7 +190,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     ref_periods.removeSmallPeriods(Time::partialSeconds(1));
 
     if (debug)
-        loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+        loginf << "'" << name_ << ": utn " << target_data.utn_
                << " periods '" << ref_periods.print() << "'";
 
     timestamp = {};
@@ -237,7 +243,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     {
         //map to ref pos
         auto ref_pos = target_data.mappedRefPos(id_tst);
-        assert (ref_pos.has_value());
+        traced_assert(ref_pos.has_value());
 
         ref_updates = { ref_pos.value() };
     };
@@ -260,7 +266,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         if (!pos1.has_value()) pos1 = target_data.mappedRefPos(id1);
 
         //interpolation of ref should always be possible, since the period is inside a valid reference period
-        assert(pos0.has_value() && pos1.has_value());
+        traced_assert(pos0.has_value() && pos1.has_value());
 
         //retrieve all ref updates inside the interval
         auto positions = target_data.refChain().positionsBetween(id0.timestamp(), 
@@ -276,7 +282,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     if (!tst_data_size) // if not test data, add everything as misses
     {
         if (debug)
-            loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+            loginf << "'" << name_ << ": utn " << target_data.utn_
                    << " no tst_data_size";
 
         for (auto& period_it : ref_periods)
@@ -293,7 +299,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 pos_current = target_data.refChain().pos(timestamp);
 
                 if (debug)
-                    loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+                    loginf << "'" << name_ << ": utn " << target_data.utn_
                            << " miss of " << String::timeStringFromDouble(t_diff)
                            << " uis " << getNumMisses(t_diff)
                            << " at [" << Time::toString(last_ts)
@@ -311,9 +317,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             }
         }
 
-        return make_shared<EvaluationRequirementResult::SingleDetection>(
+        auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
             "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
             calculator_, details, sum_uis, sum_missed_uis, ref_periods);
+
+        if (ignore_primary_only_ && target_data.isPrimaryOnly())
+            ret->setIgnoreResult("Primary-only");
+
+        return ret;
     }
 
     // collect test times in ref periods
@@ -342,8 +353,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         pos_current = target_data.tstChain().pos(tst_it);
 
         if (debug)
-            loginf << "EvaluationRequirementDetection '" << name_
-                   << "': evaluate: utn " << target_data.utn_ << " tod " << timestamp;
+            loginf << "'" << name_ << ": utn " << target_data.utn_ << " tod " << timestamp;
 
         //was_inside_ref_time_period = is_inside_ref_time_period;
         is_inside_ref_time_period = ref_periods.isInside(timestamp);
@@ -352,14 +362,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         period_max_index_before_ts = ref_periods.getPeriodMaxIndexBefore(timestamp);
 
         if (debug)
-            loginf << "EvaluationRequirementDetection '" << name_
-                   << "': evaluate: utn " << target_data.utn_
+            loginf << "'" << name_ << ": utn " << target_data.utn_
                    << " is_inside_ref_time_period " << is_inside_ref_time_period
                    << " period_max_index_before_ts " << period_max_index_before_ts;
 
         if (period_max_index_before_ts != -1)
         {
-            for (unsigned int period_cnt=0; period_cnt <= period_max_index_before_ts; ++period_cnt)
+            traced_assert(period_max_index_before_ts >= 0);
+
+            for (unsigned int period_cnt=0; period_cnt <= static_cast<unsigned int>(period_max_index_before_ts); ++period_cnt)
             {
                 if (!finished_periods.count(period_cnt)) // previous not finalized
                 {
@@ -373,7 +384,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                         tst_time_found = true;
                     }
 
-                    assert (last_period_ts_end >= last_period_ts);
+                    traced_assert(last_period_ts_end >= last_period_ts);
 
                     t_diff = Time::partialSeconds(last_period_ts_end - last_period_ts);
 
@@ -391,8 +402,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                         sum_missed_uis += getNumMisses(t_diff);
 
                         if (debug)
-                            loginf << "EvaluationRequirementDetection '" << name_
-                                   << "': evaluate: utn " << target_data.utn_
+                            loginf << "'" << name_ << ": utn " << target_data.utn_
                                    << " miss of " << String::timeStringFromDouble(t_diff)
                                    << " uis " << getNumMisses(t_diff)
                                    << " at [" << Time::toString(last_period_ts)
@@ -425,8 +435,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         if (!is_inside_ref_time_period)
         {
             if (debug)
-                loginf << "EvaluationRequirementDetection '" << name_
-                       << "': evaluate: utn " << target_data.utn_ << " outside ref time perionds";
+                loginf << "'" << name_ << ": utn " << target_data.utn_ << " outside ref time perionds";
 
             if (!skip_no_data_details)
                 addDetail(timestamp, { pos_current }, {}, false, false, sum_missed_uis, 0, 0,
@@ -448,8 +457,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         if (!ref_pos.has_value()) // only happens if test time is exact beginning of reference interval
         {
             if (debug)
-                loginf << "EvaluationRequirementDetection '" << name_
-                       << "': evaluate: utn " << target_data.utn_ << " no ref_pos value";
+                loginf << "'" << name_ << ": utn " << target_data.utn_ << " no ref_pos value";
 
             if (!skip_no_data_details)
                 addDetail(timestamp, { pos_current }, {}, false, true, sum_missed_uis, 0, 0,
@@ -464,7 +472,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         if (!is_inside)
         {
             if (debug)
-                loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+                loginf << "'" << name_ << ": utn " << target_data.utn_
                        << " outside";
 
             if (!skip_no_data_details)
@@ -479,7 +487,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         if (!period_last_tst_times.count(period_index) || was_outside) // first in period or was outside
         {
             if (debug)
-                loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+                loginf << "'" << name_ << ": utn " << target_data.utn_
                        << " first in period " << period_index <<" (" << period_last_tst_times.count(period_index)
                        << ") or was_outside " << was_outside;
 
@@ -504,8 +512,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                     sum_missed_uis += getNumMisses(t_diff);
 
                     if (debug)
-                        loginf << "EvaluationRequirementDetection '" << name_
-                               << "': evaluate: utn " << target_data.utn_
+                       loginf << "'" << name_ << ": utn " << target_data.utn_
                                << " miss of " << String::timeStringFromDouble(t_diff)
                                << " uis " << getNumMisses(t_diff)
                                << " at [" << Time::toString(ref_periods.period(period_index).begin())
@@ -536,11 +543,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             continue;
         }
 
-        assert (timestamp >= last_ts);
+        traced_assert(timestamp >= last_ts);
         t_diff = Time::partialSeconds(timestamp - last_ts);
 
         if (debug)
-            loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+            loginf << "'" << name_ << ": utn " << target_data.utn_
                    << " ts " << Time::toString(timestamp) << " d_tod " << String::timeStringFromDouble(t_diff);
 
         if (isMiss(t_diff))
@@ -548,7 +555,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             sum_missed_uis += getNumMisses(t_diff);
 
             if (debug)
-                loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+                loginf << "'" << name_ << ": utn " << target_data.utn_
                        << " miss of " << String::timeStringFromDouble(t_diff)
                        << " uis " << getNumMisses(t_diff)
                        << " at [" << Time::toString(last_ts)
@@ -565,7 +572,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         else
         {
             if (debug)
-                loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+                loginf << "'" << name_ << ": utn " << target_data.utn_
                        << " update ok";
 
             std::string comment = "OK (DToD <= " + String::doubleToStringPrecision(missThreshold(), 2) + ")";
@@ -579,8 +586,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
     // finalize unfinished periods
     if (debug)
-        loginf << "EvaluationRequirementDetection '" << name_
-               << "': evaluate: utn " << target_data.utn_ << " finalizing " << ref_periods.size()
+        loginf << "'" << name_ << ": utn " << target_data.utn_ << " finalizing " << ref_periods.size()
                << " unfinished periods";
 
     for (unsigned int period_cnt=0; period_cnt < ref_periods.size(); ++period_cnt)
@@ -597,7 +603,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 tst_time_found = true;
             }
 
-            assert (last_period_end >= last_period_tod);
+            traced_assert(last_period_end >= last_period_tod);
 
             t_diff = Time::partialSeconds(last_period_end - last_period_tod);
 
@@ -615,8 +621,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 sum_missed_uis += getNumMisses(t_diff); // TODO substract miss_tolerance_s_?
 
                 if (debug)
-                    loginf << "EvaluationRequirementDetection '" << name_
-                           << "': evaluate: utn " << target_data.utn_
+                    loginf << "'" << name_ << ": utn " << target_data.utn_
                            << " miss of " << String::timeStringFromDouble(t_diff)
                            << " uis " << getNumMisses(t_diff)
                            << " at [" << Time::toString(last_period_tod) << ","
@@ -644,12 +649,17 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     }
 
     if (debug)
-        loginf << "EvaluationRequirementDetection '" << name_ << "': evaluate: utn " << target_data.utn_
+        loginf << "'" << name_ << ": utn " << target_data.utn_
                << " sum_uis " << sum_uis;
 
-    return make_shared<EvaluationRequirementResult::SingleDetection>(
+    auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
         calculator_, details, sum_uis, sum_missed_uis, ref_periods);
+
+    if (ignore_primary_only_ && target_data.isPrimaryOnly())
+        ret->setIgnoreResult("Primary-only");
+
+    return ret;
 }
 
 /**
@@ -672,7 +682,7 @@ bool Detection::isMiss (float d_tod) const
 */
 unsigned int Detection::getNumMisses(float d_tod) const
 {
-    assert (isMiss(d_tod));
+    traced_assert(isMiss(d_tod));
 
     if (use_miss_tolerance_)
         d_tod -= miss_tolerance_s_;

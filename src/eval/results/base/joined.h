@@ -97,7 +97,8 @@ public:
     static const std::string SectorOverviewID;
     static const int         SectorOverviewRenderDelayMSec;
 
-    static const std::string TargetsTableName;
+    static const std::string SectorTargetsTableName;
+    static const std::string SectorOverviewTableName;
 
 protected:
     bool resultUsed(const std::shared_ptr<Single>& result) const;

@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "datasourcetablemodel.h"
 #include "datasourcemanager.h"
 #include "logger.h"
@@ -32,22 +49,22 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
     {
     case Qt::DisplayRole:
     {
-        logdbg << "DataSourceTableModel: data: display role: row " << index.row() << " col " << index.column();
+        logdbg << "display role: row " << index.row() << " col " << index.column();
 
-        assert (index.row() >= 0);
-        assert ((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+        traced_assert(index.row() >= 0);
+        traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
 
         unsigned int ds_id = ds_man_.getAllDsIDs().at(index.row());
 
-        logdbg << "DataSourceTableModel: data: got ds_id " << ds_id;
+        logdbg << "got ds_id " << ds_id;
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (ds_man_.hasDBDataSource(ds_id))
         {
             dbContent::DBDataSource& ds = ds_man_.dbDataSource(ds_id);
-            assert (ds_man_.hasConfigDataSource(ds_id));
+            traced_assert(ds_man_.hasConfigDataSource(ds_id));
 
             if (col_name == "Name")
                 return ds.name().c_str();
@@ -69,7 +86,7 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
         }
         else // cfg only
         {
-            assert (ds_man_.hasConfigDataSource(ds_id));
+            traced_assert(ds_man_.hasConfigDataSource(ds_id));
 
             dbContent::ConfigurationDataSource& ds = ds_man_.configDataSource(ds_id);
 
@@ -94,14 +111,14 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
     }
     case Qt::DecorationRole:
     {
-        assert (index.row() >= 0);
-        assert ((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+        traced_assert(index.row() >= 0);
+        traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
 
         unsigned int ds_id = ds_man_.getAllDsIDs().at(index.row());
 
-        logdbg << "DataSourceTableModel: data: got ds_id " << ds_id;
+        logdbg << "got ds_id " << ds_id;
 
-        assert (index.column() < table_columns_.size());
+        traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
         if (col_name != "In DB" && col_name != "In Cfg")
@@ -126,7 +143,7 @@ QVariant DataSourceTableModel::headerData(int section, Qt::Orientation orientati
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < table_columns_.size());
+        traced_assert(section < table_columns_.size());
         return table_columns_.at(section);
     }
 
@@ -148,7 +165,7 @@ Qt::ItemFlags DataSourceTableModel::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < table_columns_.size());
+    traced_assert(index.column() < table_columns_.size());
 
     //    if (table_columns_.at(index.column()) == "comment")
     //        return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
@@ -159,22 +176,22 @@ Qt::ItemFlags DataSourceTableModel::flags(const QModelIndex &index) const
 
 unsigned int DataSourceTableModel::getIdOf (const QModelIndex& index)
 {
-    assert (index.isValid());
+    traced_assert(index.isValid());
 
-    assert (index.row() >= 0);
-    assert ((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+    traced_assert(index.row() >= 0);
+    traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
 
     return ds_man_.getAllDsIDs().at(index.row());
 }
 
 QModelIndex DataSourceTableModel::dataSourceIndex(unsigned int ds_id)
 {
-    loginf << "DataSourceTableModel: selectDataSource: ds_id " << ds_id;
+    loginf << "ds_id " << ds_id;
 
     auto ds_ids = ds_man_.getAllDsIDs();
 
     auto itr = std::find(ds_ids.begin(), ds_ids.end(), ds_id);
-    assert (itr != ds_ids.end());
+    traced_assert(itr != ds_ids.end());
 
     unsigned int row = std::distance(ds_ids.begin(), itr);
 
@@ -183,12 +200,12 @@ QModelIndex DataSourceTableModel::dataSourceIndex(unsigned int ds_id)
 
 void DataSourceTableModel::updateDataSource(unsigned int ds_id)
 {
-    loginf << "DataSourceTableModel: updateDataSource: ds_id " << ds_id;
+    loginf << "ds_id " << ds_id;
 
     auto ds_ids = ds_man_.getAllDsIDs();
 
     auto itr = std::find(ds_ids.begin(), ds_ids.end(), ds_id);
-    assert (itr != ds_ids.end());
+    traced_assert(itr != ds_ids.end());
 
     unsigned int row = std::distance(ds_ids.begin(), itr);
 

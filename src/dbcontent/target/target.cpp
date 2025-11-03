@@ -1,6 +1,25 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "target.h"
+#include <exception>
 #include "stringconv.h"
 #include "timeconv.h"
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -246,25 +265,25 @@ void Target::modeCMinMax(float min, float max)
 
 float Target::modeCMin() const
 {
-    assert (info_.contains(KEY_MODE_C_MIN));
+    traced_assert(info_.contains(KEY_MODE_C_MIN));
     return info_.at(KEY_MODE_C_MIN);
 }
 
 std::string Target::modeCMinStr() const
 {
-    assert (info_.contains(KEY_MODE_C_MIN));
+    traced_assert(info_.contains(KEY_MODE_C_MIN));
     return to_string(info_.at(KEY_MODE_C_MIN));
 }
 
 float Target::modeCMax() const
 {
-    assert (info_.contains(KEY_MODE_C_MAX));
+    traced_assert(info_.contains(KEY_MODE_C_MAX));
     return info_.at(KEY_MODE_C_MAX);
 }
 
 std::string Target::modeCMaxStr() const
 {
-    assert (info_.contains(KEY_MODE_C_MAX));
+    traced_assert(info_.contains(KEY_MODE_C_MAX));
     return to_string(info_.at(KEY_MODE_C_MAX));
 }
 
@@ -320,8 +339,8 @@ bool Target::hasPositionBounds() const
 
 void Target::setPositionBounds (double latitude_min, double latitude_max, double longitude_min, double longitude_max)
 {
-    assert (latitude_min <= latitude_max);
-    assert (latitude_min <= latitude_max);
+    traced_assert(latitude_min <= latitude_max);
+    traced_assert(latitude_min <= latitude_max);
 
     info_[KEY_LATITUDE_MIN] = latitude_min;
     info_[KEY_LATITUDE_MAX] = latitude_max;
@@ -331,22 +350,22 @@ void Target::setPositionBounds (double latitude_min, double latitude_max, double
 
 double Target::latitudeMin() const
 {
-    assert (info_.count(KEY_LATITUDE_MIN));
+    traced_assert(info_.count(KEY_LATITUDE_MIN));
     return info_.at(KEY_LATITUDE_MIN);
 }
 double Target::latitudeMax() const
 {
-    assert (info_.count(KEY_LATITUDE_MAX));
+    traced_assert(info_.count(KEY_LATITUDE_MAX));
     return info_.at(KEY_LATITUDE_MAX);
 }
 double Target::longitudeMin() const
 {
-    assert (info_.count(KEY_LONGITUDE_MIN));
+    traced_assert(info_.count(KEY_LONGITUDE_MIN));
     return info_.at(KEY_LONGITUDE_MIN);
 }
 double Target::longitudeMax() const
 {
-    assert (info_.count(KEY_LONGITUDE_MAX));
+    traced_assert(info_.count(KEY_LONGITUDE_MAX));
     return info_.at(KEY_LONGITUDE_MAX);
 }
 
@@ -357,13 +376,13 @@ void Target::adsbCount(unsigned int count)
 
 unsigned int Target::adsbCount() const
 {
-    logdbg << "Target: adsbCount";
+    logdbg;
 
     unsigned int count = 0;
 
     if (info_.count(KEY_ADSB_INFO) && info_.at(KEY_ADSB_INFO).count(KEY_ADSB_COUNT))
     {
-        assert (info_.at(KEY_ADSB_INFO).at(KEY_ADSB_COUNT).is_number());
+        traced_assert(info_.at(KEY_ADSB_INFO).at(KEY_ADSB_COUNT).is_number());
         count = info_.at(KEY_ADSB_INFO).at(KEY_ADSB_COUNT);
     }
 
@@ -372,7 +391,7 @@ unsigned int Target::adsbCount() const
 
 void Target::adsbMOPSCount(std::map<std::string, unsigned int> adsb_mops_count)
 {
-    logdbg << "Target: adsbMOPSCount";
+    logdbg;
 
     info_[KEY_ADSB_INFO][KEY_ADSB_MOPS] = adsb_mops_count;
 }
@@ -385,15 +404,20 @@ bool Target::hasADSBMOPS() const
 
 std::set<unsigned int> Target::adsbMopsList() const
 {
-    logdbg << "Target: adsbMopsList";
+    logdbg;
 
     std::set<unsigned int> ret;
 
     if (hasADSBMOPS())
     {
-        for (const auto& mops_it : info_.at(KEY_ADSB_INFO).at(KEY_ADSB_MOPS).get<
-                                   std::map<std::string, nlohmann::json>>())
+        for (const auto& mops_it : info_.at(KEY_ADSB_INFO).at(KEY_ADSB_MOPS).get<std::map<std::string, nlohmann::json>>())
+        {
+            if (mops_it.first == "NULL") // set in ReconstructorTarget::addTargetReportInternal
+                continue;
+
+            logdbg << "key '" << mops_it.first << "' value '" <<  mops_it.second.dump(-1) << "'";
             ret.insert(std::stoul(mops_it.first));
+        }
     }
 
     return ret;
@@ -401,9 +425,9 @@ std::set<unsigned int> Target::adsbMopsList() const
 
 std::string Target::adsbMopsStr() const
 {
-    logdbg << "Target: adsbMopsStr";
+    logdbg;
 
-    assert (hasADSBMOPS());
+    traced_assert(hasADSBMOPS());
 
     unsigned int count = 0;
 

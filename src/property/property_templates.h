@@ -346,7 +346,7 @@ inline boost::optional<double> string2Double(PropertyDataType dtype, const std::
 template <typename T>
 inline size_t suggestedNumColorSteps(const T& vmin, const T& vmax, size_t steps_default)
 {
-    assert (vmax >= vmin);
+    traced_assert(vmax >= vmin);
 
     if (vmin == vmax)
         return 1;

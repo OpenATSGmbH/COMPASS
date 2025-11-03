@@ -282,7 +282,7 @@ public:
      */
     const HistogramBinT<T>& getBin(size_t idx) const
     {
-        assert (idx < bins_.size());
+        traced_assert(idx < bins_.size());
         return bins_.at(idx);
     }
 
@@ -386,7 +386,7 @@ public:
         int bin_idx = findBin(v);
 
         if (bin_idx < 0)
-            logerr << "HistogramT: add: no bin for value '" << v << "'";
+            logerr << "no bin for value '" << v << "'";
 
         increment(bin_idx, count);
 
@@ -553,7 +553,7 @@ private:
         }
 
         //should never happen
-        assert(n > 0);
+        traced_assert(n > 0);
 
         bins_.resize(n);
         ranges_.resize(n);

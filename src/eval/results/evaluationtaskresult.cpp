@@ -77,7 +77,7 @@ void EvaluationTaskResult::setTargets(const TargetMap& targets)
  */
 void EvaluationTaskResult::injectCalculator(EvaluationCalculator* calculator)
 {
-    assert(calculator);
+    traced_assert(calculator);
     calculator_.reset(calculator);
 }
 
@@ -145,7 +145,7 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
     if (state == UpdateState::FullUpdateNeeded ||
         state == UpdateState::Locked)
     {
-        loginf << "EvaluationTaskResult: update_impl: Running full update";
+        loginf << "running full update";
         res = calculator_->evaluate(true);
     }
     else if (state == UpdateState::PartialUpdateNeeded)
@@ -155,12 +155,12 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
 
         if (needs_recompute)
         {
-            loginf << "EvaluationTaskResult: update_impl: Running initial full update";
+            loginf << "running initial full update";
             res = calculator_->evaluate(true);
         }
         else
         {
-            loginf << "EvaluationTaskResult: update_impl: Running partial update";
+            loginf << "running partial update";
             calculator_->updateResultsToChanges();
         }
     }
@@ -183,16 +183,34 @@ Result EvaluationTaskResult::canUpdate_impl(UpdateState state) const
     return Result::succeeded();
 }
 
+/**
+ */
+Result EvaluationTaskResult::updateContents_impl(const std::vector<ContentID>& contents)
+{
+    //first update eval targets from db targets
+    updateTargets();
+
+    //run base's default contents update
+    auto r = TaskResult::updateContents_impl(contents);
+    if (!r.ok())
+        return r;
+
+    //update result content in db (eval targets changed)
+    syncContent();
+
+    return Result::succeeded();
+}
+
 namespace helpers
 {
     /**
      */
     std::pair<unsigned int, Evaluation::RequirementResultID> singleResultContentProperties(const ResultReport::SectionContent* content)
     {
-        assert(content);
+        traced_assert(content);
 
         auto info = EvaluationRequirementResult::Single::singleContentProperties(*content);
-        assert(info.has_value());
+        traced_assert(info.has_value());
 
         return std::make_pair(info->first, info->second);
     }
@@ -201,10 +219,10 @@ namespace helpers
      */
     Evaluation::RequirementResultID joinedResultContentProperties(const ResultReport::SectionContent* content)
     {
-        assert(content);
+        traced_assert(content);
 
         auto info = EvaluationRequirementResult::Joined::joinedContentProperties(*content);
-        assert(info.has_value());
+        traced_assert(info.has_value());
 
         return info.value();
     }
@@ -216,7 +234,7 @@ namespace helpers
     {
         auto info = singleResultContentProperties(content);
 
-        loginf << "obtainResult: Obtaining result for" 
+        loginf << "obtaining result for" 
                << " utn " << info.first 
                << " layer " << info.second.sec_layer_name
                << " group " << info.second.req_group_name
@@ -242,7 +260,7 @@ namespace helpers
     {
         auto info = joinedResultContentProperties(content);
 
-        loginf << "obtainResult: Obtaining result for" 
+        loginf << "obtaining result for" 
                << " layer " << info.sec_layer_name
                << " group " << info.req_group_name
                << " req " << info.req_name;
@@ -264,10 +282,10 @@ namespace helpers
      */
     unsigned int utnFromTable(const ResultReport::SectionContentTable* table, unsigned int row)
     {
-        assert(table);
-        assert(table->hasColumn("UTN"));
+        traced_assert(table);
+        traced_assert(table->hasColumn("UTN"));
         const auto& d = table->getData(row, "UTN");
-        assert (d.is_number_unsigned());
+        traced_assert(d.is_number_unsigned());
 
         unsigned int utn = d;
 
@@ -290,14 +308,14 @@ bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentF
             auto result = helpers::obtainSingleResult(figure, calculator_.get());
             if (!result)
             {
-                logerr << "EvaluationTaskResult: loadOnDemandFigure_impl: result could not be obtained";
+                logerr << "result could not be obtained";
                 return false;
             }
 
             //add overview to figure
             if (!result->addOverviewToFigure(*figure))
             {
-                logerr << "EvaluationTaskResult: loadOnDemandFigure_impl: error configuring content";
+                logerr << "error configuring content";
                 return false;
             }
 
@@ -306,7 +324,7 @@ bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentF
     }
     catch(...)
     {
-        logerr << "EvaluationTaskResult: loadOnDemandFigure_impl: critical error during load";
+        logerr << "critical error during load";
     }
     
     return false;
@@ -329,14 +347,14 @@ bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTa
             auto result = helpers::obtainSingleResult(table, calculator_.get());
             if (!result)
             {
-                logerr << "EvaluationTaskResult: loadOnDemandTable_impl: result could not be obtained";
+                logerr << "result could not be obtained";
                 return false;
             }
 
             //add table details
             if (!result->addDetailsToTable(*table))
             {
-                logerr << "EvaluationTaskResult: loadOnDemandTable_impl: error configuring content";
+                logerr << "error configuring content";
                 return false;
             }
 
@@ -355,7 +373,7 @@ bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTa
     }
     catch(...)
     {
-        logerr << "EvaluationTaskResult: loadOnDemandTable_impl: critical error during load";
+        logerr << "critical error during load";
     }
     
     return false;
@@ -379,14 +397,14 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
             auto result = helpers::obtainSingleResult(&content, calculator_.get());
             if (!result)
             {
-                logerr << "EvaluationTaskResult: loadOnDemandViewable_impl: result could not be obtained";
+                logerr << "result could not be obtained";
                 return false;
             }
 
             //configure detail highlight viewable 
             if (!result->addHighlightToViewable(viewable, index))
             {
-                logerr << "EvaluationTaskResult: loadOnDemandViewable_impl: error configuring content";
+                logerr << "error configuring content";
                 return false;
             }
 
@@ -395,7 +413,7 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
         else if (content.name() == EvaluationData::TargetsTableName)
         {
             const ResultReport::SectionContentTable* table = dynamic_cast<const ResultReport::SectionContentTable*>(&content);
-            assert(table);
+            traced_assert(table);
 
             //obtain utn
             auto utn = helpers::utnFromTable(table, row);
@@ -418,19 +436,19 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
                                                   ResultReport::SectionContentTable* table, 
                                                   unsigned int row)
 {
-    logdbg << "EvaluationTaskResult: customContextMenu_impl";
+    logdbg;
 
     if (table->name() == EvaluationRequirementResult::Single::TRDetailsTableName)
     {
         //target report details table in single result section
     }
-    else if (table->name() == EvaluationRequirementResult::Joined::TargetsTableName)
+    else if (table->name() == EvaluationRequirementResult::Joined::SectorTargetsTableName)
     {
         //target table in joined result section
         auto info = helpers::joinedResultContentProperties(table);
         auto utn  = helpers::utnFromTable(table, row);
         
-        loginf << "EvaluationTaskResult: customContextMenu_impl: Context menu requested for utn " << utn;
+        loginf << "context menu requested for utn " << utn;
 
         if (calculator_ && !isLocked())
         {
@@ -463,7 +481,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
         //evaluation target table
         auto utn  = helpers::utnFromTable(table, row);
 
-        loginf << "EvaluationTaskResult: customContextMenu_impl: Context menu requested for utn " << utn;
+        loginf << "context menu requested for utn " << utn;
 
         if (calculator_ && !isLocked())
         {
@@ -502,7 +520,7 @@ bool EvaluationTaskResult::customMenu_impl(QMenu& menu,
         if (content->name() == EvaluationData::TargetsTableName)
         {
             const ResultReport::SectionContentTable* table = dynamic_cast<const ResultReport::SectionContentTable*>(content);
-            assert(table);
+            traced_assert(table);
 
             createInterestMenu(menu);
 
@@ -521,7 +539,7 @@ void EvaluationTaskResult::postprocessTable_impl(ResultReport::SectionContentTab
     {
         //target report details table in single result section
     }
-    else if (table->name() == EvaluationRequirementResult::Joined::TargetsTableName)
+    else if (table->name() == EvaluationRequirementResult::Joined::SectorTargetsTableName)
     {
         //target table in joined result section
     }
@@ -607,7 +625,7 @@ void EvaluationTaskResult::showSurroundingData(unsigned int utn) const
 {
     if (targets_.count(utn) == 0)
     {
-        logerr << "EvaluationTaskResult: showSurroundingData: utn " << utn << " not found in targets";
+        logerr << "utn " << utn << " not found in targets";
         return;
     }
 
@@ -656,22 +674,22 @@ bool EvaluationTaskResult::interestFactorEnabled(const Evaluation::RequirementSu
  */
 void EvaluationTaskResult::setInterestFactorEnabled(const Evaluation::RequirementSumResultID& id, bool ok)
 {
-    assert(calculator_);
+    traced_assert(calculator_);
 
     interest_factor_enabled_.at(id.req_name) = ok;
 
-    updateContents({ std::make_pair(EvaluationData::SectionID, EvaluationData::TargetsTableName) });
+    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
  */
 void EvaluationTaskResult::setInterestFactorEnabled(const std::string& req_name, bool ok)
 {
-    assert(calculator_);
+    traced_assert(calculator_);
 
     interest_factor_enabled_.at(req_name) = ok;
 
-    updateContents({ std::make_pair(EvaluationData::SectionID, EvaluationData::TargetsTableName) });
+    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -681,7 +699,7 @@ void EvaluationTaskResult::setInterestFactorsEnabled(bool ok)
     for (auto& it : interest_factor_enabled_)
         it.second = ok;
 
-    updateContents({ std::make_pair(EvaluationData::SectionID, EvaluationData::TargetsTableName) });
+    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -690,7 +708,7 @@ EvaluationTarget::InterestMap EvaluationTaskResult::activeInterestFactors(unsign
 {
     EvaluationTarget::InterestMap interest_factors;
 
-    assert(targets_.count(utn));
+    traced_assert(targets_.count(utn));
 
     const auto& target = targets_.at(utn);
 
@@ -824,11 +842,11 @@ void EvaluationTaskResult::jumpToRequirement(const Evaluation::RequirementSumRes
 
     std::string sum_id = EvalSectionID::requirementResultSumID(id);
 
-    loginf << "EvaluationTaskResult: jumpToRequirement: sum id: " << sum_id;
+    loginf << "sum id: " << sum_id;
 
     std::string utn_id = EvalSectionID::createForTargetResult(utn, id);
 
-    loginf << "EvaluationTaskResult: jumpToRequirement: utn id: " << utn_id;
+    loginf << "utn id: " << utn_id;
 
     report_->setCurrentSection(utn_id, show_image);
 }
@@ -842,8 +860,7 @@ void EvaluationTaskResult::informUpdateEvalResult(int update_type)
     TaskResult::ContentID content_id;
     if (update_type == task::ContentUpdateNeeded)
     {
-        content_id = TaskResult::ContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName);
-        updateTargets();
+        content_id = TaskResult::ContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table);
     }
 
     //inform update

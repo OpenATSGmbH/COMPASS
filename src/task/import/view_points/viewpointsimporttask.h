@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWPOINTSIMPORTTASK_H
-#define VIEWPOINTSIMPORTTASK_H
+#pragma once
 
 #include "configurable.h"
 #include "task.h"
@@ -33,9 +32,8 @@ class ViewPointsImportTask : public Task, public Configurable
 {
     Q_OBJECT
 
-public slots:
-    void dialogImportSlot();
-    void dialogCancelSlot();
+// public slots:
+//     void dialogImportSlot();
 
 public:
     ViewPointsImportTask(const std::string& class_id, const std::string& instance_id,
@@ -45,7 +43,7 @@ public:
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
 
-    ViewPointsImportTaskDialog* dialog();
+    void showDialog();
 
     void importFilename(const std::string& filename);
     const std::string& importFilename() { return current_filename_; }
@@ -66,12 +64,8 @@ protected:
 
     std::string current_error_;
 
-    std::unique_ptr<ViewPointsImportTaskDialog> dialog_;
-
     virtual void checkSubConfigurables() override {}
 
     void parseCurrentFile ();
     void checkParsedData (); // throws exceptions for errors
 };
-
-#endif // VIEWPOINTSIMPORTTASK_H

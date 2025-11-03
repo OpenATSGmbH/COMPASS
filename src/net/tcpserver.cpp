@@ -1,6 +1,24 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "tcpserver.h"
 #include "logger.h"
 #include "stringconv.h"
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -8,7 +26,7 @@ using namespace Utils;
 TCPSession::TCPSession(boost::asio::ip::tcp::socket socket)
     : socket_(std::move(socket))
 {
-    loginf << "TCPSession: ctor";
+    loginf;
 }
 
 void TCPSession::start()
@@ -26,7 +44,7 @@ std::vector<std::string> TCPSession::getStrData()
 {
     boost::mutex::scoped_lock lock(str_data_mutex_);
 
-    assert (str_data_.size());
+    traced_assert(str_data_.size());
     return move(str_data_);
 }
 
@@ -47,7 +65,7 @@ void TCPSession::sendStrData(const std::string& str)
         data_.reset(new char [data_size_]);
     }
 
-    assert (data_);
+    traced_assert(data_);
     str.copy(data_.get(), str.size());
     do_write(str.size());
 }
@@ -59,13 +77,13 @@ void TCPSession::do_read()
     if (!data_)
         data_.reset(new char [data_size_]);
 
-    assert (data_);
+    traced_assert(data_);
     socket_.async_read_some(boost::asio::buffer(data_.get(), data_size_),
                             [this, self](boost::system::error_code ec, std::size_t length)
     {
         if (!ec)
         {
-            assert (data_);
+            traced_assert(data_);
 
             std::string tmp;
             tmp.assign(data_.get(), length);
@@ -84,13 +102,13 @@ void TCPSession::do_read()
 
 void TCPSession::do_write(std::size_t length)
 {
-    assert (data_);
+    traced_assert(data_);
 
     auto self(shared_from_this());
     boost::asio::async_write(socket_, boost::asio::buffer(data_.get(), length),
                              [this, self](boost::system::error_code ec, std::size_t /*length*/)
     {
-        assert (!ec);
+        traced_assert(!ec);
     });
 
     //do_read();
@@ -108,7 +126,7 @@ TCPServer::~TCPServer()
 
 void TCPServer::start()
 {
-    assert (!started_);
+    traced_assert(!started_);
 
     started_ = true;
 
@@ -140,18 +158,18 @@ bool TCPServer::hasSession()
 
 bool TCPServer::hasStrData()
 {
-    assert (session_);
+    traced_assert(session_);
     return session_->hasStrData();
 }
 
 std::vector<std::string> TCPServer::getStrData()
 {
-    assert (session_);
+    traced_assert(session_);
     return session_->getStrData();
 }
 
 void TCPServer::sendStrData(const std::string& str)
 {
-    assert (session_);
+    traced_assert(session_);
     session_->sendStrData(str);
 }

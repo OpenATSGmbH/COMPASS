@@ -17,6 +17,7 @@
 
 #include "eval/requirement/position/radarazimuth.h"
 #include "eval/results/position/radarazimuth.h"
+#include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 #include "util/number.h"
@@ -35,9 +36,10 @@ namespace EvaluationRequirement
 {
 
 PositionRadarAzimuth::PositionRadarAzimuth(
-        const std::string& name, const std::string& short_name, const std::string& group_name,
+        const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
         EvaluationCalculator& calculator, double threshold_value)
-    : Base(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN_OR_EQUAL, calculator)
+    : PositionBase(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN_OR_EQUAL, 
+        ref_min_accuracy, calculator)
 {
 }
 
@@ -45,10 +47,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
         const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
         const SectorLayer& sector_layer)
 {
-    logdbg << "EvaluationRequirementPositionRadarAzimuth '" << name_ << "': evaluate: utn " << target_data.utn_
+    logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " threshold_value " << threshold();
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.settings().max_ref_time_diff_);
+    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
@@ -56,6 +58,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
     unsigned int num_no_ref {0};
     unsigned int num_pos_outside {0};
     unsigned int num_pos_inside {0};
+    unsigned int num_ref_inaccurate {0};
     unsigned int num_pos_calc_errors {0};
     unsigned int num_comp_failed {0};
     unsigned int num_comp_passed {0};
@@ -113,7 +116,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
     ProjectionManager& proj_man = ProjectionManager::instance();
 
     Projection& projection = proj_man.currentProjection();
-    assert (projection.coordinateSystemsAdded());
+    traced_assert(projection.coordinateSystemsAdded());
 
     double ref_slant_range_m, ref_ground_range_m, ref_alt_m, ref_azm_rad,
         tst_slant_range_m, tst_ground_range_m, tst_alt_m, tst_azm_rad;
@@ -191,6 +194,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
         }
         ++num_pos_inside;
 
+        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
+
+        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
+        {
+            if (!skip_no_data_details)
+                addDetail(timestamp, tst_pos,
+                            ref_pos, // ref_pos
+                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_comp_passed, num_comp_failed, 
+                            "Inaccurate reference position");
+
+            ++num_ref_inaccurate;
+            continue;            
+        }
+
         ok = projection.wgs842PolarHorizontal(tst_ds_id,
                                               ref_pos->latitude_, ref_pos->longitude_, 0,
                                               ref_azm_rad, ref_slant_range_m, ref_ground_range_m,
@@ -259,27 +278,28 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                     comment);
     }
 
-    //        logdbg << "EvaluationRequirementPositionRadarAzimuth '" << name_ << "': evaluate: utn " << target_data.utn_
+    //        logdbg << "'" << name_ << "': utn " << target_data.utn_
     //               << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
     //               << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
     //               << " num_pos_ok " << num_pos_ok << " num_pos_nok " << num_pos_nok
     //               << " num_distances " << num_distances;
 
-    assert (num_no_ref <= num_pos);
+    traced_assert(num_no_ref <= num_pos);
 
     if (num_pos - num_no_ref != num_pos_inside + num_pos_outside)
-        loginf << "EvaluationRequirementPositionRadarAzimuth '" << name_ << "': evaluate: utn " << target_data.utn_
+        loginf << "'" << name_ << "': utn " << target_data.utn_
                << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
                << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
                << " num_pos_calc_errors " << num_pos_calc_errors
                << " num_distances " << num_distances;
 
-    assert (num_pos - num_no_ref == num_pos_inside + num_pos_outside);
-    assert (num_distances == num_comp_failed + num_comp_passed);
+    traced_assert(num_pos - num_no_ref == num_pos_inside + num_pos_outside);
+    traced_assert(num_distances == num_comp_failed + num_comp_passed);
 
     return make_shared<EvaluationRequirementResult::SinglePositionRadarAzimuth>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_comp_passed, num_comp_failed);
+                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate,
+                num_comp_passed, num_comp_failed);
 }
 
 }

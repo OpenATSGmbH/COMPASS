@@ -10,11 +10,11 @@ Therefore, 95\% is equivalent to two standard deviations ($\sigma$). \\
 
 Please note that currently only the Cartesian variables are used, and are assumed to be valid for the target reports position (and north direction), not for a system center. \\
 
-The usage WGS-84 variables is included, an calculated to Cartesian values on the position of the target report.
+The usage WGS-84 variables is included, and calculated to Cartesian values on the position of the target report.
 
 \subsection{ADS-B}
 
-The accuracy values where taken from \href{https://mode-s.org/decode/adsb/uncertainty.html}{The 1090MHz Riddle} online book.
+The accuracy values were taken from \href{https://mode-s.org/decode/adsb/uncertainty.html}{The 1090MHz Riddle} online book.
 
 \begin{center}
  \begin{table}[H]
@@ -58,7 +58,7 @@ The accuracy values where taken from \href{https://mode-s.org/decode/adsb/uncert
 \end{itemize}
 \ \\
 
-For the NUCp values, the taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NUCp value 0, no error ellipse is displayed, since the accuracy value is unkown.
+For the NUCp values, the taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NUCp value 0, no error ellipse is displayed, since the accuracy value is unknown.
 
 \subsubsection{V1 \& V2 Transponders}
 
@@ -91,11 +91,11 @@ For the NUCp values, the taken for display are listed in the $\sigma$ column, re
 \end{itemize}
 \ \\
 
-For the NACp values, the taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NACp value 0, no error ellipse is displayed, since the accuracy value is unkown.
+For the NACp values, the taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NACp value 0, no error ellipse is displayed, since the accuracy value is unknown.
 
 \subsection{MLAT}
 
-The description of the accuracy values where taken from \textit{EUROCONTROL Specification for Surveillance Data Exchange ASTERIX Part 14 Category 020 Multilateration Target Reports Appendix A: Reserved Expansion Field} (EUROCONTROL-SPEC-0149-14A) document.
+The description of the accuracy values were taken from \textit{EUROCONTROL Specification for Surveillance Data Exchange ASTERIX Part 14 Category 020 Multilateration Target Reports Appendix A: Reserved Expansion Field} (EUROCONTROL-SPEC-0149-14A) document.
 
 \begin{center}
  \begin{table}[H]
@@ -115,9 +115,9 @@ The description of the accuracy values where taken from \textit{EUROCONTROL Spec
 
 \begin{itemize}
 \item SDC.SDC values: Standard Deviation of Position of the target expressed in Cartesian coordinates, in meters
-\item SDC.COV-XY: XY Covariance Component, the unit is listed as in meters, but should be in $m^2$ and is asssumed as such
+\item SDC.COV-XY: XY Covariance Component, the unit is listed as in meters, but should be in $m^2$ and is assumed as such
 \item SDW.SDW values: Standard Deviation of Position of the target expressed in WGS-84, in degrees
-\item SDW.COV-WGS: Lat/Long Covariance Component, the unit is listed as in degrees, but should be in $deg^2$ and is asssumed as such
+\item SDW.COV-WGS: Lat/Long Covariance Component, the unit is listed as in degrees, but should be in $deg^2$ and is assumed as such
 \end{itemize}
 \ \\
 
@@ -143,7 +143,7 @@ Calculated as the Tracker APW values.
 
 \subsection{Tracker}
 
-The description of the accuracy values where taken from \textit{EUROCONTROL Specification for Surveillance Data Exchange ASTERIX Part 9 Category 062 SDPS Track Messages} (EUROCONTROL-SPEC-0149-9) document.
+The description of the accuracy values were taken from \textit{EUROCONTROL Specification for Surveillance Data Exchange ASTERIX Part 9 Category 062 SDPS Track Messages} (EUROCONTROL-SPEC-0149-9) document.
 
 \begin{center}
  \begin{table}[H]
@@ -162,7 +162,7 @@ The description of the accuracy values where taken from \textit{EUROCONTROL Spec
 
 \begin{itemize}
 \item APC.APC values: Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in Cartesian co-ordinates, in meters
-\item COV.COV: XY Covariance Component, the unit is listed as in meters, but should be in $m^2$ and is asssumed as such
+\item COV.COV: XY Covariance Component, the unit is listed as in meters, but should be in $m^2$ and is assumed as such
 \item APW.APW values: Standard Deviation of Position of the target expressed in WGS-84, in degrees
 \end{itemize}
 \ \\

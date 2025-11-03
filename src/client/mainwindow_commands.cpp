@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "mainwindow_commands.h"
 #include "mainwindow.h"
 #include "compass.h"
@@ -213,7 +230,7 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     size_t num_sectors = 0;
 
-    assert (COMPASS::instance().evaluationManager().sectorsLoaded());
+    traced_assert(COMPASS::instance().evaluationManager().sectorsLoaded());
     const auto& sector_layers = COMPASS::instance().evaluationManager().sectorsLayers();
 
     for (const auto& sl : sector_layers)
@@ -393,7 +410,7 @@ void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& va
 RTCommandLoadData::RTCommandLoadData()
     : rtcommand::RTCommand()
 {
-    condition.setSignal("compass.dbcontentmanager.loadingDoneSignal", -1); // think about max duration
+    condition.setSignal("mainwindow.dataLoaded", -1); // think about max duration
 }
 
 bool RTCommandLoadData::run_impl()
@@ -411,7 +428,7 @@ bool RTCommandLoadData::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     main_window->loadButtonSlot();
 
@@ -448,7 +465,7 @@ bool RTCommandExportViewPointsReport::run_impl()
     }
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
-    assert (main_window);
+    traced_assert(main_window);
 
     //main_window->showViewPointsTab();
 
@@ -537,9 +554,9 @@ void RTCommandExportReport::collectOptions_impl(OptionsDescription& options,
                                                 PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("report,r", po::value<std::string>()->required(), "report name, e.g. ’EUROCAE ED-87E Evaluation'")
-        ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. ’/data/db2/'")
-        ("mode,m", po::value<std::string>()->required(), "export mode, e.g. ’PDF'");
+        ("report,r", po::value<std::string>()->required(), "report name, e.g. 'EUROCAE ED-87E Evaluation'")
+        ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. '/data/report2/'")
+        ("mode,m", po::value<std::string>()->required(), "export mode, i.e. 'JSON','Latex','PDF'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "report")
     ADD_RTCOMMAND_POS_OPTION(positional, "dir"   )

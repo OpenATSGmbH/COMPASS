@@ -1,8 +1,23 @@
-#ifndef DSTYPESELECTIONCOMBOBOX_H
-#define DSTYPESELECTIONCOMBOBOX_H
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
 
 #include "datasourcemanager.h"
-//#include "global.h"
 #include "logger.h"
 
 #include <QComboBox>
@@ -22,7 +37,7 @@ public slots:
         if (doing_update_)
             return;
 
-        loginf << "DSTypeSelectionComboBox: changed " << currentText().toStdString();
+        loginf << currentText().toStdString();
 
         ds_type_ = currentText().toStdString();
 
@@ -48,7 +63,7 @@ public:
     std::string type()
     {
         if (ds_type_.size())
-            assert (std::find(DataSourceManager::data_source_types_.begin(),
+            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
                               DataSourceManager::data_source_types_.end(), ds_type_)
                     != DataSourceManager::data_source_types_.end());
 
@@ -60,7 +75,7 @@ public:
         ds_type_ = type;
 
         if (ds_type_.size())
-            assert (std::find(DataSourceManager::data_source_types_.begin(),
+            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
                               DataSourceManager::data_source_types_.end(), ds_type_)
                     != DataSourceManager::data_source_types_.end());
 
@@ -76,7 +91,7 @@ protected:
         doing_update_ = true;
 
         if (ds_type_.size())
-            assert (std::find(DataSourceManager::data_source_types_.begin(),
+            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
                               DataSourceManager::data_source_types_.end(), ds_type_)
                     != DataSourceManager::data_source_types_.end());
 
@@ -86,5 +101,3 @@ protected:
     }
 
 };
-
-#endif // DSTYPESELECTIONCOMBOBOX_H

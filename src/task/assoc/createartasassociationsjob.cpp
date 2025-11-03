@@ -62,7 +62,7 @@ CreateARTASAssociationsJob::~CreateARTASAssociationsJob() {}
 
 void CreateARTASAssociationsJob::run_impl()
 {
-    logdbg << "CreateARTASAssociationsJob: run: start";
+    logdbg;
 
     started_ = true;
 
@@ -75,7 +75,7 @@ void CreateARTASAssociationsJob::run_impl()
 
     // clear previous associations
 
-    loginf << "CreateARTASAssociationsJob: run: clearing associations";
+    loginf << "clearing associations";
 
     emit statusSignal("Clearing Previous ARTAS Target Report Usage");
     removePreviousAssociations();
@@ -118,7 +118,7 @@ void CreateARTASAssociationsJob::run_impl()
             boost::posix_time::time_duration diff = stop_time - start_time;
             load_time = diff.total_milliseconds() / 1000.0;
 
-            loginf << "CreateARTASAssociationsJob: run: done ("
+            loginf << "done ("
                    << String::doubleToStringPrecision(load_time, 2) << " s).";
             done_ = true;
 
@@ -140,7 +140,7 @@ void CreateARTASAssociationsJob::run_impl()
     boost::posix_time::time_duration diff = stop_time - start_time;
     load_time = diff.total_milliseconds() / 1000.0;
 
-    loginf << "CreateARTASAssociationsJob: run: done ("
+    loginf << "done ("
            << String::doubleToStringPrecision(load_time, 2) << " s).";
 
     COMPASS::instance().logInfo("Create ARTAS Associations")
@@ -168,11 +168,11 @@ size_t CreateARTASAssociationsJob::missingHashesAtBeginning() const
 
 void CreateARTASAssociationsJob::createUniqueARTASTracks()
 {
-    loginf << "CreateARTASAssociationsJob: createUTNS";
+    loginf;
 
     if (!buffers_.count(tracker_dbcontent_name_))
     {
-        logwrn << "CreateARTASAssociationsJob: createUTNS: no tracker data found";
+        logwrn << "no tracker data found";
         return;
     }
 
@@ -181,19 +181,19 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
-    assert(buffer->has<unsigned int>(
+    traced_assert(buffer->has<unsigned int>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_num_).name()));
-    assert(buffer->has<bool>(
+    traced_assert(buffer->has<bool>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_begin_).name()));
-    assert(buffer->has<bool>(
+    traced_assert(buffer->has<bool>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_end_).name()));
-    assert(buffer->has<unsigned char>(
+    traced_assert(buffer->has<unsigned char>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_coasting_).name()));
-    assert(buffer->has<string>(dbcont_man.getVariable(tracker_dbcontent_name_, DBContent::var_cat062_tris_).name()));
+    traced_assert(buffer->has<string>(dbcont_man.getVariable(tracker_dbcontent_name_, DBContent::var_cat062_tris_).name()));
 
-    assert(buffer->has<unsigned long>(
+    traced_assert(buffer->has<unsigned long>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_rec_num_).name()));
-    assert(buffer->has<boost::posix_time::ptime>(
+    traced_assert(buffer->has<boost::posix_time::ptime>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_timestamp_).name()));
 
     NullableVector<unsigned int>& track_num_vec = buffer->get<unsigned int>(
@@ -252,7 +252,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
         else
             tri = "";
 
-        assert(!track_num_vec.isNull(cnt));
+        traced_assert(!track_num_vec.isNull(cnt));
         track_num = track_num_vec.get(cnt);
 
         track_begin_set = !track_begin_vec.isNull(cnt);
@@ -273,10 +273,10 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
         else
             track_coasting = false;
 
-        assert(!rec_num_vec.isNull(cnt));
+        traced_assert(!rec_num_vec.isNull(cnt));
         rec_num = rec_num_vec.get(cnt);
 
-        assert(!ts_vec.isNull(cnt));
+        traced_assert(!ts_vec.isNull(cnt));
         timestamp = ts_vec.get(cnt);
 
         // was loaded as sorted in time
@@ -287,7 +287,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
 
         if (track_begin_set && track_begin && current_track_mappings.count(track_num))
         {
-            logdbg << "CreateARTASAssociationsJob: createUTNS: finalizing track utn " << utn
+            logdbg << "finalizing track utn " << utn
                    << " track end is set";
 
             finish_previous_track = true;
@@ -298,7 +298,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
                 timestamp - current_tracks.at(current_track_mappings.at(track_num)).last_ts_ >
                 track_end_time)
         {
-            logdbg << "CreateARTASAssociationsJob: createUTNS: finalizing track utn "
+            logdbg << "finalizing track utn "
                    << current_track_mappings.at(track_num) << " since tod difference "
                    << timestamp - current_tracks.at(current_track_mappings.at(track_num)).last_ts_;
 
@@ -309,7 +309,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
         {
             // finalize old track
             utn = current_track_mappings.at(track_num);
-            assert(!finished_tracks_.count(utn));
+            traced_assert(!finished_tracks_.count(utn));
             finished_tracks_[utn] = current_tracks.at(utn);
             current_tracks.erase(utn);
             current_track_mappings.erase(track_num);
@@ -317,7 +317,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
 
         if (!current_track_mappings.count(track_num))  // new track where none existed
         {
-            logdbg << "CreateARTASAssociationsJob: createUTNS: new track utn " << utn_cnt
+            logdbg << "new track utn " << utn_cnt
                    << " track num " << track_num << " tod " << Time::toString(timestamp)
                    << " begin " << (track_begin_set ? to_string(track_begin) : " not set");
 
@@ -335,7 +335,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
         else
             utn = current_track_mappings.at(track_num);
 
-        assert(current_tracks.count(utn));
+        traced_assert(current_tracks.count(utn));
         UniqueARTASTrack& unique_track = current_tracks.at(utn);
         unique_track.last_ts_ = timestamp;
 
@@ -346,7 +346,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
 
         if (ignore_update)
         {
-            logdbg << "CreateARTASAssociationsJob: createUTNS: ignoring rec num " << rec_num;
+            logdbg << "ignoring rec num " << rec_num;
             // add empty tri so that at least track update is associated
             unique_track.rec_nums_tris_[rec_num] = make_pair("", timestamp);
             ++ignored_track_updates_cnt_;
@@ -356,11 +356,11 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
 
         if (track_end_set && track_end)
         {
-            logdbg << "CreateARTASAssociationsJob: createUTNS: finalizing track utn " << utn
+            logdbg << "finalizing track utn " << utn
                    << " since track end is set";
 
             // finalize old track
-            assert(!finished_tracks_.count(utn));
+            traced_assert(!finished_tracks_.count(utn));
             finished_tracks_[utn] = current_tracks.at(utn);
             current_tracks.erase(utn);
             current_track_mappings.erase(track_num);
@@ -370,20 +370,20 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
     // finish all and clean up
     for (auto& ut_it : current_tracks)
     {
-        assert(!finished_tracks_.count(ut_it.first));
+        traced_assert(!finished_tracks_.count(ut_it.first));
         finished_tracks_[ut_it.first] = ut_it.second;
     }
 
     current_tracks.clear();
     current_track_mappings.clear();
 
-    loginf << "CreateARTASAssociationsJob: createUTNS: found " << finished_tracks_.size()
+    loginf << "found " << finished_tracks_.size()
            << " finished tracks ";
 }
 
 void CreateARTASAssociationsJob::createARTASAssociations()
 {
-    loginf << "CreateARTASAssociationsJob: createARTASAssociations";
+    loginf;
 
     // set utns in tracker rec_nums
 
@@ -395,7 +395,7 @@ void CreateARTASAssociationsJob::createARTASAssociations()
 
 void CreateARTASAssociationsJob::saveAssociations()
 {
-    loginf << "CreateARTASAssociationsJob: saveAssociations";
+    loginf;
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
@@ -410,10 +410,10 @@ void CreateARTASAssociationsJob::saveAssociations()
     //std::map<unsigned long, std::vector<unsigned long>>& associations = cont_assoc_it.second;
     //cat062 rec_num -> <rec_num>
 
-    assert (buffers_.count(tracker_dbcontent_name_));
+    traced_assert(buffers_.count(tracker_dbcontent_name_));
 
-    assert (dbcontent_man.metaCanGetVariable(tracker_dbcontent_name_, DBContent::meta_var_rec_num_));
-    assert (dbcontent_man.canGetVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_));
+    traced_assert(dbcontent_man.metaCanGetVariable(tracker_dbcontent_name_, DBContent::meta_var_rec_num_));
+    traced_assert(dbcontent_man.canGetVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_));
 
     dbContent::Variable& rec_num_var = dbcontent_man.metaGetVariable(
                 tracker_dbcontent_name_, DBContent::meta_var_rec_num_);
@@ -424,8 +424,8 @@ void CreateARTASAssociationsJob::saveAssociations()
     string rec_num_var_name = rec_num_var.name();
     string tri_rec_num_var_name = tri_rec_num_var.name();
 
-    assert (buffers_.at(tracker_dbcontent_name_)->has<unsigned long>(rec_num_var_name));
-    assert (buffers_.at(tracker_dbcontent_name_)->has<json>(tri_rec_num_var_name));
+    traced_assert(buffers_.at(tracker_dbcontent_name_)->has<unsigned long>(rec_num_var_name));
+    traced_assert(buffers_.at(tracker_dbcontent_name_)->has<json>(tri_rec_num_var_name));
 
     NullableVector<unsigned long>& rec_num_vec =
             buffers_.at(tracker_dbcontent_name_)->get<unsigned long>(rec_num_var_name);
@@ -433,7 +433,7 @@ void CreateARTASAssociationsJob::saveAssociations()
 
     for (unsigned int cnt=0; cnt < buffers_.at(tracker_dbcontent_name_)->size(); ++cnt)
     {
-        assert (!rec_num_vec.isNull(cnt));
+        traced_assert(!rec_num_vec.isNull(cnt));
 
         rec_num = rec_num_vec.get(cnt);
 
@@ -460,7 +460,7 @@ void CreateARTASAssociationsJob::saveAssociations()
 
     association_counts_[tracker_dbcontent_name_] = {buffers_.at(tracker_dbcontent_name_)->size(), num_associated};
 
-    loginf << "CreateARTASAssociationsJob: saveAssociations: dcontent " << tracker_dbcontent_name_
+    loginf << "dcontent " << tracker_dbcontent_name_
            <<  " assoc " << num_associated << " not assoc " << num_not_associated;
 
     auto buffer = buffers_.at(tracker_dbcontent_name_);
@@ -486,7 +486,7 @@ void CreateARTASAssociationsJob::saveAssociations()
     // actually save data, ok since DB job
 
 
-    loginf << "CreateARTASAssociationsJob: saveAssociations: saving for " << tracker_dbcontent_name_;
+    loginf << "saving for " << tracker_dbcontent_name_;
 
     DBContent& dbcontent = dbcontent_man.dbContent(tracker_dbcontent_name_);
 
@@ -505,7 +505,7 @@ void CreateARTASAssociationsJob::saveAssociations()
         if (index_to > buffer->size() - 1)
             index_to = buffer->size() - 1;
 
-        loginf << "CreateARTASAssociationsJob: saveAssociations: step " << cnt << " steps " << steps << " from "
+        loginf << "step " << cnt << " steps " << steps << " from "
                << index_from << " to " << index_to;
 
         db_interface_.updateBuffer(dbcontent.dbTableName(), rec_num_col_name,
@@ -513,23 +513,23 @@ void CreateARTASAssociationsJob::saveAssociations()
 
     }
 
-    loginf << "CreateARTASAssociationsJob: saveAssociations: done";
+    loginf << "done";
 }
 
 void CreateARTASAssociationsJob::createSensorAssociations()
 {
-    loginf << "CreateARTASAssociationsJob: createSensorAssociations";
+    loginf;
     // for each rec_num + tri, find sensor hash + rec_num
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
-    for (auto& dbo_it : dbcont_man)
+    for (auto& dbcont_it : dbcont_man)
     {
-        if (dbo_it.first != tracker_dbcontent_name_ && dbo_it.second->hasData())
+        if (dbcont_it.first != tracker_dbcontent_name_ && dbcont_it.second->hasData())
         {
-            string status = "Creating " + dbo_it.first + " Hash List";
+            string status = "Creating " + dbcont_it.first + " Hash List";
             emit statusSignal(status.c_str());
-            createSensorHashes(*dbo_it.second);
+            createSensorHashes(*dbcont_it.second);
         }
     }
 
@@ -546,13 +546,13 @@ void CreateARTASAssociationsJob::createSensorAssociations()
     typedef multimap<string, pair<unsigned long, boost::posix_time::ptime>>::iterator HashIterator;
     pair<HashIterator, HashIterator> possible_hash_matches;
 
-    assert(!first_track_ts_.is_not_a_date_time());  // has to be set
+    traced_assert(!first_track_ts_.is_not_a_date_time());  // has to be set
 
     emit statusSignal("Creating Associations");
 
     for (auto& ut_it : finished_tracks_)  // utn -> UAT, for each unique target
     {
-        logdbg << "CreateARTASAssociationsJob: createSensorAssociations: utn " << ut_it.first;
+        logdbg << "utn " << ut_it.first;
 
         for (auto& assoc_it : ut_it.second.rec_nums_tris_)  // rec_num -> (tri, tod), for each TRIs compound string
         {
@@ -580,7 +580,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
 
                     if (match_found)
                     {
-                        logdbg << "CreateARTASAssociationsJob: createSensorAssociations: "
+                        logdbg << "start"
                                   "found duplicate hash '"
                                << tri
                                << "' in dbcont " << dbcont_man.dbContentWithId(Number::recNumGetDBContId(match.first))
@@ -649,7 +649,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
                 {
                     if (best_match_dubious)
                     {
-                        loginf << "CreateARTASAssociationsJob: createSensorAssociations: utn "
+                        loginf << "utn "
                                << ut_it.first << " match rec_num " << best_match_rec_num
                                << " is dubious because " << best_match_dubious_comment;
                         ++dubious_associations_cnt_;
@@ -663,7 +663,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
 
                     // add non-tracker rec_num to tracker src rec_nums
 
-                    assert (cat062_associations_.count(assoc_it.first));
+                    traced_assert(cat062_associations_.count(assoc_it.first));
 
                     cat062_associations_.at(assoc_it.first).push_back(best_match_rec_num);
 
@@ -671,17 +671,17 @@ void CreateARTASAssociationsJob::createSensorAssociations()
                 }
                 else
                 {
-                    logdbg << "CreateARTASAssociationsJob: createSensorAssociations: utn "
+                    logdbg << "utn "
                            << ut_it.first << " has missing hash '" << tri << "' at "
                            << Time::toString(tri_ts);
 
-                    // assert (tri_tod-first_track_tod_ >= 0);
+                    // traced_assert(tri_tod-first_track_tod_ >= 0);
 
                     if (isTimeAtBeginningOrEnd(tri_ts))
                         ++acceptable_missing_hashes_cnt_;
                     else
                     {
-                        loginf << "CreateARTASAssociationsJob: createSensorAssociations: utn "
+                        loginf << "utn "
                                << ut_it.first << " has missing hash '" << tri << "' at "
                                << Time::toString(tri_ts);
 
@@ -693,7 +693,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
         }
     }
 
-    loginf << "CreateARTASAssociationsJob: createSensorAssociations: done with "
+    loginf << "done with "
            << found_hashes_cnt_ << " found, " << acceptable_missing_hashes_cnt_
            << " missing at beginning, " << missing_hashes_cnt_ << " missing, "
            << found_hash_duplicates_cnt_ << " duplicates";
@@ -701,13 +701,13 @@ void CreateARTASAssociationsJob::createSensorAssociations()
 
 void CreateARTASAssociationsJob::removePreviousAssociations()
 {
-    loginf << "CreateARTASAssociationsJob: removePreviousAssociations";
+    loginf;
 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
     if (buffers_.count(tracker_dbcontent_name_))
     {
-        assert (dbcontent_man.canGetVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_));
+        traced_assert(dbcontent_man.canGetVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_));
 
         string tri_rec_num_var_name =
                 dbcontent_man.getVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_).name();
@@ -753,11 +753,11 @@ bool CreateARTASAssociationsJob::isTimeAtBeginningOrEnd(boost::posix_time::ptime
 
 void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
 {
-    loginf << "CreateARTASAssociationsJob: createSensorHashes: object " << object.name();
+    loginf << "object " << object.name();
 
     if (!buffers_.count(object.name()))
     {
-        logwrn << "CreateARTASAssociationsJob: createSensorHashes: no data found";
+        logwrn << "no data found";
         return;
     }
 
@@ -773,9 +773,9 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
     Variable& hash_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_);
     Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
 
-    assert(buffer->has<unsigned long>(rec_num_var.name()));
-    assert(buffer->has<string>(hash_var.name()));
-    assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
+    traced_assert(buffer->has<unsigned long>(rec_num_var.name()));
+    traced_assert(buffer->has<string>(hash_var.name()));
+    traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
 
     NullableVector<unsigned long>& rec_nums = buffer->get<unsigned long>(rec_num_var.name());
     NullableVector<string>& hashes = buffer->get<string>(hash_var.name());
@@ -783,17 +783,17 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
 
     for (size_t cnt = 0; cnt < buffer_size; ++cnt)
     {
-        assert(!rec_nums.isNull(cnt));
-        assert(!hashes.isNull(cnt));
+        traced_assert(!rec_nums.isNull(cnt));
+        traced_assert(!hashes.isNull(cnt));
 
         if (ts_vec.isNull(cnt))
         {
-            logwrn << "CreateARTASAssociationsJob: createSensorHashes: rec_num "
-                   << rec_nums.get(cnt) << " of dbo " << object.name() << " has no time, skipping";
+            logwrn << "rec_num "
+                   << rec_nums.get(cnt) << " of dbcont " << object.name() << " has no time, skipping";
             continue;
         }
 
-        assert(!ts_vec.isNull(cnt));
+        traced_assert(!ts_vec.isNull(cnt));
 
         // hash -> rec_num, tod
         // map <string, multimap<string, pair<int, float>>> sensor_hashes_;
@@ -809,7 +809,7 @@ std::map<std::string, std::pair<unsigned int, unsigned int> > CreateARTASAssocia
 
 void CreateARTASAssociationsJob::setSaveQuestionAnswer(bool value)
 {
-    loginf << "CreateARTASAssociationsJob: setSaveQuestionAnswer: value " << value;
+    loginf << "value " << value;
 
     save_question_answer_ = value;
     save_question_answered_ = true;

@@ -79,7 +79,7 @@ std::future<RTCommandRunner::Results> RTCommandRunner::runCommands(RTCommandChai
         }
         catch (const std::exception& e)
         {
-            logerr << "RTCommandRunner: runCommand: exception '" << e.what() << "'";
+            logerr << "exception '" << e.what() << "'";
             throw e;
         }
     };

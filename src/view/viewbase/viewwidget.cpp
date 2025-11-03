@@ -73,7 +73,7 @@ ViewWidget::~ViewWidget()
 {
     if (main_splitter_)
     {
-        assert(view_);
+        traced_assert(view_);
 
         QSettings settings("COMPASS", view_->instanceId().c_str());
         settings.setValue("mainSplitterSizes", main_splitter_->saveState());
@@ -85,7 +85,7 @@ ViewWidget::~ViewWidget()
  */
 void ViewWidget::createStandardLayout()
 {
-    assert(view_);
+    traced_assert(view_);
 
     //create main layout
     QVBoxLayout* main_layout = new QVBoxLayout;
@@ -240,11 +240,11 @@ void ViewWidget::init()
         throw std::runtime_error("ViewWidget: init: Called twice");
 
     //check if all relevant widgets have been constructed
-    assert(data_widget_);
-    assert(config_widget_);
-    assert(tool_widget_);
-    assert(state_widget_);
-    assert(info_widget_);
+    traced_assert(data_widget_);
+    traced_assert(config_widget_);
+    traced_assert(tool_widget_);
+    traced_assert(state_widget_);
+    traced_assert(info_widget_);
 
     //add screenshot button
     tool_widget_->addScreenshotButton();
@@ -371,7 +371,7 @@ void ViewWidget::setLowerWidget(QWidget* w)
  */
 void ViewWidget::toggleConfigWidget()
 {
-    assert(right_widget_);
+    traced_assert(right_widget_);
 
     bool vis = right_widget_->isVisible();
     right_widget_->setVisible(!vis);
@@ -558,7 +558,7 @@ void ViewWidget::updateComponents()
 */
 std::string ViewWidget::loadedMessage() const
 {
-    assert(isInit());
+    traced_assert(isInit());
 
     return loadedMessage_impl();
 }
@@ -588,7 +588,7 @@ nlohmann::json ViewWidget::viewInfoJSON() const
 */
 bool ViewWidget::isVariableSetLoaded() const
 {
-    assert(data_widget_);
+    traced_assert(data_widget_);
     return data_widget_->isVariableSetLoaded();
 }
 
@@ -596,7 +596,7 @@ bool ViewWidget::isVariableSetLoaded() const
 */
 QImage ViewWidget::renderContents()
 {
-    assert (data_widget_);  
+    traced_assert(data_widget_);  
     QImage data_img = data_widget_->renderData();
 
     QImage img(this->size(), QImage::Format_ARGB32);
@@ -617,7 +617,7 @@ QImage ViewWidget::renderContents()
  */
 boost::optional<QString> ViewWidget::uiGet(const QString& what) const
 {
-    assert(view_);
+    traced_assert(view_);
 
     std::string view_info = view_->viewInfoJSON().dump();
     return QString::fromStdString(view_info);
@@ -628,7 +628,7 @@ boost::optional<QString> ViewWidget::uiGet(const QString& what) const
  */
 nlohmann::json ViewWidget::uiGetJSON(const QString& what) const
 {
-    assert(view_);
+    traced_assert(view_);
     return view_->viewInfoJSON();
 }
 

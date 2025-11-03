@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "mode3afilter.h"
 #include "compass.h"
 #include "mode3afilterwidget.h"
@@ -26,14 +43,14 @@ Mode3AFilter::Mode3AFilter(const std::string& class_id, const std::string& insta
 
 Mode3AFilter::~Mode3AFilter() {}
 
-bool Mode3AFilter::filters(const std::string& dbo_type)
+bool Mode3AFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbo_type);
+    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcont_name);
 }
 
 std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "Mode3AFilter: getConditionString: dbo " << dbcontent_name << " active " << active_;
+    logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
     if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
         return "";
@@ -71,21 +88,21 @@ std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, 
         first = false;
     }
 
-    logdbg << "Mode3AFilter: getConditionString: here '" << ss.str() << "'";
+    logdbg << "here '" << ss.str() << "'";
 
     return ss.str();
 }
 
 void Mode3AFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
 {
-    logdbg << "Mode3AFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("Mode3AFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 void Mode3AFilter::checkSubConfigurables()
 {
-    logdbg << "Mode3AFilter: checkSubConfigurables";
+    logdbg;
 }
 
 DBFilterWidget* Mode3AFilter::createWidget()
@@ -102,9 +119,9 @@ void Mode3AFilter::reset()
 
 void Mode3AFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -113,12 +130,12 @@ void Mode3AFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void Mode3AFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Mode 3/A Codes Values"));
+    traced_assert(filter.contains("Mode 3/A Codes Values"));
     values_str_ = filter.at("Mode 3/A Codes Values");
 
     updateValuesFromStr(values_str_);
@@ -159,7 +176,7 @@ std::vector<unsigned int> Mode3AFilter::filterBuffer(const std::string& dbconten
     dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
                 DBContent::meta_var_m3a_.name()).getFor(dbcontent_name);
 
-    assert (buffer->has<unsigned int> (var.name()));
+    traced_assert(buffer->has<unsigned int> (var.name()));
 
     NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
 
@@ -200,7 +217,7 @@ bool Mode3AFilter::updateValuesFromStr(const std::string& values_str)
 
         if (!ok)
         {
-            logerr << "Mode3AFilter: updateUTNSFromStr: utn '" << tmp_str << "' not valid";
+            logerr << "utn '" << tmp_str << "' not valid";
             break;
         }
 

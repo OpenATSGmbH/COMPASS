@@ -33,10 +33,10 @@ namespace EvaluationRequirement
 DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of detection or miss (inverted probability)");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // ui
     update_interval_edit_ = new QLineEdit(QString::number(config().updateInterval()));
@@ -117,13 +117,23 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
     form_layout_->addRow("Hold for any target", hold_for_any_target_check_);
 
 
+    // ignore_primary_only
+    ignore_primary_only_check_ = new QCheckBox ();
+    ignore_primary_only_check_->setChecked(config().ignorePrimaryOnly());
+    ignore_primary_only_check_->setToolTip("Requirement result is ignored if target is primary only (has no"
+                                           " secondary attributes, also not in reference)");
+    connect(ignore_primary_only_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleIgnorePrimaryOnlySlot);
+
+    form_layout_->addRow("Ignore Primary Only", ignore_primary_only_check_);
+
     updateActive();
 }
 
 
 void DetectionConfigWidget::updateIntervalEditSlot(QString value)
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: updateIntervalEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -131,22 +141,22 @@ void DetectionConfigWidget::updateIntervalEditSlot(QString value)
     if (ok)
         config().updateInterval(val);
     else
-        loginf << "EvaluationRequirementDetectionConfigWidget: updateIntervalEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 // min
 void DetectionConfigWidget::toggleUseMinGapLengthSlot()
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: toggleUseMinGapLengthSlot";
+    loginf;
 
-    assert (use_min_gap_length_check_);
+    traced_assert(use_min_gap_length_check_);
     config().useMinGapLength(use_min_gap_length_check_->checkState() == Qt::Checked);
 
     updateActive();
 }
 void DetectionConfigWidget::minGapLengthEditSlot(QString value)
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: minGapLengthEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -154,22 +164,22 @@ void DetectionConfigWidget::minGapLengthEditSlot(QString value)
     if (ok)
         config().minGapLength(val);
     else
-        loginf << "EvaluationRequirementDetectionConfigWidget: minGapLengthEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 // max
 void DetectionConfigWidget::toggleUseMaxGapLengthSlot()
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: toggleUseMaxGapLengthSlot";
+    loginf;
 
-    assert (use_max_gap_length_check_);
+    traced_assert(use_max_gap_length_check_);
     config().useMaxGapLength(use_max_gap_length_check_->checkState() == Qt::Checked);
 
     updateActive();
 }
 void DetectionConfigWidget::maxGapLengthEditSlot(QString value)
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: maxGapLengthEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -177,15 +187,15 @@ void DetectionConfigWidget::maxGapLengthEditSlot(QString value)
     if (ok)
         config().maxGapLength(val);
     else
-        loginf << "EvaluationRequirementDetectionConfigWidget: maxGapLengthEditSlot: axvalid value";
+        loginf << "axvalid value";
 }
 
 // invert prob
 void DetectionConfigWidget::toggleInvertProbSlot()
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: toggleInvertProbSlot";
+    loginf;
 
-    assert (use_invert_prob_check_);
+    traced_assert(use_invert_prob_check_);
     config().invertProb(use_invert_prob_check_->checkState() == Qt::Checked);
 
     updateActive();
@@ -194,16 +204,16 @@ void DetectionConfigWidget::toggleInvertProbSlot()
 // miss tol
 void DetectionConfigWidget::toggleUseMissToleranceSlot()
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: toggleUseMissToleranceSlot";
+    loginf;
 
-    assert (use_miss_tolerance_check_);
+    traced_assert(use_miss_tolerance_check_);
     config().useMissTolerance(use_miss_tolerance_check_->checkState() == Qt::Checked);
 
     updateActive();
 }
 void DetectionConfigWidget::missToleranceEditSlot(QString value)
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: missToleranceEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -211,34 +221,43 @@ void DetectionConfigWidget::missToleranceEditSlot(QString value)
     if (ok)
         config().missTolerance(val);
     else
-        loginf << "EvaluationRequirementDetectionConfigWidget: missToleranceEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void DetectionConfigWidget::toggleHoldForAnyTargetSlot()
 {
-    loginf << "EvaluationRequirementDetectionConfigWidget: toggleHoldForAnyTargetSlot";
+    loginf;
 
-    assert (hold_for_any_target_check_);
+    traced_assert(hold_for_any_target_check_);
     config().holdForAnyTarget(hold_for_any_target_check_->checkState() == Qt::Checked);
 }
 
 DetectionConfig& DetectionConfigWidget::config()
 {
     DetectionConfig* config = dynamic_cast<DetectionConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }
 
+
+void DetectionConfigWidget::toggleIgnorePrimaryOnlySlot()
+{
+    loginf;
+
+    traced_assert(ignore_primary_only_check_);
+    config().ignorePrimaryOnly(ignore_primary_only_check_->checkState() == Qt::Checked);
+}
+
 void DetectionConfigWidget::updateActive()
 {
-    assert (min_gap_length_edit_);
+    traced_assert(min_gap_length_edit_);
     min_gap_length_edit_->setEnabled(config().useMinGapLength());
 
-    assert (max_gap_length_edit_);
+    traced_assert(max_gap_length_edit_);
     max_gap_length_edit_->setEnabled(config().useMaxGapLength());
 
-    assert (miss_tolerance_edit_);
+    traced_assert(miss_tolerance_edit_);
     miss_tolerance_edit_->setEnabled(config().useMissTolerance());
 }
 

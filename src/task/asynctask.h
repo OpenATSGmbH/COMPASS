@@ -22,7 +22,7 @@
 #include <QObject>
 #include <QDialog>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <functional>
 
 class QProgressBar;
@@ -50,11 +50,21 @@ struct AsyncTaskProgress
         message = m;
         flags |= Flags::Message;
     }
-    void setSteps(int s, int stotal)
+    void setSteps(int s, int stotal, float sub_progress = 1.0f)
     {
-        step  = s;
-        steps = stotal;
-        flags |= Flags::Steps;
+        step          = s;
+        steps         = stotal;
+        step_progress = sub_progress;
+        flags        |= Flags::Steps;
+    }
+    void increment(int s)
+    {
+        if (flags & AsyncTaskProgress::Flags::Steps)
+        {
+            step += s;
+            if (step > steps) 
+                step = steps;
+        }
     }
     void setPercent(float p)
     {
@@ -66,13 +76,44 @@ struct AsyncTaskProgress
     {
         if (step < 0 || steps <= 0)
             return 0.0f;
-        return (float)step / (float)steps;
+        return (float)step / (float)steps * step_progress;
     };
 
-    std::string message;  // status message
-    int         step;     // current step
-    int         steps;    // total steps
-    float       percent;  // progress in percent
+    float progress() const
+    {
+        if (flags & AsyncTaskProgress::Flags::Percent)
+        {
+            return percent;
+        }
+        if (flags & AsyncTaskProgress::Flags::Steps)
+        {
+            return stepsPercent();
+        }
+        return -1.0f;
+    }
+
+    bool isFinished() const
+    {
+        return progress() == 1.0f;
+    }
+
+    void finish()
+    {
+        if (flags & AsyncTaskProgress::Flags::Percent)
+        {
+            percent = 1.0f;
+        }
+        if (flags & AsyncTaskProgress::Flags::Steps)
+        {
+            step = steps;
+        }
+    }
+
+    std::string message;       // status message
+    int         step;          // current step
+    int         steps;         // total steps
+    float       step_progress; // current step count's subprogress
+    float       percent;       // progress in percent
 
     int flags = 0;
 };
@@ -84,7 +125,7 @@ class AsyncTaskProgressWrapper : public QObject
 {
     Q_OBJECT
 public:
-    AsyncTaskProgressWrapper(AsyncTaskProgress* p) : progress_(p) { assert(progress_); }
+    AsyncTaskProgressWrapper(AsyncTaskProgress* p) : progress_(p) { traced_assert(progress_); }
     ~AsyncTaskProgressWrapper() = default;
 
     AsyncTaskProgress& progress() { return *progress_; }
@@ -123,6 +164,15 @@ public:
             submitChanges();
     }
 
+    void increment(int s,
+                   bool submit = false)
+    {
+        progress_->increment(s);
+
+        if (submit)
+            submitChanges();
+    }
+
     void setPercent(float p,
                     bool reset_progress = false,
                     bool submit = false)
@@ -131,6 +181,14 @@ public:
             reset(false);
 
         progress_->setPercent(p);
+
+        if (submit)
+            submitChanges();
+    }
+
+    void setFinished(bool submit = false)
+    {
+        progress_->finish();
 
         if (submit)
             submitChanges();

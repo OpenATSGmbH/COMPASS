@@ -37,7 +37,7 @@
 DBTemporaryTable::DBTemporaryTable(DBConnection* connection)
 :   connection_(connection)
 {
-    assert(connection_);
+    traced_assert(connection_);
 }
 
 /**
@@ -55,7 +55,7 @@ ResultT<std::string> DBTemporaryTable::create(const std::vector<DBTableColumnInf
     if (valid())
         remove();
 
-    assert(!valid());
+    traced_assert(!valid());
 
     auto table_name = DBTemporaryTable::createTempTableName();
 
@@ -77,8 +77,8 @@ void DBTemporaryTable::remove()
 
     auto res = connection_->deleteTable(table_name_.value());
     if (!res.ok())
-        logerr << "DBTemporaryTable: remove: could not remove temporary table '" << table_name_.value() << "': " << res.error();
-    assert(res.ok());
+        logerr << "could not remove temporary table '" << table_name_.value() << "': " << res.error();
+    traced_assert(res.ok());
 
     table_name_.reset();
 }
@@ -94,7 +94,7 @@ bool DBTemporaryTable::valid() const
  */
 const std::string& DBTemporaryTable::name() const
 {
-    assert(valid());
+    traced_assert(valid());
     return table_name_.value();
 }
 

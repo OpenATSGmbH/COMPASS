@@ -25,7 +25,7 @@
 #include <QApplication>
 #include <QStyle>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -159,7 +159,7 @@ bool copyRecursively(const std::string& source_folder, const std::string& dest_f
 
 QStringList getFilesInDirectory(const std::string& path)
 {
-    assert(directoryExists(path));
+    traced_assert(directoryExists(path));
     QDir directory(path.c_str());
     QStringList list =
         directory.entryList(QStringList({"*"}), QDir::Files);  // << "*.jpg" << "*.JPG"
@@ -168,24 +168,26 @@ QStringList getFilesInDirectory(const std::string& path)
 
 QStringList getSubdirectories(const std::string& path)
 {
-    assert(directoryExists(path));
+    traced_assert(directoryExists(path));
     QDir directory(path.c_str());
     QStringList list =
         directory.entryList(QStringList({"*"}), QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
     return list;
 }
 
-std::string getIconFilepath(const std::string& filename)
+std::string getIconFilepath(const std::string& filename, bool verify)
 {
     std::string filepath = HOME_DATA_DIRECTORY + "icons/" + filename;
-    verifyFileExists(filepath);
+    if (verify)
+        verifyFileExists(filepath);
     return filepath;
 }
 
-std::string getImageFilepath(const std::string& filename)
+std::string getImageFilepath(const std::string& filename, bool verify)
 {
     std::string filepath = HOME_DATA_DIRECTORY + "images/" + filename;
-    verifyFileExists(filepath);
+    if (verify)
+        verifyFileExists(filepath);
     return filepath;
 }
 
@@ -259,6 +261,11 @@ std::string normalizeFilename(const std::string& filename_without_ext, bool remo
     fn_lower.replace(QRegularExpression("[/\\s]+"), "_"); //replace sequences of unwanted chars with _
     
     return fn_lower.toStdString();
+}
+
+std::string join(const std::string& path0, const std::string& path1)
+{
+    return (boost::filesystem::path(path0) / boost::filesystem::path(path1)).string();
 }
 
 QIcon getIcon(const std::string& name, const QColor& color)

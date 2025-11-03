@@ -23,7 +23,7 @@
 #include "appmode.h"
 #include "result.h"
 #include "logmodel.h"
-
+#include "message.h"
 
 #include <QObject>
 
@@ -126,9 +126,6 @@ public:
     bool isShutDown() const;
     bool isRunning() const;
 
-    unsigned int maxFPS() const;
-    void maxFPS(unsigned int max_fps);
-
     bool disableLiveToOfflineSwitch() const;
     bool disableMenuConfigSave() const;
     bool disableGeographicViewRotate() const;
@@ -145,11 +142,14 @@ public:
     const char* lineEditInvalidStyle();
 
     LogStream logInfo(const std::string& component,
-                      boost::optional<unsigned int> error_code={}, nlohmann::json json_blob={});
+                      boost::optional<unsigned int> error_code={}, 
+                      nlohmann::json json_blob={});
     LogStream logWarn(const std::string& component,
-                      boost::optional<unsigned int> error_code={}, nlohmann::json json_blob={});
+                      boost::optional<unsigned int> error_code={}, 
+                      nlohmann::json json_blob={});
     LogStream logError(const std::string& component,
-                       boost::optional<unsigned int> error_code={}, nlohmann::json json_blob={});
+                       boost::optional<unsigned int> error_code={}, 
+                       nlohmann::json json_blob={});
 
     unsigned int minAppWidth() const;
 
@@ -160,6 +160,9 @@ public:
     bool disableNativeDialogs() const;
 
     LogStore& logStore();
+
+    const nlohmann::json& unspecificACIDs() const { return unspecific_acids_; }
+    //const nlohmann::json& unspecificModeAs() const { return unspecific_mode_3as_; }
 
 protected:
     COMPASS();
@@ -193,8 +196,6 @@ protected:
     unsigned int auto_live_running_resume_ask_time_ {60}; // minutes
     unsigned int auto_live_running_resume_ask_wait_time_ {1}; // minutes
 
-    unsigned int max_fps_ {30};
-
     unsigned int min_app_width_ {1600};
     unsigned int min_app_height_ {800};
 
@@ -226,6 +227,9 @@ protected:
     bool db_export_in_progress_ {false};
 
     MainWindow* main_window_;
+
+    nlohmann::json unspecific_acids_;
+    //nlohmann::json unspecific_mode_3as_;
 
 private:
     friend class Client;

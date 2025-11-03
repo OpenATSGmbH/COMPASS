@@ -22,7 +22,7 @@
 FormatSelectionWidget::FormatSelectionWidget(PropertyDataType data_type, Format& format)
     : QPushButton(), data_type_(data_type), format_(format)
 {
-    logdbg << "FormatSelectionWidget: constructor";
+    logdbg;
 
     update(data_type, format);
 
@@ -36,7 +36,7 @@ FormatSelectionWidget::~FormatSelectionWidget() {}
 
 void FormatSelectionWidget::update(PropertyDataType data_type, Format& format)
 {
-    logdbg << "FormatSelectionWidget: update: data type '" << Property::asString(data_type)
+    logdbg << "data type '" << Property::asString(data_type)
            << "' format '" << format << "'";
 
     if (format_.size() > 0)
@@ -53,7 +53,7 @@ void FormatSelectionWidget::update(PropertyDataType data_type, Format& format)
 
 void FormatSelectionWidget::createMenu()
 {
-    logdbg << "FormatSelectionWidget: createMenu";
+    logdbg;
     //    menu_.addAction( "" );
 
     std::string data_type_str = Property::asString(data_type_);
@@ -66,14 +66,14 @@ void FormatSelectionWidget::createMenu()
         vmap.insert(QString::fromStdString(data_type_str), QVariant(QString::fromStdString(ft_it)));
         action->setData(QVariant(vmap));
     }
-    logdbg << "FormatSelectionWidget: createMenu: end";
+    logdbg << "end";
 }
 
 void FormatSelectionWidget::showMenuSlot() { menu_.exec(QCursor::pos()); }
 
 void FormatSelectionWidget::triggerSlot(QAction* action)
 {
-    logdbg << "FormatSelectionWidget: triggerSlot";
+    logdbg;
 
     QVariantMap vmap = action->data().toMap();
     std::string data_type_str, format_str;
@@ -84,7 +84,7 @@ void FormatSelectionWidget::triggerSlot(QAction* action)
         format_str = vmap.begin().value().toString().toStdString();
     }
 
-    loginf << "FormatSelectionWidget: triggerSlot: got data type '" << data_type_str << "' format '"
+    loginf << "got data type '" << data_type_str << "' format '"
            << format_str << "'";
 
     PropertyDataType data_type = Property::asDataType(data_type_str);

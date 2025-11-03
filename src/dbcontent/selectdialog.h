@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBCONTENT_SELECTDIALOG_H
-#define DBCONTENT_SELECTDIALOG_H
+#pragma once
 
 #include "dbcontent/dbcontentcombobox.h"
 //#include "textfielddoublevalidator.h"
@@ -62,13 +61,13 @@ class SelectDBContentDialog : public QDialog
 
     unsigned int category()
     {
-        assert(cat_edit_);
+        traced_assert(cat_edit_);
         return cat_edit_->text().toUInt();
     }
 
     std::string selectedObject()
     {
-        assert(object_box_);
+        traced_assert(object_box_);
         return object_box_->currentText().toStdString();
     }
 
@@ -78,5 +77,3 @@ class SelectDBContentDialog : public QDialog
 };
 
 }
-
-#endif  // DBCONTENT_SELECTDIALOG_H

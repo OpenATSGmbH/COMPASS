@@ -32,10 +32,10 @@ namespace EvaluationRequirement
 IdentificationFalseConfigWidget::IdentificationFalseConfigWidget(IdentificationFalseConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of false identification");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // correctness of all
     require_all_false_check_ = new QCheckBox ();
@@ -75,35 +75,35 @@ IdentificationFalseConfigWidget::IdentificationFalseConfigWidget(IdentificationF
 
 void IdentificationFalseConfigWidget::toggleRequireCorrectnessOfAllSlot()
 {
-    loginf << "EvaluationRequirementIdentificationConfigWidget: toggleRequireCorrectnessOfAllSlot";
+    loginf;
 
-    assert (require_all_false_check_);
+    traced_assert(require_all_false_check_);
     config().requireAllFalse(require_all_false_check_->checkState() == Qt::Checked);
 
 }
 
 void IdentificationFalseConfigWidget::toggleUseModeASlot()
 {
-    loginf << "EvaluationRequirementIdentificationConfigWidget: toggleUseModeASlot";
+    loginf;
 
-    assert (use_mode_a_check_);
+    traced_assert(use_mode_a_check_);
     config().useModeA(use_mode_a_check_->checkState() == Qt::Checked);
 }
 
 void IdentificationFalseConfigWidget::toggleUseMsTaSlot()
 {
-    loginf << "EvaluationRequirementIdentificationConfigWidget: toggleUseMsTaSlot";
+    loginf;
 
-    assert (use_ms_ta_check_);
+    traced_assert(use_ms_ta_check_);
     config().useMsTa(use_ms_ta_check_->checkState() == Qt::Checked);
 
 }
 
 void IdentificationFalseConfigWidget::toggleUseMsTiSlot()
 {
-    loginf << "EvaluationRequirementIdentificationConfigWidget: toggleUseMsTiSlot";
+    loginf;
 
-    assert (use_ms_ti_check_);
+    traced_assert(use_ms_ti_check_);
     config().useMsTi(use_ms_ti_check_->checkState() == Qt::Checked);
 
 }
@@ -111,7 +111,7 @@ void IdentificationFalseConfigWidget::toggleUseMsTiSlot()
 IdentificationFalseConfig& IdentificationFalseConfigWidget::config()
 {
     IdentificationFalseConfig* config = dynamic_cast<IdentificationFalseConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

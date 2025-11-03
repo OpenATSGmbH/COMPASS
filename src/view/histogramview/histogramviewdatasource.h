@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HISTOGRAMVIEWDATASOURCE_H_
-#define HISTOGRAMVIEWDATASOURCE_H_
+#pragma once
 
 #include <QObject>
 
@@ -50,7 +49,7 @@ class HistogramViewDataSource : public QObject, public Configurable
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()
     {
-        assert(set_);
+        traced_assert(set_);
         return set_;
     }
     void unshowViewPoint (const ViewableDataConfig* vp); // vp can be nullptr
@@ -63,12 +62,10 @@ class HistogramViewDataSource : public QObject, public Configurable
     /// Selected DBContent records
     //ViewSelectionEntries& selection_entries_;
 
-    std::vector<std::pair<std::string, std::string>> temporary_added_variables_; // not persisted, DBO->varname
+    std::vector<std::pair<std::string, std::string>> temporary_added_variables_; // not persisted, DBCont->varname
 
     virtual void checkSubConfigurables();
 
     bool addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set, true of added
     void removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set
 };
-
-#endif /* HISTOGRAMVIEWDATASOURCE_H_ */

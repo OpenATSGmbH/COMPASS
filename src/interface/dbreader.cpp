@@ -40,8 +40,8 @@ DBReader::DBReader()
 DBReader::~DBReader()
 {
     if (ready_)
-        logerr << "DBReader: ~DBReader: finish not called";
-    assert(!ready_);
+        logerr << "finish not called";
+    traced_assert(!ready_);
 }
 
 /**
@@ -50,8 +50,8 @@ bool DBReader::init(const std::shared_ptr<DBCommand>& select_cmd,
                     size_t offset, 
                     size_t chunk_size)
 {
-    assert(!ready_);
-    assert(select_cmd);
+    traced_assert(!ready_);
+    traced_assert(select_cmd);
 
     ready_      = false;
     select_cmd_ = select_cmd;
@@ -88,7 +88,7 @@ void DBReader::finish()
  */
 std::shared_ptr<DBResult> DBReader::readChunk()
 {
-    assert(isReady());
+    traced_assert(isReady());
     return readChunk_impl();
 }
 
@@ -118,7 +118,7 @@ DBScopedReader::DBScopedReader(const std::shared_ptr<DBReader>& db_reader,
                                size_t chunk_size) 
 :   db_reader_(db_reader) 
 {
-    assert(db_reader_);
+    traced_assert(db_reader_);
     db_reader_->init(select_cmd, offset, chunk_size);
 };
 

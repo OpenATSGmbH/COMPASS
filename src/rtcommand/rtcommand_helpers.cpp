@@ -26,6 +26,7 @@
 #include "viewcontainer.h"
 #include "viewwidget.h"
 #include "view.h"
+#include "global.h"
 
 #include <QDialog>
 #include <QMainWindow>
@@ -131,6 +132,7 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
 
         bool ok;
         int idx = num.toInt(&ok);
+        UNUSED_VARIABLE(idx);
 
         if (ok)
         {

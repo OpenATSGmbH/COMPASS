@@ -18,8 +18,12 @@
 #include "asterixpcapdecoder.h"
 #include "asteriximporttask.h"
 #include "packetsniffer.h"
+#include "stringconv.h"
 
 #include <jasterix/jasterix.h>
+
+using namespace std;
+using namespace Utils;
 
 /**
  * @param source Import source to retrieve data from.
@@ -78,6 +82,10 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
     if (sniffer.hasUnknownPacketHeaders())
     {
         error = "Unknown packet headers encountered";
+
+        logwrn << "unknown packet headers encountered:";
+        sniffer.printUnknowns();
+
         return false;
     }
 
@@ -96,6 +104,7 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
         ASTERIXImportFileSection section;
         section.id               = PacketSniffer::signatureToString(d.first);
         section.description      = PacketSniffer::signatureToString(d.first);
+        section.info             = d.second.info();
         section.total_size_bytes = d.second.size;
 
         if (d.second.valid())
@@ -105,9 +114,10 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
             memcpy(section.raw_data.data(), d.second.data.data(), n * sizeof(char));
         }
 
-        loginf << "ASTERIXPCAPDecoder: checkFile: Adding section '" << section.id << "': "
+        loginf << "adding section '" << section.id << "': "
                << "total size = " << section.total_size_bytes << " " 
-               << "read size = " << section.raw_data.size();
+               << "read size = " << section.raw_data.size() << " "
+               << (section.info.empty() ? "" : "(" + section.info + ")");
 
         file_info.sections.push_back(section);
     }
@@ -119,9 +129,10 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
 */
 bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, 
                                        int section_idx, 
+                                       std::string& information,
                                        std::string& error) const
 {
-    assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
+    traced_assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
 
     error = "";
 
@@ -131,14 +142,16 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 
     std::unique_ptr<nlohmann::json> analysis_info;
 
+    loginf << "checking data of file " << file_info.filename << " section " << section.id;
+
     analysis_info = jasterix->analyzeData(section.raw_data.data(), section.raw_data.size(), DecodeCheckRecordLimit);
-    assert(analysis_info);
+    traced_assert(analysis_info);
 
     auto& section_error = section.error;
 
     section_error.analysis_info = *analysis_info;
 
-    //loginf << "ASTERIXPCAPDecoder: checkDecoding: file '" << file_info.filename << "' "
+    //loginf << "file '" << file_info.filename << "' "
     //       << "section " << section.id << " "
     //       << "json '" << section_error.analysis_info.dump(4) << "'";
     //            json '{
@@ -148,19 +161,65 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     //               "sensor_counts": {}
     //           }'
 
-    assert (section_error.analysis_info.contains("num_errors"));
-    assert (section_error.analysis_info.contains("num_records"));
+    traced_assert(section_error.analysis_info.contains("num_errors"));
+    traced_assert(section_error.analysis_info.contains("num_records"));
 
     unsigned int num_errors  = section_error.analysis_info.at("num_errors");
     unsigned int num_records = section_error.analysis_info.at("num_records");
 
-    if (num_errors || !num_records) // decoder errors or no data
+    loginf << analysis_info->dump(2);
+
+    if (num_errors) // decoder errors
     {
         error = "Decoding failed";
         return false;
     }
 
-    return true;
+    if (!num_records) // no data
+    {
+        error = "Decoding failed";
+        return false;
+    }
+
+    std::set<std::string> categories;
+    for (const auto& sac_sic : analysis_info->items())
+    {
+        //no sensor => continue
+        if (!sac_sic.value().is_object())
+            continue;
+
+        //sensor unknown? => error
+        if (error.empty() && sac_sic.key() == "unknown")
+        {
+            error = "Missing SAC/SIC";
+        }
+
+        for (const auto& category : sac_sic.value().items())
+        {
+            bool ok;
+            auto cat = QString::fromStdString(category.key()).toUInt(&ok);
+
+            if (ok)
+            {
+                auto cat_str = String::categoryString(cat);
+                categories.insert(cat_str);
+            }
+            else if (error.empty())
+            {
+                error = "Invalid category '" + category.key() + "'";
+            }
+
+            if (error.empty() &&
+                (!category.value().contains("010.SAC") ||
+                 !category.value().contains("010.SIC")))
+                error = "No SAC/SIC data items found";
+        }
+    }
+
+    for (const auto& cat : categories)
+        information += (information.empty() ? "" : ", ") + cat;
+
+    return error.empty();
 }
 
 /**
@@ -170,7 +229,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     std::string  current_filename  = file_info.filename;
     unsigned int current_file_line = settings().file_line_id_; //files_info_.at(current_file_count_).line_id_;
 
-    loginf << "ASTERIXPCAPDecoder: processFile: file '" << current_filename << "'";
+    loginf << "file '" << current_filename << "'";
 
     //collect used signatures
     std::set<PacketSniffer::Signature> signatures;
@@ -178,10 +237,10 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     {
         if (section.used)
         {
-            assert(!section.error.hasError());
+            traced_assert(!section.error.hasError());
             signatures.insert(PacketSniffer::signatureFromString(section.id));
 
-            loginf << "ASTERIXPCAPDecoder: processFile: importing section '" << section.id << "'";
+            loginf << "importing section '" << section.id << "'";
         }
     }
 
@@ -189,35 +248,35 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     bool file_open = sniffer.openPCAP(file_info.filename);
 
     //this should have been checked and caught beforehand
-    assert(file_open);
+    traced_assert(file_open);
 
-    auto callback = [this, current_file_line] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
                                                size_t num_frames,
                                                size_t num_records, 
-                                               size_t numErrors) 
+                                               size_t num_errors) 
     {
         // get last index
 
-        if (settings().current_file_framing_ == "")
+        if (settings().activeFileFraming() == "")
         {
-            assert(data->contains("data_blocks"));
-            assert(data->at("data_blocks").is_array());
+            traced_assert(data->contains("data_blocks"));
+            traced_assert(data->at("data_blocks").is_array());
 
             if (data->at("data_blocks").size())
             {
                 nlohmann::json& data_block = data->at("data_blocks").back();
 
-                assert(data_block.contains("content"));
-                assert(data_block.at("content").is_object());
-                assert(data_block.at("content").contains("index"));
+                traced_assert(data_block.contains("content"));
+                traced_assert(data_block.at("content").is_object());
+                traced_assert(data_block.at("content").contains("index"));
 
                 setChunkBytesRead(data_block.at("content").at("index"));
             }
         }
         else
         {
-            assert(data->contains("frames"));
-            assert(data->at("frames").is_array());
+            traced_assert(data->contains("frames"));
+            traced_assert(data->at("frames").is_array());
 
             if (data->at("frames").size())
             {
@@ -225,8 +284,8 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
                 if (frame.contains("content"))
                 {
-                    assert(frame.at("content").is_object());
-                    assert (frame.at("content").contains("index"));
+                    traced_assert(frame.at("content").is_object());
+                    traced_assert(frame.at("content").contains("index"));
 
                     setChunkBytesRead(frame.at("content").at("index"));
                 }
@@ -235,8 +294,14 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
         addRecordsRead(num_records);
 
+        if (num_errors)
+        {
+            file_info.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
+            file_info.error.errinfo = "Decoding errors: " + std::to_string(num_errors);
+        }
+
         if (job() && !job()->obsolete())
-            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, numErrors);
+            job()->fileJasterixCallback(std::move(data), current_file_line, num_frames, num_records, num_errors);
     };
 
     size_t max_packets = std::numeric_limits<size_t>::max();
@@ -253,7 +318,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
         //check for errors
         if (!data.has_value())
         {
-            logerr << "ASTERIXPCAPDecoder: processFile: Could not read data chunk from PCAP";
+            logerr << "could not read data chunk from PCAP";
             logError("Could not read data chunk from PCAP");
             break;
         }
@@ -267,8 +332,8 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
             const auto& chunk = data.value().chunk_data.data;
             size_t num_bytes = chunk.size();
 
-            loginf << "ASTERIXPCAPDecoder: processFile: processing " << num_bytes << " byte(s)"; 
-            assert(num_bytes > 0);
+            loginf << "processing " << num_bytes << " byte(s)"; 
+            traced_assert(num_bytes > 0);
             
             std::vector<char> vec(num_bytes);
             memcpy(vec.data(), chunk.data(), num_bytes * sizeof(char));

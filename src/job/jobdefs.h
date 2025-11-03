@@ -142,7 +142,7 @@ namespace job
 
             if (cpu < 0)
             {
-                logerr << "setThreadAffinity: failed to determine target cpu";
+                logerr << "failed to determine target cpu";
                 return;
             }
 
@@ -153,7 +153,7 @@ namespace job
         pthread_t nativeThread = pthread_self();
         if (pthread_setaffinity_np(nativeThread, sizeof(cpu_set_t), &cpuset) != 0)
         {
-            logerr << "setThreadAffinity: failed to set thread affinity";
+            logerr << "failed to set thread affinity";
         }
     }
 }

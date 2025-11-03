@@ -84,7 +84,7 @@ ViewPresetEditDialog::ViewPresetEditDialog(View* view,
 ,   preset_(preset)
 ,   mode_  (mode  )
 {
-    assert(view_);
+    traced_assert(view_);
 
     createUI();
     configureUI();
@@ -110,7 +110,7 @@ const QImage& ViewPresetEditDialog::previewImage(Mode mode) const
 {
     if (mode_ == Mode::Copy)
     {
-        assert(preset_);
+        traced_assert(preset_);
         return preset_->preview;
     }
     else if (mode_ == Mode::Create)
@@ -119,7 +119,7 @@ const QImage& ViewPresetEditDialog::previewImage(Mode mode) const
     }
     else if (mode_ == Mode::Edit)
     {
-        assert(preset_);
+        traced_assert(preset_);
         return preset_->preview;
     }
 
@@ -205,7 +205,7 @@ void ViewPresetEditDialog::configureUI()
 
     if (mode_ == Mode::Copy)
     {
-        assert(preset_);
+        traced_assert(preset_);
 
         //fill in current metadata (skip name as the name has to change anyway)
         category_edit_->setText(QString::fromStdString(preset_->metadata.category));
@@ -218,7 +218,7 @@ void ViewPresetEditDialog::configureUI()
     }
     else if (mode_ == Mode::Edit)
     {
-        assert(preset_);
+        traced_assert(preset_);
 
         //fill in current metadata
         name_edit_->setText(QString::fromStdString(preset_->name));
@@ -396,7 +396,7 @@ ViewPresetItemWidget::ViewPresetItemWidget(const ViewPresets::Key& key,
 :   QWidget(parent)
 ,   view_  (view  )
 {
-    assert(view_);
+    traced_assert(view_);
     
     createUI();
     updateContents(key);
@@ -580,7 +580,7 @@ void ViewPresetItemWidget::createUI()
             sep->setContentsMargins(0, 0, 0, 0);
 
             auto p = sep->palette();
-            p.setColor(QPalette::ColorRole::HighlightedText, p.color(QPalette::ColorRole::Foreground));
+            p.setColor(QPalette::ColorRole::HighlightedText, p.color(QPalette::WindowText));
 
             sep->setPalette(p);
 
@@ -644,7 +644,7 @@ void ViewPresetItemWidget::createUI()
 void ViewPresetItemWidget::updateContents(const ViewPresets::Key& key)
 {
     auto& presets = COMPASS::instance().viewManager().viewPresets();
-    assert(presets.hasPreset(key));
+    traced_assert(presets.hasPreset(key));
 
     key_    = key;
     preset_ = &presets.presets().at(key);
@@ -697,7 +697,7 @@ void ViewPresetItemWidget::updateContents()
     preview_label_->setText(preset_->preview.isNull() ? "No preview available" : "");
     preview_label_->setPixmap(preset_->preview.isNull() ? QPixmap() : QPixmap::fromImage(preset_->preview));
 
-    auto col = palette().color(QPalette::ColorRole::Background);
+    auto col = palette().color(QPalette::Window);
     col = QColor(col.red() - 20, col.green() - 20, col.blue() - 20);
 
     QPixmap pm = preset_->deployed ? decorate(QPixmap(Utils::Files::getImageFilepath("ats_transp.png").c_str()), col) : 
@@ -735,7 +735,7 @@ void ViewPresetItemWidget::copyButtonPressed()
 void ViewPresetItemWidget::saveButtonPressed()
 {
     auto& presets = COMPASS::instance().viewManager().viewPresets();
-    assert(presets.hasPreset(key_));
+    traced_assert(presets.hasPreset(key_));
 
     const auto& p = presets.presets().at(key_);
 
@@ -794,7 +794,7 @@ void ViewPresetItemWidget::leaveEvent(QEvent* event)
     if (inside_)
     {
         inside_ = false;
-        main_widget_->setBackgroundRole(QPalette::ColorRole::Background);
+        main_widget_->setBackgroundRole(QPalette::Window);
         main_widget_->setAutoFillBackground(false);
     }
 }
@@ -923,7 +923,7 @@ void ViewPresetItemListWidget::clear()
 void ViewPresetItemListWidget::editPreset(ViewPresets::Key key)
 {
     auto& presets = COMPASS::instance().viewManager().viewPresets();
-    assert(presets.hasPreset(key));
+    traced_assert(presets.hasPreset(key));
 
     auto& p = presets.presets().at(key);
 
@@ -942,7 +942,7 @@ void ViewPresetItemListWidget::editPreset(ViewPresets::Key key)
 void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
 {
     auto& presets = COMPASS::instance().viewManager().viewPresets();
-    assert(presets.hasPreset(key));
+    traced_assert(presets.hasPreset(key));
 
     const auto& p = presets.presets().at(key);
 
@@ -964,7 +964,7 @@ void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
 void ViewPresetItemListWidget::copyPreset(ViewPresets::Key key)
 {
     auto& presets = COMPASS::instance().viewManager().viewPresets();
-    assert(presets.hasPreset(key));
+    traced_assert(presets.hasPreset(key));
 
     //copy preset
     ViewPresetEditDialog dlg(view_, &presets.presets().at(key), ViewPresetEditDialog::Mode::Copy, this);
@@ -982,7 +982,7 @@ void ViewPresetItemListWidget::removeItem(ViewPresets::Key key)
 
     //get item
     auto it = std::find_if(items_.begin(), items_.end(), [ & ] (ViewPresetItemWidget* item) { return item->key() == key; });
-    assert(it != items_.end());
+    traced_assert(it != items_.end());
 
     //remove item from layout and delete
     item_layout_->removeWidget(*it);
@@ -1106,7 +1106,7 @@ ViewPresetWidget::ViewPresetWidget(View* view, QWidget* parent)
 :   QWidget(parent)
 ,   view_  (view  )
 {
-    assert(view_);
+    traced_assert(view_);
 
     createUI();
     updateContents();
@@ -1234,7 +1234,7 @@ void ViewPresetWidget::presetApplied(ViewPresets::Key key)
  */
 nlohmann::json ViewPresetWidget::viewInfoJSON() const
 {
-    assert(view_);
+    traced_assert(view_);
 
     nlohmann::json info;
 

@@ -43,7 +43,7 @@
 
 #include "evaluationtaskresult.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QCoreApplication>
 #include <QApplication>
@@ -70,7 +70,10 @@ TaskManager::TaskManager(const std::string& class_id, const std::string& instanc
 
 /**
  */
-TaskManager::~TaskManager() {}
+TaskManager::~TaskManager()
+{
+    widget_ = nullptr;
+}
 
 /**
  */
@@ -79,51 +82,51 @@ void TaskManager::generateSubConfigurable(const std::string& class_id,
 {
     if (class_id == "ASTERIXImportTask")
     {
-        assert(!asterix_importer_task_);
+        traced_assert(!asterix_importer_task_);
         asterix_importer_task_.reset(new ASTERIXImportTask(class_id, instance_id, *this));
-        assert(asterix_importer_task_);
+        traced_assert(asterix_importer_task_);
         addTask(class_id, asterix_importer_task_.get());
     }
     else if (class_id == "ViewPointsImportTask")
     {
-        assert(!view_points_import_task_);
+        traced_assert(!view_points_import_task_);
         view_points_import_task_.reset(new ViewPointsImportTask(class_id, instance_id, *this));
-        assert(view_points_import_task_);
+        traced_assert(view_points_import_task_);
         addTask(class_id, view_points_import_task_.get());
     }
     else if (class_id == "JSONImportTask")
     {
-        assert(!json_import_task_);
+        traced_assert(!json_import_task_);
         json_import_task_.reset(new JSONImportTask(class_id, instance_id, *this));
-        assert(json_import_task_);
+        traced_assert(json_import_task_);
         addTask(class_id, json_import_task_.get());
     }
     else if (class_id == "GPSTrailImportTask")
     {
-        assert(!gps_trail_import_task_);
+        traced_assert(!gps_trail_import_task_);
         gps_trail_import_task_.reset(new GPSTrailImportTask(class_id, instance_id, *this));
-        assert(gps_trail_import_task_);
+        traced_assert(gps_trail_import_task_);
         addTask(class_id, gps_trail_import_task_.get());
     }
     // else if (class_id == "GPSImportCSVTask")
     // {
-    //     assert(!gps_import_csv_task_);
+    //     traced_assert(!gps_import_csv_task_);
     //     gps_import_csv_task_.reset(new GPSImportCSVTask(class_id, instance_id, *this));
-    //     assert(gps_import_csv_task_);
+    //     traced_assert(gps_import_csv_task_);
     //     addTask(class_id, gps_import_csv_task_.get());
     // }
     else if (class_id == "ManageSectorsTask")
     {
-        assert(!manage_sectors_task_);
+        traced_assert(!manage_sectors_task_);
         manage_sectors_task_.reset(new ManageSectorsTask(class_id, instance_id, *this));
-        assert(manage_sectors_task_);
+        traced_assert(manage_sectors_task_);
         addTask(class_id, manage_sectors_task_.get());
     }
     else if (class_id == "RadarPlotPositionCalculatorTask")
     {
-        assert(!radar_plot_position_calculator_task_);
+        traced_assert(!radar_plot_position_calculator_task_);
         radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(class_id, instance_id, *this));
-        assert(radar_plot_position_calculator_task_);
+        traced_assert(radar_plot_position_calculator_task_);
         addTask(class_id, radar_plot_position_calculator_task_.get());
 
         connect(radar_plot_position_calculator_task_.get(), &RadarPlotPositionCalculatorTask::doneSignal,
@@ -131,24 +134,24 @@ void TaskManager::generateSubConfigurable(const std::string& class_id,
     }
     else if (class_id == "CreateARTASAssociationsTask")
     {
-        assert(!create_artas_associations_task_);
+        traced_assert(!create_artas_associations_task_);
         create_artas_associations_task_.reset(
                     new CreateARTASAssociationsTask(class_id, instance_id, *this));
-        assert(create_artas_associations_task_);
+        traced_assert(create_artas_associations_task_);
         addTask(class_id, create_artas_associations_task_.get());
     }
     else if (class_id == "ReconstructorTask")
     {
-        assert(!reconstruct_references_task_);
+        traced_assert(!reconstruct_references_task_);
         reconstruct_references_task_.reset(new ReconstructorTask(class_id, instance_id, *this));
-        assert(reconstruct_references_task_);
+        traced_assert(reconstruct_references_task_);
         addTask(class_id, reconstruct_references_task_.get());
     }
     else if (class_id == "ReportExport")
     {
-        assert(!report_export_);
+        traced_assert(!report_export_);
         report_export_.reset(new ResultReport::ReportExport(class_id, instance_id, this));
-        assert(report_export_);
+        traced_assert(report_export_);
     }
     else
     {
@@ -161,8 +164,8 @@ void TaskManager::generateSubConfigurable(const std::string& class_id,
  */
 void TaskManager::addTask(const std::string& class_id, Task* task)
 {
-    assert(task);
-    assert(!tasks_.count(class_id));
+    traced_assert(task);
+    traced_assert(!tasks_.count(class_id));
     tasks_[class_id] = task;
 }
 
@@ -173,62 +176,62 @@ void TaskManager::checkSubConfigurables()
     if (!asterix_importer_task_)
     {
         generateSubConfigurable("ASTERIXImportTask", "ASTERIXImportTask0");
-        assert(asterix_importer_task_);
+        traced_assert(asterix_importer_task_);
     }
 
     if (!view_points_import_task_)
     {
         generateSubConfigurable("ViewPointsImportTask", "ViewPointsImportTask0");
-        assert(view_points_import_task_);
+        traced_assert(view_points_import_task_);
     }
 
     if (!json_import_task_)
     {
         generateSubConfigurable("JSONImportTask", "JSONImportTask0");
-        assert(json_import_task_);
+        traced_assert(json_import_task_);
     }
 
     if (!gps_trail_import_task_)
     {
         generateSubConfigurable("GPSTrailImportTask", "GPSTrailImportTask0");
-        assert(gps_trail_import_task_);
+        traced_assert(gps_trail_import_task_);
     }
 
     // if (!gps_import_csv_task_)
     // {
     //     generateSubConfigurable("GPSImportCSVTask", "GPSImportCSVTask0");
-    //     assert(gps_import_csv_task_);
+    //     traced_assert(gps_import_csv_task_);
     // }
 
     if (!manage_sectors_task_)
     {
         generateSubConfigurable("ManageSectorsTask", "ManageSectorsTask0");
-        assert(manage_sectors_task_);
+        traced_assert(manage_sectors_task_);
     }
 
     if (!radar_plot_position_calculator_task_)
     {
         generateSubConfigurable("RadarPlotPositionCalculatorTask",
                                 "RadarPlotPositionCalculatorTask0");
-        assert(radar_plot_position_calculator_task_);
+        traced_assert(radar_plot_position_calculator_task_);
     }
 
     if (!create_artas_associations_task_)
     {
         generateSubConfigurable("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
-        assert(create_artas_associations_task_);
+        traced_assert(create_artas_associations_task_);
     }
 
     if (!reconstruct_references_task_)
     {
         generateSubConfigurable("ReconstructorTask", "ReconstructorTask0");
-        assert(reconstruct_references_task_);
+        traced_assert(reconstruct_references_task_);
     }
 
     if (!report_export_)
     {
         generateSubConfigurable("ReportExport", "ReportExport0");
-        assert(report_export_);
+        traced_assert(report_export_);
     }
 }
 
@@ -256,7 +259,7 @@ void TaskManager::init()
  */
 void TaskManager::shutdown()
 {
-    loginf << "TaskManager: shutdown";
+    logdbg;
 
     asterix_importer_task_->stop(); // stops if active
     asterix_importer_task_ = nullptr;
@@ -275,10 +278,10 @@ void TaskManager::shutdown()
  */
 void TaskManager::runTask(const std::string& task_name)
 {
-    loginf << "TaskManager: runTask: name " << task_name;
+    loginf << "name " << task_name;
 
-    assert(tasks_.count(task_name));
-    assert(tasks_.at(task_name)->canRun());
+    traced_assert(tasks_.count(task_name));
+    traced_assert(tasks_.at(task_name)->canRun());
 
     tasks_.at(task_name)->run();
 }
@@ -287,7 +290,7 @@ void TaskManager::runTask(const std::string& task_name)
  */
 ManageSectorsTask& TaskManager::manageSectorsTask() const
 {
-    assert(manage_sectors_task_);
+    traced_assert(manage_sectors_task_);
     return *manage_sectors_task_;
 }
 
@@ -295,7 +298,7 @@ ManageSectorsTask& TaskManager::manageSectorsTask() const
  */
 ASTERIXImportTask& TaskManager::asterixImporterTask() const
 {
-    assert(asterix_importer_task_);
+    traced_assert(asterix_importer_task_);
     return *asterix_importer_task_;
 }
 
@@ -303,7 +306,7 @@ ASTERIXImportTask& TaskManager::asterixImporterTask() const
  */
 ViewPointsImportTask& TaskManager::viewPointsImportTask() const
 {
-    assert(view_points_import_task_);
+    traced_assert(view_points_import_task_);
     return *view_points_import_task_;
 }
 
@@ -311,7 +314,7 @@ ViewPointsImportTask& TaskManager::viewPointsImportTask() const
  */
 JSONImportTask& TaskManager::jsonImporterTask() const
 {
-    assert(json_import_task_);
+    traced_assert(json_import_task_);
     return *json_import_task_;
 }
 
@@ -319,7 +322,7 @@ JSONImportTask& TaskManager::jsonImporterTask() const
  */
 GPSTrailImportTask& TaskManager::gpsTrailImportTask() const
 {
-    assert(gps_trail_import_task_);
+    traced_assert(gps_trail_import_task_);
     return *gps_trail_import_task_;
 }
 
@@ -327,7 +330,7 @@ GPSTrailImportTask& TaskManager::gpsTrailImportTask() const
  */
 // GPSImportCSVTask& TaskManager::gpsImportCSVTask() const
 // {
-//     assert(gps_import_csv_task_);
+//     traced_assert(gps_import_csv_task_);
 //     return *gps_import_csv_task_;
 // }
 
@@ -335,7 +338,7 @@ GPSTrailImportTask& TaskManager::gpsTrailImportTask() const
  */
 RadarPlotPositionCalculatorTask& TaskManager::radarPlotPositionCalculatorTask() const
 {
-    assert(radar_plot_position_calculator_task_);
+    traced_assert(radar_plot_position_calculator_task_);
     return *radar_plot_position_calculator_task_;
 }
 
@@ -343,7 +346,7 @@ RadarPlotPositionCalculatorTask& TaskManager::radarPlotPositionCalculatorTask() 
  */
 CreateARTASAssociationsTask& TaskManager::createArtasAssociationsTask() const
 {
-    assert(create_artas_associations_task_);
+    traced_assert(create_artas_associations_task_);
     return *create_artas_associations_task_;
 }
 
@@ -351,7 +354,7 @@ CreateARTASAssociationsTask& TaskManager::createArtasAssociationsTask() const
  */
 ReconstructorTask& TaskManager::reconstructReferencesTask() const
 {
-    assert(reconstruct_references_task_);
+    traced_assert(reconstruct_references_task_);
     return *reconstruct_references_task_;
 }
 
@@ -360,10 +363,10 @@ ReconstructorTask& TaskManager::reconstructReferencesTask() const
 TaskResultsWidget* TaskManager::widget()
 {
     if (!widget_)
-        widget_.reset(new TaskResultsWidget(*this));
+        widget_ =new TaskResultsWidget(*this);
 
-    assert(widget_);
-    return widget_.get();
+    traced_assert(widget_);
+    return widget_;
 }
 
 /**
@@ -395,34 +398,34 @@ void TaskManager::beginTaskResultWriting(const std::string& name,
         widget_->setDisabled(true);
 
     if (current_result_)
-        logerr << "TaskManager: beginTaskResultWriting: result id " << current_result_->id()
+        logerr << "result id " << current_result_->id()
                << " name " << current_result_->name() << " already present";
 
-    assert (!current_result_);
+    traced_assert(!current_result_);
     current_result_ = getOrCreateResult(name, type);
 
     //prepare result for new content
     auto res = current_result_->prepareResult();
     if (!res.ok())
-        logerr << "TaskManager: beginTaskResultWriting: result could not be initialized: " << res.error();
+        logerr << "result could not be initialized: " << res.error();
 
-    loginf << "TaskManager: beginTaskResultWriting: begining result id " << current_result_->id()
+    loginf << "beginning result id " << current_result_->id()
            << " name " << current_result_->name();
     
-    assert(res.ok());
+    traced_assert(res.ok());
 }
 
 /**
  */
 std::shared_ptr<TaskResult>& TaskManager::currentResult()
 {
-    assert (current_result_);
+    traced_assert(current_result_);
     return current_result_;
 }
 
 std::shared_ptr<ResultReport::Report>& TaskManager::currentReport()
 {
-    assert (current_result_);
+    traced_assert(current_result_);
     return current_result_->report();
 }
 
@@ -430,24 +433,24 @@ std::shared_ptr<ResultReport::Report>& TaskManager::currentReport()
  */
 void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 {
-    loginf << "TaskManager: endTaskResultWriting: store_result " << store_result;
+    loginf << "store_result " << store_result;
 
     if (widget_)
         widget_->setDisabled(false);
 
-    assert (current_result_);
+    traced_assert(current_result_);
 
     //finalize result after adding content
     auto res = current_result_->finalizeResult();
     if (!res.ok())
-        logerr << "TaskManager: endTaskResultWriting: Result could not be finalized: " << res.error();
+        logerr << "Result could not be finalized: " << res.error();
 
-    assert(res.ok());
+    traced_assert(res.ok());
 
     //store result?
     if (store_result)
     {
-        loginf << "TaskManager: endTaskResultWriting: Storing result...";
+        loginf << "Storing result...";
 
         auto result_ptr = current_result_.get();
         bool cleanup_db = CleanupDBIfNeeded;
@@ -462,14 +465,14 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 
         //@TODO
         if (!ok)
-            logerr << "TaskManager: endTaskResultWriting: Storing result failed: " << task.taskState().error;
+            logerr << "Storing result failed: " << task.taskState().error;
         
-        assert(ok);
+        traced_assert(ok);
     }
 
-    assert (current_result_);
+    traced_assert(current_result_);
 
-    loginf << "TaskManager: endTaskResultWriting: ending result id " << current_result_->id()
+    loginf << "ending result id " << current_result_->id()
            << " name " << current_result_->name();
 
     current_result_ = nullptr;
@@ -483,9 +486,18 @@ void TaskManager::resultHeaderChanged(const TaskResult& result)
 {
     //update result header upon change
     auto res = COMPASS::instance().dbInterface().updateResultHeader(result);
-    assert(res.ok());
+    traced_assert(res.ok());
 
     emit taskResultHeaderChangedSignal(QString::fromStdString(result.name()));
+}
+
+/**
+ */
+void TaskManager::resultContentChanged(const TaskResult& result)
+{
+    //update result content upon change
+    auto res = COMPASS::instance().dbInterface().updateResultContent(result);
+    traced_assert(res.ok());
 }
 
 /**
@@ -499,7 +511,7 @@ MainWindow* TaskManager::getMainWindow()
         if (qt_main_window)
         {
             MainWindow* main_window = dynamic_cast<MainWindow*>(qt_main_window);
-            assert (main_window);
+            traced_assert(main_window);
             return main_window;
         }
     }
@@ -526,7 +538,7 @@ const std::map<unsigned int, std::shared_ptr<TaskResult>>& TaskManager::results(
  */
 std::shared_ptr<TaskResult> TaskManager::result(unsigned int id) const // get existing result
 {
-    assert (results_.count(id));
+    traced_assert(results_.count(id));
     return results_.at(id);
 }
 
@@ -595,7 +607,7 @@ bool TaskManager::removeResult(const std::string& name,
         return true;
 
     const auto& result = results_.at(id.value());
-    assert(result);
+    traced_assert(result);
 
     auto res = COMPASS::instance().dbInterface().deleteResult(*result, CleanupDBIfNeeded);
     if (!res.ok())
@@ -617,11 +629,11 @@ ResultT<nlohmann::json> TaskManager::exportResult(const std::string& name,
                                                   const boost::optional<std::string>& export_dir,
                                                   const std::string& section)
 {
-    assert(report_export_);
-    assert(hasResult(name));
+    traced_assert(report_export_);
+    traced_assert(hasResult(name));
 
     auto r = result(name);
-    assert(r);
+    traced_assert(r);
 
     ResultReport::ReportExportDialog dlg(*r, 
                                          *report_export_, 
@@ -650,11 +662,12 @@ void TaskManager::databaseClosedSlot()
 
 /**
  */
-void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data)
+void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
+                                        bool load_blocking)
 {
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
-    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get(), load_blocking);
 }
 
 /**
@@ -695,7 +708,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 
     if (!result.ok())
     {
-        logerr << "TaskManager: loadResults: Could not load stored content: " << result.error();
+        logerr << "could not load stored content: " << result.error();
         return std::shared_ptr<ResultReport::SectionContent>();
     }
 
@@ -706,21 +719,21 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
  */
 void TaskManager::loadResults()
 {
-    assert (!current_result_);
+    traced_assert(!current_result_);
 
     results_.clear();
     
     auto res = COMPASS::instance().dbInterface().loadResults();
     if (!res.ok())
     {
-        logerr << "TaskManager: loadResults: Could not load stored results: " << res.error();
+        logerr << "could not load stored results: " << res.error();
         return;
     }
 
     for (const auto& r : res.result())
         results_[ r->id() ] = r;
 
-    loginf << "TaskManager: loadResults: Loaded " << results_.size() << " result(s)";
+    loginf << "Loaded " << results_.size() << " result(s)";
 
     emit taskResultsChangedSignal();
 }
@@ -729,11 +742,19 @@ void TaskManager::loadResults()
  */
 void TaskManager::clearResults()
 {
-    assert (!current_result_);
+    traced_assert(!current_result_);
 
     results_.clear();
     
     emit taskResultsChangedSignal();
+}
+
+/**
+ */
+void TaskManager::storeBackupSection()
+{
+    if (widget_)
+        widget_->storeBackupSection();
 }
 
 /**

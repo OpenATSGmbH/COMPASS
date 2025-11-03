@@ -33,10 +33,10 @@ namespace EvaluationRequirement
 ExtraDataConfigWidget::ExtraDataConfigWidget(ExtraDataConfig& cfg)
     : ProbabilityBaseConfigWidget(cfg)
 {
-    assert (prob_edit_);
+    traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of extra data");
 
-    assert (check_type_box_);
+    traced_assert(check_type_box_);
 
     // min_duration
     min_duration_edit_ = new QLineEdit(QString::number(config().minDuration()));
@@ -69,7 +69,7 @@ ExtraDataConfigWidget::ExtraDataConfigWidget(ExtraDataConfig& cfg)
 
 void ExtraDataConfigWidget::minDurationEditSlot(QString value)
 {
-    loginf << "ExtraDataConfigWidget: minDurationEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     float val = value.toFloat(&ok);
@@ -77,12 +77,12 @@ void ExtraDataConfigWidget::minDurationEditSlot(QString value)
     if (ok)
         config().minDuration(val);
     else
-        loginf << "ExtraDataConfigWidget: minDurationEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void ExtraDataConfigWidget::minNumUpdatesEditSlot(QString value)
 {
-    loginf << "ExtraDataConfigWidget: minNumUpdatesEditSlot: value " << value.toStdString();
+    loginf << "value " << value.toStdString();
 
     bool ok;
     unsigned int val = value.toUInt(&ok);
@@ -90,21 +90,21 @@ void ExtraDataConfigWidget::minNumUpdatesEditSlot(QString value)
     if (ok)
         config().minNumUpdates(val);
     else
-        loginf << "ExtraDataConfigWidget: minNumUpdatesEditSlot: invalid value";
+        loginf << "invalid value";
 }
 
 void ExtraDataConfigWidget::toggleIgnorePrimaryOnlySlot()
 {
-    loginf << "ExtraDataConfigWidget: toggleIgnorePrimaryOnlySlot";
+    loginf;
 
-    assert (ignore_primary_only_check_);
+    traced_assert(ignore_primary_only_check_);
     config().ignorePrimaryOnly(ignore_primary_only_check_->checkState() == Qt::Checked);
 }
 
 ExtraDataConfig& ExtraDataConfigWidget::config()
 {
     ExtraDataConfig* config = dynamic_cast<ExtraDataConfig*>(&config_);
-    assert (config);
+    traced_assert(config);
 
     return *config;
 }

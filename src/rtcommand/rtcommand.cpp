@@ -235,13 +235,13 @@ namespace rtcommand
         }
         catch (const std::exception &ex)
         {
-            logerr << "RTCommand::collectOptions(): Error: " << ex.what();
+            logerr << "error: " << ex.what();
             if (err_msg) *err_msg = QString(ex.what());
             return false;
         }
         catch (...)
         {
-            logerr << "RTCommand::collectOptions(): Unknown error";
+            logerr << "unknown error";
             if (err_msg) *err_msg = "Unknown error";
             return false;
         }
@@ -296,13 +296,13 @@ namespace rtcommand
         }
         catch (const std::exception &ex)
         {
-            logerr << "RTCommand::assignVariables(): Error: " << ex.what();
+            logerr << "error: " << ex.what();
             if (err_msg) *err_msg = QString(ex.what());
             return false;
         }
         catch (...)
         {
-            logerr << "RTCommand::assignVariables(): Unknown error";
+            logerr << "unknown error";
             if (err_msg) *err_msg = "Unknown error";
             return false;
         }
@@ -537,7 +537,7 @@ namespace rtcommand
             nlohmann::json info_json;
 
             auto cmd = RTCommandRegistry::instance().createCommandTemplate(cmd_name);
-            assert(cmd);
+            traced_assert(cmd);
 
             info += cmd->name().toStdString() + "\n";
             info += ReplyStringIndentation + cmd->description().toStdString() + "\n";

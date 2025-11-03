@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONRADARAZIMUTHCONFIGWIDGET_H
-#define EVALUATIONREQUIREMENTPOSITIONRADARAZIMUTHCONFIGWIDGET_H
+#pragma once
 
-#include "eval/requirement/base/baseconfigwidget.h"
+#include "eval/requirement/base/positionbaseconfigwidget.h"
 
 class ComparisonTypeComboBox;
 
@@ -31,7 +30,7 @@ namespace EvaluationRequirement
 {
 class PositionRadarAzimuthConfig;
 
-class PositionRadarAzimuthConfigWidget : public BaseConfigWidget
+class PositionRadarAzimuthConfigWidget : public PositionBaseConfigWidget
 {
     Q_OBJECT
 
@@ -48,5 +47,3 @@ protected:
 };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONRADARAZIMUTHCONFIGWIDGET_H

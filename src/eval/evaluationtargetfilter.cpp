@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "evaluationtargetfilter.h"
 #include "evaluationmanager.h"
 #include "compass.h"
@@ -31,7 +48,7 @@ EvaluationTargetFilter::EvaluationTargetFilter(const std::string& class_id, cons
     registerParameter("filter_target_addresses", &filter_target_addresses_, false);
     registerParameter("filter_target_addresses_blacklist", &filter_target_addresses_blacklist_, true);
     registerParameter("filter_target_address_values", &filter_target_address_values_, std::string());
-    // dbo
+    // dbcont
     registerParameter("remove_not_detected_dbconts", &remove_not_detected_dbconts_, false);
     registerParameter("remove_not_detected_dbcont_values", &remove_not_detected_dbcont_values_, json::object());
 
@@ -91,10 +108,17 @@ void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)
             {
                 for (auto& r_ma_p : remove_mode_as)
                 {
+                    traced_assert(r_ma_p.first >= 0);
                     if (r_ma_p.second == -1) // single
-                        tmp_match |= (t_ma == r_ma_p.first);
+                    {
+                        tmp_match |= (t_ma == static_cast<unsigned int>(r_ma_p.first));
+                    }
                     else // pair
-                        tmp_match |= (t_ma >= r_ma_p.first && t_ma <= r_ma_p.second);
+                    {
+                        traced_assert(r_ma_p.second >= 0);
+                        tmp_match |= ((t_ma >= static_cast<unsigned int>(r_ma_p.first) 
+                        && t_ma <= static_cast<unsigned int>(r_ma_p.second)));
+                    }
                 }
 
                 if (tmp_match)
@@ -181,7 +205,7 @@ void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)
 
         if (!use)
         {
-            logdbg << "EvaluationTargetFilter: filterUTNs: removing " << target_it->utn_ << " comment '" << comment << "'";
+            logdbg << "removing " << target_it->utn_ << " comment '" << comment << "'";
 
             target_data.modify(target_it, [use](dbContent::Target& p) { p.useInEval(use); });
             target_data.modify(target_it, [comment](dbContent::Target& p) { p.comment(comment); });
@@ -202,7 +226,7 @@ bool EvaluationTargetFilter::removeShortTargets() const
  */
 void EvaluationTargetFilter::removeShortTargets(bool value)
 {
-    loginf << "EvaluationTargetFilter: removeShortTargets: value " << value;
+    loginf << "value " << value;
 
     remove_short_targets_ = value;
 }
@@ -218,7 +242,7 @@ unsigned int EvaluationTargetFilter::removeShortTargetsMinUpdates() const
  */
 void EvaluationTargetFilter::removeShortTargetsMinUpdates(unsigned int value)
 {
-    loginf << "EvaluationTargetFilter: removeShortTargetsMinUpdates: value " << value;
+    loginf << "value " << value;
 
     remove_short_targets_min_updates_ = value;
 }
@@ -234,7 +258,7 @@ double EvaluationTargetFilter::removeShortTargetsMinDuration() const
  */
 void EvaluationTargetFilter::removeShortTargetsMinDuration(double value)
 {
-    loginf << "EvaluationTargetFilter: removeShortTargetsMinDuration: value " << value;
+    loginf << "value " << value;
 
     remove_short_targets_min_duration_ = value;
 }
@@ -250,7 +274,7 @@ bool EvaluationTargetFilter::removePsrOnlyTargets() const
  */
 void EvaluationTargetFilter::removePsrOnlyTargets(bool value)
 {
-    loginf << "EvaluationTargetFilter: removePsrOnlyTargets: value " << value;
+    loginf << "value " << value;
 
     remove_psr_only_targets_ = value;
 }
@@ -278,7 +302,7 @@ std::set<std::pair<int,int>> EvaluationTargetFilter::filterModeACodeData() const
 
             if (sub_parts.size() != 2)
             {
-                logwrn << "EvaluationTargetFilter: removeModeACodeData: not able to parse range '" << part_it << "'";
+                logwrn << "not able to parse range '" << part_it << "'";
                 continue;
             }
 
@@ -301,7 +325,7 @@ std::set<std::pair<int,int>> EvaluationTargetFilter::filterModeACodeData() const
  */
 void EvaluationTargetFilter::filterModeACodeValues(const std::string& value)
 {
-    loginf << "EvaluationTargetFilter: removeModeACodeValues: value '" << value << "'";
+    loginf << "value '" << value << "'";
 
     filter_mode_a_code_values_ = value;
 }
@@ -334,7 +358,7 @@ std::set<unsigned int> EvaluationTargetFilter::filterTargetAddressData() const
  */
 void EvaluationTargetFilter::filterTargetAddressValues(const std::string& value)
 {
-    loginf << "EvaluationTargetFilter: removeTargetAddressValues: value '" << value << "'";
+    loginf << "value '" << value << "'";
 
     filter_target_address_values_ = value;
 }
@@ -350,7 +374,7 @@ bool EvaluationTargetFilter::removeModeACOnlys() const
  */
 void EvaluationTargetFilter::removeModeACOnlys(bool value)
 {
-    loginf << "EvaluationTargetFilter: removeModeACOnlys: value " << value;
+    loginf << "value " << value;
     remove_modeac_onlys_ = value;
 }
 
@@ -365,7 +389,7 @@ bool EvaluationTargetFilter::removeNotDetectedDBContents() const
  */
 void EvaluationTargetFilter::removeNotDetectedDBContents(bool value)
 {
-    loginf << "EvaluationTargetFilter: removeNotDetectedDBOs: value " << value;
+    loginf << "value " << value;
 
     remove_not_detected_dbconts_ = value;
 }
@@ -384,7 +408,7 @@ bool EvaluationTargetFilter::removeNotDetectedDBContent(const std::string& dbcon
  */
 void EvaluationTargetFilter::removeNotDetectedDBContents(const std::string& dbcontent_name, bool value)
 {
-    loginf << "EvaluationTargetFilter: removeNotDetectedDBOs: dbo " << dbcontent_name << " value " << value;
+    loginf << "dbcont " << dbcontent_name << " value " << value;
 
     remove_not_detected_dbcont_values_[dbcontent_name] = value;
 }
@@ -400,7 +424,7 @@ bool EvaluationTargetFilter::filterTargetAddressesBlacklist() const
  */
 void EvaluationTargetFilter::filterTargetAddressesBlacklist(bool value)
 {
-    loginf << "EvaluationTargetFilter: filterTargetAddressesBlacklist: value " << value;
+    loginf << "value " << value;
 
     filter_target_addresses_blacklist_ = value;
 }
@@ -416,7 +440,7 @@ bool EvaluationTargetFilter::filterModeACodeBlacklist() const
  */
 void EvaluationTargetFilter::filterModeACodeBlacklist(bool value)
 {
-    loginf << "EvaluationTargetFilter: filterModeACodeBlacklist: value " << value;
+    loginf << "value " << value;
 
     filter_mode_a_code_blacklist_ = value;
 }
@@ -432,7 +456,7 @@ bool EvaluationTargetFilter::removeModeCValues() const
  */
 void EvaluationTargetFilter::removeModeCValues(bool value)
 {
-    loginf << "EvaluationTargetFilter: removeModeCValues: value " << value;
+    loginf << "value " << value;
 
     remove_mode_c_values_ = value;
 }
@@ -448,7 +472,7 @@ float EvaluationTargetFilter::removeModeCMinValue() const
  */
 void EvaluationTargetFilter::removeModeCMinValue(float value)
 {
-    loginf << "EvaluationTargetFilter: removeModeCMinValue: value " << value;
+    loginf << "value " << value;
     remove_mode_c_min_value_ = value;
 }
 
@@ -463,7 +487,7 @@ bool EvaluationTargetFilter::filterTargetAddresses() const
  */
 void EvaluationTargetFilter::filterTargetAddresses(bool value)
 {
-    loginf << "EvaluationTargetFilter: removeTargetAddresses: value " << value;
+    loginf << "value " << value;
 
     filter_target_addresses_ = value;
 }
@@ -479,7 +503,7 @@ bool EvaluationTargetFilter::filterModeACodes() const
  */
 void EvaluationTargetFilter::filterModeACodes(bool value)
 {
-    loginf << "EvaluationTargetFilter: removeModeACodes: value " << value;
+    loginf << "value " << value;
 
     filter_mode_a_codes_ = value;
 }

@@ -17,7 +17,7 @@
 
 #include "lateximage.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <sstream>
 
 using namespace std;

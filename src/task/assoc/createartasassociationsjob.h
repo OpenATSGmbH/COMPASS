@@ -100,7 +100,7 @@ protected:
     size_t acceptable_missing_hashes_cnt_{0};
     size_t missing_hashes_cnt_{0};
     std::multimap<std::string, std::pair<int, unsigned long>> missing_hashes_;  // hash -> (utn, rec_num)
-    size_t found_hashes_cnt_{0};                                      // dbo name -> cnt
+    size_t found_hashes_cnt_{0};                                      // dbcont name -> cnt
 
     size_t dubious_associations_cnt_{0};  // counter for all dubious
     size_t found_hash_duplicates_cnt_{0};

@@ -11,6 +11,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "message_type",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 000.Message Type\n\n001, North marker message;\n 002, Sector crossing message;\n003, South marker message;\n008, Activation of blind zone filtering;\n009, Stop of blind zone filtering.",
                     "dimension": "",
                     "is_key": false,
@@ -24,6 +26,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "rho_start",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.RHO-START\n\nMax. range = 512 NM",
                     "dimension": "Length",
                     "is_key": false,
@@ -37,6 +41,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "theta_end",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.THETA-END",
                     "dimension": "Angle",
                     "is_key": false,
@@ -50,6 +56,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "theta_start",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.THETA-START",
                     "dimension": "Angle",
                     "is_key": false,
@@ -63,6 +71,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "station_configuration_status",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 050.Station Configuration Status.Value",
                     "dimension": "",
                     "is_key": false,
@@ -76,6 +86,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "station_processing_mode",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 060.Station Processing Mode.Value",
                     "dimension": "",
                     "is_key": false,
@@ -89,6 +101,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "w_e_value",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 080.warning_error_conditions.W/E Value",
                     "dimension": "",
                     "is_key": false,
@@ -102,6 +116,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "plot_count_a",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.plot_count_values.A\n\nAerial identification:\n0 Counter for antenna 1;\n1 Counter for antenna 2.",
                     "dimension": "",
                     "is_key": false,
@@ -115,6 +131,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "plot_count_counter",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.plot_count_values.COUNTER\n\n10-bit counter value",
                     "dimension": "",
                     "is_key": false,
@@ -128,6 +146,8 @@
                 "parameters": {
                     "data_type_str": "JSON",
                     "db_column_name": "plot_count_ident",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 070.plot_count_values.IDENT\n\nFive-bit plot category identification code, as follows:\n1 Sole primary plots;\n2 Sole SSR plots;\n3 Combined plots.",
                     "dimension": "",
                     "is_key": false,
@@ -141,6 +161,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sac",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 010.SAC\n\nSystem Area Code",
                     "dimension": "",
                     "is_key": false,
@@ -154,6 +176,8 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "sic",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 010.SIC\n\nSystem Identification Code",
                     "dimension": "",
                     "is_key": false,
@@ -167,6 +191,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "sector_number",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 020.Sector Number\n\nEight most significant bits of the antenna azimuth",
                     "dimension": "Angle",
                     "is_key": false,
@@ -180,6 +206,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "time_of_day",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 030.Time of Day",
                     "dimension": "Time",
                     "is_key": false,
@@ -193,6 +221,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "antenna_rotation_speed",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 041.Antenna Rotation Speed",
                     "dimension": "Time",
                     "is_key": false,
@@ -206,6 +236,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "azimuth_error",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.AZIMUTH ERROR",
                     "dimension": "Angle",
                     "is_key": false,
@@ -219,6 +251,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "range_error",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 090.RANGE ERROR",
                     "dimension": "Length",
                     "is_key": false,
@@ -232,6 +266,8 @@
                 "parameters": {
                     "data_type_str": "FLOAT",
                     "db_column_name": "rho_end",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From 100.RHO-END\n\nMax. range = 512 NM",
                     "dimension": "Length",
                     "is_key": false,
@@ -245,6 +281,8 @@
                 "parameters": {
                     "data_type_str": "TIMESTAMP",
                     "db_column_name": "timestamp",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Epoch timestamp based on Time of Day",
                     "dimension": "",
                     "is_key": false,
@@ -258,6 +296,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "ds_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "From ds_id\n\nData Source ID",
                     "dimension": "",
                     "is_key": false,
@@ -271,6 +311,8 @@
                 "parameters": {
                     "data_type_str": "UINT",
                     "db_column_name": "line_id",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "COMMUNICATION LINE ID determines the origin of the record",
                     "dimension": "",
                     "is_key": false,
@@ -284,6 +326,8 @@
                 "parameters": {
                     "data_type_str": "ULONGINT",
                     "db_column_name": "record_number",
+                    "db_expression": "",
+                    "db_expression_variables": {},
                     "description": "Unique record id starting with 0 on every new recording",
                     "dimension": "",
                     "is_key": true,

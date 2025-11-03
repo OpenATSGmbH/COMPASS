@@ -15,10 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONREQUIREMENTPOSITIONRADARRANGECONFIG_H
-#define EVALUATIONREQUIREMENTPOSITIONRADARRANGECONFIG_H
+#pragma once
 
-#include "eval/requirement/base/baseconfig.h"
+#include "eval/requirement/base/positionbaseconfig.h"
 
 class Group;
 class EvaluationStandard;
@@ -31,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionRadarRangeConfig : public BaseConfig
+class PositionRadarRangeConfig : public PositionBaseConfig
 {
 public:
     PositionRadarRangeConfig(const std::string& class_id, const std::string& instance_id,
@@ -52,5 +51,3 @@ protected:
 };
 
 }
-
-#endif // EVALUATIONREQUIREMENTPOSITIONRADARRANGECONFIG_H

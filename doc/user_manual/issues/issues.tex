@@ -107,12 +107,6 @@ a possible fix can be to start the application using
 GDK_BACKEND=X11 ./NAME_OF_THE_APPIMAGE.AppImage
 \end{verbatim}
 
-\subsection{ADS-B Target Reports Not Shown}
-
-This previously existing issues of ADS-B sometimes having the CAT021 'Latitude HP' and 'Longitude HP' set instead of the 'Latitude' and 'Longitude' variables. This was resolved in v0.8.0 and later by setting empty CAT021 'Latitude' / 'Longitude' values using 'Latitude HP' / 'Longitude HP' during ASTERIX import. \\
-
-While this is a somewhat suboptimal solution (since it makes it hard for the user to establish what positions are exactly coming from which ASTERIX data items) it is a feasible workaround for the time being.
-
 \section{Reporting Issues}
 
 There are several ways of reporting issues. The following steps have to be taken:
@@ -144,7 +138,7 @@ Basically everything that is needed to reproduce the error should be submitted. 
 
 \subsubsection{For Application Crashes}
 
-If the application crashed, it would also be of interest to get a stacktrace. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
+If the application crashed, it would also be of interest to get a stacktrace. While this is most of the time added in the console log, it might be requested to create one manually. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
 
 Then, the application can be run using ``gdb ./COMPASS-XXX.AppImage''. The output will look similiar to this:
 
@@ -197,7 +191,7 @@ from /lib/x86_64-linux-gnu/libglib-2.0.so.0
 #6  0x00000000006be3c6 in main ()
 \end{verbatim}
 
-This is called a stacktrace. Please copy all of this text so that it can be subitted with the issue report.
+This is called a stacktrace. Please copy all of this text and add it to the issue report (upon request).
 
 
 \subsection{Issue Reporting}

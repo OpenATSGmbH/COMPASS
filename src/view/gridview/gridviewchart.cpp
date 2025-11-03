@@ -80,7 +80,7 @@ GridViewChart::GridViewChart(GridViewDataWidget* data_widget,
 :   ChartView   (chart, ChartView::SelectionStyle::RubberBand, parent)
 ,   data_widget_(data_widget)
 {
-    assert (data_widget_);
+    traced_assert(data_widget_);
 }
 
 /**
@@ -108,7 +108,7 @@ bool GridViewChart::handleMousePress(Qt::MouseButtons buttons, const QPointF& wi
 
         if (tool == GV_NAVIGATE_TOOL)
         {
-            logdbg << "GridViewChart: handleMousePress: NAVIGATE x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
             drag_data_      = widget_pos;
             drag_data_init_ = true;
@@ -117,12 +117,12 @@ bool GridViewChart::handleMousePress(Qt::MouseButtons buttons, const QPointF& wi
         }
         else if (tool == GV_ZOOM_RECT_TOOL || tool == GV_SELECT_TOOL)
         {
-            loginf << "GridViewChart: handleMousePress: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
 
-            loginf << "GridViewChart: handleMousePress: RECT xc " << p.x() << " yc " << p.y();
+            loginf << "rect xc " << p.x() << " yc " << p.y();
 
             p1_      = widget_pos.toPoint();
             p1_data_ = p;
@@ -149,7 +149,7 @@ bool GridViewChart::handleMouseMove(Qt::MouseButtons buttons, const QPointF& wid
 
         if (tool == GV_NAVIGATE_TOOL)
         {
-            logdbg << "GridViewChart: handleMouseMove: NAVIGATE x " << widget_pos.x() << " y " << widget_pos.y() << " drag_data_init " << drag_data_init_;
+            logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y() << " drag_data_init " << drag_data_init_;
 
             if (drag_data_init_)
             {
@@ -164,7 +164,7 @@ bool GridViewChart::handleMouseMove(Qt::MouseButtons buttons, const QPointF& wid
         }
         else if ((tool == GV_ZOOM_RECT_TOOL || tool == GV_SELECT_TOOL) && isSelectionEnabled())
         {
-            logdbg << "GridViewChart: handleMouseMove: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
@@ -191,7 +191,7 @@ bool GridViewChart::handleMouseRelease(Qt::MouseButtons buttons, const QPointF& 
 
         if (tool == GV_NAVIGATE_TOOL)
         {
-            logdbg << "GridViewChart: handleMouseRelease: NAVIGATE x " << widget_pos.x() << " y " << widget_pos.y();
+            logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
             drag_data_init_ = false;
 
@@ -199,12 +199,12 @@ bool GridViewChart::handleMouseRelease(Qt::MouseButtons buttons, const QPointF& 
         }
         else if ((tool == GV_ZOOM_RECT_TOOL || tool == GV_SELECT_TOOL) && isSelectionEnabled())
         {
-            loginf << "GridViewChart: handleMouseRelease: RECT x " << widget_pos.x() << " y " << widget_pos.y();
+            loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
             // view widget coordinates to chart coordinates
             QPointF p = widgetToChart(widget_pos);
 
-            loginf << "GridViewChart: handleMouseRelease: RECT xc " << p.x() << " yc " << p.y();
+            loginf << "rect xc " << p.x() << " yc " << p.y();
 
             if (update_pos)
             {
@@ -212,7 +212,7 @@ bool GridViewChart::handleMouseRelease(Qt::MouseButtons buttons, const QPointF& 
                 p2_data_ = p;
             }
             
-            loginf << "GridViewChart: handleMouseRelease: REGION p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
+            loginf << "region p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
 
             updateSelection(p1_, p2_, p1_data_, p2_data_);
             sendSelectedRegion();
@@ -341,14 +341,14 @@ void GridViewChart::paintCustomItems(QPaintEvent* event, QPainter& painter)
  */
 void GridViewChart::resetZoom()
 {
-    if (chart() && chart()->axisX() && chart()->axisY())
+    if (chart() && !chart()->axes(Qt::Horizontal).isEmpty() && !chart()->axes(Qt::Vertical).isEmpty())
     {
         const auto& bounds = data_widget_->gridBounds();
 
         if (!bounds.isEmpty())
         {
-            chart()->axisX()->setRange(bounds.x(), bounds.x() + bounds.width());
-            chart()->axisY()->setRange(bounds.y(), bounds.y() + bounds.height());
+            chart()->axes(Qt::Horizontal).first()->setRange(bounds.x(), bounds.x() + bounds.width());
+            chart()->axes(Qt::Vertical).first()->setRange(bounds.y(), bounds.y() + bounds.height());
         }
     }
 }
@@ -357,10 +357,10 @@ void GridViewChart::resetZoom()
  */
 void GridViewChart::zoom(const QPointF& p1, const QPointF& p2)
 {
-    if (chart() && chart()->axisX() && chart()->axisY())
+    if (chart() && !chart()->axes(Qt::Horizontal).isEmpty() && !chart()->axes(Qt::Vertical).isEmpty())
     {
-        chart()->axisX()->setRange(std::min(p1.x(), p2.x()), std::max(p1.x(), p2.x()));
-        chart()->axisY()->setRange(std::min(p1.y(), p2.y()), std::max(p1.y(), p2.y()));
+        chart()->axes(Qt::Horizontal).first()->setRange(std::min(p1.x(), p2.x()), std::max(p1.x(), p2.x()));
+        chart()->axes(Qt::Vertical).first()->setRange(std::min(p1.y(), p2.y()), std::max(p1.y(), p2.y()));
     }
 }
 

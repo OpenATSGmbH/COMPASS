@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "traced_assert.h"
 #include <string>
 
 #include <boost/optional.hpp>
@@ -34,7 +35,7 @@ public:
     bool ok() const { return this->first; }
     const std::string& error() const { return this->second; }
 
-    static Result failed(const std::string& err) { return Result(false, err); }
+    static Result failed(const std::string& err = "") { return Result(false, err); }
     static Result succeeded() { return Result(true, ""); }
 };
 
@@ -54,7 +55,7 @@ public:
     void setResult(const T& result) { result_ = result; }
     void resetResult() { result_.reset(); }
     bool hasResult() const { return result_.has_value(); }
-    const T& result() const { assert(hasResult()); return result_.value(); }
+    const T& result() const { traced_assert(hasResult()); return result_.value(); }
 
     static ResultT<T> succeeded(const boost::optional<T>& result) { return ResultT<T>(true, "", result); }
 

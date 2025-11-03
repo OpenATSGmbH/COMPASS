@@ -29,6 +29,9 @@
 #include <cstddef>
 #include <map>
 
+#define MAX_UDP_READ_SIZE_VALUE 1024*1024
+#define MAX_ALL_RECEIVE_SIZE_VALUE 100*1024*1024
+
 /**
  * Decode ASTERIX from network lines.
 */
@@ -43,8 +46,11 @@ public:
 
     virtual std::string currentDataSourceName() const override { return "Network"; }
 
-    static const unsigned int MAX_UDP_READ_SIZE    = 1024*1024;
-    static const unsigned int MAX_ALL_RECEIVE_SIZE = 100*1024*1024;
+    static constexpr unsigned int MAX_UDP_READ_SIZE    = MAX_UDP_READ_SIZE_VALUE;
+    static constexpr unsigned int MAX_ALL_RECEIVE_SIZE = MAX_ALL_RECEIVE_SIZE_VALUE;
+
+    static const unsigned int MaxUDPReadSize;
+    static const unsigned int MaxAllReceiveSize;
 
 protected:
     void start_impl() override final;

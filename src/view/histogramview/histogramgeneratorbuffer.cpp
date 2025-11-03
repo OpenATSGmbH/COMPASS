@@ -49,7 +49,7 @@ dbContent::Variable* HistogramGeneratorBuffer::currentVariable(const std::string
     {
         if (!meta_variable_->existsIn(db_content))
         {
-            logwrn << "HistogramGeneratorBuffer: currentVariable: meta var does not exist in dbcontent '" << db_content << "'";
+            logwrn << "meta var does not exist in dbcontent '" << db_content << "'";
             return nullptr;
         }
         data_var = &meta_variable_->getFor(db_content);

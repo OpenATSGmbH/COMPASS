@@ -17,6 +17,7 @@
 
 #include "number.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include "tbbhack.h"
 
@@ -109,10 +110,10 @@ void addWithWeightedAverage(double value1, double std_dev1, unsigned int value1_
         double weight2 = (double) value2_cnt;
 
         double new_weighted_avg = (value1 * weight1 + value2 * weight2) / (weight1 + weight2);
-        assert (std::isfinite(new_weighted_avg));
+        traced_assert(std::isfinite(new_weighted_avg));
 
         double new_weighted_stddev = (std_dev1 * weight1 + std_dev2 * weight2) / (weight1 + weight2);
-        assert (std::isfinite(new_weighted_stddev));
+        traced_assert(std::isfinite(new_weighted_stddev));
 
         weighted_avg = new_weighted_avg;
         weighted_std_dev = new_weighted_stddev; // combined standard deviation
@@ -134,7 +135,7 @@ void addWithWeightedAverage(double value1, double std_dev1, unsigned int value1_
 
         if (!std::isfinite(new_weighted_avg))
         {
-            logerr << "Number: addWithWeightedAverage: new_weighted_avg " << new_weighted_avg
+            logerr << "new_weighted_avg " << new_weighted_avg
                    << " stddevsum " << (std_dev1 * std_dev1)
                    << " weightvalsum " << (value1 * weight1 + value2 * weight2)
                    << " weightsum " << (weight1 + weight2);
@@ -182,7 +183,7 @@ unsigned int numDecimals(double v, unsigned int dec_max)
     if (idx_end == -1)
         return 0;
 
-    assert(idx_end >= idx);
+    traced_assert(idx_end >= idx);
 
     return idx_end - idx;
 }
@@ -343,8 +344,8 @@ std::pair<double, double> speedVec2SpeedAngle(double vx_mps,
 
 unsigned long recNumAddDBContId (unsigned long rec_num_wo_dbcont_id, unsigned int dbcont_id)
 {
-    assert (dbcont_id < 256); // 8bit max
-    assert (rec_num_wo_dbcont_id < (1ul << 56)); // 56bit max
+    traced_assert(dbcont_id < 256); // 8bit max
+    traced_assert(rec_num_wo_dbcont_id < (1ul << 56)); // 56bit max
     return rec_num_wo_dbcont_id << 8 | dbcont_id;
 }
 
@@ -364,7 +365,7 @@ std::tuple<double,double,double,double> getStatistics (const T& values)
     double mean=0, stddev=0, min=0, max=0;
 
     if (values.empty()) {
-        logerr << "Number: getStatistics: empty vector";
+        logerr << "empty vector";
 
         return {std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN(),
                 std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN()};
@@ -392,7 +393,7 @@ template std::tuple<double,double,double,double> getStatistics (const tbb::concu
 std::tuple<double,double,double,double> getStatistics (const std::vector<double>& values)
 {
     if (values.empty()) {
-        logerr << "Number: getStatistics: empty vector";
+        logerr << "empty vector";
 
         return {std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN(),
                 std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN()};
@@ -423,7 +424,7 @@ std::pair<double,double> calculateMeanStdDev (std::vector<double> values, float 
 
     if (values.empty())
     {
-        logerr << "Number: calculateMeanStdDev: empty vector";
+        logerr << "empty vector";
 
         return {std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN()};
     }
@@ -434,7 +435,7 @@ std::pair<double,double> calculateMeanStdDev (std::vector<double> values, float 
 
     if (num_to_check == 0)
     {
-        logerr << "Number: calculateMeanStdDev: remove all values in vector";
+        logerr << "remove all values in vector";
         return {std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN()};
     }
 
@@ -466,7 +467,7 @@ double calculateMedian(std::vector<double> data) {
     size_t size = data.size();
 
     if (size == 0) {
-        logerr << "Number: calculateMedian: empty vector";
+        logerr << "empty vector";
 
         return std::numeric_limits<double>::signaling_NaN();
     }
@@ -484,7 +485,7 @@ double calculateMedian(std::vector<double> data) {
 double calculateIQR(std::vector<double> data) {
     size_t size = data.size();
     if (size < 4) {
-        logerr << "Number: calculateIQR: too few data opints to compute IQR";
+        logerr << "too few data opints to compute IQR";
         return std::numeric_limits<double>::signaling_NaN();
     }
     std::sort(data.begin(), data.end());
@@ -508,7 +509,7 @@ double calculateIQR(std::vector<double> data) {
 // Function to calculate the median absolute deviation (MAD)
 double calculateMAD(std::vector<double> data) {
     if (data.empty()) {
-        logerr << "Number: calculateMAD: empty vector";
+        logerr << "empty vector";
 
         return std::numeric_limits<double>::signaling_NaN();
     }
@@ -538,7 +539,7 @@ std::tuple<double,double,double> getMedianStatistics (const std::vector<double>&
 
         return std::tuple<double,double,double>{median, iqr, mad};
     } catch (const std::domain_error& e) {
-        logerr << "Number: getMedianStatistics: " << e.what();
+        logerr << "start" << e.what();
         return {std::numeric_limits<double>::signaling_NaN(),
                 std::numeric_limits<double>::signaling_NaN(),
                 std::numeric_limits<double>::signaling_NaN()};

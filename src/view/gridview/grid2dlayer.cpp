@@ -235,7 +235,7 @@ void Grid2DLayers::addLayer(const std::string& name,
 */
 void Grid2DLayers::addLayer(LayerPtr&& layer)
 {
-    assert(layer);
+    traced_assert(layer);
 
     size_t idx = layers_.size();
 
@@ -262,7 +262,7 @@ const Grid2DLayers::Layers& Grid2DLayers::layers() const
 const Grid2DLayer& Grid2DLayers::layer(size_t idx) const
 {
     const auto& l = layers_.at(idx);
-    assert(l);
+    traced_assert(l);
 
     return *l;
 }
@@ -271,13 +271,13 @@ const Grid2DLayer& Grid2DLayers::layer(size_t idx) const
 */
 const Grid2DLayer& Grid2DLayers::layer(const std::string& name) const
 {
-    assert(layer_map_.count(name));
+    traced_assert(layer_map_.count(name));
     
     const auto& indices = layer_map_.at(name);
-    assert(!indices.empty());
+    traced_assert(!indices.empty());
 
     const auto& l = layers_.at(indices[ 0 ]);
-    assert(l);
+    traced_assert(l);
 
     return *l;
 }
@@ -286,7 +286,7 @@ const Grid2DLayer& Grid2DLayers::layer(const std::string& name) const
 */
 std::vector<const Grid2DLayer*> Grid2DLayers::layers(const std::string& name) const
 {
-    assert(layer_map_.count(name));
+    traced_assert(layer_map_.count(name));
     
     const auto& indices = layer_map_.at(name);
 
@@ -345,112 +345,4 @@ bool Grid2DLayers::fromJSON(const nlohmann::json& obj)
     }
 
     return true;
-}
-
-/*********************************************************************************
- * Grid2DLayerRenderer
- *********************************************************************************/
-
-/**
-*/
-std::pair<QImage,RasterReference> Grid2DLayerRenderer::render(const Grid2DLayer& layer,
-                                                              const Grid2DRenderSettings& settings)
-{
-    if (!layer.hasData())
-        return {};
-
-    const auto& data  = layer.data;
-    const auto& flags = layer.flags;
-
-    bool has_flags = layer.hasFlags();
-
-    //create empty (transparent) image
-    int pixels_per_cell = std::max(1, settings.pixels_per_cell);
-
-    size_t nrows  = layer.data.rows();
-    size_t ncols  = layer.data.cols();
-
-    size_t nrows_out = nrows * pixels_per_cell;
-    size_t ncols_out = ncols * pixels_per_cell;
-
-    QImage img(ncols_out, nrows_out, QImage::Format_ARGB32);
-        img.fill(QColor(0, 0, 0, 0));
-
-    //create reference corrected for oversampling
-    RasterReference ref = layer.ref;
-
-    ref.img_pixel_size_x /= pixels_per_cell;
-    ref.img_pixel_size_y /= pixels_per_cell;
-
-    //determine range
-    auto range = layer.range();
-
-    double vmin, vmax;
-    bool use_colormap_range = false;
-
-    if (settings.min_value.has_value() && settings.max_value.has_value())
-    {
-        //use min max values specified in settings first
-        vmin = settings.min_value.value();
-        vmax = settings.max_value.value();
-    }
-    else if (settings.color_map.canSampleValues())
-    {
-        //otherwise use range in colormap if available
-        vmin = settings.color_map.valueRange()->first;
-        vmax = settings.color_map.valueRange()->second;
-
-        use_colormap_range = true;
-    }
-    else if (range.has_value())
-    {
-        //otherwise use data range if valid
-        vmin = range.value().first;
-        vmax = range.value().second;
-    }
-    else
-    {
-        //no range => cannot render
-        return std::make_pair(img, ref);
-    }
-
-    //std::cout << "vmin: " << vmin << ", vmax: " << vmax << std::endl;
-
-    double vrange = vmax - vmin;
-    
-    auto getColor = [ & ] (size_t cx, size_t cy)
-    {
-        //handle cell selection
-        if (settings.show_selected && has_flags && (flags(cy, cx) & grid2d::CellFlags::CellSelected))
-            return settings.color_map.specialColor(ColorMap::SpecialColorSelected);
-
-        //flip y-index if north is up
-        if (layer.ref.is_north_up)
-            cy = nrows - 1 - cy;
-
-        if (data(cy, cx) == Grid2D::InvalidValue)
-            return QColor(0, 0, 0, 0);
-
-        double v = data(cy, cx);
-        if (use_colormap_range)
-            return settings.color_map.sampleValue(v);
-
-        double t = (v - vmin) / vrange;
-
-        return settings.color_map.sample(t);
-    };
-
-    for (size_t y = 0, y0 = 0; y < nrows; ++y, y0 += pixels_per_cell)
-    {
-        for (size_t x = 0, x0 = 0; x < ncols; ++x, x0 += pixels_per_cell)
-        {
-            QColor col = getColor(x, y);
-
-            for (int y2 = 0; y2 < pixels_per_cell; ++y2)
-                for (int x2 = 0; x2 < pixels_per_cell; ++x2)
-                    img.setPixelColor(x0 + x2, y0 + y2, col);
-        }
-    }
-
-    return std::make_pair(img, ref);
 }

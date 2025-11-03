@@ -22,7 +22,7 @@
 #include "files.h"
 #include "timeconv.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 #include <QString>
 #include <QByteArray>

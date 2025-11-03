@@ -1,6 +1,8 @@
 set(COMPASS_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 message("  Path: ${COMPASS_PATH}")
 
+SET(CMAKE_EXPORT_COMPILE_COMMANDS, ON)
+
 cmake_minimum_required(VERSION 3.3)
 
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
@@ -8,19 +10,19 @@ set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 project( COMPASS )
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "9")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
 message("  System: ${CMAKE_SYSTEM}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-IF (SOURCE_BRANCH)
+if(EXISTS "/.dockerenv")
 message("  Platform: Linux (inside docker)")
 add_definitions ( -UNDEBUG -Wall -std=c++14 -fext-numeric-literals) # -DQT_NO_KEYWORDS
 ELSE()
 message("  Platform: Linux (local)")
-add_definitions ( -UNDEBUG -Wall -std=c++17 -fext-numeric-literals) # -DQT_NO_KEYWORDS
+add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS -fext-numeric-literals
 ENDIF()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -46,7 +48,7 @@ set(CMAKE_AUTOMOC ON)
 #add_definitions(${Qt5Widgets_DEFINITIONS})
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
-find_package ( Boost 1.73.0 REQUIRED COMPONENTS regex system program_options filesystem iostreams thread)
+find_package (Boost 1.73.0 REQUIRED COMPONENTS regex system program_options filesystem iostreams thread stacktrace_backtrace)
 message("  Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 message("  Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
@@ -98,10 +100,10 @@ find_package(OpenSceneGraph 3.6.5 REQUIRED osgTerrain osgSim osgDB osgGA osgUtil
     # libOpenThreads & libosg automatically searched  osgQt
 message("  OSG_INCLUDE_DIR: ${OPENSCENEGRAPH_INCLUDE_DIRS}")
 
-find_package(osgQt REQUIRED)
+#find_package(osgQt REQUIRED)
 
-message("  OSGQT_INCLUDE_DIR: ${OSGQT_INCLUDE_DIR}")
-message("  OSGQT_LIBRARIES: ${OSGQT_LIBRARIES}")
+#message("  OSGQT_INCLUDE_DIR: ${OSGQT_INCLUDE_DIR}")
+#message("  OSGQT_LIBRARIES: ${OSGQT_LIBRARIES}")
 
 find_package(OSGEarth 3.2 REQUIRED)
 
@@ -113,7 +115,7 @@ message("  OSGEARTH_LIBRARY: ${OSGEARTH_LIBRARY}")
 
 message("OSG libs
     ${OPENSCENEGRAPH_LIBRARIES}"
-    ${OSGQT_INCLUDE_DIR}
+    #${OSGQT_INCLUDE_DIR}
     )
 
 find_package(GeographicLib REQUIRED)
@@ -202,13 +204,21 @@ target_link_libraries ( compass
     NemaTode::NemaTode
     Threads::Threads
     ${OPENSCENEGRAPH_LIBRARIES}
-    ${OSGQT_LIBRARIES}
+    #${OSGQT_LIBRARIES}
     ${OSGEARTH_LIBRARY}
     ${GeographicLib_LIBRARIES}
     #Arrow::arrow_static 
     #Parquet::parquet_static
     ${DUCKDB_LIBRARIES}
     )
+
+target_compile_definitions(compass PRIVATE
+    BOOST_STACKTRACE_USE_BACKTRACE
+    #BOOST_ENABLE_ASSERT_HANDLER
+    BOOST_STACKTRACE_LINK
+)
+
+# target_link_options(compass PRIVATE -rdynamic)
 
 # installation stuff
 
@@ -227,7 +237,6 @@ set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 include (CPack)
 
-
 # add a target to generate API documentation with Doxygen
 #find_package(Doxygen)
 #if(DOXYGEN_FOUND)
@@ -243,7 +252,15 @@ include (CPack)
 #file(GLOB TILD "*~")
 #file(GLOB TEMP "*.cmake")
 
+message("Installing handler")
 
+target_link_libraries ( compass_handler
+    Qt5::Widgets
+    Qt5::Core
+    Qt5::OpenGL
+    Qt5::Charts
+    Qt5::Test
+    ${Boost_LIBRARIES}
+    )
 
-
-
+install (TARGETS compass_handler DESTINATION bin)

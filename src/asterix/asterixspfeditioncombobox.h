@@ -15,8 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ASTERIXSPFEDITIONCOMBOBOX_H
-#define ASTERIXSPFEDITIONCOMBOBOX_H
+#pragma once
+
+#include "traced_assert.h"
 
 #include <jasterix/jasterix.h>
 #include <jasterix/spfedition.h>
@@ -73,7 +74,7 @@ class ASTERIXSPFEditionComboBox : public QComboBox
     void setSPFEdition(const std::string& spf_ed_str)
     {
         int index = findText(QString(spf_ed_str.c_str()));
-        assert(index >= 0);
+        traced_assert(index >= 0);
         setCurrentIndex(index);
     }
 
@@ -81,5 +82,3 @@ class ASTERIXSPFEditionComboBox : public QComboBox
     ASTERIXImportTask& task_;
     const std::shared_ptr<jASTERIX::Category> category_;
 };
-
-#endif  // ASTERIXSPFEDITIONCOMBOBOX_H

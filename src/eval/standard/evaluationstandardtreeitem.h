@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVALUATIONSTANDARDTREEITEM_H
-#define EVALUATIONSTANDARDTREEITEM_H
+#pragma once
 
 #include <QVariant>
 
@@ -40,5 +39,3 @@ public:
 protected:
     EvaluationStandardTreeItem* parent_item_ {nullptr};
 };
-
-#endif // EVALUATIONSTANDARDTREEITEM_H

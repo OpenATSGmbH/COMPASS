@@ -40,7 +40,7 @@
 #include "grid2dlayer.h"
 
 #include <sstream>
-#include <cassert>
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -70,7 +70,7 @@ Base::Base(const std::string& type,
 ,   sector_layer_(sector_layer)
 ,   calculator_  (calculator)
 {
-    assert (requirement_);
+    traced_assert(requirement_);
 
     req_grp_id_ = EvalSectionID::requirementGroupResultID(*this);
 }
@@ -154,7 +154,7 @@ const boost::optional<double>& Base::result() const
 */
 bool Base::resultUsable() const
 {
-    return (result_.has_value() && !ignore_);
+    return (result_.has_value() && !ignore_result_);
 }
 
 /**
@@ -199,7 +199,8 @@ nlohmann::json Base::resultValueOptional(const boost::optional<double>& value) c
 */
 nlohmann::json Base::resultValue(double value) const
 {
-    return requirement_->getResultValueString(value);
+    return formatValue(value, requirement_->getNumThresholdDecimals());
+    //return requirement_->getResultValueString(value);
 }
 
 /**
@@ -214,16 +215,22 @@ std::string Base::conditionResultString() const
 
 /**
 */
-void Base::setIgnored()
+void Base::setIgnoreResult(const std::string& comment)
 {
-    ignore_ = true;
+    ignore_result_ = true;
+    ignore_result_comment_ = comment;
 }
 
 /**
 */
-bool Base::isIgnored() const
+bool Base::ignoreResult() const
 {
-    return ignore_;
+    return ignore_result_;
+}
+
+const std::string& Base::ignoreResultComment() const
+{
+    return ignore_result_comment_;
 }
 
 /**
@@ -319,7 +326,7 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
 
     //add root annotation and retrieve its annotation array
     std::string root_anno_name = getRequirementAnnotationID();
-    assert(!root_anno_name.empty());
+    traced_assert(!root_anno_name.empty());
 
     ViewPointGenAnnotation root_anno(root_anno_name);
 
@@ -357,7 +364,7 @@ FeatureDefinitions Base::getCustomAnnotationDefinitions() const
 */
 void Base::addCustomAnnotations(nlohmann::json& annotations_json) const
 {
-    assert(annotations_json.is_array());
+    traced_assert(annotations_json.is_array());
 
     //get custom annotations
     auto defs = getCustomAnnotationDefinitions();
@@ -366,24 +373,24 @@ void Base::addCustomAnnotations(nlohmann::json& annotations_json) const
 
     for (const auto& value_defs : defs.definitions())
     {
-        loginf << "Base: addCustomAnnotations: Adding annotation for value '" << value_defs.first << "'"; 
+        loginf << "adding annotation for value '" << value_defs.first << "'"; 
 
         //create annotation for value features
         ViewPointGenAnnotation value_annotation(value_defs.first);
 
         for (const auto& def : value_defs.second)
         {
-            assert(def);
+            traced_assert(def);
 
             //create feature and add to annotation
             auto f = def->createFeature(this);
             if (!f)
             {
-                loginf << "Base: addCustomAnnotations: Skipping empty feature of definition type '" << def->type() << "'";
+                loginf << "skipping empty feature of definition type '" << def->type() << "'";
                 continue;
             }
 
-            loginf << "Base: addCustomAnnotations: Adding feature '" << f->name() << "' of definition type '" << def->type() << "'";
+            loginf << "adding feature '" << f->name() << "' of definition type '" << def->type() << "'";
 
             PlotMetadata metadata;
             metadata.plot_group_   = group_name;
@@ -401,7 +408,7 @@ void Base::addCustomAnnotations(nlohmann::json& annotations_json) const
             value_annotation.addAnnotation(std::unique_ptr<ViewPointGenAnnotation>(feat_annotation));
         }
 
-        loginf << "Base: addCustomAnnotations: Added " << value_annotation.numFeatures() << " feature(s) to annotation";
+        loginf << "added " << value_annotation.numFeatures() << " feature(s) to annotation";
 
         //convert to json and collect
         nlohmann::json anno_json;

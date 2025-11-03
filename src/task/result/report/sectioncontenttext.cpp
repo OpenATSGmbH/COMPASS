@@ -25,7 +25,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
-#include <cassert>
+#include "traced_assert.h"
 
 namespace ResultReport
 {
@@ -67,7 +67,7 @@ std::string SectionContentText::resourceExtension() const
 void SectionContentText::addContentUI(QVBoxLayout* layout, 
                                       bool force_ui_reset)
 {
-    assert (layout);
+    traced_assert(layout);
 
     if (isLocked())
     {
@@ -120,7 +120,7 @@ bool SectionContentText::fromJSON_impl(const nlohmann::json& j)
     if (!j.is_object() ||
         !j.contains(FieldTexts))
     {
-        logerr << "SectionContentText: fromJSON: Error: Section content text does not obtain needed fields";
+        logerr << "section content text does not obtain needed fields";
         return false;
     }
 
@@ -132,10 +132,11 @@ bool SectionContentText::fromJSON_impl(const nlohmann::json& j)
 /**
  */
 Result SectionContentText::toJSONDocument_impl(nlohmann::json& j, 
-                                               const std::string* resource_dir) const
+                                               const std::string* resource_dir,
+                                               ReportExportMode export_style) const
 {
     //call base
-    auto r = SectionContent::toJSONDocument_impl(j, resource_dir);
+    auto r = SectionContent::toJSONDocument_impl(j, resource_dir, export_style);
     if (!r.ok())
         return r;
 

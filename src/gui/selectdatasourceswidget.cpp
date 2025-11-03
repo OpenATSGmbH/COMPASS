@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "selectdatasourceswidget.h"
 #include "logger.h"
 #include "datasourcemanager.h"
@@ -45,8 +62,8 @@ SelectDataSourcesWidget::~SelectDataSourcesWidget()
 
 void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selection)
 {
-    loginf << "SelectDataSourcesWidget: updateSelected: ds_type_ " << ds_type_;
-    assert (data_source_layout_);
+    loginf << "ds_type_ " << ds_type_;
+    traced_assert(data_source_layout_);
 
     QLayoutItem* child;
     while (!data_source_layout_->isEmpty() && (child = data_source_layout_->takeAt(0)) != nullptr)
@@ -83,7 +100,7 @@ void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selecti
         checkbox->setProperty("id", ds_id);
         connect(checkbox, SIGNAL(clicked()), this, SLOT(toggleDataSourceSlot()));
 
-        loginf << "SelectDataSourcesWidget: updateSelected: got sensor " << ds_id << " name "
+        loginf << "got sensor " << ds_id << " name "
                << ds_it->name() << " active " << checkbox->isChecked();
 
         data_sources_checkboxes_[ds_id] = checkbox;
@@ -98,7 +115,7 @@ void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selecti
 
 void SelectDataSourcesWidget::toggleDataSourceSlot()
 {
-    logdbg << "SelectDataSourcesWidget: toggleDataSource";
+    logdbg;
 
     std::map<std::string, bool> selection;
 

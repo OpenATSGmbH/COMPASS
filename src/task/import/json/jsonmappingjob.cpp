@@ -39,7 +39,7 @@ JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
       data_record_keys_(data_record_keys), line_id_(line_id),
       json_parsers_(&parsers), asterix_parsers_(nullptr)
 {
-    logdbg << "JSONMappingJob: ctor";
+    logdbg;
 }
 
 JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
@@ -51,19 +51,19 @@ JSONMappingJob::JSONMappingJob(std::unique_ptr<nlohmann::json> data,
       data_record_keys_(data_record_keys), line_id_(line_id),
       json_parsers_(nullptr), asterix_parsers_(&parsers)
 {
-    logdbg << "JSONMappingJob: ctor";
+    logdbg;
 
 }
 
 JSONMappingJob::~JSONMappingJob()
 {
-    loginf << "JSONMappingJob: dtor";
-    assert (done_);
+    loginf;
+    traced_assert(done_);
 }
 
 void JSONMappingJob::run_impl()
 {
-    logdbg << "JSONMappingJob: run";
+    logdbg;
 
     started_ = true;
 
@@ -71,7 +71,7 @@ void JSONMappingJob::run_impl()
         parseJSON();
     else
     {
-        assert (asterix_parsers_);
+        traced_assert(asterix_parsers_);
         parseASTERIX();
     }
 
@@ -83,7 +83,7 @@ void JSONMappingJob::run_impl()
 
     std::map<std::string, std::shared_ptr<Buffer>> not_empty_buffers;
 
-    logdbg << "JSONMappingJob: run: counting buffer sizes";
+    logdbg << "counting buffer sizes";
     for (auto& buf_it : buffers_)
     {
         if (buf_it.second && buf_it.second->size())
@@ -97,7 +97,7 @@ void JSONMappingJob::run_impl()
     done_ = true;
     data_ = nullptr;
 
-    logdbg << "JSONMappingJob: run: done: mapped " << num_created_ << " skipped "
+    logdbg << "done: mapped " << num_created_ << " skipped "
            << num_not_mapped_;
 }
 
@@ -119,7 +119,7 @@ size_t JSONMappingJob::numErrors() const
 
 void JSONMappingJob::parseJSON()
 {
-    assert (!asterix_parsers_);
+    traced_assert(!asterix_parsers_);
 
     for (auto& parser_it : *json_parsers_)
     {
@@ -152,22 +152,22 @@ void JSONMappingJob::parseJSON()
             if (!map_it.second->active())
                 continue;
 
-            logdbg << "JSONMappingJob: parseJSON: mapping json: obj " << map_it.second->dbContentName();
+            logdbg << "mapping json: obj " << map_it.second->dbContentName();
             std::shared_ptr<Buffer>& buffer = buffers_.at(map_it.second->dbContentName());
-            assert(buffer);
+            traced_assert(buffer);
             try
             {
-                logdbg << "JSONMappingJob: parseJSON: obj " << map_it.second->dbContentName() << " parsing JSON";
+                logdbg << "obj " << map_it.second->dbContentName() << " parsing JSON";
 
                 parsed = map_it.second->parseJSON(record, *buffer);
 
-                logdbg << "JSONMappingJob: parseJSON: obj " << map_it.second->dbContentName() << " done";
+                logdbg << "obj " << map_it.second->dbContentName() << " done";
 
                 parsed_any |= parsed;
             }
             catch (exception& e)
             {
-                logerr << "JSONMappingJob: parseJSON: caught exception '" << e.what() << "' in \n'"
+                logerr << "caught exception '" << e.what() << "' in \n'"
                        << record.dump(4) << "' parser " << map_it.second->dbContentName();
 
                 ++num_errors_;
@@ -195,8 +195,8 @@ void JSONMappingJob::parseJSON()
         done_ = true;
         return;
     }
-    assert(data_);
-    logdbg << "JSONMappingJob: parseJSON: applying JSON function";
+    traced_assert(data_);
+    logdbg << "applying JSON function";
 
     JSON::applyFunctionToValues(*data_.get(), data_record_keys_, data_record_keys_.begin(),
                                 process_lambda, false);
@@ -204,7 +204,7 @@ void JSONMappingJob::parseJSON()
 
 void JSONMappingJob::parseASTERIX()
 {
-    assert (!json_parsers_);
+    traced_assert(!json_parsers_);
 
     for (auto& parser_it : *asterix_parsers_)
     {
@@ -219,7 +219,7 @@ void JSONMappingJob::parseASTERIX()
         //loginf << "UGA '" << record.dump(4) << "'";
 
         unsigned int category{0};
-        assert (record.contains("category"));
+        traced_assert(record.contains("category"));
 
         category = record.at("category");
 
@@ -235,31 +235,31 @@ void JSONMappingJob::parseASTERIX()
 
         string dbcontent_name = parser->dbContentName();
 
-        logdbg << "ASTERIXJSONMappingJob: run: mapping json: cat " << category;
+        logdbg << "mapping json: cat " << category;
 
         std::shared_ptr<Buffer>& buffer = buffers_.at(dbcontent_name);
-        assert(buffer);
+        traced_assert(buffer);
 
         try
         {
-            logdbg << "ASTERIXJSONMappingJob: run: obj " << dbcontent_name << " parsing JSON";
+            logdbg << "obj " << dbcontent_name << " parsing JSON";
 
             parsed = parser->parseJSON(record, *buffer);
 
 //            if (parsed)
 //            {
-//                logdbg << "ASTERIXJSONMappingJob: run: obj " << parser.dbObject().name() << " transforming buffer";
+//                logdbg << "obj " << parser.dbObject().name() << " transforming buffer";
 //                //parser.transformBuffer(*buffer, buffer->size() - 1);
 //            }
 
-            logdbg << "ASTERIXJSONMappingJob: run: obj " << dbcontent_name << " done";
+            logdbg << "obj " << dbcontent_name << " done";
 
             parsed_any |= parsed;
         }
         catch (exception& e)
         {
-            logerr << "ASTERIXJSONMappingJob: run: caught exception '" << e.what() << "' in \n'"
-                       << record.dump(4) << "' parser dbo " << dbcontent_name;
+            logerr << "caught exception '" << e.what() << "' in \n'"
+                       << record.dump(4) << "' parser dbcont " << dbcontent_name;
 
             ++num_errors_;
 
@@ -284,8 +284,8 @@ void JSONMappingJob::parseASTERIX()
         return;
     }
 
-    assert(data_);
-    logdbg << "JSONMappingJob: parseASTERIX: applying JSON function";
+    traced_assert(data_);
+    logdbg << "applying JSON function";
 
     JSON::applyFunctionToValues(*data_.get(), data_record_keys_, data_record_keys_.begin(),
                                 process_lambda, false);

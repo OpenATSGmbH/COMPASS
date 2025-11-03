@@ -15,13 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef UpdateBufferDBJob_H_
-#define UpdateBufferDBJob_H_
+#pragma once
 
 #include "job.h"
 
 #include <list>
-#include <cassert>
+#include "traced_assert.h"
 
 class Buffer;
 class DBContent;
@@ -40,14 +39,14 @@ class UpdateBufferDBJob : public Job
     void updateProgressSignal(float percent);
 
   public:
-    UpdateBufferDBJob(DBInterface& db_interface, DBContent& dbobject, dbContent::Variable& key_var,
+    UpdateBufferDBJob(DBInterface& db_interface, DBContent& dbcontbject, dbContent::Variable& key_var,
                       std::shared_ptr<Buffer> buffer);
 
     virtual ~UpdateBufferDBJob();
 
     std::shared_ptr<Buffer> buffer()
     {
-        assert(buffer_);
+        traced_assert(buffer_);
         return buffer_;
     }
 
@@ -55,9 +54,7 @@ class UpdateBufferDBJob : public Job
     virtual void run_impl();
 
     DBInterface& db_interface_;
-    DBContent& dbobject_;
+    DBContent& dbcontbject_;
     dbContent::Variable& key_var_;
     std::shared_ptr<Buffer> buffer_;
 };
-
-#endif /* UpdateBufferDBJob_H_ */

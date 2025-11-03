@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GPSTRAILIMPORTTASKWIDGET_H
-#define GPSTRAILIMPORTTASKWIDGET_H
+#pragma once
 
 #include <taskwidget.h>
 
@@ -101,5 +100,3 @@ protected:
     void addMainTab();
     void addConfigTab();
 };
-
-#endif // GPSTRAILIMPORTTASKWIDGET_H

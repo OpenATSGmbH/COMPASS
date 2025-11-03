@@ -102,7 +102,7 @@ protected:
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) override;
 
     void updateSettingsFromVariable();
-    void updateSettings(const std::string& dbo, const std::string& name);
+    void updateSettings(const std::string& dbcont, const std::string& name);
 
     GridViewDataWidget* getDataWidget();
 

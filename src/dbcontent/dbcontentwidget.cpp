@@ -17,19 +17,11 @@
 
 #include "dbcontent/dbcontentwidget.h"
 
-//#include "compass.h"
-//#include "configuration.h"
-//#include "configurationmanager.h"
 #include "dbcontent/dbcontent.h"
-//#include "dbodatasourcedefinitionwidget.h"
-//#include "dboeditdatasourceswidget.h"
-//#include "dbcontent/labeldefinitionwidget.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
-//#include "dbcontent/variable/variablewidget.h"
 #include "files.h"
 #include "logger.h"
-//#include "stringconv.h"
 #include "stringrepresentationcombobox.h"
 #include "unitselectionwidget.h"
 
@@ -53,7 +45,7 @@ DBContentWidget::DBContentWidget(DBContent* object, QWidget* parent,
                                Qt::WindowFlags f)
     : QWidget(parent, f), object_(object)
 {
-    assert(object_);
+    traced_assert(object_);
 
     setMinimumSize(QSize(1500, 800));
 
@@ -156,24 +148,24 @@ DBContentWidget::DBContentWidget(DBContent* object, QWidget* parent,
     main_layout->addLayout(top_layout);
 
     // dobvars
-    QLabel* dbo_label = new QLabel("Variables");
-    dbo_label->setFont(font_big);
-    main_layout->addWidget(dbo_label);
+    QLabel* dbcont_label = new QLabel("Variables");
+    dbcont_label->setFont(font_big);
+    main_layout->addWidget(dbcont_label);
 
-    QFrame* dbo_frame = new QFrame();
-    dbo_frame->setFrameStyle(QFrame::Panel | QFrame::Raised);
-    dbo_frame->setLineWidth(frame_width_small);
+    QFrame* dbcont_frame = new QFrame();
+    dbcont_frame->setFrameStyle(QFrame::Panel | QFrame::Raised);
+    dbcont_frame->setLineWidth(frame_width_small);
 
-    dbovars_grid_ = new QGridLayout();
-    updateDBOVarsGridSlot();
+    dbcontvars_grid_ = new QGridLayout();
+    updateDBContVarsGridSlot();
 
-    dbo_frame->setLayout(dbovars_grid_);
+    dbcont_frame->setLayout(dbcontvars_grid_);
 
-    QScrollArea* dbo_scroll = new QScrollArea();
-    dbo_scroll->setWidgetResizable(true);
-    dbo_scroll->setWidget(dbo_frame);
+    QScrollArea* dbcont_scroll = new QScrollArea();
+    dbcont_scroll->setWidgetResizable(true);
+    dbcont_scroll->setWidget(dbcont_frame);
 
-    main_layout->addWidget(dbo_scroll);
+    main_layout->addWidget(dbcont_scroll);
 
     setLayout(main_layout);
 
@@ -184,39 +176,35 @@ DBContentWidget::~DBContentWidget() {}
 
 void DBContentWidget::editNameSlot()
 {
-    logdbg << "DBContentWidget editName";
-    assert(name_edit_);
-    assert(object_);
+    traced_assert(name_edit_);
+    traced_assert(object_);
 
     std::string text = name_edit_->text().toStdString();
-    assert(text.size() > 0);
+    traced_assert(text.size() > 0);
     object_->name(text);
-    emit changedDBOSignal();
+    emit changedDBContSignal();
 }
 void DBContentWidget::editInfoSlot()
 {
-    logdbg << "DBContentWidget editInfo";
-    assert(info_edit_);
-    assert(object_);
+    traced_assert(info_edit_);
+    traced_assert(object_);
 
     std::string text = info_edit_->text().toStdString();
-    assert(text.size() > 0);
+    traced_assert(text.size() > 0);
     object_->info(text);
-    emit changedDBOSignal();
+    emit changedDBContSignal();
 }
 
 void DBContentWidget::editDBContentVariableNameSlot()
 {
-    logdbg << "DBContentWidget editDBContentVariableNameSlot";
-
     QLineEdit* edit = static_cast<QLineEdit*>(sender());
-    assert(edit);
+    traced_assert(edit);
 
     std::string new_name = edit->text().toStdString();
 
     Variable* variable = edit->property("variable").value<Variable*>();
-    assert(variable);
-    assert(object_->hasVariable(variable->name()));
+    traced_assert(variable);
+    traced_assert(object_->hasVariable(variable->name()));
 
     if (new_name.size() == 0 || object_->hasVariable(new_name))
     {
@@ -233,45 +221,38 @@ void DBContentWidget::editDBContentVariableNameSlot()
 
 void DBContentWidget::editDBContentVariableDescriptionSlot()
 {
-    logdbg << "DBContentWidget editDBContentVariableDescriptionSlot";
-
     QLineEdit* edit = static_cast<QLineEdit*>(sender());
-    assert(edit);
+    traced_assert(edit);
 
     Variable* variable = edit->property("variable").value<Variable*>();
-    assert(variable);
+    traced_assert(variable);
 
     variable->description(edit->text().toStdString());
 }
 
 void DBContentWidget::editDBContentVariableDBColumnSlot(const QString& text)
 {
-    logdbg << "DBContentWidget editDBContentVariableDBColumnSlot";
-
-    assert (false); // TODO
+    traced_assert(false); // TODO
 }
 
-void DBContentWidget::deleteDBOVarSlot()
+void DBContentWidget::deleteDBContVarSlot()
 {
-    logdbg << "DBContentWidget deleteDBOVar";
-
     QPushButton* button = static_cast<QPushButton*>(sender());
-    assert(button);
+    traced_assert(button);
 
     QVariant data = button->property("variable");
 
     Variable* variable = data.value<Variable*>();
-    assert(variable);
+    traced_assert(variable);
     object_->deleteVariable(variable->name());
 
-    updateDBOVarsGridSlot();
+    updateDBContVarsGridSlot();
 }
 
 void DBContentWidget::updateDataSourcesGridSlot()
 {
-    logdbg << "DBContentWidget updateDataSourcesGrid";
-    assert(object_);
-    assert(ds_grid_);
+    traced_assert(object_);
+    traced_assert(ds_grid_);
 
     QLayoutItem* child;
     while (!ds_grid_->isEmpty() && (child = ds_grid_->takeAt(0)) != nullptr)
@@ -300,21 +281,20 @@ void DBContentWidget::updateDataSourcesGridSlot()
     QIcon del_icon(Files::IconProvider::getIcon("delete.png"));
 }
 
-void DBContentWidget::updateDBOVarsGridSlot()
+void DBContentWidget::updateDBContVarsGridSlot()
 {
-    logdbg << "DBContentWidget updateDBOVarsGrid";
-    assert(object_);
-    assert(dbovars_grid_);
+    traced_assert(object_);
+    traced_assert(dbcontvars_grid_);
 
     QLayoutItem* child;
-    while (!dbovars_grid_->isEmpty() && (child = dbovars_grid_->takeAt(0)) != nullptr)
+    while (!dbcontvars_grid_->isEmpty() && (child = dbcontvars_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();
         delete child;
     }
 
-    logdbg << "DBContentWidget updateDBOVarsGrid: creating first row";
+    logdbg << "creating first row";
 
     QFont font_bold;
     font_bold.setBold(true);
@@ -328,38 +308,38 @@ void DBContentWidget::updateDBOVarsGridSlot()
 
     QLabel* name_label = new QLabel("Name");
     name_label->setFont(font_bold);
-    dbovars_grid_->addWidget(name_label, row, col);
+    dbcontvars_grid_->addWidget(name_label, row, col);
 
     col++;
     QLabel* info_label = new QLabel("Description");
     info_label->setFont(font_bold);
-    dbovars_grid_->addWidget(info_label, row, col);
+    dbcontvars_grid_->addWidget(info_label, row, col);
 
     col++;
     QLabel* type_label = new QLabel("Data type");
     type_label->setFont(font_bold);
-    dbovars_grid_->addWidget(type_label, row, col);
+    dbcontvars_grid_->addWidget(type_label, row, col);
 
     col++;
     QLabel* unit_label = new QLabel("Unit");
     unit_label->setFont(font_bold);
-    dbovars_grid_->addWidget(unit_label, row, col);
+    dbcontvars_grid_->addWidget(unit_label, row, col);
 
     col++;
     QLabel* representation_label = new QLabel("Representation");
     representation_label->setFont(font_bold);
-    dbovars_grid_->addWidget(representation_label, row, col);
+    dbcontvars_grid_->addWidget(representation_label, row, col);
 
     col++;
     std::string schema_string = "Schema";
     QLabel* label = new QLabel(schema_string.c_str());
-    dbovars_grid_->addWidget(label, row, col);
+    dbcontvars_grid_->addWidget(label, row, col);
 
-    logdbg << "DBContentWidget updateDBOVarsGrid: getting schemas";
+    logdbg << "getting schemas";
 
     QIcon del_icon(Files::IconProvider::getIcon("delete.png"));
 
-    logdbg << "DBContentWidget updateDBOVarsGrid: creating variable rows";
+    logdbg << "reating variable rows";
 
     for (auto& var_it : object_->variables())
     {
@@ -372,15 +352,15 @@ void DBContentWidget::updateDBOVarsGridSlot()
         // QVariant data = QVariant::fromValue(dynamic_cast<QObject*>(var_it.second));
         QVariant data = QVariant::fromValue(&variable);
 
-        // logdbg  << "DBContentWidget updateDBOVarsGrid: creating variable row for " << it->first
+        // logdbg  << "creating variable row for " << it->first
         // << " name";
         QLineEdit* name_edit = new QLineEdit(var_it.first.c_str());
         name_edit->setMaximumWidth(200);
         name_edit->setProperty("variable", data);
         connect(name_edit, SIGNAL(returnPressed()), this, SLOT(editDBContentVariableNameSlot()));
-        dbovars_grid_->addWidget(name_edit, row, col);
+        dbcontvars_grid_->addWidget(name_edit, row, col);
 
-        // logdbg  << "DBContentWidget updateDBOVarsGrid: creating variable row for " << it->first
+        // logdbg  << "creating variable row for " << it->first
         // << " info";
         col++;
         QLineEdit* description_edit = new QLineEdit(var_it.second->description().c_str());
@@ -388,22 +368,22 @@ void DBContentWidget::updateDBOVarsGridSlot()
         description_edit->setProperty("variable", data);
         connect(description_edit, SIGNAL(returnPressed()), this,
                 SLOT(editDBContentVariableDescriptionSlot()));
-        dbovars_grid_->addWidget(description_edit, row, col);
+        dbcontvars_grid_->addWidget(description_edit, row, col);
 
         col++;
         VariableDataTypeComboBox* type_combo = new VariableDataTypeComboBox(
                     variable.dataTypeRef(), variable.dataTypeStringRef());
-        dbovars_grid_->addWidget(type_combo, row, col);
+        dbcontvars_grid_->addWidget(type_combo, row, col);
 
         col++;
         UnitSelectionWidget* unit_sel =
             new UnitSelectionWidget(var_it.second->dimension(), var_it.second->unit());
-        dbovars_grid_->addWidget(unit_sel, row, col);
+        dbcontvars_grid_->addWidget(unit_sel, row, col);
 
         col++;
         StringRepresentationComboBox* representation_box =
             new StringRepresentationComboBox(variable.representationRef(), variable.representationStringRef());
-        dbovars_grid_->addWidget(representation_box, row, col);
+        dbcontvars_grid_->addWidget(representation_box, row, col);
 
         col++;
 
@@ -412,19 +392,19 @@ void DBContentWidget::updateDBOVarsGridSlot()
 //                    test.currentMetaTable().name(), var_it.second);
 //        box->setProperty("variable", data);
 //        connect(box, SIGNAL(activated(const QString&)), this,
-//                SLOT(editDBOVariableDBColumnSlot(const QString&)));
-//        dbovars_grid_->addWidget(box, row, col);
+//                SLOT(editDBContVariableDBColumnSlot(const QString&)));
+//        dbcontvars_grid_->addWidget(box, row, col);
 
         col++;
         QPushButton* del = new QPushButton();
         del->setIcon(del_icon);
         del->setFixedSize(UI_ICON_SIZE);
         del->setFlat(UI_ICON_BUTTON_FLAT);
-        connect(del, SIGNAL(clicked()), this, SLOT(deleteDBOVarSlot()));
+        connect(del, SIGNAL(clicked()), this, SLOT(deleteDBContVarSlot()));
         del->setProperty("variable", data);
-        dbovars_grid_->addWidget(del, row, col);
+        dbcontvars_grid_->addWidget(del, row, col);
 
         row++;
     }
-    // logdbg  << "DBContentWidget updateDBOVarsGrid: done";
+    // logdbg  << "done";
 }

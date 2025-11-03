@@ -178,7 +178,7 @@ public:
     */
     bool scan(const GetValueFunc& get_value_func, size_t n) 
     {
-        assert(get_value_func);
+        traced_assert(get_value_func);
 
         //keep track of min max values
         boost::optional<T> data_min;
@@ -238,7 +238,7 @@ public:
         if (num_bins.has_value())
             config.num_bins = num_bins.value();
 
-        logdbg << "HistogramInitializerT: generateConfiguration: valid = " << valid() 
+        logdbg << "valid = " << valid() 
                << ", has distinct = " << distinct_values_.has_value() 
                << ", num distinct = " << (distinct_values_.has_value() ? distinct_values_->size() : 0);
 
@@ -250,13 +250,13 @@ public:
         bool collect_distinct_values = collectDistinctValues();
 
         //distinct values should exist in case we collect them
-        assert(!collect_distinct_values || has_distinct_values);
+        traced_assert(!collect_distinct_values || has_distinct_values);
 
         //for a single value we just return a single category in any case
         if (data_min_.value() == data_max_.value())
         {
             //distinct values should be of size 1 in case we collect them
-            assert(!collect_distinct_values || distinct_values_->size() == 1);
+            traced_assert(!collect_distinct_values || distinct_values_->size() == 1);
 
             //single distinct value
             config.num_bins    = 1;
@@ -314,7 +314,7 @@ public:
         }
         else
         {
-            assert(distinct_values_.has_value());
+            traced_assert(distinct_values_.has_value());
             std::vector<T> categories(distinct_values_.value().begin(), distinct_values_.value().end());
             return h.createFromCategories(categories, config.sorted_bins);
         }
@@ -360,7 +360,7 @@ public:
                    const boost::optional<unsigned int>& distinct_values_min = boost::optional<unsigned int>(),
                    dbContent::Variable* data_var_repr = nullptr)
     {
-        assert(get_value_func);
+        traced_assert(get_value_func);
 
         histogram = {};
 
@@ -395,7 +395,7 @@ public:
                    bool categories_are_sorted = false,
                    dbContent::Variable* data_var_repr = nullptr)
     {
-        assert(category_values.size() == category_counts.size());
+        traced_assert(category_values.size() == category_counts.size());
 
         histogram = {};
 
@@ -452,7 +452,7 @@ protected:
      */
     std::set<T> distinctValues(const GetValueFunc& get_value_func, size_t n) const
     {
-        assert(get_value_func);
+        traced_assert(get_value_func);
 
         std::set<T> distinct_values;
 

@@ -1,3 +1,20 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "modecfilter.h"
 #include "compass.h"
 #include "modecfilterwidget.h"
@@ -27,14 +44,14 @@ ModeCFilter::ModeCFilter(const std::string& class_id, const std::string& instanc
 
 ModeCFilter::~ModeCFilter() {}
 
-bool ModeCFilter::filters(const std::string& dbo_type)
+bool ModeCFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbo_type);
+    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcont_name);
 }
 
 std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "ModeCFilter: getConditionString: dbcont " << dbcontent_name << " active " << active_;
+    logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
     auto& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -124,14 +141,14 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, b
         }
     }
 
-    logdbg << "ModeCFilter: getConditionString: here '" << ss.str() << "'";
+    logdbg << "here '" << ss.str() << "'";
 
     return ss.str();
 }
 
 void ModeCFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
 {
-    logdbg << "ModeCFilter: generateSubConfigurable: class_id " << class_id;
+    logdbg << "class_id " << class_id;
 
     throw std::runtime_error("ModeCFilter: generateSubConfigurable: unknown class_id " + class_id);
 }
@@ -144,7 +161,7 @@ DBFilterWidget* ModeCFilter::createWidget()
 
 void ModeCFilter::checkSubConfigurables()
 {
-    logdbg << "ModeCFilter: checkSubConfigurables";
+    logdbg;
 }
 
 
@@ -155,9 +172,9 @@ void ModeCFilter::reset()
 
 void ModeCFilter::saveViewPointConditions (nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (!filters.contains(name_));
+    traced_assert(!filters.contains(name_));
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
@@ -168,15 +185,15 @@ void ModeCFilter::saveViewPointConditions (nlohmann::json& filters)
 
 void ModeCFilter::loadViewPointConditions (const nlohmann::json& filters)
 {
-    assert (conditions_.size() == 0);
+    traced_assert(conditions_.size() == 0);
 
-    assert (filters.contains(name_));
+    traced_assert(filters.contains(name_));
     const json& filter = filters.at(name_);
 
-    assert (filter.contains("Barometric Altitude Minimum"));
+    traced_assert(filter.contains("Barometric Altitude Minimum"));
     min_value_ = filter.at("Barometric Altitude Minimum");
 
-    assert (filter.contains("Barometric Altitude Maximum"));
+    traced_assert(filter.contains("Barometric Altitude Maximum"));
     max_value_ = filter.at("Barometric Altitude Maximum");
 
     if (filter.contains("Barometric Altitude NULL"))
@@ -204,7 +221,7 @@ std::vector<unsigned int> ModeCFilter::filterBuffer(const std::string& dbcontent
     dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
                                                                          DBContent::meta_var_mc_.name()).getFor(dbcontent_name);
 
-    assert (buffer->has<float> (var.name()));
+    traced_assert(buffer->has<float> (var.name()));
 
     NullableVector<float>& data_vec = buffer->get<float> (var.name());
 
@@ -237,6 +254,8 @@ float ModeCFilter::minValue() const
 void ModeCFilter::minValue(float min_value)
 {
     min_value_ = min_value;
+
+    loginf << "min_value " << min_value_;
 }
 
 float ModeCFilter::maxValue() const
@@ -246,7 +265,9 @@ float ModeCFilter::maxValue() const
 
 void ModeCFilter::maxValue(float max_value)
 {
-    max_value_ = max_value_;
+    max_value_ = max_value;
+
+    loginf << "max_value " << max_value_;
 }
 
 bool ModeCFilter::nullWanted() const

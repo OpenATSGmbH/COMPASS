@@ -39,7 +39,7 @@ Report::Report(TaskResult* result)
 :   TreeItem(SectionID::SectionReport, nullptr)
 ,   result_ (result)
 {
-    assert(result_);
+    traced_assert(result_);
 
     root_section_ = std::make_shared<Section>(SectionID::SectionResults, "", this, this);
 }
@@ -48,7 +48,7 @@ Report::Report(TaskResult* result)
  */
 Report::~Report()
 {
-    logdbg << "Report: destructor";
+    logdbg;
 }
 
 /**
@@ -107,7 +107,7 @@ int Report::columnCount() const
  */
 QVariant Report::data(int column) const
 {
-    assert (column == 0);
+    traced_assert(column == 0);
 
     return name().c_str();
 }
@@ -167,11 +167,11 @@ bool Report::hasSection(const std::string& id) const
     if (id.empty())
         return false;
 
-    loginf << "Report: hasSection: Checking for section '" << id << "'";
+    loginf << "Checking for section '" << id << "'";
 
     std::string id_in = root_section_->relativeID(id);
 
-    loginf << "Report: hasSection: Checking for relative section '" << id_in << "'";
+    loginf << "Checking for relative section '" << id_in << "'";
 
     std::vector<std::string> parts = SectionID::subSections(id_in);
     if (parts.empty())
@@ -192,7 +192,7 @@ bool Report::hasSection(const std::string& id) const
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 return false;
@@ -208,14 +208,14 @@ bool Report::hasSection(const std::string& id) const
  */
 Section& Report::getSection (const std::string& id)
 {
-    logdbg << "Report: getSection: id '" << id << "'";
+    logdbg << "id '" << id << "'";
 
-    assert (id.size());
+    traced_assert(id.size());
 
     std::string id_in = root_section_->relativeID(id);
 
     std::vector<std::string> parts = SectionID::subSections(id_in);
-    assert (parts.size());
+    traced_assert(parts.size());
 
     Section* tmp = nullptr;
 
@@ -232,7 +232,7 @@ Section& Report::getSection (const std::string& id)
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 tmp->addSubSection(heading);
@@ -241,7 +241,46 @@ Section& Report::getSection (const std::string& id)
         }
     }
 
-    assert (tmp);
+    traced_assert(tmp);
+    return *tmp;
+}
+
+const Section& Report::getSection (const std::string& id) const
+{
+    logdbg << "id '" << id << "'";
+
+    traced_assert(id.size());
+
+    std::string id_in = root_section_->relativeID(id);
+
+    std::vector<std::string> parts = SectionID::subSections(id_in);
+    traced_assert(parts.size());
+
+    Section* tmp = nullptr;
+
+    for (unsigned int cnt=0; cnt < parts.size(); ++cnt)
+    {
+        std::string& heading = parts.at(cnt);
+
+        if (cnt == 0) // first
+        {
+            if (!root_section_->hasSubSection(heading))
+                root_section_->addSubSection(heading);
+
+            tmp = &root_section_->getSubSection(heading);
+        }
+        else // previous section
+        {
+            traced_assert(tmp);
+
+            if (!tmp->hasSubSection(heading))
+                tmp->addSubSection(heading);
+
+            tmp = &tmp->getSubSection(heading);
+        }
+    }
+
+    traced_assert(tmp);
     return *tmp;
 }
 
@@ -259,13 +298,13 @@ bool Report::fromJSON_impl(const nlohmann::json& j)
     if (!j.is_object() ||
         !j.contains(FieldRootSection))
     {
-        logerr << "Report: fromJSON_impl: Report does not contain needed fields: isobject = " << j.is_object();
+        logerr << "report does not contain needed fields: isobject = " << j.is_object();
         return false;
     }
 
     if (!root_section_->fromJSON(j[ FieldRootSection ]))
     {
-        logerr << "Report: fromJSON_impl: Could not read root section";
+        logerr << "could not read root section";
         return false;
     }
 
@@ -275,7 +314,8 @@ bool Report::fromJSON_impl(const nlohmann::json& j)
 /**
  */
 Result Report::toJSONDocument_impl(nlohmann::json& j,
-                                   const std::string* resource_dir) const
+                                   const std::string* resource_dir,
+                                   ReportExportMode export_style) const
 {
     //nothing to do yet
 
@@ -284,9 +324,10 @@ Result Report::toJSONDocument_impl(nlohmann::json& j,
 
 /**
  */
-void Report::setCurrentViewable(const nlohmann::json::object_t& data)
+void Report::setCurrentViewable(const nlohmann::json::object_t& data,
+                                bool load_blocking)
 {
-    result_->taskManager().setViewableDataConfig(data);
+    result_->taskManager().setViewableDataConfig(data, load_blocking);
 }
 
 /**

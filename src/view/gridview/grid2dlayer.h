@@ -26,8 +26,6 @@
 
 #include <boost/optional.hpp>
 
-#include <QImage>
-
 class ColorMap;
 
 /**
@@ -91,28 +89,4 @@ public:
 private:
     Layers   layers_;
     LayerMap layer_map_;
-};
-
-/**
-*/
-struct Grid2DRenderSettings
-{
-    ColorMap                color_map;
-    boost::optional<double> min_value;
-    boost::optional<double> max_value;
-    int                     pixels_per_cell = 1;
-
-    nlohmann::json toJSON() const;
-    bool fromJSON(const nlohmann::json& obj);
-
-    bool show_selected = true;
-};
-
-/**
-*/
-class Grid2DLayerRenderer
-{
-public:
-    static std::pair<QImage,RasterReference> render(const Grid2DLayer& layer,
-                                                    const Grid2DRenderSettings& settings);
 };

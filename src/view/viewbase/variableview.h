@@ -79,7 +79,7 @@ public:
     bool hasCurrentAnnotation() const;
 
     bool hasViewPoint () { return current_view_point_ != nullptr; }
-    const ViewableDataConfig& viewPoint() { assert (hasViewPoint()); return *current_view_point_; }
+    const ViewableDataConfig& viewPoint() { traced_assert(hasViewPoint()); return *current_view_point_; }
 
 public slots:
     virtual void unshowViewPointSlot (const ViewableDataConfig* vp) override final;
@@ -91,7 +91,7 @@ protected:
     ViewVariable& addVariable(const std::string& id,
                               const std::string& display_name,
                               const std::string& var_name,
-                              const std::string& default_dbo,
+                              const std::string& default_dbcont,
                               const std::string& default_name,
                               bool show_meta_vars,
                               bool show_empty_vars,
@@ -102,7 +102,7 @@ protected:
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) = 0;
 
-    virtual void preVariableChangedEvent(int idx, const std::string& dbo, const std::string& name) {}
+    virtual void preVariableChangedEvent(int idx, const std::string& dbcont, const std::string& name) {}
     virtual void postVariableChangedEvent(int idx) {}
 
     virtual void unshowViewPoint(const ViewableDataConfig* vp) {}

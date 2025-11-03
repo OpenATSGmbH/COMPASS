@@ -67,7 +67,7 @@ ScatterPlotView::ScatterPlotView(const std::string& class_id,
 */
 ScatterPlotView::~ScatterPlotView()
 {
-    loginf << "ScatterPlotView: dtor";
+    loginf;
 
     if (data_source_)
     {
@@ -81,7 +81,7 @@ ScatterPlotView::~ScatterPlotView()
         widget_ = nullptr;
     }
 
-    loginf << "ScatterPlotView: dtor: done";
+    loginf << "done";
 }
 
 /**
@@ -90,7 +90,7 @@ bool ScatterPlotView::init_impl()
 {
     createSubConfigurables();
 
-    assert(data_source_);
+    traced_assert(data_source_);
 
 //    connect(data_source_, &ScatterPlotViewDataSource::loadingStartedSignal, widget_->getDataWidget(),
 //            &ScatterPlotViewDataWidget::loadingStartedSlot);
@@ -124,11 +124,11 @@ bool ScatterPlotView::init_impl()
 void ScatterPlotView::generateSubConfigurable(const std::string& class_id,
                                             const std::string& instance_id)
 {
-    logdbg << "ScatterPlotView: generateSubConfigurable: class_id " << class_id << " instance_id "
+    logdbg << "class_id " << class_id << " instance_id "
            << instance_id;
     if (class_id == "ScatterPlotViewDataSource")
     {
-        assert(!data_source_);
+        traced_assert(!data_source_);
         data_source_ = new ScatterPlotViewDataSource(class_id, instance_id, this);
     }
     else if (class_id == "ScatterPlotViewWidget")
@@ -160,7 +160,7 @@ void ScatterPlotView::checkSubConfigurables()
 */
 ScatterPlotViewDataWidget* ScatterPlotView::getDataWidget()
 {
-    assert (widget_);
+    traced_assert(widget_);
     return widget_->getViewDataWidget();
 }
 
@@ -168,7 +168,7 @@ ScatterPlotViewDataWidget* ScatterPlotView::getDataWidget()
 */
 VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
 {
-    assert(data_source_);
+    traced_assert(data_source_);
 
     VariableSet set = data_source_->getSet()->getFor(dbcontent_name);
 
@@ -176,8 +176,8 @@ VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
     {
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
-        assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-        assert (dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
 
         set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
         set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
@@ -214,8 +214,8 @@ void ScatterPlotView::useConnectionLines(bool value, bool redraw)
 */
 void ScatterPlotView::updateSelection()
 {
-    loginf << "ScatterPlotView: updateSelection";
-    assert(widget_);
+    loginf;
+    traced_assert(widget_);
 
     widget_->getViewDataWidget()->redrawData(true);
 
@@ -229,10 +229,10 @@ void ScatterPlotView::updateSelection()
 */
 void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
 {
-    loginf << "ScatterPlotView: unshowViewPoint";
+    loginf;
 
-    assert (vp);
-    assert (data_source_);
+    traced_assert(vp);
+    traced_assert(data_source_);
     data_source_->unshowViewPoint(vp);
 }
 
@@ -240,10 +240,10 @@ void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
 */
 void ScatterPlotView::showViewPoint(const ViewableDataConfig* vp)
 {
-    loginf << "ScatterPlotView: showViewPoint";
+    loginf;
 
-    assert (vp);
-    assert (data_source_);
+    traced_assert(vp);
+    traced_assert(data_source_);
     data_source_->showViewPoint(vp);
 }
 

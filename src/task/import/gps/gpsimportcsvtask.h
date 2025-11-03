@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GPSIMPORTCSVTASK_H
-#define GPSIMPORTCSVTASK_H
+#pragma once
 
 #include "configurable.h"
 #include "projection/transformation.h"
@@ -149,5 +148,3 @@ protected:
     void parseCurrentFile ();
     //void checkParsedData (); // throws exceptions for errors
 };
-
-#endif // GPSIMPORTCSVTASK_H

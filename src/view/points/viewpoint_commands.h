@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWPOINT_COMMANDS_H
-#define VIEWPOINT_COMMANDS_H
+#pragma once
 
 #include "rtcommand/rtcommand.h"
 #include "viewabledataconfig.h"
@@ -42,5 +41,3 @@ protected:
     DECLARE_RTCOMMAND(set_view_point, "sets defined view point")
     DECLARE_RTCOMMAND_OPTIONS
 };
-
-#endif // VIEWPOINT_COMMANDS_H

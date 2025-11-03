@@ -22,7 +22,6 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "logger.h"
-//#include "propertylist.h"
 #include "compass.h"
 #include "viewmanager.h"
 
@@ -36,10 +35,10 @@ DBContentReadDBJob::DBContentReadDBJob(DBInterface& db_interface, DBContent& dbc
       read_list_(read_list),
       custom_filter_clause_(custom_filter_clause)
 {
-    assert(dbcontent_.existsInDB());
+    traced_assert(dbcontent_.existsInDB());
 
     use_order_ = true; // always order
-    assert (COMPASS::instance().dbContentManager().metaCanGetVariable(
+    traced_assert(COMPASS::instance().dbContentManager().metaCanGetVariable(
                 dbcontent_.name(), DBContent::meta_var_timestamp_));
 
     // always order by timestamp
@@ -51,12 +50,12 @@ DBContentReadDBJob::~DBContentReadDBJob() {}
 
 void DBContentReadDBJob::run_impl()
 {
-    logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": start";
+    logdbg << "start" << dbcontent_.name() << ": start";
     started_ = true;
 
     if (obsolete_)
     {
-        logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": obsolete before prepared";
+        logdbg << "start" << dbcontent_.name() << ": obsolete before prepared";
         done_ = true;
         return;
     }
@@ -68,7 +67,7 @@ void DBContentReadDBJob::run_impl()
 
     unsigned int cnt = 0;
 
-    ViewManager &view_manager = COMPASS::instance().viewManager();
+    //ViewManager &view_manager = COMPASS::instance().viewManager();
 
     bool last_buffer;
 
@@ -76,16 +75,16 @@ void DBContentReadDBJob::run_impl()
     {
         std::shared_ptr<Buffer> buffer;
         std::tie (buffer, last_buffer) = db_interface_.readDataChunk(dbcontent_);
-        assert(buffer);
+        traced_assert(buffer);
 
         cnt++;
 
         if (obsolete_)
             break;
 
-        assert(buffer->dbContentName() == dbcontent_.name());
+        traced_assert(buffer->dbContentName() == dbcontent_.name());
 
-        logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": intermediate signal, #buffers "
+        logdbg << "start" << dbcontent_.name() << ": intermediate signal, #buffers "
                << cnt << " last one " << last_buffer;
         row_count_ += buffer->size();
 
@@ -101,10 +100,11 @@ void DBContentReadDBJob::run_impl()
         if (obsolete_)
             break;
 
-        if (!view_manager.isProcessingData() || last_buffer) // distribute data
+        if (last_buffer) // distribute data, !view_manager.isProcessingData() || 
         {
-            logdbg << "DBContentReadDBJob: run: " << dbcontent_.name()
-                   << ": emitting intermediate read, size " << row_count_;
+            logdbg << dbcontent_.name()
+                   << ": emitting intermediate read, size " << cached_buffer_->size();
+            //cached_buffer_->printProperties();
 
             emit intermediateSignal(cached_buffer_);
 
@@ -113,7 +113,7 @@ void DBContentReadDBJob::run_impl()
 
         if (last_buffer)
         {
-            logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": last buffer";
+            logdbg << "start" << dbcontent_.name() << ": last buffer";
             break;
         }
     }
@@ -121,9 +121,9 @@ void DBContentReadDBJob::run_impl()
     if (obsolete_)
         cached_buffer_ = nullptr;
 
-    assert (!cached_buffer_);
+    traced_assert(!cached_buffer_);
 
-    logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": finalizing statement";
+    logdbg << "start" << dbcontent_.name() << ": finalizing statement";
     db_interface_.finalizeReadStatement(dbcontent_);
 
     stop_time_ = boost::posix_time::microsec_clock::local_time();
@@ -131,12 +131,12 @@ void DBContentReadDBJob::run_impl()
 
     if (diff.total_seconds() > 0)
     {
-        logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": done after " << diff << ", "
+        logdbg << "start" << dbcontent_.name() << ": done after " << diff << ", "
                << 1000.0 * row_count_ / diff.total_milliseconds() << " el/s";
     }
     else
     {
-        logdbg << "DBContentReadDBJob: run: " << dbcontent_.name() << ": done";
+        logdbg << "start" << dbcontent_.name() << ": done";
     }
 
     done_ = true;

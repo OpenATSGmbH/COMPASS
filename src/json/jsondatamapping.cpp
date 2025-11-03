@@ -34,7 +34,7 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
                                  Configurable& parent)
     : Configurable(class_id, instance_id, &parent)
 {
-    logdbg << "JSONDataMapping: constructor: this " << this;
+    logdbg2 << "this " << this;
 
     registerParameter("active", &active_, false);
     registerParameter("json_key", &json_key_, std::string());
@@ -51,7 +51,7 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
 
 //    if (format_data_type_.size())
 //    {
-//        logdbg << "JSONDataMapping: ctor: setting format from dt " << format_data_type_
+//        logdbg2 << "setting format from dt " << format_data_type_
 //               << " format " << json_value_format_;
 //        json_value_format_ = Format(Property::asDataType(format_data_type_), json_value_format_);
 //    }
@@ -62,7 +62,7 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
     registerParameter("in_array", &in_array_, false);
     registerParameter("append_value", &append_value_, false);
 
-    logdbg << "JSONDataMapping: ctor: dbo " << db_content_name_ << " var " << dbcontent_variable_name_
+    logdbg2 << "dbcont " << db_content_name_ << " var " << dbcontent_variable_name_
            << " dim " << dimension_ << " unit " << unit_;
 
     sub_keys_ = Utils::String::split(json_key_, '.');
@@ -74,14 +74,14 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
     if (sub_keys_.size() > 1)
         second_to_last_key_ = sub_keys_.end() - 2;
 
-    logdbg << "JSONDataMapping: ctor: key " << json_key_ << " num subkeys " << sub_keys_.size();
+    logdbg2 << "key " << json_key_ << " num subkeys " << sub_keys_.size();
 
     createSubConfigurables();
 }
 
 //JSONDataMapping& JSONDataMapping::operator=(JSONDataMapping&& other)
 //{
-//    logdbg << "JSONDataMapping: operator=: this " << this << " other " << &other;
+//    logdbg2 << "JSONDataMapping: operator=: this " << this << " other " << &other;
 
 //    active_ = other.active_;
 //    json_key_ = other.json_key_;
@@ -113,7 +113,7 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
 //    other.configuration().updateParameterPointer("active", &active_);
 //    other.configuration().updateParameterPointer("json_key", &json_key_);
 //    other.configuration().updateParameterPointer("dbcontent_name", &db_content_name_);
-//    other.configuration().updateParameterPointer("dbovariable_name", &dbcontent_variable_name_);
+//    other.configuration().updateParameterPointer("dbcontvariable_name", &dbcontent_variable_name_);
 //    other.configuration().updateParameterPointer("mandatory", &mandatory_);
 //    other.configuration().updateParameterPointer("comment", &comment_);
 //    other.configuration().updateParameterPointer("format_data_type", &format_data_type_);
@@ -131,7 +131,7 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
 //    return static_cast<JSONDataMapping&>(Configurable::operator=(std::move(other)));
 //}
 
-JSONDataMapping::~JSONDataMapping() { logdbg << "JSONDataMapping: destructor: this " << this; }
+JSONDataMapping::~JSONDataMapping(){}
 
 void JSONDataMapping::initializeIfRequired()
 {
@@ -164,8 +164,8 @@ void JSONDataMapping::check()
 
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
     {
-        logerr << "JSONDataMapping: check: '" << db_content_name_ << "' does not exist";
-        assert (false);
+        logerr << "'" << db_content_name_ << "' does not exist";
+        traced_assert(false);
     }
 
     DBContent& dbcontent = dbcont_man.dbContent(db_content_name_);
@@ -181,8 +181,8 @@ void JSONDataMapping::check()
 
 dbContent::Variable& JSONDataMapping::variable() const
 {
-    assert(initialized_);
-    assert(variable_);
+    traced_assert(initialized_);
+    traced_assert(variable_);
     return *variable_;
 }
 
@@ -190,7 +190,7 @@ bool JSONDataMapping::mandatory() const { return mandatory_; }
 
 void JSONDataMapping::mandatory(bool mandatory)
 {
-    logdbg << "JSONDataMapping: mandatory: " << mandatory;
+    logdbg2 << "start" << mandatory;
     mandatory_ = mandatory;
 }
 
@@ -211,9 +211,9 @@ Format& JSONDataMapping::jsonValueFormatRef()
 
 std::string JSONDataMapping::dbObjectName() const { return db_content_name_; }
 
-void JSONDataMapping::dboVariableName(const std::string& name)
+void JSONDataMapping::dbcontVariableName(const std::string& name)
 {
-    loginf << "JSONDataMapping: dboVariableName: " << name;
+    loginf << "start" << name;
 
     dbcontent_variable_name_ = name;
     initialized_ = false;
@@ -224,7 +224,7 @@ void JSONDataMapping::dboVariableName(const std::string& name)
     initialize();
 }
 
-std::string JSONDataMapping::dboVariableName() const { return dbcontent_variable_name_; }
+std::string JSONDataMapping::dbcontVariableName() const { return dbcontent_variable_name_; }
 
 std::string JSONDataMapping::dimensionUnitStr()
 {
@@ -238,7 +238,7 @@ const std::string& JSONDataMapping::jsonKey() const { return json_key_; }
 
 void JSONDataMapping::jsonKey(const std::string& json_key)
 {
-    loginf << "JSONDataMapping: jsonKey: " << json_key;
+    loginf << "start" << json_key;
 
     json_key_ = json_key;
 
@@ -260,7 +260,7 @@ void JSONDataMapping::jsonKey(const std::string& json_key)
 //    if (!widget_)
 //    {
 //        widget_.reset(new JSONDataMappingWidget (*this));
-//        assert (widget_);
+//        traced_assert(widget_);
 //    }
 
 //    return widget_.get(); // needed for qt integration, not pretty
@@ -270,7 +270,7 @@ bool JSONDataMapping::active() const { return active_; }
 
 void JSONDataMapping::active(bool active)
 {
-    loginf << "JSONDataMapping: active: " << active;
+    loginf << "start" << active;
     active_ = active;
 }
 
@@ -281,19 +281,19 @@ bool JSONDataMapping::canBeActive() const
 
 void JSONDataMapping::initialize()
 {
-    logdbg << "JSONDataMapping: initialize";
+    logdbg2 << "start";
 
-    assert(!initialized_);
+    traced_assert(!initialized_);
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
-        logwrn << "JSONDataMapping: initialize: dbobject '" << db_content_name_
+        logwrn << "dbcontbject '" << db_content_name_
                << "' does not exist";
 
     if (db_content_name_.size() && dbcont_man.existsDBContent(db_content_name_) &&
             dbcontent_variable_name_.size() && !dbcont_man.dbContent(db_content_name_).hasVariable(dbcontent_variable_name_))
-        logwrn << "JSONDataMapping: initialize: dbobject " << db_content_name_ << " variable '"
+        logwrn << "dbcontbject " << db_content_name_ << " variable '"
                << dbcontent_variable_name_ << "' does not exist";
 
     if (db_content_name_.size() && dbcont_man.existsDBContent(db_content_name_) &&
@@ -304,11 +304,11 @@ void JSONDataMapping::initialize()
     if (append_value_)
     {
         if (sub_keys_.size() < 2)
-            logwrn << "JSONDataMapping: initialize: append set but olny " << sub_keys_.size()
+            logwrn << "append set but olny " << sub_keys_.size()
                    << " sub keys";
 
         if (!variable_)
-            logwrn << "JSONDataMapping: initialize: append set not variable set";
+            logwrn << "append set not variable set";
     }
 
     initialized_ = true; // set for access to variables
@@ -321,7 +321,7 @@ void JSONDataMapping::initialize()
 
         if (dimension() != variable().dimension())
         {
-            logwrn << "JSONDataMapping: initialize: variable " << variable().name()
+            logwrn << "variable " << variable().name()
                    << " has differing dimensions " << dimension() << " "
                << variable().dimension();
 
@@ -331,7 +331,7 @@ void JSONDataMapping::initialize()
         {
             if (json_value_format_ != "")
             {
-                logwrn << "JSONDataMapping: initialize: dimension unit conversion required but format used";
+                logwrn << "dimension unit conversion required but format used";
                 initialized_ = false;
             }
             else
@@ -341,11 +341,11 @@ void JSONDataMapping::initialize()
                         UnitManager::instance().dimension(variable().dimension());
 
                 if (!dimension.hasUnit(unit()))
-                    logerr << "JSONObjectParser: transformBuffer: dimension '" << this->dimension()
+                    logerr << "dimension '" << this->dimension()
                            << "' has unknown unit '" << unit() << "'";
 
                 if (!dimension.hasUnit(variable().unit()))
-                    logerr << "JSONObjectParser: transformBuffer: dimension '"
+                    logerr << "dimension '"
                    << variable().dimension() << "' has unknown unit '"
                    << variable().unit() << "'";
 
@@ -376,7 +376,7 @@ bool JSONDataMapping::findAndSetValue(const json& j, NullableVector<T>& array_li
         {
             if (!val_ptr->is_array())
             {
-                logerr << "JSONDataMapping: findAndSetValue: key " << json_key_ << " not in array '"
+                logerr << "key " << json_key_ << " not in array '"
                        << val_ptr->dump(4) << "'";
                 return true;
             }
@@ -400,7 +400,7 @@ bool JSONDataMapping::findAndSetValue(const json& j, NullableVector<T>& array_li
             }
             catch (json::exception& e)
             {
-                logerr << "JSONDataMapping: findAndSetValue: key " << json_key_
+                logerr << "key " << json_key_
                        << " json exception " << e.what() << " property "
                        << array_list.propertyID();
                 array_list.setNull(row_cnt);
@@ -423,7 +423,7 @@ bool JSONDataMapping::findAndSetValue(const json& j, NullableVector<T>& array_li
         {
             try
             {
-                logdbg << "JSONDataMapping: findAndSetValue: row_cnt " << row_cnt
+                logdbg2 << "row_cnt " << row_cnt
                        << " key " << json_key_ << " value '" << val_ptr->dump() << "'";
 
                 if (append_value_)
@@ -435,7 +435,7 @@ bool JSONDataMapping::findAndSetValue(const json& j, NullableVector<T>& array_li
             }
             catch (json::exception& e)
             {
-                logerr << "JSONDataMapping: findAndSetValue: key " << json_key_
+                logerr << "key " << json_key_
                        << " json exception " << e.what() << " property "
                        << array_list.propertyID();
                 array_list.setNull(row_cnt);
@@ -484,8 +484,8 @@ size_t row_cnt, bool debug) const;
 bool JSONDataMapping::findAndSetValues(const json& j, NullableVector<json>& array_list,
                      size_t row_cnt, bool debug) const
 {
-    assert (!in_array_);
-    assert (!append_value_);
+    traced_assert(!in_array_);
+    traced_assert(!append_value_);
 
     std::vector<json> values = findKeys(j);
 
@@ -502,8 +502,8 @@ bool JSONDataMapping::findAndSetValues(const json& j, NullableVector<json>& arra
         {
 //            for (const json& val_ptr : val_ptrs)
 //            {
-//                assert (val_ptr);
-//                loginf << "JSONDataMapping: findAndSetValues: row_cnt " << row_cnt
+//                traced_assert(val_ptr);
+//                loginf << "row_cnt " << row_cnt
 //                       << " key " << json_key_ << " value '" << val_ptr.dump() << "'";
 
 //                pushBackValue(val_ptr, array_list, row_cnt, debug);
@@ -513,7 +513,7 @@ bool JSONDataMapping::findAndSetValues(const json& j, NullableVector<json>& arra
         }
         catch (json::exception& e)
         {
-            logerr << "JSONDataMapping: findAndSetValues: key " << json_key_
+            logerr << "key " << json_key_
                    << " json exception " << e.what() << " property "
                    << array_list.propertyID();
             array_list.setNull(row_cnt);
@@ -575,7 +575,7 @@ const std::vector<json>JSONDataMapping::findKeys(const json& j) const
             rets.push_back(j.at(json_key_));
     }
 
-    logdbg << "JSONDataMapping: findKeys: UGA rets " << rets.size();
+    logdbg2 << "UGA rets " << rets.size();
 
     return rets;
 }
@@ -583,7 +583,7 @@ const std::vector<json>JSONDataMapping::findKeys(const json& j) const
 void JSONDataMapping::addKeys(const json& j, std::vector<json>& rets ,
                                     unsigned int key_cnt) const
 {
-    assert (key_cnt < sub_keys_.size());
+    traced_assert(key_cnt < sub_keys_.size());
 
     if (j.contains(sub_keys_.at(key_cnt)))
     {
@@ -591,7 +591,7 @@ void JSONDataMapping::addKeys(const json& j, std::vector<json>& rets ,
 
         if (key_cnt == sub_keys_.size()-1) // last found
         {
-            logdbg << "JSONDataMapping: addKeys: last value '" << value.dump() << "'";
+            logdbg2 << "last value '" << value.dump() << "'";
             rets.push_back(value);
             return;
         }
@@ -599,22 +599,22 @@ void JSONDataMapping::addKeys(const json& j, std::vector<json>& rets ,
         {
             if (value.is_object())
             {
-                //loginf << "JSONDataMapping: addKeys: stepping into object";
+                //loginf << "stepping into object";
 
                 addKeys(value, rets, key_cnt+1);
 
             }
             else if (value.is_array())
             {
-                //loginf << "JSONDataMapping: addKeys: stepping into array";
+                //loginf << "stepping into array";
 
                 for (const json& it : value.get<json::array_t>())
                     addKeys(it, rets, key_cnt+1);
             }
             else
             {
-                //loginf << "JSONDataMapping: addKeys: unkown value type '" << value.dump() << "'";
-                assert (false); // not gonna happen
+                //loginf << "unkown value type '" << value.dump() << "'";
+                traced_assert(false); // not gonna happen
             }
         }
     }
@@ -660,13 +660,13 @@ template <typename T>
 void JSONDataMapping::setValue(const json* val_ptr, NullableVector<T>& array_list,
                                size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
-    logdbg << "JSONDataMapping: setValue: key " << json_key_ << " json " << val_ptr->type_name()
+    logdbg2 << "key " << json_key_ << " json " << val_ptr->type_name()
            << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (debug)
-        loginf << "JSONDataMapping: setValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (json_value_format_ == "")
@@ -682,7 +682,7 @@ void JSONDataMapping::setValue(const json* val_ptr, NullableVector<T>& array_lis
     else
         array_list.setFromFormat(row_cnt, json_value_format_, JSON::toString(*val_ptr));
 
-    logdbg << "JSONDataMapping: setValue: key " << json_key_ << " json " << *val_ptr << " buffer "
+    logdbg2 << "key " << json_key_ << " json " << *val_ptr << " buffer "
            << array_list.get(row_cnt);
 }
 
@@ -690,13 +690,13 @@ template <typename T>
 void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<T>& array_list,
                                   size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
-    logdbg << "JSONDataMapping: appendValue: key " << json_key_ << " json " << val_ptr->type_name()
+    logdbg2 << "key " << json_key_ << " json " << val_ptr->type_name()
            << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (debug)
-        loginf << "JSONDataMapping: appendValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (json_value_format_ == "")
@@ -712,17 +712,17 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<T>& array_
     else
         array_list.appendFromFormat(row_cnt, json_value_format_, JSON::toString(*val_ptr));
 
-    logdbg << "JSONDataMapping: appendValue: key " << json_key_ << " json " << *val_ptr
+    logdbg2 << "key " << json_key_ << " json " << *val_ptr
            << " buffer " << array_list.get(row_cnt);
 }
 
 void JSONDataMapping::setValue(const json* val_ptr, NullableVector<bool>& array_list,
                                size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
-        loginf << "JSONDataMapping: setValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     bool tmp_bool;
@@ -731,7 +731,7 @@ void JSONDataMapping::setValue(const json* val_ptr, NullableVector<bool>& array_
     {
         unsigned int tmp = *val_ptr;
         if (tmp > 1)
-            logerr << "JSONDataMapping: setValue: key " << json_key_ << " json " << val_ptr->type_name()
+            logerr << "key " << json_key_ << " json " << val_ptr->type_name()
                    << " value '" << tmp << "' format '" << json_value_format_ << "'";
 
         tmp_bool = static_cast<bool>(tmp);
@@ -748,17 +748,17 @@ void JSONDataMapping::setValue(const json* val_ptr, NullableVector<bool>& array_
     else
         array_list.setFromFormat(row_cnt, json_value_format_, JSON::toString(tmp_bool));
 
-    logdbg << "JSONDataMapping: setValue(bool): json " << tmp_bool << " buffer "
+    logdbg2 << "(bool): json " << tmp_bool << " buffer "
            << array_list.get(row_cnt);
 }
 
 void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<bool>& array_list,
                                   size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
-        loginf << "JSONDataMapping: appendValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     bool tmp_bool;
@@ -766,7 +766,7 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<bool>& arr
     if (val_ptr->is_number())
     {
         unsigned int tmp = *val_ptr;
-        assert(tmp == 0 || tmp == 1);
+        traced_assert(tmp == 0 || tmp == 1);
         tmp_bool = static_cast<bool>(tmp);
     }
     else
@@ -777,17 +777,17 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<bool>& arr
     else
         array_list.appendFromFormat(row_cnt, json_value_format_, JSON::toString(tmp_bool));
 
-    logdbg << "JSONDataMapping: appendValue(bool): json " << tmp_bool << " buffer "
+    logdbg2 << "(bool): json " << tmp_bool << " buffer "
            << array_list.get(row_cnt);
 }
 
 void JSONDataMapping::setValue(const json* val_ptr, NullableVector<char>& array_list,
                                size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
-        loginf << "JSONDataMapping: setValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (json_value_format_ == "")
@@ -796,17 +796,17 @@ void JSONDataMapping::setValue(const json* val_ptr, NullableVector<char>& array_
         array_list.setFromFormat(row_cnt, json_value_format_,
                                  JSON::toString(static_cast<int>(*val_ptr)));
 
-    logdbg << "JSONDataMapping: setValue(char): json " << static_cast<int>(*val_ptr) << " buffer "
+    logdbg2 << "(char): json " << static_cast<int>(*val_ptr) << " buffer "
            << array_list.get(row_cnt);
 }
 
 void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<char>& array_list,
                                   size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
-        loginf << "JSONDataMapping: appendValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (json_value_format_ == "")
@@ -815,7 +815,7 @@ void JSONDataMapping::appendValue(const json* val_ptr, NullableVector<char>& arr
         array_list.appendFromFormat(row_cnt, json_value_format_,
                                     JSON::toString(static_cast<int>(*val_ptr)));
 
-    logdbg << "JSONDataMapping: appendValue(char): json " << static_cast<int>(*val_ptr)
+    logdbg2 << "(char): json " << static_cast<int>(*val_ptr)
            << " buffer " << array_list.get(row_cnt);
 }
 
@@ -865,10 +865,10 @@ size_t row_cnt, bool debug) const;
 void JSONDataMapping::setValue(const json* val_ptr,
                                NullableVector<std::string>& array_list, size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
-        loginf << "JSONDataMapping: setValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (json_value_format_ == "")
@@ -878,17 +878,17 @@ void JSONDataMapping::setValue(const json* val_ptr,
         array_list.setFromFormat(row_cnt, json_value_format_, Utils::JSON::toString(*val_ptr), debug);
     }
 
-    logdbg << "JSONDataMapping: setValue(string): json " << Utils::JSON::toString(*val_ptr)
+    logdbg2 << "(string): json " << Utils::JSON::toString(*val_ptr)
            << " buffer " << array_list.get(row_cnt);
 }
 
 void JSONDataMapping::appendValue(const json* val_ptr,
                                   NullableVector<std::string>& array_list, size_t row_cnt, bool debug) const
 {
-    assert(val_ptr);
+    traced_assert(val_ptr);
 
     if (debug)
-        loginf << "JSONDataMapping: appendValue: key " << json_key_ << " json " << val_ptr->type_name()
+        loginf << "key " << json_key_ << " json " << val_ptr->type_name()
                << " '" << val_ptr->dump() << "' format '" << json_value_format_ << "'";
 
     if (json_value_format_ == "")
@@ -896,7 +896,7 @@ void JSONDataMapping::appendValue(const json* val_ptr,
     else
         array_list.appendFromFormat(row_cnt, json_value_format_, Utils::JSON::toString(*val_ptr));
 
-    logdbg << "JSONDataMapping: setValue(string): json " << Utils::JSON::toString(*val_ptr)
+    logdbg2 << "(string): json " << Utils::JSON::toString(*val_ptr)
            << " buffer " << array_list.get(row_cnt);
 }
 
@@ -905,10 +905,10 @@ void JSONDataMapping::pushBackValue(const nlohmann::json& val_ref, NullableVecto
                    size_t row_cnt, bool debug) const
 {
     if (debug)
-        loginf << "JSONDataMapping: pushBackValue: key " << json_key_ << " json " << val_ref.type_name()
+        loginf << "key " << json_key_ << " json " << val_ref.type_name()
                << " '" << val_ref.dump() << "' format '" << json_value_format_ << "'";
 
-    assert (json_value_format_ == "");
+    traced_assert(json_value_format_ == "");
 
     if (array_list.isNull(row_cnt))
     {

@@ -61,7 +61,7 @@ void RS2GProjection::addCoordinateSystem(unsigned int id, double latitude_deg, d
 
 ProjectionCoordinateSystemBase& RS2GProjection::coordinateSystem(unsigned int id)
 {
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     return *coordinate_systems_.at(id).get();
 }
@@ -71,6 +71,8 @@ void RS2GProjection::clearCoordinateSystems()
 {
     coordinate_systems_.clear();
     coordinate_systems_added_ = false;
+
+    missing_coordinate_systems_.clear();
 }
 
 bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double slant_range_m,
@@ -78,12 +80,12 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
                                   double& latitude_deg, double& longitude_deg, double& alt_wgs_m, bool debug)
 {
     if (!hasCoordinateSystem(id))
-        logerr << "RS2GProjection: polarToWGS84: no coord system for " << id;
+        logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
-        loginf << "RS2GProjection: polarToWGS84: azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
+        loginf << "azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
                << " has_baro " << has_baro_altitude << " baro_altitude_ft " << baro_altitude_ft;
 
     bool ret {false};
@@ -95,7 +97,7 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
         ground_range_m, ecef_x, ecef_y, ecef_z, debug);
 
     if (debug)
-        loginf << "RS2GProjection: polarToWGS84: ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
+        loginf << "ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
                << " ecef_z " << ecef_z;
 
     if (ret)
@@ -105,7 +107,7 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
 
 
         if (debug)
-            loginf << "RS2GProjection: polarToWGS84: latitude_deg " << latitude_deg
+            loginf << "latitude_deg " << latitude_deg
                    << " longitude_deg " << longitude_deg << " alt_wgs_m " << alt_wgs_m;
         // what to do with altitude?
     }
@@ -118,9 +120,9 @@ bool RS2GProjection::localXYToWGS84(unsigned int id, double x_m, double y_m,
                                     double& latitude_deg, double& longitude_deg, double& alt_wgs_m, bool debug)
 {
     if (!hasCoordinateSystem(id))
-        logerr << "RS2GProjection: localXYToWGS84: no coord system for " << id;
+        logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     bool ret {false};
 
@@ -129,7 +131,7 @@ bool RS2GProjection::localXYToWGS84(unsigned int id, double x_m, double y_m,
     coordinate_systems_.at(id)->localCart2Geocentric(x_m, y_m, 0, ecef_x, ecef_y, ecef_z);
 
     if (debug)
-        loginf << "RS2GProjection: localXYToWGS84: ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
+        loginf << "ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
                << " ecef_z " << ecef_z;
 
     ret = coordinate_systems_.at(id)->geocentric2Geodesic(ecef_x, ecef_y, ecef_z,
@@ -137,7 +139,7 @@ bool RS2GProjection::localXYToWGS84(unsigned int id, double x_m, double y_m,
 
 
     if (debug)
-        loginf << "RS2GProjection: localXYToWGS84: latitude_deg " << latitude_deg
+        loginf << "latitude_deg " << latitude_deg
                << " longitude_deg " << longitude_deg << " alt_wgs_m " << alt_wgs_m;
     // what to do with altitude?
 
@@ -150,12 +152,12 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
                                   double& latitude_deg, double& longitude_deg, double& alt_wgs_m, bool debug)
 {
     if (!hasCoordinateSystem(id))
-        logerr << "RS2GProjection: polarToWGS84: no coord system for " << id;
+        logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
-        loginf << "RS2GProjection: polarToWGS84: azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
+        loginf << "azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
                << " has_baro " << has_baro_altitude << " baro_altitude_ft " << baro_altitude_ft;
 
     bool ret {false};
@@ -167,7 +169,7 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
         ground_range_m, ecef_x, ecef_y, ecef_z, debug);
 
     if (debug)
-        loginf << "RS2GProjection: polarToWGS84: ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
+        loginf << "ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
                << " ecef_z " << ecef_z;
 
     if (ret)
@@ -177,7 +179,7 @@ bool RS2GProjection::polarToWGS84(unsigned int id, double azimuth_rad, double sl
 
 
         if (debug)
-            loginf << "RS2GProjection: polarToWGS84: latitude_deg " << latitude_deg
+            loginf << "latitude_deg " << latitude_deg
                    << " longitude_deg " << longitude_deg << " alt_wgs_m " << alt_wgs_m;
         // what to do with altitude?
     }
@@ -191,12 +193,12 @@ bool RS2GProjection::polarToWGS84(
     double& latitude_deg, double& longitude_deg, double& alt_wgs_m, bool debug)
 {
     if (!hasCoordinateSystem(id))
-        logerr << "RS2GProjection: polarToWGS84: no coord system for " << id;
+        logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
-        loginf << "RS2GProjection: polarToWGS84: azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
+        loginf << "azimuth_rad " << azimuth_rad << " slant_range_m " << slant_range_m
                << " has_baro " << has_baro_altitude << " baro_altitude_ft " << baro_altitude_ft;
 
     bool ret {false};
@@ -208,7 +210,7 @@ bool RS2GProjection::polarToWGS84(
         ecef_x, ecef_y, ecef_z, debug);
 
     if (debug)
-        loginf << "RS2GProjection: polarToWGS84: ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
+        loginf << "ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
                << " ecef_z " << ecef_z;
 
     if (ret)
@@ -218,7 +220,7 @@ bool RS2GProjection::polarToWGS84(
 
 
         if (debug)
-            loginf << "RS2GProjection: polarToWGS84: latitude_deg " << latitude_deg
+            loginf << "latitude_deg " << latitude_deg
                    << " longitude_deg " << longitude_deg << " alt_wgs_m " << alt_wgs_m;
         // what to do with altitude?
     }
@@ -232,12 +234,12 @@ bool RS2GProjection::wgs842PolarHorizontal(unsigned int id,
                                            double& radar_altitude_m, bool debug)
 {
     if (!hasCoordinateSystem(id))
-        logerr << "RS2GProjection: wgs842PolarHorizontal: no coord system for " << id;
+        logerr << "no coord system for " << id;
 
-    assert(hasCoordinateSystem(id));
+    traced_assert(hasCoordinateSystem(id));
 
     if (debug)
-        loginf << "RS2GProjection: wgs842PolarHorizontal: latitude_deg " << latitude_deg
+        loginf << "latitude_deg " << latitude_deg
                << " longitude_deg " << longitude_deg << " alt_wgs_m " << alt_wgs_m;
 
     // geodesic 2 geocentric
@@ -247,7 +249,7 @@ bool RS2GProjection::wgs842PolarHorizontal(unsigned int id,
                                                     ecef_x, ecef_y, ecef_z, debug);
 
     if (debug)
-        loginf << "RS2GProjection: wgs842PolarHorizontal: ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
+        loginf << "ecef_x " << std::fixed << ecef_x << " ecef_y " << ecef_y
                << " ecef_z " << ecef_z;
 
     double local_x, local_y, local_z;
@@ -256,7 +258,7 @@ bool RS2GProjection::wgs842PolarHorizontal(unsigned int id,
                                                      local_x, local_y, local_z, debug);
 
     if (debug)
-        loginf << "RS2GCoordinateSystem: wgs842PolarHorizontal: local_x " << std::fixed << local_x
+        loginf << "local_x " << std::fixed << local_x
                << " local_y " << local_y << " local_z " << local_z;
 
     coordinate_systems_.at(id)->localCart2RadarSlant(local_x, local_y, local_z,
@@ -264,7 +266,7 @@ bool RS2GProjection::wgs842PolarHorizontal(unsigned int id,
                                                      radar_altitude_m, debug);
 
     if (debug)
-        loginf << "RS2GProjection: wgs842PolarHorizontal: azimuth_rad " << azimuth_rad
+        loginf << "azimuth_rad " << azimuth_rad
                << " slant_range_m " << slant_range_m
                << " ground_range_m " << ground_range_m << " radar_altitude_m " << radar_altitude_m;
 

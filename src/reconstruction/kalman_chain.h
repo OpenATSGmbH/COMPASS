@@ -23,6 +23,8 @@
 #include <memory>
 #include <map>
 
+#include <boost/optional.hpp>
+
 namespace reconstruction
 {
 
@@ -61,8 +63,6 @@ class KalmanChain
 public:
     struct Settings
     {
-        typedef boost::posix_time::time_duration TD;
-
         enum class Mode
         {
             DynamicInserts = 0,  // allows dynamic inserts and reestimation, but needs to keep track of all states (more memory)
@@ -79,12 +79,12 @@ public:
         Mode           mode            = Mode::DynamicInserts;
         PredictionMode prediction_mode = PredictionMode::NearestBefore;
 
-        TD     reestim_max_duration       = boost::posix_time::seconds(30); // maximum timeframe reestimated after a new mm has been inserted
-        int    reestim_max_updates        = 500;                            // maximum updates reestimated after a new mm has been inserted
-        double reestim_residual_state_sqr = 100;                            // 10  * 10  - reestimation stop criterion based on state change residual
-        double reestim_residual_cov_sqr   = 10000;                          // 100 * 100 - reestimation stop criterion based on cov mat change residual
+        double reestim_max_duration_sec   = 30;    // maximum timeframe reestimated after a new mm has been inserted
+        int    reestim_max_updates        = 500;   // maximum updates reestimated after a new mm has been inserted
+        double reestim_residual_state_sqr = 100;   // 10  * 10  - reestimation stop criterion based on state change residual
+        double reestim_residual_cov_sqr   = 10000; // 100 * 100 - reestimation stop criterion based on cov mat change residual
 
-        TD     prediction_max_tdiff       = boost::posix_time::seconds(10); // maximum difference in time which can be predicted
+        double prediction_max_tdiff_sec   = 10;    // maximum difference in time which can be predicted
         double prediction_max_wgs84_diff  = 0.5;
 
         int    verbosity = 0;
@@ -96,15 +96,20 @@ public:
         Update() {}
         Update(unsigned long id, 
                const boost::posix_time::ptime& ts, 
+               const boost::posix_time::ptime& ts_mm, 
                const kalman::KalmanUpdateMinimal& update = kalman::KalmanUpdateMinimal()) 
         :   mm_id        (id)
         ,   t            (ts)
+        ,   t_mm         (ts_mm)
         ,   kalman_update(update) {}
 
         unsigned long               mm_id;
         boost::posix_time::ptime    t;
+        boost::posix_time::ptime    t_mm;
         kalman::KalmanUpdateMinimal kalman_update;
+
         bool                        init = false;
+
     };
 
     typedef std::pair<int, int>                              Interval;
@@ -113,6 +118,8 @@ public:
     typedef std::function<const Measurement&(unsigned long)> MeasurementGetFunc;
     typedef std::function<void(Measurement&, unsigned long)> MeasurementAssignFunc;
     typedef std::function<bool(unsigned long)>               MeasurementCheckFunc;
+
+    typedef std::pair<unsigned long, std::pair<boost::posix_time::ptime, boost::optional<boost::posix_time::ptime>>> MMDefinition;
 
     KalmanChain();
     virtual ~KalmanChain();
@@ -134,16 +141,18 @@ public:
 
     bool add(unsigned long mm_id,
              const boost::posix_time::ptime& ts,
+             const boost::optional<boost::posix_time::ptime>& ts_mm,
              bool reestim,
              UpdateStats* stats = nullptr);
-    bool add(const std::vector<std::pair<unsigned long, boost::posix_time::ptime>>& mms,
+    bool add(const std::vector<MMDefinition>& mms,
              bool reestim,
              UpdateStats* stats = nullptr);
     bool insert(unsigned long mm_id,
                 const boost::posix_time::ptime& ts,
+                const boost::optional<boost::posix_time::ptime>& ts_mm,
                 bool reestim,
                 UpdateStats* stats = nullptr);
-    bool insert(const std::vector<std::pair<unsigned long, boost::posix_time::ptime>>& mms,
+    bool insert(const std::vector<MMDefinition>& mms,
                 bool reestim,
                 UpdateStats* stats = nullptr);
     bool remove(size_t idx,
@@ -157,6 +166,7 @@ public:
 
     kalman::KalmanUpdateMinimal lastKalmanUpdate() const;
     const kalman::KalmanUpdateMinimal& getKalmanUpdate(size_t idx) const;
+    const kalman::KalmanUpdateMinimal& getKalmanUpdateAtEnd() const;
     const Update& getUpdate(size_t idx);
 
     bool hasUpdateFor(const boost::posix_time::ptime& ts) const;
@@ -166,13 +176,19 @@ public:
     bool needsReestimate() const;
     bool reestimate(UpdateStats* stats = nullptr);
 
+    double timeDiffSec(const boost::posix_time::ptime& ts) const;
+
     bool canPredict(const boost::posix_time::ptime& ts) const;
-    bool predictMT(Measurement& mm_predicted,
+    bool predictMT(Measurement* mm,
+                   kalman::GeoProbState* gp_state,
+                   kalman::GeoProbState* gp_state_mm,
                    const boost::posix_time::ptime& ts,
                    KalmanChainPredictors& predictors,
                    unsigned int thread_id,
                    PredictionStats* stats = nullptr) const;
-    bool predict(Measurement& mm_predicted,
+    bool predict(Measurement* mm,
+                 kalman::GeoProbState* gp_state,
+                 kalman::GeoProbState* gp_state_mm,
                  const boost::posix_time::ptime& ts,
                  PredictionStats* stats = nullptr) const;
     bool predictPositionClose(boost::posix_time::ptime ts, double lat, double lon) const;
@@ -210,12 +226,15 @@ private:
 
     bool addToTracker(unsigned long mm_id,
                       const boost::posix_time::ptime& ts,
+                      const boost::optional<boost::posix_time::ptime>& ts_mm,
                       UpdateStats* stats = nullptr);
     void addToEnd(unsigned long mm_id,
-                  const boost::posix_time::ptime& ts);
+                  const boost::posix_time::ptime& ts,
+                  const boost::optional<boost::posix_time::ptime>& ts_mm);
     void insertAt(int idx, 
                   unsigned long mm_id,
-                  const boost::posix_time::ptime& ts);
+                  const boost::posix_time::ptime& ts, 
+                  const boost::optional<boost::posix_time::ptime>& ts_mm);
     bool reinit(int idx) const;
     bool reestimate(int idx, 
                     KalmanEstimator::StepInfo* info = nullptr);
@@ -232,13 +251,15 @@ private:
     int predictionRefIndex(const boost::posix_time::ptime& ts) const;
     Interval predictionRefInterval(const boost::posix_time::ptime& ts) const;
 
-    bool predictInternal(Measurement& mm_predicted,
+    bool predictInternal(Measurement* mm, 
+                         kalman::GeoProbState* gp_state,
+                         kalman::GeoProbState* gp_state_mm,
                          const boost::posix_time::ptime& ts,
                          KalmanChainPredictors* predictors,
                          unsigned int thread_id,
                          PredictionStats* stats) const;
 
-    Settings settings_;
+    Settings              settings_;
 
     MeasurementGetFunc    get_func_;
     MeasurementAssignFunc assign_func_;

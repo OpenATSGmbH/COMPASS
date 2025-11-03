@@ -1,5 +1,23 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "timewindow.h"
 #include "timeconv.h"
+#include "traced_assert.h"
 #include "json.hpp"
 
 using namespace std;
@@ -14,7 +32,7 @@ TimeWindow::TimeWindow(const boost::posix_time::ptime& begin, const boost::posix
     std::get<0>(time_window_) = begin;
     std::get<1>(time_window_) = end;
 
-    assert (valid());
+    traced_assert(valid());
 }
 
 bool TimeWindow::valid() const
@@ -30,23 +48,23 @@ bool TimeWindow::valid() const
 
 void TimeWindow::setFrom(const nlohmann::json& json)
 {
-    assert (json.is_array());
-    assert (json.size() == 2);
+    traced_assert(json.is_array());
+    traced_assert(json.size() == 2);
 
-    assert (json.at(0).is_string());
-    assert (json.at(1).is_string());
+    traced_assert(json.at(0).is_string());
+    traced_assert(json.at(1).is_string());
 
     time_window_ = {{},{}};
 
     std::get<0>(time_window_) = Time::fromString(json.at(0));
     std::get<1>(time_window_) = Time::fromString(json.at(1));
 
-    assert (valid());
+    traced_assert(valid());
 }
 
 nlohmann::json TimeWindow::getAsJson() const
 {
-    assert (valid());
+    traced_assert(valid());
 
     nlohmann::json json_result = nlohmann::json::array();
 
@@ -107,22 +125,22 @@ bool TimeWindowCollection::contains(const boost::posix_time::ptime& ts) const
 void TimeWindowCollection::setFrom(nlohmann::json& json)
 {
     time_windows_.clear();
-    assert (json.is_array());
+    traced_assert(json.is_array());
 
     for (const auto& time_window_array : json)
     {
-        assert (time_window_array.is_array());
+        traced_assert(time_window_array.is_array());
 
         TimeWindow time_window;
 
         time_window.setFrom(time_window_array);
-        assert (time_window.valid());
+        traced_assert(time_window.valid());
 
 
         time_windows_.push_back(std::move(time_window));
     }
 
-    assert (valid());
+    traced_assert(valid());
 }
 
 nlohmann::json TimeWindowCollection::asJSON() const
@@ -152,14 +170,14 @@ std::string TimeWindowCollection::asString() const
 
 const Utils::TimeWindow& TimeWindowCollection::get(unsigned int index)
 {
-    assert (index < time_windows_.size());
+    traced_assert(index < time_windows_.size());
     return time_windows_.at(index);
 }
 
 
 void TimeWindowCollection::add(const TimeWindow& time_window)
 {
-    assert (time_window.valid());
+    traced_assert(time_window.valid());
     time_windows_.push_back(time_window);
 }
 
@@ -176,7 +194,7 @@ bool TimeWindowCollection::contains(const TimeWindow& time_window)
 
 void TimeWindowCollection::erase(unsigned int index)
 {
-    assert (index < time_windows_.size());
+    traced_assert(index < time_windows_.size());
     time_windows_.erase(time_windows_.begin() + index);
 }
 

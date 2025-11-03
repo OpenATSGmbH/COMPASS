@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ASTERIXPOSTPROCESS_H
-#define ASTERIXPOSTPROCESS_H
+#pragma once
 
 #include "json_fwd.hpp"
 
@@ -43,5 +42,3 @@ class ASTERIXPostProcess
     void postProcessCAT048(int sac, int sic, nlohmann::json& record);
     void postProcessCAT062(int sac, int sic, nlohmann::json& record);
 };
-
-#endif  // ASTERIXPOSTPROCESS_H

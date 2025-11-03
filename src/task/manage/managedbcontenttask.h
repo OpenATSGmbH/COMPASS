@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MANAGEDBOBJECTSTASK_H
-#define MANAGEDBOBJECTSTASK_H
+#pragma once
 
 #include <QObject>
 #include <memory>
@@ -48,5 +47,3 @@ class ManageDBContentTask : public Task, public Configurable
 
     virtual void checkSubConfigurables() {}
 };
-
-#endif  // MANAGEDBOBJECTSTASK_H

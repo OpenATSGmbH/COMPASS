@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WRITEBUFFERDBJOB_H_
-#define WRITEBUFFERDBJOB_H_
+#pragma once
 
 #include <list>
 
@@ -45,5 +44,3 @@ class WriteBufferDBJob : public DBJob
   protected:
     Buffer* buffer_;
 };
-
-#endif /* WRITEBUFFERDBJOB_H_ */

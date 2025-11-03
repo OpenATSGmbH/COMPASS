@@ -37,7 +37,7 @@
 #include "viewpoint.h"
 #include "compass.h"
 
-#include <cassert>
+#include "traced_assert.h"
 #include <algorithm>
 #include <fstream>
 
@@ -170,14 +170,14 @@ std::shared_ptr<Joined> SingleTrackAngle::createEmptyJoined(const std::string& r
 */
 boost::optional<double> SingleTrackAngle::computeResult_impl() const
 {
-    assert (num_no_ref_ <= num_pos_);
-    assert (num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_no_ref_ <= num_pos_);
+    traced_assert(num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
 
     accumulator_.reset();
 
     auto values = getValues(DetailKey::Offset);
 
-    assert (values.size() == num_comp_failed_ + num_comp_passed_);
+    traced_assert(values.size() == num_comp_failed_ + num_comp_passed_);
 
     unsigned int num_trackangles = values.size();
 
@@ -186,7 +186,7 @@ boost::optional<double> SingleTrackAngle::computeResult_impl() const
 
     accumulator_.accumulate(values, true);
 
-    assert (num_comp_failed_ <= num_trackangles);
+    traced_assert(num_comp_failed_ <= num_trackangles);
 
     return (double)num_comp_passed_ / (double)num_trackangles;
 }
@@ -217,14 +217,19 @@ nlohmann::json::array_t SingleTrackAngle::targetTableValuesCustom() const
              num_comp_passed_ };                 // "#DNOK"
 }
 
+std::string SingleTrackAngle::targetTableCustomSortColumn() const 
+{
+    return "#CF";
+};
+
 /**
 */
 std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                            , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference trackangles"  , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
+             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
              { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
              { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
@@ -267,12 +272,12 @@ nlohmann::json::array_t SingleTrackAngle::detailValues(const EvaluationDetail& d
 bool SingleTrackAngle::detailIsOk(const EvaluationDetail& detail) const
 {
     auto req = dynamic_cast<const EvaluationRequirement::TrackAngle*>(requirement_.get());
-    assert(req);
+    traced_assert(req);
 
     bool failed_values_of_interest = req->failedValuesOfInterest();
 
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);
-    assert(check_passed.has_value());
+    traced_assert(check_passed.has_value());
 
     return (( failed_values_of_interest &&  check_passed.value()) ||
             (!failed_values_of_interest && !check_passed.value()));
@@ -285,7 +290,7 @@ void SingleTrackAngle::addAnnotationForDetail(nlohmann::json& annotations_json,
                                               TargetAnnotationType type,
                                               bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -370,15 +375,15 @@ void JoinedTrackAngle::accumulateSingleResult(const std::shared_ptr<Single>& sin
 */
 boost::optional<double> JoinedTrackAngle::computeResult_impl() const
 {
-    loginf << "JoinedTrackAngle: computeResult_impl:"
+    loginf << "start"
             << " num_pos " << num_pos_
             << " num_no_ref " << num_no_ref_
             << " num_no_tst_value " << num_no_tst_value_
             << " num_comp_failed " << num_comp_failed_
             << " num_comp_passed " << num_comp_passed_;
 
-    assert (num_no_ref_ <= num_pos_);
-    assert (num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_no_ref_ <= num_pos_);
+    traced_assert(num_pos_ - num_no_ref_ == num_pos_inside_ + num_pos_outside_);
 
     unsigned int total = num_comp_passed_ + num_comp_failed_;
 
@@ -394,8 +399,8 @@ std::vector<Joined::SectorInfo> JoinedTrackAngle::sectorInfos() const
 {
     return { { "#Pos [1]"       , "Number of updates"                            , num_pos_                           }, 
              { "#NoRef [1]"     , "Number of updates w/o reference trackangles"  , num_no_ref_                        },
-             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
+             { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
              { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
              { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
@@ -410,7 +415,7 @@ std::vector<Joined::SectorInfo> JoinedTrackAngle::sectorInfos() const
 */
 bool JoinedTrackAngle::exportAsCSV(std::ofstream& strm) const
 {
-    // loginf << "JoinedTrackAngle: exportAsCSV";
+    // loginf;
 
     // strm << "trackangle_offset\n";
 

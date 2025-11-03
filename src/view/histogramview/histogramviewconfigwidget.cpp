@@ -48,7 +48,7 @@ HistogramViewConfigWidget::HistogramViewConfigWidget(HistogramViewWidget* view_w
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
     view_ = view_widget->getView();
-    assert(view_);
+    traced_assert(view_);
 
     //log scale
     {
@@ -74,9 +74,9 @@ HistogramViewConfigWidget::~HistogramViewConfigWidget() = default;
  */
 void HistogramViewConfigWidget::toggleLogScale()
 {
-    assert(log_check_);
+    traced_assert(log_check_);
     bool checked = log_check_->checkState() == Qt::Checked;
-    logdbg << "HistogramViewConfigWidget: toggleLogScale: setting overwrite to " << checked;
+    logdbg << "setting overwrite to " << checked;
     view_->useLogScale(checked, true);
 }
 
@@ -115,9 +115,9 @@ void HistogramViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
  */
 //void HistogramViewConfigWidget::exportSlot()
 //{
-//    logdbg << "HistogramViewConfigWidget: exportSlot";
+//    logdbg;
 //    //assert(overwrite_check_);
-//    assert(export_button_);
+//    traced_assert(export_button_);
 
 //    export_button_->setDisabled(true);
 //    //emit exportSignal(overwrite_check_->checkState() == Qt::Checked);
@@ -127,7 +127,7 @@ void HistogramViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
  */
 //void HistogramViewConfigWidget::exportDoneSlot(bool cancelled)
 //{
-//    assert(export_button_);
+//    traced_assert(export_button_);
 
 //    export_button_->setDisabled(false);
 

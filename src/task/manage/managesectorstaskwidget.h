@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MANAGESECTORSTASKWIDGET_H
-#define MANAGESECTORSTASKWIDGET_H
+#pragma once
 
 #include <taskwidget.h>
 
@@ -93,5 +92,3 @@ protected:
     QStringList table_columns_{"ID", "Sector Name",  "Layer Name", "Exclude", "Num Points", "Altitude Minimum",
                                "Altitude Maximum", "Color", "Delete"};
 };
-
-#endif // MANAGESECTORSTASKWIDGET_H

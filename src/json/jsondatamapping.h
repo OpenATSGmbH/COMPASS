@@ -15,8 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JSONDATAMAPPING_H
-#define JSONDATAMAPPING_H
+#pragma once
 
 #include <memory>
 
@@ -24,7 +23,6 @@
 #include "format.h"
 #include "json_fwd.hpp"
 #include "jsondatamappingwidget.h"
-//#include "logger.h"
 #include "nullablevector.h"
 
 namespace dbContent {
@@ -83,8 +81,8 @@ class JSONDataMapping : public Configurable
 
     std::string dbObjectName() const;
 
-    void dboVariableName(const std::string& name);
-    std::string dboVariableName() const;
+    void dbcontVariableName(const std::string& name);
+    std::string dbcontVariableName() const;
 
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id)
@@ -187,5 +185,3 @@ class JSONDataMapping : public Configurable
 };
 
 Q_DECLARE_METATYPE(JSONDataMapping*)
-
-#endif  // JSONDATAMAPPING_H

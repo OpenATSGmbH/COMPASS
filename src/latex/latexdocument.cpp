@@ -22,6 +22,7 @@
 #include "latexsection.h"
 #include "compass.h"
 #include "licensemanager.h"
+#include "reportdefs.h"
 
 #include <QDateTime>
 
@@ -36,7 +37,7 @@ using namespace Utils;
 LatexDocument::LatexDocument(const std::string& path, const std::string& filename)
     : path_(path), filename_(filename)
 {
-    loginf << "LatexDocument: constructor: path '" << path_ << "' filename '" << filename_ << "'";
+    loginf << "path '" << path_ << "' filename '" << filename_ << "'";
 
     footer_left_  = COMPASS::instance().versionString(false, true);
     footer_right_ = COMPASS::instance().licenseeString(true);
@@ -44,7 +45,7 @@ LatexDocument::LatexDocument(const std::string& path, const std::string& filenam
 
 void LatexDocument::write()
 {
-    loginf << "LatexDocument: write: path '" << path_ << "' filename '" << filename_ << "'";
+    loginf << "path '" << path_ << "' filename '" << filename_ << "'";
 
     bool ret = Files::createMissingDirectories(path_);
 
@@ -53,7 +54,7 @@ void LatexDocument::write()
 
     std::string path = path_ + "/" + filename_;
 
-    loginf << "LatexDocument: write: writing file to '" << path << "'";
+    loginf << "writing file to '" << path << "'";
 
     ofstream file (path);
     if (!file.is_open())
@@ -65,12 +66,14 @@ void LatexDocument::write()
 
     file.close();
 
-    loginf << "LatexDocument: write: done";
+    loginf << "done";
 }
 
 std::string LatexDocument::toString()
 {
     stringstream ss;
+
+    auto color_defs = ResultReport::Colors::latexCustomColorDefines();
 
     ss << R"(\documentclass[twoside,a4paper]{report}
           \usepackage{geometry}
@@ -91,9 +94,17 @@ std::string LatexDocument::toString()
           \usepackage{pdflscape}
 
           \usepackage{xcolor}
+          \usepackage[table]{xcolor}
           \definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
-          \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.13}
+          \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.13})";
 
+    ss << "\n";
+
+    //define additional report colors
+    for (const auto& cd : color_defs)
+        ss << "\t  " << cd << "\n";
+
+    ss << R"(
           \usepackage{silence}
 
           \pagestyle{fancy}       % Set the page style to fancy
@@ -215,11 +226,11 @@ std::string LatexDocument::toString()
 
 LatexSection& LatexDocument::getSection (const std::string& id)
 {
-    assert (id.size());
+    traced_assert(id.size());
     std::vector<std::string> parts = String::split(id, ':');
-    assert (parts.size());
+    traced_assert(parts.size());
 
-    loginf << "LatexDocument: getSection: id '"+id+"' parts " << parts.size();
+    loginf << "id '"+id+"' parts " << parts.size();
 
     //std::string& top = parts.at(0);
 
@@ -238,7 +249,7 @@ LatexSection& LatexDocument::getSection (const std::string& id)
         }
         else // previous section
         {
-            assert (tmp);
+            traced_assert(tmp);
 
             if (!tmp->hasSubSection(heading))
                 tmp->addSubSection(heading);
@@ -247,7 +258,7 @@ LatexSection& LatexDocument::getSection (const std::string& id)
         }
     }
 
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
@@ -259,15 +270,15 @@ bool LatexDocument::hasSubSection (const std::string& heading)
 LatexSection& LatexDocument::getSubSection (const std::string& heading)
 {
     LatexSection* tmp = findSubSection (heading);
-    assert (tmp);
+    traced_assert(tmp);
     return *tmp;
 }
 
 void LatexDocument::addSubSection (const std::string& heading)
 {
-    assert (!hasSubSection(heading));
+    traced_assert(!hasSubSection(heading));
     sub_content_.push_back(unique_ptr<LatexSection>(new LatexSection(LatexSectionLevel::SECTION, heading)));
-    assert (hasSubSection(heading));
+    traced_assert(hasSubSection(heading));
 }
 
 std::string LatexDocument::path() const

@@ -137,12 +137,12 @@ JSONObjectParserWidget::JSONObjectParserWidget(JSONObjectParser& parser, QWidget
 
 void JSONObjectParserWidget::update()
 {
-    assert(parser_);
-    assert(json_container_key_edit_);
-    assert(json_key_edit_);
-    assert(json_value_edit_);
-    assert(override_data_source_check_);
-    assert(data_source_variable_name_edit_);
+    traced_assert(parser_);
+    traced_assert(json_container_key_edit_);
+    traced_assert(json_key_edit_);
+    traced_assert(json_value_edit_);
+    traced_assert(override_data_source_check_);
+    traced_assert(data_source_variable_name_edit_);
 
     json_container_key_edit_->setText(parser_->JSONContainerKey().c_str());
     json_key_edit_->setText(parser_->JSONKey().c_str());
@@ -153,17 +153,17 @@ void JSONObjectParserWidget::update()
 
 void JSONObjectParserWidget::updateActive()
 {
-    loginf << "JSONObjectParserWidget: updateActive: value " << parser_->active();
+    loginf << "value " << parser_->active();
 
-    assert (active_check_);
+    traced_assert(active_check_);
     active_check_->setChecked(parser_->active());
 }
 
 void JSONObjectParserWidget::updateMappingsGrid()
 {
-    loginf << "JSONObjectParserWidget: updateMappingsGrid";
-    assert(parser_);
-    assert(mappings_grid_);
+    loginf;
+    traced_assert(parser_);
+    traced_assert(mappings_grid_);
 
     QLayoutItem* child;
     while (!mappings_grid_->isEmpty() && (child = mappings_grid_->takeAt(0)) != nullptr)
@@ -194,9 +194,9 @@ void JSONObjectParserWidget::updateMappingsGrid()
     comment_label->setFont(font_bold);
     mappings_grid_->addWidget(comment_label, row, 2);
 
-    QLabel* dbovar_label = new QLabel("DBContent Variable");
-    dbovar_label->setFont(font_bold);
-    mappings_grid_->addWidget(dbovar_label, row, 3);
+    QLabel* dbcontvar_label = new QLabel("DBContent Variable");
+    dbcontvar_label->setFont(font_bold);
+    mappings_grid_->addWidget(dbcontvar_label, row, 3);
 
     QLabel* mandatory_label = new QLabel("Mandatory");
     mandatory_label->setFont(font_bold);
@@ -309,57 +309,57 @@ void JSONObjectParserWidget::setParser(JSONObjectParser& parser) { parser_ = &pa
 
 //void JSONObjectParserWidget::toggleActiveSlot ()
 //{
-//    loginf << "JSONObjectParserWidget: toggleActiveSlot";
+//    loginf;
 
 //    QCheckBox* widget = static_cast<QCheckBox*>(sender());
-//    assert(widget);
+//    traced_assert(widget);
 
 //    parser_->active(widget->checkState() == Qt::Checked);
 //}
 
 void JSONObjectParserWidget::jsonContainerKeyChangedSlot()
 {
-    assert(parser_);
-    assert(json_container_key_edit_);
+    traced_assert(parser_);
+    traced_assert(json_container_key_edit_);
 
     parser_->JSONContainerKey(json_container_key_edit_->text().toStdString());
 }
 
 void JSONObjectParserWidget::jsonKeyChangedSlot()
 {
-    assert(parser_);
-    assert(json_key_edit_);
+    traced_assert(parser_);
+    traced_assert(json_key_edit_);
 
     parser_->JSONKey(json_key_edit_->text().toStdString());
 }
 
 void JSONObjectParserWidget::jsonValueChangedSlot()
 {
-    assert(parser_);
-    assert(json_value_edit_);
+    traced_assert(parser_);
+    traced_assert(json_value_edit_);
 
     parser_->JSONValue(json_value_edit_->text().toStdString());
 }
 
 void JSONObjectParserWidget::overrideDataSourceChangedSlot()
 {
-    assert(parser_);
-    assert(override_data_source_check_);
+    traced_assert(parser_);
+    traced_assert(override_data_source_check_);
 
     parser_->overrideDataSource(override_data_source_check_->isChecked());
 }
 
 void JSONObjectParserWidget::dataSourceVariableChangedSlot()
 {
-    assert(parser_);
-    assert(data_source_variable_name_edit_);
+    traced_assert(parser_);
+    traced_assert(data_source_variable_name_edit_);
 
     parser_->dataSourceVariableName(data_source_variable_name_edit_->text().toStdString());
 }
 
 void JSONObjectParserWidget::addNewMappingSlot()
 {
-    assert(parser_);
+    traced_assert(parser_);
 
     auto config = Configuration::create("JSONDataMapping");
     config->addParameter<std::string>("json_key", config->getInstanceId());
@@ -372,14 +372,14 @@ void JSONObjectParserWidget::addNewMappingSlot()
 
 void JSONObjectParserWidget::mappingActiveChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingActiveChangedSlot";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     if (!mapping->hasVariable() && widget->checkState() == Qt::Checked)
     {
@@ -410,115 +410,115 @@ void JSONObjectParserWidget::mappingActiveChangedSlot()
 
 void JSONObjectParserWidget::mappingKeyChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingKeyChangedSlot";
+    loginf;
 
     QLineEdit* widget = static_cast<QLineEdit*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     mapping->jsonKey(widget->text().toStdString());
 }
 
 void JSONObjectParserWidget::mappingCommentChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingCommentChangedSlot";
+    loginf;
 
     QLineEdit* widget = static_cast<QLineEdit*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     mapping->comment(widget->text().toStdString());
 }
 
 void JSONObjectParserWidget::mappingDBContentVariableChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingDBContentVariableChangedSlot";
+    loginf;
 
     dbContent::VariableSelectionWidget* var_widget =
             static_cast<dbContent::VariableSelectionWidget*>(sender());
-    assert(var_widget);
+    traced_assert(var_widget);
     QVariant data = var_widget->property("mapping");
     // unsigned int row = var_widget->property("row").toUInt();
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     if (var_widget->hasVariable())
     {
-        loginf << "JSONObjectParserWidget: mappingDBContentVariableChangedSlot: variable set";
+        loginf << "variable set";
 
-        mapping->dboVariableName(var_widget->selectedVariable().name());
+        mapping->dbcontVariableName(var_widget->selectedVariable().name());
     }
     else
     {
-        loginf << "JSONObjectParserWidget: mappingDBContentVariableChangedSlot: variable removed";
+        loginf << "variable removed";
 
-        mapping->dboVariableName("");
+        mapping->dbcontVariableName("");
     }
 }
 
 void JSONObjectParserWidget::mappingMandatoryChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingMandatoryChangedSlot";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     mapping->mandatory(widget->checkState() == Qt::Checked);
 }
 
 void JSONObjectParserWidget::mappingInArrayChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingInArrayChangedSlot";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     mapping->inArray(widget->checkState() == Qt::Checked);
 }
 
 void JSONObjectParserWidget::mappingAppendChangedSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingAppendChangedSlot";
+    loginf;
 
     QCheckBox* widget = static_cast<QCheckBox*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     mapping->appendValue(widget->checkState() == Qt::Checked);
 }
 
 void JSONObjectParserWidget::mappingDeleteSlot()
 {
-    loginf << "JSONObjectParserWidget: mappingDeleteSlot";
+    loginf;
 
     QPushButton* widget = static_cast<QPushButton*>(sender());
-    assert(widget);
+    traced_assert(widget);
     QVariant data = widget->property("mapping");
 
     JSONDataMapping* mapping = data.value<JSONDataMapping*>();
-    assert(mapping);
+    traced_assert(mapping);
 
     unsigned int index = widget->property("index").toUInt();
 
-    assert(parser_->hasMapping(index));
+    traced_assert(parser_->hasMapping(index));
     parser_->removeMapping(index);
 
     updateMappingsGrid();

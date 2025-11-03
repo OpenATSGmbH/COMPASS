@@ -38,6 +38,7 @@ public:
                              unsigned int num_no_ref,
                              unsigned int num_pos_outside,
                              unsigned int num_pos_inside,
+                             unsigned int num_ref_inaccurate,
                              unsigned int num_comp_passed,
                              unsigned int num_comp_failed,
                              const std::vector<double>& range_values_ref,

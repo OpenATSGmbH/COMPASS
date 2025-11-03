@@ -40,7 +40,7 @@
 #include <QApplication>
 #include <QInputDialog>
 
-#include <cassert>
+#include "traced_assert.h"
 #include <type_traits>
 #include <iostream>
 
@@ -67,19 +67,19 @@ SectionContentTable::SectionContentTable(const string& name, unsigned int num_co
 void SectionContentTable::addRow (vector<QVariant> row, EvaluationRequirementResult::Base* result_ptr,
                                   QVariant annotation)
 {
-    assert (row.size() == num_columns_);
+    traced_assert(row.size() == num_columns_);
 
     rows_.push_back(row);
     result_ptrs_.push_back(result_ptr);
     annotations_.push_back(annotation);
 
-    assert (annotations_.size() == rows_.size());
-    assert (result_ptrs_.size() == rows_.size());
+    traced_assert(annotations_.size() == rows_.size());
+    traced_assert(result_ptrs_.size() == rows_.size());
 }
 
 void SectionContentTable::addToLayout (QVBoxLayout* layout)
 {
-    assert (layout);
+    traced_assert(layout);
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
@@ -145,7 +145,7 @@ void SectionContentTable::addToLayout (QVBoxLayout* layout)
 
 void SectionContentTable::accept(LatexVisitor& v)
 {
-    loginf << "SectionContentTable: accept";
+    loginf;
 
     createOnDemandIfNeeded();
 
@@ -171,18 +171,18 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
     {
     case Qt::DisplayRole:
     {
-        logdbg << "SectionContentTable: data: display role: row " << index.row() << " col " << index.column();
+        logdbg << "display role: row " << index.row() << " col " << index.column();
 
-        assert (index.row() >= 0);
-        assert (index.row() < rows_.size());
-        assert (index.column() < num_columns_);
+        traced_assert(index.row() >= 0);
+        traced_assert(index.row() < rows_.size());
+        traced_assert(index.column() < num_columns_);
 
         return rows_.at(index.row()).at(index.column());
     }
     case Qt::BackgroundRole:
     {
-        assert (index.row() >= 0);
-        assert (index.row() < rows_.size());
+        traced_assert(index.row() >= 0);
+        traced_assert(index.row() < rows_.size());
 
         unsigned int row_index = index.row();
 
@@ -194,9 +194,9 @@ QVariant SectionContentTable::data(const QModelIndex& index, int role) const
     }
     case Qt::ForegroundRole:
     {
-        assert (index.row() >= 0);
-        assert (index.row() < rows_.size());
-        assert (index.column() < num_columns_);
+        traced_assert(index.row() >= 0);
+        traced_assert(index.row() < rows_.size());
+        traced_assert(index.column() < num_columns_);
 
         QVariant data = rows_.at(index.row()).at(index.column());
 
@@ -227,7 +227,7 @@ QVariant SectionContentTable::headerData(int section, Qt::Orientation orientatio
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        assert (section < num_columns_);
+        traced_assert(section < num_columns_);
         return headings_.at(section).c_str();
     }
 
@@ -249,7 +249,7 @@ Qt::ItemFlags SectionContentTable::flags(const QModelIndex &index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
 
-    assert (index.column() < headings_.size());
+    traced_assert(index.column() < headings_.size());
 
     return QAbstractItemModel::flags(index);
 }
@@ -267,7 +267,7 @@ unsigned int SectionContentTable::filteredRowCount () const
         proxy_model_->showUnused(show_unused_);
 
         SectionContentTable* tmp = const_cast<SectionContentTable*>(this); // hacky
-        assert (tmp);
+        traced_assert(tmp);
         proxy_model_->setSourceModel(tmp);
     }
 
@@ -282,7 +282,7 @@ std::vector<std::string> SectionContentTable::sortedRowStrings(unsigned int row,
         proxy_model_->showUnused(show_unused_);
 
         SectionContentTable* tmp = const_cast<SectionContentTable*>(this); // hacky
-        assert (tmp);
+        traced_assert(tmp);
         proxy_model_->setSourceModel(tmp);
     }
 
@@ -313,17 +313,17 @@ std::vector<std::string> SectionContentTable::sortedRowStrings(unsigned int row,
                 this, &SectionContentTable::doubleClickedSlot);
     }
 
-    logdbg << "SectionContentTable: sortedRowStrings: row " << row << " rows " << proxy_model_->rowCount()
+    logdbg << "row " << row << " rows " << proxy_model_->rowCount()
            << " data rows " << rows_.size();
-    assert (row < proxy_model_->rowCount());
-    assert (row < rows_.size());
+    traced_assert(row < proxy_model_->rowCount());
+    traced_assert(row < rows_.size());
 
     vector<string> result;
 
     for (unsigned int col=0; col < num_columns_; ++col)
     {
         QModelIndex index = proxy_model_->index(row, col);
-        assert (index.isValid());
+        traced_assert(index.isValid());
         // get string can convert to latex
         if (latex)
             result.push_back(String::latexString(proxy_model_->data(index).toString().toStdString()));
@@ -342,18 +342,18 @@ bool SectionContentTable::hasReference (unsigned int row) const
     //     proxy_model_->showUnused(show_unused_);
 
     //     SectionContentTable* tmp = const_cast<SectionContentTable*>(this); // hacky
-    //     assert (tmp);
+    //     traced_assert(tmp);
     //     proxy_model_->setSourceModel(tmp);
     // }
 
-    // assert (row < proxy_model_->rowCount());
-    // assert (row < rows_.size());
+    // traced_assert(row < proxy_model_->rowCount());
+    // traced_assert(row < rows_.size());
 
     // QModelIndex index = proxy_model_->index(row, 0);
-    // assert (index.isValid());
+    // traced_assert(index.isValid());
 
     // auto const source_index = proxy_model_->mapToSource(index);
-    // assert (source_index.isValid());
+    // traced_assert(source_index.isValid());
 
     // unsigned int row_index = source_index.row();
 
@@ -371,32 +371,32 @@ std::string SectionContentTable::reference (unsigned int row) const
     //     proxy_model_->showUnused(show_unused_);
 
     //     SectionContentTable* tmp = const_cast<SectionContentTable*>(this); // hacky
-    //     assert (tmp);
+    //     traced_assert(tmp);
     //     proxy_model_->setSourceModel(tmp);
     // }
 
-    // assert (row < proxy_model_->rowCount());
-    // assert (row < rows_.size());
+    // traced_assert(row < proxy_model_->rowCount());
+    // traced_assert(row < rows_.size());
 
     // QModelIndex index = proxy_model_->index(row, 0);
-    // assert (index.isValid());
+    // traced_assert(index.isValid());
 
     // auto const source_index = proxy_model_->mapToSource(index);
-    // assert (source_index.isValid());
+    // traced_assert(source_index.isValid());
 
     // unsigned int row_index = source_index.row();
 
-    // assert (result_ptrs_.at(row_index)
+    // traced_assert(result_ptrs_.at(row_index)
     //         && result_ptrs_.at(row_index)->hasReference(*this, annotations_.at(row_index)));
 
     // string tmp = result_ptrs_.at(row_index)->reference(*this, annotations_.at(row_index));
     // //e.g. "Report:Results:"+getRequirementSectionID();
-    // assert (tmp.size() >= 14);
+    // traced_assert(tmp.size() >= 14);
 
     // if (tmp == "Report:Results")
     //     return "";
 
-    // assert (tmp.rfind("Report:Results:", 0) == 0);
+    // traced_assert(tmp.rfind("Report:Results:", 0) == 0);
     // tmp.erase(0,15);
 
     // return tmp;
@@ -411,9 +411,9 @@ bool SectionContentTable::showUnused() const
 
 void SectionContentTable::showUnused(bool value)
 {
-    loginf << "SectionContentTable: showUnused: value " << value;
+    loginf << "value " << value;
 
-    assert (proxy_model_);
+    traced_assert(proxy_model_);
 
     beginResetModel();
 
@@ -425,12 +425,12 @@ void SectionContentTable::showUnused(bool value)
 
 void SectionContentTable::registerCallBack (const std::string& name, std::function<void()> func)
 {
-    assert (!callback_map_.count(name));
+    traced_assert(!callback_map_.count(name));
     callback_map_.emplace(name, func);
 }
 void SectionContentTable::executeCallBack (const std::string& name)
 {
-    assert (callback_map_.count(name));
+    traced_assert(callback_map_.count(name));
     callback_map_.at(name)();
 }
 
@@ -458,7 +458,7 @@ void SectionContentTable::createOnDemandIfNeeded()
 {
     if (create_on_demand_ && !already_created_by_demand_)
     {
-        loginf << "SectionContentTable: createOnDemandIfNeeded: creating";
+        loginf << "creating";
 
         QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -485,21 +485,21 @@ void SectionContentTable::clickedSlot(const QModelIndex& index)
 {
     if (!index.isValid())
     {
-        loginf << "SectionContentTable: clickedSlot: invalid index";
+        loginf << "invalid index";
         return;
     }
 
     if (QApplication::mouseButtons() & Qt::RightButton)
     {
-        loginf << "SectionContentTable: clickedSlot: RMB click ignored";
+        loginf << "RMB click ignored";
         return;
     }
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
-    assert (source_index.row() >= 0);
-    assert (source_index.row() < rows_.size());
+    traced_assert(source_index.row() >= 0);
+    traced_assert(source_index.row() < rows_.size());
 
     last_clicked_row_index_ = source_index.row();
 
@@ -518,7 +518,7 @@ void SectionContentTable::performClickAction()
 
     // if (result_ptrs_.at(row_index) && result_ptrs_.at(row_index)->hasViewableData(*this, annotations_.at(row_index)))
     // {
-    //     loginf << "SectionContentTable: performClickAction: index has associated viewable";
+    //     loginf << "index has associated viewable";
 
     //     std::shared_ptr<nlohmann::json::object_t> viewable;
 
@@ -540,7 +540,7 @@ void SectionContentTable::performClickAction()
     //         task.runAsyncDialog();
     //     }
 
-    //     assert (viewable);
+    //     traced_assert(viewable);
 
     //     eval_man_.setViewableDataConfig(*viewable.get());
     // }
@@ -553,51 +553,51 @@ void SectionContentTable::doubleClickedSlot(const QModelIndex& index)
 
     // if (!index.isValid())
     // {
-    //     loginf << "SectionContentTable: doubleClickedSlot: invalid index";
+    //     loginf << "invalid index";
     //     return;
     // }
 
     // auto const source_index = proxy_model_->mapToSource(index);
-    // assert (source_index.isValid());
+    // traced_assert(source_index.isValid());
 
-    // assert (source_index.row() >= 0);
-    // assert (source_index.row() < rows_.size());
+    // traced_assert(source_index.row() >= 0);
+    // traced_assert(source_index.row() < rows_.size());
 
-    // loginf << "SectionContentTable: doubleClickedSlot: row " << source_index.row();
+    // loginf << "row " << source_index.row();
 
     // unsigned int row_index = source_index.row();
 
     // if (result_ptrs_.at(row_index) && result_ptrs_.at(row_index)->hasReference(*this, annotations_.at(row_index)))
     // {
     //     string reference = result_ptrs_.at(row_index)->reference(*this, annotations_.at(row_index));
-    //     assert (reference.size());
+    //     traced_assert(reference.size());
 
-    //     loginf << "SectionContentTable: currentRowChangedSlot: index has associated reference '"
+    //     loginf << "index has associated reference '"
     //            << reference << "'";
 
     //     eval_man_.showResultId(reference);
     // }
     // else
-    //     loginf << "SectionContentTable: currentRowChangedSlot: index has no associated reference";
+    //     loginf << "index has no associated reference";
 }
 
 void SectionContentTable::customContextMenuSlot(const QPoint& p)
 {
-    logdbg << "SectionContentTable: customContextMenuSlot";
+    logdbg;
 
-    assert (table_view_);
+    traced_assert(table_view_);
 
     QModelIndex index = table_view_->indexAt(p);
     if (!index.isValid())
         return;
 
     auto const source_index = proxy_model_->mapToSource(index);
-    assert (source_index.isValid());
+    traced_assert(source_index.isValid());
 
-    loginf << "SectionContentTable: customContextMenuSlot: row " << index.row() << " src " << source_index.row();
+    loginf << "row " << index.row() << " src " << source_index.row();
 
-    assert (source_index.row() >= 0);
-    assert (source_index.row() < rows_.size());
+    traced_assert(source_index.row() >= 0);
+    traced_assert(source_index.row() < rows_.size());
 
     unsigned int row_index = source_index.row();
 
@@ -605,14 +605,14 @@ void SectionContentTable::customContextMenuSlot(const QPoint& p)
     {
         EvaluationRequirementResult::Single* single_result =
                 static_cast<EvaluationRequirementResult::Single*>(result_ptrs_.at(row_index));
-        assert (single_result);
+        traced_assert(single_result);
 
         QMenu menu;
 
         unsigned int utn = single_result->utn();
-        loginf << "SectionContentTable: customContextMenuSlot: utn " << utn;
+        loginf << "utn " << utn;
 
-        assert (eval_man_.calculator().data().hasTargetData(utn));
+        traced_assert(eval_man_.calculator().data().hasTargetData(utn));
 
         const EvaluationTargetData& target_data = eval_man_.calculator().data().targetData(utn);
 
@@ -646,17 +646,17 @@ void SectionContentTable::customContextMenuSlot(const QPoint& p)
         menu.exec(table_view_->viewport()->mapToGlobal(p));
     }
     else
-        loginf << "SectionContentTable: customContextMenuSlot: no associated utn";
+        loginf << "no associated utn";
 }
 
 void SectionContentTable::addUTNSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
-    loginf << "SectionContentTable: addUTNSlot: utn " << utn;
+    loginf << "utn " << utn;
 
     COMPASS::instance().dbContentManager().utnUseEval(utn, true);
     //eval_man_.useUTN(utn, true, true);
@@ -666,7 +666,7 @@ void SectionContentTable::addUTNSlot ()
 void SectionContentTable::removeUTNSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
@@ -677,7 +677,7 @@ void SectionContentTable::removeUTNSlot ()
     if (ok && !text.isEmpty())
     {
 
-        loginf << "SectionContentTable: removeUTNSlot: utn " << utn;
+        loginf << "utn " << utn;
 
         COMPASS::instance().dbContentManager().utnUseEval(utn, false);
         COMPASS::instance().dbContentManager().utnComment(utn, text.toStdString());
@@ -687,11 +687,11 @@ void SectionContentTable::removeUTNSlot ()
 void SectionContentTable::showFullUTNSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
-    loginf << "SectionContentTable: showFullUTNSlot: utn " << utn;
+    loginf << "utn " << utn;
 
     eval_man_.calculator().showFullUTN(utn);
 }
@@ -699,11 +699,11 @@ void SectionContentTable::showFullUTNSlot ()
 void SectionContentTable::showSurroundingDataSlot ()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     unsigned int utn = action->data().toUInt();
 
-    loginf << "SectionContentTable: showSurroundingDataSlot: utn " << utn;
+    loginf << "utn " << utn;
 
     //eval_man_.calculator().showSurroundingData(utn);
 }
@@ -746,7 +746,7 @@ void SectionContentTable::toggleShowUnusedSlot()
 
 void SectionContentTable::copyContentSlot()
 {
-    loginf << "SectionContentTable: copyContentSlot";
+    loginf;
 
     stringstream ss;
 
@@ -769,7 +769,7 @@ void SectionContentTable::copyContentSlot()
     for (unsigned int row=0; row < num_rows; ++row)
     {
         row_strings = sortedRowStrings(row, false);
-        assert (row_strings.size() == num_cols);
+        traced_assert(row_strings.size() == num_cols);
 
         for (unsigned int cnt=0; cnt < num_cols; ++cnt)
         {
@@ -787,13 +787,13 @@ void SectionContentTable::copyContentSlot()
 void SectionContentTable::executeCallBackSlot()
 {
     QAction* action = dynamic_cast<QAction*> (QObject::sender());
-    assert (action);
+    traced_assert(action);
 
     string name = action->data().toString().toStdString();
 
-    loginf << "SectionContentTable: executeCallBackSlot: name " << name;
+    loginf << "name " << name;
 
-    assert (callback_map_.count(name));
+    traced_assert(callback_map_.count(name));
     executeCallBack(name);
 }
 

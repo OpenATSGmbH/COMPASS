@@ -32,7 +32,7 @@
 #include "util/timeconv.h"
 #include "viewpoint.h"
 
-#include <cassert>
+#include "traced_assert.h"
 
 using namespace std;
 using namespace Utils;
@@ -164,8 +164,8 @@ SingleCorrectBase::SingleCorrectBase(const std::string& result_type,
 */
 boost::optional<double> SingleCorrectBase::computeResult_impl() const
 {
-    assert (num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_pos_inside_ == num_no_ref_id_ + num_correct_ + num_not_correct_);
+    traced_assert(num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_pos_inside_ == num_no_ref_id_ + num_correct_ + num_not_correct_);
 
     unsigned int num_total = num_correct_ + num_not_correct_;
 
@@ -209,8 +209,8 @@ std::vector<Single::TargetInfo> SingleCorrectBase::targetInfos() const
           { "#NoRef [1]"     , "Number of updates w/o reference position or " + cvn, num_no_ref_pos_ + num_no_ref_id_ },
           { "#NoRefPos [1]"  , "Number of updates w/o reference position "         , num_no_ref_pos_                  },
           { "#NoRef [1]"     , "Number of updates w/o reference " + cvn            , num_no_ref_id_                   },
-          { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
           { "#PosOutside [1]", "Number of updates outside sector"                  , num_pos_outside_                 },
+          { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
           { sn_c + " [1]"    , "Number of updates with correct " + cvn             , num_correct_                     },
           { sn_nc + " [1]"   , "Number of updates with no correct " + cvn          , num_not_correct_                 } };
 
@@ -250,7 +250,7 @@ nlohmann::json::array_t SingleCorrectBase::detailValues(const EvaluationDetail& 
 bool SingleCorrectBase::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_not_correct = detail.getValueAs<bool>(DetailKey::IsNotCorrect);
-    assert(is_not_correct.has_value());
+    traced_assert(is_not_correct.has_value());
 
     return !is_not_correct.value();
 }
@@ -262,7 +262,7 @@ void SingleCorrectBase::addAnnotationForDetail(nlohmann::json& annotations_json,
                                                TargetAnnotationType type,
                                                bool is_ok) const
 {
-    assert (detail.numPositions() >= 1);
+    traced_assert(detail.numPositions() >= 1);
 
     if (type == TargetAnnotationType::Highlight)
     {
@@ -339,15 +339,15 @@ void JoinedCorrectBase::accumulateSingleResult(const std::shared_ptr<Single>& si
 */
 boost::optional<double> JoinedCorrectBase::computeResult_impl() const
 {
-    loginf << "JoinedCorrectBase: computeResult_impl: " << type()
+    loginf << "start" << type()
             << " num_updates " << num_updates_
             << " num_no_ref_pos " << num_no_ref_pos_
             << " num_no_ref_id " << num_no_ref_id_
             << " num_correct " << num_correct_
             << " num_not_correct " << num_not_correct_;
 
-    assert (num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
-    assert (num_pos_inside_ == num_no_ref_id_+ num_correct_ + num_not_correct_);
+    traced_assert(num_updates_ - num_no_ref_pos_ == num_pos_inside_ + num_pos_outside_);
+    traced_assert(num_pos_inside_ == num_no_ref_id_+ num_correct_ + num_not_correct_);
 
     unsigned int total = num_correct_ + num_not_correct_;
 
@@ -369,8 +369,8 @@ std::vector<Joined::SectorInfo> JoinedCorrectBase::sectorInfos() const
              { "#NoRef [1]"     , "Number of updates w/o reference position or " + cvn, num_no_ref_pos_ + num_no_ref_id_ },
              { "#NoRefPos [1]"  , "Number of updates w/o reference position "         , num_no_ref_pos_                  },
              { "#NoRef [1]"     , "Number of updates w/o reference " + cvn            , num_no_ref_id_                   },
-             { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
              { "#PosOutside [1]", "Number of updates outside sector"                  , num_pos_outside_                 },
+             { "#PosInside [1]" , "Number of updates inside sector"                   , num_pos_inside_                  },
              { sn_c + " [1]"    , "Number of updates with correct " + cvn             , num_correct_                     },
              { sn_nc + " [1]"   , "Number of updates with no correct " + cvn          , num_not_correct_                 } };
 }
