@@ -250,7 +250,7 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     //store errors
     if (has_no_sac_sic && has_no_sac_sic_critical)
     {
-        error = "Missing SAC/SIC" + (has_no_sac_sic_cat >= 0 ? " in cat " + std::to_string(has_no_sac_sic_cat) : "");
+        error = "Missing SAC/SIC" + (has_no_sac_sic_cat >= 0 ? " in CAT" + String::categoryString((unsigned int)has_no_sac_sic_cat) : "");
     }
     else if (has_invalid_cat)
     {
