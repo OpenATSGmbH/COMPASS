@@ -255,8 +255,10 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
                                                size_t num_records, 
                                                size_t num_errors) 
     {
-        // get last index
+        if (!this->isRunning())
+            return;
 
+        // get last index
         if (settings().activeFileFraming() == "")
         {
             traced_assert(data->contains("data_blocks"));
@@ -312,8 +314,14 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     //read chunks from PCAP until file is at end
     while (!eof)
     {
+        if (!isRunning())
+            break;
+
         //get next big chunk
         auto data = sniffer.readFileNext(max_packets, max_bytes, signatures);
+
+        if (!isRunning())
+            break;
 
         //check for errors
         if (!data.has_value())

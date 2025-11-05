@@ -59,7 +59,12 @@ void ASTERIXDecoderFile::start_impl()
     current_file_idx_         = -1;
 
     while (isRunning() && nextFile())
+    {
         processCurrentFile();
+
+        if (!isRunning())
+            break;
+    }
 }
 
 /**
@@ -85,6 +90,9 @@ bool ASTERIXDecoderFile::atEnd() const
 */
 void ASTERIXDecoderFile::processCurrentFile()
 {
+    if (!isRunning())
+        return;
+
     traced_assert(!atEnd());
 
     auto& current_file = source_.file_infos_.at(current_file_idx_);
@@ -99,6 +107,9 @@ void ASTERIXDecoderFile::processCurrentFile()
     try
     {
         processFile(current_file);
+
+        if (!isRunning())
+            return;
 
         //another file done
         done_file_size_          += current_file.sizeInBytes(true);

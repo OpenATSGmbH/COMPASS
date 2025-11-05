@@ -120,12 +120,17 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, int sec
         for (const auto& category : sac_sic.value().items())
         {
             bool ok;
-            QString::fromStdString(category.key()).toInt(&ok);
+            auto cat = QString::fromStdString(category.key()).toUInt(&ok);
 
             if (ok)
-                categories.insert(category.key());
+            {
+                auto cat_str = String::categoryString(cat);
+                categories.insert(cat_str);
+            }
             else if (error.empty())
+            {
                 error = "Invalid category '" + category.key() + "'";
+            }
 
             if (error.empty() &&
                 (!category.value().contains("010.SAC") ||
