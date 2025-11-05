@@ -42,9 +42,9 @@ struct ASTERIXImportFileError
 
     void reset()
     {
-        errtype       = ErrorType::NoError;
-        errinfo       = "";
-        analysis_info = {};
+        errtype        = ErrorType::NoError;
+        errinfo        = "";
+        analysis_info  = {};
     }
 
     bool hasError() const
@@ -76,6 +76,7 @@ struct ASTERIXImportFileSection
     size_t                 total_size_bytes = 0; // total size of this section in bytes
     
     ASTERIXImportFileError error;                // error information (e.g. decoding)
+    std::string            warning;              // warning
     bool                   used = true;          // use this section for import
 };
 
@@ -89,6 +90,7 @@ struct ASTERIXImportFileInfo
     void reset();
 
     bool hasError() const;
+    bool hasWarning() const;
     bool canDecode() const;
     bool decodingTested() const { return decoding_tested; }
     bool fileProcessed() const { return processed; }
@@ -107,6 +109,7 @@ struct ASTERIXImportFileInfo
     Sections                sections;
     boost::optional<size_t> total_size_bytes;
     ASTERIXImportFileError  error;
+    std::string             warning;
     bool                    used = true;
 
 private:

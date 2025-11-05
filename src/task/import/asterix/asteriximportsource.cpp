@@ -59,6 +59,7 @@ nlohmann::json ASTERIXImportFileSection::toJSON() const
 void ASTERIXImportFileInfo::reset()
 {
     error.reset();
+    warning = "";
     sections.clear();
 
     decoding_tested = false;
@@ -77,6 +78,22 @@ bool ASTERIXImportFileInfo::hasError() const
     //used file section has an error?
     for (const auto& s : sections)
         if (s.used && s.error.hasError())
+            return true;
+
+    return false;
+}
+
+/**
+*/
+bool ASTERIXImportFileInfo::hasWarning() const 
+{
+    //file itself has a warning?
+    if (!warning.empty())
+        return true;
+
+    //used file section has an error?
+    for (const auto& s : sections)
+        if (s.used && !s.warning.empty())
             return true;
 
     return false;
@@ -153,6 +170,7 @@ nlohmann::json ASTERIXImportFileInfo::toJSON() const
     info[ "used"            ] = used;
     info[ "decoding_tested" ] = decoding_tested;
     info[ "error"           ] = error.toJSON();
+    info[ "warning"         ] = warning;
 
     nlohmann::json sec_infos = nlohmann::json::array();
     for (const auto& s : sections)

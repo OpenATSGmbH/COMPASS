@@ -130,7 +130,8 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
 bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info, 
                                        int section_idx, 
                                        std::string& information,
-                                       std::string& error) const
+                                       std::string& error,
+                                       std::string& warning) const
 {
     traced_assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
 
@@ -181,6 +182,12 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
         return false;
     }
 
+    bool has_no_sac_sic          = false;
+    bool has_no_sac_sic_critical = false;
+    int  has_no_sac_sic_cat      = -1;
+    bool has_invalid_cat         = false;
+    bool has_no_sac_sic_item     = false;
+
     std::set<std::string> categories;
     for (const auto& sac_sic : analysis_info->items())
     {
@@ -188,37 +195,78 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
         if (!sac_sic.value().is_object())
             continue;
 
-        //sensor unknown? => error
-        if (error.empty() && sac_sic.key() == "unknown")
+        //check if there is a valid sac sic
+        bool has_sac_sic = sac_sic.key() != "unknown";
+
+        //unknown sac sic key => mark as error
+        if (!has_sac_sic)
         {
-            error = "Missing SAC/SIC";
+            has_no_sac_sic = true;
+
+            //no items to proof this is not cat001 or cat002? => mark as critical
+            if (sac_sic.value().size() == 0)
+                has_no_sac_sic_critical = true;
         }
 
         for (const auto& category : sac_sic.value().items())
         {
-            bool ok;
-            auto cat = QString::fromStdString(category.key()).toUInt(&ok);
+            //convert cat string to number
+            bool cat_ok;
+            auto cat = QString::fromStdString(category.key()).toInt(&cat_ok);
 
-            if (ok)
+            if (cat_ok)
             {
                 auto cat_str = String::categoryString(cat);
                 categories.insert(cat_str);
             }
-            else if (error.empty())
+            else
             {
-                error = "Invalid category '" + category.key() + "'";
+                //no valid cat string? => mark as error
+                has_invalid_cat = true;
             }
 
-            if (error.empty() &&
+            // no sac sic and cat cannot be proven to be cat001 or cat002 => mark as critical
+            if (!has_sac_sic && (!cat_ok || (cat != 1 && cat != 2)))
+            {
+                has_no_sac_sic_critical = true;
+
+                //remember any valid cat for error message
+                if (cat_ok)
+                    has_no_sac_sic_cat = cat;
+            }
+
+            // should have sac sic and no sac sic items found => mark as error
+            if (has_sac_sic &&
                 (!category.value().contains("010.SAC") ||
                  !category.value().contains("010.SIC")))
-                error = "No SAC/SIC data items found";
+                has_no_sac_sic_item = true;
         }
     }
 
+    //compile information string
     for (const auto& cat : categories)
         information += (information.empty() ? "" : ", ") + cat;
 
+    //store errors
+    if (has_no_sac_sic && has_no_sac_sic_critical)
+    {
+        error = "Missing SAC/SIC" + (has_no_sac_sic_cat >= 0 ? " in cat " + std::to_string(has_no_sac_sic_cat) : "");
+    }
+    else if (has_invalid_cat)
+    {
+        error = "Invalid category";
+    }
+    else if (has_no_sac_sic_item) // only makes sense if there was a sac sic
+    {
+        error = "No SAC/SIC data items found";
+    }
+
+    //store warnings
+    if (has_no_sac_sic && !has_no_sac_sic_critical)
+    {
+        warning = "Missing SAC/SIC in CAT001 or CAT002";
+    }
+    
     return error.empty();
 }
 
