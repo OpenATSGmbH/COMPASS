@@ -88,7 +88,7 @@ class DataSourceManager : public QObject, public Configurable
     unsigned int getDBDataSourceDSID(const std::string& ds_name);
     bool hasDataSourcesOfDBContent(const std::string dbcontent_name);
     bool canAddNewDataSourceFromConfig (unsigned int ds_id);
-    void addNewDataSource (unsigned int ds_id); // be sure not to call from different thread
+    void addNewDataSource (unsigned int ds_id, bool emit_signal=true); // be sure not to call from different thread
 
     dbContent::DBDataSource& dbDataSource(unsigned int ds_id);
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& dbDataSources() const;
