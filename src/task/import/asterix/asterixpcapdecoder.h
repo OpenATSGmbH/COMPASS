@@ -39,6 +39,10 @@ protected:
     void stop_impl() override final;
 
     bool checkFile(ASTERIXImportFileInfo& file_info, std::string& error) const override final;
-    bool checkDecoding(ASTERIXImportFileInfo& file_info, int section_idx, std::string& information, std::string& error) const override final;
+    bool checkDecoding(ASTERIXImportFileInfo& file_info, 
+                       int section_idx, 
+                       std::string& information, 
+                       std::string& error, 
+                       std::string& warning) const override final;
     void processFile(ASTERIXImportFileInfo& file_info) override final;
 };
