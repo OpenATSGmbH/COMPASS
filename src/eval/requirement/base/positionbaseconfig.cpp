@@ -24,6 +24,7 @@ PositionBaseConfig::~PositionBaseConfig() {}
 
 void PositionBaseConfig::addToReport(std::shared_ptr<ResultReport::Report> report)
 {
+    //adds the table if needed
     BaseConfig::addToReport(report);
 
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);

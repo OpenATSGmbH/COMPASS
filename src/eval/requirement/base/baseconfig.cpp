@@ -185,7 +185,8 @@ void BaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    if (!section.hasTable("req_table"))
+        section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
     auto& table = section.getTable("req_table");
 
