@@ -59,9 +59,10 @@ bool RTCommandEvaluate::run_impl()
 
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
-    if (!eval_man.canEvaluate().ok())
+    auto can_evaluate = eval_man.canEvaluate();
+    if (!can_evaluate.ok())
     {
-        setResultMessage("Unable to load evaluation data and evaluate");
+        setResultMessage("Unable to load evaluation data and evaluate: " + can_evaluate.error());
         return false;
     }
 
