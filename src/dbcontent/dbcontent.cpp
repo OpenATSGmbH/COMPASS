@@ -673,11 +673,16 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
             line_tods[datasource_vec.get(cnt)][line_vec.get(cnt)] = timestamp_vec.get(cnt);
     }
 
+    bool ds_added = false;
+
     for (auto& ds_id_it : line_counts) // ds_id -> line -> cnt
     {
         // add s
         if (!ds_man.hasDBDataSource(ds_id_it.first))
-            ds_man.addNewDataSource(ds_id_it.first);
+        {
+            ds_man.addNewDataSource(ds_id_it.first, false);
+            ds_added = true;
+        }
 
         traced_assert(ds_man.hasDBDataSource(ds_id_it.first));
 
@@ -690,6 +695,9 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
                 ds_man.dbDataSource(ds_id_it.first).maxTimestamp(line_tod_it.first, line_tod_it.second);
         }
     }
+
+    if (ds_added)
+        emit ds_man.dataSourcesChangedSignal();
 }
 
 /**
