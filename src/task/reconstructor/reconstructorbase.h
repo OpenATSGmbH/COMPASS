@@ -310,7 +310,7 @@ public:
     bool processing() const;
 
     virtual const std::map<unsigned int, std::map<unsigned int,
-                                                  std::pair<unsigned int, unsigned int>>>& assocAounts() const = 0;
+                                                  std::pair<unsigned int, unsigned int>>>& assocCounts() const = 0;
     // ds_id -> dbcont id -> (assoc, not assoc cnt)
 
     virtual void createAdditionalAnnotations() {}

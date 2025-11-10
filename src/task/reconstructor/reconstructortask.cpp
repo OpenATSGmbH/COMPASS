@@ -249,7 +249,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
     pmsg += ("<br><br><div align='left'>Elapsed: "
              + String::timeStringFromDouble(time_elapsed_s, false)+ " </div>").c_str();
 
-    if (ns && sidx && !run_start_time_after_del_.is_not_a_date_time()) // do remaining time estimate if possible
+    if (ns && (sidx || done_) && !run_start_time_after_del_.is_not_a_date_time()) // do remaining time estimate if possible
     {
         double time_elapsed_after_del_s = Time::partialSeconds(boost::posix_time::microsec_clock::local_time()
                                                                - run_start_time_after_del_);
@@ -271,7 +271,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
                      + String::timeStringFromDouble(time_remaining_s, false)+ " </div>").c_str();
 
 
-        const auto& counts = currentReconstructor()->assocAounts();
+        const auto& counts = currentReconstructor()->assocCounts();
 
         DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
@@ -916,7 +916,6 @@ void ReconstructorTask::loadingDoneSlot()
         return;
     }
 
-
     loginf << "processing first slice "
            << !loading_slice_->first_slice_
            << " remove ts " << Time::toString(loading_slice_->remove_before_time_);
@@ -1110,7 +1109,7 @@ void ReconstructorTask::endReconstruction()
 
         auto& table = section.getTable("Data Source Counts");
 
-        const auto& counts = currentReconstructor()->assocAounts();
+        const auto& counts = currentReconstructor()->assocCounts();
 
         DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();

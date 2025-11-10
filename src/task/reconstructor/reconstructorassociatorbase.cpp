@@ -1446,7 +1446,7 @@ void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget&
 }
 
 const std::map<unsigned int, std::map<unsigned int,
-                                      std::pair<unsigned int, unsigned int>>>& ReconstructorAssociatorBase::assocAounts() const
+                                      std::pair<unsigned int, unsigned int>>>& ReconstructorAssociatorBase::assocCounts() const
 {
     return assoc_counts_;
 }
