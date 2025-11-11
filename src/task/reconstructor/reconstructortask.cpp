@@ -270,7 +270,6 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
             pmsg += ("<div align='right'>Remaining: "
                      + String::timeStringFromDouble(time_remaining_s, false)+ " </div>").c_str();
 
-
         const auto& counts = currentReconstructor()->assocCounts();
 
         DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
@@ -338,7 +337,6 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
                 //  </tr>
                 //</table>
         }
-
     }
 
     progress_dialog_->setLabelText("<html>"+pmsg+"</html>");

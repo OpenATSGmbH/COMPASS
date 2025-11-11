@@ -64,10 +64,6 @@ struct ASTERIXFileInfo
 
 /**
 */
-
-
-/**
-*/
 class ASTERIXImportTask : public Task, public Configurable
 {
     Q_OBJECT

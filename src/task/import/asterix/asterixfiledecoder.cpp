@@ -46,7 +46,7 @@ ASTERIXFileDecoder::~ASTERIXFileDecoder() = default;
 void ASTERIXFileDecoder::stop_impl()
 {
     // stop decoding
-    task().jASTERIX()->stopFileDecoding();
+    task().jASTERIX()->stopDecoding();
 }
 
 /**
