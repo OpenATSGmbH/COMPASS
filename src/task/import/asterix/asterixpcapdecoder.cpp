@@ -135,7 +135,9 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 {
     traced_assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
 
-    error = "";
+    error       = "";
+    information = "";
+    warning     = "";
 
     auto& section = file_info.sections.at(section_idx);
 

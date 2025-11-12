@@ -60,6 +60,7 @@ void ASTERIXImportFileInfo::reset()
 {
     error.reset();
     warning = "";
+    contentinfo = "";
     sections.clear();
 
     decoding_tested = false;
