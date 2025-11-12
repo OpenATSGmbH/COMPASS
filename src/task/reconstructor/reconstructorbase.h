@@ -334,9 +334,11 @@ public:
     bool isVehicleACID(const std::string& acid);
     bool isVehicleACAD(unsigned int value);
 
-    std::unique_ptr<reconstruction::KalmanChain> createConfiguredChain(bool dynamic_insertions) const;
-    std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredEstimator(bool extract_wgs84_pos) const;
-    std::unique_ptr<reconstruction::KalmanOnlineTracker> createConfiguredOnlineEstimator(bool extract_wgs84_pos) const;
+    reconstruction::KalmanEstimator::Settings assocChainEstimatorSettings() const;
+
+    std::unique_ptr<reconstruction::KalmanChain> createConfiguredAssocChain(bool dynamic_insertions) const;
+    std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredAssocEstimator(bool extract_wgs84_pos) const;
+    std::unique_ptr<reconstruction::KalmanOnlineTracker> createConfiguredOnlineAssocEstimator(bool extract_wgs84_pos) const;
 
 signals:
     void configChanged(); 
@@ -382,7 +384,7 @@ protected:
 private:
     void init();
     void initIfNeeded();
-    void initChainPredictors();
+    void initAssocChainPredictors();
 
     void resetTimeframe();
     void applyTimeframeLimits();

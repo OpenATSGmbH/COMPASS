@@ -723,7 +723,8 @@ void KalmanEstimator::kalmanInit(const kalman::KalmanUpdateMinimal& update)
 /**
  * Checks if the measurement triggers a reinitialization of the kalman filter based on different criteria.
 */
-KalmanEstimator::ReinitState KalmanEstimator::needsReinit(const Measurement& mm) const
+KalmanEstimator::ReinitState KalmanEstimator::needsReinit(const Measurement& mm,
+                                                          const double* max_dt_override) const
 {
     if (settings_.reinit_check_flags & Settings::ReinitFlags::ReinitCheckDistance)
     {
@@ -735,10 +736,11 @@ KalmanEstimator::ReinitState KalmanEstimator::needsReinit(const Measurement& mm)
         }
     }
 
-    if ((settings_.reinit_check_flags & Settings::ReinitFlags::ReinitCheckTime) && settings_.max_dt > 0)
+    double max_dt = max_dt_override ? *max_dt_override : settings_.max_dt;
+    if ((settings_.reinit_check_flags & Settings::ReinitFlags::ReinitCheckTime) && max_dt > 0)
     {
         const double dt = kalman_interface_->timestep(mm);
-        if (std::fabs(dt) > settings_.max_dt)
+        if (std::fabs(dt) > max_dt)
             return KalmanEstimator::ReinitState::ReinitTime;
     }
 
@@ -912,11 +914,12 @@ Eigen::Vector2d KalmanEstimator::mmPos2Cart(const Measurement& mm,
 /**
 */
 KalmanEstimator::StepResult KalmanEstimator::kalmanStep(kalman::KalmanUpdate& update,
-                                                        const Measurement& mm)
+                                                        const Measurement& mm,
+                                                        const double* max_dt_override)
 {
     step_info_.reset();
 
-    auto result = kalmanStepInternal(update, mm);
+    auto result = kalmanStepInternal(update, mm, max_dt_override);
 
     step_info_.result = result;
 
@@ -934,7 +937,8 @@ KalmanEstimator::StepResult KalmanEstimator::kalmanStep(kalman::KalmanUpdate& up
 /**
 */
 KalmanEstimator::StepResult KalmanEstimator::kalmanStepInternal(kalman::KalmanUpdate& update,
-                                                                const Measurement& mm)
+                                                                const Measurement& mm,
+                                                                const double* max_dt_override)
 {
     traced_assert(isInit());
 
@@ -953,7 +957,7 @@ KalmanEstimator::StepResult KalmanEstimator::kalmanStepInternal(kalman::KalmanUp
     }
 
     //check if reinit is needed
-    if (needsReinit(mm) != ReinitState::ReinitNotNeeded)
+    if (needsReinit(mm, max_dt_override) != ReinitState::ReinitNotNeeded)
     {
         //reinit
         kalmanInterfaceReinit(update, mm);

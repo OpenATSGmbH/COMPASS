@@ -168,12 +168,19 @@ ReferenceCalculatorWidget::ReferenceCalculatorWidget(ReconstructorBase& reconstr
     if (add_optionals)
         layout->addRow("Minimum Time Step [s]", min_dt_box_);
 
-    max_dt_box_ = new QDoubleSpinBox;
-    max_dt_box_->setDecimals(3);
-    max_dt_box_->setMinimum(0.0);
-    max_dt_box_->setMaximum(std::numeric_limits<double>::max());
-    connect(max_dt_box_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [ = ] (double v) { settings->max_dt = v; });
-    layout->addRow("Maximum Time Step [s]", max_dt_box_);
+    max_dt_ground_box_ = new QDoubleSpinBox;
+    max_dt_ground_box_->setDecimals(3);
+    max_dt_ground_box_->setMinimum(0.0);
+    max_dt_ground_box_->setMaximum(std::numeric_limits<double>::max());
+    connect(max_dt_ground_box_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [ = ] (double v) { settings->max_dt_ground = v; });
+    layout->addRow("Maximum Time Step (Ground) [s]", max_dt_ground_box_);
+
+    max_dt_air_box_ = new QDoubleSpinBox;
+    max_dt_air_box_->setDecimals(3);
+    max_dt_air_box_->setMinimum(0.0);
+    max_dt_air_box_->setMaximum(std::numeric_limits<double>::max());
+    connect(max_dt_air_box_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [ = ] (double v) { settings->max_dt_air = v; });
+    layout->addRow("Maximum Time Step (Air) [s]", max_dt_air_box_);
 
     max_distance_box_ = new QDoubleSpinBox;
     max_distance_box_->setDecimals(3);
@@ -335,7 +342,8 @@ void ReferenceCalculatorWidget::updateValues()
 
     //if (min_chain_size_box_) min_chain_size_box_->setValue(settings.min_chain_size);
     if (min_dt_box_) min_dt_box_->setValue(settings.min_dt);
-    if (max_dt_box_) max_dt_box_->setValue(settings.max_dt);
+    if (max_dt_air_box_) max_dt_air_box_->setValue(settings.max_dt_air);
+    if (max_dt_ground_box_) max_dt_ground_box_->setValue(settings.max_dt_ground);
     if (max_distance_box_) max_distance_box_->setValue(settings.max_distance);
 
     if (smooth_rts_box_) smooth_rts_box_->setChecked(settings.smooth_rts);

@@ -430,6 +430,8 @@ public:
 
     bool isPrimaryAt(boost::posix_time::ptime timestamp,
                      boost::posix_time::time_duration max_time_diff, const InterpOptions& interp_options) const;
+    bool isOnGroundAt(const boost::posix_time::ptime& timestamp,
+                      const boost::posix_time::time_duration& max_time_diff) const;
 
     boost::optional<float> modeCCodeAt (boost::posix_time::ptime timestamp,
                                        boost::posix_time::time_duration max_time_diff,

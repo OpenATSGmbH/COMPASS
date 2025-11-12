@@ -53,7 +53,8 @@ private:
     QDoubleSpinBox* repr_distance_box_            = nullptr;
     //QSpinBox*       min_chain_size_box_           = nullptr;
     QDoubleSpinBox* min_dt_box_                   = nullptr;
-    QDoubleSpinBox* max_dt_box_                   = nullptr;
+    QDoubleSpinBox* max_dt_air_box_               = nullptr;
+    QDoubleSpinBox* max_dt_ground_box_            = nullptr;
     QDoubleSpinBox* max_distance_box_             = nullptr;
     QCheckBox*      smooth_rts_box_               = nullptr;
     QDoubleSpinBox* smooth_scale_box_             = nullptr;
