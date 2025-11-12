@@ -517,7 +517,8 @@ ReconstructorBase::ReconstructorBase(const std::string& class_id,
 
         //registerParameter("ref_min_chain_size", &ref_calc_settings_.min_chain_size   , ReferenceCalculatorSettings().min_chain_size);
         registerParameter("ref_min_dt", &ref_calc_settings_.min_dt, ReferenceCalculatorSettings().min_dt);
-        registerParameter("ref_max_dt", &ref_calc_settings_.max_dt, ReferenceCalculatorSettings().max_dt);
+        registerParameter("ref_max_dt_air", &ref_calc_settings_.max_dt_air, ReferenceCalculatorSettings().max_dt_air);
+        registerParameter("ref_max_dt_ground", &ref_calc_settings_.max_dt_ground, ReferenceCalculatorSettings().max_dt_ground);
         registerParameter("ref_max_distance", &ref_calc_settings_.max_distance,
                           ReferenceCalculatorSettings().max_distance);
 
@@ -854,30 +855,6 @@ void ReconstructorBase::reset()
 
     cancelled_ = false;
     init_      = false;
-}
-
-/**
- */
-void ReconstructorBase::initChainPredictors()
-{
-    if (chain_predictors_->isInit())
-        return;
-
-//int num_threads = std::max(1, tbb::task_scheduler_init::default_num_threads());
-
-#if TBB_VERSION_MAJOR <= 2020
-    int num_threads = tbb::task_scheduler_init::default_num_threads(); // TODO PHIL
-#else
-    int num_threads = tbb::info::default_concurrency();
-#endif
-
-    traced_assert(num_threads > 0);
-
-    traced_assert(chain_predictors_);
-
-    chain_predictors_->init(referenceCalculatorSettings().kalman_type_assoc,
-                            referenceCalculatorSettings().chainEstimatorSettings(),
-                            num_threads);
 }
 
 /**
@@ -1973,11 +1950,18 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
     mm.lat = pos.value().latitude_;
     mm.lon = pos.value().longitude_;
 
+    //ask target report if on ground
+    mm.on_ground = ri.isOnGround();
+
     //if target is available determine process noise on per target report basis
     if (target)
     {
         mm.Q_var        = (float)determineProcessNoiseVariance(ri, *target, ref_calc_settings_.Q_std         );
         mm.Q_var_interp = (float)determineProcessNoiseVariance(ri, *target, ref_calc_settings_.resample_Q_std);
+
+        //ask target if on ground
+        if (!mm.on_ground)
+            mm.on_ground = target->isOnGroundAt(ri.timestamp_, Time::partialSeconds(settings().max_time_diff_));
     }
 
     //velocity
@@ -2066,7 +2050,14 @@ void ReconstructorBase::informConfigChanged()
     emit configChanged();
 }
 
-std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfiguredChain(bool dynamic_insertions) const
+reconstruction::KalmanEstimator::Settings ReconstructorBase::assocChainEstimatorSettings() const
+{
+    const double max_time_diff_pred = settings().max_time_diff_;
+
+    return referenceCalculatorSettings().chainEstimatorSettings(max_time_diff_pred);
+}
+
+std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfiguredAssocChain(bool dynamic_insertions) const
 {
     std::unique_ptr<reconstruction::KalmanChain> chain;
     chain.reset(new reconstruction::KalmanChain);
@@ -2080,7 +2071,7 @@ std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfigured
 
     chain->settings().prediction_max_tdiff_sec = settings().max_time_diff_;
 
-    chain->configureEstimator(referenceCalculatorSettings().chainEstimatorSettings());
+    chain->configureEstimator(assocChainEstimatorSettings());
     chain->init(referenceCalculatorSettings().kalman_type_assoc);
 
     auto rec_ptr = const_cast<ReconstructorBase*>(this);
@@ -2100,12 +2091,12 @@ std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfigured
     return chain;
 }
 
-std::unique_ptr<reconstruction::KalmanEstimator> ReconstructorBase::createConfiguredEstimator(bool extract_wgs84_pos) const
+std::unique_ptr<reconstruction::KalmanEstimator> ReconstructorBase::createConfiguredAssocEstimator(bool extract_wgs84_pos) const
 {
     std::unique_ptr<reconstruction::KalmanEstimator> kalman;
     kalman.reset(new reconstruction::KalmanEstimator);
 
-    kalman->settings() = referenceCalculatorSettings().chainEstimatorSettings();
+    kalman->settings() = assocChainEstimatorSettings();
     kalman->settings().extract_wgs84_pos = extract_wgs84_pos;
     kalman->settings().verbosity         = 0;
     kalman->settings().debug             = false;
@@ -2115,14 +2106,14 @@ std::unique_ptr<reconstruction::KalmanEstimator> ReconstructorBase::createConfig
     return kalman;
 }
 
-std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createConfiguredOnlineEstimator(bool extract_wgs84_pos) const
+std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createConfiguredOnlineAssocEstimator(bool extract_wgs84_pos) const
 {
     std::unique_ptr<reconstruction::KalmanOnlineTracker> kalman;
     kalman.reset(new reconstruction::KalmanOnlineTracker);
 
     kalman->settings().prediction_max_tdiff_sec = settings().max_time_diff_;
 
-    kalman->estimatorSettings() = referenceCalculatorSettings().chainEstimatorSettings();
+    kalman->estimatorSettings() = assocChainEstimatorSettings();
     kalman->estimatorSettings().extract_wgs84_pos = extract_wgs84_pos;
     kalman->estimatorSettings().verbosity         = 0;
     kalman->estimatorSettings().debug             = false;
@@ -2130,4 +2121,25 @@ std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createCo
     kalman->init(referenceCalculatorSettings().kalman_type_assoc);
 
     return kalman;
+}
+
+void ReconstructorBase::initAssocChainPredictors()
+{
+    if (chain_predictors_->isInit())
+        return;
+
+//int num_threads = std::max(1, tbb::task_scheduler_init::default_num_threads());
+
+#if TBB_VERSION_MAJOR <= 2020
+    int num_threads = tbb::task_scheduler_init::default_num_threads(); // TODO PHIL
+#else
+    int num_threads = tbb::info::default_concurrency();
+#endif
+
+    traced_assert(num_threads > 0);
+    traced_assert(chain_predictors_);
+
+    chain_predictors_->init(referenceCalculatorSettings().kalman_type_assoc,
+                            assocChainEstimatorSettings(),
+                            num_threads);
 }

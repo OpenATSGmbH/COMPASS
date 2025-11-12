@@ -729,8 +729,10 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                 refs.debug_events_.back().info += s;
         }
 
-        //do kalman step
-        auto res = estimator.kalmanStep(update, mm);
+        //do kalman step with maximum dt provided by measurement
+        double max_dt_mm = settings_.maximumTimestep(mm.on_ground);
+
+        auto res = estimator.kalmanStep(update, mm, &max_dt_mm);
 
         if (debug_mm)
         {

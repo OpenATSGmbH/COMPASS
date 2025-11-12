@@ -1821,6 +1821,23 @@ bool ReconstructorTarget::isPrimaryAt(boost::posix_time::ptime timestamp,
     return false;
 }
 
+bool ReconstructorTarget::isOnGroundAt(const boost::posix_time::ptime& timestamp,
+                                       const boost::posix_time::time_duration& max_time_diff) const
+{
+    //check target category for ground only
+    auto target_cat = targetCategory();
+    if (target_cat != TargetBase::Category::Unknown &&
+        TargetBase::isGroundOnly(target_cat))
+        return true;
+
+    //check ground bit in vicinity
+    boost::optional<bool> gbs = groundBitAt(timestamp, max_time_diff);
+    if (gbs.has_value() && gbs.value())
+        return true;
+
+    return false;
+}
+
 boost::optional<float> ReconstructorTarget::modeCCodeAt (boost::posix_time::ptime timestamp,
                                                         boost::posix_time::time_duration max_time_diff,
                                                         const InterpOptions& interp_options) const
@@ -2531,11 +2548,13 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
 
     unsigned int buffer_cnt = 0;
 
+    const auto max_dt_pred = reconstructor_.settings().max_time_diff_;
+
     const auto& ref_calc_settings = reconstructor_.referenceCalculatorSettings();
 
     boost::posix_time::time_duration d_max = Time::partialSeconds(10);
     boost::posix_time::time_duration track_end_time = Time::partialSeconds(30);
-    boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings().resample_dt);
+    boost::posix_time::time_duration reftraj_ui = Time::partialSeconds(ref_calc_settings.chainEstimatorSettings(max_dt_pred).resample_dt);
 
     auto m3a_series = getMode3ASeries();
     auto altitude_series = getAltitudeSeries();
@@ -2990,7 +3009,7 @@ boost::posix_time::ptime ReconstructorTarget::trackerTime(size_t idx) const
 
 void ReconstructorTarget::reinitTracker()
 {
-    chain() = reconstructor_.createConfiguredChain(dynamic_insertions_);
+    chain() = reconstructor_.createConfiguredAssocChain(dynamic_insertions_);
 
     chain()->settings().verbosity = 0;
     chain()->settings().debug     = false; //utn_ == 537;
