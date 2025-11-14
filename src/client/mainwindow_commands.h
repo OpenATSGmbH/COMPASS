@@ -46,7 +46,7 @@ struct RTCommandDeleteAllDataSources : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(delete_all_data_sources, "deletes all data sources in the configuration")
+    DECLARE_RTCOMMAND(delete_all_data_sources, "deletes all data sources in the configuration, which are not part of an opened database")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
