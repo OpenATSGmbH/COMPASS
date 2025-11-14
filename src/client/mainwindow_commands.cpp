@@ -71,6 +71,7 @@ REGISTER_RTCOMMAND(main_window::RTCommandImportJSONFile)
 REGISTER_RTCOMMAND(main_window::RTCommandImportGPSTrail)
 
 REGISTER_RTCOMMAND(main_window::RTCommandImportDataSourcesFile)
+REGISTER_RTCOMMAND(main_window::RTCommandDeleteAllDataSources)
 REGISTER_RTCOMMAND(main_window::RTCommandImportSectorsJSON)
 REGISTER_RTCOMMAND(main_window::RTCommandCalculateRadarPlotPositions)
 REGISTER_RTCOMMAND(main_window::RTCommandCalculateARTASAssociations)
@@ -95,6 +96,7 @@ void init_commands()
     main_window::RTCommandOpenRecentDB::init();
     main_window::RTCommandCreateDB::init();
     main_window::RTCommandImportDataSourcesFile::init();
+    main_window::RTCommandDeleteAllDataSources::init();
     main_window::RTCommandCloseDB::init();
     main_window::RTCommandQuit::init();
 
@@ -176,6 +178,21 @@ void RTCommandImportDataSourcesFile::collectOptions_impl(OptionsDescription& opt
 void RTCommandImportDataSourcesFile::assignVariables_impl(const VariablesMap& variables)
 {
     RTCOMMAND_GET_VAR_OR_THROW(variables, "filename", std::string, filename_)
+}
+
+// delete_all_data_sources
+
+bool RTCommandDeleteAllDataSources::run_impl()
+{
+    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    {
+        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        return false;
+    }
+
+    COMPASS::instance().dataSourceManager().deleteAllConfigDataSources();
+
+    return true;
 }
 
 // import sectors json
