@@ -2349,7 +2349,7 @@ std::map <std::string, unsigned int> ReconstructorTarget::getDBContentCounts() c
     return counts;
 }
 
-std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
+std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget::createReferenceBuffer()
 {
     logdbg2 << "utn " << utn_ << " ref size " << references_.size();
 
@@ -2425,116 +2425,12 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_));
 
-    std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>(buffer_list, dbcontent_name);
+    std::shared_ptr<Buffer> buffer_written = std::make_shared<Buffer>(buffer_list, dbcontent_name);
+    std::shared_ptr<Buffer> buffer_glue    = std::make_shared<Buffer>(buffer_list, dbcontent_name);
 
     // exit if no data
     if (tr_timestamps_.size() <= 1 || references_.size() <= 1)
-        return buffer;
-
-    NullableVector<unsigned int>& ds_id_vec = buffer->get<unsigned int> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name());
-    NullableVector<unsigned char>& sac_vec = buffer->get<unsigned char> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_).name());
-    NullableVector<unsigned char>& sic_vec = buffer->get<unsigned char> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_).name());
-    NullableVector<unsigned int>& line_vec = buffer->get<unsigned int> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name());
-
-    NullableVector<float>& tod_vec = buffer->get<float> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_).name());
-    NullableVector<ptime>& ts_vec = buffer->get<ptime> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_).name());
-
-    NullableVector<double>& lat_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name());
-    NullableVector<double>& lon_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name());
-    NullableVector<float>& mc_vec = buffer->get<float> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_).name());
-
-    // track num begin, end
-    NullableVector<bool>& track_begin_vec = buffer->get<bool> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_).name());
-    NullableVector<bool>& track_end_vec = buffer->get<bool> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_).name());
-    NullableVector<unsigned int>& track_num_vec = buffer->get<unsigned int> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_).name());
-
-    // speed, track angle
-    NullableVector<double>& vx_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_).name());
-    NullableVector<double>& vy_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_).name());
-
-    NullableVector<double>& speed_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_).name());
-    NullableVector<double>& track_angle_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_).name());
-
-    NullableVector<float>& rocd_vec = buffer->get<float> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_).name());
-
-    // accs
-    NullableVector<double>& ax_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_).name());
-    NullableVector<double>& ay_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_).name());
-
-    // stddevs
-    NullableVector<double>& x_stddev_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_).name());
-    NullableVector<double>& y_stddev_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_).name());
-    NullableVector<double>& xy_cov_vec = buffer->get<double> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_xy_cov_).name());
-
-    // ground bit
-    NullableVector<bool>& gb_vec = buffer->get<bool> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_).name());
-
-    NullableVector<unsigned int>& m3a_vec = buffer->get<unsigned int> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_).name());
-    NullableVector<unsigned int>& acad_vec = buffer->get<unsigned int> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_).name());
-    NullableVector<string>& acid_vec = buffer->get<string> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_).name());
-
-    // mom
-    NullableVector<unsigned char>& mom_long_acc_vec = buffer->get<unsigned char> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_).name());
-    NullableVector<unsigned char>& mom_trans_acc_vec = buffer->get<unsigned char> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_).name());
-    NullableVector<unsigned char>& mom_vert_rate_vec = buffer->get<unsigned char> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_).name());
-
-    // contribution
-    NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_).name());
-    NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_).name());
-    NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_).name());
-    NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_).name());
-    NullableVector<float>& cont_reftraj_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_).name());
-    NullableVector<float>& cont_other_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_).name());
-
-    NullableVector<json>& cont_sources_vec = buffer->get<json>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_).name());
-    NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_).name());        
-
-    NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_).name());
-    NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_).name());
-    NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_).name());
-
-    NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_).name());
+        return std::make_pair(buffer_written, buffer_glue);
 
     unsigned int ref_sac = reconstructor_.settings().ds_sac;
     unsigned int ref_sic = reconstructor_.settings().ds_sic;
@@ -2545,8 +2441,6 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
     double ax, ay, bearing_new_rad, turnrate_rad, a_ms2;
     double rocd_ft_s;
     double dt;
-
-    unsigned int buffer_cnt = 0;
 
     const auto max_dt_pred = reconstructor_.settings().max_time_diff_;
 
@@ -2601,7 +2495,6 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         logdbg << "utn " << utn_ << " adding tr " << Time::toString(tr_it->first);
         contrib_info.add(reconstructor_.target_reports_.at(tr_it->second),
                             (ref_it->first - tr_it->first) < reftraj_ui);
-        
     }
 
     // finish up for ref updates without target reports
@@ -2618,303 +2511,445 @@ std::shared_ptr<Buffer> ReconstructorTarget::getReferenceBuffer()
         ++ref_it;
     }
 
-    // generate buffer
-    for (auto& ref_it : references_)
+    // adds either written or glue slice region to a buffer
+    auto addRefDataToBuffer = [ & ] (Buffer* buffer, bool to_be_written)
     {
-        // loginf << "utn " << utn_
-        //        << " ref ts " << Time::toString(ref_it.second.t)
-        //        << " wbt " << Time::toString(reconstructor_.currentSlice().write_before_time_) <<
-        //     " skip " << (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_);
+        NullableVector<unsigned int>& ds_id_vec = buffer->get<unsigned int> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name());
+        NullableVector<unsigned char>& sac_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_).name());
+        NullableVector<unsigned char>& sic_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_).name());
+        NullableVector<unsigned int>& line_vec = buffer->get<unsigned int> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name());
 
-        if (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_) // skip, too early
-            continue;
+        NullableVector<float>& tod_vec = buffer->get<float> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_).name());
+        NullableVector<ptime>& ts_vec = buffer->get<ptime> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_).name());
 
-        if (!ref_ts_prev_.is_not_a_date_time())
-            traced_assert(ref_it.second.t > ref_ts_prev_);
+        NullableVector<double>& lat_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name());
+        NullableVector<double>& lon_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name());
+        NullableVector<float>& mc_vec = buffer->get<float> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_).name());
 
-        // final filtering using max stddev
-        if (ref_calc_settings.filter_references_max_stddev_ &&
-            ref_it.second.x_stddev.has_value() && 
-            ref_it.second.y_stddev.has_value())
+        // track num begin, end
+        NullableVector<bool>& track_begin_vec = buffer->get<bool> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_).name());
+        NullableVector<bool>& track_end_vec = buffer->get<bool> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_).name());
+        NullableVector<unsigned int>& track_num_vec = buffer->get<unsigned int> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_).name());
+
+        // speed, track angle
+        NullableVector<double>& vx_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_).name());
+        NullableVector<double>& vy_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_).name());
+
+        NullableVector<double>& speed_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_).name());
+        NullableVector<double>& track_angle_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_).name());
+
+        NullableVector<float>& rocd_vec = buffer->get<float> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_).name());
+
+        // accs
+        NullableVector<double>& ax_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_).name());
+        NullableVector<double>& ay_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_).name());
+
+        // stddevs
+        NullableVector<double>& x_stddev_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_).name());
+        NullableVector<double>& y_stddev_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_).name());
+        NullableVector<double>& xy_cov_vec = buffer->get<double> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_xy_cov_).name());
+
+        // ground bit
+        NullableVector<bool>& gb_vec = buffer->get<bool> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_).name());
+
+        NullableVector<unsigned int>& m3a_vec = buffer->get<unsigned int> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_).name());
+        NullableVector<unsigned int>& acad_vec = buffer->get<unsigned int> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_).name());
+        NullableVector<string>& acid_vec = buffer->get<string> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_).name());
+
+        // mom
+        NullableVector<unsigned char>& mom_long_acc_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_).name());
+        NullableVector<unsigned char>& mom_trans_acc_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_).name());
+        NullableVector<unsigned char>& mom_vert_rate_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_).name());
+
+        // contribution
+        NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_).name());
+        NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_).name());
+        NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_).name());
+        NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_).name());
+        NullableVector<float>& cont_reftraj_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_).name());
+        NullableVector<float>& cont_other_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_).name());
+
+        NullableVector<json>& cont_sources_vec = buffer->get<json>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_).name());
+        NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_).name());        
+
+        NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_).name());
+        NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_).name());
+        NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_).name());
+
+        NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
+            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_).name());
+
+        unsigned int buffer_cnt = 0;
+
+        //copy current reference online information
+        auto track_begin       = track_begin_;
+        auto ref_ts_prev       = ref_ts_prev_;
+        auto has_prev_v        = has_prev_v_;
+        auto v_x_prev          = v_x_prev_;
+        auto v_y_prev          = v_y_prev_;
+        auto has_prev_baro_alt = has_prev_baro_alt_;
+        auto baro_alt_prev     = baro_alt_prev_;
+
+        // generate buffer
+        for (auto& ref_it : references_)
         {
-            double stddev_max = std::max(ref_it.second.x_stddev.value(), ref_it.second.y_stddev.value());
-            if (stddev_max > ref_calc_settings.filter_references_max_stddev_m_)
+            // loginf << "utn " << utn_
+            //        << " ref ts " << Time::toString(ref_it.second.t)
+            //        << " wbt " << Time::toString(reconstructor_.currentSlice().write_before_time_) <<
+            //     " skip " << (ref_it.second.t >= reconstructor_.currentSlice().write_before_time_);
+
+            bool ref_to_be_written = ref_it.second.t < reconstructor_.currentSlice().write_before_time_;
+
+            //not the time region we are looking for?
+            if (to_be_written != ref_to_be_written)
                 continue;
-        }
 
-        traced_assert(references_tr_contributions_.count(ref_it.second.t));
+            if (!ref_ts_prev.is_not_a_date_time())
+                traced_assert(ref_it.second.t > ref_ts_prev);
 
-        ds_id_vec.set(buffer_cnt, ref_ds_id);
-        sac_vec.set(buffer_cnt, ref_sac);
-        sic_vec.set(buffer_cnt, ref_sic);
-        line_vec.set(buffer_cnt, reconstructor_.settings().ds_line);
-
-        ts_vec.set(buffer_cnt, ref_it.second.t);
-        tod_vec.set(buffer_cnt, ref_it.second.t.time_of_day().total_milliseconds() / 1000.0);
-
-        lat_vec.set(buffer_cnt, ref_it.second.lat);
-        lon_vec.set(buffer_cnt, ref_it.second.lon);
-
-        // add to min/max pos
-
-        if (latitude_min_ && latitude_max_
-            && longitude_min_ && longitude_max_)
-        {
-            latitude_min_ = min(*latitude_min_, ref_it.second.lat);
-            latitude_max_ = max(*latitude_max_, ref_it.second.lat);
-
-            longitude_min_ = min(*longitude_min_, ref_it.second.lon);
-            longitude_max_ = max(*longitude_max_, ref_it.second.lon);
-        }
-        else
-        {
-            latitude_min_ = ref_it.second.lat;
-            latitude_max_ = ref_it.second.lat;
-
-            longitude_min_ = ref_it.second.lon;
-            longitude_max_ = ref_it.second.lon;
-        }
-
-        utn_vec.set(buffer_cnt, utn_);
-
-        track_num_vec.set(buffer_cnt, utn_);
-
-        // track end
-        if (!ref_ts_prev_.is_not_a_date_time()
-            && ref_it.second.t - ref_ts_prev_ > track_end_time) // have time before and dt > track end time
-        {
-            if (buffer_cnt != 0)
-                track_end_vec.set(buffer_cnt-1, true); // set at previous update if possible
-
-            track_begin_ = true;
-
-            has_prev_v_ = false; // info too old
-            has_prev_baro_alt_ = false;
-        }
-
-        track_end_vec.set(buffer_cnt, false);
-        track_begin_vec.set(buffer_cnt, track_begin_);
-
-        track_begin_ = false;
-
-        // set speed
-
-        if (ref_it.second.vx.has_value() && ref_it.second.vy.has_value())
-        {
-            vx_vec.set(buffer_cnt, *ref_it.second.vx);
-            vy_vec.set(buffer_cnt, *ref_it.second.vy);
-
-            speed_ms = sqrt(pow(*ref_it.second.vx, 2)+pow(*ref_it.second.vy, 2)); // for 1s
-            bearing_rad = atan2(*ref_it.second.vx, *ref_it.second.vy);
-
-            speed_vec.set(buffer_cnt, speed_ms * M_S2KNOTS);
-            track_angle_vec.set(buffer_cnt, bearing_rad * RAD2DEG);
-
-            // set ax, ay
-            if (has_prev_v_)
+            // final filtering using max stddev
+            if (ref_calc_settings.filter_references_max_stddev_ &&
+                ref_it.second.x_stddev.has_value() && 
+                ref_it.second.y_stddev.has_value())
             {
-                ax = *ref_it.second.vx - v_x_prev_;
-                ay = *ref_it.second.vy - v_y_prev_;
-
-                ax_vec.set(buffer_cnt, ax);
-                ay_vec.set(buffer_cnt, ay);
-
-                a_ms2 = sqrt(pow(ax, 2)+pow(ay, 2)); // for 1s2
-
-                // LONG ACC
-                if (fabs(a_ms2) < 1) // like 0
-                    mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::ConstantGroundspeed);
-                else if (a_ms2 > 0)
-                    mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::IncreasingGroundspeed);
-                else if (a_ms2 < 0)
-                    mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::DecreasingGroundspeed);
-
-                bearing_new_rad = atan2(*ref_it.second.vx + ax, *ref_it.second.vy + ay); // for 1s
-
-                turnrate_rad = bearing_new_rad - bearing_rad;
-
-                //loginf << " turnrate_rad " << turnrate_rad;
-
-                while (turnrate_rad > M_PI)
-                    turnrate_rad -= 2*M_PI;
-                while (turnrate_rad < -M_PI)
-                    turnrate_rad += 2*M_PI;
-
-                traced_assert(fabs(turnrate_rad) <= M_PI);
-
-                // TRANS ACC
-                if (fabs(turnrate_rad) < M_PI/20) // like 0
-                    mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::ConstantCourse);
-                else if (turnrate_rad > 0)
-                    mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::RightTurn);
-                else if (turnrate_rad < 0)
-                    mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::LeftTurn);
+                double stddev_max = std::max(ref_it.second.x_stddev.value(), ref_it.second.y_stddev.value());
+                if (stddev_max > ref_calc_settings.filter_references_max_stddev_m_)
+                    continue;
             }
 
-            v_x_prev_ = *ref_it.second.vx;
-            v_y_prev_ = *ref_it.second.vy;
-            has_prev_v_ = true;
-        }
-        else
-            has_prev_v_ = false;
+            traced_assert(references_tr_contributions_.count(ref_it.second.t));
 
-        if (mom_long_acc_vec.isNull(buffer_cnt))
-            mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::Undetermined);
+            ds_id_vec.set(buffer_cnt, ref_ds_id);
+            sac_vec.set(buffer_cnt, ref_sac);
+            sic_vec.set(buffer_cnt, ref_sic);
+            line_vec.set(buffer_cnt, reconstructor_.settings().ds_line);
 
-        if (mom_trans_acc_vec.isNull(buffer_cnt))
-            mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::Undetermined);
+            ts_vec.set(buffer_cnt, ref_it.second.t);
+            tod_vec.set(buffer_cnt, ref_it.second.t.time_of_day().total_milliseconds() / 1000.0);
 
-        // set stddevs
+            lat_vec.set(buffer_cnt, ref_it.second.lat);
+            lon_vec.set(buffer_cnt, ref_it.second.lon);
 
-        if (ref_it.second.x_stddev.has_value() && ref_it.second.y_stddev.has_value() && ref_it.second.xy_cov.has_value())
-        {
-            x_stddev_vec.set(buffer_cnt, *ref_it.second.x_stddev);
-            y_stddev_vec.set(buffer_cnt, *ref_it.second.y_stddev);
-
-            xy_cov = *ref_it.second.xy_cov;
-
-            // to inverse of this asterix rep
-            // if (xy_cov < 0)
-            //     xy_cov = - pow(xy_cov, 2);
-            // else
-            //     xy_cov = pow(xy_cov, 2);
-
-            // if (xy_cov < 0)
-            //     xy_cov_vec.set(buffer_cnt, -sqrt(-xy_cov));
-            // else
-            //     xy_cov_vec.set(buffer_cnt, sqrt(xy_cov));
-
-            xy_cov_vec.set(buffer_cnt, xy_cov);
-        }
-
-        // set other data
-        {
-            if (altitude_series.hasValueAt(ref_it.second.t))
-                mc_vec.set(buffer_cnt, altitude_series.getValueAt(ref_it.second.t));
-
-            if (!mc_vec.isNull(buffer_cnt)) // has current alt
+            // add to min/max pos (only for written slice part)
+            if (to_be_written)
             {
-                if (has_prev_baro_alt_)
+                if (latitude_min_ && latitude_max_
+                    && longitude_min_ && longitude_max_)
                 {
-                    dt = (ts_vec.get(buffer_cnt) - ref_ts_prev_).total_milliseconds() / 1000.0;
+                    latitude_min_ = min(*latitude_min_, ref_it.second.lat);
+                    latitude_max_ = max(*latitude_max_, ref_it.second.lat);
 
-                    rocd_ft_s = (mc_vec.get(buffer_cnt) - baro_alt_prev_) / dt;
-                    rocd_vec.set(buffer_cnt, rocd_ft_s * 60); // ft per minute
+                    longitude_min_ = min(*longitude_min_, ref_it.second.lon);
+                    longitude_max_ = max(*longitude_max_, ref_it.second.lon);
+                }
+                else
+                {
+                    latitude_min_ = ref_it.second.lat;
+                    latitude_max_ = ref_it.second.lat;
 
-                    // MOM Vertical Rate
-                    if (rocd_ft_s == 0)
-                        mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Level);
-                    else if (rocd_ft_s > 0)
-                        mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Climb);
-                    else if (rocd_ft_s < 0)
-                        mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Descent);
+                    longitude_min_ = ref_it.second.lon;
+                    longitude_max_ = ref_it.second.lon;
+                }
+            }
+
+            utn_vec.set(buffer_cnt, utn_);
+
+            track_num_vec.set(buffer_cnt, utn_);
+
+            // track end
+            if (!ref_ts_prev.is_not_a_date_time()
+                && ref_it.second.t - ref_ts_prev > track_end_time) // have time before and dt > track end time
+            {
+                if (buffer_cnt != 0)
+                    track_end_vec.set(buffer_cnt-1, true); // set at previous update if possible
+
+                track_begin = true;
+
+                has_prev_v = false; // info too old
+                has_prev_baro_alt = false;
+            }
+
+            track_end_vec.set(buffer_cnt, false);
+            track_begin_vec.set(buffer_cnt, track_begin);
+
+            track_begin = false;
+
+            // set speed
+            if (ref_it.second.vx.has_value() && ref_it.second.vy.has_value())
+            {
+                vx_vec.set(buffer_cnt, *ref_it.second.vx);
+                vy_vec.set(buffer_cnt, *ref_it.second.vy);
+
+                speed_ms = sqrt(pow(*ref_it.second.vx, 2)+pow(*ref_it.second.vy, 2)); // for 1s
+                bearing_rad = atan2(*ref_it.second.vx, *ref_it.second.vy);
+
+                speed_vec.set(buffer_cnt, speed_ms * M_S2KNOTS);
+                track_angle_vec.set(buffer_cnt, bearing_rad * RAD2DEG);
+
+                // set ax, ay
+                if (has_prev_v)
+                {
+                    ax = *ref_it.second.vx - v_x_prev;
+                    ay = *ref_it.second.vy - v_y_prev;
+
+                    ax_vec.set(buffer_cnt, ax);
+                    ay_vec.set(buffer_cnt, ay);
+
+                    a_ms2 = sqrt(pow(ax, 2)+pow(ay, 2)); // for 1s2
+
+                    // LONG ACC
+                    if (fabs(a_ms2) < 1) // like 0
+                        mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::ConstantGroundspeed);
+                    else if (a_ms2 > 0)
+                        mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::IncreasingGroundspeed);
+                    else if (a_ms2 < 0)
+                        mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::DecreasingGroundspeed);
+
+                    bearing_new_rad = atan2(*ref_it.second.vx + ax, *ref_it.second.vy + ay); // for 1s
+
+                    turnrate_rad = bearing_new_rad - bearing_rad;
+
+                    //loginf << " turnrate_rad " << turnrate_rad;
+
+                    while (turnrate_rad > M_PI)
+                        turnrate_rad -= 2*M_PI;
+                    while (turnrate_rad < -M_PI)
+                        turnrate_rad += 2*M_PI;
+
+                    traced_assert(fabs(turnrate_rad) <= M_PI);
+
+                    // TRANS ACC
+                    if (fabs(turnrate_rad) < M_PI/20) // like 0
+                        mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::ConstantCourse);
+                    else if (turnrate_rad > 0)
+                        mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::RightTurn);
+                    else if (turnrate_rad < 0)
+                        mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::LeftTurn);
                 }
 
-                has_prev_baro_alt_ = true;
-                baro_alt_prev_ = mc_vec.get(buffer_cnt);
+                v_x_prev = *ref_it.second.vx;
+                v_y_prev = *ref_it.second.vy;
+                has_prev_v = true;
             }
             else
-                has_prev_baro_alt_ = false;
+            {
+                has_prev_v = false;
+            }
 
+            if (mom_long_acc_vec.isNull(buffer_cnt))
+                mom_long_acc_vec.set(buffer_cnt, (unsigned char) MOM_LONG_ACC::Undetermined);
+
+            if (mom_trans_acc_vec.isNull(buffer_cnt))
+                mom_trans_acc_vec.set(buffer_cnt, (unsigned char) MOM_TRANS_ACC::Undetermined);
+
+            // set stddevs
+
+            if (ref_it.second.x_stddev.has_value() && ref_it.second.y_stddev.has_value() && ref_it.second.xy_cov.has_value())
+            {
+                x_stddev_vec.set(buffer_cnt, *ref_it.second.x_stddev);
+                y_stddev_vec.set(buffer_cnt, *ref_it.second.y_stddev);
+
+                xy_cov = *ref_it.second.xy_cov;
+
+                // to inverse of this asterix rep
+                // if (xy_cov < 0)
+                //     xy_cov = - pow(xy_cov, 2);
+                // else
+                //     xy_cov = pow(xy_cov, 2);
+
+                // if (xy_cov < 0)
+                //     xy_cov_vec.set(buffer_cnt, -sqrt(-xy_cov));
+                // else
+                //     xy_cov_vec.set(buffer_cnt, sqrt(xy_cov));
+
+                xy_cov_vec.set(buffer_cnt, xy_cov);
+            }
+
+            // set other data
+            {
+                if (altitude_series.hasValueAt(ref_it.second.t))
+                    mc_vec.set(buffer_cnt, altitude_series.getValueAt(ref_it.second.t));
+
+                if (!mc_vec.isNull(buffer_cnt)) // has current alt
+                {
+                    if (has_prev_baro_alt)
+                    {
+                        dt = (ts_vec.get(buffer_cnt) - ref_ts_prev).total_milliseconds() / 1000.0;
+
+                        rocd_ft_s = (mc_vec.get(buffer_cnt) - baro_alt_prev) / dt;
+                        rocd_vec.set(buffer_cnt, rocd_ft_s * 60); // ft per minute
+
+                        // MOM Vertical Rate
+                        if (rocd_ft_s == 0)
+                            mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Level);
+                        else if (rocd_ft_s > 0)
+                            mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Climb);
+                        else if (rocd_ft_s < 0)
+                            mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Descent);
+                    }
+
+                    has_prev_baro_alt = true;
+                    baro_alt_prev = mc_vec.get(buffer_cnt);
+                }
+                else
+                    has_prev_baro_alt = false;
+            }
+
+            if (mom_vert_rate_vec.isNull(buffer_cnt))
+                mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Undetermined);
+
+            { // mode a
+
+                if (m3a_series.hasValueAt(ref_it.second.t))
+                    m3a_vec.set(buffer_cnt, m3a_series.getValueAt(ref_it.second.t));
+            }
+
+            { // acad
+                ReconstructorInfoPair info = dataFor(
+                    ref_it.second.t, d_max,
+                    [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) {
+                        return tr.acad_.has_value(); });
+
+                if (info.first && info.first->acad_ && acad_vec.isNull(buffer_cnt))
+                    acad_vec.set(buffer_cnt, *info.first->acad_);
+
+                if (info.second && info.second->acad_ && acad_vec.isNull(buffer_cnt))
+                    acad_vec.set(buffer_cnt, *info.second->acad_);
+            }
+
+            { // acid
+                ReconstructorInfoPair info = dataFor(
+                    ref_it.second.t, d_max,
+                    [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) {
+                        return tr.acid_.has_value(); });
+
+                if (info.first && info.first->acid_ && acid_vec.isNull(buffer_cnt))
+                    acid_vec.set(buffer_cnt, *info.first->acid_);
+
+                if (info.second && info.second->acid_ && acid_vec.isNull(buffer_cnt))
+                    acid_vec.set(buffer_cnt, *info.second->acid_);
+            }
+
+            { // gbs
+
+                if (gbs_series.hasValueAt(ref_it.second.t))
+                    gb_vec.set(buffer_cnt, gbs_series.getValueAt(ref_it.second.t));
+            }
+
+            if (references_tr_contributions_.count(ref_it.second.t))
+            {
+                auto& contrib = references_tr_contributions_.at(ref_it.second.t);
+
+                if (contrib.adsb_age_)
+                    cont_adsb_age_vec.set(buffer_cnt, *contrib.adsb_age_);
+
+                if (contrib.mlat_age_)
+                    cont_mlat_age_vec.set(buffer_cnt, *contrib.mlat_age_);
+
+                if (contrib.radar_age_)
+                    cont_radar_age_vec.set(buffer_cnt, *contrib.radar_age_);
+
+                if (contrib.reftraj_age_)
+                    cont_reftraj_age_vec.set(buffer_cnt, *contrib.reftraj_age_);
+
+                if (contrib.tracker_age_)
+                    cont_tracker_age_vec.set(buffer_cnt, *contrib.tracker_age_);
+
+                if (contrib.other_age_)
+                    cont_other_age_vec.set(buffer_cnt, *contrib.other_age_);
+
+                if (contrib.rec_nums_.size())
+                    cont_sources_vec.set(buffer_cnt, contrib.contributions(reconstructor_));
+                cont_source_num_vec.set(buffer_cnt, contrib.rec_nums_.size());
+
+                if (contrib.primary_age_)
+                    cont_primary_age_vec.set(buffer_cnt, *contrib.primary_age_);
+                if (contrib.mode_ac_age_)
+                    cont_modeac_age_vec.set(buffer_cnt, *contrib.mode_ac_age_);
+                if (contrib.modes_age_)
+                    cont_modes_age_vec.set(buffer_cnt, *contrib.modes_age_);
+            }
+
+            ++buffer_cnt;
+
+            ref_ts_prev = ref_it.second.t;
         }
 
-        if (mom_vert_rate_vec.isNull(buffer_cnt))
-            mom_vert_rate_vec.set(buffer_cnt, (unsigned char) MOM_VERT_RATE::Undetermined);
-
-        { // mode a
-
-            if (m3a_series.hasValueAt(ref_it.second.t))
-                m3a_vec.set(buffer_cnt, m3a_series.getValueAt(ref_it.second.t));
-        }
-
-        { // acad
-            ReconstructorInfoPair info = dataFor(
-                ref_it.second.t, d_max,
-                [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) {
-                    return tr.acad_.has_value(); });
-
-            if (info.first && info.first->acad_ && acad_vec.isNull(buffer_cnt))
-                acad_vec.set(buffer_cnt, *info.first->acad_);
-
-            if (info.second && info.second->acad_ && acad_vec.isNull(buffer_cnt))
-                acad_vec.set(buffer_cnt, *info.second->acad_);
-
-        }
-
-        { // acid
-            ReconstructorInfoPair info = dataFor(
-                ref_it.second.t, d_max,
-                [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) {
-                    return tr.acid_.has_value(); });
-
-            if (info.first && info.first->acid_ && acid_vec.isNull(buffer_cnt))
-                acid_vec.set(buffer_cnt, *info.first->acid_);
-
-            if (info.second && info.second->acid_ && acid_vec.isNull(buffer_cnt))
-                acid_vec.set(buffer_cnt, *info.second->acid_);
-
-        }
-
-        { // gbs
-
-            if (gbs_series.hasValueAt(ref_it.second.t))
-                gb_vec.set(buffer_cnt, gbs_series.getValueAt(ref_it.second.t));
-        }
-
-        if (references_tr_contributions_.count(ref_it.second.t))
+        // only for the written slice part
+        if (to_be_written)
         {
-            auto& contrib = references_tr_contributions_.at(ref_it.second.t);
+            // write back updated reference online information
+            track_begin_       = track_begin;
+            ref_ts_prev_       = ref_ts_prev;
+            has_prev_v_        = has_prev_v;
+            v_x_prev_          = v_x_prev;
+            v_y_prev_          = v_y_prev;
+            has_prev_baro_alt_ = has_prev_baro_alt;
+            baro_alt_prev_     = baro_alt_prev;
 
-            if (contrib.adsb_age_)
-                cont_adsb_age_vec.set(buffer_cnt, *contrib.adsb_age_);
+            // check last update for track end
+            if (buffer_written->size())
+            {
+                unsigned int last_index = buffer_cnt - 1;
 
-            if (contrib.mlat_age_)
-                cont_mlat_age_vec.set(buffer_cnt, *contrib.mlat_age_);
-
-            if (contrib.radar_age_)
-                cont_radar_age_vec.set(buffer_cnt, *contrib.radar_age_);
-
-            if (contrib.reftraj_age_)
-                cont_reftraj_age_vec.set(buffer_cnt, *contrib.reftraj_age_);
-
-            if (contrib.tracker_age_)
-                cont_tracker_age_vec.set(buffer_cnt, *contrib.tracker_age_);
-
-            if (contrib.other_age_)
-                cont_other_age_vec.set(buffer_cnt, *contrib.other_age_);
-
-            if (contrib.rec_nums_.size())
-                cont_sources_vec.set(buffer_cnt, contrib.contributions(reconstructor_));
-            cont_source_num_vec.set(buffer_cnt, contrib.rec_nums_.size());
-
-            if (contrib.primary_age_)
-                cont_primary_age_vec.set(buffer_cnt, *contrib.primary_age_);
-            if (contrib.mode_ac_age_)
-                cont_modeac_age_vec.set(buffer_cnt, *contrib.mode_ac_age_);
-            if (contrib.modes_age_)
-                cont_modes_age_vec.set(buffer_cnt, *contrib.modes_age_);                                                
+                if (reconstructor_.currentSlice().next_slice_begin_ - ts_vec.get(last_index) > track_end_time)
+                    track_end_vec.set(last_index, true);
+            }
         }
+    };
 
-        ++buffer_cnt;
+    // fill written buffer
+    addRefDataToBuffer(buffer_written.get(), true);
 
-        ref_ts_prev_ = ref_it.second.t;
-    }
+    // fill cached glue region buffer
+    addRefDataToBuffer(buffer_glue.get(), false);
 
-    // check last update for track end
-    if (buffer->size())
-    {
-        unsigned int last_index = buffer_cnt - 1;
+    counts_[dbcontent_id] += buffer_written->size();
 
-        if (reconstructor_.currentSlice().next_slice_begin_ - ts_vec.get(last_index) > track_end_time)
-            track_end_vec.set(last_index, true);
-    }
-
-    counts_[dbcontent_id] += buffer->size();
-
-    logdbg2 << "utn " << utn_ << " buffer size " << buffer->size();
+    logdbg2 << "utn " << utn_ << " written buffer size " << buffer_written->size() << " glue buffer size: " << buffer_glue->size();
     //assert (buffer->size());
 
-    return buffer;
+    return std::make_pair(buffer_written, buffer_glue);
 }
 
 void ReconstructorTarget::removeOutdatedTargetReports()

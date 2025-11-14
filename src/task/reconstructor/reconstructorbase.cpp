@@ -1333,12 +1333,14 @@ void ReconstructorBase::removeTargetReportsLaterOrEqualThan(const boost::posix_t
         tgt_it.second.removeTargetReportsLaterOrEqualThan(ts);
 }
 
-std::map<unsigned int, std::map<unsigned long, unsigned int>> ReconstructorBase::createAssociations()
+std::pair<ReconstructorBase::AssocMap, ReconstructorBase::AssocMap> ReconstructorBase::createAssociations()
 {
     loginf;
 
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations;
-    unsigned int num_assoc {0};
+    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations_written;
+    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations_glue;
+    unsigned int num_assoc_written {0};
+    unsigned int num_assoc_glue    {0};
 
     for (auto& tgt_it : targets_container_.targets_)
     {
@@ -1348,24 +1350,31 @@ std::map<unsigned int, std::map<unsigned long, unsigned int>> ReconstructorBase:
 
             dbContent::targetReport::ReconstructorInfo& tr = target_reports_.at(rn_it);
 
-            if (tr.timestamp_ < currentSlice().write_before_time_) // tr.in_current_slice_
+            bool written = tr.timestamp_ < currentSlice().write_before_time_;
+
+            if (written) // tr.in_current_slice_
             {
-                associations[Number::recNumGetDBContId(rn_it)][rn_it] = tgt_it.first;
-                ++num_assoc;
+                associations_written[Number::recNumGetDBContId(rn_it)][rn_it] = tgt_it.first;
+                ++num_assoc_written;
+            }
+            else
+            {
+                associations_glue[Number::recNumGetDBContId(rn_it)][rn_it] = tgt_it.first;
+                ++num_assoc_glue;
             }
         }
         tgt_it.second.associations_written_ = true;
-
         tgt_it.second.updateCounts();
     }
 
-    loginf << "done with " << num_assoc << " associated";
+    loginf << "done with " << num_assoc_written << " written associated, " << num_assoc_glue << " overlap associated";
 
-    return associations;
+    return std::make_pair(associations_written, associations_glue);
 }
 
-std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createAssociationBuffers(
-    std::map<unsigned int, std::map<unsigned long,unsigned int>> associations)
+std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorBase::createAssociationBuffers(
+    const AssocMap& associations_written,
+    const AssocMap& associations_glue)
 {
     logdbg;
 
@@ -1373,131 +1382,160 @@ std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createAssociat
 
     // write association info to buffers
 
-    std::map<std::string, std::shared_ptr<Buffer>> assoc_data;
+    std::map<std::string, std::shared_ptr<Buffer>> assoc_data_written;
+    std::map<std::string, std::shared_ptr<Buffer>> assoc_data_glue;
 
-    for (auto& cont_assoc_it : associations) // dbcontent -> rec_nums
+    auto createAssocBuffer = [ & ] (const AssocMap& associations,
+                                    std::map<std::string, std::shared_ptr<Buffer>>& assoc_data,
+                                    bool written)
     {
-        unsigned int num_associated {0};
-        unsigned int num_not_associated {0};
+        std::string buffer_id = written ? "written" : "overlap";
 
-        unsigned int dbcontent_id = cont_assoc_it.first;
-        string dbcontent_name = dbcontent_man.dbContentWithId(cont_assoc_it.first);
-        //DBContent& dbcontent = dbcontent_man.dbContent(dbcontent_name);
-
-        std::map<unsigned long, unsigned int>& tr_associations = cont_assoc_it.second;
-
-        logdbg << "db content " << dbcontent_name;
-
-        string rec_num_name =
-            dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(dbcontent_name).name();
-
-        string utn_name =
-            dbcontent_man.metaVariable(DBContent::meta_var_utn_.name()).getFor(dbcontent_name).name();
-
-        PropertyList properties;
-        properties.addProperty(utn_name,  DBContent::meta_var_utn_.dataType());
-        properties.addProperty(rec_num_name,  DBContent::meta_var_rec_num_.dataType());
-
-        assoc_data [dbcontent_name].reset(new Buffer(properties));
-
-        shared_ptr<Buffer> buffer  = assoc_data.at(dbcontent_name);
-
-        NullableVector<unsigned int>& utn_col_vec = buffer->get<unsigned int>(utn_name);
-        NullableVector<unsigned long>& rec_num_col_vec = buffer->get<unsigned long>(rec_num_name);
-
-        traced_assert(tr_ds_.count(dbcontent_id));
-
-        unsigned int buf_cnt = 0;
-        for (auto& ds_it : tr_ds_.at(dbcontent_id))  // iterate over all rec nums
+        for (auto& cont_assoc_it : associations) // dbcontent -> rec_nums
         {
-            for (auto& line_it : ds_it.second)
+            unsigned int num_associated {0};
+            unsigned int num_not_associated {0};
+
+            unsigned int dbcontent_id = cont_assoc_it.first;
+            string dbcontent_name = dbcontent_man.dbContentWithId(cont_assoc_it.first);
+            //DBContent& dbcontent = dbcontent_man.dbContent(dbcontent_name);
+
+            const std::map<unsigned long, unsigned int>& tr_associations = cont_assoc_it.second;
+
+            logdbg << "db content " << dbcontent_name;
+
+            string rec_num_name =
+                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(dbcontent_name).name();
+
+            string utn_name =
+                dbcontent_man.metaVariable(DBContent::meta_var_utn_.name()).getFor(dbcontent_name).name();
+
+            PropertyList properties;
+            properties.addProperty(utn_name,  DBContent::meta_var_utn_.dataType());
+            properties.addProperty(rec_num_name,  DBContent::meta_var_rec_num_.dataType());
+
+            assoc_data[dbcontent_name].reset(new Buffer(properties));
+
+            shared_ptr<Buffer> buffer = assoc_data.at(dbcontent_name);
+
+            NullableVector<unsigned int>& utn_col_vec      = buffer->get<unsigned int>(utn_name);
+            NullableVector<unsigned long>& rec_num_col_vec = buffer->get<unsigned long>(rec_num_name);
+
+            traced_assert(tr_ds_.count(dbcontent_id));
+
+            unsigned int buf_cnt = 0;
+
+            for (auto& ds_it : tr_ds_.at(dbcontent_id))  // iterate over all rec nums
             {
-                for (auto& rn_it : line_it.second)
+                for (auto& line_it : ds_it.second)
                 {
-                    traced_assert(target_reports_.count(rn_it));
-
-                    if (target_reports_.at(rn_it).timestamp_ >= currentSlice().write_before_time_)
-                        continue;
-
-                    rec_num_col_vec.set(buf_cnt, rn_it);
-
-                    if (tr_associations.count(rn_it))
+                    for (auto& rn_it : line_it.second)
                     {
-                        utn_col_vec.set(buf_cnt, tr_associations.at(rn_it));
-                        ++num_associated;
-                    }
-                    else
-                        ++num_not_associated;
-                    // else null
+                        traced_assert(target_reports_.count(rn_it));
 
-                    ++buf_cnt;
+                        bool to_be_written = target_reports_.at(rn_it).timestamp_ < currentSlice().write_before_time_;
+                        if (to_be_written != written)
+                            continue;
+
+                        rec_num_col_vec.set(buf_cnt, rn_it);
+
+                        if (tr_associations.count(rn_it))
+                        {
+                            utn_col_vec.set(buf_cnt, tr_associations.at(rn_it));
+                            ++num_associated;
+                        }
+                        else
+                        {
+                            ++num_not_associated;
+                        }
+                        // else null
+
+                        ++buf_cnt;
+                    }
                 }
             }
+
+            logdbg << buffer_id << ": dbcontent " << dbcontent_name
+                << " assoc " << num_associated << " not assoc " << num_not_associated
+                << " buffer size " << buffer->size();
+
+            logdbg << buffer_id << ": dcontent " << dbcontent_name << " done";
         }
+    };
 
-        logdbg << "dcontent " << dbcontent_name
-               <<  " assoc " << num_associated << " not assoc " << num_not_associated
-               << " buffer size " << buffer->size();
-
-        logdbg << "dcontent " << dbcontent_name << " done";
-    }
+    createAssocBuffer(associations_written, assoc_data_written, true);
+    createAssocBuffer(associations_glue, assoc_data_glue, false);
 
     logdbg << "done";
 
-    return assoc_data;
+    return std::make_pair(assoc_data_written, assoc_data_glue);
 }
 
-std::map<std::string, std::shared_ptr<Buffer>> ReconstructorBase::createReferenceBuffers()
+std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorBase::createReferenceBuffers()
 {
     logdbg << "num " << targets_container_.targets_.size();
 
-    std::shared_ptr<Buffer> buffer;
+    std::shared_ptr<Buffer> buffer_written;
+    std::shared_ptr<Buffer> buffer_glue;
 
+    //accumulate target reference data to buffers
     for (auto& tgt_it : targets_container_.targets_)
     {
-        if (!buffer)
-            buffer = tgt_it.second.getReferenceBuffer(); // also updates count
+        auto b = tgt_it.second.createReferenceBuffer();
+
+        //current slice
+        if (!buffer_written)
+            buffer_written = b.first; // also updates count
         else
-        {
-            auto tmp = tgt_it.second.getReferenceBuffer();
-            buffer->seizeBuffer(*tmp);
-        }
+            buffer_written->seizeBuffer(*b.first);
+        
+        //last slice's glue region
+        if (!buffer_glue)
+            buffer_glue = b.second; // also updates count
+        else
+            buffer_glue->seizeBuffer(*b.second);
     }
 
-    if (buffer && buffer->size())
+    //create reference data source if needed
+    auto createDataSource = [ & ] (Buffer* buffer)
     {
-        NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(
-            DBContent::meta_var_timestamp_.name());
-
-        logdbg << "buffer size " << buffer->size()
-               << " ts min " << Time::toString(ts_vec.get(0))
-               << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
-
-        DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
-
-        unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
-
-        if (!src_man.hasConfigDataSource(ds_id))
+        if (buffer && buffer->size())
         {
-            logdbg << "creating data source";
+            NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(
+                DBContent::meta_var_timestamp_.name());
 
-            src_man.createConfigDataSource(ds_id);
-            traced_assert(src_man.hasConfigDataSource(ds_id));
+            logdbg << "buffer size " << buffer->size()
+                << " ts min " << Time::toString(ts_vec.get(0))
+                << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
+
+            DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
+
+            unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
+
+            if (!src_man.hasConfigDataSource(ds_id))
+            {
+                logdbg << "creating data source";
+
+                src_man.createConfigDataSource(ds_id);
+                traced_assert(src_man.hasConfigDataSource(ds_id));
+            }
+
+            dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
+
+            src.name(settings().ds_name);
+            src.dsType("RefTraj"); // same as dstype
         }
+    };
 
-        dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
+    createDataSource(buffer_written.get());
+    createDataSource(buffer_glue.get());
 
-        src.name(settings().ds_name);
-        src.dsType("RefTraj"); // same as dstype
+    auto map_written = buffer_written && buffer_written->size() ? std::map<std::string, std::shared_ptr<Buffer>> {{buffer_written->dbContentName(), buffer_written}} : 
+                                                                  std::map<std::string, std::shared_ptr<Buffer>> {};
+    auto map_glue = buffer_glue && buffer_glue->size() ? std::map<std::string, std::shared_ptr<Buffer>> {{buffer_glue->dbContentName(), buffer_glue}} : 
+                                                         std::map<std::string, std::shared_ptr<Buffer>> {};
 
-        return std::map<std::string, std::shared_ptr<Buffer>> {{buffer->dbContentName(), buffer}};
-    }
-    else
-    {
-        logdbg << "empty buffer";
-
-        return std::map<std::string, std::shared_ptr<Buffer>> {};
-    }
+    return std::make_pair(map_written, map_glue);
 }
 
 void ReconstructorBase::doReconstructionStatistics()

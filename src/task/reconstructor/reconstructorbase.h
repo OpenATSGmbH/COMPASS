@@ -165,10 +165,13 @@ public:
         boost::posix_time::ptime write_before_time_;
 
         std::map<std::string, std::shared_ptr<Buffer>> data_;
-        bool loading_done_ {false}; // set if data_ is set correctly and can be processed
+        bool loading_done_ {false}; // set if loading has finished
+        bool has_data_ {false}; // set if data_ is set correctly and can be processed
 
         std::map<std::string, std::shared_ptr<Buffer>> assoc_data_;
         std::map<std::string, std::shared_ptr<Buffer>> reftraj_data_;
+        std::map<std::string, std::shared_ptr<Buffer>> assoc_data_glue_;
+        std::map<std::string, std::shared_ptr<Buffer>> reftraj_data_glue_;
 
         bool processing_done_ {false}; // set if assoc_data_, reftraj_data_ are set correctly and can be written
         bool write_done_ {false}; // set if data has been written
@@ -236,7 +239,8 @@ public:
         std::vector<unsigned long> rec_nums_;
     };
 
-    typedef std::map<std::string, std::shared_ptr<Buffer>> Buffers;
+    typedef std::map<std::string, std::shared_ptr<Buffer>>                Buffers;
+    typedef std::map<unsigned int, std::map<unsigned long, unsigned int>> AssocMap;
 
     ReconstructorBase(const std::string& class_id, 
                       const std::string& instance_id,
@@ -372,10 +376,10 @@ protected:
     void createTargetReportBatches();
     void removeTargetReportsLaterOrEqualThan(const boost::posix_time::ptime& ts); // for slice recalc
 
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> createAssociations();
-    std::map<std::string, std::shared_ptr<Buffer>> createAssociationBuffers(
-        std::map<unsigned int, std::map<unsigned long, unsigned int>> associations);
-    std::map<std::string, std::shared_ptr<Buffer>> createReferenceBuffers();
+    std::pair<AssocMap, AssocMap> createAssociations();
+    std::pair<Buffers, Buffers> createAssociationBuffers(const AssocMap& associations_written,
+                                                         const AssocMap& associations_glue);
+    std::pair<Buffers, Buffers> createReferenceBuffers();
 
     void doUnassociatedAnalysis();
     void doOutlierAnalysis();
