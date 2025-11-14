@@ -40,6 +40,16 @@ protected:
     DECLARE_RTCOMMAND_OPTIONS
 };
 
+// delete_all_data_sources
+struct RTCommandDeleteAllDataSources : public rtcommand::RTCommand
+{
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(delete_all_data_sources, "deletes all data sources in the configuration")
+    DECLARE_RTCOMMAND_NOOPTIONS
+};
+
 // import_sectors_json
 struct RTCommandImportSectorsJSON : public rtcommand::RTCommand
 {
