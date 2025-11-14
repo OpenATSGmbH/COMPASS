@@ -22,7 +22,6 @@
 class Buffer;
 class QLabel;
 class RadarPlotPositionCalculatorTask;
-class DBContentComboBox;
 
 namespace dbContent
 {

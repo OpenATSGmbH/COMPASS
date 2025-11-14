@@ -32,7 +32,7 @@ class DBContentComboBox : public QComboBox
     void changedObject();
 
   public:
-    DBContentComboBox(bool allow_meta, bool no_status_content, QWidget* parent = nullptr)
+    DBContentComboBox(bool allow_meta, bool target_report_only, QWidget* parent = nullptr)
         : QComboBox(parent), allow_meta_(allow_meta)
     {
         traced_assert(COMPASS::instance().dbContentManager().size());
@@ -41,7 +41,7 @@ class DBContentComboBox : public QComboBox
 
         for (auto& dbcont_it : COMPASS::instance().dbContentManager())
         {
-            if (no_status_content && dbcont_it.second->containsStatusContent())
+            if (target_report_only && !dbcont_it.second->containsTargetReports())
                 continue;
 
             addItem(dbcont_it.first.c_str());
