@@ -1,5 +1,7 @@
 {
     "parameters": {
+        "contains_status_content": true,
+        "contains_target_reports": true,
         "db_table_name": "data_cat010",
         "id": 10,
         "info": "",
