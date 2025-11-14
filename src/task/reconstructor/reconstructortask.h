@@ -188,8 +188,6 @@ protected:
     void writeDataSlice();
     void endReconstruction();
 
-    void finalizeSlice(std::unique_ptr<ReconstructorBase::DataSlice>& slice);
-
     std::string current_reconstructor_str_;
 
     nlohmann::json use_dstypes_; // dstype -> bool
@@ -211,12 +209,13 @@ protected:
     boost::posix_time::ptime run_start_time_after_del_;
 
     size_t current_slice_idx_ = 0;
-    size_t num_written_slices_ = 0;
+    bool write_initialized_ = false;
 
     std::unique_ptr<ReconstructorBase::DataSlice> loading_slice_;
     bool loading_data_ {false};
     std::unique_ptr<ReconstructorBase::DataSlice> processing_slice_;
     std::unique_ptr<ReconstructorBase::DataSlice> writing_slice_;
+    std::unique_ptr<ReconstructorBase::DataSlice> last_slice_;
 
     DebugSettings debug_settings_;
 

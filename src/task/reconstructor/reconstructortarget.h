@@ -295,7 +295,6 @@ public:
     bool created_in_current_slice_ {false};
 
     bool associations_written_ {false}; // set after the utn was used in db at least once
-    bool track_begin_ {true}; // unset after first target report written
 
     // target report aggregation & search structures, by record numbers
     std::vector<unsigned long> target_reports_;
@@ -334,13 +333,6 @@ public:
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
     std::multimap<boost::posix_time::ptime, unsigned long> reference_tr_usages_;
     std::map<boost::posix_time::ptime, ContributingSourcesInfo> references_tr_contributions_;
-
-    boost::posix_time::ptime ref_ts_prev_;
-    bool has_prev_v_ {false};
-    double v_x_prev_, v_y_prev_;
-
-    bool has_prev_baro_alt_ {false};
-    float baro_alt_prev_;
 
     mutable Transformation trafo_;
 
@@ -463,7 +455,7 @@ public:
     void updateCounts();
     std::map <std::string, unsigned int> getDBContentCounts() const;
 
-    std::shared_ptr<Buffer> getReferenceBuffer();
+    std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> createReferenceBuffer();
 
     void removeOutdatedTargetReports();
     void removeTargetReportsLaterOrEqualThan(boost::posix_time::ptime ts);
@@ -527,6 +519,14 @@ protected:
 
     bool multithreaded_predictions_ = true;
     bool dynamic_insertions_        = true;
+
+    //online reference information to be used in createReferenceBuffer()
+    bool track_begin_ {true}; // unset after first target report written
+    boost::posix_time::ptime ref_ts_prev_;
+    bool has_prev_v_ {false};
+    double v_x_prev_, v_y_prev_;
+    bool has_prev_baro_alt_ {false};
+    float baro_alt_prev_;
 
     nlohmann::json adsb_info_json_;
 
