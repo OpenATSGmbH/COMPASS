@@ -174,7 +174,7 @@ void RS2GCoordinateSystem::radarSlant2LocalCart(double azimuth_rad, double rho_m
 
     double ground_range_m = rho_m * cos(elev_angle_rad);
 
-    if (bias_info.bias_valid_)
+    if (bias_info.azimuth_bias_valid_ && bias_info.range_bias_valid_)
     {
         // Apply corrections: 
         // range_corrected = (range_measured - range_bias) / (1 + range_gain)
