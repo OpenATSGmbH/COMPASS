@@ -540,7 +540,7 @@ RESTART_SELF_ASSOC:
                     << "' with '" << other_target.asStr() << "' using score "
                     << String::doubleToStringPrecision(-largest_score, 2); // invert sign again
 
-            bool target_was_pri = target.isPrimary();
+            bool target_was_pri = target.isPrimaryOnly();
 
             // move target reports
             target.addTargetReports(other_target);
@@ -548,7 +548,7 @@ RESTART_SELF_ASSOC:
             // schedule remove from targets
             utns_to_remove.insert(other_utn);
 
-            if (target_was_pri && !target.isPrimary())
+            if (target_was_pri && !target.isPrimaryOnly())
                 utns_to_ignore.insert(utn);
 
             reconstructor().targets_container_.replaceInLookup(other_utn, utn);

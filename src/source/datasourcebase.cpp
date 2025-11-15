@@ -297,6 +297,8 @@ bool DataSourceBase::ignoreRadarAzmRange() const
 }
 void DataSourceBase::ignoreRadarAzmRange(bool value)
 {
+    loginf << "name " << name_ << " dsType '" << dsType() << "'";
+
     assert(dsType() == "Radar");
     info_[IgnoreRadarAzmRngKey] = value;
 }

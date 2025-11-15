@@ -125,7 +125,7 @@ void RS2GCoordinateSystem::radarSlant2LocalCart(double azimuth_rad, double rho_m
     // logdbg << "in x: " << local[0] << " y: " << local[1]
     //        << " z: " << local[2];
 
-    double elevation_m {0};
+    double elevation_m {0}; // absolute WGS‑84 height
 
     if (has_altitude)
         elevation_m = altitude_m;

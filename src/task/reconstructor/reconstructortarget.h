@@ -360,7 +360,7 @@ public:
 
     bool hasModeC () const;
 
-    bool isPrimary() const;
+    bool isPrimaryOnly() const;
 
     std::string asStr() const;
     std::string timeStr() const;

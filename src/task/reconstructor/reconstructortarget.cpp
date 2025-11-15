@@ -667,7 +667,7 @@ bool ReconstructorTarget::hasModeC () const
     return mode_c_min_ && mode_c_max_;
 }
 
-bool ReconstructorTarget::isPrimary() const
+bool ReconstructorTarget::isPrimaryOnly() const
 {
     return !hasACAD() && !hasACID() && !hasModeA() && !hasModeC();
 }
@@ -1800,7 +1800,7 @@ std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>> 
 bool ReconstructorTarget::isPrimaryAt(boost::posix_time::ptime timestamp,
                  boost::posix_time::time_duration max_time_diff, const InterpOptions& interp_options) const
 {
-    if (isPrimary()) // for full target
+    if (isPrimaryOnly()) // for full target
         return true;
 
     if (!hasDataForTime(timestamp, max_time_diff))
