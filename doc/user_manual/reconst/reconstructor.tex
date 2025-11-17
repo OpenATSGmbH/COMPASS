@@ -18,7 +18,7 @@ Reference trajectories are calculated based on available sensors and System Trac
    \begin{itemize}  
    \item Requires commercial professional license
    \item Association based on secondary attributes and self-adaptive probabilistic thresholds
-   \item Uses Radar bias estimation \& correction, ADS-B geometric altitude for slant range correction, accuracy re-estimation and scaling, ADS-B verification, ...
+   \item Uses Joint Probabilistic Data Association (JPDA), Radar bias estimation \& correction, ADS-B geometric altitude for slant range correction, accuracy re-estimation and scaling, ADS-B verification, ...
    \item Position estimation using Interacting Multiple Models (IMM) filter, with a Rauch-Tung-Striebel (RTS) smoother
    \end{itemize}
 \end{itemize}  
@@ -187,6 +187,12 @@ Without going into detail, in this section a short overview is given over the ca
 \item Using parameters based models as well as 2D accuracy maps
 \end{itemize}
 \item Correct Radar biases: Estimate and correct azimuth bias, range bias \& gain
+\item Joint Probabilistic Data Association (JPDA)
+\begin{itemize}
+\item Method based on published paper: \href{https://doi.org/10.1109/CDC.1980.271915}{“Multi-Target Tracking Using Joint Probabilistic Data Association” by Fortmann, Bar-Shalom \& Scheffe, 1980}
+\item Computes the marginal probabilities of all feasible measurement-to-target associations, considering under clutter and missed detections
+\item Updates each target state by weighting measurements by those probabilities and saves optimal associations
+\end{itemize}
 \item Use ADS-B geometric altitude for slant-range correction
 \begin{itemize}
 \item Method based on published paper: \href{https://doi.org/10.3390/engproc2022028008}{'Usage of Geometric Altitude for Radar Plot Position Improvements' by H. Puhr, MDPI 2022}

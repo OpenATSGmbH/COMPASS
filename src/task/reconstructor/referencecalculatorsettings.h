@@ -43,14 +43,21 @@ struct ReferenceCalculatorSettings
     };
 
     /**
+     */
+    double maximumTimestep(bool on_ground) const
+    {
+        return on_ground ? max_dt_ground : max_dt_air;
+    }
+
+    /**
     */
-    reconstruction::KalmanEstimator::Settings kalmanEstimatorSettings() const
+    reconstruction::KalmanEstimator::Settings kalmanEstimatorSettings(bool on_ground = false) const
     {
         reconstruction::KalmanEstimator::Settings settings;
 
         //settings.min_chain_size    = min_chain_size;
         settings.min_dt            = min_dt;
-        settings.max_dt            = max_dt;
+        settings.max_dt            = maximumTimestep(on_ground);
         settings.max_distance_cart = max_distance;
 
         settings.Q_var       = Q_std.Q_std_static * Q_std.Q_std_static;
@@ -82,11 +89,12 @@ struct ReferenceCalculatorSettings
 
     /**
     */
-    reconstruction::KalmanEstimator::Settings chainEstimatorSettings() const
+    reconstruction::KalmanEstimator::Settings chainEstimatorSettings(double max_time_diff_pred, bool on_ground = false) const
     {
-        reconstruction::KalmanEstimator::Settings settings = kalmanEstimatorSettings();
+        reconstruction::KalmanEstimator::Settings settings = kalmanEstimatorSettings(on_ground);
+        settings.max_dt = 2 * max_time_diff_pred + 1; // maximum kalman step = 2 * max prediction time + something
 
-        //override settings for chain if needed
+        //override more settings for chain here if needed
 
         return settings;
     }
@@ -114,7 +122,8 @@ struct ReferenceCalculatorSettings
     //reinit related
     //int    min_chain_size = 2;
     double min_dt         = 0.001;
-    double max_dt         = 11.0;
+    double max_dt_ground  = 5.0;
+    double max_dt_air     = 10.0;
     double max_distance   = 50000.0;
 
     bool   smooth_rts   = true;

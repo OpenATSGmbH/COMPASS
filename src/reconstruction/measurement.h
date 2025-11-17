@@ -107,6 +107,7 @@ struct Measurement
     static const std::string FieldInterpFirst;
     static const std::string FieldPosAccCorr;
     static const std::string FieldStopped;
+    static const std::string FieldOnGround;
 
     static const std::string FieldLat;
     static const std::string FieldLon;
@@ -145,6 +146,7 @@ struct Measurement
     bool                     pos_acc_corrected = false; // position accuracy has been corrected due to invalid correlation coefficient
     bool                     stopped           = false; // measurement in stopped state (adsb related)
     bool                     test_clutter      = false; // measurement is test clutter (for debugging purpose)
+    bool                     on_ground         = false; // measurement is known to be on ground
 
     double                   lat;                       // wgs84 latitude 
     double                   lon;                       // wgs84 longitude

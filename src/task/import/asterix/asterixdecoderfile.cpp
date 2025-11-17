@@ -59,7 +59,12 @@ void ASTERIXDecoderFile::start_impl()
     current_file_idx_         = -1;
 
     while (isRunning() && nextFile())
+    {
         processCurrentFile();
+
+        if (!isRunning())
+            break;
+    }
 }
 
 /**
@@ -85,6 +90,9 @@ bool ASTERIXDecoderFile::atEnd() const
 */
 void ASTERIXDecoderFile::processCurrentFile()
 {
+    if (!isRunning())
+        return;
+
     traced_assert(!atEnd());
 
     auto& current_file = source_.file_infos_.at(current_file_idx_);
@@ -99,6 +107,9 @@ void ASTERIXDecoderFile::processCurrentFile()
     try
     {
         processFile(current_file);
+
+        if (!isRunning())
+            return;
 
         //another file done
         done_file_size_          += current_file.sizeInBytes(true);
@@ -282,7 +293,11 @@ void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
                 progress->setMessage(msg, false, true);
             }
 
-            bool section_ok = checkDecoding(file_info, (int)i, file_info.sections[ i ].contentinfo, file_info.sections[ i ].error);
+            bool section_ok = checkDecoding(file_info, 
+                                            (int)i, 
+                                            file_info.sections[ i ].contentinfo, 
+                                            file_info.sections[ i ].error, 
+                                            file_info.sections[ i ].warning);
             
             //set section to unused?
             if (!section_ok)
@@ -301,7 +316,7 @@ void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
     }
 
     //... otherwise check decoding on complete file
-    bool file_dec_ok = checkDecoding(file_info, -1, file_info.contentinfo, file_info.error);
+    bool file_dec_ok = checkDecoding(file_info, -1, file_info.contentinfo, file_info.error, file_info.warning);
 
     //set file to unused?
     if (!file_dec_ok)
@@ -318,15 +333,18 @@ void ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
 bool ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info, 
                                        int section_idx, 
                                        std::string& contentinfo,
-                                       ASTERIXImportFileError& error) const
+                                       ASTERIXImportFileError& error,
+                                       std::string& warning) const
 {
     bool ok = false;
     std::string err_msg;
+    warning = "";
+    contentinfo = "";
             
     try
     {
         //invoke derived
-        ok = checkDecoding(file_info, section_idx, contentinfo, err_msg);
+        ok = checkDecoding(file_info, section_idx, contentinfo, err_msg, warning);
     }
     catch(const std::exception& e)
     {

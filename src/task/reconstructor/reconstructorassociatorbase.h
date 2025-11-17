@@ -49,21 +49,18 @@ class ReconstructorAssociatorBase
     virtual void reset();
 
     const std::map<unsigned int, std::map<unsigned int,
-                                          std::pair<unsigned int, unsigned int>>>& assocAounts() const;
+                                          std::pair<unsigned int, unsigned int>>>& assocCounts() const;
 
     struct AssociationOption
     {
         AssociationOption(){}
 
         AssociationOption(bool usable, unsigned int utn, unsigned int other_utn, unsigned int num_updates,
-                          bool associate_secondary, float avg_distance)
+                          bool associate_secondary, float avg_distance, float score)
             : usable_(usable), utn_(utn), other_utn_(other_utn), num_updates_(num_updates),
             associate_based_on_secondary_attributes_(associate_secondary), avg_distance_(avg_distance),
-            score_((float)num_updates_ / avg_distance_)
-        {
-            if (associate_based_on_secondary_attributes_)
-                    score_ *= 5;
-        }
+            score_(score)
+        {}
 
         bool usable_ {false};
         unsigned int utn_ {0};

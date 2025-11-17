@@ -249,7 +249,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
     pmsg += ("<br><br><div align='left'>Elapsed: "
              + String::timeStringFromDouble(time_elapsed_s, false)+ " </div>").c_str();
 
-    if (ns && sidx && !run_start_time_after_del_.is_not_a_date_time()) // do remaining time estimate if possible
+    if (ns && (sidx || done_) && !run_start_time_after_del_.is_not_a_date_time()) // do remaining time estimate if possible
     {
         double time_elapsed_after_del_s = Time::partialSeconds(boost::posix_time::microsec_clock::local_time()
                                                                - run_start_time_after_del_);
@@ -270,8 +270,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
             pmsg += ("<div align='right'>Remaining: "
                      + String::timeStringFromDouble(time_remaining_s, false)+ " </div>").c_str();
 
-
-        const auto& counts = currentReconstructor()->assocAounts();
+        const auto& counts = currentReconstructor()->assocCounts();
 
         DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
@@ -338,7 +337,6 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
                 //  </tr>
                 //</table>
         }
-
     }
 
     progress_dialog_->setLabelText("<html>"+pmsg+"</html>");
@@ -428,12 +426,13 @@ void ReconstructorTask::run()
     processing_slice_ = nullptr;
     processing_data_slice_ = false;
     writing_slice_ = nullptr;
+    last_slice_ = nullptr;
 
     cancelled_ = false;
     done_ = false;
 
     current_slice_idx_ = 0;
-    num_written_slices_ = 0;
+    write_initialized_ = false;
 
     delcalcref_future_ = {};
     deltgts_future_ = {};
@@ -527,7 +526,6 @@ void ReconstructorTask::deleteCalculatedReferencesDoneSlot()
                     return;
 
                 QMetaObject::invokeMethod(this, "deleteTargetsDoneSlot", Qt::QueuedConnection);
-
             }
             catch (const std::exception& e)
             {
@@ -565,15 +563,12 @@ void ReconstructorTask::deleteTargetsDoneSlot()
                     return;
 
                 QMetaObject::invokeMethod(this, "deleteAssociationsDoneSlot", Qt::QueuedConnection);
-
             }
             catch (const std::exception& e)
             {
                 loginf << "delete associations threw exception '" << e.what() << "'";
                 traced_assert(false);
             }
-
-
         }});
 }
 
@@ -709,126 +704,6 @@ void ReconstructorTask::loadDataSlice()
     }
 }
 
-void ReconstructorTask::processDataSlice()
-{
-    loginf;
-
-    if (cancelled_)
-        return;
-
-    traced_assert(loading_slice_);
-    traced_assert(!processing_slice_);
-
-    processing_slice_ = std::move(loading_slice_);
-
-    traced_assert(!processing_data_slice_);
-
-    if (!processing_slice_->data_.size())
-    {
-        logdbg << "empty buffer at ("
-               << Time::toString(loading_slice_->slice_begin_)<< ", no process";
-
-        processing_slice_ = nullptr;
-
-        return;
-    }
-
-    processing_data_slice_ = true;
-
-    logdbg << "processing1 first slice "
-           << !processing_slice_->first_slice_
-           << " remove ts " << Time::toString(processing_slice_->remove_before_time_);
-
-    traced_assert(processing_slice_);
-
-    logdbg << "processing2 first slice "
-           << !processing_slice_->first_slice_
-           << " remove ts " << Time::toString(processing_slice_->remove_before_time_);
-
-    for (auto& buf_it : processing_slice_->data_)
-    {
-        loginf << buf_it.first << " size " << buf_it.second->size() 
-        << " num prop " << buf_it.second->properties().size();
-    }
-
-    process_future_ = std::async(std::launch::async, [&] {
-        try
-        {
-            logdbg << "async process";
-
-            logdbg << "async processing first slice "
-                   << !processing_slice_->first_slice_
-                   << " remove ts " << Time::toString(processing_slice_->remove_before_time_);
-
-            traced_assert(!currentReconstructor()->processing());
-            currentReconstructor()->processSlice();
-
-            // wait for previous writing done
-            while (writing_slice_ && !cancelled_)
-                QThread::msleep(1);
-
-            logdbg << "done";
-
-            QMetaObject::invokeMethod(this, "processingDoneSlot", Qt::QueuedConnection);
-        }
-        catch (std::exception& e)
-        {
-            loginf << "processing slice threw exception '" << e.what() << "'";
-            traced_assert(false);
-        }
-    });
-}
-
-void ReconstructorTask::writeDataSlice()
-{
-    loginf;
-
-    traced_assert(writing_slice_);
-
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
-
-    for (auto& buf_it : writing_slice_->assoc_data_)
-    {
-        logdbg << "association dbcontent " << buf_it.first;
-
-        DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
-
-        dbcontent.updateData(
-            dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
-    }
-
-    if (num_written_slices_ == 0)
-    {
-        connect(&dbcontent_man, &DBContentManager::insertDoneSignal,
-                this, &ReconstructorTask::writeDoneSlot);
-    }
-
-    ++num_written_slices_;
-
-    loginf << "references dbcontent";
-
-    dbcontent_man.insertData(writing_slice_->reftraj_data_);
-}
-
-void ReconstructorTask::sectorsChangedSlot()
-{
-    used_sectors_.clear();
-
-    if (COMPASS::instance().evaluationManager().sectorsLoaded())
-    {
-        auto& sectors_layers = COMPASS::instance().evaluationManager().sectorsLayers();
-
-        use_sectors_extend_ = sectors_layers.size();
-
-        for (const auto& sect_it : sectors_layers)
-            used_sectors_[sect_it->name()] = true;
-    }
-    else
-    {
-        use_sectors_extend_ = false;
-    }
-}
-
 void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
 {
     traced_assert(loading_slice_);
@@ -860,6 +735,8 @@ void ReconstructorTask::loadingDoneSlot()
 
     // add data to slice
     loading_slice_->data_ = dbcontent_man.data();
+    loading_slice_->has_data_ = !loading_slice_->data_.empty();
+    loading_slice_->loading_done_ = true;
 
     for (auto& buf_it : loading_slice_->data_)
     {
@@ -916,35 +793,22 @@ void ReconstructorTask::loadingDoneSlot()
         return;
     }
 
-
     loginf << "processing first slice "
            << !loading_slice_->first_slice_
            << " remove ts " << Time::toString(loading_slice_->remove_before_time_);
 
-    if (loading_slice_->data_.size())
+    if (!loading_slice_->has_data_)
     {
-        processDataSlice();
-
-        traced_assert(!loading_slice_);
-        traced_assert(processing_data_slice_);
+        loginf << "empty buffer after load at ("
+               << Time::toString(loading_slice_->slice_begin_);
     }
-    else // loading slice empty
-    {
-        loginf << "empty buffer at ("
-               << Time::toString(loading_slice_->slice_begin_)<< ", no process";
 
-        loading_slice_ = nullptr;
-        traced_assert(!processing_data_slice_);
+    processDataSlice();
 
-        if (last_slice)
-        {
-            loginf << "finalizing last empty slice";
-
-            endReconstruction();
-            // release unused memory
-            malloc_trim(0);
-        }
-    }
+    traced_assert(!loading_slice_);
+    
+    //PWa: could already be moved away from processing slice (e.g. if data empty)
+    //traced_assert(processing_data_slice_);
 
     if (cancelled_)
         return;
@@ -960,12 +824,93 @@ void ReconstructorTask::loadingDoneSlot()
     }
     else // do next load
     {
-        loginf << "next slice";
+        loginf << "loading next slice";
 
         if (cancelled_)
             return;
 
         loadDataSlice();
+    }
+}
+
+void ReconstructorTask::processDataSlice()
+{
+    loginf;
+
+    if (cancelled_)
+        return;
+
+    traced_assert(loading_slice_);
+    traced_assert(!processing_slice_);
+
+    processing_slice_ = std::move(loading_slice_);
+
+    traced_assert(!processing_data_slice_);
+
+    processing_data_slice_ = true;
+
+    logdbg << "processing first slice "
+           << !processing_slice_->first_slice_
+           << " remove ts " << Time::toString(processing_slice_->remove_before_time_);
+
+    traced_assert(processing_slice_);
+
+    logdbg << "processing2 first slice "
+           << !processing_slice_->first_slice_
+           << " remove ts " << Time::toString(processing_slice_->remove_before_time_);
+
+    if (processing_slice_->has_data_)
+    {
+        for (auto& buf_it : processing_slice_->data_)
+        {
+            loginf << buf_it.first << " size " << buf_it.second->size() 
+            << " num prop " << buf_it.second->properties().size();
+        }
+
+        process_future_ = std::async(std::launch::async, [&] {
+            try
+            {
+                logdbg << "async process";
+
+                logdbg << "async processing first slice "
+                    << !processing_slice_->first_slice_
+                    << " remove ts " << Time::toString(processing_slice_->remove_before_time_);
+
+                traced_assert(!currentReconstructor()->processing());
+                currentReconstructor()->processSlice();
+
+                // wait for previous writing done
+                while (writing_slice_ && !cancelled_)
+                    QThread::msleep(1);
+
+                logdbg << "done";
+
+                QMetaObject::invokeMethod(this, "processingDoneSlot", Qt::QueuedConnection);
+            }
+            catch (std::exception& e)
+            {
+                loginf << "processing slice threw exception '" << e.what() << "'";
+                traced_assert(false);
+            }
+        });
+    }
+    else
+    {
+        logdbg << "empty buffer at ("
+               << Time::toString(processing_slice_->slice_begin_);
+
+        //no data no processing => immediately mark as done
+        processing_slice_->processing_done_ = true;
+
+        //wait for current write to end
+        while (writing_slice_ && !cancelled_)
+        {
+            QCoreApplication::processEvents();
+            QThread::msleep(10);
+        }
+
+        //directly skip to processing done
+        processingDoneSlot();
     }
 }
 
@@ -981,8 +926,10 @@ void ReconstructorTask::processingDoneSlot()
         return;
     }
 
+    //!processDataSlice() gurantees that no writing slice is currently process!
+
     // processing done
-    traced_assert(currentReconstructor()->currentSlice().processing_done_);
+    traced_assert(processing_slice_->processing_done_);
     traced_assert(processing_data_slice_);
     traced_assert(processing_slice_);
     traced_assert(!writing_slice_);
@@ -992,16 +939,84 @@ void ReconstructorTask::processingDoneSlot()
     traced_assert(!writing_slice_);
     writing_slice_ = std::move(processing_slice_);
 
+    writeDataSlice(); // starts the async jobs
+}
+
+void ReconstructorTask::writeDataSlice()
+{
+    loginf;
+
+    traced_assert(writing_slice_);
+
+    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+
     if (skip_reference_data_writing_)
     {
-        loginf << "skipping reference writing";
+        //directly invoke writeDoneSlot()
+        writeDoneSlot();
+        return;
+    }
 
-        //immediately finalize slice
-        finalizeSlice(writing_slice_);
+    auto initWriteIfNeeded = [ & ] ()
+    {
+        if (!write_initialized_)
+        {
+            //wire needed write connection(s)
+            connect(&dbcontent_man, &DBContentManager::insertDoneSignal,
+                    this, &ReconstructorTask::writeDoneSlot);
+
+            write_initialized_ = true;
+        }
+    };
+
+    if (writing_slice_->has_data_)
+    {
+        //current slice has data => write current slice data
+        initWriteIfNeeded();
+
+        for (auto& buf_it : writing_slice_->assoc_data_)
+        {
+            if (!buf_it.second)
+                continue;
+
+            logdbg << "association dbcontent " << buf_it.first;
+
+            DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
+
+            dbcontent.updateData(
+                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+        }
+
+        loginf << "references dbcontent slice idx " << writing_slice_->slice_count_;
+
+        dbcontent_man.insertData(writing_slice_->reftraj_data_);
+    }
+    else if (last_slice_ && last_slice_->has_data_)
+    {
+        //current slice has no data but last slice has unwritten glue data => write last slice's glue data
+        initWriteIfNeeded();
+
+        for (auto& buf_it : last_slice_->assoc_data_glue_)
+        {
+            if (!buf_it.second)
+                continue;
+
+            logdbg << "association dbcontent (overlap)" << buf_it.first;
+
+            DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
+
+            dbcontent.updateData(
+                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+        }
+
+        loginf << "references dbcontent (overlap) slice idx " << last_slice_->slice_count_;
+
+        dbcontent_man.insertData(last_slice_->reftraj_data_glue_);
     }
     else
     {
-        writeDataSlice(); // starts the async jobs
+        //no data to write => directly invoke writeDoneSlot()
+        writeDoneSlot();
     }
 }
 
@@ -1010,7 +1025,7 @@ void ReconstructorTask::writeDoneSlot()
     loginf << "last " << writing_slice_->is_last_slice_;
 
     traced_assert(writing_slice_);
-    writing_slice_->write_done_ = true;
+    writing_slice_->write_done_ = true; // note: also set if write is skipped
 
     if (cancelled_)
     {
@@ -1018,31 +1033,27 @@ void ReconstructorTask::writeDoneSlot()
         return;
     }
 
-    //writing finished, finalize slice
-    finalizeSlice(writing_slice_);
+    //move to last slice
+    last_slice_ = std::move(writing_slice_);
 
-    loginf << "done";
-}
+    //clear unneeded data
+    last_slice_->data_.clear();
+    last_slice_->assoc_data_.clear();
+    last_slice_->reftraj_data_.clear();
 
-void ReconstructorTask::finalizeSlice(std::unique_ptr<ReconstructorBase::DataSlice>& slice)
-{
-    traced_assert(slice);
+    loginf << "is last = " << last_slice_->is_last_slice_;
 
-    loginf << "is last = " << slice->is_last_slice_;
-
-    if (slice->is_last_slice_)
+    if (last_slice_->is_last_slice_)
     {
-        //last slice finalized => end reconstruction
+        last_slice_.reset();
+
         endReconstruction();
     }
 
-    loginf << "trim";
-
     // release unused memory
-    malloc_trim(0); 
+    malloc_trim(0);
 
-    // free slice
-    slice.reset();
+    loginf << "done";
 }
 
 void ReconstructorTask::endReconstruction()
@@ -1110,7 +1121,7 @@ void ReconstructorTask::endReconstruction()
 
         auto& table = section.getTable("Data Source Counts");
 
-        const auto& counts = currentReconstructor()->assocAounts();
+        const auto& counts = currentReconstructor()->assocCounts();
 
         DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
@@ -1159,6 +1170,25 @@ void ReconstructorTask::endReconstruction()
     {
         //auto-close dialog and immediately cleanup db
         progress_dialog_->close();
+    }
+}
+
+void ReconstructorTask::sectorsChangedSlot()
+{
+    used_sectors_.clear();
+
+    if (COMPASS::instance().evaluationManager().sectorsLoaded())
+    {
+        auto& sectors_layers = COMPASS::instance().evaluationManager().sectorsLayers();
+
+        use_sectors_extend_ = sectors_layers.size();
+
+        for (const auto& sect_it : sectors_layers)
+            used_sectors_[sect_it->name()] = true;
+    }
+    else
+    {
+        use_sectors_extend_ = false;
     }
 }
 
@@ -1233,6 +1263,7 @@ void ReconstructorTask::runCancelledSlot()
     loading_slice_ = nullptr;
     processing_slice_ = nullptr;
     writing_slice_ = nullptr;
+    last_slice_ = nullptr;
 
     done_ = true;
     malloc_trim(0); // release unused memory

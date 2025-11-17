@@ -902,7 +902,7 @@ bool DataSourceManager::hasDataSourcesOfDBContent(const std::string dbcontent_na
     { return s->numInsertedMap().count(dbcontent_name) > 0; } ) != db_data_sources_.end();
 }
 
-void DataSourceManager::addNewDataSource (unsigned int ds_id)
+void DataSourceManager::addNewDataSource (unsigned int ds_id, bool emit_signal)
 {
     loginf << "ds_id " << ds_id;
 
@@ -938,7 +938,8 @@ void DataSourceManager::addNewDataSource (unsigned int ds_id)
     traced_assert(hasDBDataSource(ds_id));
     updateDSIdsAll();
 
-    emit dataSourcesChangedSignal();
+    if (emit_signal)
+        emit dataSourcesChangedSignal();
 
     loginf << "ds_id " << ds_id << " done";
 }

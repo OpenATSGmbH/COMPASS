@@ -38,7 +38,8 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
     boost::system::error_code ec;
 
     //    boost::asio::ip::address mcast_addr = boost::asio::ip::address::from_string(address_mcast, ec);
-    boost::asio::ip::address mcast_addr = boost::asio::ip::address::from_string(line_info_->mcastIP(), ec);
+    //boost::asio::ip::address mcast_addr = boost::asio::ip::address::from_string(line_info_->mcastIP(), ec);
+    boost::asio::ip::address mcast_addr = boost::asio::ip::make_address(line_info_->mcastIP(), ec);
 
     if (ec)
     {
@@ -55,7 +56,8 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
 
     if (has_listen_address)
     {
-        listen_addr = boost::asio::ip::address::from_string(line_info_->listenIP(), ec);
+        //listen_addr = boost::asio::ip::address::from_string(line_info_->listenIP(), ec);
+        listen_addr = boost::asio::ip::make_address(line_info_->listenIP(), ec);
 
         if (ec)
         {
@@ -112,7 +114,9 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
 
     if (line_info_->hasSenderIP())
     {
-        sender_addr_ = boost::asio::ip::address::from_string(line_info_->senderIP(), ec);
+        sender_addr_ = boost::asio::ip::make_address(line_info_->senderIP(), ec);
+
+        
 
         if (ec)
         {

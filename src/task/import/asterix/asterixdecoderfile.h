@@ -65,7 +65,8 @@ protected:
     virtual bool checkDecoding(ASTERIXImportFileInfo& file_info, 
                                int section_idx, 
                                std::string& information,
-                               std::string& error) const = 0;
+                               std::string& error,
+                               std::string& warning) const = 0;
     virtual void processFile(ASTERIXImportFileInfo& file_info) = 0;
 
     void addRecordsRead(size_t n);
@@ -93,7 +94,8 @@ private:
     bool checkDecoding(ASTERIXImportFileInfo& file_info, 
                        int section_idx, 
                        std::string& contentinfo,
-                       ASTERIXImportFileError& error) const;
+                       ASTERIXImportFileError& error,
+                       std::string& warning) const;
 
     size_t currentlyReadBytes() const;
     float getRecordsPerSecond() const;

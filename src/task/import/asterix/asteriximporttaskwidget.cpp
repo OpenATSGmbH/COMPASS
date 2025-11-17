@@ -426,8 +426,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
             std::string name   = file_info.filename;
             std::string info   = "";
             std::string cinfo  = file_info.contentinfo;
-            std::string status = file_info.decodingTested() ? (!file_info.canDecode() ? "Error" : "OK") : "?";
-            std::string descr  = file_info.error.errinfo;
+            std::string status = file_info.decodingTested() ? (!file_info.canDecode() ? "Error" : (file_info.hasWarning() ? "Warning" : "OK")) : "?";
+            std::string descr  = !file_info.error.errinfo.empty() ? file_info.error.errinfo : (!file_info.warning.empty() ? file_info.warning : "");
 
             auto item = new QTreeWidgetItem;
             item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
@@ -456,8 +456,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                     std::string name   = section.description;
                     std::string info   = section.info;
                     std::string cinfo  = section.contentinfo;
-                    std::string status = file_info.decodingTested() ? (section.error.hasError() ? "Error" : "OK") : "?";
-                    std::string descr  = section.error.errinfo;
+                    std::string status = file_info.decodingTested() ? (section.error.hasError() ? "Error" : (!section.warning.empty() ? "Warning" : "OK")) : "?";
+                    std::string descr  = !section.error.errinfo.empty() ? section.error.errinfo : (!section.warning.empty() ? section.warning : "");
 
                     auto sec_item = new QTreeWidgetItem;
                     sec_item->setCheckState(0, section.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);

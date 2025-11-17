@@ -125,7 +125,7 @@ void RS2GCoordinateSystem::radarSlant2LocalCart(double azimuth_rad, double rho_m
     // logdbg << "in x: " << local[0] << " y: " << local[1]
     //        << " z: " << local[2];
 
-    double elevation_m {0};
+    double elevation_m {0}; // absolute WGS‑84 height
 
     if (has_altitude)
         elevation_m = altitude_m;
@@ -174,10 +174,13 @@ void RS2GCoordinateSystem::radarSlant2LocalCart(double azimuth_rad, double rho_m
 
     double ground_range_m = rho_m * cos(elev_angle_rad);
 
-    if (bias_info.bias_valid_)
+    if (bias_info.azimuth_bias_valid_ && bias_info.range_bias_valid_)
     {
-        ground_range_m = ground_range_m * bias_info.range_gain_ + bias_info.range_bias_m_;
-        azimuth_rad += bias_info.azimuth_bias_deg_ * DEG2RAD;
+        // Apply corrections: 
+        // range_corrected = (range_measured - range_bias) / (1 + range_gain)
+        // azimuth_corrected = azimuth_measured - azimuth_bias
+        ground_range_m = (ground_range_m - bias_info.range_bias_m_) / (1.0 + bias_info.range_gain_);
+        azimuth_rad = azimuth_rad - bias_info.azimuth_bias_deg_ * DEG2RAD;
     }
 
     if (debug)

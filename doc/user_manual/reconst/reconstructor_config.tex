@@ -92,7 +92,7 @@ In this tab, the association parameters can be set, i.e. the thresholds used to 
 \begin{figure}[H]
     \center
       \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
-    \caption{Scoring + UMKalman Reconstruction Parameters}
+    \caption{Scoring + UMKalman Reference Calculation Parameters}
 \end{figure}
 
 In this tab, the reference calculation parameters can be set, i.e. the Kalman and reconstruction parameters used for position estimation of the references. \\
@@ -105,7 +105,8 @@ In this tab, the reference calculation parameters can be set, i.e. the Kalman an
     Process Stddev [m] Ground & 3 & Process noise for ground targets \\ \hline
     Process Stddev [m] Air & 10 & Process noise for FL400 targets \\ \hline
     Process Stddev [m] Unknown & 7 & Process noise for targets w/o altitude \\ \hline
-    Maximum Time Step [s] & 11 & Re-init reference if no update available within given time \\ \hline
+    Maximum Time Step (Ground) [s] & 5 & Re-init reference if no update available within given time (on ground) \\ \hline
+    Maximum Time Step (Air) [s] & 10 & Re-init reference if no update available within given time (in air) \\ \hline
     Resample Interval[s] & 2 & Update interval for the resampled reference trajectories \\ \hline
     Resample Process Stddev [m] Ground & 2 & Resampling process noise for ground targets \\ \hline
     Resample Process Stddev [m] Air & 5 & Resampling process noise for FL400 targets \\ \hline

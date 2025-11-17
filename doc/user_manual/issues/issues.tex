@@ -78,6 +78,28 @@ At least on the authors workstation with an Intel graphics card and for some oth
 
 If this is not the case for you please comment on \url{https://github.com/hpuhr/COMPASS/issues/151}
 
+\subsection{OpenStreetMap Display Wrong}
+
+When the Geographic View is in an operating system with a Mesa 23 version, the following display issue occurs.
+
+\begin{figure}[H]
+    \hspace*{-2cm}
+    \includegraphics[width=18cm,frame]{figures/geo_osm.png}
+  \caption{Geographic View OpenStreetMap Issue}
+\end{figure}
+
+The root cause is a know bug in one of the used libraries, the Mesa library. The Mesa API acts as the middleman: Applications call OpenGL functions, Mesa's libGL dispatches to the appropriate DRI driver, which Hardware-specific driver executes on GPU. This Mesa libary, in exactly version 23 (and sub-versions) exhibits this issue. \\
+
+Unfortunately, this can not be solved in the application, and no known workarounds exist. The only know solutions are:
+\begin{itemize}  
+\item Using a different background map (e.g. minimal\_2d)
+\item Downgrading to Mesa 22.*
+\item Upgrading to Mesa 24.* or later
+\end{itemize}
+\ \\
+
+It might be possible to resolve this inside COMPASS at a later release, but nothing can be promised for now.
+
 \subsection{Graphical Issues}
 
 For issues of the following nature:
