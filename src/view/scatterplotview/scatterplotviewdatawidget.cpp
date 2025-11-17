@@ -946,17 +946,22 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
         auto series = chart_view_->chart()->series();
 
-        auto axis_x = dynamic_cast<QValueAxis*>(chart_view_->chart()->axes(Qt::Horizontal).first());
-        auto axis_y = dynamic_cast<QValueAxis*>(chart_view_->chart()->axes(Qt::Vertical).first());
+        auto axis_x = chart_view_->chart()->axes(Qt::Horizontal).first();
+        auto axis_y = chart_view_->chart()->axes(Qt::Vertical  ).first();
+        traced_assert(axis_x);
+        traced_assert(axis_y);
+
+        auto range_x = getAxisRange(axis_x);
+        auto range_y = getAxisRange(axis_y);
 
         chart_info[ "x_axis_label" ] = axis_x->titleText().toStdString();
         chart_info[ "y_axis_label" ] = axis_y->titleText().toStdString();
 
-        bool   has_axis_bounds = (axis_x != nullptr && axis_y != nullptr);
-        QRectF axis_bounds     = has_axis_bounds ? QRectF(axis_x->min(), 
-                                                          axis_y->min(),
-                                                          axis_x->max() - axis_x->min(),
-                                                          axis_y->max() - axis_y->min()) : QRectF();
+        bool   has_axis_bounds = (range_x.has_value() && range_y.has_value());
+        QRectF axis_bounds     = has_axis_bounds ? QRectF(range_x.value().first, 
+                                                          range_y.value().first, 
+                                                          range_x.value().second - range_x.value().first, 
+                                                          range_y.value().second - range_y.value().first) : QRectF();
 
         info[ "axis_bounds_valid" ] = has_axis_bounds;
         info[ "axis_bounds_xmin"  ] = has_axis_bounds ? axis_bounds.left()   : 0.0;

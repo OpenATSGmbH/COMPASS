@@ -19,8 +19,10 @@
 
 struct RadarBiasInfo
 {
-    bool bias_valid_ {false};
+    bool azimuth_bias_valid_ {false};
     double azimuth_bias_deg_ {0};
+    
+    bool range_bias_valid_ {false};
     double range_bias_m_ {0};
-    double range_gain_ {1};
+    double range_gain_ {0.0};
 };

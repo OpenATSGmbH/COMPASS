@@ -43,7 +43,7 @@ ASTERIXPCAPDecoder::~ASTERIXPCAPDecoder() = default;
 */
 void ASTERIXPCAPDecoder::stop_impl()
 {
-    task().jASTERIX()->stopFileDecoding();
+    task().jASTERIX()->stopDecoding();
 }
 
 /**
@@ -135,7 +135,9 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 {
     traced_assert(section_idx >= 0 && section_idx < (int)file_info.sections.size());
 
-    error = "";
+    error       = "";
+    information = "";
+    warning     = "";
 
     auto& section = file_info.sections.at(section_idx);
 
@@ -274,6 +276,9 @@ bool ASTERIXPCAPDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
 */
 void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
 {
+    if (!isRunning())
+        return;
+
     std::string  current_filename  = file_info.filename;
     unsigned int current_file_line = settings().file_line_id_; //files_info_.at(current_file_count_).line_id_;
 
@@ -362,13 +367,13 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     //read chunks from PCAP until file is at end
     while (!eof)
     {
-        if (!isRunning())
+        if (!isRunning() || !job() || job()->obsolete())
             break;
 
         //get next big chunk
         auto data = sniffer.readFileNext(max_packets, max_bytes, signatures);
 
-        if (!isRunning())
+        if (!isRunning() || !job() || job()->obsolete())
             break;
 
         //check for errors
@@ -394,7 +399,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
             std::vector<char> vec(num_bytes);
             memcpy(vec.data(), chunk.data(), num_bytes * sizeof(char));
 
-            task().jASTERIX(true)->decodeData(vec.data(), vec.size(), callback);
+            task().jASTERIX(true)->decodeData(vec.data(), vec.size(), callback, true);
 
             chunkFinished();
         }

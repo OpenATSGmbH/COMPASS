@@ -73,7 +73,7 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
 
         auto& dbcontent = dbcont_man.dbContent(dbcontent_name);
 
-        if (!dbcontent.containsStatusContent())
+        if (!dbcontent.containsStatusContent() || dbcontent_name == "CAT063")
             continue;
 
         // cat002: 001 North marker message;002 Sector crossing message;

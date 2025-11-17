@@ -49,7 +49,7 @@ class ReconstructorAssociatorBase
     virtual void reset();
 
     const std::map<unsigned int, std::map<unsigned int,
-                                          std::pair<unsigned int, unsigned int>>>& assocAounts() const;
+                                          std::pair<unsigned int, unsigned int>>>& assocCounts() const;
 
     struct AssociationOption
     {

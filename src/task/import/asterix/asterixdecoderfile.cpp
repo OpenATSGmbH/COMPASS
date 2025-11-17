@@ -339,6 +339,7 @@ bool ASTERIXDecoderFile::checkDecoding(ASTERIXImportFileInfo& file_info,
     bool ok = false;
     std::string err_msg;
     warning = "";
+    contentinfo = "";
             
     try
     {

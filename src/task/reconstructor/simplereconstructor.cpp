@@ -239,9 +239,9 @@ void SimpleReconstructor::processSlice_impl()
     if (cancelled_)
         return;
 
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations = createAssociations();
+    auto associations = createAssociations();
     // only for ts < write_before_time, also updates target counts
-    currentSlice().assoc_data_ = createAssociationBuffers(associations);
+    std::tie(currentSlice().assoc_data_, currentSlice().assoc_data_glue_) = createAssociationBuffers(associations.first, associations.second);
 
     if (cancelled_)
         return;
@@ -256,7 +256,7 @@ void SimpleReconstructor::processSlice_impl()
     if (cancelled_)
         return;
 
-    currentSlice().reftraj_data_ = createReferenceBuffers(); // only for ts < write_before_time
+    std::tie(currentSlice().reftraj_data_, currentSlice().reftraj_data_glue_) = createReferenceBuffers(); // only for ts < write_before_time
 
     return;
 }

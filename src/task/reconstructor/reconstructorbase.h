@@ -165,10 +165,13 @@ public:
         boost::posix_time::ptime write_before_time_;
 
         std::map<std::string, std::shared_ptr<Buffer>> data_;
-        bool loading_done_ {false}; // set if data_ is set correctly and can be processed
+        bool loading_done_ {false}; // set if loading has finished
+        bool has_data_ {false}; // set if data_ is set correctly and can be processed
 
         std::map<std::string, std::shared_ptr<Buffer>> assoc_data_;
         std::map<std::string, std::shared_ptr<Buffer>> reftraj_data_;
+        std::map<std::string, std::shared_ptr<Buffer>> assoc_data_glue_;
+        std::map<std::string, std::shared_ptr<Buffer>> reftraj_data_glue_;
 
         bool processing_done_ {false}; // set if assoc_data_, reftraj_data_ are set correctly and can be written
         bool write_done_ {false}; // set if data has been written
@@ -236,7 +239,8 @@ public:
         std::vector<unsigned long> rec_nums_;
     };
 
-    typedef std::map<std::string, std::shared_ptr<Buffer>> Buffers;
+    typedef std::map<std::string, std::shared_ptr<Buffer>>                Buffers;
+    typedef std::map<unsigned int, std::map<unsigned long, unsigned int>> AssocMap;
 
     ReconstructorBase(const std::string& class_id, 
                       const std::string& instance_id,
@@ -310,7 +314,7 @@ public:
     bool processing() const;
 
     virtual const std::map<unsigned int, std::map<unsigned int,
-                                                  std::pair<unsigned int, unsigned int>>>& assocAounts() const = 0;
+                                                  std::pair<unsigned int, unsigned int>>>& assocCounts() const = 0;
     // ds_id -> dbcont id -> (assoc, not assoc cnt)
 
     virtual void createAdditionalAnnotations() {}
@@ -334,9 +338,11 @@ public:
     bool isVehicleACID(const std::string& acid);
     bool isVehicleACAD(unsigned int value);
 
-    std::unique_ptr<reconstruction::KalmanChain> createConfiguredChain(bool dynamic_insertions) const;
-    std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredEstimator(bool extract_wgs84_pos) const;
-    std::unique_ptr<reconstruction::KalmanOnlineTracker> createConfiguredOnlineEstimator(bool extract_wgs84_pos) const;
+    reconstruction::KalmanEstimator::Settings assocChainEstimatorSettings() const;
+
+    std::unique_ptr<reconstruction::KalmanChain> createConfiguredAssocChain(bool dynamic_insertions) const;
+    std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredAssocEstimator(bool extract_wgs84_pos) const;
+    std::unique_ptr<reconstruction::KalmanOnlineTracker> createConfiguredOnlineAssocEstimator(bool extract_wgs84_pos) const;
 
 signals:
     void configChanged(); 
@@ -370,10 +376,10 @@ protected:
     void createTargetReportBatches();
     void removeTargetReportsLaterOrEqualThan(const boost::posix_time::ptime& ts); // for slice recalc
 
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> createAssociations();
-    std::map<std::string, std::shared_ptr<Buffer>> createAssociationBuffers(
-        std::map<unsigned int, std::map<unsigned long, unsigned int>> associations);
-    std::map<std::string, std::shared_ptr<Buffer>> createReferenceBuffers();
+    std::pair<AssocMap, AssocMap> createAssociations();
+    std::pair<Buffers, Buffers> createAssociationBuffers(const AssocMap& associations_written,
+                                                         const AssocMap& associations_glue);
+    std::pair<Buffers, Buffers> createReferenceBuffers();
 
     void doUnassociatedAnalysis();
     void doOutlierAnalysis();
@@ -382,7 +388,7 @@ protected:
 private:
     void init();
     void initIfNeeded();
-    void initChainPredictors();
+    void initAssocChainPredictors();
 
     void resetTimeframe();
     void applyTimeframeLimits();

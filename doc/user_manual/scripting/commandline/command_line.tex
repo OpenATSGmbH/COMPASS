@@ -67,51 +67,51 @@ If additional command line options are wanted please contact the author.
 
 \subsection{Options}
 
-\subsubsection{--create\_db filename}
+\subsubsection{-{}-create\_db filename}
 
 Adds the supplied filename and creates a new DuckDB database.
  
-\subsubsection{--open\_db filename}
+\subsubsection{-{}-open\_db filename}
 
 Adds the supplied filename and opens an existing DuckDB database.
 
-\subsubsection{--import\_data\_sources\_file filename}
+\subsubsection{-{}-import\_data\_sources\_file filename}
 
 Adds the data sources defined in the JSON file to the configuration, as described in \nameref{sec:config_ds_export}.
 
-\subsubsection{--import\_view\_points filename}
+\subsubsection{-{}-import\_view\_points filename}
 
 After a database was opened, adds the supplied filename and starts an import using the task described in \nameref{sec:ui_import_viewpoints}.
  
-\subsubsection{--import\_asterix\_file filename}
-\subsubsection{--import\_asterix\_files filenames}
-\subsubsection{--import\_asterix\_pcap\_file filename}
-\subsubsection{--import\_asterix\_pcap\_files filenames}
+\subsubsection{-{}-import\_asterix\_file filename}
+\subsubsection{-{}-import\_asterix\_files filenames}
+\subsubsection{-{}-import\_asterix\_pcap\_file filename}
+\subsubsection{-{}-import\_asterix\_pcap\_files filenames}
 
 After a database was opened, adds the supplied filename and starts an import using the task described in \nameref{sec:ui_import_asterix}.
 
-\subsubsection{--import\_asterix\_file\_line arg}
+\subsubsection{-{}-import\_asterix\_file\_line arg}
 
 If an import using the task described in \nameref{sec:ui_import_asterix} is started, it will use the given line identifier (L1 ...L4).
 
 
-\subsubsection{--import\_asterix\_date arg}
+\subsubsection{-{}-import\_asterix\_date arg}
 
 If an import using the task described in \nameref{sec:ui_import_asterix} is started, it will use the import date in YYYY-mm-DD format.
 
-\subsubsection{--import\_asterix\_network}
+\subsubsection{-{}-import\_asterix\_network}
 
 After a database was opened, an import using the task described in \nameref{sec:ui_import_asterix_network} is started.
 
-\subsubsection{--import\_asterix\_network\_time\_offset arg}
+\subsubsection{-{}-import\_asterix\_network\_time\_offset arg}
 
 If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, it will use the given time offset, in HH:MM:SSS.
 
-\subsubsection{--import\_asterix\_network\_max\_lines arg}
+\subsubsection{-{}-import\_asterix\_network\_max\_lines arg}
 
 If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, it will use the given maximum number of input lines (and deactivate the others).
 
-\subsubsection{--asterix\_framing framing}
+\subsubsection{-{}-asterix\_framing framing}
 
 When an Import ASTERIX Task is started the given framing is used, the following options exist:
 
@@ -122,7 +122,7 @@ When an Import ASTERIX Task is started the given framing is used, the following 
 \item rff: Comsoft RFF format
 \end{itemize}
 
-\subsubsection{--asterix\_decoder\_cfg 'str'}
+\subsubsection{-{}-asterix\_decoder\_cfg 'str'}
 
 When an Import ASTERIX task is started the given configuration is used, in which the editions and mapping can be specified for each category using a JSON string. \\
 
@@ -154,7 +154,7 @@ For one or a number of categories, the following options can be set:
 
 Please note that the naming must be exactly as in the GUI, otherwise the application quits with an error message.
 
-\subsubsection{--import\_asterix\_parameters}
+\subsubsection{-{}-import\_asterix\_parameters}
 
 When an Import ASTERIX task is started the given configuration overrides are used, all parameters can be set using a JSON string. \\
 
@@ -190,15 +190,15 @@ Please note that the parameter naming must be exactly as in the 'task\_import\_a
 \ \\
 
 
-\subsubsection{--import\_json\_file filename}
+\subsubsection{-{}-import\_json\_file filename}
 
 After a database was opened, adds the supplied filename and starts an import using the task described in \nameref{sec:ui_import_json}.
 
-\subsubsection{--import\_gps\_trail filename}
+\subsubsection{-{}-import\_gps\_trail filename}
 
 After a database was opened, adds the supplied filename and starts an import using using the task described in \nameref{sec:ui_import_gps}.
 
-\subsubsection{--import\_gps\_parameters 'str'}
+\subsubsection{-{}-import\_gps\_parameters 'str'}
 
 When an Import GPS Trail task is started the given configuration is used, in which the data source and secondary parameters for the GPS trail is defined using a JSON string.
 
@@ -221,7 +221,7 @@ In a nice formatting the string looks like this:
 
 Please \textbf{note} that both 'mode\_3a\_code' and 'target\_address' must be given as decimal values.
 
-% \subsubsection{--import\_sectors\_json}
+% \subsubsection{-{}-import\_sectors\_json}
 % 
 % After a database was opened, adds imports a previously exported sectors JSON file using the following tasks:
 % 
@@ -230,34 +230,34 @@ Please \textbf{note} that both 'mode\_3a\_code' and 'target\_address' must be gi
 % \end{itemize}
 
 
-\subsubsection{--import\_sectors\_json  filename}
+\subsubsection{-{}-import\_sectors\_json  filename}
 
 After a database was opened, adds the sectors defined in supplied filename using the task described in \nameref{sec:ui_configure_sectors_manage}.
 
-\subsubsection{--calculate\_artas\_tr\_usage}
+\subsubsection{-{}-calculate\_artas\_tr\_usage}
 
 After a database with imported content exists, target report association can be calculated based on ARTAS tracks using the task described in \nameref{sec:ui_associate_tr_artas}.
 
-\subsubsection{--reconstruct\_references}
+\subsubsection{-{}-reconstruct\_references}
 
 After a database with imported content exists, reconstruct reference trajectories using the task described in \nameref{sec:reconst}.
 
-\subsubsection{--load\_data}
+\subsubsection{-{}-load\_data}
 
 Triggers a load process after opening the database.
 
-\subsubsection{--export\_view\_points\_report}
+\subsubsection{-{}-export\_view\_points\_report}
 
 After starting the application into the management window, a export View Points as PDF process is triggered as described in
 \nameref{sec:view_points_export_pdf}.
 
 The given argument filename defines the report filename, with the report directory as the parent directory of the given filename.
 
-\subsubsection{--evaluate}
+\subsubsection{-{}-evaluate}
 
 After opening a database a pre-configured evaluation run is triggered as described in \nameref{sec:eval}.
 
-\subsubsection{--import\_gps\_parameters 'str'}
+\subsubsection{-{}-evaluation\_parameters 'str'}
 
 When an Evaluation task is started the given configuration is used, in which all parameters of the evaluation can be defined using a JSON string.
 
@@ -299,30 +299,30 @@ In a nice formatting such a string can look like this:
 
 The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed.
 
-\subsubsection{--evaluate\_run\_filter}
+\subsubsection{-{}-evaluate\_run\_filter}
 
 When an Evaluation task is started an automatic filtering of targets is performed, as configured using the 'Filter UTNs' dialog defined in \nameref{sec:eval_filter_targets}.
 
 
-\subsubsection{--export\_report 'str'}
+\subsubsection{-{}-export\_report 'str'}
 
 Existing reports can be exported as described in the section \nameref{sec:report_export}.
 
 The given argument filename defines the report name, which will be exported with the report directory as the database directory  and the report name as subfolder, as PDF (unless other values are set).
 
-\subsubsection{--export\_report\_directory 'str'}
+\subsubsection{-{}-export\_report\_directory 'str'}
 
 Sets the report directory to the given value when exporting a report as described in the section \nameref{sec:report_export}.
 
-\subsubsection{--export\_report\_mode 'str'}
+\subsubsection{-{}-export\_report\_mode 'str'}
 
 Sets the report export type to the given value (i.e. 'JSON','Latex','PDF') when exporting a report as described in the section \nameref{sec:report_export}.
 
-\subsubsection{--no\_cfg\_save}
+\subsubsection{-{}-no\_cfg\_save}
 
 When quitting the application later, no configuration changes are saved.
 
-\subsubsection{--quit}
+\subsubsection{-{}-quit}
 
 After the other tasks were run, automatically quits the application.
 

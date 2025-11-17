@@ -153,7 +153,8 @@ public:
     void kalmanInit(const kalman::KalmanUpdateMinimal& update);
 
     StepResult kalmanStep(kalman::KalmanUpdate& update,
-                          const Measurement& mm);
+                          const Measurement& mm,
+                          const double* max_dt_override = nullptr);
     
     kalman::KalmanError kalmanPrediction(Measurement* mm,
                                          kalman::GeoProbState* gp_state,
@@ -283,7 +284,8 @@ public:
 private:
     void initDataStructs(kalman::KalmanUpdate& update,
                          const Measurement& mm);
-    ReinitState needsReinit(const Measurement& mm) const;
+    ReinitState needsReinit(const Measurement& mm,
+                            const double* max_dt_override) const;
     void kalmanInterfaceReinit(kalman::KalmanUpdate& update,
                                const Measurement& mm);
     kalman::KalmanError kalmanInterfaceStep(kalman::KalmanUpdate& update,
@@ -297,7 +299,8 @@ private:
     void storePositionWGS84(kalman::KalmanUpdate& update);
 
     StepResult kalmanStepInternal(kalman::KalmanUpdate& update,
-                                  const Measurement& mm);
+                                  const Measurement& mm,
+                                  const double* max_dt_override);
 
     void executeChainFunc(Updates& updates, const ChainFunc& func) const;
 

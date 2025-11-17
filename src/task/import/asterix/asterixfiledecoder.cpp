@@ -46,7 +46,7 @@ ASTERIXFileDecoder::~ASTERIXFileDecoder() = default;
 void ASTERIXFileDecoder::stop_impl()
 {
     // stop decoding
-    task().jASTERIX()->stopFileDecoding();
+    task().jASTERIX()->stopDecoding();
 }
 
 /**
@@ -57,8 +57,9 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
                                        std::string& error,
                                        std::string& warning) const
 {
-    error   = "";
-    warning = "";
+    error       = "";
+    information = "";
+    warning     = "";
 
     //get a fresh jasterix instance
     auto jasterix = task().jASTERIX(true);
