@@ -31,7 +31,8 @@ namespace dbContent
 {
 
 
-ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, const std::string& instance_id,
+ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, 
+                                                 const std::string& instance_id,
                                                  DataSourceManager& ds_manager)
     : Configurable(class_id, instance_id, &ds_manager)
 {
@@ -65,6 +66,7 @@ ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, co
         has_short_name_ = false;
 
     parseNetworkLineInfo();
+    parseRemoteUnits();
 
     logdbg << "start" << name()
            << " sac/sic " << sac() << "/" << sic();
@@ -104,6 +106,7 @@ void ConfigurationDataSource::setFromJSON(const json& j)
         info_ = nullptr;
 
     parseNetworkLineInfo();
+    parseRemoteUnits();
 }
 
 DBDataSource* ConfigurationDataSource::getAsNewDBDS()

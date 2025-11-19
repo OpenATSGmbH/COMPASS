@@ -16,10 +16,13 @@
  */
 
 #include "source/datasourcebase.h"
+#include "source/datasourceremoteunit.h"
+
 #include "global.h"
 #include "logger.h"
 #include "number.h"
 #include "traced_assert.h"
+#include "csvimport.h"
 
 using namespace Utils;
 using namespace std;
@@ -30,6 +33,7 @@ const string position_key = "position";
 const std::string radar_range_key = "radar_range";
 const std::string radar_accuracy_key = "radar_accuracy";
 const std::string network_lines_key = "network_lines";
+const std::string remote_units_key = "remote_units";
 
 namespace dbContent
 {
@@ -161,6 +165,7 @@ void DataSourceBase::info(const std::string& info)
     info_ = json::parse(info);
 
     parseNetworkLineInfo();
+    parseRemoteUnits();
 }
 
 nlohmann::json& DataSourceBase::info()
@@ -477,6 +482,185 @@ std::shared_ptr<DataSourceLineInfo> DataSourceBase::networkLine (const std::stri
     return line_info_.at(key);
 }
 
+bool DataSourceBase::hasRemoteUnits() const
+{
+    return info_.contains(remote_units_key);
+}
+
+void DataSourceBase::addRemoteUnits()
+{
+    info_[ remote_units_key ] = nlohmann::json::object();
+}
+
+std::map<int, std::shared_ptr<DataSourceRemoteUnit>> DataSourceBase::remoteUnits() const
+{
+    return remote_unit_info_;
+}
+
+bool DataSourceBase::hasRemoteUnit(int index) const
+{
+    return remote_unit_info_.count(index);
+}
+
+std::shared_ptr<DataSourceRemoteUnit> DataSourceBase::createRemoteUnit(int index)
+{
+    traced_assert(hasRemoteUnits());
+    traced_assert(!hasRemoteUnit(index));
+
+    json& remote_units = info_.at(remote_units_key);
+    traced_assert(remote_units.is_object());
+
+    auto key = std::to_string(index);
+
+    remote_units[key] = json::object();
+    auto ptr = std::make_shared<DataSourceRemoteUnit>(remote_units[key]);
+    remote_unit_info_[index] = ptr;
+
+    traced_assert(hasRemoteUnit(index));
+
+    return ptr;
+}
+
+std::shared_ptr<DataSourceRemoteUnit> DataSourceBase::createRemoteUnit(const RemoteUnitDefinition& ru_def)
+{
+    auto ru = createRemoteUnit(ru_def.index);
+    ru->configure(ru_def);
+
+    loginf << info_.dump(4);
+
+    return ru;
+}
+
+void DataSourceBase::createRemoteUnits(const std::map<int, RemoteUnitDefinition>& ru_defs)
+{
+    for (const auto& ru_def : ru_defs)
+        createRemoteUnit(ru_def.second);
+}
+
+std::shared_ptr<DataSourceRemoteUnit> DataSourceBase::remoteUnit(int index)
+{
+    traced_assert(hasRemoteUnits());
+
+    if (!hasRemoteUnit(index))
+        createRemoteUnit(index);
+
+    return remote_unit_info_.at(index);
+}
+
+void DataSourceBase::removeRemoteUnit(int index)
+{
+    traced_assert(hasRemoteUnits());
+    traced_assert(hasRemoteUnit(index));
+
+    //erase item
+    remote_unit_info_.erase(index);
+
+    //erase from json
+    json& remote_units = info_.at(remote_units_key);
+
+    auto key = std::to_string(index);
+    remote_units.erase(key);
+
+    traced_assert(!hasRemoteUnit(index));
+}
+
+void DataSourceBase::clearRemoteUnits()
+{
+    traced_assert(hasRemoteUnits());
+
+    //erase items
+    remote_unit_info_.clear();
+
+    //erase json items
+    json& remote_units = info_.at(remote_units_key);
+    remote_units.clear();
+}
+
+bool DataSourceBase::importRemoteUnitsCSV(std::map<int, RemoteUnitDefinition>& ru_defs,
+                                          const std::string& fn, 
+                                          std::string* error)
+{
+    if (error)
+        *error = "";
+
+    ru_defs.clear();
+
+    csv::CSVImport csv_import;
+    auto result = csv_import.parse(fn);
+
+    if (!result.ok())
+    {
+        if (error)
+            *error = result.error();
+        return false;
+    }
+
+    const auto& lines = result.result();
+    if (!lines.is_array())
+    {
+        if (error)
+            *error = "malformed intermediate json data";
+        return false;
+    }
+
+    std::string err = "";
+    for (const auto& line : lines)
+    {
+        if (!line.is_array())
+        {
+            err = "malformed intermediate json line data";
+            break;
+        }
+
+        if (line.size() != 6)
+        {
+            err = "invalid number of line data items";
+            break;
+        }
+
+        if (!line[ 0 ].is_number())
+        {
+            err = "invalid index data type";
+            break;
+        }
+
+        try
+        {
+            RemoteUnitDefinition ru_def;
+
+            ru_def.index     = line[ 0 ].get<int>();
+            ru_def.name      = line[ 1 ].get<std::string>();
+            ru_def.comment   = line[ 2 ].get<std::string>();
+            ru_def.latitude  = line[ 3 ].get<double>();
+            ru_def.longitude = line[ 4 ].get<double>();
+            ru_def.altitude  = line[ 5 ].get<double>();
+
+            if (ru_defs.count(ru_def.index))
+            {
+                err = "duplicate index encountered";
+                break;
+            }
+
+            ru_defs[ ru_def.index ] = ru_def;
+        }
+        catch(const std::exception& e)
+        {
+            err = "invalid data type";
+            break;
+        }
+    }
+
+    if (!err.empty())
+    {
+        if (error)
+            *error = err;
+        
+        return false;
+    }
+
+    return true;
+}
+
 void DataSourceBase::setFromJSONDeprecated (const nlohmann::json& j)
 {
     info_.clear();
@@ -609,6 +793,9 @@ void DataSourceBase::setFromJSON (const nlohmann::json& j)
 
     if (hasNetworkLines())
         parseNetworkLineInfo();
+
+    if (hasRemoteUnits())
+        parseRemoteUnits();
 }
 
 json DataSourceBase::getAsJSON() const
@@ -635,6 +822,7 @@ bool DataSourceBase::isCalculatedReferenceSource()
 {
     return info_.contains("calculated_reftraj") && info_.at("calculated_reftraj") == true;
 }
+
 void DataSourceBase::setCalculatedReferenceSource()
 {
     info_["calculated_reftraj"] = true;
@@ -660,6 +848,32 @@ void DataSourceBase::parseNetworkLineInfo()
     }
 }
 
+void DataSourceBase::parseRemoteUnits()
+{
+    logdbg << "start" << sac() << "/" << sic();
+
+    remote_unit_info_.clear();
+
+    if (info_.count(remote_units_key))
+    {
+        json& remote_units = info_.at(remote_units_key);
+        traced_assert(remote_units.is_object());
+
+        for (auto& ru_it : remote_units.items())  // iterate over array
+        {
+            traced_assert(ru_it.value().is_object());
+
+            auto ptr = std::make_shared<DataSourceRemoteUnit>(ru_it.value());
+
+            //check key validity
+            auto key = std::to_string(ptr->index());
+            traced_assert(ru_it.key() == key);
+
+            remote_unit_info_[ ptr->index() ] = ptr;
+
+            //loginf << "Adding remote unit " << ptr->index() << ":\n" << ptr->asString();
+        }
+    }
 }
 
-
+}
