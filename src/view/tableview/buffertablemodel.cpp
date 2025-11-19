@@ -23,6 +23,8 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableset.h"
+#include "datasourcemanager.h"
+#include "datasourceremoteunit.h"
 #include "global.h"
 #include "jobmanager.h"
 #include "tableview.h"
@@ -179,6 +181,11 @@ QVariant BufferTableModel::data(const QModelIndex& index, int role) const
         }
         else
         {
+            //try to get an internal special representation
+            if (view_.settings().use_presentation_ && BufferTableModel::getSpecialRepresentation(value_str, variable, *buffer_, buffer_index))
+                return QString(value_str.c_str());
+
+            //not found => get from variable
             std::string property_name = variable.name();
 
             if (data_type == PropertyDataType::BOOL)
@@ -340,6 +347,74 @@ QVariant BufferTableModel::data(const QModelIndex& index, int role) const
         }
     }
     return QVariant();
+}
+
+bool BufferTableModel::getSpecialRepresentation(std::string& repr,
+                                                dbContent::Variable& var,
+                                                Buffer& buffer,
+                                                unsigned int buffer_idx)
+{
+    //no presentation string activated => return
+    auto        data_type     = var.dataType();
+    std::string property_name = var.name();
+
+    //no other data types processed at the moment
+    if (data_type != PropertyDataType::JSON)
+        return false;
+
+    //handle CAT020 contributing receivers
+    if (var.dbContentName() == "CAT020" && var.name() == DBContent::var_cat020_crontrib_recv_.name())
+    {
+        //handle null
+        if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))
+            return false;
+
+        auto& contrib_receivers = buffer.get<nlohmann::json>(property_name).getRef(buffer_idx);
+
+        //valid receivers?
+        if (!contrib_receivers.is_array() || contrib_receivers.empty())
+            return false;
+
+        auto& dbcontent_man = COMPASS::instance().dbContentManager();
+
+        //needs a valid ds id
+        traced_assert(dbcontent_man.metaCanGetVariable(var.dbContentName(), DBContent::meta_var_ds_id_));
+        auto& ds_var = dbcontent_man.metaGetVariable(var.dbContentName(), DBContent::meta_var_ds_id_);
+        traced_assert(buffer.hasAnyPropertyNamed(ds_var.name()));
+
+        auto& ds_vec = buffer.get<unsigned int>(ds_var.name());
+        if (ds_vec.isNull(buffer_idx))
+            return false;
+
+        auto ds_id = ds_vec.get(buffer_idx);
+        
+        //get data source
+        auto& ds_man = COMPASS::instance().dataSourceManager();
+        traced_assert(ds_man.hasDBDataSource(ds_id));
+
+        auto& ds = ds_man.dbDataSource(ds_id);
+
+        //generate string representation
+        auto j_repr = nlohmann::json::array();
+
+        for (const auto& j_idx : contrib_receivers)
+        {
+            traced_assert(j_idx.is_number_integer());
+            int idx = j_idx.get<int>();
+
+            if (ds.hasRemoteUnit(idx))
+                j_repr.push_back(ds.remoteUnit(idx)->name()); // remote unit => add name
+            else
+                j_repr.push_back(idx); // add index
+        }
+
+        repr = j_repr.dump();
+
+        return true;
+    }
+
+    //no special representation found
+    return false;
 }
 
 bool BufferTableModel::setData(const QModelIndex& index, 

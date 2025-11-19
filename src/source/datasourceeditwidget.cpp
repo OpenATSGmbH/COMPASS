@@ -1170,10 +1170,9 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
     traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
     traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
-    auto ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
-    QString title = QString::fromStdString("Select CSV File for Sensor '" + ds_name + "'");
-
-    QString path = QString::fromStdString(COMPASS::instance().lastUsedPath());
+    auto    ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+    QString title   = QString::fromStdString("Select CSV File for Sensor '" + ds_name + "'");
+    QString path    = QString::fromStdString(COMPASS::instance().lastUsedPath());
 
     QString fn = QFileDialog::getOpenFileName(this, title, path, "*.csv");
     if (fn.isEmpty())
