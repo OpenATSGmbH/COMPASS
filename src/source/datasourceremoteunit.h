@@ -38,6 +38,7 @@ public:
     ~DataSourceRemoteUnit();
 
     void configure(const RemoteUnitDefinition& def);
+    RemoteUnitDefinition toDefinition() const;
 
     int index() const;
     void index(int idx);

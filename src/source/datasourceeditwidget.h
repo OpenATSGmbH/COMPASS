@@ -74,6 +74,9 @@ public slots:
     void addMLATRemoteUnitSlot();
     void importMLATRemoteUnitsSlot();
     void clearMLATRemoteUnitsSlot();
+    void showRemoteUnitContextMenuSlot(const QPoint& pos);
+    void clearSelectedMLATRemoteUnitsSlot();
+    void editMLATRemoteUnitSlot();
 
     void addNetLinesSlot();
     void netLineEditedSlot(const QString& value_str);
@@ -204,4 +207,6 @@ protected:
     void updateRadar(dbContent::DataSourceBase* ds);
     void updateMLAT(dbContent::DataSourceBase* ds);
     void updateNetwork(dbContent::DataSourceBase* ds);
+
+    bool editRemoteUnit(int idx);
 };

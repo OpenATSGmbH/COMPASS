@@ -40,12 +40,30 @@ DataSourceRemoteUnit::~DataSourceRemoteUnit() = default;
  */
 void DataSourceRemoteUnit::configure(const RemoteUnitDefinition& def)
 {
+    //once set an index shall not be changed
+    traced_assert(!config_.contains(KeyIndex) || index() == def.index);
+
     index(def.index);
     name(def.name);
     comment(def.comment);
     latitude(def.latitude);
     longitude(def.longitude);
     altitude(def.altitude);
+}
+
+/**
+ */
+RemoteUnitDefinition DataSourceRemoteUnit::toDefinition() const
+{
+    RemoteUnitDefinition def;
+    def.index     = index();
+    def.name      = name();
+    def.comment   = comment();
+    def.latitude  = latitude();
+    def.longitude = longitude();
+    def.altitude  = altitude();
+
+    return def;
 }
 
 /**

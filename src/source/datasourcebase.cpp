@@ -526,7 +526,7 @@ std::shared_ptr<DataSourceRemoteUnit> DataSourceBase::createRemoteUnit(const Rem
     auto ru = createRemoteUnit(ru_def.index);
     ru->configure(ru_def);
 
-    loginf << info_.dump(4);
+    //loginf << info_.dump(4);
 
     return ru;
 }
@@ -564,7 +564,7 @@ void DataSourceBase::removeRemoteUnit(int index)
     traced_assert(!hasRemoteUnit(index));
 }
 
-void DataSourceBase::clearRemoteUnits()
+void DataSourceBase::removeRemoteUnits()
 {
     traced_assert(hasRemoteUnits());
 

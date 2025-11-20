@@ -164,7 +164,7 @@ public:
     void createRemoteUnits(const std::map<int, RemoteUnitDefinition>& ru_defs);
     std::shared_ptr<DataSourceRemoteUnit> remoteUnit(int index); // creates if not exists
     void removeRemoteUnit(int index);
-    void clearRemoteUnits();
+    void removeRemoteUnits();
     static bool importRemoteUnitsCSV(std::map<int, RemoteUnitDefinition>& ru_defs,
                                      const std::string& fn, 
                                      std::string* error = nullptr);

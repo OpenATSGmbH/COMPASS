@@ -42,6 +42,7 @@
 #include <QFileDialog>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
+#include <QMenu>
 
 using namespace std;
 using namespace dbContent;
@@ -50,7 +51,7 @@ using namespace Utils;
 const std::string DataSourceEditWidget::TabMainName            = "Main";
 const std::string DataSourceEditWidget::TabRadarRangesName     = "Ranges";
 const std::string DataSourceEditWidget::TabRadarAccuraciesName = "Accuracies";
-const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "RUs";
+const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "Remote Units";
 const std::string DataSourceEditWidget::TabNetworkLinesName    = "Network";
 
 DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceManager& ds_man, 
@@ -486,6 +487,8 @@ void DataSourceEditWidget::createRemoteUnitsTab()
     remote_units_list_ = new QTreeWidget;
     remote_units_list_->setHeaderLabels(headers);
     remote_units_list_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    remote_units_list_->setSelectionMode(QTreeWidget::SelectionMode::ExtendedSelection);
+    remote_units_list_->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
 
     remote_units_list_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
     remote_units_list_->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::Stretch);
@@ -528,6 +531,8 @@ void DataSourceEditWidget::createRemoteUnitsTab()
     add_ru_layout->addStretch();
 
     main_layout->addWidget(add_remote_units_placeholder_);
+
+    connect(remote_units_list_, &QTreeWidget::customContextMenuRequested, this, &DataSourceEditWidget::showRemoteUnitContextMenuSlot);
 }
 
 void DataSourceEditWidget::createNetworkTab()
@@ -1050,8 +1055,10 @@ void DataSourceEditWidget::addMLATRemoteUnitsSlot()
     updateContent();
 }
 
-void DataSourceEditWidget::addMLATRemoteUnitSlot()
+bool DataSourceEditWidget::editRemoteUnit(int idx)
 {
+    bool add = idx < 0;
+
     auto ds_db   = currentDBDataSource();
     auto ds_conf = currentConfigDataSource();
     auto ds      = currentDataSource();
@@ -1060,9 +1067,19 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
     traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
     traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
-    auto ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
-    QString title = QString::fromStdString("Add Remote Unit for Sensor '" + ds_name + "'");
+    RemoteUnitDefinition ru_def_in;
+    if (!add)
+    {
+        traced_assert(ds->hasRemoteUnit(idx));
+        auto ru = ds->remoteUnit(idx);
+        traced_assert(ru);
 
+        ru_def_in = ru->toDefinition();
+    }
+
+    auto ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+    QString title = add ? QString::fromStdString("Add Remote Unit for Sensor '" + ds_name + "'") :
+                          QString::fromStdString("Edit Remote Unit " + std::to_string(idx) + " for Sensor '" + ds_name + "'");
     QDialog dlg;
     dlg.setWindowTitle(title);
 
@@ -1079,26 +1096,29 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
     auto index_box = new QSpinBox;
     index_box->setMinimum(0);
     index_box->setMaximum(std::numeric_limits<int>::max());
-    index_box->setValue(0);
+    index_box->setValue(add ? 0 : ru_def_in.index);
+    index_box->setEnabled(add);
 
     auto name_box = new QLineEdit;
+    name_box->setText(add ? "" : QString::fromStdString(ru_def_in.name));
 
     auto comment_box = new QLineEdit;
+    comment_box->setText(add ? "" : QString::fromStdString(ru_def_in.comment));
 
     auto lat_box = new QDoubleSpinBox;
     lat_box->setMinimum(-90);
     lat_box->setMaximum( 90);
-    lat_box->setValue(0);
+    lat_box->setValue(add ? 0 : ru_def_in.latitude);
 
     auto lon_box = new QDoubleSpinBox;
     lon_box->setMinimum(-180);
     lon_box->setMaximum( 180);
-    lon_box->setValue(0);
+    lon_box->setValue(add ? 0 : ru_def_in.longitude);
 
     auto alt_box = new QDoubleSpinBox;
     alt_box->setMinimum(std::numeric_limits<double>::lowest());
     alt_box->setMaximum(std::numeric_limits<double>::max());
-    alt_box->setValue(0);
+    alt_box->setValue(add ? 0 : ru_def_in.altitude);
 
     data_layout->addRow("Index: "    , index_box);
     data_layout->addRow("Name: "     , name_box);
@@ -1107,7 +1127,7 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
     data_layout->addRow("Longitude: ", lon_box);
     data_layout->addRow("Altitude: " , alt_box);
 
-    auto ok_button = new QPushButton("Add");
+    auto ok_button = new QPushButton(add ? "Add" : "Apply");
     auto cancel_button = new QPushButton("Cancel");
 
     button_layout->addWidget(cancel_button);
@@ -1120,8 +1140,8 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
     {
         QString err;
 
-        if ((ds_db && ds_db->hasRemoteUnit(index_box->value())) ||
-            (ds_conf && ds_conf->hasRemoteUnit(index_box->value())))
+        if ((add && ds_db && ds_db->hasRemoteUnit(index_box->value())) ||
+            (add && ds_conf && ds_conf->hasRemoteUnit(index_box->value())))
         {
             err = "Please choose a unique index.";
         }
@@ -1142,7 +1162,7 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
     connect(ok_button, &QPushButton::pressed, cb);
 
     if (dlg.exec() == QDialog::Rejected)
-        return;
+        return false;
 
     RemoteUnitDefinition ru_def;
     ru_def.index     = index_box->value();
@@ -1152,12 +1172,39 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
     ru_def.longitude = lon_box->value();
     ru_def.altitude  = alt_box->value();
 
-    if (ds_db)
-        ds_db->createRemoteUnit(ru_def);
-    if (ds_conf)
-        ds_conf->createRemoteUnit(ru_def);
+    if (add)
+    {
+        //add using configuration
+        if (ds_db)
+            ds_db->createRemoteUnit(ru_def);
+        if (ds_conf)
+            ds_conf->createRemoteUnit(ru_def);
+    }
+    else
+    {
+        //apply configuration
+        if (ds_db)
+        {
+            traced_assert(ds_db->hasRemoteUnit(idx));
+            traced_assert(ds_db->remoteUnit(idx));
+            ds_db->remoteUnit(idx)->configure(ru_def);
+        }
+        if (ds_conf)
+        {
+            traced_assert(ds_conf->hasRemoteUnit(idx));
+            traced_assert(ds_conf->remoteUnit(idx));
+            ds_conf->remoteUnit(idx)->configure(ru_def);
+        }
+    }
 
     updateMLAT(ds);
+
+    return true;
+}
+
+void DataSourceEditWidget::addMLATRemoteUnitSlot()
+{
+    editRemoteUnit(-1);
 }
 
 void DataSourceEditWidget::importMLATRemoteUnitsSlot()
@@ -1193,7 +1240,7 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
         if (!ds)
             return;
         
-        ds->clearRemoteUnits();
+        ds->removeRemoteUnits();
         ds->createRemoteUnits(ru_defs);
     };
 
@@ -1214,11 +1261,64 @@ void DataSourceEditWidget::clearMLATRemoteUnitsSlot()
     traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
     if (ds_db)
-        ds_db->clearRemoteUnits();
+        ds_db->removeRemoteUnits();
     if (ds_conf)
-        ds_conf->clearRemoteUnits();
+        ds_conf->removeRemoteUnits();
 
     updateMLAT(ds);
+}
+
+void DataSourceEditWidget::showRemoteUnitContextMenuSlot(const QPoint& pos)
+{
+    if (remote_units_list_->selectedItems().empty())
+        return;
+
+    QMenu menu;
+
+    auto edit_action = menu.addAction("Edit");
+    auto remove_action = menu.addAction("Remove");
+
+    connect(edit_action, &QAction::triggered, this, &DataSourceEditWidget::editMLATRemoteUnitSlot);
+    connect(remove_action, &QAction::triggered, this, &DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot);
+
+    menu.exec(QCursor::pos());
+}
+
+void DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot()
+{
+    if (remote_units_list_->selectedItems().empty())
+        return;
+
+    auto ds_db   = currentDBDataSource();
+    auto ds_conf = currentConfigDataSource();
+    auto ds      = currentDataSource();
+
+    traced_assert(ds);
+    traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
+    traced_assert(!ds_db || ds_db->dsType() == "MLAT");
+
+    for (auto item : remote_units_list_->selectedItems())
+    {
+        int index = item->data(0, Qt::DisplayRole).toInt();
+
+        if (ds_db)
+            ds_db->removeRemoteUnit(index);
+        if (ds_conf)
+            ds_conf->removeRemoteUnit(index);
+    }
+
+    updateMLAT(ds);
+}
+
+void DataSourceEditWidget::editMLATRemoteUnitSlot()
+{
+    if (remote_units_list_->selectedItems().empty())
+        return;
+
+    bool ok = false;
+    int index = remote_units_list_->selectedItems().front()->data(0, Qt::DisplayRole).toInt();
+
+    editRemoteUnit(index);
 }
 
 void DataSourceEditWidget::addNetLinesSlot()
