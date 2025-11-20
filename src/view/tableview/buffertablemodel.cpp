@@ -363,7 +363,7 @@ bool BufferTableModel::getSpecialRepresentation(std::string& repr,
         return false;
 
     //handle CAT020 contributing receivers
-    if (var.dbContentName() == "CAT020" && var.name() == DBContent::var_cat020_crontrib_recv_.name())
+    if (var.dbContent().id() == 20 && var.name() == DBContent::var_cat020_crontrib_recv_.name())
     {
         //handle null
         if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))
@@ -395,20 +395,27 @@ bool BufferTableModel::getSpecialRepresentation(std::string& repr,
         auto& ds = ds_man.dbDataSource(ds_id);
 
         //generate string representation
-        auto j_repr = nlohmann::json::array();
+        repr = "[";
 
+        size_t i = 0;
+        size_t n = contrib_receivers.size();
         for (const auto& j_idx : contrib_receivers)
         {
             traced_assert(j_idx.is_number_integer());
             int idx = j_idx.get<int>();
 
             if (ds.hasRemoteUnit(idx))
-                j_repr.push_back(ds.remoteUnit(idx)->name()); // remote unit => add name
+                repr += ds.remoteUnit(idx)->name(); // remote unit => add name
             else
-                j_repr.push_back(idx); // add index
+                repr += std::to_string(idx); // add index
+
+            if (i < n - 1)
+                repr += ", ";
+
+            ++i;
         }
 
-        repr = j_repr.dump();
+        repr += "]";
 
         return true;
     }
