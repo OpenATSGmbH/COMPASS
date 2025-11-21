@@ -774,10 +774,60 @@ bool PacketSniffer::readFile(ReadStyle read_style,
     config.read_config.data_filter   = data_filter;
 
     //loop packets
-    if (pcap_loop(pcap_file_, 0, pcapPacketHandler, (u_char*)&config) < 0) 
-        return false;
+    // if (pcap_loop(pcap_file_, 0, pcapPacketHandler, (u_char*)&config) < 0) 
+    //     return false;
 
-    return true;
+    // return true;
+
+    bool error = false;
+    struct pcap_pkthdr* pkthdr = nullptr;
+    const u_char* packet = nullptr;
+
+    while (!config.chunk_ended)
+    {
+        int rc = pcap_next_ex(pcap_file_, &pkthdr, &packet);
+
+        if (rc == 1)
+        {
+            if (pkthdr->caplen < pkthdr->len)
+            {
+                logwrn << "truncated packet (" << pkthdr->caplen
+                       << " / " << pkthdr->len << " bytes), skipping";
+                continue;
+            }
+
+            pcapPacketHandler((u_char*)&config, pkthdr, packet);
+        }
+        else if (rc == 0)
+        {
+            continue; // timeout
+        }
+        else if (rc == PCAP_ERROR_BREAK)
+        {
+            loginf << "pcap_next_ex reached end of file";
+            break;
+        }
+        else
+        {
+            const char* err = pcap_geterr(pcap_file_);
+            if (err && std::string(err).find("truncated dump file") != std::string::npos)
+            {
+                FILE* fp = pcap_file(pcap_file_);
+                long pos = fp ? ftell(fp) : -1;
+                //long total = fp ? Utils::Files::fileSize(pcap_filename_) : -1;
+
+                logwrn << "truncated dump tail ignored at byte " << pos;
+                       //<< " / " << total;
+                break; // TODO PHIL WARNING TREATMENT PLZ
+            }
+
+            logerr << "pcap_next_ex error: " << (err ? err : "unknown");
+            error = true;
+            break;
+        }
+    }
+
+    return !error;
 }
 
 /**
@@ -830,22 +880,44 @@ boost::optional<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_pac
     {
         int ret = pcap_next_ex(pcap_file_, &pkthdr, &packet);
 
-        //file ended?
-        if (ret == PCAP_ERROR_BREAK)
+        if (ret == 1)
+        {
+            if (pkthdr->caplen < pkthdr->len)
+            {
+                logwrn << "truncated packet (" << pkthdr->caplen
+                       << " / " << pkthdr->len << "), skipping";
+                continue;
+            }
+
+            pcapPacketHandler((u_char*)&config, pkthdr, packet);
+        }
+        else if (ret == 0)
+        {
+            continue;
+        }
+        else if (ret == PCAP_ERROR_BREAK)
         {
             loginf << "pcap_next_ex reached end of data";
             reached_eof_ = true;
             break;
         }
-        
-        //read error?
-        if (ret != 1)
+        else
         {
+            const char* err = pcap_geterr(pcap_file_);
+            if (err && std::string(err).find("truncated dump file") != std::string::npos)
+            {
+                FILE* fp = pcap_file(pcap_file_);
+                long pos = fp ? ftell(fp) : -1;
+
+                logwrn << "truncated dump tail ignored at byte " << pos;
+                reached_eof_ = true;
+                break; // TODO PHIL WARNING TREATMENT PLZ
+            }
+
+            logerr << "pcap_next_ex error: " << (err ? err : "unknown");
             error = true;
             break;
         }
-
-        pcapPacketHandler((u_char*)&config, pkthdr, packet);
     }
 
     //pcap error?
