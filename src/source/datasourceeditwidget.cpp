@@ -1315,7 +1315,6 @@ void DataSourceEditWidget::editMLATRemoteUnitSlot()
     if (remote_units_list_->selectedItems().empty())
         return;
 
-    bool ok = false;
     int index = remote_units_list_->selectedItems().front()->data(0, Qt::DisplayRole).toInt();
 
     editRemoteUnit(index);
