@@ -62,9 +62,12 @@ class BufferTableModel : public QAbstractTableModel
     void saveAsCSV(const std::string& file_name);
 
     void reset();
-
     void rebuild();
 
+    static bool getSpecialRepresentation(std::string& repr,
+                                         dbContent::Variable& var,
+                                         Buffer& buffer,
+                                         unsigned int buffer_idx);
   protected:
     BufferTableWidget* table_widget_{nullptr};
     DBContent& object_;

@@ -21,6 +21,7 @@
 
 #include "allbuffercsvexportjob.h"
 #include "allbuffertablewidget.h"
+#include "buffertablemodel.h"
 #include "compass.h"
 #include "buffer.h"
 #include "dbcontent/dbcontent.h"
@@ -205,6 +206,10 @@ QVariant AllBufferTableModel::data(const QModelIndex& index, int role) const
         }
         else
         {
+            //try to get an internal special representation
+            if (view_.settings().use_presentation_ && BufferTableModel::getSpecialRepresentation(value_str, variable, *buffer, buffer_index))
+                return QString(value_str.c_str());
+
             std::string property_name = variable.name();
 
             if (data_type == PropertyDataType::BOOL)

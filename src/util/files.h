@@ -64,6 +64,8 @@ std::string getIconFilepath(const std::string& filename, bool verify = true);
 std::string getImageFilepath(const std::string& filename, bool verify = true);
 QIcon getIcon(const std::string& name, const QColor& color = QColor());
 
+std::string getFontFilepath(const std::string& filename, bool verify = true);
+
 void deleteFile(const std::string& filename);
 void deleteFolder(const std::string& path);
 

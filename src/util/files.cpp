@@ -191,6 +191,15 @@ std::string getImageFilepath(const std::string& filename, bool verify)
     return filepath;
 }
 
+
+std::string getFontFilepath(const std::string& filename, bool verify)
+{
+    std::string filepath = HOME_DATA_DIRECTORY + "fonts/" + filename;
+    if (verify)
+        verifyFileExists(filepath);
+    return filepath;
+}
+
 void deleteFile(const std::string& filename)
 {
     QFile file(filename.c_str());
