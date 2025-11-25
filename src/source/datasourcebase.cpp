@@ -273,9 +273,9 @@ void DataSourceBase::altitude (double value)
 
 double DataSourceBase::altitude () const
 {
-    traced_assert(hasPosition());
 
-    if (!info_.at(position_key).contains("altitude"))
+
+    if (!info_.count(position_key) || !info_.at(position_key).contains("altitude"))
         return 0.0;
     else
         return info_.at(position_key).at("altitude");
