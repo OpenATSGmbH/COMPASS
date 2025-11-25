@@ -24,7 +24,6 @@ class DataSourceLineInfo
 public:
     DataSourceLineInfo(const std::string& key, nlohmann::json& config);
 
-
     bool hasListenIP() const;
     const std::string listenIP() const;
     void listenIP(const std::string& value);

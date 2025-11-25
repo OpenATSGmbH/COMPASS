@@ -31,12 +31,15 @@ namespace dbContent
     class DataSourceBase;
 }
 
+class QTabWidget;
 class QLabel;
 class QLineEdit;
 class QPushButton;
 class QGridLayout;
 class QComboBox;
 class QCheckBox;
+class QVBoxLayout;
+class QTreeWidget;
 
 class DataSourceEditWidget : public QWidget
 {
@@ -67,19 +70,35 @@ public slots:
     void addRadarAccuraciesSlot();
     void radarAccuraciesEditedSlot(const QString& value_str);
 
+    void addMLATRemoteUnitsSlot(); 
+    void addMLATRemoteUnitSlot();
+    void importMLATRemoteUnitsSlot();
+    void clearMLATRemoteUnitsSlot();
+    void showRemoteUnitContextMenuSlot(const QPoint& pos);
+    void clearSelectedMLATRemoteUnitsSlot();
+    void editMLATRemoteUnitSlot();
+
     void addNetLinesSlot();
     void netLineEditedSlot(const QString& value_str);
 
     void deleteSlot();
 
 public:
-    DataSourceEditWidget(bool show_network_lines, DataSourceManager& ds_man, std::function<void(unsigned int)> update_ds_func,
-        std::function<void(unsigned int)> delete_ds_func);
+    DataSourceEditWidget(bool show_network_lines, 
+                         DataSourceManager& ds_man, 
+                         std::function<void(unsigned int)> update_ds_func,
+                         std::function<void(unsigned int)> delete_ds_func);
 
     void showID(unsigned int ds_id);
     void clear();
 
     void updateContent();
+
+    static const std::string TabMainName;
+    static const std::string TabRadarRangesName;
+    static const std::string TabRadarAccuraciesName;
+    static const std::string TabMLATRemoteUnitsName;
+    static const std::string TabNetworkLinesName;
 
 protected:
     bool show_network_lines_;
@@ -91,6 +110,8 @@ protected:
     bool has_current_ds_ {false};
     unsigned int current_ds_id_ {0};
     bool current_ds_in_db_ {false};
+
+    QTabWidget* tab_widget_ {nullptr};
 
     QLineEdit* name_edit_{nullptr};
     QLineEdit* short_name_edit_{nullptr};
@@ -142,17 +163,50 @@ protected:
     QPushButton* add_accuracies_button_{nullptr};
 
     // net lines
-    QPushButton* add_lines_button_{nullptr};
-
     QWidget* net_widget_{nullptr};
     std::map<std::string, std::vector<QLineEdit*>> net_edits_; // L1 -> edits (listen, mcastip, mcastport, sender)
 
+    QPushButton* add_lines_button_{nullptr};
+
+    // mlat remote units
+    QWidget* remote_units_widget_{nullptr};
+    QTreeWidget* remote_units_list_{nullptr};
+    QPushButton* ru_add_button_{nullptr};
+    QPushButton* ru_import_button_{nullptr};
+    QPushButton* ru_clear_button_{nullptr};
+
+    QPushButton* add_remote_units_button_{nullptr};
+    QWidget* add_remote_units_placeholder_{nullptr};
+
     QPushButton* delete_button_{nullptr};
 
-    void disableAll();
+    std::map<std::string, int> tab_map_;
+
+    dbContent::DataSourceBase* currentDataSource();
+    dbContent::DataSourceBase* currentDBDataSource();
+    dbContent::DataSourceBase* currentConfigDataSource();
+
+    QVBoxLayout* createTab(const std::string& name, bool has_scroll_area);
+    int tabIndex(const std::string& name) const;
+
+    void createUI();
+    void createMainTab();
+    void createNetworkTab();
+    void createRadarRangesTab();
+    void createRadarAccuraciesTab();
+    void createRemoteUnitsTab();
+
+    void enableAll(bool enable);
+    void enableCommon(bool enable);
+    void enableRadar(bool enable);
+    void enableMLAT(bool enable);
+    void enableNetwork(bool enable);
+
     void updateMain(dbContent::DataSourceBase* ds);
     void updatePosition(dbContent::DataSourceBase* ds);
     void updateRadar(dbContent::DataSourceBase* ds);
+    void updateMLAT(dbContent::DataSourceBase* ds);
     void updateNetwork(dbContent::DataSourceBase* ds);
-};
 
+    bool editRemoteUnit(int idx);
+};

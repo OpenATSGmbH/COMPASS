@@ -22,6 +22,9 @@
 
 #include <string>
 
+class DataSourceRemoteUnit;
+struct RemoteUnitDefinition;
+
 namespace dbContent
 {
 
@@ -152,6 +155,20 @@ public:
     void createNetworkLine (const std::string& key);
     std::shared_ptr<DataSourceLineInfo> networkLine (const std::string& key); // creates if not exists
 
+    bool hasRemoteUnits() const;
+    void addRemoteUnits();
+    std::map<int, std::shared_ptr<DataSourceRemoteUnit>> remoteUnits() const;
+    bool hasRemoteUnit(int index) const;
+    std::shared_ptr<DataSourceRemoteUnit> createRemoteUnit(int index);
+    std::shared_ptr<DataSourceRemoteUnit> createRemoteUnit(const RemoteUnitDefinition& ru_def);
+    void createRemoteUnits(const std::map<int, RemoteUnitDefinition>& ru_defs);
+    std::shared_ptr<DataSourceRemoteUnit> remoteUnit(int index); // creates if not exists
+    void removeRemoteUnit(int index);
+    void removeRemoteUnits();
+    static bool importRemoteUnitsCSV(std::map<int, RemoteUnitDefinition>& ru_defs,
+                                     const std::string& fn, 
+                                     std::string* error = nullptr);
+
     void setFromJSONDeprecated (const nlohmann::json& j);
     void setFromJSON (const nlohmann::json& j);
 
@@ -177,8 +194,10 @@ protected:
     nlohmann::json info_;
 
     std::map<std::string, std::shared_ptr<DataSourceLineInfo>> line_info_;
+    std::map<int, std::shared_ptr<DataSourceRemoteUnit>>       remote_unit_info_;
 
     void parseNetworkLineInfo();
+    void parseRemoteUnits();
 };
 
 }

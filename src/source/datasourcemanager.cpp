@@ -115,7 +115,6 @@ DataSourceManager::DataSourceManager(const std::string& class_id, const std::str
 
     updateDSIdsAll();
 
-
     dbContent::init_data_source_commands();
 }
 
