@@ -1544,18 +1544,22 @@ void DataSourceEditWidget::enableRadar(bool enable)
     radar_widget_->setVisible(enable);
     psr_jpda_widget_->setVisible(enable);
 
-    tab_widget_->setTabVisible(tabIndex(TabRadarAccuraciesName), enable);
-    tab_widget_->setTabVisible(tabIndex(TabRadarRangesName), enable);
+    // tab_widget_->setTabVisible(tabIndex(TabRadarAccuraciesName), enable);
+    // tab_widget_->setTabVisible(tabIndex(TabRadarRangesName), enable);
+    setTabVisibleCompat(tabIndex(TabRadarAccuraciesName), enable);
+    setTabVisibleCompat(tabIndex(TabRadarRangesName), enable);
 }
 
 void DataSourceEditWidget::enableMLAT(bool enable)
 {
-    tab_widget_->setTabVisible(tabIndex(TabMLATRemoteUnitsName), enable);
+    //tab_widget_->setTabVisible(tabIndex(TabMLATRemoteUnitsName), enable);
+    setTabVisibleCompat(tabIndex(TabMLATRemoteUnitsName), enable);
 }
 
 void DataSourceEditWidget::enableNetwork(bool enable)
 {
-    tab_widget_->setTabVisible(tabIndex(TabNetworkLinesName), enable);
+    //tab_widget_->setTabVisible(tabIndex(TabNetworkLinesName), enable);
+    setTabVisibleCompat(tabIndex(TabNetworkLinesName), enable);
 }
 
 void DataSourceEditWidget::updateMain(dbContent::DataSourceBase* ds)
@@ -1732,8 +1736,11 @@ void DataSourceEditWidget::updateRadar(dbContent::DataSourceBase* ds)
     }
 
     //reshow tab(s)
-    tab_widget_->setTabVisible(tabIndex(TabRadarAccuraciesName), true);
-    tab_widget_->setTabVisible(tabIndex(TabRadarRangesName), true);
+    // tab_widget_->setTabVisible(tabIndex(TabRadarAccuraciesName), true);
+    // tab_widget_->setTabVisible(tabIndex(TabRadarRangesName), true);
+        
+    setTabVisibleCompat(tabIndex(TabRadarAccuraciesName), true);
+    setTabVisibleCompat(tabIndex(TabRadarRangesName), true);
 }
 
 void DataSourceEditWidget::updateMLAT(dbContent::DataSourceBase* ds)
@@ -1773,7 +1780,8 @@ void DataSourceEditWidget::updateMLAT(dbContent::DataSourceBase* ds)
     }
 
     //reshow tab(s)
-    tab_widget_->setTabVisible(tabIndex(TabMLATRemoteUnitsName), true);
+    //tab_widget_->setTabVisible(tabIndex(TabMLATRemoteUnitsName), true);
+    setTabVisibleCompat(tabIndex(TabMLATRemoteUnitsName), true);
 }
 
 void DataSourceEditWidget::updateNetwork(dbContent::DataSourceBase* ds)
@@ -1822,5 +1830,17 @@ void DataSourceEditWidget::updateNetwork(dbContent::DataSourceBase* ds)
     }
 
     //reshow tab(s)
-    tab_widget_->setTabVisible(tabIndex(TabNetworkLinesName), true);
+    //tab_widget_->setTabVisible(tabIndex(TabNetworkLinesName), true);
+    setTabVisibleCompat(tabIndex(TabNetworkLinesName), true);
+}
+
+void DataSourceEditWidget::setTabVisibleCompat(int index, bool visible)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    tab_widget_->setTabVisible(index, visible);
+#else
+    tab_widget_->setTabEnabled(index, visible);
+    if (!visible && tab_widget_->currentIndex() == index)
+        tab_widget_->setCurrentIndex(0);
+#endif
 }

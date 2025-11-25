@@ -209,4 +209,6 @@ protected:
     void updateNetwork(dbContent::DataSourceBase* ds);
 
     bool editRemoteUnit(int idx);
+
+    void setTabVisibleCompat(int index, bool visible);
 };

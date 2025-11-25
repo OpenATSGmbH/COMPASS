@@ -21,7 +21,7 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
 RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \ 
   && echo 'deb-src http://archive.debian.org/debian stretch main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --no-install-recommends openssl apt-utils software-properties-common build-essential gcc g++ cmake wget liblog4cpp5-dev libssl-dev libarchive-dev libmysql++-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev build-essential libfontconfig1-dev libx11-dev libxcb1-dev libxkbcommon-dev libglu1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libegl1-mesa-drivers libxkbcommon-x11-dev libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libpcap-dev libgeographic-dev python2.7-dev sudo \
+  && apt-get install -y --no-install-recommends openssl apt-utils software-properties-common build-essential gcc g++ cmake wget liblog4cpp5-dev libssl-dev libarchive-dev libmysql++-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev build-essential libx11-dev libxcb1-dev libxkbcommon-dev libglu1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libegl1-mesa-drivers libxkbcommon-x11-dev libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev sudo \
   && apt-get build-dep -y libopenscenegraph-dev libosgearth-dev libboost-all-dev \
   && rm -rf /var/lib/apt/lists/*
 
