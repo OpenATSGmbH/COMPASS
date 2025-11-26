@@ -41,10 +41,14 @@ public:
     std::string rus() const;
     void rus(const std::string& rus_str);
 
+    bool matchAll() const;
+    void matchAll(bool match_all);
+
 protected:
     std::string db_column_name_;
 
     std::string rus_str_;
+    bool match_all_;
 
     virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;

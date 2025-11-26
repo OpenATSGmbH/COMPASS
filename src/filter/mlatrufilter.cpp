@@ -35,6 +35,7 @@ MLATRUFilter::MLATRUFilter(const std::string& class_id, const std::string& insta
     : DBFilter(class_id, instance_id, parent, false)
 {
     registerParameter("rus_str", &rus_str_, std::string());
+    registerParameter("match_all", &match_all_, false);
 
     name_ = "MLAT RUs";
 
@@ -50,7 +51,8 @@ bool MLATRUFilter::filters(const std::string& dbcontent_name)
 
 std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
+    loginf << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
+           << "' match_all " << match_all_;
 
     if (!active_)
         return "";
@@ -157,7 +159,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
             for (auto& value : ds_numbers)
             {
                 if (!first_value)
-                    ss << " OR";
+                    ss << (match_all_ ? " AND" : " OR");
 
                 ss << " json_contains(" << contrib_dbcol_name << ", '" << value << "')";
 
@@ -213,6 +215,7 @@ void MLATRUFilter::saveViewPointConditions (nlohmann::json& filters)
     json& filter = filters.at(name_);
 
     filter["rus"] = rus_str_;
+    filter["match_all"] = match_all_;
 }
 
 void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
@@ -225,6 +228,11 @@ void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(filter.contains("rus"));
     rus_str_ = filter.at("rus");
 
+    if (filter.contains("match_all"))
+        match_all_ = filter.at("match_all");
+    else
+        match_all_ = false;
+
     if (widget())
         widget()->update();
 }
@@ -236,7 +244,19 @@ std::string MLATRUFilter::rus() const
 
 void MLATRUFilter::rus(const std::string& rus_str)
 {
+    loginf << "'" << rus_str << "'";
+
     rus_str_ = rus_str;
+}
+
+bool MLATRUFilter::matchAll() const
+{
+    return match_all_;
+}
+
+void MLATRUFilter::matchAll(bool match_all)
+{
+    match_all_ = match_all;
 }
 
 
