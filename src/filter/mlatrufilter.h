@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <tuple>
 #include "dbfilter.h"
 
 class MLATRUFilter : public DBFilter
@@ -41,12 +42,10 @@ public:
     void rus(const std::string& rus_str);
 
 protected:
+    std::string db_column_name_;
+
     std::string rus_str_;
-    std::vector<unsigned int> values_;
-    bool null_wanted_ {false};
 
     virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
-
-    bool updateRUsFromStr(const std::string& values_str); // returns success
 };
