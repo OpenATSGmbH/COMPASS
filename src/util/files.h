@@ -25,6 +25,8 @@
 
 #include "global.h"
 
+#include <boost/optional.hpp>
+
 class QColor;
 
 static const std::string SYSTEM_INSTALL_PATH = CMAKE_INSTALL_PREFIX + std::string("/compass/");
@@ -62,7 +64,7 @@ QStringList getSubdirectories(const std::string& path);
 
 std::string getIconFilepath(const std::string& filename, bool verify = true);
 std::string getImageFilepath(const std::string& filename, bool verify = true);
-QIcon getIcon(const std::string& name, const QColor& color = QColor());
+QIcon createIcon(const std::string& name, const QColor& color = QColor());
 
 std::string getFontFilepath(const std::string& filename, bool verify = true);
 
@@ -83,7 +85,7 @@ std::string join(const std::string& path0, const std::string& path1);
 
 class IconProvider {
 public:
-    static QIcon getIcon(const std::string& name);
+    static QIcon getIcon(const std::string& name, const boost::optional<QColor>& color = boost::optional<QColor>());
 };
 
 }  // namespace Files

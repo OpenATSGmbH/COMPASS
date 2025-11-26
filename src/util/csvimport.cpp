@@ -45,17 +45,18 @@ bool CSVImport::parseCsvLine(QStringList& fields, const QString& line, const QCh
 
         if (c == '"')
         {
-            field.append(c);
+            //count quotes
             ++num_quotes;
         }
         else if (c == sep && !in_quotes)
         {
-            //collect field
+            //collect field at separator
             fields << field;
             field.clear();
         }
         else
         {
+            //add to field content
             field.append(c);
         }
     }
