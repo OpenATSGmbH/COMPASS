@@ -168,7 +168,7 @@ public:
     static bool importRemoteUnitsCSV(std::map<int, RemoteUnitDefinition>& ru_defs,
                                      const std::string& fn, 
                                      std::string* error = nullptr);
-    std::multimap<std::string, unsigned int> mlatRUNames() const;
+    std::map<std::string, std::vector<unsigned int>> mlatRUNames() const;
 
     void setFromJSONDeprecated (const nlohmann::json& j);
     void setFromJSON (const nlohmann::json& j);

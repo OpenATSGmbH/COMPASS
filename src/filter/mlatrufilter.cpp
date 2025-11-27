@@ -51,7 +51,7 @@ bool MLATRUFilter::filters(const std::string& dbcontent_name)
 
 std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    logdbg << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
+    loginf << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
            << "' match_all " << match_all_;
 
     if (!active_)
@@ -74,7 +74,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
         dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).dbColumnName();        
 
     vector<string> split_str = String::split(rus_str_, ',');
-    vector<unsigned int> numbers;
+    vector<vector<unsigned int>> numbers;
 
     // check if null wanted, and keep only rest
     bool null_wanted = false;
@@ -95,7 +95,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
         if (ok)
         {
-            numbers.push_back(num_tmp);
+            numbers.push_back({num_tmp});
             it = split_str.erase(it);
             continue;
         }
@@ -105,7 +105,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
-    std::map<unsigned int, std::multimap<std::string, unsigned int>> ru_lookup; // ds id -> ru name -> ru index
+    std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> ru_lookup; // ds id -> ru name -> {ru indexes}
 
     for (auto& db_src_it : ds_man.dbDataSources())
     {
@@ -130,16 +130,52 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     for (auto& ds_it : ru_lookup)
     {
         // already entered numbers
-        vector<unsigned int> ds_numbers = numbers;
+        vector<vector<unsigned int>> ds_numbers = numbers;
 
         // add all ru names as numbers
         for (auto& ru_name : split_str)
         {
-            auto range = ds_it.second.equal_range(String::trim(ru_name));
-            for (auto it = range.first; it != range.second; ++it)
+            // auto range = ds_it.second.equal_range(String::trim(ru_name));
+            // for (auto it = range.first; it != range.second; ++it)
+            // {
+            //     ds_numbers.push_back(it->second);
+            // }
+
+            if (ds_it.second.count(String::trim(ru_name)))
+                ds_numbers.push_back(ds_it.second.at(String::trim(ru_name)));
+        }
+
+        {
+            string tmp;
+
+            if (null_wanted)
+                tmp = "null";
+
+            for (auto& values : ds_numbers)
             {
-                ds_numbers.push_back(it->second);
+                if (tmp.size())
+                    tmp += (match_all_ ? " AND" : " OR");
+
+                if (values.size() == 1)
+                    tmp += " " + to_string(values.at(0));
+                else
+                {
+                    tmp +=  " (";
+
+                    for (unsigned int cnt=0; cnt < values.size(); cnt++) // any of these indexes corresond to a matching name
+                    {
+                        if (cnt != 0)
+                            tmp +=  " OR";
+
+                        tmp += " " + to_string(values.at(cnt));
+                    }
+
+                    tmp +=  ")";
+                }
             }
+        
+            loginf << "ds_id " << ds_it.first << " rus " << tmp;
+
         }
 
         if (ds_numbers.size())
@@ -156,12 +192,29 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
             bool first_value{true};
 
-            for (auto& value : ds_numbers)
+            for (auto& values : ds_numbers)
             {
                 if (!first_value)
                     ss << (match_all_ ? " AND" : " OR");
 
-                ss << " json_contains(" << contrib_dbcol_name << ", '" << value << "')";
+                assert (values.size());
+
+                if (values.size() == 1)
+                    ss << " json_contains(" << contrib_dbcol_name << ", '" << values.at(0) << "')";
+                else
+                {
+                    ss << " (";
+
+                    for (unsigned int cnt=0; cnt < values.size(); cnt++) // any of these indexes corresond to a matching name
+                    {
+                        if (cnt != 0)
+                            ss << " OR";
+
+                        ss << " json_contains(" << contrib_dbcol_name << ", '" << values.at(cnt) << "')";
+                    }
+
+                    ss << ")";
+                }
 
                 first_value = false;
             }

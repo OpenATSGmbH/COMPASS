@@ -661,14 +661,14 @@ bool DataSourceBase::importRemoteUnitsCSV(std::map<int, RemoteUnitDefinition>& r
     return true;
 }
 
-std::multimap<std::string, unsigned int> DataSourceBase::mlatRUNames() const
+std::map<std::string, std::vector<unsigned int>> DataSourceBase::mlatRUNames() const
 {
-    std::multimap<std::string, unsigned int> ret;
+    std::map<std::string, std::vector<unsigned int>> ret;
 
     for (auto& ru_it : remote_unit_info_)
     {
         if (ru_it.second)
-            ret.insert({ru_it.second->name(), ru_it.first});
+            ret[ru_it.second->name()].push_back(ru_it.first);
     }
 
     return ret;
