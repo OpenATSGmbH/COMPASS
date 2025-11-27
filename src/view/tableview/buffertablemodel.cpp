@@ -363,7 +363,7 @@ bool BufferTableModel::getSpecialRepresentation(std::string& repr,
         return false;
 
     //handle CAT020 contributing receivers
-    if (var.dbContent().id() == 20 && var.name() == DBContent::var_cat020_crontrib_recv_.name())
+    if (var.dbContent().id() == 20 && var.name() == DBContent::var_cat020_contrib_recv_.name())
     {
         //handle null
         if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))

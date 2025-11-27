@@ -51,7 +51,7 @@ bool MLATRUFilter::filters(const std::string& dbcontent_name)
 
 std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, bool& first)
 {
-    loginf << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
+    logdbg << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
            << "' match_all " << match_all_;
 
     if (!active_)
@@ -62,10 +62,10 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
 
     traced_assert(
-        dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_));
+        dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
 
     std::string contrib_dbcol_name =
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_).dbColumnName();
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_).dbColumnName();
 
     traced_assert(
         dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
@@ -175,7 +175,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     first = false;
 
-    loginf << "here '" << ss.str() << "'";
+    loginf << "'" << ss.str() << "'";
     
     return ss.str();
 }

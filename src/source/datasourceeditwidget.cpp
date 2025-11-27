@@ -51,7 +51,7 @@ using namespace Utils;
 const std::string DataSourceEditWidget::TabMainName            = "Main";
 const std::string DataSourceEditWidget::TabRadarRangesName     = "Ranges";
 const std::string DataSourceEditWidget::TabRadarAccuraciesName = "Accuracies";
-const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "Remote Units";
+const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "MLAT Remote Units";
 const std::string DataSourceEditWidget::TabNetworkLinesName    = "Network";
 
 DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceManager& ds_man, 

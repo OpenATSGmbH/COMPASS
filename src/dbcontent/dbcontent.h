@@ -183,7 +183,7 @@ public:
     static const Property var_radar_azimuth_;
     static const Property var_radar_altitude_;
 
-    static const Property var_cat020_crontrib_recv_;
+    static const Property var_cat020_contrib_recv_;
 
     static const Property var_cat021_toa_position_;     // "ToA Position" 071.Time of Applicability for Position
     static const Property var_cat021_tomr_position_; // "ToMR Position" 0.73 Time of Message Reception for Position
