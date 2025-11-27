@@ -17,7 +17,6 @@
 
 #include "mlatrufilterwidget.h"
 #include "mlatrufilter.h"
-//#include "stringconv.h"
 #include "logger.h"
 
 #include <QHBoxLayout>
@@ -37,9 +36,9 @@ MLATRUFilterWidget::MLATRUFilterWidget(MLATRUFilter& filter)
 
     addNameValuePair("MLAT RUs IN", value_edit_);
 
-    match_all_cb_ = new QCheckBox("Require Match All");
+    match_all_cb_ = new QCheckBox();
     connect(match_all_cb_, &QCheckBox::toggled, this, &MLATRUFilterWidget::matchAllToggledSlot);
-    layout()->addWidget(match_all_cb_);
+    addNameValuePair("Require Match All", match_all_cb_);
 
     update();
 }
