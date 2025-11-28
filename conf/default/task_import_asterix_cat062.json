@@ -3397,6 +3397,70 @@
                     "mandatory": false,
                     "unit": ""
                 }
+            },
+            "JSONDataMappingNumREFCSN": {
+                "parameters": {
+                    "active": true,
+                    "append_value": false,
+                    "comment": "",
+                    "db_content_name": "CAT062",
+                    "db_content_variable_name": "Num Contributing Sensors",
+                    "dimension": "",
+                    "format_data_type": "",
+                    "in_array": false,
+                    "json_key": "REF.CSN.REP",
+                    "json_value_format": "",
+                    "mandatory": false,
+                    "unit": ""
+                }
+            },
+            "JSONDataMappingNumREFCST": {
+                "parameters": {
+                    "active": true,
+                    "append_value": false,
+                    "comment": "",
+                    "db_content_name": "CAT062",
+                    "db_content_variable_name": "Num Contributing Sensors Track Number",
+                    "dimension": "",
+                    "format_data_type": "",
+                    "in_array": false,
+                    "json_key": "REF.CST.REP",
+                    "json_value_format": "",
+                    "mandatory": false,
+                    "unit": ""
+                }
+            },
+            "JSONDataMappingREFCSN": {
+                "parameters": {
+                    "active": true,
+                    "append_value": false,
+                    "comment": "",
+                    "db_content_name": "CAT062",
+                    "db_content_variable_name": "Contributing Sensors",
+                    "dimension": "",
+                    "format_data_type": "",
+                    "in_array": false,
+                    "json_key": "REF.CSN.CSN",
+                    "json_value_format": "",
+                    "mandatory": false,
+                    "unit": ""
+                }
+            },
+            "JSONDataMappingREFCST": {
+                "parameters": {
+                    "active": true,
+                    "append_value": false,
+                    "comment": "",
+                    "db_content_name": "CAT062",
+                    "db_content_variable_name": "Contributing Sensors Track Number",
+                    "dimension": "",
+                    "format_data_type": "",
+                    "in_array": false,
+                    "json_key": "REF.CST.CST",
+                    "json_value_format": "",
+                    "mandatory": false,
+                    "unit": ""
+                }
             }
         }
     }
