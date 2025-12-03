@@ -145,8 +145,11 @@ const Property DBContent::var_cat062_callsign_fpl_ {"Callsign FPL", PropertyData
 const Property DBContent::var_cat062_vx_stddev_ {"Vx StdDev", PropertyDataType::DOUBLE};
 const Property DBContent::var_cat062_vy_stddev_ {"Vy StdDev", PropertyDataType::DOUBLE};
 
+const Property DBContent::var_cat062_sum_num_contrib_sensors_ {"Sum Number Contributing Sensors", PropertyDataType::UCHAR};
+
 const Property DBContent::var_cat063_sensor_sac_ {"Sensor SAC", PropertyDataType::UCHAR};
 const Property DBContent::var_cat063_sensor_sic_ {"Sensor SIC", PropertyDataType::UCHAR};
+const Property DBContent::var_cat063_con_        {"CON", PropertyDataType::UCHAR};
 
 const Property DBContent::var_cat065_batch_number_ {"Batch Number", PropertyDataType::UCHAR};
 

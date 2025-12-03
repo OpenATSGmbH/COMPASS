@@ -181,6 +181,9 @@ public:
     static std::string detectionTypeToString(DetectionType type);
     static DetectionType detectionTypeFromString(const std::string& str);
 
+    static std::string dsTypeToString(DataSourceType type);
+    static DataSourceType dsTypeFromString(const std::string& str);
+
 protected:
     std::string ds_type_;
 

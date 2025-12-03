@@ -191,5 +191,13 @@ protected:
 
 private:
     void showCommandShell();
+
+    unsigned int tool_ds_;
+    unsigned int tool_sstatus_;
+    unsigned int tool_filters_;
+    unsigned int tool_targets_;
+    unsigned int tool_reports_;
+    unsigned int tool_vp_;
+    unsigned int tool_log_;
 };
 

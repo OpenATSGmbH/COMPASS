@@ -31,7 +31,13 @@
 
 class COMPASS;
 class DataSourcesToolWidget;
+class DataSourcesStatusToolWidget;
 class DataSourcesConfigurationDialog;
+
+namespace dbContent
+{
+    class VariableSet;
+}
 
 class DataSourceManager : public QObject, public Configurable
 {
@@ -60,9 +66,11 @@ class DataSourceManager : public QObject, public Configurable
         double primary_range_stddev_;     // meters
         double secondary_azimuth_stddev_; // degrees
         double secondary_range_stddev_;   // meters
-        double mode_s_azimuth_stddev_;    // degrees
+        double mode_s_azimuth_stddev_;    // degrees 
         double mode_s_range_stddev_;      // meters
 
+        double sensor_status_max_secs_scan_  = 30.0;
+        double sensor_status_max_secs_coast_ = 10.0;
     };
 
     const static std::vector<std::string> data_source_types_;
@@ -123,7 +131,8 @@ class DataSourceManager : public QObject, public Configurable
     void resetToStartupConfiguration();
 
     DataSourcesToolWidget* loadWidget();
-    void updateWidget();
+    DataSourcesStatusToolWidget* statusWidget();
+    void updateWidgets();
 
     DataSourcesConfigurationDialog* configurationDialog();
 
@@ -165,6 +174,8 @@ class DataSourceManager : public QObject, public Configurable
     void deselectAllLines();
     void selectSpecificLineSlot(unsigned int line_id);
 
+    void addSensorStatusVariables(const std::string& dbcontent_name, dbContent::VariableSet& var_set) const;
+
     DataSourceManager::Config& config();
 
   protected:
@@ -177,6 +188,7 @@ class DataSourceManager : public QObject, public Configurable
     std::vector<unsigned int> ds_ids_all_; // both from config and db, vector to have order
 
     DataSourcesToolWidget* load_widget_{nullptr}; // deleted by qt
+    DataSourcesStatusToolWidget* status_widget_{nullptr};
 
     std::unique_ptr<DataSourcesConfigurationDialog> config_dialog_;
 

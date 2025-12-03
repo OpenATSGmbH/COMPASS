@@ -326,6 +326,7 @@ VariableSet DBContentManager::getReadSet(const std::string& dbcontent_name)
 {
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
     ViewManager& view_man       = COMPASS::instance().viewManager();
+    DataSourceManager& ds_man   = COMPASS::instance().dataSourceManager();
 
     VariableSet read_set = view_man.getReadSet(dbcontent_name);
 
@@ -699,7 +700,7 @@ void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
     has_associations_ = true;
     associations_id_ = assoc_id;
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -725,7 +726,7 @@ void DBContentManager::clearAssociationsIdentifier()
 
     dbinterface.saveProperties();
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -1077,7 +1078,7 @@ void DBContentManager::finishInserting()
                    << Time::toString(Time::currentUTCTime() - min_time_found);
     }
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
@@ -1110,6 +1111,9 @@ void DBContentManager::addInsertedDataToChache()
                           VariableSet read_set = COMPASS::instance().viewManager().getReadSet(buf_it->first);
                           addStandardVariables(buf_it->first, read_set);
                           //label_generator_->addVariables(buf_it->first, read_set);
+
+                          //sensor status
+                          COMPASS::instance().dataSourceManager().addSensorStatusVariables(buf_it->first, read_set);
 
                           vector<Property> buffer_properties_to_be_removed;
 

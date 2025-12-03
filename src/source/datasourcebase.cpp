@@ -86,6 +86,29 @@ DataSourceBase::DetectionType DataSourceBase::detectionTypeFromString(const std:
     return DetectionType::Undefined; // fallback
 }
 
+std::string DataSourceBase::dsTypeToString(DataSourceType type)
+{
+    switch (type)
+    {
+    case DataSourceType::ADSB: return "ADSB";
+    case DataSourceType::MLAT: return "MLAT";
+    case DataSourceType::Radar: return "Radar";
+    case DataSourceType::Tracker: return "Tracker";
+    case DataSourceType::RefTraj: return "RefTraj";
+    default: return "Other"; // fallback
+    }
+}
+
+DataSourceType DataSourceBase::dsTypeFromString(const std::string& str)
+{
+    if (str == "ADSB") return DataSourceType::ADSB;
+    if (str == "MLAT") return DataSourceType::MLAT;
+    if (str == "Radar") return DataSourceType::Radar;
+    if (str == "Tracker") return DataSourceType::Tracker;
+    if (str == "RefTraj") return DataSourceType::RefTraj;
+    return DataSourceType::Other; // fallback
+}
+
 DataSourceBase::DataSourceBase()
 {
 }

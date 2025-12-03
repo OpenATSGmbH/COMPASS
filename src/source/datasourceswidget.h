@@ -213,6 +213,8 @@ protected:
     void selectSpecificLines();
     void toogleShowCounts();
 
+
+
 private:
     friend class DataSourcesWidgetItem;
     friend class DataSourceLineButton;

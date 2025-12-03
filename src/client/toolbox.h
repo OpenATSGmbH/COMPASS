@@ -77,7 +77,7 @@ public:
 
     void setMainContent(QWidget* content);
 
-    void addTool(ToolBoxWidget* tool);
+    unsigned int addTool(ToolBoxWidget* tool);
     size_t numTools() const;
 
     void disableTools(std::set<unsigned int> indexes);

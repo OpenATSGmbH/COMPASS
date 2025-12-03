@@ -13,6 +13,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/datasourcelineinfo.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbdatasourcewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbdatasourceselectioncombobox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourceswidgetbase.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourceswidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcestoolwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesusewidget.h"
@@ -23,6 +24,8 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecreatedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecompoundcoverage.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourceremoteunit.h"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatuswidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatustoolwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/datasourcemanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcebase.cpp"
@@ -31,6 +34,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/datasource_commands.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcelineinfo.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbdatasourcewidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourceswidgetbase.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourceswidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcestoolwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesusewidget.cpp"
@@ -40,4 +44,6 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecreatedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecompoundcoverage.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourceremoteunit.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatuswidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatustoolwidget.cpp"
 )
