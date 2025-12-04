@@ -114,6 +114,9 @@ DataSourceManager::DataSourceManager(const std::string& class_id, const std::str
 
     //registerParameter("use_radar_min_stddev", &config_.use_radar_min_stddev_, Config().use_radar_min_stddev_);
 
+    //registerParameter("sensor_status_max_secs_scan", &config_.sensor_status_max_secs_scan_, Config().sensor_status_max_secs_scan_);
+    //registerParameter("sensor_status_max_secs_valid", &config_.sensor_status_max_secs_valid_, Config().sensor_status_max_secs_valid_);
+
     createSubConfigurables();
 
     updateDSIdsAll();

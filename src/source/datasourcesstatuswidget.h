@@ -71,14 +71,21 @@ class DataSourcesStatusWidget : public DataSourcesWidgetBase
 
 signals:
     void eventAdded();
+    void refreshed();
 
 public:
     struct SensorStatus
     {
-        bool                     con_valid = false;
-        bool                     coasting = false;
-        unsigned char            con;
-        boost::posix_time::ptime ts;
+        enum class State
+        {
+            Fresh = 0, // sensor status has been freshly added (=uninit)
+            Coasting,  // sensor is in coasting (had its last status update at ts older than max time diff)
+            HasStatus  // sensor has valid status (had its last status update at ts newer or equal max time diff)
+        };
+
+        State                    state = State::Fresh; //state of this status
+        unsigned char            con;                  //last con value
+        boost::posix_time::ptime ts;                   //timestamp the last con value was obtained
     };
 
     struct Event
@@ -122,6 +129,7 @@ public:
     void unsetActiveTracker();
     bool hasActiveTracker() const { return active_tracker_.has_value(); }
     const boost::optional<TrackerKey>& activeTracker() const { return active_tracker_; }
+    const boost::posix_time::ptime& lastRefresh() const { return last_refresh_ts_; }
 
     void reset();
 
@@ -161,4 +169,6 @@ private:
 
     std::map<TrackerKey, SensorStatusMap> sensor_status_;
     std::vector<Event>                    events_;
+
+    boost::posix_time::ptime last_refresh_ts_;
 };

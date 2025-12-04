@@ -25,6 +25,8 @@ class DataSourceManager;
 class QComboBox;
 class QTextEdit;
 class QPushButton;
+class QCheckBox;
+class QLabel;
 
 /**
  */
@@ -56,16 +58,22 @@ public:
 
 private:
     void createUI();
+
     void updateTrackerSelection();
     void updateLineSelection();
     void updateActiveTracker(); 
     void updateEventBox();
+    void updateInfos();
+
+    void eventBoxSliderChanged(int value);
+    void eventFollowBoxToggled(bool ok);
 
     DataSourceManager&       ds_man_;
     DataSourcesStatusWidget* ds_widget_{nullptr};
 
     QComboBox*   tracker_combo_          = nullptr;
     QComboBox*   line_combo_             = nullptr;
+    QLabel*      info_label_             = nullptr;
     QTextEdit*   event_box_              = nullptr;
     QPushButton* event_box_reset_button_ = nullptr;
 };

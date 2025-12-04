@@ -33,10 +33,10 @@
  ***********************************************************************************************************/
 
 const std::pair<std::string, QColor> DataSourceStatusItem::InfoNoData            = { "No Data", Qt::gray };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoCoasting          = { "Coasting", Qt::gray };
+const std::pair<std::string, QColor> DataSourceStatusItem::InfoCoasting          = { "Coasting", QColor(255, 165, 0) };
 const std::pair<std::string, QColor> DataSourceStatusItem::InfoNoStatus          = { "No Status", Qt::gray };
 
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoConOperational    = { "Operational", Qt::green };
+const std::pair<std::string, QColor> DataSourceStatusItem::InfoConOperational    = { "Operational", Qt::darkGreen };
 const std::pair<std::string, QColor> DataSourceStatusItem::InfoConDegraded       = { "Degraded", QColor(255, 165, 0) };
 const std::pair<std::string, QColor> DataSourceStatusItem::InfoConInitialization = { "Initializing", Qt::blue };
 const std::pair<std::string, QColor> DataSourceStatusItem::InfoConDisconnected   = { "Not Connected", Qt::red };
@@ -55,6 +55,8 @@ DataSourceStatusItem::DataSourceStatusItem(DataSourcesStatusWidget* widget,
  */
 void DataSourceStatusItem::init_impl()
 {
+    DataSourceItemBase::init_impl();
+
     status_label_ = new QLabel;
 
     auto f = status_label_->font();
@@ -69,6 +71,8 @@ void DataSourceStatusItem::init_impl()
  */
 void DataSourceStatusItem::updateContentChanges_impl()
 {
+    DataSourceItemBase::updateContentChanges_impl();
+
     //nothing to do yet
 }
 
@@ -76,6 +80,8 @@ void DataSourceStatusItem::updateContentChanges_impl()
  */
 void DataSourceStatusItem::updateContent_impl()
 {
+    DataSourceItemBase::updateContent_impl();
+
     if (!status_widget_->hasCurrentTrackerStatus(dsID()))
     {
         //set to no data (should never be displayed actually)
@@ -85,7 +91,10 @@ void DataSourceStatusItem::updateContent_impl()
 
     const auto& status = status_widget_->currentTrackerStatus(dsID());
 
-    if (status.con_valid)
+    //should be init at this point
+    traced_assert(status.state != DataSourcesStatusWidget::SensorStatus::State::Fresh);
+
+    if (status.state == DataSourcesStatusWidget::SensorStatus::State::HasStatus)
     {
         //set to con state
         if (status.con == 0)
@@ -99,15 +108,16 @@ void DataSourceStatusItem::updateContent_impl()
         else
             showStatus(InfoConUnknown);
     }
-    else if (status.coasting)
+    else if (status.state == DataSourcesStatusWidget::SensorStatus::State::Coasting)
     {
         //set to coasting
         showStatus(InfoCoasting);
     }
     else
     {
-        //set to no status (little bit weird)
-        showStatus(InfoNoStatus);
+        //weird state
+        bool unknown_sensor_status_state = true;
+        traced_assert(!unknown_sensor_status_state);
     }
 
     std::string info;
@@ -166,22 +176,31 @@ std::string DataSourcesStatusWidget::Event::displayInfo() const
     {
         txt += "Sensor ";
 
-        traced_assert(ds_man.hasDBDataSource(sensor_ds_id.value()));
-        txt += ds_man.dbDataSource(sensor_ds_id.value()).name() + " ";
+        if (ds_man.hasDBDataSource(sensor_ds_id.value()))
+            txt += ds_man.dbDataSource(sensor_ds_id.value()).name() + " ";
+        else if (ds_man.hasConfigDataSource(sensor_ds_id.value()))
+            txt += ds_man.configDataSource(sensor_ds_id.value()).name() + " ";
+        else
+            txt += std::to_string(sensor_ds_id.value()) + " ";
     }
 
     switch (type)
     {
         case Type::FirstStatus:
             txt += "First status obtained ";
+            break;
         case Type::GoingIntoCoasting:
             txt += "Going into coasting ";
+            break;
         case Type::RegainedStatus:
             txt += "Regained status ";
+            break;
         case Type::MissingInformation:
             txt += "Status information missing ";
+            break;
         case Type::NoData:
             txt += "No data available ";
+            break;
     }
     
     return txt;
@@ -199,13 +218,13 @@ const int DataSourcesStatusWidget::InfoColumn   = 2;
 DataSourcesStatusWidget::DataSourcesStatusWidget(DataSourceManager& ds_man, 
                                                  DBContentManager& dbcontent_man,
                                                  bool init_ui)
-:   DataSourcesWidgetBase(ds_man, false, false)
+:   DataSourcesWidgetBase(ds_man, Source::Config, false, false)
 ,   dbcontent_man_(dbcontent_man)
 {
     if (init_ui)
         init();
 
-    connect(&dbcontent_man_, &DBContentManager::loadedDataSignal, this, &DataSourcesStatusWidget::dataLoaded);
+    connect(&dbcontent_man_, &DBContentManager::loadedDataSignal, this, &DataSourcesStatusWidget::dataLoaded, Qt::QueuedConnection);
 }
 
 /**
@@ -329,8 +348,6 @@ void DataSourcesStatusWidget::logEvent(Event::Type type,
                                        const boost::optional<unsigned int>& sensor_ds_id,
                                        const std::string& info)
 {
-
-
     Event evt;
     evt.type            = type;
     evt.severity        = severityFromType(type);
@@ -404,7 +421,7 @@ void DataSourcesStatusWidget::dataLoaded()
 
             auto& ts = ts_vec.getRef(i);
             
-            //break if scan period has been elapsed
+            //break if scan period has been parsed
             if (ts <= ts_cur && Utils::Time::partialSeconds(ts_cur - ts) > ds_man_.config().sensor_status_max_secs_scan_)
                 break;
 
@@ -416,19 +433,19 @@ void DataSourcesStatusWidget::dataLoaded()
             unsigned int sensor_id = (unsigned int)sen_sac_vec.get(i) * 255 + sen_sic_vec.get(i);
 
             auto& sen_stat_map = sensor_status_[ key ];
-            bool init = sen_stat_map.count(sensor_id) > 0;
-
             auto& sen_stat = sen_stat_map[ sensor_id ];
-            if (!sen_stat.con_valid || ts >= sen_stat.ts)
+
+            if (sen_stat.state == SensorStatus::State::Fresh ||
+                ts >= sen_stat.ts)
             {
                 //log no status -> status
-                if (!sen_stat.con_valid)
-                    logEvent(init ? Event::Type::FirstStatus : Event::Type::RegainedStatus, ts, ds_id, line_id, sensor_id);
+                if (sen_stat.state == SensorStatus::State::Fresh ||
+                    sen_stat.state == SensorStatus::State::Coasting)
+                    logEvent(sen_stat.state == SensorStatus::State::Fresh ? Event::Type::FirstStatus : Event::Type::RegainedStatus, ts, ds_id, line_id, sensor_id);
 
-                sen_stat.ts        = ts;
-                sen_stat.con       = con_vec.get(i);
-                sen_stat.con_valid = true;
-                sen_stat.coasting  = false;
+                sen_stat.ts    = ts;
+                sen_stat.con   = con_vec.get(i);
+                sen_stat.state = SensorStatus::State::HasStatus;
             }
         }
 
@@ -447,6 +464,10 @@ void DataSourcesStatusWidget::dataLoaded()
 
     //update content to new status 
     updateContent();
+
+    last_refresh_ts_ = Utils::Time::currentUTCTime();
+
+    emit refreshed();
 }
 
 /**
@@ -459,13 +480,16 @@ void DataSourcesStatusWidget::updateSensorStatus()
     {
         for (auto& sen_stat : sen_stat_map.second)
         {
-            if (sen_stat.second.con_valid &&
+            //state should be init at this point
+            traced_assert(sen_stat.second.state != SensorStatus::State::Fresh);
+
+            //if not yet coasting check if coasting now
+            if (sen_stat.second.state != SensorStatus::State::Coasting &&
                 sen_stat.second.ts <= ts_cur && 
-                Utils::Time::partialSeconds(ts_cur - sen_stat.second.ts) > ds_man_.config().sensor_status_max_secs_coast_)
+                Utils::Time::partialSeconds(ts_cur - sen_stat.second.ts) > ds_man_.config().sensor_status_max_secs_valid_)
             {
-                //set sensor to coasting
-                sen_stat.second.con_valid = false;
-                sen_stat.second.coasting  = true;
+                //set sensor status to coasting
+                sen_stat.second.state = SensorStatus::State::Coasting;
 
                 logEvent(Event::Type::GoingIntoCoasting, 
                          ts_cur, 

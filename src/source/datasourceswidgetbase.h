@@ -27,6 +27,7 @@ class QTreeWidget;
 
 namespace dbContent
 {
+    class DataSourceBase;
     class DBDataSource;
 }
 
@@ -104,7 +105,7 @@ public:
 
     void setDSID(unsigned int ds_id);
     unsigned int dsID() const { return ds_id_; }
-    const dbContent::DBDataSource* dataSource() const { return ds_; }
+    const dbContent::DataSourceBase* dataSource() const { return ds_; }
 
 protected:
     virtual void init_impl() override;
@@ -112,8 +113,8 @@ protected:
     virtual void updateContent_impl() override;
 
 private:
-    unsigned int                   ds_id_;
-    const dbContent::DBDataSource* ds_         = nullptr;
+    unsigned int                     ds_id_;
+    const dbContent::DataSourceBase* ds_         = nullptr;
 };
 
 /**
@@ -158,7 +159,14 @@ signals:
     void dataSourceSelectedSignal(unsigned int ds_id);
 
 public:
+    enum class Source
+    {
+        Database = 0,
+        Config
+    };
+
     DataSourcesWidgetBase(DataSourceManager& ds_man,
+                          Source source,
                           bool can_show_counts,
                           bool init_ui);
     virtual ~DataSourcesWidgetBase();
@@ -168,9 +176,13 @@ public:
     virtual void addActionsToConfigMenu(QMenu* menu) {}
 
     DataSourceManager& dsManager() { return ds_man_; }
+    Source dsSource() const { return source_; }
 
 protected:
     void init();
+    std::vector<const dbContent::DataSourceBase*> dataSources() const;
+    const dbContent::DataSourceBase* dataSource(unsigned int ds_id) const;
+    dbContent::DataSourceBase* dataSource(unsigned int ds_id);
 
     virtual QStringList getCustomColumnHeaders() const { return QStringList(); }
 
@@ -192,6 +204,8 @@ protected:
 
 private:
     friend class DataSourcesWidgetItemBase;
+    friend class DataSourceTypeItemBase;
+    friend class DataSourceItemBase;
 
     QStringList getColumnHeaders() const;
     void createUI();
@@ -202,10 +216,10 @@ private:
                                const std::string& ds_type_name);
     int generateDataSource(DataSourceItemBase* item,
                            DataSourcesWidgetItemBase* parent_item, 
-                           const dbContent::DBDataSource& data_source);
+                           const dbContent::DataSourceBase& data_source);
     int generateDataSourceCount(DataSourceCountItemBase* item,
                                 DataSourcesWidgetItemBase* parent_item,
-                                const dbContent::DBDataSource& data_source,
+                                const dbContent::DataSourceBase& data_source,
                                 const std::string& dbc_name);
 
     void itemChanged(QTreeWidgetItem *item, int column);
@@ -213,7 +227,8 @@ private:
 
     void updateAllContent();
 
-    bool can_show_counts_;
+    Source source_;
+    bool   can_show_counts_;
 
     bool init_ = false;
 
@@ -223,11 +238,21 @@ private:
 
 /**
  */
-class DataSourcesListWidget : public DataSourcesWidgetBase
+class DataSourcesListDBWidget : public DataSourcesWidgetBase
 {
 public:
-    DataSourcesListWidget(DataSourceManager& ds_man,
-                          bool can_show_counts)
-    :   DataSourcesWidgetBase(ds_man, can_show_counts, true) {}
-    virtual ~DataSourcesListWidget() = default;
+    DataSourcesListDBWidget(DataSourceManager& ds_man,
+                            bool can_show_counts)
+    :   DataSourcesWidgetBase(ds_man, Source::Database, can_show_counts, true) {}
+    virtual ~DataSourcesListDBWidget() = default;
+};
+
+/**
+ */
+class DataSourcesListConfigWidget : public DataSourcesWidgetBase
+{
+public:
+    DataSourcesListConfigWidget(DataSourceManager& ds_man)
+    :   DataSourcesWidgetBase(ds_man, Source::Config, false, true) {}
+    virtual ~DataSourcesListConfigWidget() = default;
 };

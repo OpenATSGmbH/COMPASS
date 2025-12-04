@@ -70,7 +70,7 @@ class DataSourceManager : public QObject, public Configurable
         double mode_s_range_stddev_;      // meters
 
         double sensor_status_max_secs_scan_  = 30.0;
-        double sensor_status_max_secs_coast_ = 10.0;
+        double sensor_status_max_secs_valid_ = 30.0;
     };
 
     const static std::vector<std::string> data_source_types_;

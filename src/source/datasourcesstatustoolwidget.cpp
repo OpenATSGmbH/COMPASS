@@ -34,6 +34,7 @@
 #include <QComboBox>
 #include <QTextEdit>
 #include <QScrollBar>
+#include <QCheckBox>
 
 const QColor DataSourcesStatusToolWidget::ColorWarning = QColor(255, 165, 0);
 const QColor DataSourcesStatusToolWidget::ColorError   = Qt::red;
@@ -62,6 +63,7 @@ void DataSourcesStatusToolWidget::createUI()
     setLayout(main_layout);
 
     QHBoxLayout* selection_layout = new QHBoxLayout;
+    selection_layout->setContentsMargins(0, 0, 0, 0);
 
     tracker_combo_ = new QComboBox;
     tracker_combo_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -82,9 +84,30 @@ void DataSourcesStatusToolWidget::createUI()
 
     auto& dbc_man = COMPASS::instance().dbContentManager();
 
+    QVBoxLayout* status_layout = new QVBoxLayout;
+    status_layout->setContentsMargins(0, 0, 0, 0);
+    status_layout->setSpacing(1);
+
     ds_widget_ = new DataSourcesStatusWidget(ds_man_, dbc_man);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     ds_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    info_label_ = new QLabel("-");
+    auto info_txt = new QLabel("Last Updated: ");
+    info_txt->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+
+    auto info_layout = new QHBoxLayout;
+    info_layout->setContentsMargins(0, 0, 0, 0);
+
+    info_layout->addWidget(info_txt);
+    info_layout->addWidget(info_label_);
+
+    status_layout->addWidget(ds_widget_);
+    status_layout->addLayout(info_layout);
+
+    auto event_layout = new QVBoxLayout;
+    event_layout->setContentsMargins(0, 0, 0, 0);
+    event_layout->setSpacing(1);
 
     event_box_ = new QTextEdit;
     event_box_->setReadOnly(true);
@@ -92,9 +115,12 @@ void DataSourcesStatusToolWidget::createUI()
     event_box_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     event_box_->setPlaceholderText("No Events");
 
+    event_layout->addWidget(event_box_);
+
     main_layout->addLayout(selection_layout);
-    main_layout->addWidget(ds_widget_);
-    main_layout->addWidget(event_box_);
+    main_layout->addLayout(status_layout);
+    main_layout->addLayout(info_layout);
+    main_layout->addLayout(event_layout);
 
     connect(tracker_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
@@ -102,6 +128,8 @@ void DataSourcesStatusToolWidget::createUI()
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
     connect(ds_widget_, &DataSourcesStatusWidget::eventAdded,
             this, &DataSourcesStatusToolWidget::updateEventBox);
+    connect(ds_widget_, &DataSourcesStatusWidget::refreshed,
+            this, &DataSourcesStatusToolWidget::updateInfos);
 }
 
 /**
@@ -303,6 +331,14 @@ void DataSourcesStatusToolWidget::updateEventBox()
         QColor color = evt.severity == DataSourcesStatusWidget::Event::Severity::Warning ? ColorWarning : ColorError;
         event_box_->append("<span style='color:" + color.name() + ";'>" + QString::fromStdString(txt) + "</span>");
     }
+}
 
-    event_box_->verticalScrollBar()->setValue(event_box_->verticalScrollBar()->maximum());
+/**
+ */
+void DataSourcesStatusToolWidget::updateInfos()
+{
+    auto ts = ds_widget_->lastRefresh();
+    std::string txt = ts.is_not_a_date_time() ? "-" : Utils::Time::toString(ts);
+
+    info_label_->setText(QString::fromStdString(txt));
 }
