@@ -32,16 +32,6 @@
  * DataSourceStatusItem
  ***********************************************************************************************************/
 
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoNoData            = { "No Data", Qt::gray };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoCoasting          = { "Coasting", QColor(255, 165, 0) };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoNoStatus          = { "No Status", Qt::gray };
-
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoConOperational    = { "Operational", Qt::darkGreen };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoConDegraded       = { "Degraded", QColor(255, 165, 0) };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoConInitialization = { "Initializing", Qt::blue };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoConDisconnected   = { "Not Connected", Qt::red };
-const std::pair<std::string, QColor> DataSourceStatusItem::InfoConUnknown        = { "Unknown CON", Qt::red };
-
 /**
  */
 DataSourceStatusItem::DataSourceStatusItem(DataSourcesStatusWidget* widget,
@@ -65,6 +55,7 @@ void DataSourceStatusItem::init_impl()
     status_label_->setFont(f);
 
     setItemWidget(DataSourcesStatusWidget::StatusColumn, status_label_);
+    setTextAlignment(DataSourcesStatusWidget::LastUpdateColumn, Qt::AlignHCenter);
 }
 
 /**
@@ -82,49 +73,26 @@ void DataSourceStatusItem::updateContent_impl()
 {
     DataSourceItemBase::updateContent_impl();
 
-    if (!status_widget_->hasCurrentTrackerStatus(dsID()))
+    //no sensor status available?
+    if (!status_widget_->hasActiveTrackerSensorState(dsID()))
     {
-        //set to no data (should never be displayed actually)
-        showStatus(InfoNoData);
+        showStatus(DataSourcesStatusWidget::InfoStatusUnknown);
         return;
     }
 
-    const auto& status = status_widget_->currentTrackerStatus(dsID());
+    const auto& sensor_state = status_widget_->activeTrackerSensorState(dsID());
 
     //should be init at this point
-    traced_assert(status.state != DataSourcesStatusWidget::SensorStatus::State::Fresh);
+    traced_assert(!sensor_state.isFresh());
 
-    if (status.state == DataSourcesStatusWidget::SensorStatus::State::HasStatus)
-    {
-        //set to con state
-        if (status.con == 0)
-            showStatus(InfoConOperational);
-        else if (status.con == 1)
-            showStatus(InfoConDegraded);
-        else if (status.con == 2)
-            showStatus(InfoConInitialization);
-        else if (status.con == 3)
-            showStatus(InfoConDisconnected);
-        else
-            showStatus(InfoConUnknown);
-    }
-    else if (status.state == DataSourcesStatusWidget::SensorStatus::State::Coasting)
-    {
-        //set to coasting
-        showStatus(InfoCoasting);
-    }
-    else
-    {
-        //weird state
-        bool unknown_sensor_status_state = true;
-        traced_assert(!unknown_sensor_status_state);
-    }
+    auto display_info = DataSourcesStatusWidget::displayInfoFromSensorStatus(sensor_state.status);
+    showStatus(display_info);
 
-    std::string info;
-    if (!status.ts.is_not_a_date_time())
-        info = "Last update: " + Utils::Time::toString(status.ts);
+    std::string last_update_str;
+    if (!sensor_state.ts_con.is_not_a_date_time())
+        last_update_str = Utils::Time::toTimeString(sensor_state.ts_con, false);
 
-    setText(DataSourcesStatusWidget::InfoColumn, QString::fromStdString(info));
+    setText(DataSourcesStatusWidget::LastUpdateColumn, QString::fromStdString(last_update_str));
 }
 
 /**
@@ -148,34 +116,27 @@ void DataSourceStatusItem::showStatus(const std::pair<std::string, QColor>& info
 
 /**
  */
-std::string DataSourcesStatusWidget::Event::displayInfo() const
+std::pair<std::string, QColor> DataSourcesStatusWidget::Event::displayInfo(bool tracker_info,
+                                                                           bool sensor_info) const
 {
     std::string txt;
 
     if (!ts.is_not_a_date_time())
     {
-        txt += Utils::Time::toString(ts) + " ";
+        txt += Utils::Time::toTimeString(ts, false) + " ";
     }
 
     auto& ds_man = COMPASS::instance().dataSourceManager();
 
-    if (tracker_ds_id.has_value())
+    if (tracker_info && tracker_key.has_value())
     {
-        txt += "Tracker ";
-
-        traced_assert(ds_man.hasDBDataSource(tracker_ds_id.value()));
-        txt += ds_man.dbDataSource(tracker_ds_id.value()).name() + " ";
-
-        if (tracker_line_id.has_value())
-        {
-            txt += "L" + std::to_string(tracker_line_id.value() + 1) + " ";
-        }
+        traced_assert(ds_man.hasDBDataSource(tracker_key.value().first));
+        txt += ds_man.dbDataSource(tracker_key.value().first).name() + " ";
+        txt += "L" + std::to_string(tracker_key.value().second + 1) + " ";
     }
 
-    if (sensor_ds_id.has_value())
+    if (sensor_info && sensor_ds_id.has_value())
     {
-        txt += "Sensor ";
-
         if (ds_man.hasDBDataSource(sensor_ds_id.value()))
             txt += ds_man.dbDataSource(sensor_ds_id.value()).name() + " ";
         else if (ds_man.hasConfigDataSource(sensor_ds_id.value()))
@@ -184,45 +145,63 @@ std::string DataSourcesStatusWidget::Event::displayInfo() const
             txt += std::to_string(sensor_ds_id.value()) + " ";
     }
 
-    switch (type)
+    QColor color;
+
+    if (type == Type::StatusChange)
     {
-        case Type::FirstStatus:
-            txt += "First status obtained ";
-            break;
-        case Type::GoingIntoCoasting:
-            txt += "Going into coasting ";
-            break;
-        case Type::RegainedStatus:
-            txt += "Regained status ";
-            break;
-        case Type::MissingInformation:
-            txt += "Status information missing ";
-            break;
-        case Type::NoData:
-            txt += "No data available ";
-            break;
+        traced_assert(status_change.has_value());
+
+        auto state0_str = DataSourcesStatusWidget::stringFromSensorStatus(status_change->first);
+        auto state1_di  = DataSourcesStatusWidget::displayInfoFromSensorStatus(status_change->second);
+
+        txt += state0_str + " \u2192 " + state1_di.first + " ";
+
+        color = state1_di.second;
+    }
+    else if (type == Type::MissingInformation)
+    {
+        txt += DataSourcesStatusWidget::InfoStatusInfoMissing.first + " ";
+        color = DataSourcesStatusWidget::InfoStatusInfoMissing.second;
+    }
+    else if (type == Type::NoCAT063Data)
+    {
+        txt += DataSourcesStatusWidget::InfoNoData.first + " ";
+        color = DataSourcesStatusWidget::InfoNoData.second;
     }
     
-    return txt;
+    return std::make_pair(txt, color);
 }
 
 /***********************************************************************************************************
  * DataSourcesStatusWidget
  ***********************************************************************************************************/
 
-const int DataSourcesStatusWidget::StatusColumn = 1;
-const int DataSourcesStatusWidget::InfoColumn   = 2;
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoConOperational    = { "Operational"               , Qt::darkGreen       };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoConDegraded       = { "Degraded"                  , QColor(255, 165, 0) };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoConInitialization = { "Initializing"              , Qt::blue            };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoConDisconnected   = { "Not Connected"             , Qt::red             };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoCoasting          = { "Coasting"                  , QColor(255, 165, 0) };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoStatusUnknown     = { "Status Unknown"            , Qt::darkGray        };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoStatusInfoMissing = { "Status information missing", Qt::red             };
+const std::pair<std::string, QColor> DataSourcesStatusWidget::InfoNoData            = { "No data available"         , Qt::darkGray        };
+
+const int DataSourcesStatusWidget::StatusColumn     = 1;
+const int DataSourcesStatusWidget::LastUpdateColumn = 2;
+
+const int DataSourcesStatusWidget::MaximumEventCount = 1000;
 
 /**
  */
 DataSourcesStatusWidget::DataSourcesStatusWidget(DataSourceManager& ds_man, 
                                                  DBContentManager& dbcontent_man,
                                                  bool init_ui)
-:   DataSourcesWidgetBase(ds_man, Source::Config, false, false)
+:   DataSourcesWidgetBase(ds_man, Source::All, false, false)
 ,   dbcontent_man_(dbcontent_man)
 {
     if (init_ui)
         init();
+
+    showLastUpdates(ds_man.config().sensor_status_show_last_updates_);
 
     connect(&dbcontent_man_, &DBContentManager::loadedDataSignal, this, &DataSourcesStatusWidget::dataLoaded, Qt::QueuedConnection);
 }
@@ -230,6 +209,70 @@ DataSourcesStatusWidget::DataSourcesStatusWidget(DataSourceManager& ds_man,
 /**
  */
 DataSourcesStatusWidget::~DataSourcesStatusWidget() = default;
+
+/**
+ */
+DataSourcesStatusWidget::SensorStatus DataSourcesStatusWidget::sensorStatusFromCon(unsigned char con)
+{
+    if (con == 0)
+        return SensorStatus::ConOperational;
+    else if (con == 1)
+        return SensorStatus::ConDegraded;
+    else if (con == 2)
+        return SensorStatus::ConInitialization;
+    else if (con == 3)
+        return SensorStatus::ConDisconnected;
+
+    bool unknown_con_state = true;
+    traced_assert(!unknown_con_state);
+}
+
+/**
+ */
+std::pair<std::string, QColor> DataSourcesStatusWidget::displayInfoFromSensorStatus(SensorStatus status)
+{
+    switch (status)
+    {
+        case SensorStatus::ConOperational:
+            return DataSourcesStatusWidget::InfoConOperational;
+        case SensorStatus::ConDegraded:
+            return DataSourcesStatusWidget::InfoConDegraded;
+        case SensorStatus::ConInitialization:
+            return DataSourcesStatusWidget::InfoConInitialization;
+        case SensorStatus::ConDisconnected:
+            return DataSourcesStatusWidget::InfoConDisconnected;
+        case SensorStatus::Fresh:
+            return DataSourcesStatusWidget::InfoStatusUnknown;
+        case SensorStatus::Coasting:
+            return DataSourcesStatusWidget::InfoCoasting;
+    }
+    return DataSourcesStatusWidget::InfoStatusUnknown;
+}
+
+/**
+ */
+std::string DataSourcesStatusWidget::stringFromSensorStatus(SensorStatus status)
+{
+    return displayInfoFromSensorStatus(status).first;
+}
+
+/**
+ */
+QColor DataSourcesStatusWidget::colorFromSensorStatus(SensorStatus status)
+{
+    return displayInfoFromSensorStatus(status).second;
+}
+
+/**
+ */
+void DataSourcesStatusWidget::addActionsToConfigMenu(QMenu* menu)
+{
+    auto last_update_action = menu->addAction("Show Last Sensor Updates");
+    last_update_action->setCheckable(true);
+    last_update_action->setChecked(ds_man_.config().sensor_status_show_last_updates_);
+
+    connect(last_update_action, &QAction::toggled, [ this ] (bool ok) { this->showLastUpdates(ok); });
+}
 
 /**
  */
@@ -267,42 +310,57 @@ void DataSourcesStatusWidget::unsetActiveTracker()
 
 /**
  */
-bool DataSourcesStatusWidget::hasCurrentTrackerStatus() const
+const DataSourcesStatusWidget::Event* DataSourcesStatusWidget::lastTrackerEvent() const
 {
-    return (active_tracker_.has_value() && sensor_status_.count(active_tracker_.value()) > 0);
+    if  (!hasActiveTrackerStates())
+        return nullptr;
+
+    const auto& ats = activeTrackerStates();
+    if (ats.events.empty())
+        return nullptr;
+
+    const auto& evt = ats.events.back();
+
+    return &evt;
 }
 
 /**
  */
-bool DataSourcesStatusWidget::hasCurrentTrackerStatus(unsigned int ds_id) const
+bool DataSourcesStatusWidget::hasActiveTrackerStates() const
+{
+    return (active_tracker_.has_value() && tracker_states_.count(active_tracker_.value()) > 0);
+}
+
+/**
+ */
+bool DataSourcesStatusWidget::hasActiveTrackerSensorState(unsigned int ds_id) const
 {
     return (active_tracker_.has_value() && 
-            sensor_status_.count(active_tracker_.value()) > 0 && 
-            sensor_status_.at(active_tracker_.value()).count(ds_id) > 0);
+            tracker_states_.count(active_tracker_.value()) > 0 && 
+            tracker_states_.at(active_tracker_.value()).states.count(ds_id) > 0);
 }
 
 /**
  */
-const DataSourcesStatusWidget::SensorStatusMap& DataSourcesStatusWidget::currentTrackerStatus() const
+const DataSourcesStatusWidget::TrackerStates& DataSourcesStatusWidget::activeTrackerStates() const
 {
-    traced_assert(hasCurrentTrackerStatus());
-    return sensor_status_.at(active_tracker_.value());
+    traced_assert(hasActiveTrackerStates());
+    return tracker_states_.at(active_tracker_.value());
 }
 
 /**
  */
-const DataSourcesStatusWidget::SensorStatus& DataSourcesStatusWidget::currentTrackerStatus(unsigned int ds_id) const
+const DataSourcesStatusWidget::SensorState& DataSourcesStatusWidget::activeTrackerSensorState(unsigned int ds_id) const
 {
-    traced_assert(hasCurrentTrackerStatus(ds_id));
-    return sensor_status_.at(active_tracker_.value()).at(ds_id);
+    traced_assert(hasActiveTrackerSensorState(ds_id));
+    return tracker_states_.at(active_tracker_.value()).states.at(ds_id);
 }
 
 /**
  */
 void DataSourcesStatusWidget::reset()
 {
-    sensor_status_.clear();
-    events_.clear();
+    tracker_states_.clear();
 
     updateContent();
 }
@@ -313,53 +371,70 @@ QStringList DataSourcesStatusWidget::getCustomColumnHeaders() const
 { 
     QStringList headers;
     headers << "Status";
-    headers << "Info";
+    headers << "Last Update";
 
     return headers;
 }
 
-namespace 
+/**
+ */
+void DataSourcesStatusWidget::logEvent(TrackerStates* tracker_states,
+                                       Event::Type type,
+                                       const boost::posix_time::ptime& ts,
+                                       const boost::optional<TrackerKey>& tracker_key,
+                                       const boost::optional<unsigned int>& sensor_ds_id,
+                                       const boost::optional<StatusChange>& status_change,
+                                       const std::string& info )
 {
-    DataSourcesStatusWidget::Event::Severity severityFromType(DataSourcesStatusWidget::Event::Type type)
+    traced_assert(type != Event::Type::StatusChange || status_change.has_value());
+
+    Event evt;
+    evt.type            = type;
+    evt.ts              = ts.is_not_a_date_time() ? Utils::Time::currentUTCTime() : ts;
+    evt.tracker_key     = tracker_key;
+    evt.sensor_ds_id    = sensor_ds_id;
+    evt.status_change   = status_change;
+    evt.info            = info;
+
+    bool signal_changes = false;
+
+    if (tracker_states)
     {
-        switch(type) 
-        {
-            case DataSourcesStatusWidget::Event::Type::FirstStatus:
-                return DataSourcesStatusWidget::Event::Severity::Info;
-            case DataSourcesStatusWidget::Event::Type::GoingIntoCoasting:
-                return DataSourcesStatusWidget::Event::Severity::Warning;
-            case DataSourcesStatusWidget::Event::Type::RegainedStatus:
-                return DataSourcesStatusWidget::Event::Severity::Info;
-            case DataSourcesStatusWidget::Event::Type::MissingInformation:
-                return DataSourcesStatusWidget::Event::Severity::Error;
-            case DataSourcesStatusWidget::Event::Type::NoData:
-                return DataSourcesStatusWidget::Event::Severity::Error;
-        }
-        return DataSourcesStatusWidget::Event::Severity::Info;
+        //tracker specific event => add to tracker states
+        traced_assert(tracker_key.has_value());
+
+        addEvent(*tracker_states, evt);
+
+        signal_changes = active_tracker_.has_value() && (active_tracker_.value() == tracker_key.value());
     }
+    else
+    {
+        //general event => distribute to all tracker states
+        traced_assert(type != Event::Type::StatusChange);
+        traced_assert(!tracker_key.has_value());
+        traced_assert(!sensor_ds_id.has_value());
+        traced_assert(!status_change.has_value());
+
+        for (auto& ts : tracker_states_)
+            addEvent(ts.second, evt);
+
+        signal_changes = true;
+    }
+    
+    if (signal_changes)
+        emit eventAdded();
 }
 
 /**
  */
-void DataSourcesStatusWidget::logEvent(Event::Type type,
-                                       const boost::posix_time::ptime& ts,
-                                       const boost::optional<unsigned int>& tracker_ds_id,
-                                       const boost::optional<unsigned int>& tracker_line_id,
-                                       const boost::optional<unsigned int>& sensor_ds_id,
-                                       const std::string& info)
+void DataSourcesStatusWidget::addEvent(TrackerStates& tracker_states,
+                                       const Event& evt)
 {
-    Event evt;
-    evt.type            = type;
-    evt.severity        = severityFromType(type);
-    evt.ts              = ts.is_not_a_date_time() ? Utils::Time::currentUTCTime() : ts;
-    evt.tracker_ds_id   = tracker_ds_id;
-    evt.tracker_line_id = tracker_line_id;
-    evt.sensor_ds_id    = sensor_ds_id;
-    evt.info            = info;
+    tracker_states.events.push_back(evt);
 
-    events_.push_back(evt);
-
-    emit eventAdded();
+    //remove old events if limit is reached
+    if (tracker_states.events.size() > MaximumEventCount)
+        tracker_states.events.pop_front();
 }
 
 /**
@@ -380,20 +455,21 @@ void DataSourcesStatusWidget::dataLoaded()
         auto buffer = it->second;
 
         bool has_ts_var    = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_timestamp_);
-        bool has_ds_id_var = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_ds_id_);
-        bool has_line_var  = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_line_id_);
+        bool has_ds_id_var = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_ds_id_    );
+        bool has_line_var  = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_line_id_  );
+
         auto var_ts        = has_ts_var    ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_timestamp_) : nullptr;
         auto var_ds        = has_ds_id_var ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_ds_id_    ) : nullptr;
         auto var_line      = has_line_var  ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_line_id_  ) : nullptr;
 
-        bool has_ts_id     = var_ts   && buffer->hasAnyPropertyNamed(var_ts->name());
+        bool has_ts        = var_ts   && buffer->hasAnyPropertyNamed(var_ts->name());
         bool has_ds_id     = var_ds   && buffer->hasAnyPropertyNamed(var_ds->name());
         bool has_line      = var_line && buffer->hasAnyPropertyNamed(var_line->name());
         bool has_con       = buffer->hasAnyPropertyNamed(DBContent::var_cat063_con_.name());
         bool has_sen_sac   = buffer->hasAnyPropertyNamed(DBContent::var_cat063_sensor_sac_.name());
         bool has_sen_sic   = buffer->hasAnyPropertyNamed(DBContent::var_cat063_sensor_sic_.name());
 
-        traced_assert(has_ts_id && has_ds_id && has_line && has_con && has_sen_sac && has_sen_sic);
+        traced_assert(has_ts && has_ds_id && has_line && has_con && has_sen_sac && has_sen_sic);
 
         auto& ts_vec      = buffer->get<boost::posix_time::ptime>(var_ts->name());
         auto& ds_id_vec   = buffer->get<unsigned int>(var_ds->name());
@@ -402,13 +478,20 @@ void DataSourcesStatusWidget::dataLoaded()
         auto& sen_sac_vec = buffer->get<unsigned char>(DBContent::var_cat063_sensor_sac_.name());
         auto& sen_sic_vec = buffer->get<unsigned char>(DBContent::var_cat063_sensor_sic_.name());
 
+        // auto ts0 = ts_vec.get(0);
+        // auto ts1 = ts_vec.get(buffer->size() - 1);
+        // loginf << "TS NUM RANGE " << Utils::Time::toString(ts0) << " - " << Utils::Time::toString(ts1);
+
         auto ts_cur = Utils::Time::currentUTCTime();
 
         bool missing_info = false;
 
+        boost::posix_time::ptime last_ts;
+
         size_t n = buffer->size() - 1;
         for (size_t i = n; i-- > 0; )
         {
+            //ds + line never expected to be null
             if (ts_vec.isNull(i)      ||
                 con_vec.isNull(i)     ||
                 sen_sac_vec.isNull(i) ||
@@ -420,6 +503,9 @@ void DataSourcesStatusWidget::dataLoaded()
             }
 
             auto& ts = ts_vec.getRef(i);
+
+            //!timestamps are expected to be ordered!
+            traced_assert(last_ts.is_not_a_date_time() || ts <= last_ts);
             
             //break if scan period has been parsed
             if (ts <= ts_cur && Utils::Time::partialSeconds(ts_cur - ts) > ds_man_.config().sensor_status_max_secs_scan_)
@@ -432,31 +518,45 @@ void DataSourcesStatusWidget::dataLoaded()
 
             unsigned int sensor_id = (unsigned int)sen_sac_vec.get(i) * 255 + sen_sic_vec.get(i);
 
-            auto& sen_stat_map = sensor_status_[ key ];
-            auto& sen_stat = sen_stat_map[ sensor_id ];
+            auto& tracker_states = tracker_states_[ key ];
+            auto& sen_state = tracker_states.states[ sensor_id ];
 
-            if (sen_stat.state == SensorStatus::State::Fresh ||
-                ts >= sen_stat.ts)
+            if (sen_state.isFresh() ||
+                ts >= sen_state.ts_con)
             {
-                //log no status -> status
-                if (sen_stat.state == SensorStatus::State::Fresh ||
-                    sen_stat.state == SensorStatus::State::Coasting)
-                    logEvent(sen_stat.state == SensorStatus::State::Fresh ? Event::Type::FirstStatus : Event::Type::RegainedStatus, ts, ds_id, line_id, sensor_id);
+                auto old_status        = sen_state.status;
+                bool old_status_is_con = sen_state.isCON();
 
-                sen_stat.ts    = ts;
-                sen_stat.con   = con_vec.get(i);
-                sen_stat.state = SensorStatus::State::HasStatus;
+                sen_state.ts_con = ts;
+                sen_state.status = DataSourcesStatusWidget::sensorStatusFromCon(con_vec.get(i));
+
+                //store newest status update
+                if (tracker_states.last_update_ts.is_not_a_date_time() || ts > tracker_states.last_update_ts)
+                    tracker_states.last_update_ts = ts;
+
+                //log regain of con status
+                if (!old_status_is_con)
+                {
+                    logEvent(&tracker_states,
+                             Event::Type::StatusChange,
+                             ts, 
+                             key, 
+                             sensor_id,
+                             StatusChange(old_status, sen_state.status));
+                }
             }
+
+            last_ts = ts;
         }
 
         //log missing information
         if (missing_info)
-            logEvent(Event::Type::MissingInformation, {});
+            logEvent(nullptr, Event::Type::MissingInformation, {});
     }
     else
     {
         //no data in buffer
-        logEvent(Event::Type::NoData, {});
+        logEvent(nullptr, Event::Type::NoCAT063Data, {});
     }
 
     //update status from new information
@@ -476,26 +576,29 @@ void DataSourcesStatusWidget::updateSensorStatus()
 {
     auto ts_cur = Utils::Time::currentUTCTime();
 
-    for (auto& sen_stat_map : sensor_status_)
+    for (auto& tracker_status : tracker_states_)
     {
-        for (auto& sen_stat : sen_stat_map.second)
+        for (auto& sen_stat : tracker_status.second.states)
         {
             //state should be init at this point
-            traced_assert(sen_stat.second.state != SensorStatus::State::Fresh);
+            traced_assert(!sen_stat.second.isFresh());
 
             //if not yet coasting check if coasting now
-            if (sen_stat.second.state != SensorStatus::State::Coasting &&
-                sen_stat.second.ts <= ts_cur && 
-                Utils::Time::partialSeconds(ts_cur - sen_stat.second.ts) > ds_man_.config().sensor_status_max_secs_valid_)
+            if (!sen_stat.second.isCoasting() &&
+                sen_stat.second.ts_con <= ts_cur && 
+                Utils::Time::partialSeconds(ts_cur - sen_stat.second.ts_con) > ds_man_.config().sensor_status_max_secs_valid_)
             {
-                //set sensor status to coasting
-                sen_stat.second.state = SensorStatus::State::Coasting;
+                auto old_status = sen_stat.second.status;
 
-                logEvent(Event::Type::GoingIntoCoasting, 
+                //set sensor status to coasting
+                sen_stat.second.status = SensorStatus::Coasting;
+
+                logEvent(&tracker_status.second,
+                         Event::Type::StatusChange, 
                          ts_cur, 
-                         sen_stat_map.first.first,
-                         sen_stat_map.first.second,
-                         sen_stat.first);
+                         tracker_status.first,
+                         sen_stat.first,
+                         StatusChange(old_status, sen_stat.second.status));
             }
         }
     }
@@ -527,19 +630,16 @@ bool DataSourcesStatusWidget::showDS(unsigned int ds_id) const
         return false;
 
     //no sensor status for active tracker yet => show nothing
-    auto it = sensor_status_.find(active_tracker_.value());
-    if (it == sensor_status_.end())
+    auto it = tracker_states_.find(active_tracker_.value());
+    if (it == tracker_states_.end())
         return false;
 
-    //has sensor status for given ds id?
-    return it->second.count(ds_id) > 0;
-}
+    //is db data source? => always show
+    if (ds_man_.hasDBDataSource(ds_id))
+        return true;
 
-/**
- */
-bool DataSourcesStatusWidget::showDSLine(unsigned int ds_id, unsigned int ds_line) const
-{
-    return true;
+    //config data source => has sensor status for given ds id?
+    return it->second.states.count(ds_id) > 0;
 }
 
 /**
@@ -547,4 +647,12 @@ bool DataSourcesStatusWidget::showDSLine(unsigned int ds_id, unsigned int ds_lin
 DataSourceItemBase* DataSourcesStatusWidget::createDSItem(DataSourcesWidgetItemBase* parent)
 {
     return new DataSourceStatusItem(this, parent);
+}
+
+/**
+ */
+void DataSourcesStatusWidget::showLastUpdates(bool show)
+{
+    ds_man_.config().sensor_status_show_last_updates_ = show;
+    showColumn(LastUpdateColumn, show);
 }

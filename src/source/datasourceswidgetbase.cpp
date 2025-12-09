@@ -325,17 +325,29 @@ void DataSourcesWidgetBase::init()
 std::vector<const dbContent::DataSourceBase*> DataSourcesWidgetBase::dataSources() const
 {
     std::vector<const dbContent::DataSourceBase*> data_sources;
-    if (source_ == Source::Config)
+
+    std::set<unsigned int> added;
+
+    if (source_ == Source::Database ||
+        source_ == Source::All)
     {
-        for (const auto& ds : ds_man_.configDataSources())
-            data_sources.push_back(ds.get());
-    }
-    else //Source::Database
-    {
+        //add all db data sources
         for (const auto& ds : ds_man_.dbDataSources())
+        {
             data_sources.push_back(ds.get());
+            added.insert(ds->id());
+        }
     }
 
+    if (source_ == Source::Config ||
+        source_ == Source::All)
+    {
+        //add config data sources if not yet added as db data sources
+        for (const auto& ds : ds_man_.configDataSources())
+            if (added.count(ds->id()) == 0)
+                data_sources.push_back(ds.get());
+    }
+    
     return data_sources;
 }
 
@@ -348,10 +360,21 @@ const dbContent::DataSourceBase* DataSourcesWidgetBase::dataSource(unsigned int 
         traced_assert(ds_man_.hasConfigDataSource(ds_id));
         return &ds_man_.configDataSource(ds_id);
     }
-    else //Source::Database
+    else if (source_ == Source::Database)
     {
         traced_assert(ds_man_.hasDBDataSource(ds_id));
         return &ds_man_.dbDataSource(ds_id);
+    }
+    else //Source::All
+    {
+        bool has_config_ds = ds_man_.hasConfigDataSource(ds_id);
+        bool has_db_ds     = ds_man_.hasDBDataSource(ds_id);
+        traced_assert(has_config_ds || has_db_ds);
+
+        if (has_db_ds)
+            return &ds_man_.dbDataSource(ds_id);
+        else
+            return &ds_man_.configDataSource(ds_id);
     }
 
     return nullptr;
@@ -366,10 +389,21 @@ dbContent::DataSourceBase* DataSourcesWidgetBase::dataSource(unsigned int ds_id)
         traced_assert(ds_man_.hasConfigDataSource(ds_id));
         return &ds_man_.configDataSource(ds_id);
     }
-    else //Source::Database
+    else if (source_ == Source::Database)
     {
         traced_assert(ds_man_.hasDBDataSource(ds_id));
         return &ds_man_.dbDataSource(ds_id);
+    }
+    else //Source::All
+    {
+        bool has_config_ds = ds_man_.hasConfigDataSource(ds_id);
+        bool has_db_ds     = ds_man_.hasDBDataSource(ds_id);
+        traced_assert(has_config_ds || has_db_ds);
+
+        if (has_db_ds)
+            return &ds_man_.dbDataSource(ds_id);
+        else
+            return &ds_man_.configDataSource(ds_id);
     }
 
     return nullptr;
@@ -429,6 +463,14 @@ QStringList DataSourcesWidgetBase::getColumnHeaders() const
 bool DataSourcesWidgetBase::showsCounts() const
 {
     return can_show_counts_;
+}
+
+/**
+ */
+void DataSourcesWidgetBase::showColumn(int col, bool show)
+{
+    traced_assert(col >= 0 && col < tree_widget_->columnCount());
+    tree_widget_->setColumnHidden(col, !show);
 }
 
 /**

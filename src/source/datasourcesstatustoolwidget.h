@@ -27,6 +27,7 @@ class QTextEdit;
 class QPushButton;
 class QCheckBox;
 class QLabel;
+class QSplitter;
 
 /**
  */
@@ -38,7 +39,7 @@ public:
     DataSourcesStatusToolWidget(DataSourceManager& ds_man);
     virtual ~DataSourcesStatusToolWidget();
 
-        //ToolBoxWidget
+    //ToolBoxWidget
     QIcon toolIcon() const override final;
     std::string toolName() const override final;
     std::string toolInfo() const override final;
@@ -53,8 +54,8 @@ public:
     void resetStatus();
     void resetEvents();
 
-    static const QColor ColorWarning;
-    static const QColor ColorError;
+    static const int DefaultStretchDataSources;
+    static const int DefaultStretchEvents;
 
 private:
     void createUI();
@@ -65,15 +66,19 @@ private:
     void updateEventBox();
     void updateInfos();
 
+    void addNewestEvent();
+
     void eventBoxSliderChanged(int value);
     void eventFollowBoxToggled(bool ok);
 
     DataSourceManager&       ds_man_;
     DataSourcesStatusWidget* ds_widget_{nullptr};
 
+    QSplitter*   main_splitter_          = nullptr;
     QComboBox*   tracker_combo_          = nullptr;
     QComboBox*   line_combo_             = nullptr;
-    QLabel*      info_label_             = nullptr;
+    QLabel*      info_refreshed_label_   = nullptr;
+    QLabel*      info_received_label_    = nullptr;
     QTextEdit*   event_box_              = nullptr;
     QPushButton* event_box_reset_button_ = nullptr;
 };

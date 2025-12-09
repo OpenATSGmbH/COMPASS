@@ -326,7 +326,6 @@ VariableSet DBContentManager::getReadSet(const std::string& dbcontent_name)
 {
     EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
     ViewManager& view_man       = COMPASS::instance().viewManager();
-    DataSourceManager& ds_man   = COMPASS::instance().dataSourceManager();
 
     VariableSet read_set = view_man.getReadSet(dbcontent_name);
 
@@ -1155,20 +1154,16 @@ void DBContentManager::addInsertedDataToChache()
                           else
                           {
                               data_.at(buf_it->first)->seizeBuffer(*buf_it->second.get());
-
-                              // sort by tod
-                              traced_assert(metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
-
-                              Variable& ts_var = metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
-
-                              Property ts_prop {ts_var.name(), ts_var.dataType()};
-
-                              traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
-
-                              data_.at(buf_it->first)->sortByProperty(ts_prop);
                           }
-                      });
 
+                          // sort by tod
+                          traced_assert(metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+                          Variable& ts_var = metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
+                          Property ts_prop {ts_var.name(), ts_var.dataType()};
+                          traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
+
+                          data_.at(buf_it->first)->sortByProperty(ts_prop);
+                      });
 
     insert_data_.clear();
 }

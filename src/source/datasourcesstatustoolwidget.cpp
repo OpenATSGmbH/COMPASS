@@ -35,9 +35,10 @@
 #include <QTextEdit>
 #include <QScrollBar>
 #include <QCheckBox>
+#include <QSplitter>
 
-const QColor DataSourcesStatusToolWidget::ColorWarning = QColor(255, 165, 0);
-const QColor DataSourcesStatusToolWidget::ColorError   = Qt::red;
+const int DataSourcesStatusToolWidget::DefaultStretchDataSources = 3;
+const int DataSourcesStatusToolWidget::DefaultStretchEvents      = 1;
 
 /**
  */
@@ -62,6 +63,7 @@ void DataSourcesStatusToolWidget::createUI()
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
+    //create tracker selection
     QHBoxLayout* selection_layout = new QHBoxLayout;
     selection_layout->setContentsMargins(0, 0, 0, 0);
 
@@ -82,52 +84,77 @@ void DataSourcesStatusToolWidget::createUI()
     selection_layout->addWidget(line_label);
     selection_layout->addWidget(line_combo_);
 
-    auto& dbc_man = COMPASS::instance().dbContentManager();
+    //create splitter
+    main_splitter_ = new QSplitter;
+    main_splitter_->setOrientation(Qt::Vertical);
 
-    QVBoxLayout* status_layout = new QVBoxLayout;
+    //create status widget
+    auto ds_status_widget = new QWidget;
+
+    QVBoxLayout* status_layout = new QVBoxLayout();
     status_layout->setContentsMargins(0, 0, 0, 0);
     status_layout->setSpacing(1);
+    ds_status_widget->setLayout(status_layout);
+
+    auto& dbc_man = COMPASS::instance().dbContentManager();
 
     ds_widget_ = new DataSourcesStatusWidget(ds_man_, dbc_man);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     ds_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    info_label_ = new QLabel("-");
-    auto info_txt = new QLabel("Last Updated: ");
-    info_txt->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    info_received_label_ = new QLabel("-");
+    auto info_received_txt = new QLabel("Received ToD: ");
+    info_received_txt->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+
+    info_refreshed_label_ = new QLabel("-");
+    auto info_refreshed_txt = new QLabel("Updated ToD: ");
+    info_refreshed_txt->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
     auto info_layout = new QHBoxLayout;
     info_layout->setContentsMargins(0, 0, 0, 0);
 
-    info_layout->addWidget(info_txt);
-    info_layout->addWidget(info_label_);
-
+    info_layout->addWidget(info_received_txt);
+    info_layout->addWidget(info_received_label_);
+    info_layout->addWidget(info_refreshed_txt);
+    info_layout->addWidget(info_refreshed_label_);
+    
     status_layout->addWidget(ds_widget_);
     status_layout->addLayout(info_layout);
+
+    //create event widget
+    auto event_widget = new QWidget;
 
     auto event_layout = new QVBoxLayout;
     event_layout->setContentsMargins(0, 0, 0, 0);
     event_layout->setSpacing(1);
+    event_widget->setLayout(event_layout);
 
     event_box_ = new QTextEdit;
     event_box_->setReadOnly(true);
     event_box_->setAcceptRichText(true);
+    event_box_->document()->setMaximumBlockCount(DataSourcesStatusWidget::MaximumEventCount);
     event_box_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     event_box_->setPlaceholderText("No Events");
 
     event_layout->addWidget(event_box_);
 
+    //add to splitter
+    main_splitter_->addWidget(ds_status_widget);
+    main_splitter_->addWidget(event_widget);
+
+    main_splitter_->setStretchFactor(0, DefaultStretchDataSources);
+    main_splitter_->setStretchFactor(1, DefaultStretchEvents     );
+
+    //add to main layout
     main_layout->addLayout(selection_layout);
-    main_layout->addLayout(status_layout);
-    main_layout->addLayout(info_layout);
-    main_layout->addLayout(event_layout);
+    main_layout->addWidget(main_splitter_);
 
     connect(tracker_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
     connect(line_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
     connect(ds_widget_, &DataSourcesStatusWidget::eventAdded,
-            this, &DataSourcesStatusToolWidget::updateEventBox);
+            this, &DataSourcesStatusToolWidget::addNewestEvent);
     connect(ds_widget_, &DataSourcesStatusWidget::refreshed,
             this, &DataSourcesStatusToolWidget::updateInfos);
 }
@@ -308,37 +335,74 @@ void DataSourcesStatusToolWidget::updateActiveTracker()
         //no valid selection => unset tracker
         ds_widget_->unsetActiveTracker();
     }
+
+    //update ui elements to active tracker
+    updateEventBox();
+    updateInfos();
+}
+
+namespace
+{
+    /**
+     */
+    void addEventToTextEdit(QTextEdit* edit,
+                            const DataSourcesStatusWidget::Event& evt)
+    {
+        auto di = evt.displayInfo(false, true);
+    
+        if (!di.second.isValid())
+        {
+            //add in default color
+            edit->append(QString::fromStdString(di.first));
+        }
+        else
+        {
+            //colorize event text
+            edit->append("<span style='color:" + di.second.name() + ";'>" + QString::fromStdString(di.first) + "</span>");
+        }
+    }
 }
 
 /**
  */
 void DataSourcesStatusToolWidget::updateEventBox()
 {
-    const auto& events = ds_widget_->events();
-    if (events.empty())
+    event_box_->clear();
+
+    if (!ds_widget_->hasActiveTrackerStates())
         return;
 
-    const auto& evt = events.back();
+    const auto& ats = ds_widget_->activeTrackerStates();
+    for (const auto& evt : ats.events)
+        addEventToTextEdit(event_box_, evt);
+}
 
-    auto txt = evt.displayInfo();
+/**
+ */
+void DataSourcesStatusToolWidget::addNewestEvent()
+{
+    auto evt = ds_widget_->lastTrackerEvent();
+    if (!evt)
+        return;
     
-    if (evt.severity == DataSourcesStatusWidget::Event::Severity::Info)
-    {
-        event_box_->append(QString::fromStdString(txt));
-    }
-    else
-    {
-        QColor color = evt.severity == DataSourcesStatusWidget::Event::Severity::Warning ? ColorWarning : ColorError;
-        event_box_->append("<span style='color:" + color.name() + ";'>" + QString::fromStdString(txt) + "</span>");
-    }
+    addEventToTextEdit(event_box_, *evt);
 }
 
 /**
  */
 void DataSourcesStatusToolWidget::updateInfos()
 {
-    auto ts = ds_widget_->lastRefresh();
-    std::string txt = ts.is_not_a_date_time() ? "-" : Utils::Time::toString(ts);
+    auto refresh_ts = ds_widget_->lastRefresh();
+    std::string refresh_txt = refresh_ts.is_not_a_date_time() ? "-" : Utils::Time::toTimeString(refresh_ts, false);
 
-    info_label_->setText(QString::fromStdString(txt));
+    info_refreshed_label_->setText(QString::fromStdString(refresh_txt));
+
+    std::string update_recv_txt = "-";
+    if (ds_widget_->hasActiveTrackerStates())
+    {
+        const auto& states = ds_widget_->activeTrackerStates();
+        update_recv_txt = states.last_update_ts.is_not_a_date_time() ? "-" : Utils::Time::toTimeString(states.last_update_ts, false);
+    }
+
+    info_received_label_->setText(QString::fromStdString(update_recv_txt));
 }

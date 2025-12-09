@@ -162,7 +162,8 @@ public:
     enum class Source
     {
         Database = 0,
-        Config
+        Config,
+        All
     };
 
     DataSourcesWidgetBase(DataSourceManager& ds_man,
@@ -178,6 +179,8 @@ public:
     DataSourceManager& dsManager() { return ds_man_; }
     Source dsSource() const { return source_; }
 
+    void showColumn(int col, bool show);
+
 protected:
     void init();
     std::vector<const dbContent::DataSourceBase*> dataSources() const;
@@ -190,7 +193,6 @@ protected:
 
     virtual bool showDSType(const std::string& ds_type_name) const { return true; }
     virtual bool showDS(unsigned int ds_id) const { return true; }
-    virtual bool showDSLine(unsigned int ds_id, unsigned int ds_line) const { return true; }
 
     virtual DataSourceTypeItemBase* createDSTypeItem(DataSourcesWidgetItemBase* parent = nullptr);
     virtual DataSourceItemBase* createDSItem(DataSourcesWidgetItemBase* parent = nullptr);
@@ -223,7 +225,6 @@ private:
                                 const std::string& dbc_name);
 
     void itemChanged(QTreeWidgetItem *item, int column);
-    void lineChanged(unsigned int ds_id, unsigned int ds_line, bool use);
 
     void updateAllContent();
 

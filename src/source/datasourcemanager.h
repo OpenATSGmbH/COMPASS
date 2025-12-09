@@ -69,8 +69,9 @@ class DataSourceManager : public QObject, public Configurable
         double mode_s_azimuth_stddev_;    // degrees 
         double mode_s_range_stddev_;      // meters
 
-        double sensor_status_max_secs_scan_  = 30.0;
-        double sensor_status_max_secs_valid_ = 30.0;
+        double sensor_status_max_secs_scan_     = 30.0;
+        double sensor_status_max_secs_valid_    = 30.0;
+        bool   sensor_status_show_last_updates_ = false;
     };
 
     const static std::vector<std::string> data_source_types_;
