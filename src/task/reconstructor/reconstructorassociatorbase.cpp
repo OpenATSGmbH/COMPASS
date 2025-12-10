@@ -998,11 +998,13 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                           double distance_m{0}, tgt_est_std_dev{0}, tr_est_std_dev{0};
 
                           if (!canGetPositionOffsetTR(tr, other))
+                          {
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
             continue;
 #endif
+                          }
                           auto pos_offs = getPositionOffsetTR(tr, other, do_debug, {}, &prediction_stats[ target_cnt ]);
 
                           if (!pos_offs.has_value())
@@ -1010,7 +1012,6 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                               if (do_debug)
                                   loginf << "DBG tr " << tr.record_num_ << " other_utn " << other_utn
                                          << " no position offset";
-
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -1049,6 +1050,9 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     for (auto& res_it : results) // usable, other utn, num updates, avg distance
     {
         tie(usable, other_utn, mahalanobis_dist) = res_it;
+
+        if (do_debug)
+            loginf << "usable " << usable << " other_utn " << other_utn << " mahalanobis_dist " << String::doubleToStringPrecision(mahalanobis_dist, 2);
 
         if (!usable)
             continue;
