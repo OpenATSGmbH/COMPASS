@@ -18,6 +18,7 @@
 #pragma once
 
 #include "datasourceswidgetbase.h"
+#include "datasourcesstatus.h"
 
 #include <map>
 #include <deque>
@@ -48,13 +49,10 @@ protected:
 
 private:
     void showStatus(const std::string& msg, const QColor& color);
-    void showStatus(const std::pair<std::string, QColor>& info);
 
     DataSourcesStatusWidget* status_widget_ = nullptr;
     QLabel*                  status_label_  = nullptr;
 };
-
-
 
 /**
  */
@@ -63,83 +61,19 @@ class DataSourcesStatusWidget : public DataSourcesWidgetBase
     Q_OBJECT
 
 signals:
+    void activeTrackerChanged();
     void eventAdded();
     void refreshed();
 
 public:
     /**
-     * Sensor status enum.
-     * - The first items are directly mapped from CON states
-     * - The other items are internally determined states
-     */
-    enum class SensorStatus
-    {
-        //con states
-        ConOperational    = 0, // sensor operational  (from CON)
-        ConDegraded       = 1, // sensor degraded     (from CON)
-        ConInitialization = 2, // sensor initializing (from CON)
-        ConDisconnected   = 3, // sensor disconnected (from CON)
-
-        //internal states
-        Fresh             = 4, // sensor status uninit
-        Coasting          = 5  // sensor coasting (last received CON status too old)
-    };
-
-    /**
-     * Current sensor state.
-     */
-    struct SensorState
-    {
-        bool isFresh() const { return status == SensorStatus::Fresh; }
-        bool isCoasting() const { return status == SensorStatus::Coasting; }
-        bool isCON() const { return status == SensorStatus::ConOperational    || 
-                                    status == SensorStatus::ConDegraded       ||
-                                    status == SensorStatus::ConInitialization ||
-                                    status == SensorStatus::ConDisconnected; }
-
-        SensorStatus             status = SensorStatus::Fresh; // current sensor status
-        boost::posix_time::ptime ts_con;                       // timestamp the last CON status was obtained
-    };
-
-    typedef std::map<unsigned int, SensorState>   SensorStateMap;     // sensor id => state
-    typedef std::pair<unsigned int, unsigned int> TrackerKey;         // sensor id, line id
-    typedef std::pair<SensorStatus, SensorStatus> StatusChange;       // old and new sensor status
-
-    /**
-     * A sensor status event (e.g. a status change for a certain sensor at a certain time)
-     */
-    struct Event
-    {
-        enum class Type
-        {
-            StatusChange = 0,   // sensor status changed
-            MissingInformation, // important sensor status related information was missing from CAT063 buffer (timestamp, CON, sensor id, etc.)
-            NoCAT063Data        // no CAT063 data received from buffers
-        };
-
-        bool isGeneral() const { return !tracker_key.has_value(); }
-        bool isTrackerSpecific() const { return tracker_key.has_value(); }
-        bool isTrackerSpecific(const TrackerKey& key) const { return isTrackerSpecific() && tracker_key.value() == key; }
-
-        std::pair<std::string, QColor> displayInfo(bool tracker_info,
-                                                   bool sensor_info) const;
-
-        Type                                  type;           // event type
-        boost::posix_time::ptime              ts;             // event timestamp
-        boost::optional<TrackerKey>           tracker_key;    // tracker the event is assigned to (might be empty in general events)
-        boost::optional<unsigned int>         sensor_ds_id;   // id of the involved sensor (might be empty in general events)
-        boost::optional<StatusChange>         status_change;  // old and new status (used for StatusChange type events)
-        std::string                           info;           // additional information
-    };
-
-    /**
      * Holds all important state information related to a certain tracker (+line).
      */
     struct TrackerStates
     {
-        SensorStateMap           states;         // sensor states
-        boost::posix_time::ptime last_update_ts; // latest update received for a sensor from this tracker
-        std::deque<Event>        events;         // tracker statuts events
+        sensor_status::SensorStateMap states;         // sensor states
+        boost::posix_time::ptime      last_update_ts; // latest update received for a sensor from this tracker
+        sensor_status::EventQueue     events;    // tracker status events
     };
 
     DataSourcesStatusWidget(DataSourceManager& ds_man, 
@@ -155,36 +89,34 @@ public:
     void unsetActiveTracker();
     bool hasActiveTracker() const { return active_tracker_.has_value(); }
 
-    const boost::optional<TrackerKey>& activeTracker() const { return active_tracker_; }
+    const boost::optional<sensor_status::TrackerKey>& activeTracker() const { return active_tracker_; }
     const boost::posix_time::ptime& lastRefresh() const { return last_refresh_ts_; }
-    const Event* lastTrackerEvent() const;
+    const sensor_status::EventQueue& currentEventQueue() const;
+    sensor_status::EventQueue& currentEventQueue();
 
     bool hasActiveTrackerStates() const;
     const TrackerStates& activeTrackerStates() const;
     bool hasActiveTrackerSensorState(unsigned int ds_id) const;
-    const SensorState& activeTrackerSensorState(unsigned int ds_id) const;
+    const sensor_status::SensorState& activeTrackerSensorState(unsigned int ds_id) const;
 
     void showLastUpdates(bool show);
 
-    static SensorStatus sensorStatusFromCon(unsigned char con);
+    static QColor colorFromSensorStatus(sensor_status::SensorStatus status);
+    static QColor colorFromEvent(const sensor_status::Event& evt);
 
-    static std::string stringFromSensorStatus(SensorStatus status);
-    static QColor colorFromSensorStatus(SensorStatus status);
-    static std::pair<std::string, QColor> displayInfoFromSensorStatus(SensorStatus status);
-
-    static const std::pair<std::string, QColor> InfoConOperational;
-    static const std::pair<std::string, QColor> InfoConDegraded;
-    static const std::pair<std::string, QColor> InfoConInitialization;
-    static const std::pair<std::string, QColor> InfoConDisconnected;
-    static const std::pair<std::string, QColor> InfoCoasting;
-    static const std::pair<std::string, QColor> InfoStatusUnknown;
-    static const std::pair<std::string, QColor> InfoStatusInfoMissing;
-    static const std::pair<std::string, QColor> InfoNoData;
+    static const QColor ColorConOperational;
+    static const QColor ColorConDegraded;
+    static const QColor ColorConInitialization;
+    static const QColor ColorConDisconnected;
+    static const QColor ColorCoasting;
+    static const QColor ColorStatusUnknown;
+    static const QColor ColorStatusInfoMissing;
+    static const QColor ColorNoData;
 
     static const int StatusColumn;
     static const int LastUpdateColumn;
 
-    static const int MaximumEventCount;
+    static const int MaximumEventQueueLength;
 
 protected:
     virtual QStringList getCustomColumnHeaders() const override;
@@ -196,22 +128,27 @@ protected:
 
 private:
     void logEvent(TrackerStates* tracker_states,
-                  Event::Type type,
+                  sensor_status::Event::Type type,
                   const boost::posix_time::ptime& ts,
-                  const boost::optional<TrackerKey>& tracker_key = boost::optional<TrackerKey>(),
+                  const boost::optional<sensor_status::TrackerKey>& tracker_key = boost::optional<sensor_status::TrackerKey>(),
                   const boost::optional<unsigned int>& sensor_ds_id = boost::optional<unsigned int>(),
-                  const boost::optional<StatusChange>& status_change = boost::optional<StatusChange>(),
+                  const boost::optional<sensor_status::StatusChange>& status_change = boost::optional<sensor_status::StatusChange>(),
                   const std::string& info = "");
     void addEvent(TrackerStates& tracker_states,
-                  const Event& evt);
+                  const sensor_status::Event& evt);
+    void addEvent(sensor_status::EventQueue& event_queue,
+                  const sensor_status::Event& evt);
+    void initTrackerStates(const sensor_status::TrackerKey& key,
+                           TrackerStates& tracker_states) const;
 
     void dataLoaded();
     void updateSensorStatus();
 
     DBContentManager& dbcontent_man_;
 
-    boost::optional<TrackerKey> active_tracker_;
+    boost::optional<sensor_status::TrackerKey> active_tracker_;
 
-    std::map<TrackerKey, TrackerStates> tracker_states_;
+    std::map<sensor_status::TrackerKey, TrackerStates> tracker_states_;
     boost::posix_time::ptime            last_refresh_ts_;
+    sensor_status::EventQueue           general_events_;
 };

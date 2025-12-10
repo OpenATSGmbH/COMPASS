@@ -148,12 +148,8 @@ void DataSourceTypeItemBase::updateContent_impl()
     traced_assert(is_init_);
     traced_assert(!ds_type_.empty());
 
-    bool has_sources = false;
-
     //enable or disable the item based on availability in data sources
-    for (const auto& ds_it : widget_->dataSources())
-        if (ds_it->dsType() == ds_type_)
-            has_sources = true;
+    bool has_sources = !widget_->dataSources(true, &ds_type_).empty();
 
     if (has_sources)
     {
@@ -322,7 +318,8 @@ void DataSourcesWidgetBase::init()
 
 /**
  */
-std::vector<const dbContent::DataSourceBase*> DataSourcesWidgetBase::dataSources() const
+std::vector<const dbContent::DataSourceBase*> DataSourcesWidgetBase::dataSources(bool filter, 
+                                                                                 std::string* ds_type) const
 {
     std::vector<const dbContent::DataSourceBase*> data_sources;
 
@@ -334,6 +331,11 @@ std::vector<const dbContent::DataSourceBase*> DataSourcesWidgetBase::dataSources
         //add all db data sources
         for (const auto& ds : ds_man_.dbDataSources())
         {
+            if (filter && !showDS(ds->id()))
+                continue;
+            if (ds_type && ds->dsType() != *ds_type)
+                continue;
+
             data_sources.push_back(ds.get());
             added.insert(ds->id());
         }
@@ -342,10 +344,17 @@ std::vector<const dbContent::DataSourceBase*> DataSourcesWidgetBase::dataSources
     if (source_ == Source::Config ||
         source_ == Source::All)
     {
-        //add config data sources if not yet added as db data sources
         for (const auto& ds : ds_man_.configDataSources())
+        {
+            if (filter && !showDS(ds->id()))
+                continue;
+            if (ds_type && ds->dsType() != *ds_type)
+                continue;
+
+            //add config data sources if not yet added as db data sources
             if (added.count(ds->id()) == 0)
                 data_sources.push_back(ds.get());
+        }
     }
     
     return data_sources;
@@ -579,13 +588,13 @@ int DataSourcesWidgetBase::generateDataSourceType(DataSourceTypeItemBase* item,
     item->setDSType(ds_type_name);
     int changes = item->updateContent() ? 1 : 0;
 
-    auto data_sources = dataSources();
+    auto data_sources = dataSources(true);
 
     //create needed items
     int ncur = item->childCount();
     int n    = 0;
     for (const auto& ds_it : data_sources)
-        if (ds_it->dsType() == ds_type_name && showDS(ds_it->id()))
+        if (ds_it->dsType() == ds_type_name)
             ++n;
 
     if (n > ncur)
@@ -612,7 +621,7 @@ int DataSourcesWidgetBase::generateDataSourceType(DataSourceTypeItemBase* item,
     int cnt = 0;
     for (const auto& ds_it : data_sources)
     {
-        if (ds_it->dsType() == ds_type_name && showDS(ds_it->id()))
+        if (ds_it->dsType() == ds_type_name)
         {
             auto ds_item = dynamic_cast<DataSourceItemBase*>(item->child(cnt));
             traced_assert(ds_item);

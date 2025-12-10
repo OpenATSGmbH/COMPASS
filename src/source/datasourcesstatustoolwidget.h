@@ -36,6 +36,8 @@ class DataSourcesStatusToolWidget : public ToolBoxWidget
     Q_OBJECT
 
 public:
+    typedef std::map<unsigned int, std::vector<unsigned int>> ActiveTrackerLines;
+
     DataSourcesStatusToolWidget(DataSourceManager& ds_man);
     virtual ~DataSourcesStatusToolWidget();
 
@@ -60,12 +62,17 @@ public:
 private:
     void createUI();
 
+    ActiveTrackerLines activeTrackerLines() const;
+
     void updateTrackerSelection();
-    void updateLineSelection();
+    void updateLineSelection(const ActiveTrackerLines& tracker_lines);
     void updateActiveTracker(); 
     void updateEventBox();
     void updateInfos();
 
+    void onDataSourcesChanged();
+    void onActiveTrackerChanged();
+    
     void addNewestEvent();
 
     void eventBoxSliderChanged(int value);
@@ -81,4 +88,6 @@ private:
     QLabel*      info_received_label_    = nullptr;
     QTextEdit*   event_box_              = nullptr;
     QPushButton* event_box_reset_button_ = nullptr;
+
+    ActiveTrackerLines current_tracker_lines_;
 };

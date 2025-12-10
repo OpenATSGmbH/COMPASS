@@ -172,8 +172,7 @@ public:
                           bool init_ui);
     virtual ~DataSourcesWidgetBase();
 
-    void updateContent(bool recreate_required = false);
-
+    virtual void updateContent(bool recreate_required = false);
     virtual void addActionsToConfigMenu(QMenu* menu) {}
 
     DataSourceManager& dsManager() { return ds_man_; }
@@ -183,7 +182,7 @@ public:
 
 protected:
     void init();
-    std::vector<const dbContent::DataSourceBase*> dataSources() const;
+    std::vector<const dbContent::DataSourceBase*> dataSources(bool filter, std::string* ds_type = nullptr) const;
     const dbContent::DataSourceBase* dataSource(unsigned int ds_id) const;
     dbContent::DataSourceBase* dataSource(unsigned int ds_id);
 

@@ -132,7 +132,7 @@ void DataSourcesStatusToolWidget::createUI()
     event_box_ = new QTextEdit;
     event_box_->setReadOnly(true);
     event_box_->setAcceptRichText(true);
-    event_box_->document()->setMaximumBlockCount(DataSourcesStatusWidget::MaximumEventCount);
+    event_box_->document()->setMaximumBlockCount(DataSourcesStatusWidget::MaximumEventQueueLength);
     event_box_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     event_box_->setPlaceholderText("No Events");
 
@@ -153,10 +153,16 @@ void DataSourcesStatusToolWidget::createUI()
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
     connect(line_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
+    
+    connect(ds_widget_, &DataSourcesStatusWidget::activeTrackerChanged,
+            this, &DataSourcesStatusToolWidget::onActiveTrackerChanged);
     connect(ds_widget_, &DataSourcesStatusWidget::eventAdded,
             this, &DataSourcesStatusToolWidget::addNewestEvent);
     connect(ds_widget_, &DataSourcesStatusWidget::refreshed,
             this, &DataSourcesStatusToolWidget::updateInfos);
+    
+    connect(&ds_man_, &DataSourceManager::dataSourcesChangedSignal,
+            this, &DataSourcesStatusToolWidget::onDataSourcesChanged);
 }
 
 /**
@@ -211,20 +217,21 @@ void DataSourcesStatusToolWidget::addToToolBar(QToolBar* tool_bar)
  */
 void DataSourcesStatusToolWidget::loadingStarted()
 {
-    ds_widget_->setEnabled(false);
+    //ds_widget_->setEnabled(false);
 }
 
 /**
  */
 void DataSourcesStatusToolWidget::loadingDone()
 {
-    ds_widget_->setEnabled(true);
+    //ds_widget_->setEnabled(true);
 }
 
 /**
  */
 void DataSourcesStatusToolWidget::updateContent(bool recreate_required)
 {
+    //needed because new tracker data could have been added during load
     updateTrackerSelection();
 
     ds_widget_->updateContent(recreate_required);
@@ -248,14 +255,11 @@ void DataSourcesStatusToolWidget::resetEvents()
 
 /**
  */
-void DataSourcesStatusToolWidget::updateTrackerSelection()
+DataSourcesStatusToolWidget::ActiveTrackerLines DataSourcesStatusToolWidget::activeTrackerLines() const
 {
     const std::string DBCName = "CAT063";
 
-    auto active_tracker = ds_widget_->activeTracker();
-
-    tracker_combo_->blockSignals(true);
-    tracker_combo_->clear();
+    ActiveTrackerLines tracker_lines;
 
     for (const auto& db_ds : ds_man_.dbDataSources())
     {
@@ -266,7 +270,42 @@ void DataSourcesStatusToolWidget::updateTrackerSelection()
         if (!db_ds->hasNumInserted(DBCName))
             continue;
 
-        tracker_combo_->addItem(QString::fromStdString(db_ds->name()), QVariant(db_ds->id()));
+        auto& lines = tracker_lines[ db_ds->id() ];
+
+        for (unsigned int line_id = 0; line_id < 4; ++line_id)
+        {
+            //add if line has inserted data
+            if (!db_ds->hasNumInserted(DBCName, line_id))
+                continue;
+            
+            lines.push_back(line_id);
+        }
+    }
+
+    return tracker_lines;
+}
+
+/**
+ */
+void DataSourcesStatusToolWidget::updateTrackerSelection()
+{
+    //determine active tracker lines
+    //caching: skip if tracker lines to be added did not change since the last update
+    auto tracker_lines = activeTrackerLines();
+    if (tracker_lines == current_tracker_lines_)
+        return;
+
+    auto active_tracker = ds_widget_->activeTracker();
+
+    tracker_combo_->blockSignals(true);
+    tracker_combo_->clear();
+
+    for (const auto& tl : tracker_lines)
+    {
+        traced_assert(ds_man_.hasDBDataSource(tl.first));
+        const auto& db_ds = ds_man_.dbDataSource(tl.first);
+
+        tracker_combo_->addItem(QString::fromStdString(db_ds.name()), QVariant(db_ds.id()));
     }
 
     int idx = active_tracker.has_value() ? tracker_combo_->findData(QVariant(active_tracker->first)) : -1;
@@ -276,15 +315,16 @@ void DataSourcesStatusToolWidget::updateTrackerSelection()
 
     tracker_combo_->blockSignals(false);
 
-    updateLineSelection();
+    updateLineSelection(tracker_lines);
+
+    //cache currently added tracker lines
+    current_tracker_lines_ = tracker_lines;
 }
 
 /**
  */
-void DataSourcesStatusToolWidget::updateLineSelection()
+void DataSourcesStatusToolWidget::updateLineSelection(const ActiveTrackerLines& tracker_lines)
 {
-    const std::string DBCName = "CAT063";
-
     auto active_tracker = ds_widget_->activeTracker();
 
     line_combo_->blockSignals(true);
@@ -295,16 +335,10 @@ void DataSourcesStatusToolWidget::updateLineSelection()
         auto ds_id = tracker_combo_->currentData().toUInt();
         bool ds_id_is_current = active_tracker.has_value() && ds_id == active_tracker->first;
 
-        traced_assert(ds_man_.hasDBDataSource(ds_id));
-        const auto& db_ds = ds_man_.dbDataSource(ds_id);
+        traced_assert(tracker_lines.count(ds_id));
 
-        for (unsigned int line_id = 0; line_id < 4; ++line_id)
-        {
-            if (!db_ds.hasNumInserted(DBCName, line_id))
-                continue;
-            
+        for (unsigned int line_id : tracker_lines.at(ds_id))
             line_combo_->addItem("L" + QString::number(line_id + 1), QVariant(line_id));
-        }
 
         int idx = ds_id_is_current ? line_combo_->findData(QVariant(active_tracker->second)) : -1;
 
@@ -327,18 +361,33 @@ void DataSourcesStatusToolWidget::updateActiveTracker()
         unsigned int ds_id   = tracker_combo_->currentData().toUInt();
         unsigned int line_id = line_combo_->currentData().toUInt();
 
-        //set to selected tracker + line
+        //set to selected tracker + line => might trigger content update
         ds_widget_->setActiveTracker(ds_id, line_id);
     }
     else
     {
-        //no valid selection => unset tracker
+        //unset tracker => might trigger content update
         ds_widget_->unsetActiveTracker();
     }
+}
 
-    //update ui elements to active tracker
+/**
+ * Reacts on changing the active tracker in the data sources status widget.
+ */
+void DataSourcesStatusToolWidget::onActiveTrackerChanged()
+{
+    //update dependent ui elements
     updateEventBox();
     updateInfos();
+}
+
+/**
+ * Reacts on changing data sources.
+ */
+void DataSourcesStatusToolWidget::onDataSourcesChanged()
+{
+    //might trigger further ui changes
+    updateTrackerSelection();
 }
 
 namespace
@@ -346,19 +395,20 @@ namespace
     /**
      */
     void addEventToTextEdit(QTextEdit* edit,
-                            const DataSourcesStatusWidget::Event& evt)
+                            const sensor_status::Event& evt)
     {
-        auto di = evt.displayInfo(false, true);
+        auto txt = evt.toString(false, true);
+        auto col = DataSourcesStatusWidget::colorFromEvent(evt);
     
-        if (!di.second.isValid())
+        if (!col.isValid())
         {
             //add in default color
-            edit->append(QString::fromStdString(di.first));
+            edit->append(QString::fromStdString(txt));
         }
         else
         {
             //colorize event text
-            edit->append("<span style='color:" + di.second.name() + ";'>" + QString::fromStdString(di.first) + "</span>");
+            edit->append("<span style='color:" + col.name() + ";'>" + QString::fromStdString(txt) + "</span>");
         }
     }
 }
@@ -369,11 +419,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
 {
     event_box_->clear();
 
-    if (!ds_widget_->hasActiveTrackerStates())
-        return;
-
-    const auto& ats = ds_widget_->activeTrackerStates();
-    for (const auto& evt : ats.events)
+    for (const auto& evt : ds_widget_->currentEventQueue().queue())
         addEventToTextEdit(event_box_, evt);
 }
 
@@ -381,11 +427,8 @@ void DataSourcesStatusToolWidget::updateEventBox()
  */
 void DataSourcesStatusToolWidget::addNewestEvent()
 {
-    auto evt = ds_widget_->lastTrackerEvent();
-    if (!evt)
-        return;
-    
-    addEventToTextEdit(event_box_, *evt);
+    for (const auto& evt : ds_widget_->currentEventQueue().consumeNewEvents())
+        addEventToTextEdit(event_box_, *evt);
 }
 
 /**
