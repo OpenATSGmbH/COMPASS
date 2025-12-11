@@ -82,8 +82,8 @@ std::string Event::toString(bool add_tracker_info,
     {
         traced_assert(status_change.has_value());
 
-        auto state0_str = sensor_status::stringFromSensorStatus(status_change->first);
-        auto state1_str = sensor_status::stringFromSensorStatus(status_change->second);
+        auto state0_str = sensor_status::displayStringFromSensorStatus(status_change->first);
+        auto state1_str = sensor_status::displayStringFromSensorStatus(status_change->second);
 
         txt += state0_str + " \u2192 " + state1_str + " ";
     }
@@ -200,6 +200,16 @@ std::string stringFromSensorStatus(SensorStatus status)
             return "Unknown";
     }
     return "Unknown";
+}
+
+/**
+ */
+std::string displayStringFromSensorStatus(sensor_status::SensorStatus status)
+{
+    if (status == sensor_status::SensorStatus::Fresh)
+        return stringFromSensorStatus(sensor_status::SensorStatus::Unknown);
+
+    return stringFromSensorStatus(status);
 }
 
 } // namespace sensor_status

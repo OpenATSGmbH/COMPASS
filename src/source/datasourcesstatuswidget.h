@@ -142,6 +142,7 @@ private:
                            TrackerStates& tracker_states) const;
 
     void dataLoaded();
+    void backupSensorStates();
     void updateSensorStatus();
 
     DBContentManager& dbcontent_man_;
@@ -149,6 +150,10 @@ private:
     boost::optional<sensor_status::TrackerKey> active_tracker_;
 
     std::map<sensor_status::TrackerKey, TrackerStates> tracker_states_;
-    boost::posix_time::ptime            last_refresh_ts_;
-    sensor_status::EventQueue           general_events_;
+    std::map<unsigned long, boost::posix_time::ptime>  processed_rec_nums_;
+
+    boost::posix_time::ptime  last_refresh_ts_;
+    sensor_status::EventQueue general_events_;
+
+    bool detailed_scan_ = true;
 };

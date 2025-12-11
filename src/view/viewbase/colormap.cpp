@@ -196,6 +196,20 @@ std::vector<QColor> ColorMap::sample(ColorScale scale,
 
 /**
 */
+QColor ColorMap::sample(double t, const std::vector<QColor>& samples)
+{
+    size_t n_samples = samples.size();
+    traced_assert(n_samples >= 2);
+
+    std::vector<Eigen::Vector3d> samples_01(n_samples);
+    for (size_t i = 0; i < n_samples; ++i)
+        samples_01[ i ] = colorQt2Eigen(samples[ i ]);
+
+    return colorEigen2Qt(colorscale::sampleCustom(t, samples_01));
+}
+
+/**
+*/
 std::vector<QColor> ColorMap::sample(const std::vector<QColor>& samples, 
                                      size_t n)
 {
@@ -216,11 +230,30 @@ std::vector<QColor> ColorMap::sample(const std::vector<QColor>& samples,
 
 /**
 */
+QColor ColorMap::sample(double t,
+                        const QColor& color_min, 
+                        const QColor& color_max)
+{
+    return sample(t, { color_min, color_max });
+}
+
+/**
+*/
 std::vector<QColor> ColorMap::sample(const QColor& color_min, 
                                      const QColor& color_max, 
                                      size_t n)
 {
     return sample({ color_min, color_max }, n);
+}
+
+/**
+*/
+QColor ColorMap::sample(double t,
+                        const QColor& color_min, 
+                        const QColor& color_mid, 
+                        const QColor& color_max)
+{
+    return sample(t, { color_min, color_mid, color_max });
 }
 
 /**

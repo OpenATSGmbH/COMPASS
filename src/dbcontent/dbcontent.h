@@ -217,6 +217,8 @@ public:
     static const Property var_cat062_type_lm_;
     static const Property var_cat062_baro_alt_;
     static const Property var_cat062_fl_measured_; // trusted, not valid
+    static const Property var_cat062_num_contrib_sensors_;
+    static const Property var_cat062_num_contrib_sensors_tn_;
     static const Property var_cat062_sum_num_contrib_sensors_;
 
     //Rate of Climb/Descent float feet / min

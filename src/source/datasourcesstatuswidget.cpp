@@ -76,7 +76,7 @@ void DataSourceStatusItem::updateContent_impl()
     //no sensor status available?
     if (!status_widget_->hasActiveTrackerSensorState(dsID()))
     {
-        auto txt = sensor_status::stringFromSensorStatus(sensor_status::SensorStatus::Unknown);
+        auto txt = sensor_status::displayStringFromSensorStatus(sensor_status::SensorStatus::Unknown);
         auto col = DataSourcesStatusWidget::colorFromSensorStatus(sensor_status::SensorStatus::Unknown);
 
         showStatus(txt, col);
@@ -89,7 +89,7 @@ void DataSourceStatusItem::updateContent_impl()
     //should be init at this point
     traced_assert(!sensor_state.isFresh());
 
-    auto txt = sensor_status::stringFromSensorStatus(sensor_state.status);
+    auto txt = sensor_status::displayStringFromSensorStatus(sensor_state.status);
     auto col = DataSourcesStatusWidget::colorFromSensorStatus(sensor_state.status);
 
     showStatus(txt, col);
@@ -193,7 +193,7 @@ QColor DataSourcesStatusWidget::colorFromEvent(const sensor_status::Event& evt)
  */
 void DataSourcesStatusWidget::addActionsToConfigMenu(QMenu* menu)
 {
-    auto last_update_action = menu->addAction("Show Last Sensor Updates");
+    auto last_update_action = menu->addAction("Show Last Update ToD");
     last_update_action->setCheckable(true);
     last_update_action->setChecked(ds_man_.config().sensor_status_show_last_updates_);
 
@@ -397,7 +397,10 @@ void DataSourcesStatusWidget::dataLoaded()
 
     const std::string DBCType = "CAT063";
 
-    //update sensor status from data
+    //backup old sensor states
+    backupSensorStates();
+
+    //determine new sensor status from data
     auto data = dbcontent_man_.data();
     auto it = data.find(DBCType);
 
@@ -480,26 +483,13 @@ void DataSourcesStatusWidget::dataLoaded()
             if (sen_state.isFresh() ||
                 ts >= sen_state.ts_con)
             {
-                auto old_status        = sen_state.status;
-                bool old_status_is_con = sen_state.isCON();
-
+                //set new CON status
                 sen_state.ts_con = ts;
                 sen_state.status = sensor_status::sensorStatusFromCon(con_vec.get(i));
 
                 //store newest status update
                 if (tracker_states.last_update_ts.is_not_a_date_time() || ts > tracker_states.last_update_ts)
                     tracker_states.last_update_ts = ts;
-
-                //log regain of con status
-                if (!old_status_is_con)
-                {
-                    logEvent(&tracker_states,
-                             sensor_status::Event::Type::StatusChange,
-                             ts, 
-                             key, 
-                             sensor_id,
-                             sensor_status::StatusChange(old_status, sen_state.status));
-                }
             }
 
             last_ts = ts;
@@ -528,6 +518,15 @@ void DataSourcesStatusWidget::dataLoaded()
 
 /**
  */
+void DataSourcesStatusWidget::backupSensorStates()
+{
+    for (auto& tracker_status : tracker_states_)
+        for (auto& sen_stat : tracker_status.second.states)
+            sen_stat.second.backup();
+}
+
+/**
+ */
 void DataSourcesStatusWidget::updateSensorStatus()
 {
     auto ts_cur = Utils::Time::currentUTCTime();
@@ -544,17 +543,19 @@ void DataSourcesStatusWidget::updateSensorStatus()
                 sen_stat.second.ts_con <= ts_cur && 
                 Utils::Time::partialSeconds(ts_cur - sen_stat.second.ts_con) > ds_man_.config().sensor_status_max_secs_valid_)
             {
-                auto old_status = sen_stat.second.status;
-
                 //set sensor status to coasting
                 sen_stat.second.status = sensor_status::SensorStatus::Coasting;
+            }
 
+            //log status change
+            if (sen_stat.second.status_last != sen_stat.second.status)
+            {
                 logEvent(&tracker_status.second,
-                         sensor_status::Event::Type::StatusChange, 
-                         ts_cur, 
+                         sensor_status::Event::Type::StatusChange,
+                         sen_stat.second.status == sensor_status::SensorStatus::Coasting ? ts_cur : sen_stat.second.ts_con, 
                          tracker_status.first,
                          sen_stat.first,
-                         sensor_status::StatusChange(old_status, sen_stat.second.status));
+                         sensor_status::StatusChange(sen_stat.second.status_last, sen_stat.second.status));
             }
         }
     }

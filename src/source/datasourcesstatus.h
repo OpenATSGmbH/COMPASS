@@ -60,9 +60,17 @@ struct SensorState
                                 status == SensorStatus::ConDegraded       ||
                                 status == SensorStatus::ConInitialization ||
                                 status == SensorStatus::ConDisconnected; }
+    void backup()
+    {
+        status_last = status;
+        ts_con_last = ts_con;
+    }
 
-    SensorStatus             status = SensorStatus::Fresh; // current sensor status
-    boost::posix_time::ptime ts_con;                       // timestamp the last CON status was obtained
+    SensorStatus             status = SensorStatus::Fresh;      // current sensor status
+    boost::posix_time::ptime ts_con;                            // timestamp the last CON status was obtained
+
+    SensorStatus             status_last = SensorStatus::Fresh; // last sensor status
+    boost::posix_time::ptime ts_con_last;                       // last sensor status CON timestamp
 };
 
 typedef std::pair<unsigned int, unsigned int> TrackerKey;     // sensor id, line id
@@ -123,5 +131,6 @@ private:
 
 extern SensorStatus sensorStatusFromCon(unsigned char con);
 extern std::string stringFromSensorStatus(SensorStatus status);
+extern std::string displayStringFromSensorStatus(sensor_status::SensorStatus status);
 
 } // namespace sensor_status
