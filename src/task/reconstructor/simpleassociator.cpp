@@ -45,6 +45,8 @@ void SimpleAssociator::associateNewData()
 {
     unassoc_rec_nums_.clear();
 
+    max_time_diff_ = Time::partialSeconds(reconstructor().settings().max_time_diff_);
+
     loginf << "associating RefTraj data";
 
     if (reconstructor().isCancelled())
