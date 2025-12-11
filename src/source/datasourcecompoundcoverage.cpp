@@ -42,7 +42,7 @@ void DataSourceCompoundCoverage::addRangeCircle (unsigned int ds_id, double cent
                                  ds_id, center_lat, center_long, range_m});
 }
 
-bool DataSourceCompoundCoverage::isInside (double pos_lat, double pos_long) const
+bool DataSourceCompoundCoverage::isInside (double pos_lat_deg, double pos_long_deg) const
 {
     traced_assert(is_finalized_);
 
@@ -61,17 +61,18 @@ bool DataSourceCompoundCoverage::isInside (double pos_lat, double pos_long) cons
 
     for (auto& rng_circ : range_circles_cs_)
     {
-        rng_circ.first->geodesic2LocalCart(pos_lat, pos_long, 0, local_x, local_y, local_z);
+        rng_circ.first->geodesic2LocalCart(pos_lat_deg * DEG2RAD, pos_long_deg * DEG2RAD, 0,
+                                           local_x, local_y, local_z);
 
         pos_rng_m = sqrt(pow(local_x, 2) + pow(local_y, 2));
 
         if (pos_rng_m <= rng_circ.second)
         {
-            logdbg << "inside circ, true";
+            logdbg << "pos_rng_m " << pos_rng_m << " inside circ, true";
             return true;
         }
         else
-            logdbg << "outside circ, range "
+            logdbg << "pos_rng_m " << pos_rng_m << " outside circ, range "
                    << pos_rng_m << " max " << rng_circ.second << ", false";
     }
 
