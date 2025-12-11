@@ -69,6 +69,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
+    logdbg << "'" << name_ << "': utn " << target_data.utn_ << " test data size " << tst_data.size();
+
     unsigned int num_pos {0};
     unsigned int num_no_ref {0};
     unsigned int num_pos_outside {0};
