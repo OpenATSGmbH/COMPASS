@@ -33,6 +33,7 @@ const std::string QT_DATETIME_FORMAT_SHORT {"yyyy-MM-dd hh:mm:ss"};
 string str_format = "%Y-%m-%d %H:%M:%S.%f";
 string date_str_format = "%Y-%m-%d";
 string time_str_format = "%H:%M:%S.%f";
+string time_str_format_nodigits = "%H:%M:%S";
 //string time_str_format = "%H:%M:%s *";
 boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
 
@@ -212,12 +213,12 @@ string toStringLong(unsigned long value)
    return toString(fromLong(value));
 }
 
-string toTimeString(const boost::posix_time::ptime& value)
+string toTimeString(const boost::posix_time::ptime& value, bool show_digits)
 {
     ostringstream date_stream; // thread_local wrong string
 
     // thread-safe static locale setup
-    static std::locale custom_locale(std::locale::classic(), new boost::posix_time::time_facet(time_str_format.c_str()));
+    static std::locale custom_locale(std::locale::classic(), new boost::posix_time::time_facet(show_digits ? time_str_format.c_str() : time_str_format_nodigits.c_str()));
 
     // static std::locale custom_locale(std::locale::classic(), new boost::posix_time::time_facet(str_format.c_str()));
     date_stream.imbue(custom_locale);
@@ -226,7 +227,9 @@ string toTimeString(const boost::posix_time::ptime& value)
     //loginf << "UGA1 " << Time::toString(value) << " " << date_stream.str();
 
     string tmp = date_stream.str();
-    tmp.erase(tmp.length()-3);
+
+    if (show_digits)
+        tmp.erase(tmp.length()-3);
 
     return tmp;
 }

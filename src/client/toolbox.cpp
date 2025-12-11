@@ -244,7 +244,7 @@ void ToolBox::updateToolBar()
 
 /**
  */
-void ToolBox::addTool(ToolBoxWidget* tool)
+unsigned int ToolBox::addTool(ToolBoxWidget* tool)
 {
     traced_assert(tool);
 
@@ -278,6 +278,8 @@ void ToolBox::addTool(ToolBoxWidget* tool)
     connect(tool, &ToolBoxWidget::iconChangedSignal, [ button, tool ] { button->setIcon(tool->toolIcon()); } );
     connect(tool, &ToolBoxWidget::toolsChangedSignal, [ this ] () { this->updateToolBar(); });
 
+    unsigned int idx = (unsigned int)tools_.size();
+
     Tool t;
     t.idx    = tool_idx;
     t.widget = tool;
@@ -286,6 +288,8 @@ void ToolBox::addTool(ToolBoxWidget* tool)
     tools_.push_back(t);
     widget_stack_->addWidget(tool);
     icon_layout_->addWidget(button);
+
+    return idx;
 }
 
 /**

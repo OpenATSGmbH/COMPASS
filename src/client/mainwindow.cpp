@@ -24,6 +24,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetlistwidget.h"
 #include "datasourcestoolwidget.h"
+#include "datasourcesstatustoolwidget.h"
 #include "dbcontent/variable/metavariableconfigurationdialog.h"
 #include "files.h"
 #include "filtermanager.h"
@@ -209,12 +210,13 @@ void MainWindow::createUI()
     // initialize toolbox
     tool_box_ = new ToolBox(this);
     
-    tool_box_->addTool(COMPASS::instance().dataSourceManager().loadWidget()); // 0
-    tool_box_->addTool(COMPASS::instance().filterManager().widget()); // 1
-    tool_box_->addTool(COMPASS::instance().dbContentManager().targetListWidget()); // 2
-    tool_box_->addTool(COMPASS::instance().taskManager().widget()); // 3
-    tool_box_->addTool(COMPASS::instance().viewManager().viewPointsWidget()); // 4
-    tool_box_->addTool(new LogWidget(COMPASS::instance().logStore())); // 5
+    tool_ds_      = tool_box_->addTool(COMPASS::instance().dataSourceManager().loadWidget()); // 0
+    tool_filters_ = tool_box_->addTool(COMPASS::instance().filterManager().widget()); // 1
+    tool_targets_ = tool_box_->addTool(COMPASS::instance().dbContentManager().targetListWidget()); // 2
+    tool_sstatus_ = tool_box_->addTool(COMPASS::instance().dataSourceManager().statusWidget()); // 3
+    tool_reports_ = tool_box_->addTool(COMPASS::instance().taskManager().widget()); // 4
+    tool_vp_      = tool_box_->addTool(COMPASS::instance().viewManager().viewPointsWidget()); // 5
+    tool_log_     = tool_box_->addTool(new LogWidget(COMPASS::instance().logStore())); // 6
 
     //@TODO: !handle filter check box!
     //QTabBar *tabBar = tab_widget_->tabBar();
@@ -224,6 +226,9 @@ void MainWindow::createUI()
     tool_box_->setMainContent(tab_widget_);
     tool_box_->finalize();
     tool_box_->selectTool("Data Sources");
+
+    //disable sensor status by default (only available in live mode)
+    tool_box_->disableTools({ tool_sstatus_ });
 
     // add toolbox and view tab widget
     content_layout->addWidget(tool_box_);
@@ -1138,11 +1143,17 @@ void MainWindow::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_
     traced_assert(tool_box_);
     if (app_mode_current == AppMode::LiveRunning)
     {
-        tool_box_->disableTools({2,3,4});
+        tool_box_->disableTools({}); // enable all
+        tool_box_->disableTools({tool_targets_, 
+                                 tool_reports_, 
+                                 tool_vp_});
         selectTool("Data Sources");
     }
     else
+    {
         tool_box_->disableTools({}); // enable all
+        tool_box_->disableTools({ tool_sstatus_ });
+    }
 
     updateBottomWidget();
     updateMenus();

@@ -699,7 +699,7 @@ void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
     has_associations_ = true;
     associations_id_ = assoc_id;
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -725,7 +725,7 @@ void DBContentManager::clearAssociationsIdentifier()
 
     dbinterface.saveProperties();
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -1077,7 +1077,7 @@ void DBContentManager::finishInserting()
                    << Time::toString(Time::currentUTCTime() - min_time_found);
     }
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
@@ -1087,6 +1087,8 @@ void DBContentManager::finishInserting()
            << " full " << String::timeStringFromDouble(
                   (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
 }
+
+#define ADD_INSERTED_MT
 
 /**
  */
@@ -1102,69 +1104,81 @@ void DBContentManager::addInsertedDataToChache()
     unsigned int num_buffers = insert_data_.size();
     boost::mutex data_mutex;
 
+#ifdef ADD_INSERTED_MT
     tbb::parallel_for(uint(0), num_buffers, [&](unsigned int buffer_cnt)
-                      {
-                          std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = insert_data_.begin();
-                          std::advance(buf_it, buffer_cnt);
+#else
+    for (unsigned int buffer_cnt = 0; buffer_cnt < num_buffers; ++buffer_cnt)
+#endif
+    {
+        std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = insert_data_.begin();
+        std::advance(buf_it, buffer_cnt);
 
-                          VariableSet read_set = COMPASS::instance().viewManager().getReadSet(buf_it->first);
-                          addStandardVariables(buf_it->first, read_set);
-                          //label_generator_->addVariables(buf_it->first, read_set);
+        VariableSet read_set = COMPASS::instance().viewManager().getReadSet(buf_it->first);
+        addStandardVariables(buf_it->first, read_set);
+        //label_generator_->addVariables(buf_it->first, read_set);
 
-                          vector<Property> buffer_properties_to_be_removed;
+        //sensor status
+        COMPASS::instance().dataSourceManager().addSensorStatusVariables(buf_it->first, read_set);
 
-                          // remove all unused
-                          for (const auto& prop_it : buf_it->second->properties().properties())
-                          {
-                              if (!read_set.hasDBColumnName(prop_it.name()))
-                                  buffer_properties_to_be_removed.push_back(prop_it); // remove it later
-                          }
+        // for (unsigned int i = 0; i < read_set.getSize(); ++i)
+        //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";
 
-                          for (auto& prop_it : buffer_properties_to_be_removed)
-                          {
-                              logdbg << "deleting property " << prop_it.name();
-                              buf_it->second->deleteProperty(prop_it);
-                          }
+        vector<Property> buffer_properties_to_be_removed;
 
-                          // add assoc property if required
-                          if (metaCanGetVariable(buf_it->first, DBContent::meta_var_utn_))
-                          {
-                              Variable& utn_var = metaGetVariable(buf_it->first, DBContent::meta_var_utn_);
-                              Property utn_prop (utn_var.dbColumnName(), utn_var.dataType());
+        // remove all unused
+        for (const auto& prop_it : buf_it->second->properties().properties())
+        {
+            if (!read_set.hasDBColumnName(prop_it.name()))
+            {
+                buffer_properties_to_be_removed.push_back(prop_it); // remove it later
+            }
+        }
 
-                              if (!buf_it->second->hasProperty(utn_prop))
-                                  buf_it->second->addProperty(utn_prop);
-                          }
+        for (auto& prop_it : buffer_properties_to_be_removed)
+        {
+            logdbg << buf_it->first << " deleting property " << prop_it.name();
+            buf_it->second->deleteProperty(prop_it);
+        }
 
-                          // change db column names to dbcont var names
-                          buf_it->second->transformVariables(read_set, true);
+        // add assoc property if required
+        if (metaCanGetVariable(buf_it->first, DBContent::meta_var_utn_))
+        {
+            Variable& utn_var = metaGetVariable(buf_it->first, DBContent::meta_var_utn_);
+            Property utn_prop (utn_var.dbColumnName(), utn_var.dataType());
 
-                          // add selection flags
-                          buf_it->second->addProperty(DBContent::selected_var);
+            if (!buf_it->second->hasProperty(utn_prop))
+                buf_it->second->addProperty(utn_prop);
+        }
 
-                          // add buffer to be able to distribute to views
-                          if (!data_.count(buf_it->first))
-                          {
-                              boost::mutex::scoped_lock locker(data_mutex);
-                              data_[buf_it->first] = buf_it->second;
-                          }
-                          else
-                          {
-                              data_.at(buf_it->first)->seizeBuffer(*buf_it->second.get());
+        // change db column names to dbcont var names
+        buf_it->second->transformVariables(read_set, true);
 
-                              // sort by tod
-                              traced_assert(metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        // add selection flags
+        buf_it->second->addProperty(DBContent::selected_var);
 
-                              Variable& ts_var = metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
+        // add buffer to be able to distribute to views
+        if (!data_.count(buf_it->first))
+        {
+            boost::mutex::scoped_lock locker(data_mutex);
+            data_[buf_it->first] = buf_it->second;
+        }
+        else
+        {
+            data_.at(buf_it->first)->seizeBuffer(*buf_it->second.get());
+        }
 
-                              Property ts_prop {ts_var.name(), ts_var.dataType()};
+        // sort by tod
+        traced_assert(metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        Variable& ts_var = metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
+        Property ts_prop {ts_var.name(), ts_var.dataType()};
+        traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
 
-                              traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
-
-                              data_.at(buf_it->first)->sortByProperty(ts_prop);
-                          }
-                      });
-
+        data_.at(buf_it->first)->sortByProperty(ts_prop);
+#ifdef ADD_INSERTED_MT
+    });
+#else
+    }
+#endif
 
     insert_data_.clear();
 }

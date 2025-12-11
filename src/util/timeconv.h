@@ -41,7 +41,7 @@ extern long decorrectLongQtUTC(long t);
 extern std::string toString(const boost::posix_time::ptime& value, unsigned int partial_digits=3, bool* ok = nullptr);
 extern std::string toString(const boost::posix_time::time_duration& duration, unsigned int partial_digits=3);
 extern std::string toStringLong(unsigned long value);
-extern std::string toTimeString(const boost::posix_time::ptime& value);
+extern std::string toTimeString(const boost::posix_time::ptime& value, bool show_digits = true);
 extern std::string toDateString(const boost::posix_time::ptime& value);
 extern boost::posix_time::ptime fromDateString(const std::string& value);
 extern boost::posix_time::ptime currentUTCTime();

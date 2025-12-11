@@ -84,6 +84,7 @@ public:
     void sic(unsigned int sic);
 
     virtual unsigned int id() const; // from sac/sic
+    virtual bool inDataBase() const = 0;
 
     std::string name() const;
     void name(const std::string &name);
@@ -180,6 +181,9 @@ public:
 
     static std::string detectionTypeToString(DetectionType type);
     static DetectionType detectionTypeFromString(const std::string& str);
+
+    static std::string dsTypeToString(DataSourceType type);
+    static DataSourceType dsTypeFromString(const std::string& str);
 
 protected:
     std::string ds_type_;

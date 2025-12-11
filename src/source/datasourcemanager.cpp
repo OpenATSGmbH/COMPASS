@@ -18,9 +18,12 @@
 
 #include "datasourcemanager.h"
 #include "datasourcestoolwidget.h"
+#include "datasourcesstatustoolwidget.h"
 #include "datasourcesconfigurationdialog.h"
 #include "compass.h"
 #include "dbinterface.h"
+#include "dbcontent.h"
+#include "dbcontentmanager.h"
 #include "number.h"
 #include "stringconv.h"
 #include "files.h"
@@ -111,6 +114,9 @@ DataSourceManager::DataSourceManager(const std::string& class_id, const std::str
 
     //registerParameter("use_radar_min_stddev", &config_.use_radar_min_stddev_, Config().use_radar_min_stddev_);
 
+    //registerParameter("sensor_status_max_secs_scan", &config_.sensor_status_max_secs_scan_, Config().sensor_status_max_secs_scan_);
+    //registerParameter("sensor_status_max_secs_valid", &config_.sensor_status_max_secs_valid_, Config().sensor_status_max_secs_valid_);
+
     createSubConfigurables();
 
     updateDSIdsAll();
@@ -125,7 +131,8 @@ DataSourceManager::~DataSourceManager()
     config_data_sources_.clear();
     db_data_sources_.clear(); // delete their widgets, which removes them from load_widget_
 
-    load_widget_ = nullptr; // deleted by qt
+    load_widget_   = nullptr; // deleted by qt
+    status_widget_ = nullptr; // deleted by qt
 }
 
 void DataSourceManager::generateSubConfigurable(const std::string& class_id,
@@ -146,6 +153,25 @@ void DataSourceManager::generateSubConfigurable(const std::string& class_id,
                                  class_id);
 }
 
+void DataSourceManager::addSensorStatusVariables(const std::string& dbcontent_name, dbContent::VariableSet& var_set) const
+{
+    auto& dbcontent_man = COMPASS::instance().dbContentManager();
+
+    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    {
+        if (dbcontent_name == "CAT063")
+        {
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_con_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_con_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+        }
+    }
+}
+
 const std::vector<unsigned int>& DataSourceManager::getAllDsIDs()
 {
     return ds_ids_all_;
@@ -161,13 +187,26 @@ DataSourcesToolWidget* DataSourceManager::loadWidget()
     traced_assert(load_widget_);
     
     return load_widget_;
-
 }
 
-void DataSourceManager::updateWidget()
+DataSourcesStatusToolWidget* DataSourceManager::statusWidget()
+{
+    if (!status_widget_)
+    {
+        status_widget_ = new DataSourcesStatusToolWidget(*this);
+    }
+
+    traced_assert(status_widget_);
+    
+    return status_widget_;
+}
+
+void DataSourceManager::updateWidgets()
 {
     if (load_widget_)
         load_widget_->updateContent();
+    if (status_widget_)
+        status_widget_->updateContent();
 }
 
 DataSourcesConfigurationDialog* DataSourceManager::configurationDialog()
@@ -209,7 +248,7 @@ void DataSourceManager::importDataSources(const std::string& filename)
     }
 
     updateDSIdsAll();
-    updateWidget();
+    updateWidgets();
 
     emit dataSourcesChangedSignal();
 }
@@ -673,7 +712,6 @@ void DataSourceManager::resetToStartupConfiguration()
 
 void DataSourceManager::databaseOpenedSlot()
 {
-
     loginf;
 
     loadDBDataSources();
@@ -682,6 +720,8 @@ void DataSourceManager::databaseOpenedSlot()
 
     if (load_widget_)
         load_widget_->updateContent();
+    if (status_widget_)
+        status_widget_->updateContent();
 }
 
 void DataSourceManager::databaseClosedSlot()
@@ -694,6 +734,8 @@ void DataSourceManager::databaseClosedSlot()
 
     if (load_widget_)
         load_widget_->updateContent();
+    if (status_widget_)
+        status_widget_->updateContent();
 }
 
 void DataSourceManager::configurationDialogDoneSlot()
@@ -707,6 +749,8 @@ void DataSourceManager::configurationDialogDoneSlot()
 
     if (load_widget_)
         load_widget_->updateContent(true);
+    if (status_widget_)
+        status_widget_->updateContent(true);
 
     emit dataSourcesChangedSignal();
 }

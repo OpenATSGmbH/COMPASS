@@ -59,14 +59,24 @@ public:
     ColorMap();
     virtual ~ColorMap();
 
-    static QColor sample(double t, ColorScale scale);
+    static QColor sample(double t, 
+                         ColorScale scale);
     static std::vector<QColor> sample(ColorScale scale, 
                                       size_t n);
+    static QColor sample(double t, 
+                         const std::vector<QColor>& samples);
     static std::vector<QColor> sample(const std::vector<QColor>& samples, 
                                       size_t n);
+    static QColor sample(double t, 
+                         const QColor& color_min, 
+                         const QColor& color_max);
     static std::vector<QColor> sample(const QColor& color_min, 
                                       const QColor& color_max, 
                                       size_t n);
+    static QColor sample(double t,
+                         const QColor& color_min, 
+                         const QColor& color_mid, 
+                         const QColor& color_max);
     static std::vector<QColor> sample(const QColor& color_min, 
                                       const QColor& color_mid, 
                                       const QColor& color_max,

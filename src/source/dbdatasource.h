@@ -75,6 +75,8 @@ public:
     virtual unsigned int id() const override; // from saved db content
     void id(unsigned int id);
 
+    virtual bool inDataBase() const override { return true; }
+
     bool loadingWanted() const;
     void loadingWanted(bool loading_wanted);
 

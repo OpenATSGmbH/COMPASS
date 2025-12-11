@@ -37,6 +37,7 @@ DataSourcesToolWidget::DataSourcesToolWidget(DataSourceManager& ds_man)
 {
     createUI();
 }
+
 DataSourcesToolWidget::~DataSourcesToolWidget()
 {
 
