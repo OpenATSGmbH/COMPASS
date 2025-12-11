@@ -1918,7 +1918,7 @@
                 "parameters": {
                     "data_type_str": "UCHAR",
                     "db_column_name": "",
-                    "db_expression": "add(num_ref_contrib_sensors,num_ref_contrib_sensors_tn)",
+                    "db_expression": "add(coalesce(num_ref_contrib_sensors,0),coalesce(num_ref_contrib_sensors_tn,0))",
                     "db_expression_variables": [
                         "Num Contributing Sensors",
                         "Num Contributing Sensors Track Number"
