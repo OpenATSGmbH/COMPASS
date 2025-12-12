@@ -132,7 +132,7 @@ void DataSourcesStatusToolWidget::createUI()
     event_box_ = new QTextEdit;
     event_box_->setReadOnly(true);
     event_box_->setAcceptRichText(true);
-    event_box_->document()->setMaximumBlockCount(DataSourcesStatusWidget::MaximumEventQueueLength);
+    event_box_->document()->setMaximumBlockCount(ds_man_.config().sensor_status_max_event_buf_size_);
     event_box_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     event_box_->setPlaceholderText("No Events");
 
@@ -156,8 +156,8 @@ void DataSourcesStatusToolWidget::createUI()
     
     connect(ds_widget_, &DataSourcesStatusWidget::activeTrackerChanged,
             this, &DataSourcesStatusToolWidget::onActiveTrackerChanged);
-    connect(ds_widget_, &DataSourcesStatusWidget::eventAdded,
-            this, &DataSourcesStatusToolWidget::addNewestEvent);
+    connect(ds_widget_, &DataSourcesStatusWidget::eventsAdded,
+            this, &DataSourcesStatusToolWidget::addNewestEvents);
     connect(ds_widget_, &DataSourcesStatusWidget::refreshed,
             this, &DataSourcesStatusToolWidget::updateInfos);
     
@@ -204,7 +204,44 @@ toolbox::ScreenRatio DataSourcesStatusToolWidget::defaultScreenRatio() const
  */
 void DataSourcesStatusToolWidget::addToConfigMenu(QMenu* menu) 
 {
-    ds_widget_->addActionsToConfigMenu(menu);
+    auto update_age_menu = menu->addMenu("Maximum Status Age");
+
+    const auto& max_status_age_options = ds_man_.config().sensor_status_max_status_age_options_;
+    traced_assert(max_status_age_options.is_array());
+
+    auto max_status_age_index = ds_man_.config().sensor_status_max_status_age_index_;
+
+    // Create an exclusive action group
+    QActionGroup* group = new QActionGroup(this);
+    group->setExclusive(true);
+
+    auto addStatusAgeAction = [ max_status_age_index, update_age_menu, this, &max_status_age_options, group ] (unsigned int index)
+    {
+        unsigned int value = max_status_age_options.at(index);
+
+        auto action = update_age_menu->addAction(QString::number(value) + "s");
+        action->setCheckable(true);
+
+        action->setChecked(index == max_status_age_index);
+
+        group->addAction(action);
+
+        connect(action, &QAction::triggered, 
+            [ this, index ] () 
+            { 
+                this->ds_man_.config().sensor_status_max_status_age_index_ = index; 
+                this->resetStatus();
+            });
+    };
+
+    for (size_t i = 0; i < max_status_age_options.size(); ++i)
+        addStatusAgeAction((unsigned int)i);
+
+    auto last_update_action = menu->addAction("Show Last Update ToD");
+    last_update_action->setCheckable(true);
+    last_update_action->setChecked(ds_man_.config().sensor_status_show_last_updates_);
+
+    connect(last_update_action, &QAction::toggled, [ this ] (bool ok) { this->ds_widget_->showLastUpdates(ok); });
 }
 
 /**
@@ -397,18 +434,21 @@ namespace
     void addEventToTextEdit(QTextEdit* edit,
                             const sensor_status::Event& evt)
     {
-        auto txt = evt.toString(false, true);
-        auto col = DataSourcesStatusWidget::colorFromEvent(evt);
+        auto txt  = evt.toString(false, true);
+        auto col  = DataSourcesStatusWidget::colorFromEvent(evt);
+        auto font = DataSourcesStatusWidget::fontFromEvent(evt);
+
+        auto qt_txt = (font.bold() ? "<b>" : "") + QString::fromStdString(txt) + (font.bold() ? "</b>" : "");
     
         if (!col.isValid())
         {
             //add in default color
-            edit->append(QString::fromStdString(txt));
+            edit->append(qt_txt);
         }
         else
         {
             //colorize event text
-            edit->append("<span style='color:" + col.name() + ";'>" + QString::fromStdString(txt) + "</span>");
+            edit->append("<span style='color:" + col.name() + ";'>" + qt_txt + "</span>");
         }
     }
 }
@@ -425,7 +465,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
 
 /**
  */
-void DataSourcesStatusToolWidget::addNewestEvent()
+void DataSourcesStatusToolWidget::addNewestEvents()
 {
     for (const auto& evt : ds_widget_->currentEventQueue().consumeNewEvents())
         addEventToTextEdit(event_box_, *evt);

@@ -91,6 +91,35 @@ DataSourceManager::Config::Config()
 ,   mode_s_range_stddev_     (50)
     //,   use_radar_min_stddev_                 (false)
 {
+    sensor_status_max_status_age_options_ = nlohmann::json::array();
+    sensor_status_max_status_age_options_.push_back(10u); //in seconds
+    sensor_status_max_status_age_options_.push_back(20u);
+    sensor_status_max_status_age_options_.push_back(30u);
+    sensor_status_max_status_age_options_.push_back(40u);
+    sensor_status_max_status_age_options_.push_back(50u);
+    sensor_status_max_status_age_options_.push_back(60u);
+
+    sensor_status_max_status_age_index_ = 1; //20s
+}
+
+double DataSourceManager::Config::sensorStatusMaxStatusAgeValue() const
+{
+    traced_assert(sensor_status_max_status_age_options_.is_array());
+    traced_assert(sensor_status_max_status_age_index_ < sensor_status_max_status_age_options_.size());
+
+    unsigned int value = sensor_status_max_status_age_options_.at(sensor_status_max_status_age_index_);
+
+    return (double)value;
+}
+
+double DataSourceManager::Config::sensorStatusMaxStatusAgeMaxValue() const
+{
+    traced_assert(sensor_status_max_status_age_options_.is_array());
+    traced_assert(sensor_status_max_status_age_options_.size() > 0);
+
+    unsigned int value = sensor_status_max_status_age_options_.back();
+
+    return (double)value;
 }
 
 DataSourceManager::DataSourceManager(const std::string& class_id, const std::string& instance_id,
@@ -114,8 +143,10 @@ DataSourceManager::DataSourceManager(const std::string& class_id, const std::str
 
     //registerParameter("use_radar_min_stddev", &config_.use_radar_min_stddev_, Config().use_radar_min_stddev_);
 
-    //registerParameter("sensor_status_max_secs_scan", &config_.sensor_status_max_secs_scan_, Config().sensor_status_max_secs_scan_);
-    //registerParameter("sensor_status_max_secs_valid", &config_.sensor_status_max_secs_valid_, Config().sensor_status_max_secs_valid_);
+    registerParameter("sensor_status_max_status_age_options", &config_.sensor_status_max_status_age_options_, Config().sensor_status_max_status_age_options_);
+    registerParameter("sensor_status_max_status_age_index", &config_.sensor_status_max_status_age_index_, Config().sensor_status_max_status_age_index_);
+    registerParameter("sensor_status_max_event_buf_size", &config_.sensor_status_max_event_buf_size_, Config().sensor_status_max_event_buf_size_);
+    registerParameter("sensor_status_show_last_updates", &config_.sensor_status_show_last_updates_, Config().sensor_status_show_last_updates_);
 
     createSubConfigurables();
 

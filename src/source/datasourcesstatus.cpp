@@ -41,8 +41,10 @@ std::string Event::typeToString(Type type)
             return "Information missing from CAT063 data";
         case Event::Type::NoCAT063Data:
             return "No CAT063 data found";
-        case Event::Type::StatusChange:
-            return "Status changed";
+        case Event::Type::StatusChangeIntermediate:
+            return "Status changed (intermediate)";
+        case Event::Type::StatusChangeFinal:
+            return "Status changed (final)";
     }
     return "";
 }
@@ -78,7 +80,16 @@ std::string Event::toString(bool add_tracker_info,
             txt += std::to_string(sensor_ds_id.value()) + " ";
     }
 
-    if (type == sensor_status::Event::Type::StatusChange)
+    if (type == sensor_status::Event::Type::StatusChangeIntermediate)
+    {
+        traced_assert(status_change.has_value());
+
+        auto state0_str = sensor_status::displayStringFromSensorStatus(status_change->first);
+        auto state1_str = sensor_status::displayStringFromSensorStatus(status_change->second);
+
+        txt += state0_str + " \u2192 " + state1_str + " ";
+    }
+    else if (type == sensor_status::Event::Type::StatusChangeFinal)
     {
         traced_assert(status_change.has_value());
 
@@ -97,6 +108,14 @@ std::string Event::toString(bool add_tracker_info,
     }
     
     return txt;
+}
+
+/**
+ */
+bool Event::operator<(const Event& other) const
+{
+    return std::tie(ts, type, tracker_key, sensor_ds_id, status_change) <
+           std::tie(other.ts, other.type, other.tracker_key, other.sensor_ds_id, other.status_change);
 }
 
 /*************************************************************************************
@@ -194,8 +213,6 @@ std::string stringFromSensorStatus(SensorStatus status)
             return "Not Connected";
         case SensorStatus::Fresh:
             return "Fresh";
-        case SensorStatus::Coasting:
-            return "Coasting";
         case SensorStatus::Unknown:
             return "Unknown";
     }
