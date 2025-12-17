@@ -164,6 +164,9 @@ public:
     const nlohmann::json& unspecificACIDs() const { return unspecific_acids_; }
     //const nlohmann::json& unspecificModeAs() const { return unspecific_mode_3as_; }
 
+    bool sensorStatusTimeHack() const;
+    void sensorStatusTimeHack(bool value);
+
 protected:
     COMPASS();
 
@@ -230,6 +233,8 @@ protected:
 
     nlohmann::json unspecific_acids_;
     //nlohmann::json unspecific_mode_3as_;
+
+    bool sensor_status_time_hack_{false};
 
 private:
     friend class Client;

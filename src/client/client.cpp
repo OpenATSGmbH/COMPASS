@@ -218,6 +218,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("throw", po::bool_switch(&do_throw_), "")
         ("numerical_crash", po::bool_switch(&do_numerical_crash_), "")
         ("segfault", po::bool_switch(&do_segfault_), "")
+        ("sensor_status_hack", po::bool_switch(&do_sensor_status_hack_), "")
         ;
 
     // Print full command line for debugging
@@ -434,6 +435,9 @@ bool Client::run ()
 
     if (expert_mode_)
         COMPASS::instance().expertMode(true);
+
+    if (do_sensor_status_hack_)
+        COMPASS::instance().sensorStatusTimeHack(do_sensor_status_hack_);
 
     MainWindow& main_window = COMPASS::instance().mainWindow();
     splash.raise();

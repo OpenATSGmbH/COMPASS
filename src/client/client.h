@@ -101,6 +101,7 @@ private:
     bool do_throw_ {false};
     bool do_numerical_crash_ {false};
     bool do_segfault_ {false};
+    bool do_sensor_status_hack_ {false};
 
     void checkAndSetupConfig();
 

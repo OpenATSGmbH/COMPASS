@@ -103,11 +103,11 @@ void DataSourcesStatusToolWidget::createUI()
     ds_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     info_received_label_ = new QLabel("-");
-    auto info_received_txt = new QLabel("Received ToD: ");
+    auto info_received_txt = new QLabel("Last Received: ");
     info_received_txt->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
     info_refreshed_label_ = new QLabel("-");
-    auto info_refreshed_txt = new QLabel("Updated ToD: ");
+    auto info_refreshed_txt = new QLabel("Last Update: ");
     info_refreshed_txt->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
     auto info_layout = new QHBoxLayout;
@@ -169,7 +169,7 @@ void DataSourcesStatusToolWidget::createUI()
  */
 QIcon DataSourcesStatusToolWidget::toolIcon() const 
 {
-    return QIcon(Utils::Files::getIconFilepath("data_sources.png").c_str());
+    return QIcon(Utils::Files::getIconFilepath("sensor_status.png").c_str());
 }
 
 /**

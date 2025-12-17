@@ -370,6 +370,17 @@ LogStore& COMPASS::logStore()
     return log_store_;
 }
 
+bool COMPASS::sensorStatusTimeHack() const
+{
+    return sensor_status_time_hack_;
+}
+void COMPASS::sensorStatusTimeHack(bool value)
+{
+    loginf << "value " << value;
+
+    sensor_status_time_hack_ = value;
+}
+
 bool COMPASS::disableNativeDialogs() const
 {
     return disable_native_dialogs_;
