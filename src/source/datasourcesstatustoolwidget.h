@@ -73,7 +73,7 @@ private:
     void onDataSourcesChanged();
     void onActiveTrackerChanged();
     
-    void addNewestEvent();
+    void addNewestEvents();
 
     void eventBoxSliderChanged(int value);
     void eventFollowBoxToggled(bool ok);

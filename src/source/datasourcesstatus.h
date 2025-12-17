@@ -45,8 +45,7 @@ enum class SensorStatus
 
     //internal states
     Fresh             = 4, // sensor status uninit
-    Coasting          = 5, // sensor coasting (last received CON status too old)
-    Unknown           = 6  // sensor status unknown
+    Unknown           = 5  // sensor status unknown
 };
 
 /**
@@ -55,27 +54,19 @@ enum class SensorStatus
 struct SensorState
 {
     bool isFresh() const { return status == SensorStatus::Fresh; }
-    bool isCoasting() const { return status == SensorStatus::Coasting; }
+    bool isUnknown() const { return status == SensorStatus::Unknown; }
     bool isCON() const { return status == SensorStatus::ConOperational    || 
                                 status == SensorStatus::ConDegraded       ||
                                 status == SensorStatus::ConInitialization ||
                                 status == SensorStatus::ConDisconnected; }
-    void backup()
-    {
-        status_last = status;
-        ts_con_last = ts_con;
-    }
 
     SensorStatus             status = SensorStatus::Fresh;      // current sensor status
     boost::posix_time::ptime ts_con;                            // timestamp the last CON status was obtained
-
-    SensorStatus             status_last = SensorStatus::Fresh; // last sensor status
-    boost::posix_time::ptime ts_con_last;                       // last sensor status CON timestamp
+    unsigned long            rec_num_con;                       // cat063 rec num of con status
 };
 
 typedef std::pair<unsigned int, unsigned int> TrackerKey;     // sensor id, line id
 typedef std::pair<SensorStatus, SensorStatus> StatusChange;   // old and new sensor status
-typedef std::map<unsigned int, SensorState>   SensorStateMap; // sensor id => state
 
 /**
  * A sensor status event (e.g. a status change for a certain sensor at a certain time)
@@ -84,9 +75,10 @@ struct Event
 {
     enum class Type
     {
-        StatusChange = 0,   // sensor status changed
-        MissingInformation, // important sensor status related information was missing from CAT063 buffer (timestamp, CON, sensor id, etc.)
-        NoCAT063Data        // no CAT063 data received from buffers
+        StatusChangeIntermediate = 0, // intermediate sensor status change
+        StatusChangeFinal,            // final sensor status change
+        MissingInformation,           // important sensor status related information was missing from CAT063 buffer (timestamp, CON, sensor id, etc.)
+        NoCAT063Data                  // no CAT063 data received from buffers
     };
 
     bool isGeneral() const { return !tracker_key.has_value(); }
@@ -96,6 +88,8 @@ struct Event
     std::string toString(bool add_tracker_info,
                          bool add_sensor_info) const;
 
+    bool operator<(const Event& other) const;
+
     static std::string typeToString(Type type);
 
     Type                                  type;           // event type
@@ -103,7 +97,6 @@ struct Event
     boost::optional<TrackerKey>           tracker_key;    // tracker the event is assigned to (might be empty in general events)
     boost::optional<unsigned int>         sensor_ds_id;   // id of the involved sensor (might be empty in general events)
     boost::optional<StatusChange>         status_change;  // old and new status (used for StatusChange type events)
-    std::string                           info;           // additional information
 
     bool consumed = false;
 };
