@@ -148,5 +148,12 @@ void printBacktrace() {
     free(symbols);
 }
 
+const char* appDir()
+{
+    return getenv("APPDIR");
+
+    //return nullptr;
+}
+
 }
 }

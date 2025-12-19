@@ -26,7 +26,7 @@ class UDPReceiver
 public:
     UDPReceiver(boost::asio::io_context& io_context, std::shared_ptr<DataSourceLineInfo> line_info,
                 std::function<void(const char*, unsigned int)> data_callback, unsigned int max_read_size);
-
+    ~UDPReceiver();
 
     void handle_receive_from(const boost::system::error_code& error,
                              size_t bytes_recvd);

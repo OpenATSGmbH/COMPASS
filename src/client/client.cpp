@@ -404,7 +404,7 @@ bool Client::run ()
         }
 
         // make system your application font (applies to all widgets)
-        if (getenv("APPDIR") != nullptr)
+        if (Utils::System::appDir() != nullptr)
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
@@ -707,7 +707,7 @@ void Client::checkAndSetupConfig()
 #if USE_EXPERIMENTAL_SOURCE == true
         cout << "COMPASSClient: includes experimental features" << endl;
 
-        const char* appdir = getenv("APPDIR");
+        const char* appdir = Utils::System::appDir();
         if (appdir)
         {
             cout << "COMPASSClient: assuming fuse environment in '" << appdir << "'" << endl;

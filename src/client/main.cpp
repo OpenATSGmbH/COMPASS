@@ -19,6 +19,7 @@
 #include "compass.h"
 #include "logger.h"
 #include "msghandler.h"
+#include "util/system.h"
 
 #include <QThread>
 #include <QTimer>
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
         signal(SIGABRT, signalHandler);
         signal(SIGTERM, signalHandler);
         
-        const bool is_app_image = getenv("APPDIR") != nullptr;
+        const bool is_app_image = Utils::System::appDir() != nullptr;
 
         if (!is_app_image)
         {

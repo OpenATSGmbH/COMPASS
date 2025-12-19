@@ -40,6 +40,7 @@
 #include "result.h"
 #include "dbinstance.h"
 #include "logwidget.h"
+#include "util/system.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -52,7 +53,7 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-const bool COMPASS::is_app_image_ = {getenv("APPDIR") != nullptr};
+const bool COMPASS::is_app_image_ = {Utils::System::appDir() != nullptr};
 
 COMPASS::COMPASS()
     : Configurable("COMPASS", "COMPASS0", 0, "compass.json"), log_store_(!is_app_image_)

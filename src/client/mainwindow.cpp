@@ -65,6 +65,7 @@
 #include "reconstructortask.h"
 #include "reconstructortaskdialog.h"
 #include "util/async.h"
+#include "util/system.h"
 
 #include "logwidget.h"
 
@@ -102,7 +103,7 @@ MainWindow::MainWindow()
     QLocale::setDefault(QLocale::c());
     setLocale(QLocale::c());
 
-    const char* appdir = getenv("APPDIR");
+    const char* appdir = Utils::System::appDir();
     if (appdir && COMPASS::instance().disableNativeDialogs())
         QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs); // disable native
 

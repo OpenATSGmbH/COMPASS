@@ -39,5 +39,7 @@ extern int tbbCurrentThreadID();
 
 extern void printBacktrace();
 
+extern const char* appDir();
+
 }  // namespace System
 }  // namespace Utils
