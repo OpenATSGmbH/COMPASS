@@ -439,42 +439,44 @@ Result DBInterface::cleanupDBInternal()
 
     cleanup_in_progress_ = true;
 
-    Result res_cleanup, res_critical;
+    // Result res_cleanup, res_critical;
 
-    try
-    {
-        auto res_reconnect = db_instance_->reconnect(true, &res_cleanup);
+    // try
+    // {
+    //     auto res_reconnect = db_instance_->reconnect(true, &res_cleanup);
 
-        //reconnection shall never fail
-        if (!res_reconnect.ok())
-            throw std::runtime_error("Reconnecting to database failed: " + res_reconnect.error());
+    //     //reconnection shall never fail
+    //     if (!res_reconnect.ok())
+    //         throw std::runtime_error("Reconnecting to database failed: " + res_reconnect.error());
 
-        if (!res_cleanup.ok())
-        {
-            //cleanup didn't work => log and return false
-            logerr << "Cleanup failed: " << res_cleanup.error();
-        }
+    //     if (!res_cleanup.ok())
+    //     {
+    //         //cleanup didn't work => log and return false
+    //         logerr << "Cleanup failed: " << res_cleanup.error();
+    //     }
 
-        res_critical = Result::succeeded();
-    }
-    catch(const std::exception& ex)
-    {
-        res_critical = Result::failed(ex.what());
-    }
+    //     res_critical = Result::succeeded();
+    // }
+    // catch(const std::exception& ex)
+    // {
+    //     res_critical = Result::failed(ex.what());
+    // }
 
-    cleanup_in_progress_ = false;
+    // cleanup_in_progress_ = false;
 
-    if (!res_critical.ok())
-    {
-        //@TODO: correct way to resolve this worst case?
+    // if (!res_critical.ok())
+    // {
+    //     //@TODO: correct way to resolve this worst case?
 
-        reset();
+    //     reset();
 
-        logerr << "error: " << res_critical.error();
-        throw std::runtime_error(res_critical.error());
-    }
+    //     logerr << "error: " << res_critical.error();
+    //     throw std::runtime_error(res_critical.error());
+    // }
 
-    return res_cleanup;
+    // return res_cleanup;
+
+    return execute("VACUUM");
 }
 
 /**
