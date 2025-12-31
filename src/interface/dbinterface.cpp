@@ -462,7 +462,9 @@ Result DBInterface::cleanupDBInternal()
     //     res_critical = Result::failed(ex.what());
     // }
 
-    // cleanup_in_progress_ = false;
+    auto res = execute("VACUUM");
+
+    cleanup_in_progress_ = false;
 
     // if (!res_critical.ok())
     // {
@@ -476,7 +478,7 @@ Result DBInterface::cleanupDBInternal()
 
     // return res_cleanup;
 
-    return execute("VACUUM");
+    return res;
 }
 
 /**
