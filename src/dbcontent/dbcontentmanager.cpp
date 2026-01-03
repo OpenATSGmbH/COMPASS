@@ -1827,6 +1827,16 @@ void DBContentManager::clearSelectedRecNums()
     }
 }
 
+bool DBContentManager::hasMaxLatency() const
+{
+    return max_latency_.has_value() && !max_latency_->is_not_a_date_time();
+}
+
+boost::posix_time::time_duration DBContentManager::maxLatency() const
+{
+    return *max_latency_;
+}
+
 /**
  */
 void DBContentManager::saveSelectedRecNums()

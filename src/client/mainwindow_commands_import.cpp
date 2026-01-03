@@ -28,6 +28,7 @@
 #include "util/files.h"
 #include "util/stringconv.h"
 #include "util/timeconv.h"
+#include "dbinterface.h"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -933,16 +934,22 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
     }
 
     bool db_opened = COMPASS::instance().dbOpened();
+    assert (db_opened);
     bool db_inmem  = COMPASS::instance().dbInMem();
 
     std::string current_db_filename = (db_opened && !db_inmem) ? COMPASS::instance().lastDbFilename() : "";
 
-    //close current db
-    if (db_opened)
-        COMPASS::instance().mainWindow().closeDBSlot();
+    bool use_db_in_mem = COMPASS::instance().dbInterface().useLiveInMemDB();
 
-    //create in-memory db for live mode
-    COMPASS::instance().mainWindow().createInMemoryDB(current_db_filename);
+    if (use_db_in_mem)
+    {
+        //close current db
+        if (db_opened)
+            COMPASS::instance().mainWindow().closeDBSlot();
+
+        //create in-memory db for live mode
+        COMPASS::instance().mainWindow().createInMemoryDB(current_db_filename);
+    }
 
     ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
 

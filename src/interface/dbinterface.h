@@ -86,17 +86,12 @@ class DBInterface : public QObject, public Configurable
 {
     Q_OBJECT
 
-signals:
-    //void databaseOpenedSignal();
-    //void databaseContentChangedSignal();
-    //void databaseClosedSignal();
-
 public:
     DBInterface(std::string class_id, std::string instance_id, COMPASS* compass);
     virtual ~DBInterface();
 
     virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+                                         const std::string& instance_id) override;
 
     void openDBFile(const std::string& filename, bool overwrite);
     void openDBInMemory();
@@ -235,7 +230,20 @@ public:
 
     static const size_t TableBulkUpdateMinRows;
 
+    bool useLiveInMemDB() const { return use_live_inmem_db_; }
+    unsigned int maxRAMFileGB() const { return max_ram_file_gb_; }
+    unsigned int maxRAMinMemPerc() const { return max_ram_inmem_perc_; }
+    unsigned int numThreads() const { return num_threads_; }
+
 protected:
+    unsigned int max_ram_file_gb_{2};
+    unsigned int max_ram_inmem_perc_{50};
+    unsigned int num_threads_{8};
+    unsigned int num_statements_cleanup_{1000};
+    bool use_live_inmem_db_{true};
+
+    unsigned int num_statements_cnt_{0};
+
     virtual void checkSubConfigurables() override {}
 
     void openDBFileInternal(const std::string& filename, bool overwrite);

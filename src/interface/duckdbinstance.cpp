@@ -16,6 +16,7 @@
  */
 
 #include "duckdbinstance.h"
+#include "dbinterface.h"
 #include "duckdbconnection.h"
 
 #include "logger.h"
@@ -45,9 +46,9 @@ namespace
                 duckdb_destroy_config(&config_);
         }
 
-        void configure(const DuckDBSettings& settings)
+        void configure(const DuckDBSettings& settings, const DBInterface& dbinterface)
         {
-            settings.configure(&config_);
+            settings.configure(&config_, dbinterface);
         }
 
         bool valid() const { return ok_; }
@@ -83,7 +84,7 @@ Result DuckDBInstance::open_impl(const std::string& file_name)
         return Result::failed("Could not create db configuration");
 
     //configure
-    config.configure(settings_);
+    config.configure(settings_, interface());
 
     //open db
     char* error = nullptr;

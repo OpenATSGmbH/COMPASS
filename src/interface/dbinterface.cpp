@@ -87,13 +87,18 @@ const size_t DBInterface::TableBulkUpdateMinRows = 50;
 
 /**
  */
-DBInterface::DBInterface(string class_id, 
-                         string instance_id, 
-                         COMPASS* compass)
+DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
 :   Configurable(class_id, instance_id, compass)
 ,   insert_mt_(true)
 {
     registerParameter("read_chunk_size", &read_chunk_size_, 50000u);
+    
+    registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
+    registerParameter("max_ram_inmem_perc", &max_ram_inmem_perc_, max_ram_inmem_perc_);
+    registerParameter("num_threads", &num_threads_, num_threads_);
+    registerParameter("num_statements_cleanup", &num_statements_cleanup_, num_statements_cleanup_);
+
+    registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
 
     createSubConfigurables();
 }
@@ -435,9 +440,58 @@ Result DBInterface::cleanupDBInternal()
 
     traced_assert(ready());
     traced_assert(!cleanup_in_progress_);
-    traced_assert(!dbInMemory());
+    //traced_assert(!dbInMemory());
 
     cleanup_in_progress_ = true;
+
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
+        auto log_db_status = [&](const string& stage)
+    {
+        try
+        {
+            DBCommand command;
+            // Query raw bytes from duckdb_memory() for precision, while keeping other info from pragma_database_size
+            command.set("SELECT (SELECT sum(memory_usage_bytes) FROM duckdb_memory()) as mem_bytes, memory_limit, wal_size FROM pragma_database_size();");
+
+            PropertyList list;
+            list.addProperty("mem_bytes", PropertyDataType::ULONGINT);
+            list.addProperty("memory_limit", PropertyDataType::STRING);
+            list.addProperty("wal_size", PropertyDataType::STRING);
+            command.list(list);
+
+            shared_ptr<DBResult> result = execute(command);
+            
+            if (result->containsData())
+            {
+                shared_ptr<Buffer> buffer = result->buffer();
+                if (buffer->size() > 0)
+                {
+                    // Get raw bytes
+                    unsigned long mem_bytes = buffer->get<unsigned long>("mem_bytes").get(0);
+                    string mem_limit = buffer->get<string>("memory_limit").get(0);
+                    string wal_size = buffer->get<string>("wal_size").get(0);
+
+                    // Convert to MB with high precision
+                    double mem_mb = mem_bytes / (1024.0 * 1024.0);
+
+                    std::stringstream ss;
+                    ss << std::fixed << std::setprecision(2) << mem_mb;
+
+                    loginf << "duckDB " << stage << " status: "
+                           << "RAM used: " << ss.str() << " MB" 
+                           << " (Limit: " << mem_limit << ")"
+                           << " | WAL size: " << wal_size;
+                }
+            }
+        }
+        catch(const std::exception& ex)
+        {
+            logwrn << "could not query precise db status: " << ex.what();
+        }
+    };
+
+    log_db_status("before");
 
     // Result res_cleanup, res_critical;
 
@@ -462,7 +516,27 @@ Result DBInterface::cleanupDBInternal()
     //     res_critical = Result::failed(ex.what());
     // }
 
-    auto res = execute("VACUUM");
+    auto res = execute("CHECKPOINT");
+
+    if (!res.ok())
+    {
+        logerr << "'CHECKPOINT' failed: " << res.error();
+        throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
+    }
+
+    res = execute("VACUUM");
+
+        if (!res.ok())
+    {
+        logerr << "'VACUUM' failed: " << res.error();
+        throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+    }
+    boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration time_diff = elapsed_time - start_time;
+
+    log_db_status("after " + to_string(time_diff.total_milliseconds()) + "ms");
+
+    num_statements_cnt_ = 0;
 
     cleanup_in_progress_ = false;
 
@@ -2510,6 +2584,14 @@ void DBInterface::insertBuffer(const string& table_name,
         logerr << "inserting into table '" << table_name << "' failed: " << res.error();
         throw runtime_error("DBInterface: insertBuffer: inserting into table '" + table_name + "' failed: " + res.error());
     }
+
+    ++num_statements_cnt_;
+
+    if (num_statements_cnt_ > num_statements_cleanup_)
+    {
+        loginf << "num db statements count reached, doing cleanup";
+        cleanupDBInternal();
+    }
 }
 
 /**
@@ -2799,6 +2881,14 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
 
         std::shared_ptr<DBCommand> command = sqlGenerator().getDeleteCommand(dbcontent, before_timestamp);
         execute(*command.get());
+    }
+
+    ++num_statements_cnt_;
+
+    if (num_statements_cnt_ > num_statements_cleanup_)
+    {
+        loginf << "num db statements count reached, doing cleanup";
+        cleanupDBInternal();
     }
 }
 

@@ -514,7 +514,25 @@ void DataSourcesStatusWidget::dataLoaded()
         bool has_sen_sac   = buffer->hasAnyPropertyNamed(DBContent::var_cat063_sensor_sac_.name());
         bool has_sen_sic   = buffer->hasAnyPropertyNamed(DBContent::var_cat063_sensor_sic_.name());
 
-        traced_assert(has_rn && has_ts && has_ds_id && has_line && has_con && has_sen_sac && has_sen_sic);
+        bool all_vars_present = has_rn && has_ts && has_ds_id && has_line && has_con && has_sen_sac && has_sen_sic;
+
+        if (!all_vars_present)
+        {
+            loginf << "missing required variables for sensor status update:";
+            loginf << "  rec num: " << (has_rn ? "ok" : "missing");
+            loginf << "  timestamp: " << (has_ts ? "ok" : "missing");
+            loginf << "  ds id: " << (has_ds_id ? "ok" : "missing");
+            loginf << "  line id: " << (has_line ? "ok" : "missing");
+            loginf << "  con: " << (has_con ? "ok" : "missing");
+            loginf << "  sensor sac: " << (has_sen_sac ? "ok" : "missing");
+            loginf << "  sensor sic: " << (has_sen_sic ? "ok" : "missing");
+        }
+
+        if(!all_vars_present)
+        {
+            logwrn << "required variables missing, skipping update";
+            return;
+        }
 
         auto& rec_num_vec = buffer->get<unsigned long>(var_rn->name());
         auto& ts_vec      = buffer->get<boost::posix_time::ptime>(var_ts->name());

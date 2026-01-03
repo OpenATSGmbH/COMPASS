@@ -22,6 +22,7 @@
 #include "targetmodel.h"
 #include "viewabledataconfig.h"
 
+#include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/optional.hpp>
 
 #include <QObject>
@@ -198,6 +199,9 @@ public:
     void storeSelectedRecNums(const std::vector<unsigned long>& selected); // to be stored for next load
     void clearSelectedRecNums();
 
+    bool hasMaxLatency() const;
+    boost::posix_time::time_duration maxLatency() const;
+
 protected:
     virtual void checkSubConfigurables() override;
     void finishLoading();
@@ -247,6 +251,8 @@ protected:
     std::map<std::string, std::set<unsigned long>> tmp_selected_rec_nums_; // for storage between loads
 
     std::map<std::string, std::shared_ptr<Buffer>> insert_data_;
+
+    boost::optional<boost::posix_time::time_duration> max_latency_;
 
     bool load_in_progress_{false};
     bool insert_in_progress_{false};
