@@ -69,6 +69,8 @@
 #include <boost/filesystem/path.hpp>
 
 #include <fstream>
+#include <tuple>
+#include <functional>
 
 using namespace Utils;
 using namespace std;
@@ -436,17 +438,16 @@ bool DBInterface::cleanupDB(bool show_dialog)
  */
 Result DBInterface::cleanupDBInternal()
 {
-    loginf << "cleaning db...";
+    loginf << "cleaning db";
 
     traced_assert(ready());
     traced_assert(!cleanup_in_progress_);
-    //traced_assert(!dbInMemory());
 
     cleanup_in_progress_ = true;
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-        auto log_db_status = [&](const string& stage)
+    std::function<std::tuple<string, string, string>()> get_db_status = [&]() -> std::tuple<string, string, string>
     {
         try
         {
@@ -478,10 +479,7 @@ Result DBInterface::cleanupDBInternal()
                     std::stringstream ss;
                     ss << std::fixed << std::setprecision(2) << mem_mb;
 
-                    loginf << "duckDB " << stage << " status: "
-                           << "RAM used: " << ss.str() << " MB" 
-                           << " (Limit: " << mem_limit << ")"
-                           << " | WAL size: " << wal_size;
+                    return std::make_tuple(ss.str(), mem_limit, wal_size);
                 }
             }
         }
@@ -489,32 +487,11 @@ Result DBInterface::cleanupDBInternal()
         {
             logwrn << "could not query precise db status: " << ex.what();
         }
+        return std::make_tuple("?", "?", "?");
     };
 
-    log_db_status("before");
-
-    // Result res_cleanup, res_critical;
-
-    // try
-    // {
-    //     auto res_reconnect = db_instance_->reconnect(true, &res_cleanup);
-
-    //     //reconnection shall never fail
-    //     if (!res_reconnect.ok())
-    //         throw std::runtime_error("Reconnecting to database failed: " + res_reconnect.error());
-
-    //     if (!res_cleanup.ok())
-    //     {
-    //         //cleanup didn't work => log and return false
-    //         logerr << "Cleanup failed: " << res_cleanup.error();
-    //     }
-
-    //     res_critical = Result::succeeded();
-    // }
-    // catch(const std::exception& ex)
-    // {
-    //     res_critical = Result::failed(ex.what());
-    // }
+    string mem_before, limit_before, wal_before;
+    std::tie(mem_before, limit_before, wal_before) = get_db_status();
 
     auto res = execute("CHECKPOINT");
 
@@ -534,23 +511,17 @@ Result DBInterface::cleanupDBInternal()
     boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
 
-    log_db_status("after " + to_string(time_diff.total_milliseconds()) + "ms");
+    string mem_after, limit_after, wal_after;
+    std::tie(mem_after, limit_after, wal_after) = get_db_status();
+
+    loginf << "duckDB cleanup (" << time_diff.total_milliseconds() << "ms): "
+           << "RAM: " << mem_before << " -> " << mem_after << " MB" 
+           << " (Limit: " << limit_after << ")"
+           << (wal_after != "0 bytes" ? " | WAL: " + wal_after : "");
 
     num_statements_cnt_ = 0;
 
     cleanup_in_progress_ = false;
-
-    // if (!res_critical.ok())
-    // {
-    //     //@TODO: correct way to resolve this worst case?
-
-    //     reset();
-
-    //     logerr << "error: " << res_critical.error();
-    //     throw std::runtime_error(res_critical.error());
-    // }
-
-    // return res_cleanup;
 
     return res;
 }

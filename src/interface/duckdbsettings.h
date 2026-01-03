@@ -40,7 +40,7 @@ struct DuckDBSettings
         Descending
     };
 
-    void configure(duckdb_config* config, const DBInterface& dbinterface) const;
+    void configure(duckdb_config* config, const DBInterface& dbinterface, bool db_in_memory) const;
 
     static std::string accessModeAsString(AccessMode mode);
     static std::string sortOrderAsString(SortOrder order);

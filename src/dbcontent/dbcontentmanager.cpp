@@ -47,6 +47,7 @@
 #include <QMessageBox>
 
 #include <algorithm>
+#include <boost/none.hpp>
 #include <string>
 
 using namespace std;
@@ -832,7 +833,8 @@ void DBContentManager::finishInserting()
 
     // ts calc for resume action
 
-    boost::posix_time::ptime min_time_found; // for max latency calculation
+    boost::posix_time::ptime min_tr_time_found; // for max latency calculation
+    string min_tr_time_dbcont;
 
     for (auto& buf_it : insert_data_)
     {
@@ -863,10 +865,17 @@ void DBContentManager::finishInserting()
                 if (has_vec_min_max)
                 {
                     // set min time found
-                    if (min_time_found.is_not_a_date_time())
-                        min_time_found = ts_vec_min;
-                    else
-                        min_time_found = min(min_time_found, ts_vec_min);
+                    if (dbContent(buf_it.first).containsTargetReports())
+                    {
+                        logdbg << "new " << buf_it.first << " min ts with latency " << Time::toString(Time::currentUTCTime() - ts_vec_min);
+
+                        if (min_tr_time_found.is_not_a_date_time())
+                            min_tr_time_found = ts_vec_min;
+                        else
+                            min_tr_time_found = min(min_tr_time_found, ts_vec_min);
+
+                        min_tr_time_dbcont = buf_it.first;
+                    }
 
                     if (hasMinMaxTimestamp())
                     {
@@ -1072,9 +1081,16 @@ void DBContentManager::finishInserting()
 
         tmp_time = microsec_clock::local_time();
 
-        if (!min_time_found.is_not_a_date_time())
-            loginf << "max latency "
-                   << Time::toString(Time::currentUTCTime() - min_time_found);
+        if (!min_tr_time_found.is_not_a_date_time())
+        {
+            max_latency_ = Time::currentUTCTime() - min_tr_time_found;
+            
+            loginf << "max latency " << Time::toString(*max_latency_) << " in " << min_tr_time_dbcont;
+        }
+        else
+        {
+            max_latency_ = boost::none;
+        }
     }
 
     COMPASS::instance().dataSourceManager().updateWidgets();

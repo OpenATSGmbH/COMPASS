@@ -46,9 +46,9 @@ namespace
                 duckdb_destroy_config(&config_);
         }
 
-        void configure(const DuckDBSettings& settings, const DBInterface& dbinterface)
+        void configure(const DuckDBSettings& settings, const DBInterface& dbinterface, bool db_in_memory)
         {
-            settings.configure(&config_, dbinterface);
+            settings.configure(&config_, dbinterface, db_in_memory);
         }
 
         bool valid() const { return ok_; }
@@ -83,8 +83,10 @@ Result DuckDBInstance::open_impl(const std::string& file_name)
     if (!config.valid()) 
         return Result::failed("Could not create db configuration");
 
+    bool db_in_memory = file_name.empty();
+
     //configure
-    config.configure(settings_, interface());
+    config.configure(settings_, interface(), db_in_memory);
 
     //open db
     char* error = nullptr;
