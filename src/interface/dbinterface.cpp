@@ -96,7 +96,7 @@ DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
     registerParameter("read_chunk_size", &read_chunk_size_, 50000u);
     
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
-    registerParameter("max_ram_inmem_perc", &max_ram_inmem_perc_, max_ram_inmem_perc_);
+    registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
     registerParameter("num_statements_cleanup", &num_statements_cleanup_, num_statements_cleanup_);
 

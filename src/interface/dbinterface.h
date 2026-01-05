@@ -232,12 +232,12 @@ public:
 
     bool useLiveInMemDB() const { return use_live_inmem_db_; }
     unsigned int maxRAMFileGB() const { return max_ram_file_gb_; }
-    unsigned int maxRAMinMemPerc() const { return max_ram_inmem_perc_; }
+    unsigned int maxRAMinMemGB() const { return max_ram_inmem_gb_; }
     unsigned int numThreads() const { return num_threads_; }
 
 protected:
     unsigned int max_ram_file_gb_{2};
-    unsigned int max_ram_inmem_perc_{50};
+    unsigned int max_ram_inmem_gb_{8};
     unsigned int num_threads_{8};
     unsigned int num_statements_cleanup_{3600};
     bool use_live_inmem_db_{true};
