@@ -61,6 +61,7 @@ public:
     void close();
     Result reconnect(bool cleanup_db = false, Result* cleanup_result = nullptr);
     Result exportToFile(const std::string& file_name);
+    Result cleanupDBInMem();
 
     const std::string& dbFilename() const { return db_filename_; }
 
@@ -98,6 +99,9 @@ protected:
 
     /// implements db file cleanup (if supported)
     virtual Result cleanupDB_impl(const std::string& db_fn);
+
+    /// implements db file cleanup in mem (if supported)
+    virtual Result cleanupDBInMem_impl();
 
     /// implements db export to a specified file
     virtual Result exportToFile_impl(const std::string& filename) = 0;

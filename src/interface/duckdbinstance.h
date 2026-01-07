@@ -40,6 +40,7 @@ protected:
     void close_impl() override final;
     ResultT<DBConnection*> createConnection_impl(bool verbose) override final;
     Result cleanupDB_impl(const std::string& db_fn) override final;
+    Result cleanupDBInMem_impl() override final;
     Result exportToFile_impl(const std::string& file_name) override final;
 
     std::vector<db::SQLPragma> sqlPragmas() const override final;

@@ -212,6 +212,31 @@ Result DuckDBInstance::cleanupDB_impl(const std::string& db_fn)
 
 /**
  */
+Result DuckDBInstance::cleanupDBInMem_impl()
+{
+    std::string sql = std::string("ATTACH ':memory:' AS backup_db;") +
+                      "COPY FROM DATABASE memory TO backup_db;" + 
+                      "COPY FROM DATABASE backup_db TO memory;";
+
+    duckdb_connection con;
+    if (duckdb_connect(db_, &con) == DuckDBError) 
+    {
+        return Result::failed("Could not open connection to memory db");
+    }
+    
+    auto state = duckdb_query(con, sql.c_str(), nullptr);
+    if (state != DuckDBSuccess)
+    {
+        return Result::failed("Compressing database failed");
+    }
+
+    duckdb_disconnect(&con);
+
+    return Result::succeeded();
+}
+
+/**
+ */
 Result DuckDBInstance::exportToFile_impl(const std::string& file_name)
 {
     //sync to db file (also merges wal-file)

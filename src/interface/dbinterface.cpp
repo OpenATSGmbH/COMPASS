@@ -452,6 +452,9 @@ Result DBInterface::cleanupDBInternal()
     logdbg << "reconnecting";
     auto res = db_instance_->defaultConnection().reconnect();
 
+    if (db_instance_->dbInMem())
+        db_instance_->cleanupDBInMem();
+
     if (!res.ok())
     {
         logerr << "reconnect failed: " << res.error();
