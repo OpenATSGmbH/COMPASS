@@ -21,6 +21,8 @@
 
 #include <duckdb.h>
 
+using namespace std;
+
 /**
  */
 std::string DuckDBSettings::accessModeAsString(AccessMode mode)
@@ -52,6 +54,10 @@ void DuckDBSettings::configure(duckdb_config* config, const DBInterface& dbinter
         loginf << "duckDB file ram limit: " << dbinterface.maxRAMFileGB() << "GB";
         duckdb_set_config(*config, "memory_limit", (std::to_string(dbinterface.maxRAMFileGB()) + "GB").c_str());
     }
+
+    string preserve_order = dbinterface.preserveInsertOrder() ? "true" : "false";
+
+    duckdb_set_config(*config, "preserve_insertion_order", preserve_order.c_str());
     
     duckdb_set_config(*config, "default_order", DuckDBSettings::sortOrderAsString(sort_order_default).c_str());
 }

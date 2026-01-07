@@ -102,6 +102,8 @@ DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
 
     registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
 
+    registerParameter("preserve_insert_order", &preserve_insert_order_, preserve_insert_order_);
+
     createSubConfigurables();
 }
 
@@ -447,6 +449,15 @@ Result DBInterface::cleanupDBInternal()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
+    loginf << "reconnecting";
+    auto res = db_instance_->defaultConnection().reconnect();
+
+    if (!res.ok())
+    {
+        logerr << "reconnect failed: " << res.error();
+        throw runtime_error("DBInterface: cleanupDBInternal: reconnect failed: " + res.error());
+    }
+
     std::function<std::tuple<string, string, string>()> get_db_status = [&]() -> std::tuple<string, string, string>
     {
         try
@@ -493,7 +504,7 @@ Result DBInterface::cleanupDBInternal()
     string mem_before, limit_before, wal_before;
     std::tie(mem_before, limit_before, wal_before) = get_db_status();
 
-    auto res = execute("CHECKPOINT");
+    res = execute("CHECKPOINT");
 
     if (!res.ok())
     {

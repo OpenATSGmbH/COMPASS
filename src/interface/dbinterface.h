@@ -234,6 +234,7 @@ public:
     unsigned int maxRAMFileGB() const { return max_ram_file_gb_; }
     unsigned int maxRAMinMemGB() const { return max_ram_inmem_gb_; }
     unsigned int numThreads() const { return num_threads_; }
+    bool preserveInsertOrder() const { return preserve_insert_order_; }
 
 protected:
     unsigned int max_ram_file_gb_{2};
@@ -241,6 +242,8 @@ protected:
     unsigned int num_threads_{8};
     unsigned int num_statements_cleanup_{3600};
     bool use_live_inmem_db_{true};
+
+    bool preserve_insert_order_{true};
 
     unsigned int num_statements_cnt_{0};
 

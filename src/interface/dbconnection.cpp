@@ -133,6 +133,13 @@ void DBConnection::disconnect()
     connected_ = false;
 }
 
+Result DBConnection::reconnect()
+{
+    disconnect();
+
+    return connect();
+}
+
 /**
  * Executes the given sql query without returning any data or specific error messages.
  */
