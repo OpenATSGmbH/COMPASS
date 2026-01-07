@@ -49,6 +49,7 @@
 #include <QProgressDialog>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTimer>
 
 #include <algorithm>
 #include <malloc.h>
@@ -765,6 +766,9 @@ void ASTERIXImportTask::stop()
 
     stopped_ = true;
 
+    if (data_received_timer_)
+        data_received_timer_->stop();
+
     if (decode_job_)
         decode_job_->setObsolete();
 
@@ -833,6 +837,11 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
         COMPASS::instance().appMode(AppMode::LiveRunning); // set live mode
 
         COMPASS::instance().logInfo("ASTERIX Import") << "started: network";
+
+        data_received_timer_ = std::make_unique<QTimer>();
+        connect(data_received_timer_.get(), &QTimer::timeout, this, &ASTERIXImportTask::checkDataReceivedSlot);
+        data_received_timer_->setInterval(1000);
+        data_received_timer_->start();
     }
     else
         COMPASS::instance().logInfo("ASTERIX Import") << "started: files";
@@ -1437,6 +1446,8 @@ void ASTERIXImportTask::insertDoneSlot()
 
     --num_packets_in_processing_;
 
+    last_live_update_time_ = boost::posix_time::microsec_clock::local_time();
+
     //    double insert_time_ms = (double)(
     //                boost::posix_time::microsec_clock::local_time() - insert_start_time_).total_microseconds() / 1000.0;
 
@@ -1467,6 +1478,23 @@ void ASTERIXImportTask::insertDoneSlot()
 
 /**
 */
+void ASTERIXImportTask::checkDataReceivedSlot()
+{
+    loginf;
+
+    using namespace boost::posix_time;
+
+    if (!num_packets_in_processing_ 
+        && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
+    {
+        loginf << "forcing live update";
+        QMetaObject::invokeMethod(&COMPASS::instance().dbContentManager(), "processLiveModeSlot", Qt::QueuedConnection);
+        last_live_update_time_ = microsec_clock::local_time();
+    }
+}
+
+/**
+*/
 void ASTERIXImportTask::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
     loginf << "current " << toString(app_mode_current)
@@ -1480,15 +1508,22 @@ void ASTERIXImportTask::appModeSwitchSlot (AppMode app_mode_previous, AppMode ap
     if (app_mode_current == AppMode::LiveRunning)
     {
         traced_assert(app_mode_previous == AppMode::LivePaused || app_mode_previous == AppMode::Offline);
+
+        if (data_received_timer_ && !data_received_timer_->isActive())
+            data_received_timer_->start();
     }
     else if (app_mode_current == AppMode::LivePaused)
     {
         traced_assert(app_mode_previous == AppMode::LiveRunning); // can only happen from running
+
+        if (data_received_timer_)
+            data_received_timer_->stop();
     }
     else if (app_mode_current == AppMode::Offline)
     {
         traced_assert(app_mode_previous == AppMode::LiveRunning || app_mode_previous == AppMode::LivePaused);
 
+        // data_received_timer_->stop() called inside stop()
         stop();
     }
 }

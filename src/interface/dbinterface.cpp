@@ -440,7 +440,7 @@ bool DBInterface::cleanupDB(bool show_dialog)
  */
 Result DBInterface::cleanupDBInternal()
 {
-    loginf << "cleaning db";
+    logdbg << "cleaning db";
 
     traced_assert(ready());
     traced_assert(!cleanup_in_progress_);
@@ -449,7 +449,7 @@ Result DBInterface::cleanupDBInternal()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    loginf << "reconnecting";
+    logdbg << "reconnecting";
     auto res = db_instance_->defaultConnection().reconnect();
 
     if (!res.ok())

@@ -42,6 +42,7 @@ class ASTERIXCategoryConfig;
 class ASTERIXStatusDialog;
 
 class QProgressDialog;
+class QTimer;
 
 namespace jASTERIX
 {
@@ -87,6 +88,8 @@ public slots:
     void postprocessObsoleteSlot();
 
     void insertDoneSlot();
+
+    void checkDataReceivedSlot(); // calls live update function if no data was received
 
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
@@ -162,6 +165,7 @@ protected:
     ASTERIXImportSource       source_;
 
     std::unique_ptr<QProgressDialog> file_progress_dialog_;
+    std::unique_ptr<QTimer>          data_received_timer_;
 
     mutable std::shared_ptr<jASTERIX::jASTERIX> jasterix_;
     ASTERIXPostProcess post_process_;
@@ -193,6 +197,8 @@ protected:
     boost::posix_time::ptime start_time_;
     boost::posix_time::ptime last_insert_time_;
     boost::posix_time::ptime last_file_progress_time_;
+
+    boost::posix_time::ptime last_live_update_time_;
 
     bool error_{false};
     std::string error_message_;
