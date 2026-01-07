@@ -968,9 +968,85 @@ void DBContentManager::finishInserting()
     if (COMPASS::instance().appMode() == AppMode::Offline || COMPASS::instance().appMode() == AppMode::LivePaused)
         insert_data_.clear();
 
-    // start clearing old data
-
     if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    {
+        //live mode specific processing
+        processLiveModeSlot();
+    }
+    else
+    {
+        //non-live updates
+        COMPASS::instance().dataSourceManager().updateWidgets();
+        //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
+
+        logdbg << "update widgets + lines took "
+           << String::timeStringFromDouble(
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
+    }
+
+    logdbg << "full update took " << String::timeStringFromDouble(
+                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+}
+
+/**
+ */
+void DBContentManager::processLiveModeSlot()
+{
+    if (COMPASS::instance().appMode() != AppMode::LiveRunning)
+        return;
+
+    using namespace boost::posix_time;
+
+    auto tmp_time = microsec_clock::local_time();
+
+    //compute latency related stuff
+    boost::posix_time::ptime min_tr_time_found; // for max latency calculation
+    string min_tr_time_dbcont;
+
+    for (auto& buf_it : insert_data_)
+    {
+        string dbcont_name = buf_it.first;
+
+        traced_assert(metaCanGetVariable(dbcont_name, DBContent::meta_var_timestamp_));
+
+        // timestamp
+        {
+            Variable& var = metaGetVariable(dbcont_name, DBContent::meta_var_timestamp_);
+            if (buf_it.second->has<boost::posix_time::ptime>(var.dbColumnName()))
+            {
+                NullableVector<boost::posix_time::ptime>& data_vec = buf_it.second->get<boost::posix_time::ptime>(
+                    var.dbColumnName());
+
+                bool has_vec_min_max;
+                ptime ts_vec_min, ts_vec_max;
+
+                tie(has_vec_min_max, ts_vec_min, ts_vec_max) = data_vec.minMaxValues();
+
+                if (has_vec_min_max)
+                {
+                    // set min time found
+                    if (dbContent(buf_it.first).containsTargetReports())
+                    {
+                        logdbg << "new " << buf_it.first << " min ts with latency " << Time::toString(Time::currentUTCTime() - ts_vec_min);
+
+                        if (min_tr_time_found.is_not_a_date_time())
+                            min_tr_time_found = ts_vec_min;
+                        else
+                            min_tr_time_found = min(min_tr_time_found, ts_vec_min);
+
+                        min_tr_time_dbcont = buf_it.first;
+                    }
+                }
+            }
+        }
+    }
+
+    logdbg << "latency check took "
+           << String::timeStringFromDouble(
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
+
+    tmp_time = microsec_clock::local_time();
+
     {
         using namespace boost::posix_time;
 
@@ -983,9 +1059,7 @@ void DBContentManager::finishInserting()
 
     logdbg << "clear old took "
            << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-           << " full " << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
     tmp_time = microsec_clock::local_time();
 
@@ -993,17 +1067,15 @@ void DBContentManager::finishInserting()
 
     bool had_data = data_.size();
 
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning) // do tod cleanup
     {
         addInsertedDataToChache();
 
         logdbg << "insert cache took "
-               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble((microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
-        buffer_cnt = 0;
+        auto buffer_cnt = 0;
         for (auto& buf_it : data_)
             buffer_cnt += buf_it.second->size();
 
@@ -1013,9 +1085,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "cut cache took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
@@ -1031,9 +1101,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "filterDataSources took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         buffer_cnt = 0;
         for (auto& buf_it : data_)
@@ -1049,9 +1117,7 @@ void DBContentManager::finishInserting()
 
             logdbg << "filter buffs took "
                    << String::timeStringFromDouble(
-                          (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-                   << " full " << String::timeStringFromDouble(
-                          (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                          (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
             tmp_time = microsec_clock::local_time();
         }
@@ -1065,9 +1131,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "distribute took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
@@ -1075,9 +1139,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "update cnts took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
@@ -1097,11 +1159,9 @@ void DBContentManager::finishInserting()
 
     //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
-    logdbg << "update lines took "
+    logdbg << "update widgets + lines took "
            << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-           << " full " << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 }
 
 #define ADD_INSERTED_MT

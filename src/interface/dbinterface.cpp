@@ -458,7 +458,7 @@ Result DBInterface::cleanupDBInternal()
         throw runtime_error("DBInterface: cleanupDBInternal: reconnect failed: " + res.error());
     }
 
-    std::function<std::tuple<string, string, string>()> get_db_status = [&]() -> std::tuple<string, string, string>
+    std::function<std::tuple<string, string, string, unsigned long>()> get_db_status = [&]() -> std::tuple<string, string, string, unsigned long>
     {
         try
         {
@@ -490,7 +490,7 @@ Result DBInterface::cleanupDBInternal()
                     std::stringstream ss;
                     ss << std::fixed << std::setprecision(2) << mem_mb;
 
-                    return std::make_tuple(ss.str(), mem_limit, wal_size);
+                    return std::make_tuple(ss.str(), mem_limit, wal_size, mem_bytes);
                 }
             }
         }
@@ -498,11 +498,49 @@ Result DBInterface::cleanupDBInternal()
         {
             logwrn << "could not query precise db status: " << ex.what();
         }
-        return std::make_tuple("?", "?", "?");
+        return std::make_tuple("?", "?", "?", 0);
+    };
+
+    auto get_db_row_count = [&]()
+    {
+        unsigned long row_count = 0;
+
+        try
+        {
+            auto info = db_instance_->defaultConnection().createTableInfo();
+            for (const auto& ti : info.result())
+            {
+                const auto& table_name = ti.second.name();
+
+                PropertyList list;
+                list.addProperty("num_rows", PropertyDataType::ULONGINT);
+
+                DBCommand command;
+                command.set("SELECT COUNT(*) FROM " + table_name);
+                command.list(list);
+
+                std::shared_ptr<DBResult> result = execute(command);
+                if (result->containsData() && result->buffer() && result->buffer()->size() > 0)
+                {
+                    row_count += result->buffer()->get<unsigned long>("num_rows").get(0);
+                }
+                else
+                {
+                    logwrn << "could not query row count for table " << table_name;
+                }
+            }
+        }
+        catch(const std::exception& ex)
+        {
+            logwrn << "could not query db row count: " << ex.what();
+        }
+
+        return row_count;
     };
 
     string mem_before, limit_before, wal_before;
-    std::tie(mem_before, limit_before, wal_before) = get_db_status();
+    unsigned long mem_bytes_before;
+    std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
 
     res = execute("CHECKPOINT");
 
@@ -514,7 +552,7 @@ Result DBInterface::cleanupDBInternal()
 
     res = execute("VACUUM");
 
-        if (!res.ok())
+    if (!res.ok())
     {
         logerr << "'VACUUM' failed: " << res.error();
         throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
@@ -523,12 +561,18 @@ Result DBInterface::cleanupDBInternal()
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
 
     string mem_after, limit_after, wal_after;
-    std::tie(mem_after, limit_after, wal_after) = get_db_status();
+    unsigned long mem_bytes_after;
+    std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
+
+    unsigned long total_row_count = get_db_row_count();
+
+    double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
 
     loginf << "duckDB cleanup (" << time_diff.total_milliseconds() << "ms): "
            << "RAM: " << mem_before << " -> " << mem_after << " MB" 
            << " (Limit: " << limit_after << ")"
-           << (wal_after != "0 bytes" ? " | WAL: " + wal_after : "");
+           << " " << (total_row_count / 1000.0) << "K rows"
+           << " " << kb_per_row << " KB/row";
 
     num_statements_cnt_ = 0;
 

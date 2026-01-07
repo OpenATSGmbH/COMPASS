@@ -61,6 +61,8 @@ public slots:
 
     void metaDialogOKSlot();
 
+    void processLiveModeSlot();
+
 signals:
     void dbContentStatusChanged();
     void dbObjectsChangedSignal();
