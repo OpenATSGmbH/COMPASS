@@ -839,7 +839,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
         COMPASS::instance().logInfo("ASTERIX Import") << "started: network";
 
-        data_received_timer_ = std::make_unique<QTimer>();
+        data_received_timer_.reset(new QTimer);
         connect(data_received_timer_.get(), &QTimer::timeout, this, &ASTERIXImportTask::checkDataReceivedSlot);
         data_received_timer_->setInterval(1000);
         data_received_timer_->start();
