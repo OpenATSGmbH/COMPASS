@@ -440,6 +440,12 @@ bool DBInterface::cleanupDB(bool show_dialog)
  */
 Result DBInterface::cleanupDBInternal()
 {
+    // [FIX] Protect the critical section where the DB instance is destroyed/recreated.
+    // Also required because we call execute(), which expects the lock to be held.
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
+
     logdbg << "cleaning db";
 
     traced_assert(ready());
@@ -448,18 +454,6 @@ Result DBInterface::cleanupDBInternal()
     cleanup_in_progress_ = true;
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
-
-    logdbg << "reconnecting";
-    auto res = db_instance_->defaultConnection().reconnect();
-
-    if (db_instance_->dbInMem())
-        db_instance_->cleanupDBInMem();
-
-    if (!res.ok())
-    {
-        logerr << "reconnect failed: " << res.error();
-        throw runtime_error("DBInterface: cleanupDBInternal: reconnect failed: " + res.error());
-    }
 
     std::function<std::tuple<string, string, string, unsigned long>()> get_db_status = [&]() -> std::tuple<string, string, string, unsigned long>
     {
@@ -545,7 +539,7 @@ Result DBInterface::cleanupDBInternal()
     unsigned long mem_bytes_before;
     std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
 
-    res = execute("CHECKPOINT");
+    auto res = execute("CHECKPOINT");
 
     if (!res.ok())
     {
@@ -553,13 +547,30 @@ Result DBInterface::cleanupDBInternal()
         throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
     }
 
-    res = execute("VACUUM");
+    // logdbg << "reconnecting";
+    // res = db_instance_->defaultConnection().reconnect();
 
-    if (!res.ok())
+    if (db_instance_->dbInMem())
     {
-        logerr << "'VACUUM' failed: " << res.error();
-        throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+        db_instance_->cleanupDBInMem();
+
+        if (!res.ok())
+        {
+            logerr << "reconnect failed: " << res.error();
+            throw runtime_error("DBInterface: cleanupDBInternal: reconnect failed: " + res.error());
+        }
     }
+    else
+    {
+        res = execute("VACUUM");
+
+        if (!res.ok())
+        {
+            logerr << "'VACUUM' failed: " << res.error();
+            throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+        }
+    }
+
     boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
 

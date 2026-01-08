@@ -302,6 +302,7 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
 
     if (data->at("data_blocks").size())
     {
+        boost::mutex::scoped_lock locker(extracted_data_mutex_);
         extracted_data_.emplace_back(std::move(data));
     }
 }

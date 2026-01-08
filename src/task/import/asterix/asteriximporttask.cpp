@@ -27,6 +27,7 @@
 #include "jobmanager.h"
 #include "logger.h"
 #include "asteriximporttaskdialog.h"
+#include "traced_assert.h"
 #include "util/stringconv.h"
 #include "system.h"
 #include "taskmanager.h"
@@ -841,7 +842,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
         data_received_timer_ = std::make_unique<QTimer>();
         connect(data_received_timer_.get(), &QTimer::timeout, this, &ASTERIXImportTask::checkDataReceivedSlot);
         data_received_timer_->setInterval(1000);
-        data_received_timer_->start();
+        //data_received_timer_->start();
     }
     else
         COMPASS::instance().logInfo("ASTERIX Import") << "started: files";
@@ -1482,6 +1483,8 @@ void ASTERIXImportTask::checkDataReceivedSlot()
 {
     loginf;
 
+    traced_assert(COMPASS::instance().appMode() == AppMode::LiveRunning);
+
     using namespace boost::posix_time;
 
     if (!num_packets_in_processing_ 
@@ -1509,8 +1512,8 @@ void ASTERIXImportTask::appModeSwitchSlot (AppMode app_mode_previous, AppMode ap
     {
         traced_assert(app_mode_previous == AppMode::LivePaused || app_mode_previous == AppMode::Offline);
 
-        if (data_received_timer_ && !data_received_timer_->isActive())
-            data_received_timer_->start();
+        // if (data_received_timer_ && !data_received_timer_->isActive())
+        //     data_received_timer_->start();
     }
     else if (app_mode_current == AppMode::LivePaused)
     {

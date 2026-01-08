@@ -46,12 +46,12 @@ void DuckDBSettings::configure(duckdb_config* config, const DBInterface& dbinter
     
     if (db_in_memory)
     {
-        loginf << "duckDB in memory limit: " << dbinterface.maxRAMinMemGB() << "GB"; // % also possible
+        logdbg << "duckDB in memory limit: " << dbinterface.maxRAMinMemGB() << "GB"; // % also possible
         duckdb_set_config(*config, "memory_limit", (std::to_string(dbinterface.maxRAMinMemGB()) + "GB").c_str());
     }
     else
     {
-        loginf << "duckDB file ram limit: " << dbinterface.maxRAMFileGB() << "GB";
+        logdbg << "duckDB file ram limit: " << dbinterface.maxRAMFileGB() << "GB";
         duckdb_set_config(*config, "memory_limit", (std::to_string(dbinterface.maxRAMFileGB()) + "GB").c_str());
     }
 
