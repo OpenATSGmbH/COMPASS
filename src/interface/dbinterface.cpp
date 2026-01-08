@@ -498,6 +498,29 @@ Result DBInterface::cleanupDBInternal()
         return std::make_tuple("?", "?", "?", 0);
     };
 
+    auto get_db_file_size = [&]()
+    {
+        DBCommand command;
+        // Query raw bytes from duckdb_memory() for precision, while keeping other info from pragma_database_size
+        command.set("SELECT database_size FROM pragma_database_size();");
+
+        PropertyList list;
+        list.addProperty("database_size", PropertyDataType::STRING);
+        command.list(list);
+
+        shared_ptr<DBResult> result = execute(command);
+        if (result->containsData())
+        {
+            shared_ptr<Buffer> buffer = result->buffer();
+            if (buffer->size() > 0)
+            {
+                return buffer->get<std::string>("database_size").get(0);
+            }
+        }
+
+        return std::string("?");
+    };
+
     auto get_db_row_count = [&]()
     {
         unsigned long row_count = 0;
@@ -539,39 +562,62 @@ Result DBInterface::cleanupDBInternal()
     unsigned long mem_bytes_before;
     std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
 
-    auto res = execute("CHECKPOINT");
+    auto db_size_before = get_db_file_size();
 
-    if (!res.ok())
+    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
     {
-        logerr << "'CHECKPOINT' failed: " << res.error();
-        throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
+        if (db_instance_->dbInMem())
+        {
+            auto res = execute("CHECKPOINT");
+
+            if (!res.ok())
+            {
+                logerr << "'CHECKPOINT' failed: " << res.error();
+                throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
+            }
+
+            res = execute("VACUUM");
+
+            if (!res.ok())
+            {
+                logerr << "'VACUUM' failed: " << res.error();
+                throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+            }
+        }
+        else
+        {
+            //loginf << "LIIIIIIVE IN FIIIIIIIILE";
+
+            //reconnect and cleanup to make sure the filesize does not grow
+            Result cleanup_result;
+            auto res = db_instance_->reconnect(true, &cleanup_result);
+
+            if (!res.ok() || !cleanup_result.ok())
+            {
+                logerr << "Cleanup failed: " << res.error();
+                throw runtime_error("DBInterface: cleanupDBInternal: Cleanup failed: " + res.error());
+            }
+        }
     }
-
-    res = execute("VACUUM");
-
-    if (!res.ok())
+    else
     {
-        logerr << "'VACUUM' failed: " << res.error();
-        throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
-    }
-
-    // loginf << "reconnecting";
-    // res = db_instance_->defaultConnection().reconnect();
-
-    if (db_instance_->dbInMem())
-    {
-        db_instance_->cleanupDBInMem();
+        //offline
+        auto res = execute("CHECKPOINT");
 
         if (!res.ok())
         {
-            logerr << "reconnect failed: " << res.error();
-            throw runtime_error("DBInterface: cleanupDBInternal: reconnect failed: " + res.error());
+            logerr << "'CHECKPOINT' failed: " << res.error();
+            throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
+        }
+
+        res = execute("VACUUM");
+
+        if (!res.ok())
+        {
+            logerr << "'VACUUM' failed: " << res.error();
+            throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
         }
     }
-    // else
-    // {
-
-    // }
 
     boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
@@ -581,11 +627,13 @@ Result DBInterface::cleanupDBInternal()
     std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
 
     unsigned long total_row_count = get_db_row_count();
-
     double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
 
+    auto db_size_after = get_db_file_size();
+
     loginf << "duckDB cleanup (" << time_diff.total_milliseconds() << "ms): "
-           << "RAM: " << mem_before << " -> " << mem_after << " MB" 
+           << "FILE: " << db_size_before << " -> " << db_size_after
+           << " RAM: " << mem_before << " -> " << mem_after << " MB" 
            << " (Limit: " << limit_after << ")"
            << " " << (total_row_count / 1000.0) << "K rows"
            << " " << kb_per_row << " KB/row";
@@ -594,7 +642,7 @@ Result DBInterface::cleanupDBInternal()
 
     cleanup_in_progress_ = false;
 
-    return res;
+    return true;
 }
 
 /**
