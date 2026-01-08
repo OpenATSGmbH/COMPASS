@@ -2586,6 +2586,7 @@ void DBInterface::insertDBContent(DBContent& dbcontent, std::shared_ptr<Buffer> 
 
     traced_assert(ready());
     traced_assert(buffer);
+    traced_assert(!cleanup_in_progress_);
 
     // create table if required
     if (!existsTable(dbcontent.dbTableName()))
@@ -2604,6 +2605,7 @@ void DBInterface::insertBuffer(const string& table_name,
 
     traced_assert(ready());
     traced_assert(buffer);
+    traced_assert(!cleanup_in_progress_);
 
     if (!existsTable(table_name))
     {
@@ -2634,6 +2636,7 @@ void DBInterface::insertBuffer(const string& table_name,
 void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Buffer>>& buffers)
 {
     traced_assert(ready());
+    traced_assert (!cleanup_in_progress_);
 
     bool db_supports_mt = db_instance_->sqlConfiguration().supports_mt;
     bool exec_mt        = insert_mt_ && db_supports_mt && buffers.size() > 1;
@@ -2919,6 +2922,7 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
                                boost::posix_time::ptime before_timestamp)
 {
     traced_assert(ready());
+    traced_assert(!cleanup_in_progress_);
 
     {
         #ifdef PROTECT_INSTANCE
