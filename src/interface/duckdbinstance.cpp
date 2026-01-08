@@ -260,6 +260,11 @@ Result DuckDBInstance::cleanupDBInMem_impl()
         return Result::failed("Could not open connection to memory db");
     }
     
+    // Perform a checkpoint to flush the WAL to the main storage.
+    // This ensures that the subsequent COPY operation reads from a consistent
+    // state and avoids potential corruption from concurrent operations.
+    duckdb_query(con, "FORCE CHECKPOINT;", nullptr);
+
     std::string sql_export = "ATTACH '" + temp_path + "' AS backup_ram;" +
                              "COPY FROM DATABASE memory TO backup_ram;";
 

@@ -547,7 +547,15 @@ Result DBInterface::cleanupDBInternal()
         throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
     }
 
-    // logdbg << "reconnecting";
+    res = execute("VACUUM");
+
+    if (!res.ok())
+    {
+        logerr << "'VACUUM' failed: " << res.error();
+        throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+    }
+
+    // loginf << "reconnecting";
     // res = db_instance_->defaultConnection().reconnect();
 
     if (db_instance_->dbInMem())
@@ -560,16 +568,10 @@ Result DBInterface::cleanupDBInternal()
             throw runtime_error("DBInterface: cleanupDBInternal: reconnect failed: " + res.error());
         }
     }
-    else
-    {
-        res = execute("VACUUM");
+    // else
+    // {
 
-        if (!res.ok())
-        {
-            logerr << "'VACUUM' failed: " << res.error();
-            throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
-        }
-    }
+    // }
 
     boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
@@ -2624,14 +2626,6 @@ void DBInterface::insertBuffer(const string& table_name,
         logerr << "inserting into table '" << table_name << "' failed: " << res.error();
         throw runtime_error("DBInterface: insertBuffer: inserting into table '" + table_name + "' failed: " + res.error());
     }
-
-    ++num_statements_cnt_;
-
-    if (num_statements_cnt_ > num_statements_cleanup_)
-    {
-        loginf << "num db statements count reached, doing cleanup";
-        cleanupDBInternal();
-    }
 }
 
 /**
@@ -2719,59 +2713,71 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
         }
     }
 
-    unsigned int n = insert_jobs.size();
-
-    logdbg << "created " << n << " job(s)";
-
-    //create connections for multithreading (if supported)
-    std::vector<DBConnectionWrapper> mt_connections;
-    if (db_supports_mt)
     {
-        mt_connections.resize(n);
+#ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+#endif
 
-        for (unsigned int i = 0; i < n; ++i)
+        unsigned int n = insert_jobs.size();
+
+        logdbg << "created " << n << " job(s)";
+
+        // create connections for multithreading (if supported)
+        std::vector<DBConnectionWrapper> mt_connections;
+        if (db_supports_mt)
         {
-            mt_connections[ i ] = db_instance_->concurrentConnection(i);
-            traced_assert(!mt_connections[ i ].isEmpty());
+            mt_connections.resize(n);
 
-            if (mt_connections[ i ].hasError())
+            for (unsigned int i = 0; i < n; ++i)
             {
-                logerr << "creating mt connection failed: " << mt_connections[ i ].error();
-                throw runtime_error("DBInterface: insertDBContent: creating mt connection failed: " + mt_connections[ i ].error());
+                mt_connections[i] = db_instance_->concurrentConnection(i);
+                traced_assert(!mt_connections[i].isEmpty());
+
+                if (mt_connections[i].hasError())
+                {
+                    logerr << "creating mt connection failed: " << mt_connections[i].error();
+                    throw runtime_error(
+                        "DBInterface: insertDBContent: creating mt connection failed: " +
+                        mt_connections[i].error());
+                }
             }
         }
-    }
 
-    //insert buffers
-    std::vector<Result> results(n, 0);
-    if (exec_mt)
-    {
-        //insert multithreaded (if supported)
-        tbb::parallel_for(uint(0), n, [ & ](unsigned int i) 
+        // insert buffers
+        std::vector<Result> results(n, 0);
+        if (exec_mt)
         {
-            auto& job = insert_jobs.at(i);
-            results.at(i) = mt_connections.at(i).connection().insertBuffer(job.table, job.buffer, job.idx_from, job.idx_to);
-        });
-    }
-    else
-    {
-        //single threaded insert
+            // insert multithreaded (if supported)
+            tbb::parallel_for(uint(0), n,
+                              [&](unsigned int i)
+                              {
+                                  auto& job = insert_jobs.at(i);
+                                  results.at(i) = mt_connections.at(i).connection().insertBuffer(
+                                      job.table, job.buffer, job.idx_from, job.idx_to);
+                              });
+        }
+        else
+        {
+            // single threaded insert
+            for (unsigned int i = 0; i < n; ++i)
+            {
+                auto& job = insert_jobs.at(i);
+                results.at(i) = db_instance_->defaultConnection().insertBuffer(
+                    job.table, job.buffer, job.idx_from, job.idx_to);
+            }
+        }
+
+        // check results
         for (unsigned int i = 0; i < n; ++i)
         {
-            auto& job = insert_jobs.at(i);
-            results.at(i) = db_instance_->defaultConnection().insertBuffer(job.table, job.buffer, job.idx_from, job.idx_to);
-        }
-    }
-
-    //check results
-    for (unsigned int i = 0; i < n; ++i)
-    {
-        const auto& table_name = insert_jobs.at(i).table;
-        const auto& result     = results.at(i);
-        if (!result.ok())
-        {
-            logerr << "inserting into table '" << table_name << "' failed: " << result.error();
-            throw runtime_error("DBInterface: insertBuffer: inserting into table '" + table_name + "' failed: " + result.error());
+            const auto& table_name = insert_jobs.at(i).table;
+            const auto& result = results.at(i);
+            if (!result.ok())
+            {
+                logerr << "inserting into table '" << table_name << "' failed: " << result.error();
+                throw runtime_error("DBInterface: insertBuffer: inserting into table '" +
+                                    table_name + "' failed: " + result.error());
+            }
         }
     }
 }
