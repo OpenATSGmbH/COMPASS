@@ -62,9 +62,6 @@ DBContentManager::DBContentManager(const std::string& class_id, const std::strin
 {
     logdbg << "creating subconfigurables";
 
-    registerParameter("max_live_data_age_cache", &max_live_data_age_cache_, 5u);
-    registerParameter("max_live_data_age_db", &max_live_data_age_db_, 60u);
-
     createSubConfigurables();
 
     // check uniqueness of dbcontent ids
@@ -1050,7 +1047,7 @@ void DBContentManager::processLiveModeSlot()
     {
         using namespace boost::posix_time;
 
-        ptime old_time = Time::currentUTCTime() - minutes(max_live_data_age_db_);
+        ptime old_time = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeDb());
 
         logdbg << "deleting data before " << Time::toString(old_time);
 
@@ -1335,7 +1332,7 @@ void DBContentManager::cutCachedData()
 {
     unsigned int buffer_size;
 
-    boost::posix_time::ptime min_ts = Time::currentUTCTime() - boost::posix_time::minutes(max_live_data_age_cache_);
+    boost::posix_time::ptime min_ts = Time::currentUTCTime() - boost::posix_time::minutes(compass_.maxLiveDataAgeCache());
     // max - x minutes
 
     logdbg << "current ts " << Time::toString(Time::currentUTCTime())
@@ -1714,13 +1711,6 @@ nlohmann::json DBContentManager::utnsAsJSON() const
     traced_assert(hasTargetsInfo());
 
     return target_model_->utnsAsJSON();
-}
-
-/**
- */
-unsigned int DBContentManager::maxLiveDataAgeCache() const
-{
-    return max_live_data_age_cache_;
 }
 
 /**

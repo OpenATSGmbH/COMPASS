@@ -66,6 +66,7 @@
 #include <QElapsedTimer>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include <fstream>
@@ -98,9 +99,15 @@ DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
     registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
-    registerParameter("num_statements_cleanup", &num_statements_cleanup_, num_statements_cleanup_);
+    registerParameter("live_cleanup_time_min", &live_cleanup_time_min_, live_cleanup_time_min_);
 
     registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
+    
+    if (use_live_inmem_db_)
+    {
+        logwrn << "version not reliable with live in-mem db, deactivating";
+        use_live_inmem_db_ = false; // TODO REMOVE HACK
+    }
 
     registerParameter("preserve_insert_order", &preserve_insert_order_, preserve_insert_order_);
 
@@ -627,7 +634,7 @@ Result DBInterface::cleanupDBInternal()
     std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
 
     unsigned long total_row_count = get_db_row_count();
-    double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
+    //double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
 
     auto db_size_after = get_db_file_size();
 
@@ -635,10 +642,10 @@ Result DBInterface::cleanupDBInternal()
            << "FILE: " << db_size_before << " -> " << db_size_after
            << " RAM: " << mem_before << " -> " << mem_after << " MB" 
            << " (Limit: " << limit_after << ")"
-           << " " << (total_row_count / 1000.0) << "K rows"
-           << " " << kb_per_row << " KB/row";
+           << " " << (total_row_count / 1000.0) << "K.rows";
+           //<< " " << kb_per_row << " KB/row";
 
-    num_statements_cnt_ = 0;
+    last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
 
     cleanup_in_progress_ = false;
 
@@ -2981,11 +2988,12 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
         execute(*command.get());
     }
 
-    ++num_statements_cnt_;
+    if (last_live_cleanup_time_.is_not_a_date_time())
+        last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
 
-    if (num_statements_cnt_ > num_statements_cleanup_)
+    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::minutes(live_cleanup_time_min_))
     {
-        loginf << "num db statements count reached, doing cleanup";
+        loginf << "live cleanup time reached, doing cleanup";
         cleanupDBInternal();
     }
 }

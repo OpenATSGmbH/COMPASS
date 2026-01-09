@@ -136,6 +136,9 @@ public:
     unsigned int autoLiveRunningResumeAskWaitTime() const; // min
     bool disableConfirmResetViews() const;
 
+    unsigned int maxLiveDataAgeCache() const { return max_live_data_age_cache_; }
+    unsigned int maxLiveDataAgeDb() const { return max_live_data_age_db_; }
+
     bool darkMode() const;
     void darkMode(bool value);
 
@@ -195,6 +198,9 @@ protected:
     bool disable_confirm_reset_views_ {false};
 
     static const bool is_app_image_;
+
+    unsigned int max_live_data_age_cache_ {5};
+    unsigned int max_live_data_age_db_ {60};
 
     unsigned int auto_live_running_resume_ask_time_ {60}; // minutes
     unsigned int auto_live_running_resume_ask_wait_time_ {1}; // minutes

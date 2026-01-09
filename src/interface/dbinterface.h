@@ -240,12 +240,12 @@ protected:
     unsigned int max_ram_file_gb_{2};
     unsigned int max_ram_inmem_gb_{8};
     unsigned int num_threads_{8};
-    unsigned int num_statements_cleanup_{3600};
+    unsigned int live_cleanup_time_min_{60};
     bool use_live_inmem_db_{true};
 
     bool preserve_insert_order_{true};
 
-    unsigned int num_statements_cnt_{0};
+    boost::posix_time::ptime last_live_cleanup_time_;
 
     virtual void checkSubConfigurables() override {}
 

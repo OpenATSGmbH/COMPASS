@@ -91,6 +91,9 @@ COMPASS::COMPASS()
 
     registerParameter("disable_add_remove_views", &disable_add_remove_views_, false);
 
+    registerParameter("max_live_data_age_cache", &max_live_data_age_cache_, 5u);
+    registerParameter("max_live_data_age_db", &max_live_data_age_db_, 60u);
+
     registerParameter("auto_live_running_resume_ask_time", &auto_live_running_resume_ask_time_, 60u);
     registerParameter("auto_live_running_resume_ask_wait_time", &auto_live_running_resume_ask_wait_time_, 1u);
 
@@ -1051,7 +1054,7 @@ void COMPASS::appMode(const AppMode& app_mode)
             msg_box->show();
 
             boost::posix_time::ptime min_ts =
-                    Time::currentUTCTime() - boost::posix_time::minutes(dbcontent_manager_->maxLiveDataAgeCache());
+                    Time::currentUTCTime() - boost::posix_time::minutes(max_live_data_age_cache_);
 
             string custom_filter = "timestamp >= " + to_string(Time::toLong(min_ts));
 
