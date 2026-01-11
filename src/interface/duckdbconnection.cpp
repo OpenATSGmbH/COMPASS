@@ -86,6 +86,10 @@ Result DuckDBConnection::connect_impl()
     if (state != DuckDBSuccess)
         return Result::failed("Could not connect to database");
 
+    state = duckdb_query(connection_, "INSTALL json; LOAD json;", nullptr);
+    if (state != DuckDBSuccess)
+        return Result::failed("Could load JSON extension");
+
     return Result::succeeded();
 }
 

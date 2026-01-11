@@ -106,6 +106,8 @@ void DBContentReadDBJob::run_impl()
                    << ": emitting intermediate read, size " << cached_buffer_->size();
             //cached_buffer_->printProperties();
 
+            //loginf << cached_buffer_->asJSON(10).dump(2);
+
             emit intermediateSignal(cached_buffer_);
 
             cached_buffer_ = nullptr;

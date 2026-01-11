@@ -268,7 +268,7 @@ Result DuckDBInstance::cleanupDBInMem_impl()
     std::string sql_export = "ATTACH '" + temp_path + "' AS backup_ram;" +
                              "COPY FROM DATABASE memory TO backup_ram;";
 
-    loginf << "UGA1";
+    //loginf << "UGA1";
     auto state = duckdb_query(con, sql_export.c_str(), nullptr);
 
     if (state != DuckDBSuccess)
@@ -277,19 +277,19 @@ Result DuckDBInstance::cleanupDBInMem_impl()
         return Result::failed("Exporting database to RAM buffer failed");
     }
 
-    loginf << "UGA2";
+    //loginf << "UGA2";
     duckdb_disconnect(&con);
 
     // 2. FORCE CLOSE ALL CONNECTIONS
     // Call the base class close(), which destroys default_connection_, 
     // concurrent_connections_, and custom_connections_.
     // This is critical to ensure the old duckdb_database handle refcount hits 0.
-    loginf << "UGA3";
+    //loginf << "UGA3";
     close();
 
     // 3. Re-open the database (creates new duckdb_database instance)
     // Use openInMemory() instead of open("") to avoid the base class assertion failure.
-    loginf << "UGA4";
+    //loginf << "UGA4";
     auto res = openInMemory(); 
     if (!res.ok())
     {
@@ -297,7 +297,7 @@ Result DuckDBInstance::cleanupDBInMem_impl()
         return Result::failed(std::string("Could not reopen memory db: ") + res.error());
     }
 
-    loginf << "UGA5";
+    //loginf << "UGA5";
     // 4. Import using a local transient connection on the NEW db_
     if (duckdb_connect(db_, &con) == DuckDBError) 
     {
@@ -309,7 +309,7 @@ Result DuckDBInstance::cleanupDBInMem_impl()
                              "COPY FROM DATABASE backup_ram TO memory;" + 
                              "DETACH backup_ram;";
 
-    loginf << "UGA6";
+    //loginf << "UGA6";
     state = duckdb_query(con, sql_import.c_str(), nullptr);
 
     if (state != DuckDBSuccess)
@@ -317,12 +317,12 @@ Result DuckDBInstance::cleanupDBInMem_impl()
         return Result::failed("Restoring database failed");
     }
 
-    loginf << "UGA7";
+    //loginf << "UGA7";
     duckdb_disconnect(&con);
     
     Files::deleteFile(temp_path);
 
-    loginf << "UGA8";
+    //loginf << "UGA8";
 
     // [FIX] Update the C++ cache of existing tables.
     // openInMemory() scanned an empty DB, so the cache currently thinks no tables exist.

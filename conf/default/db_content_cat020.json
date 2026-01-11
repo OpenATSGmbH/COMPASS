@@ -99,6 +99,23 @@
                     "unit": ""
                 }
             },
+            "Variable46_2": {
+                "parameters": {
+                    "data_type_str": "UINT",
+                    "db_column_name": "",
+                    "db_expression": "CAST(json_array_length(contributing_receivers) AS INTEGER)",
+                    "db_expression_variables": [
+                        "Contributing Receivers"
+                    ],
+                    "description": "Number of contributing receivers",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Num Contributing Receivers",
+                    "representation_str": "STANDARD",
+                    "short_name": "NumRUx",
+                    "unit": ""
+                }
+            },
             "Variable47": {
                 "parameters": {
                     "data_type_str": "JSON",
