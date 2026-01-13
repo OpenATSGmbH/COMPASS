@@ -262,6 +262,18 @@ void FilterGeneratorWidget::accept()
 
     std::string filter_name = filter_name_->text().toStdString();
 
+    if (COMPASS::instance().filterManager().hasSubConfigurable("DBFilter", filter_name))
+    {
+        QMessageBox::critical(this, "Error", "A filter with this name is already present. Please choose a unique filter name.");
+        return;
+    }
+
+    if (data_conditions_.empty())
+    {
+        QMessageBox::critical(this, "Error", "Please add at least one filter condition.");
+        return;
+    }
+
     auto configuration = Configuration::create("DBFilter", filter_name);
 
     for (unsigned int cnt = 0; cnt < data_conditions_.size(); cnt++)
