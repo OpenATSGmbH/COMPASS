@@ -133,34 +133,43 @@ void ManageSectorsTask::addFile(const std::string& filename)
         file_list_ = tmp_list;
     }
 
-    loginf << "filenames '" << file_list_.dump(2) << "'";
-
     current_filename_ = filename;
     parseCurrentFile(false);
 
     if (dialog_)
         dialog_->updateFileList();
+
+    loginf << "filenames '" << file_list_.dump(2) << "'";
+    loginf << "current filename '" << current_filename_ << "'";
 }
 
 void ManageSectorsTask::removeCurrentFilename()
 {
-    loginf << "filename '" << current_filename_ << "'";
+    loginf << "filenames '" << file_list_.dump(2) << "'";
+    loginf << "current filename '" << current_filename_ << "'";
 
     traced_assert(current_filename_.size());
     traced_assert(hasFile(current_filename_));
 
-    if (file_list_.count(current_filename_) != 1)
+    auto it = std::find(file_list_.begin(), file_list_.end(), current_filename_);
+
+    if (it == file_list_.end())
+    {
         throw std::invalid_argument("ManageSectorsTask: removeCurrentFilename: name '" +
                                     current_filename_ + "' not in use");
+    }
 
-    file_list_.erase(current_filename_);
+    file_list_.erase(it);
     current_filename_ = "";
 
     parse_message_ = "";
     found_sectors_num_ = 0;
 
     if (dialog_)
+    {
         dialog_->updateFileList();
+        dialog_->updateParseMessage();
+    }
 }
 
 void ManageSectorsTask::removeAllFiles ()
@@ -174,7 +183,10 @@ void ManageSectorsTask::removeAllFiles ()
     found_sectors_num_ = 0;
 
     if (dialog_)
+    {
         dialog_->updateFileList();
+        dialog_->updateParseMessage();
+    }
 }
 
 void ManageSectorsTask::currentFilename(const std::string& filename)
