@@ -620,7 +620,33 @@ void KalmanChain::insertAt(int idx,
         needs_reestimate_ = true;
     }
 
-    traced_assert(checkIntegrity());
+    bool ok = checkIntegrity();
+
+    if (!ok)
+    {
+        int n = (int)updates_.size();
+
+        int idx_before = idx < 0 ? n - 2 : idx - 1;
+        int idx_after  = idx < 0 ? -1    : idx + 1;
+
+        if (idx_before < 0) 
+            idx_before = -1;
+        if (idx_before >= n) 
+            idx_before = -1;
+
+        if (idx_after < 0) 
+            idx_after = -1;
+        if (idx_after >= n) 
+            idx_after = -1;
+
+        loginf << "integrity check failed";
+        loginf << "inserted at " << idx << "/" << n-1 
+               << " ts " << Utils::Time::toString(ts)
+               << " ts_mm " << (ts_mm.has_value() ? Utils::Time::toString(ts_mm.value()) : "-")
+               << " ts_before " << (idx_before < 0 ? "-" : Utils::Time::toString(updates_.at(idx_before).t))
+               << " ts_after " << (idx_after < 0 ? "-" : Utils::Time::toString(updates_.at(idx_after).t));
+    }
+    traced_assert(ok);
 }
 
 /**
