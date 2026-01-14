@@ -939,7 +939,7 @@ void Buffer::transformVariables(dbContent::VariableSet& list, bool dbcol2dbcontv
         // rename to reflect dbcont variable
         if (current_var_name != transformed_var_name)
         {
-            loginf << "renaming variable " << current_var_name
+            logdbg << "renaming variable " << current_var_name
                    << " to variable name " << transformed_var_name;
 
             switch (data_type)

@@ -94,6 +94,8 @@ DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
 :   Configurable(class_id, instance_id, compass)
 ,   insert_mt_(true)
 {
+    registerParameter("log_verbose", &log_verbose_, log_verbose_);
+
     registerParameter("read_chunk_size", &read_chunk_size_, 50000u);
     
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
@@ -650,6 +652,11 @@ Result DBInterface::cleanupDBInternal()
     cleanup_in_progress_ = false;
 
     return true;
+}
+
+bool DBInterface::logVerbose() const
+{
+    return log_verbose_;
 }
 
 /**

@@ -90,6 +90,8 @@ public:
     DBInterface(std::string class_id, std::string instance_id, COMPASS* compass);
     virtual ~DBInterface();
 
+    bool logVerbose() const;
+
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
 
@@ -237,6 +239,8 @@ public:
     bool preserveInsertOrder() const { return preserve_insert_order_; }
 
 protected:
+    bool log_verbose_ {false};
+
     unsigned int max_ram_file_gb_{2};
     unsigned int max_ram_inmem_gb_{8};
     unsigned int num_threads_{8};

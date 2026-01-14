@@ -49,6 +49,7 @@ public:
     DBInstance(DBInterface* interface); 
     virtual ~DBInstance();
 
+    bool beVerbose() const; // to log or not to log that is the question
     std::string status() const;
 
     bool dbOpen() const;

@@ -59,7 +59,7 @@ DBConnection::DBConnection(DBInstance* instance, bool verbose)
 DBConnection::~DBConnection()
 {
     if (verbose_)
-        logdbg;
+        loginf << "connected " << connected();
 
     traced_assert(!connected());
 }
@@ -87,10 +87,13 @@ std::string DBConnection::status() const
  */
 Result DBConnection::connect()
 {
+    if (verbose_)
+        loginf << "db open " << instance_->dbOpen();
+
     traced_assert(instance_->dbOpen());
 
     if (verbose_)
-        loginf << "connecting to instance '" << instance_->dbFilename() << "'...";
+        loginf << "connecting to instance '" << instance_->dbFilename() << "', connected " << connected();
 
     //close any opened connection
     if (connected())
@@ -98,12 +101,17 @@ Result DBConnection::connect()
 
     auto connect_result = connect_impl();
     if (!connect_result.ok())
+    {
+        if (verbose_)
+            loginf << "connect failed, error '" << connect_result.error() << "'";
+
         return connect_result;
+    }
 
     connected_ = true;
 
     if (verbose_)
-        loginf << "done";
+        loginf << "done with success";
 
     return Result::succeeded();
 }
@@ -114,30 +122,47 @@ Result DBConnection::connect()
 void DBConnection::disconnect()
 {
     if (verbose_)
-        logdbg << "connected " << connected_;
+        loginf << "connected " << connected_;
 
     if (!connected_)
         return;
 
     if (verbose_)
-        logdbg << "";
+        loginf << "stopping read";
 
     //close any active reader
     stopRead();
 
+    if (verbose_)
+        loginf << "stopping performance metrics";
+
     //stop active performance metrics
     stopPerformanceMetrics();
+
+    if (verbose_)
+        loginf << "disconnecting";
 
     disconnect_impl();
 
     connected_ = false;
+
+    if (verbose_)
+        loginf << "done";
 }
 
 Result DBConnection::reconnect()
 {
+    if (verbose_)
+        loginf << "disconnecting";
+
     disconnect();
 
-    return connect();
+    auto res = connect();
+
+    if (!res.ok() && verbose_)
+        loginf << "connect failed, error '" << res.error() << "'";
+
+    return res;
 }
 
 /**
@@ -146,7 +171,7 @@ Result DBConnection::reconnect()
 Result DBConnection::execute(const std::string& sql)
 {
     if (verbose_)
-        logdbg << "sql statement execute: '" << sql << "'";
+        loginf << "sql statement execute: '" << sql << "'";
 
     traced_assert(connected());
 
@@ -159,7 +184,7 @@ Result DBConnection::execute(const std::string& sql)
 std::shared_ptr<DBResult> DBConnection::execute(const std::string& sql, bool fetch_result_buffer)
 {
     if (verbose_)
-        logdbg << "sql statement execute: '" << sql << "'";
+        loginf << "sql statement execute: '" << sql << "'";
 
     traced_assert(connected());
 
@@ -182,7 +207,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const std::string& sql, bool fet
 std::shared_ptr<DBResult> DBConnection::execute(const DBCommand& command)
 {
     if (verbose_)
-        logdbg << "executing single command";
+        loginf << "executing single command";
 
     traced_assert(connected());
 
@@ -206,7 +231,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const DBCommand& command)
 std::shared_ptr<DBResult> DBConnection::execute(const DBCommandList& command_list)
 {
     if (verbose_)
-        logdbg << "executing " << command_list.getNumCommands() << " command(s)";
+        loginf << "executing " << command_list.getNumCommands() << " command(s)";
 
     traced_assert(connected());
 
@@ -249,7 +274,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const DBCommandList& command_lis
         dbresult->buffer(buffer);
 
     if (verbose_)
-        logdbg << "end";
+        loginf << "end";
 
     return dbresult;
 }
@@ -259,6 +284,10 @@ std::shared_ptr<DBResult> DBConnection::execute(const DBCommandList& command_lis
 Result DBConnection::executePragma(const db::SQLPragma& pragma)
 {
     auto sql = sqlGenerator().configurePragma(pragma);
+
+    if (verbose_)
+        loginf << "sql pragma '" << sql << "'";
+
     return execute(sql);
 }
 
@@ -270,6 +299,9 @@ Result DBConnection::createTable(const std::string& table_name,
                                  const std::vector<db::Index>& indices,
                                  bool table_must_not_exist)
 {
+    if (verbose_)
+        loginf << "table_name '" << table_name << "'";
+
     traced_assert(connected());
     traced_assert(instance_);
 
@@ -282,9 +314,17 @@ Result DBConnection::createTable(const std::string& table_name,
         return table_must_not_exist ? Result::failed("table '" + table_name + "' already exists") : Result::succeeded();
     }
 
+    if (verbose_)
+        loginf << "creating table '" << table_name << "'";
+
     auto res = createTableInternal(table_name, column_infos, indices, true);
     if (!res.ok())
+    {
+        if (verbose_)
+            loginf << "create failed with error '" << res.error() << "'";
+
         return res;
+    }
 
     return Result::succeeded();
 }
@@ -296,6 +336,9 @@ Result DBConnection::createTableInternal(const std::string& table_name,
                                          const std::vector<db::Index>& indices,
                                          bool verbose)
 {
+    if (verbose_)
+        loginf << "table_name '" << table_name << "'";
+
     traced_assert(connected());
 
     //get sql statement
@@ -310,6 +353,9 @@ Result DBConnection::createTableInternal(const std::string& table_name,
         return Result::failed(result->error());
     }
 
+    if (verbose_)
+        loginf << "done";
+
     return Result::succeeded();
 }
 
@@ -317,9 +363,20 @@ Result DBConnection::createTableInternal(const std::string& table_name,
  */
 Result DBConnection::deleteTable(const std::string& table_name)
 {
+    if (verbose_)
+        loginf << "table_name '" << table_name << "'";
+
     auto res = execute("DROP TABLE " + table_name + ";");
     if (!res.ok())
+    {
+        if (verbose_)
+            loginf << "delete failed with error '" << res.error() << "'";
+
         return res;
+    }
+
+    if (verbose_)
+        loginf << "done";
 
     return Result::succeeded();
 }
@@ -328,6 +385,9 @@ Result DBConnection::deleteTable(const std::string& table_name)
  */
 Result DBConnection::deleteTableContents(const std::string& table_name)
 {
+    if (verbose_)
+        loginf << "table_name '" << table_name << "'";
+
     return execute("DELETE FROM " + table_name + ";");
 }
 
@@ -340,6 +400,9 @@ Result DBConnection::insertBuffer(const std::string& table_name,
                                   const boost::optional<size_t>& idx_to,
                                   PropertyList* table_properties)
 {
+    if (verbose_)
+        loginf << "table_name '" << table_name << "'";
+
     traced_assert(connected());
     traced_assert(buffer);
 
@@ -376,6 +439,9 @@ Result DBConnection::updateBuffer(const std::string& table_name,
                                   const boost::optional<size_t>& idx_from, 
                                   const boost::optional<size_t>& idx_to)
 {
+    if (verbose_)
+        loginf << "table_name '" << table_name << "'";
+
     traced_assert(connected());
     traced_assert(buffer);
 
@@ -469,9 +535,17 @@ Result DBConnection::updateBuffer_impl(const std::string& table_name,
  */
 ResultT<std::vector<std::string>> DBConnection::getTableList()
 {
+    if (verbose_)
+        loginf;
+
     traced_assert(connected());
 
     auto res = getTableList_impl();
+
+    if (!res.ok())
+    {
+        loginf << "failed with error '" << res.error() << "'";
+    }
 
     //if (!res.first)
     //    logerr << "retrieving table list failed"; 
@@ -487,6 +561,11 @@ ResultT<DBTableInfo> DBConnection::getColumnList(const std::string& table)
     traced_assert(connected());
 
     auto res = getColumnList_impl(table);
+
+    if (!res.ok())
+    {
+        loginf << "failed with error '" << res.error() << "'";
+    }
 
     //if (!res.first)
     //    logerr << "retrieving column list failed"; 
@@ -604,7 +683,7 @@ std::shared_ptr<DBResult> DBConnection::readChunk()
     traced_assert(result->buffer() && result->containsData());
 
     if (verbose_)
-        logdbg << "read " << result->buffer()->size()
+        loginf << "read " << result->buffer()->size()
                << " left " << active_reader_->numLeft() << " hasmore " << result->hasMore();
 
     // if (!result->hasMore())
@@ -662,13 +741,22 @@ bool DBConnection::hasActivePerformanceMetrics() const
  */
 ResultT<DBConnection::TableInfo> DBConnection::createTableInfo()
 {
+    if (verbose_)
+        loginf;
+
     traced_assert(connected());
 
     TableInfo table_info;
 
     auto list_res = getTableList();
+    
     if (!list_res.ok())
+    {
+        if (verbose_)
+            loginf << "failed with error '" << list_res.error() << "'";
+
         return list_res;
+    }
     
     traced_assert(list_res.hasResult());
 

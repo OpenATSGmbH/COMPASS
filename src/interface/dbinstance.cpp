@@ -56,6 +56,11 @@ DBInstance::~DBInstance()
     close();
 }
 
+bool DBInstance::beVerbose() const
+{
+    return interface_.logVerbose();
+}
+
 /**
  * Returns the current instance status.
  */
@@ -151,7 +156,7 @@ Result DBInstance::openInternal(const std::string& file_name)
     db_in_mem_   = in_mem;
 
     //open default connection
-    auto conn_result = createConnection(true);
+    auto conn_result = createConnection(interface_.logVerbose());
     if (!conn_result.ok())
         return conn_result;
 
