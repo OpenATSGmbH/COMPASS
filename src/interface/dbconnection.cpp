@@ -207,7 +207,7 @@ std::shared_ptr<DBResult> DBConnection::execute(const std::string& sql, bool fet
 std::shared_ptr<DBResult> DBConnection::execute(const DBCommand& command)
 {
     if (verbose_)
-        loginf << "executing single command";
+        loginf << "executing single command sql '" << command.get() << "'";
 
     traced_assert(connected());
 
