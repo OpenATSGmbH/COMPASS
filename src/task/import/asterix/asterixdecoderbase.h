@@ -53,11 +53,16 @@ public:
     bool error() const;
     std::string errorMessage() const;
 
+    size_t numWarnings() const;
+    bool warning() const;
+    std::string warningMessage() const;
+
     virtual bool hasStatusInfo() const { return false; };
     virtual std::string statusInfoString() const { return ""; }
     virtual float statusInfoProgress() const { return 0; } // percent
     virtual std::string currentDataSourceName() const { return ""; }
     virtual std::vector<std::string> errors() const;
+    virtual std::vector<std::string> warnings() const;
 
     virtual boost::optional<std::string> requiredASTERIXFraming() const { return {}; }
 
@@ -78,6 +83,7 @@ protected:
     float elapsedSeconds() const;
 
     void logError(const std::string& err = "");
+    void logWarning(const std::string& wrn = "");
 
     virtual bool canRun_impl() const = 0;
     virtual bool canDecode_impl() const = 0;
@@ -102,4 +108,8 @@ private:
     size_t      num_errors_ = 0;
     bool        error_      = false;
     std::string error_message_;
+
+    size_t      num_warnings_ = 0;
+    bool        warning_      = false;
+    std::string warning_message_;
 };

@@ -49,10 +49,12 @@ void ASTERIXPCAPDecoder::stop_impl()
 /**
 */
 bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info, 
-                                   std::string& error) const
+                                   std::string& error,
+                                   std::string& warning) const
 {
     file_info.sections.clear();
     error = "";
+    warning = "";
 
     //already has error?
     if (file_info.hasError())
@@ -70,13 +72,19 @@ bool ASTERIXPCAPDecoder::checkFile(ASTERIXImportFileInfo& file_info,
     }
 
     //parse file and accumulate a little portion of data per detected signature
-    if (!sniffer.readFile(PacketSniffer::ReadStyle::PerSignature,
-                          {}, //we want complete packet stats, so no packet filter
-                          PacketSniffer::DataFilter().maxBytesPerSignature(DecodeCheckMaxBytes)))
+    auto res = sniffer.readFile(PacketSniffer::ReadStyle::PerSignature,
+                                {}, //we want complete packet stats, so no packet filter
+                                PacketSniffer::DataFilter().maxBytesPerSignature(DecodeCheckMaxBytes));
+
+    //read error?
+    if (!res.ok())
     {
         error = "Could not parse PCAP file";
         return false;
     }
+
+    if (res.hasWarning())
+        warning = res.warning();
 
     //check if unrecognized headers have been encountered
     if (sniffer.hasUnknownPacketHeaders())
@@ -371,26 +379,29 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
             break;
 
         //get next big chunk
-        auto data = sniffer.readFileNext(max_packets, max_bytes, signatures);
+        auto data_res = sniffer.readFileNext(max_packets, max_bytes, signatures);
 
         if (!isRunning() || !job() || job()->obsolete())
             break;
 
         //check for errors
-        if (!data.has_value())
+        if (!data_res.ok() || !data_res.hasResult())
         {
             logerr << "could not read data chunk from PCAP";
-            logError("Could not read data chunk from PCAP");
+            logError("Could not read data chunk from PCAP: " + data_res.error());
             break;
         }
 
-        eof = data.value().eof;
+        if (data_res.hasWarning())
+            logWarning(data_res.warning());
+
+        eof = data_res.result().eof;
 
         //more data? => munch munch
         if (!eof)
         {
             //decode chunk
-            const auto& chunk = data.value().chunk_data.data;
+            const auto& chunk = data_res.result().chunk_data.data;
             size_t num_bytes = chunk.size();
 
             loginf << "processing " << num_bytes << " byte(s)"; 

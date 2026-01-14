@@ -42,6 +42,7 @@ public:
     virtual float statusInfoProgress() const override;
     virtual std::string currentDataSourceName() const override;
     virtual std::vector<std::string> errors() const override;
+    virtual std::vector<std::string> warnings() const override;
     
     std::string getCurrentFilename() const;
 
@@ -61,7 +62,9 @@ protected:
 
     virtual void start_impl() override;
 
-    virtual bool checkFile(ASTERIXImportFileInfo& file_info, std::string& error) const { return true; }
+    virtual bool checkFile(ASTERIXImportFileInfo& file_info, 
+                           std::string& error,
+                           std::string& warning) const { return true; }
     virtual bool checkDecoding(ASTERIXImportFileInfo& file_info, 
                                int section_idx, 
                                std::string& information,

@@ -28,15 +28,21 @@ class Result : public std::pair<bool, std::string>
 {
 public:
     Result() : std::pair<bool, std::string>(false, "") {}
-    Result(bool ok, const std::string& err = "") : std::pair<bool, std::string>(ok, err) {}
+    Result(bool ok, const std::string& err = "", const std::string& wrn = "") : std::pair<bool, std::string>(ok, err), warning_(wrn) {}
 
     virtual ~Result() = default;
 
     bool ok() const { return this->first; }
     const std::string& error() const { return this->second; }
 
+    bool hasWarning() const { return !warning_.empty(); }
+    const std::string& warning() const { return warning_; }
+
     static Result failed(const std::string& err = "") { return Result(false, err); }
-    static Result succeeded() { return Result(true, ""); }
+    static Result succeeded(const std::string& wrn = "") { return Result(true, "", wrn); }
+
+private:
+    std::string warning_;
 };
 
 /**
@@ -48,6 +54,7 @@ public:
     ResultT() = default;
     ResultT(bool ok, const std::string& err = "") : Result(ok, err) {}
     ResultT(bool ok, const std::string& err, const boost::optional<T>& result) : Result(ok, err), result_(result) {}
+    ResultT(bool ok, const std::string& err, const boost::optional<T>& result, const std::string& wrn) : Result(ok, err, wrn), result_(result) {}
     ResultT(const Result& result) : Result(result) {}
 
     virtual ~ResultT() = default;
@@ -57,7 +64,7 @@ public:
     bool hasResult() const { return result_.has_value(); }
     const T& result() const { traced_assert(hasResult()); return result_.value(); }
 
-    static ResultT<T> succeeded(const boost::optional<T>& result) { return ResultT<T>(true, "", result); }
+    static ResultT<T> succeeded(const boost::optional<T>& result, const std::string& wrn = "") { return ResultT<T>(true, "", result, wrn); }
 
 private:
     boost::optional<T> result_;

@@ -333,9 +333,12 @@ void ASTERIXJSONDecoder::stop_impl()
 
 /**
 */
-bool ASTERIXJSONDecoder::checkFile(ASTERIXImportFileInfo& file_info, std::string& error) const
+bool ASTERIXJSONDecoder::checkFile(ASTERIXImportFileInfo& file_info, 
+                                   std::string& error,
+                                   std::string& warning) const
 {
     error = "";
+    warning = "";
 
     //already has error?
     if (file_info.hasError())

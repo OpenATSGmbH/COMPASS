@@ -1575,7 +1575,8 @@ void ASTERIXImportTask::checkAllDone()
             << ", inserted " << num_records_ << " rec"
             << " with " << records_per_second << " rec/s";
 
-        auto errors = decoder_->errors();
+        auto errors   = decoder_->errors();
+        auto warnings = decoder_->warnings();
 
         if (!errors.empty())
         {
@@ -1585,6 +1586,16 @@ void ASTERIXImportTask::checkAllDone()
 
             COMPASS::instance().logError("ASTERIX Import")
                 << "Import finished with errors." << "\n\n"
+                << ss.str();
+        }
+        if (!warnings.empty())
+        {
+            std::stringstream ss;
+            for (const auto& w : warnings)
+                ss << w << "\n";
+
+            COMPASS::instance().logWarn("ASTERIX Import")
+                << "Import finished with warnings." << "\n\n"
                 << ss.str();
         }
 
