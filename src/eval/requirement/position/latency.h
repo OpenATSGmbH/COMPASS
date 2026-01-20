@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionLatency : public PositionBase
+class PositionLatency : public PositionBaseProb
 {
 public:
     PositionLatency(

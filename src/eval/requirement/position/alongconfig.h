@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionAlongConfig : public PositionBaseConfig
+class PositionAlongConfig : public PositionBaseProbConfig
 {
 public:
     PositionAlongConfig(const std::string& class_id, const std::string& instance_id,

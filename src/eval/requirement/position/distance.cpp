@@ -37,7 +37,7 @@ PositionDistance::PositionDistance(
             double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
             float threshold_value, COMPARISON_TYPE threshold_value_check_type,
             bool failed_values_of_interest)
-    : PositionBase(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator),
+    : PositionBaseProb(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator),
       threshold_value_(threshold_value), threshold_value_check_type_(threshold_value_check_type),
       failed_values_of_interest_(failed_values_of_interest)
 {

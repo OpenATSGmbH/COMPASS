@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionRadarAzimuth : public PositionBase
+class PositionRadarAzimuth : public PositionBaseProb
 {
 public:
     PositionRadarAzimuth(

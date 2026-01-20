@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
     class PositionDistanceConfig;
 
-    class PositionDistanceConfigWidget : public PositionBaseConfigWidget
+    class PositionDistanceConfigWidget : public PositionBaseProbConfigWidget
     {
         Q_OBJECT
 

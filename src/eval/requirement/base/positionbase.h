@@ -24,14 +24,35 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionBase : public ProbabilityBase
+class PositionBaseProb : public ProbabilityBase
 {
 public:
-  PositionBase(const std::string& name, const std::string& short_name,
-               const std::string& group_name, double prob_threshold,
-               COMPARISON_TYPE prob_check_type, float ref_min_accuracy,
-               EvaluationCalculator& calculator);
-  virtual ~PositionBase();            
+    PositionBaseProb(const std::string& name, 
+                     const std::string& short_name,
+                     const std::string& group_name, 
+                     double prob_threshold,
+                     COMPARISON_TYPE prob_check_type, 
+                     float ref_min_accuracy,
+                     EvaluationCalculator& calculator);
+    virtual ~PositionBaseProb();            
+
+protected:
+    float ref_min_accuracy_ {0};
+};
+
+/**
+*/
+class PositionBaseValue : public Base
+{
+public:
+    PositionBaseValue(const std::string& name, 
+                      const std::string& short_name,
+                      const std::string& group_name, 
+                      double threshold,
+                      COMPARISON_TYPE thres_check_type, 
+                      float ref_min_accuracy,
+                      EvaluationCalculator& calculator);
+    virtual ~PositionBaseValue();            
 
 protected:
     float ref_min_accuracy_ {0};

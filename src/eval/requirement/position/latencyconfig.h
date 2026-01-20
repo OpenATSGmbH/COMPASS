@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionLatencyConfig : public PositionBaseConfig
+class PositionLatencyConfig : public PositionBaseProbConfig
 {
 public:
     PositionLatencyConfig(const std::string& class_id, const std::string& instance_id,

@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionDistance : public PositionBase
+class PositionDistance : public PositionBaseProb
 {
 public:
     PositionDistance(

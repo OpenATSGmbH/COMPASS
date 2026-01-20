@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionRadarRange : public PositionBase
+class PositionRadarRange : public PositionBaseProb
 {
 public:
     PositionRadarRange(

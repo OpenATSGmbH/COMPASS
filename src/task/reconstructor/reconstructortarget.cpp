@@ -2349,6 +2349,11 @@ std::map <std::string, unsigned int> ReconstructorTarget::getDBContentCounts() c
     return counts;
 }
 
+/**
+ * Returns 
+ * - the next written reference data as buffer (ref data in [slice_begin - glue_region, slice_end - glue_region])
+ * - the next glue portion of the reference data as buffer (ref data in [slice_end - glue_region, slice_end])
+ */
 std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget::createReferenceBuffer()
 {
     logdbg2 << "utn " << utn_ << " ref size " << references_.size();

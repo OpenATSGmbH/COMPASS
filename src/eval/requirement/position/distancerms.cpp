@@ -35,7 +35,7 @@ namespace EvaluationRequirement
 PositionDistanceRMS::PositionDistanceRMS(
         const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
         EvaluationCalculator& calculator, double threshold_value)
-    : PositionBase(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN_OR_EQUAL, 
+    : PositionBaseValue(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN_OR_EQUAL, 
         ref_min_accuracy, calculator)
 {
 }

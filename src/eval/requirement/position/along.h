@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionAlong : public PositionBase
+class PositionAlong : public PositionBaseProb
 {
 public:
     PositionAlong(

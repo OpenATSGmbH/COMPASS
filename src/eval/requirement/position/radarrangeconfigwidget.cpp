@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 
 PositionRadarRangeConfigWidget::PositionRadarRangeConfigWidget(PositionRadarRangeConfig& cfg)
-    : PositionBaseConfigWidget(cfg)
+    : PositionBaseProbConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));

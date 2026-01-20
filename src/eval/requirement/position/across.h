@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionAcross : public PositionBase
+class PositionAcross : public PositionBaseProb
 {
 public:
     PositionAcross(

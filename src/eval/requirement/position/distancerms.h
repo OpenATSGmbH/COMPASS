@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionDistanceRMS : public PositionBase
+class PositionDistanceRMS : public PositionBaseValue
 {
 public:
     PositionDistanceRMS(
@@ -35,8 +35,9 @@ public:
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
             const SectorLayer& sector_layer) override;
 
-    std::string probabilityNameShort() const override { return "RMS"; }
-    std::string probabilityName() const override { return "Root mean square"; }
+    virtual std::string getConditionResultNameShort() const override { return "RMS"; }
+    virtual std::string getConditionResultName() const override { return "Root mean square"; }
+    virtual std::string getConditionUnits() const override { return "m"; }
 };
 
 }

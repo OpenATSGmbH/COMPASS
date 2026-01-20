@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 class PositionRadarAzimuthConfig;
 
-class PositionRadarAzimuthConfigWidget : public PositionBaseConfigWidget
+class PositionRadarAzimuthConfigWidget : public PositionBaseProbConfigWidget
 {
     Q_OBJECT
 

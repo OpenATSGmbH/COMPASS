@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionRadarAzimuthConfig : public PositionBaseConfig
+class PositionRadarAzimuthConfig : public PositionBaseProbConfig
 {
 public:
     PositionRadarAzimuthConfig(const std::string& class_id, const std::string& instance_id,

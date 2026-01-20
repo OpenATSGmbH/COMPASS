@@ -36,17 +36,34 @@ class Report;
 namespace EvaluationRequirement
 {
 
-class PositionBase;
-
 /**
  */
-class PositionBaseConfig : public ProbabilityBaseConfig
+class PositionBaseProbConfig : public ProbabilityBaseConfig
 {
     Q_OBJECT
   public:
-    PositionBaseConfig(const std::string& class_id, const std::string& instance_id, Group& group,
-                       EvaluationStandard& standard, EvaluationCalculator& calculator);
-    virtual ~PositionBaseConfig();
+    PositionBaseProbConfig(const std::string& class_id, const std::string& instance_id, Group& group,
+                           EvaluationStandard& standard, EvaluationCalculator& calculator);
+    virtual ~PositionBaseProbConfig();
+
+    virtual void addToReport(std::shared_ptr<ResultReport::Report> report);
+
+    float refMinimumAccuracy() const { return ref_min_accuracy_; }
+    void refMinimumAccuracy(float val) { ref_min_accuracy_ = val; }
+
+  protected:
+    float ref_min_accuracy_{10};
+};
+
+/**
+ */
+class PositionBaseValueConfig : public BaseConfig
+{
+    Q_OBJECT
+  public:
+    PositionBaseValueConfig(const std::string& class_id, const std::string& instance_id, Group& group,
+                            EvaluationStandard& standard, EvaluationCalculator& calculator);
+    virtual ~PositionBaseValueConfig();
 
     virtual void addToReport(std::shared_ptr<ResultReport::Report> report);
 

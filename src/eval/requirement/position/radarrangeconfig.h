@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionRadarRangeConfig : public PositionBaseConfig
+class PositionRadarRangeConfig : public PositionBaseProbConfig
 {
 public:
     PositionRadarRangeConfig(const std::string& class_id, const std::string& instance_id,

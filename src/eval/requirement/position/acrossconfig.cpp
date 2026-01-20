@@ -29,10 +29,11 @@ using namespace std;
 
 namespace EvaluationRequirement
 {
+
 PositionAcrossConfig::PositionAcrossConfig(
         const std::string& class_id, const std::string& instance_id,
         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : PositionBaseConfig(class_id, instance_id, group, standard, calculator)
+    : PositionBaseProbConfig(class_id, instance_id, group, standard, calculator)
 {
     registerParameter("max_abs_value", &max_abs_value_, 50.0f);
 }
@@ -79,6 +80,7 @@ void PositionAcrossConfig::addToReport (std::shared_ptr<ResultReport::Report> re
                   "Maximum absolute across-track position difference between the test and the reference",
                   roundf(prob_ * 10000.0) / 100.0});
 
-    PositionBaseConfig::addToReport(report);
+    PositionBaseProbConfig::addToReport(report);
 }
+
 }
