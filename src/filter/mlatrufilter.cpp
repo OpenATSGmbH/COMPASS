@@ -74,7 +74,8 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
         dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).dbColumnName();        
 
     vector<string> split_str = String::split(rus_str_, ',');
-    vector<vector<unsigned int>> numbers;
+    
+    vector<vector<unsigned int>> numbers; // raw numbers that need no converion
 
     // check if null wanted, and keep only rest
     bool null_wanted = false;
@@ -90,6 +91,9 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
             continue;
         }
 
+        if (!it->size())
+            continue;
+
         // check if number
         unsigned int num_tmp = QString(it->c_str()).toInt(&ok);
 
@@ -102,6 +106,8 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
         ++it;
     }
+
+    loginf << "numbers " << numbers.size() << " null " << null_wanted;
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
@@ -120,11 +126,13 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     ss << " (";
 
+    bool first_in_filter = true;
+
     // add null wanted
     if (null_wanted)
     {
         ss << contrib_dbcol_name << " IS NULL";
-        first = false;
+        first_in_filter = false;
     }
 
     for (auto& ds_it : ru_lookup)
@@ -135,52 +143,13 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
         // add all ru names as numbers
         for (auto& ru_name : split_str)
         {
-            // auto range = ds_it.second.equal_range(String::trim(ru_name));
-            // for (auto it = range.first; it != range.second; ++it)
-            // {
-            //     ds_numbers.push_back(it->second);
-            // }
-
             if (ds_it.second.count(String::trim(ru_name)))
                 ds_numbers.push_back(ds_it.second.at(String::trim(ru_name)));
         }
 
-        {
-            string tmp;
-
-            if (null_wanted)
-                tmp = "null";
-
-            for (auto& values : ds_numbers)
-            {
-                if (tmp.size())
-                    tmp += (match_all_ ? " AND" : " OR");
-
-                if (values.size() == 1)
-                    tmp += " " + to_string(values.at(0));
-                else
-                {
-                    tmp +=  " (";
-
-                    for (unsigned int cnt=0; cnt < values.size(); cnt++) // any of these indexes corresond to a matching name
-                    {
-                        if (cnt != 0)
-                            tmp +=  " OR";
-
-                        tmp += " " + to_string(values.at(cnt));
-                    }
-
-                    tmp +=  ")";
-                }
-            }
-        
-            loginf << "ds_id " << ds_it.first << " rus " << tmp;
-
-        }
-
         if (ds_numbers.size())
         {
-            if (!first)
+            if (!first_in_filter)
                 ss << " OR";
                 
             ss << " (";
@@ -220,11 +189,14 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
             }
             ss << ")";
 
-            first = false;
+            first_in_filter = false;
         }
     }
 
     ss << ")";
+
+    if (first_in_filter)
+        return "";
 
     first = false;
 
