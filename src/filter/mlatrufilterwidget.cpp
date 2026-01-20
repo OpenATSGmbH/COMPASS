@@ -53,6 +53,11 @@ void MLATRUFilterWidget::update()
 
     value_edit_->setText(filter_.rus().c_str());
 
+    if (filter_.checkRUs(filter_.rus()))
+        value_edit_->setStyleSheet("");
+    else
+        value_edit_->setStyleSheet("QLineEdit { background-color: #FF6666; }");
+
     QSignalBlocker blocker(match_all_cb_);
     match_all_cb_->setChecked(filter_.matchAll());
 }
@@ -62,6 +67,11 @@ void MLATRUFilterWidget::valueEditedSlot(const QString& value)
     string value_str = value.toStdString();
 
     loginf << "'" << value_str << "'";
+
+    if (filter_.checkRUs(value_str))
+        value_edit_->setStyleSheet("");
+    else
+        value_edit_->setStyleSheet("QLineEdit { background-color: #FF6666; }");
 
     filter_.rus(value_str);
 }

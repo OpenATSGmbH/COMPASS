@@ -25,6 +25,8 @@
 #include "logger.h"
 #include "stringconv.h"
 
+#include <boost/algorithm/string.hpp>
+
 using namespace std;
 using namespace Utils;
 using namespace nlohmann;
@@ -81,19 +83,9 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     bool null_wanted = false;
     bool ok;
 
+    // add only numbers which do not need conversion, and remove them
     for (auto it = split_str.begin(); it != split_str.end();)
     {
-        // check if null
-        if (String::trim(*it) == "NULL" || String::trim(*it) == "null")
-        {
-            null_wanted = true;
-            it = split_str.erase(it);
-            continue;
-        }
-
-        if (!it->size())
-            continue;
-
         // check if number
         unsigned int num_tmp = QString(it->c_str()).toInt(&ok);
 
@@ -141,10 +133,13 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
         vector<vector<unsigned int>> ds_numbers = numbers;
 
         // add all ru names as numbers
-        for (auto& ru_name : split_str)
+        for (string ru_name : split_str)
         {
-            if (ds_it.second.count(String::trim(ru_name)))
-                ds_numbers.push_back(ds_it.second.at(String::trim(ru_name)));
+            boost::algorithm::trim(ru_name);
+            boost::algorithm::to_lower(ru_name);
+
+            if (ds_it.second.count(ru_name))
+                ds_numbers.push_back(ds_it.second.at(ru_name));
         }
 
         if (ds_numbers.size())
@@ -265,6 +260,58 @@ void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
 std::string MLATRUFilter::rus() const
 {
     return rus_str_;
+}
+
+bool MLATRUFilter::checkRUs(const std::string& rus_str)
+{
+    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    std::set<std::string> known_ru_names;
+
+    for (auto& db_src_it : ds_man.dbDataSources())
+    {
+        if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
+        {
+            for (auto const& pair : db_src_it->mlatRUNames())
+            {
+                if (!known_ru_names.count(pair.first))
+                    known_ru_names.insert(pair.first);
+            }
+        }
+    }
+
+    vector<string> split_str = String::split(rus_str, ',');
+
+    bool ok;
+    
+    // check if null wanted, and keep only rest
+    for (string str : split_str)
+    {
+        boost::algorithm::trim(str);
+        boost::algorithm::to_lower(str);
+
+        if (!str.size())
+            continue;
+
+        // check if null
+        if (str == "null")
+            continue;
+
+        // check if number
+        unsigned int num_tmp = QString(str.c_str()).toInt(&ok);
+
+        if (ok)
+            continue;
+
+        // else a name
+
+        if (!known_ru_names.count(str))
+        {
+            loginf << "ru '" << str << "' not in '" << String::compress(known_ru_names,',') << "'";
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void MLATRUFilter::rus(const std::string& rus_str)

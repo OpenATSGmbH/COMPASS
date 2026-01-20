@@ -24,6 +24,8 @@
 #include "traced_assert.h"
 #include "csvimport.h"
 
+#include <boost/algorithm/string.hpp>
+
 using namespace Utils;
 using namespace std;
 using namespace nlohmann;
@@ -691,7 +693,13 @@ std::map<std::string, std::vector<unsigned int>> DataSourceBase::mlatRUNames() c
     for (auto& ru_it : remote_unit_info_)
     {
         if (ru_it.second)
+        {
+            std::string name = ru_it.second->name();
+            boost::algorithm::trim(name);
+            boost::algorithm::to_lower(name);
+            
             ret[ru_it.second->name()].push_back(ru_it.first);
+        }
     }
 
     return ret;

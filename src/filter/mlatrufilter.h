@@ -41,6 +41,8 @@ public:
     std::string rus() const;
     void rus(const std::string& rus_str);
 
+    bool checkRUs(const std::string& rus_str);
+
     bool matchAll() const;
     void matchAll(bool match_all);
 

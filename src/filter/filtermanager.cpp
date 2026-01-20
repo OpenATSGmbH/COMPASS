@@ -500,6 +500,14 @@ void FilterManager::dataSourcesChangedSlot()
         traced_assert(filter);
         filter->updateDataSourcesSlot();
     }
+
+    if (hasFilter("MLAT RUs"))
+    {
+        MLATRUFilter* filter = dynamic_cast<MLATRUFilter*>(getFilter("MLAT RUs"));
+        traced_assert(filter);
+        if (filter->widget())
+            filter->widget()->update();
+    }
 }
 
 void FilterManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
