@@ -28,7 +28,7 @@ namespace EvaluationRequirement
 {
     class PositionAlongConfig;
 
-    class PositionAlongConfigWidget : public PositionBaseConfigWidget
+    class PositionAlongConfigWidget : public PositionBaseProbConfigWidget
     {
         Q_OBJECT
 

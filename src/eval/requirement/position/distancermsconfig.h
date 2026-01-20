@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionDistanceRMSConfig : public PositionBaseConfig
+class PositionDistanceRMSConfig : public PositionBaseValueConfig
 {
 public:
     PositionDistanceRMSConfig(const std::string& class_id, const std::string& instance_id,

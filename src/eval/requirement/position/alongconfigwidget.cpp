@@ -28,7 +28,7 @@ namespace EvaluationRequirement
 {
 
 PositionAlongConfigWidget::PositionAlongConfigWidget(PositionAlongConfig& cfg)
-    : PositionBaseConfigWidget(cfg)
+    : PositionBaseProbConfigWidget(cfg)
 {
     traced_assert(prob_edit_);
     prob_edit_->setToolTip("Probability of acceptable along-track position");

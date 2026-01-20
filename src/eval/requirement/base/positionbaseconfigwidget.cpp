@@ -28,9 +28,13 @@
 namespace EvaluationRequirement 
 {
 
+/*******************************************************************************************
+ * PositionBaseProbConfigWidget
+ *******************************************************************************************/
+
 /**
 */
-PositionBaseConfigWidget::PositionBaseConfigWidget(PositionBaseConfig& cfg)
+PositionBaseProbConfigWidget::PositionBaseProbConfigWidget(PositionBaseProbConfig& cfg)
 :   ProbabilityBaseConfigWidget(cfg)
 {
     traced_assert(form_layout_);
@@ -39,7 +43,7 @@ PositionBaseConfigWidget::PositionBaseConfigWidget(PositionBaseConfig& cfg)
     ref_min_acc_edit_->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
     ref_min_acc_edit_->setToolTip("Minimum Reference Accuracy");
     connect(ref_min_acc_edit_, &QLineEdit::textEdited, this,
-            &PositionBaseConfigWidget::minRefAccuracyEditSlot);
+            &PositionBaseProbConfigWidget::minRefAccuracyEditSlot);
 
     form_layout_->addRow("Minimum Reference Accuracy [m]", ref_min_acc_edit_);
 
@@ -47,9 +51,9 @@ PositionBaseConfigWidget::PositionBaseConfigWidget(PositionBaseConfig& cfg)
 
 /**
 */
-PositionBaseConfig& PositionBaseConfigWidget::config()
+PositionBaseProbConfig& PositionBaseProbConfigWidget::config()
 {
-    PositionBaseConfig* config = dynamic_cast<PositionBaseConfig*>(&config_);
+    PositionBaseProbConfig* config = dynamic_cast<PositionBaseProbConfig*>(&config_);
     traced_assert(config);
 
     return *config;
@@ -57,7 +61,52 @@ PositionBaseConfig& PositionBaseConfigWidget::config()
 
 /**
 */
-void PositionBaseConfigWidget::minRefAccuracyEditSlot(QString value)
+void PositionBaseProbConfigWidget::minRefAccuracyEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().refMinimumAccuracy(val);
+    else
+        loginf << "invalid value";
+}
+
+/*******************************************************************************************
+ * PositionBaseValueConfigWidget
+ *******************************************************************************************/
+
+/**
+*/
+PositionBaseValueConfigWidget::PositionBaseValueConfigWidget(PositionBaseValueConfig& cfg)
+:   BaseConfigWidget(cfg)
+{
+    traced_assert(form_layout_);
+
+    ref_min_acc_edit_ = new QLineEdit(QString::number(config().refMinimumAccuracy()));
+    ref_min_acc_edit_->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
+    ref_min_acc_edit_->setToolTip("Minimum Reference Accuracy");
+    connect(ref_min_acc_edit_, &QLineEdit::textEdited, this,
+            &PositionBaseValueConfigWidget::minRefAccuracyEditSlot);
+
+    form_layout_->addRow("Minimum Reference Accuracy [m]", ref_min_acc_edit_);
+}
+
+/**
+*/
+PositionBaseValueConfig& PositionBaseValueConfigWidget::config()
+{
+    PositionBaseValueConfig* config = dynamic_cast<PositionBaseValueConfig*>(&config_);
+    traced_assert(config);
+
+    return *config;
+}
+
+/**
+*/
+void PositionBaseValueConfigWidget::minRefAccuracyEditSlot(QString value)
 {
     loginf << "value " << value.toStdString();
 

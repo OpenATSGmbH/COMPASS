@@ -24,11 +24,12 @@ class QLineEdit;
 namespace EvaluationRequirement 
 {
 
-class PositionBaseConfig;
+class PositionBaseProbConfig;
+class PositionBaseValueConfig;
 
 /**
 */
-class PositionBaseConfigWidget : public ProbabilityBaseConfigWidget
+class PositionBaseProbConfigWidget : public ProbabilityBaseConfigWidget
 {
     Q_OBJECT
 
@@ -36,11 +37,30 @@ public slots:
     void minRefAccuracyEditSlot(QString value);
 
 public:
-    PositionBaseConfigWidget(PositionBaseConfig& cfg);
-    virtual ~PositionBaseConfigWidget() = default;
+    PositionBaseProbConfigWidget(PositionBaseProbConfig& cfg);
+    virtual ~PositionBaseProbConfigWidget() = default;
 
 protected:
-    PositionBaseConfig& config();
+    PositionBaseProbConfig& config();
+
+    QLineEdit* ref_min_acc_edit_{nullptr};
+};
+
+/**
+*/
+class PositionBaseValueConfigWidget : public BaseConfigWidget
+{
+    Q_OBJECT
+
+public slots:
+    void minRefAccuracyEditSlot(QString value);
+
+public:
+    PositionBaseValueConfigWidget(PositionBaseValueConfig& cfg);
+    virtual ~PositionBaseValueConfigWidget() = default;
+
+protected:
+    PositionBaseValueConfig& config();
 
     QLineEdit* ref_min_acc_edit_{nullptr};
 };
