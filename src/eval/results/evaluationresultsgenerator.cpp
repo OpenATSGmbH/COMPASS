@@ -579,6 +579,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     // store targets to result
     eval_result->setTargets(calculator_.data().toTargets());
+    
 
     loginf << "storing results...";
 

@@ -27,10 +27,14 @@ namespace Utils
 
 TimeWindow::TimeWindow() {}
 
-TimeWindow::TimeWindow(const boost::posix_time::ptime& begin, const boost::posix_time::ptime& end)
+TimeWindow::TimeWindow(const boost::posix_time::ptime& begin, 
+                       const boost::posix_time::ptime& end,
+                       const std::string& comment)
 {
     std::get<0>(time_window_) = begin;
     std::get<1>(time_window_) = end;
+
+    comment_ = comment;
 
     traced_assert(valid());
 }
@@ -49,15 +53,19 @@ bool TimeWindow::valid() const
 void TimeWindow::setFrom(const nlohmann::json& json)
 {
     traced_assert(json.is_array());
-    traced_assert(json.size() == 2);
+    traced_assert(json.size() == 2 || json.size() == 3);
 
     traced_assert(json.at(0).is_string());
     traced_assert(json.at(1).is_string());
+    traced_assert(json.size() < 3 || json.at(2).is_string());
 
     time_window_ = {{},{}};
 
     std::get<0>(time_window_) = Time::fromString(json.at(0));
     std::get<1>(time_window_) = Time::fromString(json.at(1));
+
+    if (json.size() == 3)
+        comment_ = json.at(2).get<std::string>();
 
     traced_assert(valid());
 }
@@ -70,13 +78,19 @@ nlohmann::json TimeWindow::getAsJson() const
 
     json_result.push_back(Time::toString(std::get<0>(time_window_)));
     json_result.push_back(Time::toString(std::get<1>(time_window_)));
+    json_result.push_back(comment_);
 
     return json_result;
 }
 
-std::string TimeWindow::asStr() const
+std::string TimeWindow::asStr(bool with_comment) const
 {
-    return Time::toString(std::get<0>(time_window_)) + " - " + Time::toString(std::get<1>(time_window_));
+    std::string str = Time::toString(std::get<0>(time_window_)) + " - " + Time::toString(std::get<1>(time_window_));
+
+    if (with_comment && !comment_.empty())
+        str += " " + comment_;
+
+    return str;
 }
 
 bool TimeWindow::contains(const boost::posix_time::ptime& ts) const
@@ -93,11 +107,16 @@ const boost::posix_time::ptime& TimeWindow::begin() const
 {
     return std::get<0>(time_window_);
 }
+
 const boost::posix_time::ptime& TimeWindow::end() const
 {
     return std::get<1>(time_window_);
 }
 
+const std::string& TimeWindow::comment() const
+{
+    return comment_;
+}
 
 // --------------------
 
@@ -122,7 +141,7 @@ bool TimeWindowCollection::contains(const boost::posix_time::ptime& ts) const
     return false;
 }
 
-void TimeWindowCollection::setFrom(nlohmann::json& json)
+void TimeWindowCollection::setFrom(const nlohmann::json& json)
 {
     time_windows_.clear();
     traced_assert(json.is_array());
@@ -153,7 +172,7 @@ nlohmann::json TimeWindowCollection::asJSON() const
     return json_result;
 }
 
-std::string TimeWindowCollection::asString() const
+std::string TimeWindowCollection::asString(bool with_comments) const
 {
     ostringstream ss;
 
@@ -162,7 +181,7 @@ std::string TimeWindowCollection::asString() const
         if (ss.str().size())
             ss << endl;
 
-        ss << tw_it.asStr();
+        ss << tw_it.asStr(with_comments);
     }
 
     return ss.str();

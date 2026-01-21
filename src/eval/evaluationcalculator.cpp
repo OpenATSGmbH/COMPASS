@@ -235,13 +235,18 @@ void EvaluationCalculator::readSettings()
     registerParameter("report_split_results_by_mops", &settings_.report_split_results_by_mops_, Settings().report_split_results_by_mops_);
     registerParameter("report_split_results_by_aconly_ms", &settings_.report_split_results_by_aconly_ms_, Settings().report_split_results_by_aconly_ms_);
 
-    //grid generation
+    // grid generation
     registerParameter("grid_num_cells_x", &settings_.grid_num_cells_x, Settings().grid_num_cells_x);
     registerParameter("grid_num_cells_y", &settings_.grid_num_cells_y, Settings().grid_num_cells_y);
 
-    //histogram generation
+    // histogram generation
     registerParameter("histogram_num_bins", &settings_.histogram_num_bins, Settings().histogram_num_bins);
-    
+
+    // global and target constraints
+    registerParameter("global_time_window_json_", &global_time_window_json_, nlohmann::json());
+    registerParameter("global_exclusion_time_windows_json_", &global_exclusion_time_windows_json_, nlohmann::json());
+    registerParameter("target_constraints_json_", &target_constraints_json_, nlohmann::json());
+
     updateDerivedParameters();
 }
 
@@ -280,8 +285,43 @@ void EvaluationCalculator::checkSubConfigurables()
  */
 void EvaluationCalculator::updateDerivedParameters()
 {
+    //data sources
     data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
     data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
+
+    //various constraints
+    global_time_window_.reset();
+    if (!global_time_window_json_.is_null())
+    {
+        global_time_window_ = Utils::TimeWindow();
+        global_time_window_->setFrom(global_time_window_json_);
+    }
+
+    global_exclusion_time_windows_.reset();
+    if (!global_exclusion_time_windows_json_.is_null())
+    {
+        global_exclusion_time_windows_ = Utils::TimeWindowCollection();
+        global_exclusion_time_windows_->setFrom(global_exclusion_time_windows_json_);
+    }
+
+    target_constraints_.clear();
+    if (target_constraints_json_.is_object())
+    {
+        for (const auto& tc : target_constraints_json_.items())
+        {
+            QString s = QString::fromStdString(tc.key());
+
+            bool ok;
+            auto utn = s.toUInt(&ok);
+            traced_assert(ok);
+
+            dbContent::TargetConstraints c;
+            ok = c.fromJSON(tc.value());
+            traced_assert(ok);
+
+            target_constraints_[ utn ] = c;
+        }
+    }
 }
 
 /**
@@ -329,6 +369,11 @@ void EvaluationCalculator::reset()
     //clear data sources
     data_sources_ref_.clear();
     data_sources_tst_.clear();
+
+    //clear constraints
+    global_time_window_.reset();
+    global_exclusion_time_windows_.reset();
+    target_constraints_.clear();
 }
 
 /**
@@ -352,6 +397,7 @@ void EvaluationCalculator::clearData()
 /**
  */
 Result EvaluationCalculator::evaluate(bool update_report,
+                                      bool update_constraints,
                                       const std::vector<unsigned int>& utns,
                                       const std::vector<Evaluation::RequirementResultID>& requirements)
 {
@@ -375,6 +421,13 @@ Result EvaluationCalculator::evaluate(bool update_report,
 
         clearData();
 
+        if (update_constraints)
+        {
+            global_time_window_.reset();
+            global_exclusion_time_windows_.reset();
+            target_constraints_.clear();
+        }
+
         emit resultsChanged();
 
         // actually load
@@ -386,6 +439,9 @@ Result EvaluationCalculator::evaluate(bool update_report,
         // update stuff before load
         updateCompoundCoverage(activeDataSourcesTst());
         updateSectorROI();
+
+        if (update_constraints)
+            updateExternalConstraints();
 
         if (Blocking)
         {
@@ -1191,6 +1247,8 @@ const EvaluationCalculator::ResultMap& EvaluationCalculator::results() const
     return results_gen_->results(); 
 }
 
+/**
+ */
 const std::string& EvaluationCalculator::resultName() const
 {
     return results_gen_->resultName(); 
@@ -1659,6 +1717,66 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
     }
 
     tst_srcs_coverage_->finalize();
+}
+
+/**
+ */
+void EvaluationCalculator::updateExternalConstraints()
+{
+    //store applied load constraints of eval manager
+    global_time_window_.reset();
+    global_time_window_json_ = {};
+
+    global_exclusion_time_windows_.reset();
+    global_exclusion_time_windows_json_ = {};
+
+    if (eval_man_.useTimestampFilter())
+    {
+        global_time_window_      = Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd());
+        global_time_window_json_ = global_time_window_->getAsJson();
+
+        global_exclusion_time_windows_      = eval_man_.excludedTimeWindows();
+        global_exclusion_time_windows_json_ = global_exclusion_time_windows_->asJSON();
+    }
+
+    //store current constraints of existing targets
+    target_constraints_      = COMPASS::instance().dbContentManager().targetModel()->targetConstraints(true);
+    target_constraints_json_ = nlohmann::json::object();
+
+    for (const auto& tc : target_constraints_)
+    {
+        auto key = std::to_string(tc.first);
+        target_constraints_json_[ key ] = tc.second.toJSON();
+    }
+}
+
+/**
+ */
+bool EvaluationCalculator::isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const
+{
+    // check global load exclusion windows
+    if (global_exclusion_time_windows_.has_value() && global_exclusion_time_windows_->contains(ts))
+        return false;
+
+    //check global load window
+    if (global_time_window_.has_value() && !global_time_window_->contains(ts))
+        return false;
+
+    return true;
+}
+
+/**
+ */
+const dbContent::TargetConstraints* EvaluationCalculator::targetConstraint(unsigned int utn) const
+{
+    if (target_constraints_.empty())
+        return nullptr;
+
+    auto it = target_constraints_.find(utn);
+    if (it == target_constraints_.end())
+        return nullptr;
+
+    return &it->second;
 }
 
 /**

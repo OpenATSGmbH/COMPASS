@@ -1045,8 +1045,8 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
     fil_man.useFilters(true);
     fil_man.disableAllFilters();
 
-    const auto& roi      = calculator.sectorROI();
-    const auto& utns     = calculator.evaluationUTNs();
+    const auto& roi  = calculator.sectorROI();
+    const auto& utns = calculator.evaluationUTNs();
     
     // position data
     if (roi.has_value())
@@ -1086,10 +1086,10 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
         utn_fil->loadViewPointConditions(filter);
     }
 
-    // timestamp filter
-
+    // timestamp-based load filters
     if (use_timestamp_filter_)
     {
+        // configure timestamp filter
         traced_assert(fil_man.hasFilter("Timestamp"));
         DBFilter* fil = fil_man.getFilter("Timestamp");
 
@@ -1100,6 +1100,7 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
         filter["Timestamp"]["Timestamp Minimum"] = Time::toString(load_timestamp_begin_);
         filter["Timestamp"]["Timestamp Maximum"] = Time::toString(load_timestamp_end_);
 
+        // configure exclustion windows filter
         if (load_filtered_time_windows_.size())
         {
             filter["Excluded Time Windows"]["Windows"] =

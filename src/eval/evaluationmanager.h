@@ -180,10 +180,10 @@ private:
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;
 
-    bool use_timestamp_filter_ {false};
-    boost::posix_time::ptime load_timestamp_begin_;
-    boost::posix_time::ptime load_timestamp_end_;
-    Utils::TimeWindowCollection load_filtered_time_windows_;
+    bool                        use_timestamp_filter_ {false}; // enables/disables BOTH application of timestamp load filter and exclusion windows load filter
+    boost::posix_time::ptime    load_timestamp_begin_;         // ts filter begin (added to timestamp load filter)
+    boost::posix_time::ptime    load_timestamp_end_;           // ts filter end (added to timestamp load filter)
+    Utils::TimeWindowCollection load_filtered_time_windows_;   // exclusion windows (added to exclusion windows load filter)
 
     std::string last_result_name_;
 };

@@ -299,8 +299,10 @@ QVariant TargetModel::getCellContent(const Target& target, Columns col) const
     {
         QString tmp;
 
+        bool with_comments = false;
+
         if (target.evalExcludedTimeWindows().size())
-            tmp = target.evalExcludedTimeWindows().asString().c_str();
+            tmp = target.evalExcludedTimeWindows().asString(with_comments).c_str();
 
         if (target.evalExcludedRequirements().size())
         {
@@ -829,6 +831,8 @@ void TargetModel::updateToDB(unsigned int utn)
     COMPASS::instance().dbInterface().updateTargets(targets_info);
 }
 
+/**
+ */
 void TargetModel::updateToDB(std::set<unsigned int> utns)
 {
     loginf << "saving utns " << String::compress(utns,',');
@@ -880,23 +884,45 @@ void TargetModel::showModeACColumns(bool show)
     show_mode_ac_columns_ = show;
 }
 
+/**
+ */
 void TargetModel::showADSBColumns(bool show)
 {
     show_adsb_columns_ = show;
 }
 
+/**
+ */
 void TargetModel::updateCommentColumn()
 {
     emit dataChanged(index(0, ColComment), index(this->rowCount(), ColComment), {Qt::DisplayRole});
 }
 
+/**
+ */
 void TargetModel::updateEvalUseColumn()
 {
     emit dataChanged(index(0, ColUseInEval), index(this->rowCount(), ColUseInEval), {Qt::DecorationRole});
 }
+
+/**
+ */
 void TargetModel::updateEvalDetailsColumn()
 {
     emit dataChanged(index(0, ColUseEvalDetails), index(this->rowCount(), ColUseEvalDetails), {Qt::DisplayRole});
+}
+
+/**
+ */
+std::map<unsigned int, TargetConstraints> TargetModel::targetConstraints(bool active_only) const
+{
+    std::map<unsigned int, TargetConstraints> constraints;
+
+    for (const auto& target : target_data_)
+        if (!active_only || target.constraints().hasActiveConstraint())
+            constraints[ target.utn_ ] = target.constraints();
+
+    return constraints;
 }
 
 }

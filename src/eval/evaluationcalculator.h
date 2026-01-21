@@ -25,6 +25,8 @@
 #include "evaluationresultsgenerator.h"
 #include "datasourcecompoundcoverage.h"
 
+#include "target.h"
+
 #include "result.h"
 
 #include "json_fwd.hpp"
@@ -104,6 +106,7 @@ public:
     void reset();
     void clearData();
     Result evaluate(bool update_report = true,
+                    bool update_constraints = true,
                     const std::vector<unsigned int>& utns = std::vector<unsigned int>(),
                     const std::vector<Evaluation::RequirementResultID>& requirements = std::vector<Evaluation::RequirementResultID>());
     void updateResultsToChanges();
@@ -220,6 +223,13 @@ public:
     const boost::optional<ROI>& sectorROI() const { return sector_roi_; }
     const std::vector<unsigned int>& evaluationUTNs() const { return eval_utns_; }
 
+    const boost::optional<Utils::TimeWindow>& globalTimeWindow() const { return global_time_window_; }
+    const boost::optional<Utils::TimeWindowCollection>& globalExclusionTimeWindows() const { return global_exclusion_time_windows_; }
+    const std::map<unsigned int, dbContent::TargetConstraints>& targetConstraints() const { return target_constraints_; }
+
+    bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
+    const dbContent::TargetConstraints* targetConstraint(unsigned int utn) const;
+
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
 signals:
@@ -243,6 +253,8 @@ protected:
 
     void updateDerivedParameters();
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
+
+    void updateExternalConstraints();
 
     void loadedDataData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     Result loadingDone();
@@ -274,6 +286,13 @@ protected:
     std::unique_ptr<EvaluationData>                        data_;
     std::unique_ptr<EvaluationResultsGenerator>            results_gen_;
     std::unique_ptr<dbContent::DataSourceCompoundCoverage> tst_srcs_coverage_;
+
+    nlohmann::json                                         global_time_window_json_;
+    boost::optional<Utils::TimeWindow>                     global_time_window_;
+    nlohmann::json                                         global_exclusion_time_windows_json_;
+    boost::optional<Utils::TimeWindowCollection>           global_exclusion_time_windows_;
+    nlohmann::json                                         target_constraints_json_;
+    std::map<unsigned int, dbContent::TargetConstraints>   target_constraints_;
 
     bool use_fast_sector_inside_check_ = true;
 };

@@ -145,21 +145,24 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
     if (state == UpdateState::FullUpdateNeeded ||
         state == UpdateState::Locked)
     {
+        // run full update (also needed to remove lock)
         loginf << "running full update";
         res = calculator_->evaluate(true);
     }
     else if (state == UpdateState::PartialUpdateNeeded)
     {
+        // partial update: decide if full update is needed anyways
         bool needs_recompute = !calculator_->evaluated() || 
                                 calculator_->hasConstraints();
-
         if (needs_recompute)
         {
+            // full update needed, because result is yet uninitialized
             loginf << "running initial full update";
             res = calculator_->evaluate(true);
         }
         else
         {
+            // only partial update needed
             loginf << "running partial update";
             calculator_->updateResultsToChanges();
         }

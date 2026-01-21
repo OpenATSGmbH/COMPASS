@@ -24,7 +24,32 @@
 using namespace std;
 using namespace Utils;
 
-namespace dbContent {
+namespace dbContent 
+{
+
+nlohmann::json TargetConstraints::toJSON() const
+{
+    nlohmann::json j;
+    j[ Target::KEY_EVAL_USE                   ] = use_in_eval_;
+    j[ Target::KEY_EVAL_EXCLUDED_TIME_WINDOWS ] = excluded_time_windows_.asJSON();
+    j[ Target::KEY_EVAL_EXCLUDED_REQUIREMENTS ] = excluded_requirements_;
+
+    return j;
+}
+
+bool TargetConstraints::fromJSON(const nlohmann::json& j)
+{
+    *this = {};
+
+    if (j.contains(Target::KEY_EVAL_USE))
+        use_in_eval_ = j[ Target::KEY_EVAL_USE ];
+    if (j.contains(Target::KEY_EVAL_EXCLUDED_TIME_WINDOWS))
+        excluded_time_windows_.setFrom(j[ Target::KEY_EVAL_EXCLUDED_TIME_WINDOWS ]);
+    if (j.contains(Target::KEY_EVAL_EXCLUDED_REQUIREMENTS))
+        excluded_requirements_ = j[ Target::KEY_EVAL_EXCLUDED_REQUIREMENTS ].get<std::set<std::string>>();
+    
+    return true;
+}
 
 const std::string Target::KEY_EVAL                       = "eval";
 const std::string Target::KEY_EVAL_USE                   = "use";
@@ -59,25 +84,25 @@ Target::Target(unsigned int utn, nlohmann::json info)
     if (!info_.contains(KEY_EVAL) || !info_.at(KEY_EVAL).contains(KEY_EVAL_USE))
         info_[KEY_EVAL][KEY_EVAL_USE] = true;
 
-    use_in_eval_ = info_.at(KEY_EVAL).at(KEY_EVAL_USE);
+    constraints_.use_in_eval_ = info_.at(KEY_EVAL).at(KEY_EVAL_USE);
 
     if (info_.at(KEY_EVAL).contains(KEY_EVAL_EXCLUDED_TIME_WINDOWS))
-        excluded_time_windows_.setFrom(info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_TIME_WINDOWS));
+        constraints_.excluded_time_windows_.setFrom(info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_TIME_WINDOWS));
 
     if (info_.at(KEY_EVAL).contains(KEY_EVAL_EXCLUDED_REQUIREMENTS))
-        excluded_requirements_ = info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_REQUIREMENTS).get<std::set<std::string>>();
+        constraints_.excluded_requirements_ = info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_REQUIREMENTS).get<std::set<std::string>>();
 }
 
 bool Target::useInEval() const
 {
-    return use_in_eval_;
+    return constraints_.use_in_eval_;
 }
 
 void Target::useInEval(bool value)
 {
-    use_in_eval_ = value;
+    constraints_.use_in_eval_ = value;
 
-    info_[KEY_EVAL][KEY_EVAL_USE] = use_in_eval_;
+    info_[KEY_EVAL][KEY_EVAL_USE] = constraints_.use_in_eval_;
 }
 
 std::string Target::comment() const
@@ -465,18 +490,18 @@ TargetBase::Category Target::targetCategory() const
 
 const Utils::TimeWindowCollection& Target::evalExcludedTimeWindows() const
 {
-    return excluded_time_windows_;
+    return constraints_.excluded_time_windows_;
 }
 
 void Target::evalExcludedTimeWindows(const Utils::TimeWindowCollection& collection)
 {
-    excluded_time_windows_ = collection;
-    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_TIME_WINDOWS] = excluded_time_windows_.asJSON();
+    constraints_.excluded_time_windows_ = collection;
+    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_TIME_WINDOWS] = constraints_.excluded_time_windows_.asJSON();
 }
 
 void Target::clearEvalExcludedTimeWindows()
 {
-    excluded_time_windows_.clear();
+    constraints_.excluded_time_windows_.clear();
 
     if (info_[KEY_EVAL].contains(KEY_EVAL_EXCLUDED_TIME_WINDOWS))
         info_[KEY_EVAL].erase(KEY_EVAL_EXCLUDED_TIME_WINDOWS);
@@ -484,24 +509,21 @@ void Target::clearEvalExcludedTimeWindows()
 
 const std::set<std::string>& Target::evalExcludedRequirements() const
 {
-    return excluded_requirements_;
+    return constraints_.excluded_requirements_;
 }
 
 void Target::evalExcludedRequirements(const std::set<std::string>& excl_req)
 {
-    excluded_requirements_ = excl_req;
-    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_REQUIREMENTS] = excluded_requirements_;
+    constraints_.excluded_requirements_ = excl_req;
+    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_REQUIREMENTS] = constraints_.excluded_requirements_;
 }
 
 void Target::clearEvalExcludedRequirements()
 {
-    excluded_requirements_.clear();
+    constraints_.excluded_requirements_.clear();
 
     if (info_[KEY_EVAL].contains(KEY_EVAL_EXCLUDED_REQUIREMENTS))
         info_[KEY_EVAL].erase(KEY_EVAL_EXCLUDED_REQUIREMENTS);
 }
 
 }
-
-
-
