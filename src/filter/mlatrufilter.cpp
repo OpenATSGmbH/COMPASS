@@ -86,6 +86,21 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     // add only numbers which do not need conversion, and remove them
     for (auto it = split_str.begin(); it != split_str.end();)
     {
+        string tmp = *it;
+
+        boost::algorithm::trim(tmp);
+        boost::algorithm::to_lower(tmp);
+
+        if (!tmp.size())
+            continue;
+
+        if (tmp == "null")
+        {
+            null_wanted = true;
+            it = split_str.erase(it);
+            continue;
+        }
+        
         // check if number
         unsigned int num_tmp = QString(it->c_str()).toInt(&ok);
 
