@@ -36,6 +36,7 @@
 GridView::Settings::Settings() 
 :   value_type            (grid2d::ValueType::ValueTypeCountValid)
 ,   grid_resolution       (50       )
+,   max_grid_resolution   (2000       )
 ,   render_color_value_min(""       )
 ,   render_color_value_max(""       )
 ,   render_color_scale    ((int)colorscale::ColorScale::Green2Red)
@@ -55,6 +56,7 @@ GridView::GridView(const std::string& class_id,
 {
     registerParameter("value_type", &settings_.value_type, Settings().value_type);
     registerParameter("grid_resolution", &settings_.grid_resolution, Settings().grid_resolution);
+    registerParameter("max_grid_resolution", &settings_.max_grid_resolution, Settings().max_grid_resolution);
     registerParameter("render_color_scale", &settings_.render_color_scale, Settings().render_color_scale);
     registerParameter("render_color_num_steps", &settings_.render_color_num_steps, Settings().render_color_num_steps);
     registerParameter("render_color_value_min", &settings_.render_color_value_min, Settings().render_color_value_min);
