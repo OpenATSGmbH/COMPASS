@@ -228,9 +228,9 @@ void EvaluationTargetData::updateConstraints() const
     auto constraint = calculator_.targetConstraint(utn_);
 
     if (constraint)
-        constraints_ = *constraint;
+        constraints_ = *constraint; // constraint stored for this utn in calculator
     else
-        constraints_ = {};
+        constraints_ = {};          // default constraints: none
 }
 
 /**

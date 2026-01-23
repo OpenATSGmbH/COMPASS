@@ -147,18 +147,18 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
     {
         // run full update (also needed to remove lock)
         loginf << "running full update";
-        res = calculator_->evaluate(true);
+        res = calculator_->update();
     }
     else if (state == UpdateState::PartialUpdateNeeded)
     {
         // partial update: decide if full update is needed anyways
         bool needs_recompute = !calculator_->evaluated() || 
-                                calculator_->hasConstraints();
+                                calculator_->hasConstraints(); // if constraints are stored we drop them and run a full update anyway
         if (needs_recompute)
         {
             // full update needed, because result is yet uninitialized
             loginf << "running initial full update";
-            res = calculator_->evaluate(true);
+            res = calculator_->update();
         }
         else
         {
@@ -250,7 +250,7 @@ namespace helpers
 
         //otherwise evaluate for specified utn and requirement
         //note: if eval fails a nullptr is returned in the next step
-        calculator->evaluate(false, { info.first }, { info.second });
+        calculator->reload({ info.first }, { info.second });
         
         //then return result
         return calculator->singleResult(info.second, info.first);
@@ -275,7 +275,7 @@ namespace helpers
 
         //otherwise evaluate for specified requirement
         //note: if eval fails a nullptr is returned in the next step
-        calculator->evaluate(false, {}, { info });
+        calculator->reload({}, { info });
 
         //then return result
         return calculator->joinedResult(info);

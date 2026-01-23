@@ -164,7 +164,7 @@ public:
     void updateEvalUseColumn();
     void updateEvalDetailsColumn();
 
-    std::map<unsigned int, TargetConstraints> targetConstraints(bool active_only) const;
+    std::map<unsigned int, TargetEvalConstraints> evaluationConstraints(bool active_only) const;
 
     static std::string iconForTarget(const Target& target, bool add_placeholder_txt = false);
 

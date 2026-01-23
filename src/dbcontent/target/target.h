@@ -33,7 +33,7 @@ namespace dbContent
 /**
  * A list of constraints used first and foremost for evaluation.
  */
-struct TargetConstraints
+struct TargetEvalConstraints
 {
     /**
      */
@@ -72,7 +72,7 @@ public:
     void evalExcludedRequirements(const std::set<std::string>& excl_req);
     void clearEvalExcludedRequirements();
 
-    const TargetConstraints& constraints() const { return constraints_; }
+    const TargetEvalConstraints& evaluationConstraints() const { return eval_constraints_; }
 
     std::string comment() const;
     void comment (const std::string& value);
@@ -166,7 +166,7 @@ public:
 protected:
     nlohmann::json info_;
 
-    TargetConstraints constraints_;
+    TargetEvalConstraints eval_constraints_; 
 
     mutable std::string time_duration_str_;
 

@@ -914,13 +914,13 @@ void TargetModel::updateEvalDetailsColumn()
 
 /**
  */
-std::map<unsigned int, TargetConstraints> TargetModel::targetConstraints(bool active_only) const
+std::map<unsigned int, TargetEvalConstraints> TargetModel::evaluationConstraints(bool active_only) const
 {
-    std::map<unsigned int, TargetConstraints> constraints;
+    std::map<unsigned int, TargetEvalConstraints> constraints;
 
     for (const auto& target : target_data_)
-        if (!active_only || target.constraints().hasActiveConstraint())
-            constraints[ target.utn_ ] = target.constraints();
+        if (!active_only || target.evaluationConstraints().hasActiveConstraint())
+            constraints[ target.utn_ ] = target.evaluationConstraints();
 
     return constraints;
 }

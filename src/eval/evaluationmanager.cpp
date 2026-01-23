@@ -216,7 +216,7 @@ Result EvaluationManager::evaluate(bool show_dialog)
     traced_assert(calculator_local);
 
     //evaluate
-    auto eval_res = calculator_local->evaluate(true);
+    auto eval_res = calculator_local->update();
 
     if (!eval_res.ok())
     {

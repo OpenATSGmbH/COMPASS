@@ -27,7 +27,7 @@ using namespace Utils;
 namespace dbContent 
 {
 
-nlohmann::json TargetConstraints::toJSON() const
+nlohmann::json TargetEvalConstraints::toJSON() const
 {
     nlohmann::json j;
     j[ Target::KEY_EVAL_USE                   ] = use_in_eval_;
@@ -37,7 +37,7 @@ nlohmann::json TargetConstraints::toJSON() const
     return j;
 }
 
-bool TargetConstraints::fromJSON(const nlohmann::json& j)
+bool TargetEvalConstraints::fromJSON(const nlohmann::json& j)
 {
     *this = {};
 
@@ -84,25 +84,25 @@ Target::Target(unsigned int utn, nlohmann::json info)
     if (!info_.contains(KEY_EVAL) || !info_.at(KEY_EVAL).contains(KEY_EVAL_USE))
         info_[KEY_EVAL][KEY_EVAL_USE] = true;
 
-    constraints_.use_in_eval_ = info_.at(KEY_EVAL).at(KEY_EVAL_USE);
+    eval_constraints_.use_in_eval_ = info_.at(KEY_EVAL).at(KEY_EVAL_USE);
 
     if (info_.at(KEY_EVAL).contains(KEY_EVAL_EXCLUDED_TIME_WINDOWS))
-        constraints_.excluded_time_windows_.setFrom(info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_TIME_WINDOWS));
+        eval_constraints_.excluded_time_windows_.setFrom(info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_TIME_WINDOWS));
 
     if (info_.at(KEY_EVAL).contains(KEY_EVAL_EXCLUDED_REQUIREMENTS))
-        constraints_.excluded_requirements_ = info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_REQUIREMENTS).get<std::set<std::string>>();
+        eval_constraints_.excluded_requirements_ = info_.at(KEY_EVAL).at(KEY_EVAL_EXCLUDED_REQUIREMENTS).get<std::set<std::string>>();
 }
 
 bool Target::useInEval() const
 {
-    return constraints_.use_in_eval_;
+    return eval_constraints_.use_in_eval_;
 }
 
 void Target::useInEval(bool value)
 {
-    constraints_.use_in_eval_ = value;
+    eval_constraints_.use_in_eval_ = value;
 
-    info_[KEY_EVAL][KEY_EVAL_USE] = constraints_.use_in_eval_;
+    info_[KEY_EVAL][KEY_EVAL_USE] = eval_constraints_.use_in_eval_;
 }
 
 std::string Target::comment() const
@@ -490,18 +490,18 @@ TargetBase::Category Target::targetCategory() const
 
 const Utils::TimeWindowCollection& Target::evalExcludedTimeWindows() const
 {
-    return constraints_.excluded_time_windows_;
+    return eval_constraints_.excluded_time_windows_;
 }
 
 void Target::evalExcludedTimeWindows(const Utils::TimeWindowCollection& collection)
 {
-    constraints_.excluded_time_windows_ = collection;
-    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_TIME_WINDOWS] = constraints_.excluded_time_windows_.asJSON();
+    eval_constraints_.excluded_time_windows_ = collection;
+    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_TIME_WINDOWS] = eval_constraints_.excluded_time_windows_.asJSON();
 }
 
 void Target::clearEvalExcludedTimeWindows()
 {
-    constraints_.excluded_time_windows_.clear();
+    eval_constraints_.excluded_time_windows_.clear();
 
     if (info_[KEY_EVAL].contains(KEY_EVAL_EXCLUDED_TIME_WINDOWS))
         info_[KEY_EVAL].erase(KEY_EVAL_EXCLUDED_TIME_WINDOWS);
@@ -509,18 +509,18 @@ void Target::clearEvalExcludedTimeWindows()
 
 const std::set<std::string>& Target::evalExcludedRequirements() const
 {
-    return constraints_.excluded_requirements_;
+    return eval_constraints_.excluded_requirements_;
 }
 
 void Target::evalExcludedRequirements(const std::set<std::string>& excl_req)
 {
-    constraints_.excluded_requirements_ = excl_req;
-    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_REQUIREMENTS] = constraints_.excluded_requirements_;
+    eval_constraints_.excluded_requirements_ = excl_req;
+    info_[KEY_EVAL][KEY_EVAL_EXCLUDED_REQUIREMENTS] = eval_constraints_.excluded_requirements_;
 }
 
 void Target::clearEvalExcludedRequirements()
 {
-    constraints_.excluded_requirements_.clear();
+    eval_constraints_.excluded_requirements_.clear();
 
     if (info_[KEY_EVAL].contains(KEY_EVAL_EXCLUDED_REQUIREMENTS))
         info_[KEY_EVAL].erase(KEY_EVAL_EXCLUDED_REQUIREMENTS);

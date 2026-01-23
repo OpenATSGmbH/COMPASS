@@ -243,9 +243,10 @@ void EvaluationCalculator::readSettings()
     registerParameter("histogram_num_bins", &settings_.histogram_num_bins, Settings().histogram_num_bins);
 
     // global and target constraints
-    registerParameter("global_time_window_json_", &global_time_window_json_, nlohmann::json());
-    registerParameter("global_exclusion_time_windows_json_", &global_exclusion_time_windows_json_, nlohmann::json());
-    registerParameter("target_constraints_json_", &target_constraints_json_, nlohmann::json());
+    registerParameter("global_time_filter_enabled", &global_time_filter_enabled_, false);
+    registerParameter("global_time_window", &global_time_window_json_, nlohmann::json());
+    registerParameter("global_exclusion_time_windows", &global_exclusion_time_windows_json_, nlohmann::json());
+    registerParameter("target_constraints", &target_constraints_json_, nlohmann::json());
 
     updateDerivedParameters();
 }
@@ -290,38 +291,9 @@ void EvaluationCalculator::updateDerivedParameters()
     data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
 
     //various constraints
-    global_time_window_.reset();
-    if (!global_time_window_json_.is_null())
-    {
-        global_time_window_ = Utils::TimeWindow();
-        global_time_window_->setFrom(global_time_window_json_);
-    }
-
-    global_exclusion_time_windows_.reset();
-    if (!global_exclusion_time_windows_json_.is_null())
-    {
-        global_exclusion_time_windows_ = Utils::TimeWindowCollection();
-        global_exclusion_time_windows_->setFrom(global_exclusion_time_windows_json_);
-    }
-
-    target_constraints_.clear();
-    if (target_constraints_json_.is_object())
-    {
-        for (const auto& tc : target_constraints_json_.items())
-        {
-            QString s = QString::fromStdString(tc.key());
-
-            bool ok;
-            auto utn = s.toUInt(&ok);
-            traced_assert(ok);
-
-            dbContent::TargetConstraints c;
-            ok = c.fromJSON(tc.value());
-            traced_assert(ok);
-
-            target_constraints_[ utn ] = c;
-        }
-    }
+    loadGlobalTimeWindow();
+    loadGlobalExclusionTimeWindows();
+    loadTargetConstraints();
 }
 
 /**
@@ -369,11 +341,6 @@ void EvaluationCalculator::reset()
     //clear data sources
     data_sources_ref_.clear();
     data_sources_tst_.clear();
-
-    //clear constraints
-    global_time_window_.reset();
-    global_exclusion_time_windows_.reset();
-    target_constraints_.clear();
 }
 
 /**
@@ -395,11 +362,38 @@ void EvaluationCalculator::clearData()
 }
 
 /**
+ * Runs a full evaluation and regenerates the report.
+ * Uses the internally stored constraints.
  */
-Result EvaluationCalculator::evaluate(bool update_report,
-                                      bool update_constraints,
-                                      const std::vector<unsigned int>& utns,
-                                      const std::vector<Evaluation::RequirementResultID>& requirements)
+Result EvaluationCalculator::evaluate()
+{
+    return evaluateInternal(false, true, {}, {});
+}
+
+/**
+ * Updates the internally stored constraints, runs a full evaluation and regenerates the report.
+ */
+Result EvaluationCalculator::update()
+{
+    return evaluateInternal(true, true, {}, {});
+}
+
+/**
+ * Reloads all needed data for specified utns and requirements.
+ * Uses the internally stored constraints.
+ */
+Result EvaluationCalculator::reload(const std::vector<unsigned int>& utns,
+                                    const std::vector<Evaluation::RequirementResultID>& requirements)
+{
+    return evaluateInternal(false, false, utns, requirements);
+}
+
+/**
+ */
+Result EvaluationCalculator::evaluateInternal(bool update_constraints,
+                                              bool update_report,
+                                              const std::vector<unsigned int>& utns,
+                                              const std::vector<Evaluation::RequirementResultID>& requirements)
 {
     loginf;
 
@@ -421,13 +415,6 @@ Result EvaluationCalculator::evaluate(bool update_report,
 
         clearData();
 
-        if (update_constraints)
-        {
-            global_time_window_.reset();
-            global_exclusion_time_windows_.reset();
-            target_constraints_.clear();
-        }
-
         emit resultsChanged();
 
         // actually load
@@ -439,9 +426,6 @@ Result EvaluationCalculator::evaluate(bool update_report,
         // update stuff before load
         updateCompoundCoverage(activeDataSourcesTst());
         updateSectorROI();
-
-        if (update_constraints)
-            updateExternalConstraints();
 
         if (Blocking)
         {
@@ -1723,31 +1707,19 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
  */
 void EvaluationCalculator::updateExternalConstraints()
 {
-    //store applied load constraints of eval manager
-    global_time_window_.reset();
-    global_time_window_json_ = {};
+    eval_man_.
 
-    global_exclusion_time_windows_.reset();
-    global_exclusion_time_windows_json_ = {};
+    //obtain current constraints
+    global_time_window_            = eval_man_.useTimestampFilter() ? Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd()) : 
+                                                                      Utils::TimeWindow();
+    global_exclusion_time_windows_ = eval_man_.useTimestampFilter() ? eval_man_.excludedTimeWindows() : 
+                                                                      Utils::TimeWindowCollection();
+    target_constraints_            = COMPASS::instance().dbContentManager().targetModel()->evaluationConstraints(true);
 
-    if (eval_man_.useTimestampFilter())
-    {
-        global_time_window_      = Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd());
-        global_time_window_json_ = global_time_window_->getAsJson();
-
-        global_exclusion_time_windows_      = eval_man_.excludedTimeWindows();
-        global_exclusion_time_windows_json_ = global_exclusion_time_windows_->asJSON();
-    }
-
-    //store current constraints of existing targets
-    target_constraints_      = COMPASS::instance().dbContentManager().targetModel()->targetConstraints(true);
-    target_constraints_json_ = nlohmann::json::object();
-
-    for (const auto& tc : target_constraints_)
-    {
-        auto key = std::to_string(tc.first);
-        target_constraints_json_[ key ] = tc.second.toJSON();
-    }
+    //update serializable json
+    global_time_window_json_            = globalTimeWindowAsJSON();
+    global_exclusion_time_windows_json_ = globalExclustionTimeWindowsAsJSON();
+    target_constraints_json_            = targetConstraintsAsJSON();
 }
 
 /**
@@ -1755,11 +1727,11 @@ void EvaluationCalculator::updateExternalConstraints()
 bool EvaluationCalculator::isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const
 {
     // check global load exclusion windows
-    if (global_exclusion_time_windows_.has_value() && global_exclusion_time_windows_->contains(ts))
+    if (global_exclusion_time_windows_.contains(ts))
         return false;
 
     //check global load window
-    if (global_time_window_.has_value() && !global_time_window_->contains(ts))
+    if (global_time_window_.valid() && !global_time_window_.contains(ts))
         return false;
 
     return true;
@@ -1767,14 +1739,154 @@ bool EvaluationCalculator::isTimeStampNotExcluded(const boost::posix_time::ptime
 
 /**
  */
-const dbContent::TargetConstraints* EvaluationCalculator::targetConstraint(unsigned int utn) const
+void EvaluationCalculator::setGLobalTimeFilterEnabled(bool ok)
+{
+    global_time_filter_enabled_ = ok;
+}
+
+/**
+ */
+bool EvaluationCalculator::globalTimeFilterEnabled() const
+{
+    return global_time_filter_enabled_;
+}
+
+/**
+ */
+void EvaluationCalculator::setGlobalTimeWindow(const Utils::TimeWindow& time_window)
+{
+    global_time_window_ = time_window;
+}
+
+/**
+ */
+void EvaluationCalculator::saveGlobalTimeWindow()
+{
+    global_time_window_json_ = global_time_window_.getAsJson();
+}
+
+/**
+ */
+void EvaluationCalculator::loadGlobalTimeWindow()
+{
+    global_time_window_ = Utils::TimeWindow();
+
+    if (global_time_window_json_.is_null())
+        return;
+
+    global_time_window_.setFrom(global_time_window_json_);
+}
+
+/**
+ */
+void EvaluationCalculator::setGlobalExclusionTimeWindows(const Utils::TimeWindowCollection& global_exclusion_time_windows)
+{
+    global_exclusion_time_windows_ = global_exclusion_time_windows;
+}
+
+/**
+ */
+void EvaluationCalculator::saveGlobalExclusionTimeWindows()
+{
+    global_exclusion_time_windows_json_= global_exclusion_time_windows_.asJSON();
+}
+
+/**
+ */
+void EvaluationCalculator::loadGlobalExclusionTimeWindows()
+{
+    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
+
+    if (global_exclusion_time_windows_json_.is_null())
+        return;
+
+    global_exclusion_time_windows_.setFrom(global_exclusion_time_windows_json_);
+}
+
+/**
+ */
+void EvaluationCalculator::setTargetConstraint(unsigned int utn, const dbContent::TargetEvalConstraints& constraints)
+{
+    target_constraints_[ utn ] = constraints;
+}
+
+/**
+ */
+void EvaluationCalculator::setTargetUse(unsigned int utn, bool use)
+{
+    target_constraints_[ utn ].use_in_eval_ = use;
+}
+
+/**
+ */
+void EvaluationCalculator::setTargetExcludedTimeWindows(unsigned int utn, const Utils::TimeWindowCollection& twc)
+{
+    target_constraints_[ utn ].excluded_time_windows_ = twc;
+}
+
+/**
+ */
+void EvaluationCalculator::setTargetExcludedRequirements(unsigned int utn, const std::set<std::string>& req)
+{
+    target_constraints_[ utn ].excluded_requirements_ = req;
+}
+
+/**
+ */
+void EvaluationCalculator::saveTargetConstraints()
+{
+    target_constraints_json_ = nlohmann::json::object();
+
+    for (const auto& tc : target_constraints_)
+    {
+        if (!tc.second.hasActiveConstraint())
+            continue;
+
+        auto key = std::to_string(tc.first);
+        target_constraints_json_[ key ] = tc.second.toJSON();
+    }
+}
+
+/**
+ */
+void EvaluationCalculator::loadTargetConstraints()
+{
+    target_constraints_.clear();
+
+    if (target_constraints_json_.is_null())
+        return;
+
+    traced_assert(target_constraints_json_.is_object());
+
+    for (const auto& tc_json : target_constraints_json_.items())
+    {
+        QString s = QString::fromStdString(tc_json.key());
+
+        bool ok;
+        auto utn = s.toUInt(&ok);
+        traced_assert(ok);
+
+        dbContent::TargetEvalConstraints tc;
+        ok = tc.fromJSON(tc_json.value());
+        traced_assert(ok);
+
+        if (!tc.hasActiveConstraint())
+            continue;
+
+        target_constraints_[ utn ] = tc;
+    }
+}
+
+/**
+ */
+const dbContent::TargetEvalConstraints* EvaluationCalculator::targetConstraint(unsigned int utn) const
 {
     if (target_constraints_.empty())
-        return nullptr;
+        return &default_constraints_;
 
     auto it = target_constraints_.find(utn);
     if (it == target_constraints_.end())
-        return nullptr;
+        return &default_constraints_;
 
     return &it->second;
 }

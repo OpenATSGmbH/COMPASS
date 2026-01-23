@@ -259,7 +259,7 @@ protected:
     mutable bool has_mops_versions_ {false};
     mutable std::set<unsigned int> mops_versions_;
 
-    mutable dbContent::TargetConstraints constraints_;
+    mutable dbContent::TargetEvalConstraints constraints_;
 
     mutable InsideCheckMatrix                    inside_ref_;
     mutable InsideCheckMatrix                    inside_tst_;

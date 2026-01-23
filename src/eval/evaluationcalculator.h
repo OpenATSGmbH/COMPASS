@@ -105,10 +105,11 @@ public:
 
     void reset();
     void clearData();
-    Result evaluate(bool update_report = true,
-                    bool update_constraints = true,
-                    const std::vector<unsigned int>& utns = std::vector<unsigned int>(),
-                    const std::vector<Evaluation::RequirementResultID>& requirements = std::vector<Evaluation::RequirementResultID>());
+
+    Result evaluate();
+    Result update();
+    Result reload(const std::vector<unsigned int>& utns,
+                  const std::vector<Evaluation::RequirementResultID>& requirements);
     void updateResultsToChanges();
 
     // check and correct missing information
@@ -223,12 +224,29 @@ public:
     const boost::optional<ROI>& sectorROI() const { return sector_roi_; }
     const std::vector<unsigned int>& evaluationUTNs() const { return eval_utns_; }
 
-    const boost::optional<Utils::TimeWindow>& globalTimeWindow() const { return global_time_window_; }
-    const boost::optional<Utils::TimeWindowCollection>& globalExclusionTimeWindows() const { return global_exclusion_time_windows_; }
-    const std::map<unsigned int, dbContent::TargetConstraints>& targetConstraints() const { return target_constraints_; }
+    void setGLobalTimeFilterEnabled(bool ok);
+    bool globalTimeFilterEnabled() const;
+
+    void setGlobalTimeWindow(const Utils::TimeWindow& time_window);
+    void saveGlobalTimeWindow();
+    void loadGlobalTimeWindow();
+    const Utils::TimeWindow& globalTimeWindow() const { return global_time_window_; }
+
+    void setGlobalExclusionTimeWindows(const Utils::TimeWindowCollection& global_exclusion_time_windows);
+    void saveGlobalExclusionTimeWindows();
+    void loadGlobalExclusionTimeWindows();
+    const Utils::TimeWindowCollection& globalExclusionTimeWindows() const { return global_exclusion_time_windows_; }
+
+    void setTargetConstraint(unsigned int utn, const dbContent::TargetEvalConstraints& constraints);
+    void setTargetUse(unsigned int utn, bool use);
+    void setTargetExcludedTimeWindows(unsigned int utn, const Utils::TimeWindowCollection& twc);
+    void setTargetExcludedRequirements(unsigned int utn, const std::set<std::string>& req);
+    void saveTargetConstraints();
+    void loadTargetConstraints();
+    const dbContent::TargetEvalConstraints* targetConstraint(unsigned int utn) const;
+    const std::map<unsigned int, dbContent::TargetEvalConstraints>& targetConstraints() const { return target_constraints_; }
 
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
-    const dbContent::TargetConstraints* targetConstraint(unsigned int utn) const;
 
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
@@ -240,6 +258,11 @@ signals:
     
 protected:
     virtual void checkSubConfigurables() override;
+
+    Result evaluateInternal(bool update_ext_constraints,
+                            bool update_report,
+                            const std::vector<unsigned int>& utns,
+                            const std::vector<Evaluation::RequirementResultID>& requirements);
 
     void readSettings();
 
@@ -259,6 +282,13 @@ protected:
     void loadedDataData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     Result loadingDone();
     Result evaluateData();
+
+    nlohmann::json globalTimeWindowAsJSON() const;
+    nlohmann::json globalExclustionTimeWindowsAsJSON() const;
+    nlohmann::json targetConstraintsAsJSON() const;
+    Utils::TimeWindow globalTimeWindowFromJSON(const nlohmann::json& j) const;
+    Utils::TimeWindowCollection globalExclustionTimeWindowsFromJSON(const nlohmann::json& j) const;
+    std::map<unsigned int, dbContent::TargetEvalConstraints> targetConstraintsFromJSON(const nlohmann::json& j) const;
 
     EvaluationManager& eval_man_;
 
@@ -287,12 +317,15 @@ protected:
     std::unique_ptr<EvaluationResultsGenerator>            results_gen_;
     std::unique_ptr<dbContent::DataSourceCompoundCoverage> tst_srcs_coverage_;
 
-    nlohmann::json                                         global_time_window_json_;
-    boost::optional<Utils::TimeWindow>                     global_time_window_;
-    nlohmann::json                                         global_exclusion_time_windows_json_;
-    boost::optional<Utils::TimeWindowCollection>           global_exclusion_time_windows_;
-    nlohmann::json                                         target_constraints_json_;
-    std::map<unsigned int, dbContent::TargetConstraints>   target_constraints_;
+    bool                                                     global_time_filter_enabled_ = false;
+    nlohmann::json                                           global_time_window_json_;
+    Utils::TimeWindow                                        global_time_window_;
+    nlohmann::json                                           global_exclusion_time_windows_json_;
+    Utils::TimeWindowCollection                              global_exclusion_time_windows_;
+    nlohmann::json                                           target_constraints_json_;
+    std::map<unsigned int, dbContent::TargetEvalConstraints> target_constraints_;
+
+    dbContent::TargetEvalConstraints default_constraints_;
 
     bool use_fast_sector_inside_check_ = true;
 };
