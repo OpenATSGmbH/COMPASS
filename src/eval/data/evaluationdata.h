@@ -122,9 +122,13 @@ public:
     // tst
     unsigned int tst_line_id_;
 
-    static const std::string SectionID;
+    static const std::string TargetsSectionID;
     static const std::string TargetsTableName;
     static const std::string ContentPropertyTargets;
+
+    static const std::string ConstraintsSectionID;
+    static const std::string ConstraintsTSTableName;
+    static const std::string ConstraintsReqTableName;
 
 protected:
     std::pair<nlohmann::json, unsigned int> rawCellData(const EvaluationTarget& target, 

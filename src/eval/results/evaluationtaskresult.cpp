@@ -148,6 +148,8 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
         // sync: run full evaluation with updated constraints (also needed to remove lock)
         loginf << "running full update";
         res = calculator_->evaluate();
+
+        loginf << calculator_->constraintsAsString();
     }
     else if (state == UpdateState::PartialUpdateNeeded)
     {
@@ -156,13 +158,13 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
                                 calculator_->hasPartialResult(); // if partial results are currently stored: drop them and run a full update anyway
         if (needs_recompute)
         {
-            // full update needed, because result is yet uninitialized (internally stored constraints used)
+            // full update needed, because result is yet uninitialized
             loginf << "running initial full update";
-            res = calculator_->update();
+            res = calculator_->evaluate();
         }
         else
         {
-            // only partial update needed (internally stored constraints used)
+            // only partial update needed
             loginf << "running partial update";
             calculator_->updateResultsToChanges();
         }
@@ -681,7 +683,7 @@ void EvaluationTaskResult::setInterestFactorEnabled(const Evaluation::Requiremen
 
     interest_factor_enabled_.at(id.req_name) = ok;
 
-    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
+    updateContent(TaskResultContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -692,7 +694,7 @@ void EvaluationTaskResult::setInterestFactorEnabled(const std::string& req_name,
 
     interest_factor_enabled_.at(req_name) = ok;
 
-    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
+    updateContent(TaskResultContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -702,7 +704,7 @@ void EvaluationTaskResult::setInterestFactorsEnabled(bool ok)
     for (auto& it : interest_factor_enabled_)
         it.second = ok;
 
-    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
+    updateContent(TaskResultContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -863,7 +865,7 @@ void EvaluationTaskResult::informUpdateEvalResult(int update_type)
     TaskResult::ContentID content_id;
     if (update_type == task::ContentUpdateNeeded)
     {
-        content_id = TaskResult::ContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table);
+        content_id = TaskResult::ContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table);
     }
 
     //inform update

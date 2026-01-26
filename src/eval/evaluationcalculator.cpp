@@ -1332,6 +1332,9 @@ void EvaluationCalculator::updateResultsToChanges ()
 {
     if (evaluated_)
     {
+        //update constraints first
+        updateConstraints();
+
         results_gen_->updateToChanges();
     }
 }
