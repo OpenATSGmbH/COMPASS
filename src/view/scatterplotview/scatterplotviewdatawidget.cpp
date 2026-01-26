@@ -57,6 +57,8 @@ using namespace std;
 using namespace dbContent;
 using namespace Utils;
 
+const int ScatterPlotViewDataWidget::ConnectLinesDataCountMax = 100000;
+
 /**
 */
 ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view_widget,

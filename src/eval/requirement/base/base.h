@@ -99,8 +99,8 @@ public:
     virtual std::string getConditionResultName() const = 0;
     virtual std::string getConditionUnits() const = 0;
 
-    static const unsigned int NumThresholdDecimalsMin = 2;
-    static const unsigned int NumThresholdDecimalsMax = 6;
+    static const unsigned int NumThresholdDecimalsMin;
+    static const unsigned int NumThresholdDecimalsMax;
     
 protected:
     std::string name_;

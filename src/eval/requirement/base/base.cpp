@@ -194,6 +194,9 @@ std::function<bool(const unsigned char&, const unsigned char&)> Base::cmpCoastin
 std::function<std::string(const unsigned char&)> Base::printCoasting =
     [] (const unsigned int& val) { return to_string((unsigned int) val); };
 
+const unsigned int Base::NumThresholdDecimalsMin = 2;
+const unsigned int Base::NumThresholdDecimalsMax = 6;
+
 /**
 */
 Base::Base(const std::string& name, 
