@@ -174,8 +174,8 @@ public:
     bool mappedRefPosInside(const SectorLayer& layer, 
                             const dbContent::TargetReport::Chain::DataID& id) const;
 
-    static const int InterpGroundBitMaxSeconds = 15;
-    static const int InterestFactorPrecision   = 3;
+    static const int InterpGroundBitMaxSeconds;
+    static const int InterestFactorPrecision;
 
     // targets of interest
     void clearInterestFactors() const;

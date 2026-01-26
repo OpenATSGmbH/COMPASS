@@ -129,6 +129,27 @@ find_package(DuckDB REQUIRED)
 
 add_library(compass "")
 
+# Enable C++ warnings
+# target_compile_options(compass PRIVATE
+#     -Wall
+#     -Wextra
+#     -Wpedantic
+#     -Wshadow
+#     -Wconversion
+# )
+
+# Debug + sanitizers
+# target_compile_options(compass PRIVATE
+#     -g
+#     -O0
+#     -fsanitize=address,undefined
+#     -fno-omit-frame-pointer
+# )
+
+# target_link_options(compass PRIVATE
+#     -fsanitize=address,undefined
+# )
+
 message("Install path: ${CMAKE_INSTALL_PREFIX}")
 
 include(lib/CMakeLists.txt)

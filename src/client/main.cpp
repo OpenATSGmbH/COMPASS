@@ -58,7 +58,8 @@ int main(int argc, char** argv)
             //localbuild => switch to xcb if on wayland (and not specified otherwise)
             if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) 
             {
-                const char *session = qgetenv("XDG_SESSION_TYPE").constData();
+                auto var = qgetenv("XDG_SESSION_TYPE");
+                const char *session = var.constData();
                 if (session && QString::fromLocal8Bit(session) == "wayland")
                 {
                     std::cout << "setting platform to xcb" << std::endl; 

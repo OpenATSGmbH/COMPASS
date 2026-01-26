@@ -25,6 +25,8 @@
  * RangeEditBase
  ****************************************************************************************/
 
+const int RangeEditBase::MinSliderSteps = 10;
+
 /**
  */
 RangeEditBase::RangeEditBase(int slider_steps, QWidget* parent)
