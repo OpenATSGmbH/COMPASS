@@ -145,24 +145,24 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
     if (state == UpdateState::FullUpdateNeeded ||
         state == UpdateState::Locked)
     {
-        // run full update (also needed to remove lock)
+        // sync: run full evaluation with updated constraints (also needed to remove lock)
         loginf << "running full update";
-        res = calculator_->update();
+        res = calculator_->evaluate();
     }
     else if (state == UpdateState::PartialUpdateNeeded)
     {
         // partial update: decide if full update is needed anyways
         bool needs_recompute = !calculator_->evaluated() || 
-                                calculator_->hasConstraints(); // if constraints are stored we drop them and run a full update anyway
+                                calculator_->hasPartialResult(); // if partial results are currently stored: drop them and run a full update anyway
         if (needs_recompute)
         {
-            // full update needed, because result is yet uninitialized
+            // full update needed, because result is yet uninitialized (internally stored constraints used)
             loginf << "running initial full update";
             res = calculator_->update();
         }
         else
         {
-            // only partial update needed
+            // only partial update needed (internally stored constraints used)
             loginf << "running partial update";
             calculator_->updateResultsToChanges();
         }
@@ -250,7 +250,7 @@ namespace helpers
 
         //otherwise evaluate for specified utn and requirement
         //note: if eval fails a nullptr is returned in the next step
-        calculator->reload({ info.first }, { info.second });
+        calculator->reloadNeededData({ info.first }, { info.second });
         
         //then return result
         return calculator->singleResult(info.second, info.first);
@@ -275,7 +275,7 @@ namespace helpers
 
         //otherwise evaluate for specified requirement
         //note: if eval fails a nullptr is returned in the next step
-        calculator->reload({}, { info });
+        calculator->reloadNeededData({}, { info });
 
         //then return result
         return calculator->joinedResult(info);

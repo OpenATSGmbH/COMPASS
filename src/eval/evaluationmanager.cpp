@@ -108,7 +108,7 @@ void EvaluationManager::generateSubConfigurable(const std::string& class_id,
     {
         traced_assert(!calculator_);
 
-        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_);
+        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, false);
         calculator_.reset(calculator);
     }
     else
@@ -215,8 +215,8 @@ Result EvaluationManager::evaluate(bool show_dialog)
     auto calculator_local = res.result();
     traced_assert(calculator_local);
 
-    //evaluate
-    auto eval_res = calculator_local->update();
+    //evaluate with updated constraints
+    auto eval_res = calculator_local->evaluate();
 
     if (!eval_res.ok())
     {

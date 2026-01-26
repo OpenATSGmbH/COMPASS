@@ -228,12 +228,13 @@ void EvaluationTargetData::updateToChanges() const
  */
 void EvaluationTargetData::updateConstraints() const
 {
+    //fetch constraint (if available)
     auto constraint = calculator_.targetConstraint(utn_);
 
     if (constraint)
-        constraints_ = *constraint; // constraint stored for this utn in calculator
+        constraints_ = *constraint;
     else
-        constraints_ = {};          // default constraints: none
+        constraints_ = {}; //default: no constraints
 }
 
 /**
@@ -1737,7 +1738,7 @@ void EvaluationTargetData::computeSectorInsideInfo(InsideCheckMatrix& mat,
             above_ok = false;
     }
 
-    // calc if insice test sensor coverage, true if not circles
+    // calc if inside test sensor coverage, true if not circles
     bool inside_cov = calculator_.tstSrcsCoverage().isInside(pos.latitude_, pos.longitude_);
 
     // check sector layers
