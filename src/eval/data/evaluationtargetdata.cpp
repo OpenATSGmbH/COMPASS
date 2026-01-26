@@ -58,6 +58,9 @@ double EvaluationTargetData::interest_thres_req_mid_  = 0.01;
 double EvaluationTargetData::interest_thres_sum_high_ = 0.1;
 double EvaluationTargetData::interest_thres_sum_mid_  = 0.05;
 
+const int EvaluationTargetData::InterpGroundBitMaxSeconds = 15;
+const int EvaluationTargetData::InterestFactorPrecision   = 3;
+
 /**
  */
 EvaluationTargetData::EvaluationTargetData(unsigned int utn, 

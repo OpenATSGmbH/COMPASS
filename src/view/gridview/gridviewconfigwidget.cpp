@@ -94,8 +94,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     layout->addRow("Value Type:", value_type_layout);
 
     grid_resolution_box_ = new QSpinBox;
-    grid_resolution_box_->setMinimum(1);
-    grid_resolution_box_->setMaximum(1000);
+    grid_resolution_box_->setMinimum(1); // maximum set in updateConfig
     grid_resolution_box_->setKeyboardTracking(false);
 
     UI_TEST_OBJ_NAME(grid_resolution_box_, "grid_resolution");
@@ -387,6 +386,7 @@ void GridViewConfigWidget::updateConfig()
     value_type_combo_->blockSignals(false);
 
     grid_resolution_box_->blockSignals(true);
+    grid_resolution_box_->setMaximum(settings.max_grid_resolution);
     grid_resolution_box_->setValue((int)settings.grid_resolution);
     grid_resolution_box_->blockSignals(false);
 

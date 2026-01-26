@@ -45,8 +45,8 @@ UTNFilter::~UTNFilter() {}
 
 bool UTNFilter::filters(const std::string& dbcont_name)
 {
-    if (!COMPASS::instance().dbContentManager().hasAssociations())
-        return false;
+    // if (!COMPASS::instance().dbContentManager().hasAssociations())
+    //     return false;
 
     return true; // condition string for non-associated dbcontent as well
 }
@@ -56,7 +56,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, boo
     logdbg << "dbcontent " << dbcontent_name << " active " << active_
            << " null_wanted " << null_wanted_;
 
-    if (!active_ || !COMPASS::instance().dbContentManager().hasAssociations())
+    if (!active_) //  !COMPASS::instance().dbContentManager().hasAssociations()
         return "";
 
     stringstream ss;

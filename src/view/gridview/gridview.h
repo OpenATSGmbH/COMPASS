@@ -40,6 +40,7 @@ public:
         int          value_type;
 
         unsigned int grid_resolution;
+        unsigned int max_grid_resolution;
 
         std::string  render_color_value_min;
         std::string  render_color_value_max;
