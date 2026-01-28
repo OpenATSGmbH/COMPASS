@@ -41,9 +41,13 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
 {
     registerBaseSettings(settings_);
 
-    registerParameter("max_distance_notok", &settings_.max_distance_notok_, 5*NM2M); // kb 5nm
-    registerParameter("max_distance_dubious", &settings_.max_distance_dubious_, 2*NM2M);
-    registerParameter("max_distance_acceptable", &settings_.max_distance_acceptable_, 1*NM2M);
+    registerParameter("max_distance_notok_air", &settings_.max_distance_notok_air_, settings_.max_distance_notok_air_); // kb 5nm
+    registerParameter("max_distance_dubious_air", &settings_.max_distance_dubious_air_, settings_.max_distance_dubious_air_);
+    registerParameter("max_distance_acceptable_air", &settings_.max_distance_acceptable_air_, settings_.max_distance_acceptable_air_);
+
+    registerParameter("max_distance_notok_ground", &settings_.max_distance_notok_ground_, settings_.max_distance_notok_ground_);
+    registerParameter("max_distance_dubious_ground", &settings_.max_distance_dubious_ground_, settings_.max_distance_dubious_ground_);
+    registerParameter("max_distance_acceptable_ground", &settings_.max_distance_acceptable_ground_, settings_.max_distance_acceptable_ground_);
 
     registerParameter("numerical_min_std_dev", &settings_.numerical_min_std_dev_, settings_.numerical_min_std_dev_);
 

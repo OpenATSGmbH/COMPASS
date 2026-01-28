@@ -1353,8 +1353,14 @@ void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget&
             continue;
         }
 
+        auto ground_bit0 = target.groundBitAt(tr.timestamp_, max_time_diff_, dbContent::ReconstructorTarget::InterpOptions());
+        auto ground_bit1 = other.groundBitAt(tr.timestamp_, max_time_diff_, dbContent::ReconstructorTarget::InterpOptions());
+
+        bool one_is_on_ground = (ground_bit0 && *ground_bit0) || (ground_bit1 && *ground_bit1);
+
         //@TODO: debug flag
-        auto pos_offs = getPositionOffsetTargets(tr.timestamp_, target, other, false, {}, stats);
+        auto pos_offs = getPositionOffsetTargets(tr.timestamp_, target, other,
+             one_is_on_ground,false, {}, stats);
         if (!pos_offs.has_value())
         {
             ++pos_skipped_cnt;
@@ -1368,7 +1374,7 @@ void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget&
         double distance_score;
 
         std::tie(score_class, distance_score) =
-            checkPositionOffsetScore(distance_m, stddev_sum_targets, secondary_verified);
+            checkPositionOffsetScore(target, other, distance_m, stddev_sum_targets, secondary_verified, one_is_on_ground);
 
         // distance_score is supposed to be positve, the higher the better
 
