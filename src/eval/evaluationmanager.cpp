@@ -200,7 +200,7 @@ Result EvaluationManager::evaluate(bool show_dialog)
     calculator_->resetCustomReportName();
 
     //show config dialog?
-    boost::optional<std::string> custom_report_name;
+    std::string report_name;
     if (show_dialog)
     {
         EvaluationDialog dlg(*calculator_);
@@ -209,7 +209,13 @@ Result EvaluationManager::evaluate(bool show_dialog)
         if (ret == QDialog::Rejected)
             return Result::succeeded();
 
-        custom_report_name = dlg.reportName();
+        //obtain suitable report name from dialog
+        report_name = dlg.reportName();
+    }
+    else
+    {
+        //obtain suitable report name from calculator
+        report_name = calculator_->suggestReportName();
     }
 
     //create clone of current calculator
@@ -222,9 +228,8 @@ Result EvaluationManager::evaluate(bool show_dialog)
     auto calculator_local = res.result();
     traced_assert(calculator_local);
 
-    //obtained custom report name from dialog?
-    if (custom_report_name.has_value())
-        calculator_local->setCustomReportName(custom_report_name.value());
+    //we always set a custom report name
+    calculator_local->setCustomReportName(report_name);
 
     //evaluate with updated constraints
     auto eval_res = calculator_local->evaluate();

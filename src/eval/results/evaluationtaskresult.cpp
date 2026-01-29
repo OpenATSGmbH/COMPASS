@@ -85,12 +85,17 @@ void EvaluationTaskResult::injectCalculator(EvaluationCalculator* calculator)
  */
 Result EvaluationTaskResult::createCalculator()
 {
+    calculator_.reset();
+
     //clone calculator from config
     auto res = EvaluationCalculator::clone(config_);
     if (!res.ok())
         return res;
 
     calculator_.reset(res.result());
+
+    //always preserve report name
+    calculator_->setCustomReportName(name());
     
     //created calculator should be properly configured
     auto can_eval = calculator_->canEvaluate();

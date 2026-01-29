@@ -67,8 +67,6 @@ public:
 
     void clear();
 
-    static const std::string EvalResultName;
-
 protected:
     void addTargetSection(const std::shared_ptr<ResultReport::Report>& report);
     void addNonResultsContent(const std::shared_ptr<ResultReport::Report>& report);

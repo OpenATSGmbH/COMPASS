@@ -1987,7 +1987,7 @@ std::string EvaluationCalculator::suggestReportName() const
 
     const auto& ds_name = ds_man.dbDataSource(ds_id).name();
 
-    std::string report_name = settings_.current_standard_ + " " + ds_name + " L" + std::to_string(settings_.line_id_tst_ + 1);
+    std::string report_name = settings_.current_standard_ + " " + ds_name + " L" + std::to_string(settings_.line_id_tst_ + 1) + " Evaluation";
 
     return report_name;
 }

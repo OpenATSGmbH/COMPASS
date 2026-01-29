@@ -64,8 +64,6 @@ using namespace EvaluationRequirementResult;
 using namespace EvaluationResultsReport;
 using namespace Utils;
 
-const std::string EvaluationResultsGenerator::EvalResultName = "Evaluation";
-
 /**
  */
 EvaluationResultsGenerator::EvaluationResultsGenerator(EvaluationCalculator& calculator)
@@ -140,7 +138,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     clear();
 
-    result_name_ = calculator_.reportName() + " " + EvalResultName;
+    result_name_ = calculator_.reportName();
 
     vector<unsigned int> used_utns;
     std::set<unsigned int> utn_set(utns.begin(), utns.end());
