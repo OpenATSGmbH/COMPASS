@@ -253,8 +253,6 @@ void EvaluationCalculator::readSettings()
         registerParameter("global_time_window", &global_time_window_json_, nlohmann::json());
         registerParameter("global_exclusion_time_windows", &global_exclusion_time_windows_json_, nlohmann::json());
         registerParameter("target_constraints", &target_constraints_json_, nlohmann::json());
-
-        registerParameter("custom_report_name", &custom_report_name_, std::string());
     }
 
     updateDerivedParameters();
