@@ -39,7 +39,7 @@ EvaluationTimestampConditionsDialog::EvaluationTimestampConditionsDialog(Evaluat
 
     setModal(true);
 
-    setMinimumSize(QSize(600, 400));
+    setMinimumSize(QSize(800, 400));
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
@@ -63,7 +63,6 @@ EvaluationTimestampConditionsDialog::EvaluationTimestampConditionsDialog(Evaluat
 
     tw_widget_ = new TimeWindowCollectionWidget(eval_man.excludedTimeWindows());
     form_layout->addRow("Excluded Time Windows", tw_widget_);
-
 
     main_layout->addLayout(form_layout);
 
@@ -116,7 +115,6 @@ void EvaluationTimestampConditionsDialog::updateValues()
                                                       Time::QT_DATETIME_FORMAT.c_str()));
 
     update_active_ = false;
-
 }
 
 /**

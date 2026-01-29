@@ -32,22 +32,26 @@ class TimeWindow
 {
 public:
     TimeWindow();
-    TimeWindow(const boost::posix_time::ptime& begin, const boost::posix_time::ptime& end);
+    TimeWindow(const boost::posix_time::ptime& begin, 
+               const boost::posix_time::ptime& end,
+               const std::string& comment = "");
 
     bool valid() const;
 
     void setFrom(const nlohmann::json& json);
     nlohmann::json getAsJson() const;
-    std::string asStr() const;
+    std::string asStr(bool with_comment = false) const;
 
     bool contains(const boost::posix_time::ptime& ts) const;
     bool contains(const TimeWindow& tw) const;
 
     const boost::posix_time::ptime& begin() const;
     const boost::posix_time::ptime& end() const;
+    const std::string& comment() const;
 
 protected:
     std::pair<boost::posix_time::ptime,boost::posix_time::ptime> time_window_;
+    std::string comment_;
 };
 
 // changes have to be stored manually
@@ -60,9 +64,9 @@ public:
     bool valid() const;
     bool contains(const boost::posix_time::ptime& ts) const;
 
-    void setFrom(nlohmann::json& json);
+    void setFrom(const nlohmann::json& json);
     nlohmann::json asJSON() const;
-    std::string asString() const;
+    std::string asString(bool with_comments = false) const;
 
     const Utils::TimeWindow& get(unsigned int index);
 
@@ -71,7 +75,7 @@ public:
     bool contains(const TimeWindow& time_window);
     void erase(unsigned int index);
     void clear();
-
+    void sort();
 
     unsigned int size() const { return time_windows_.size(); }
 
@@ -84,7 +88,6 @@ public:
 
     std::vector<Utils::TimeWindow>::const_iterator cbegin() const { return time_windows_.cbegin(); }
     std::vector<Utils::TimeWindow>::const_iterator cend() const { return time_windows_.cend(); }
-
 
 protected:
     std::vector<Utils::TimeWindow> time_windows_;

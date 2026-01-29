@@ -29,6 +29,7 @@
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
 #include "task/result/report/sectioncontenttable.h"
+#include "task/result/report/sectioncontenttext.h"
 
 #include "util/async.h"
 //#include "util/stringmat.h"
@@ -50,9 +51,14 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace boost::posix_time;
 
-const std::string EvaluationData::SectionID              = "Overview:Targets";
-const std::string EvaluationData::TargetsTableName       = "Evaluated Targets";
-const std::string EvaluationData::ContentPropertyTargets = "targets";
+const std::string EvaluationData::TargetsSectionID        = "Overview:Targets";
+const std::string EvaluationData::TargetsTableName        = "Evaluated Targets";
+const std::string EvaluationData::ContentPropertyTargets  = "targets";
+
+const std::string EvaluationData::ConstraintsSectionID          = "Overview:Excluded Data";
+const std::string EvaluationData::ConstraintsTSTableName        = "Excluded Time Windows";
+const std::string EvaluationData::ConstraintsReqTableName       = "Excluded Requirements";
+const std::string EvaluationData::ConstraintsPlaceholderTxtName = "No excluded data defined.";
 
 /**
  */
@@ -599,26 +605,193 @@ std::map<unsigned int, EvaluationTarget> EvaluationData::toTargets() const
 
 /**
  */
-void EvaluationData::addToReport(std::shared_ptr<ResultReport::Report> report) const
+void EvaluationData::addConstraintsSection(std::shared_ptr<ResultReport::Report> report) const
+{
+    //add constraints section
+    auto& section_constraints = report->getSection(ConstraintsSectionID);
+
+    //add + fill timestamp constraints table
+    bool        global_ts_filter_enabled = calculator_.globalTimeFilterEnabled();
+    const auto& global_ts_window         = calculator_.globalTimeWindow();
+    const auto& global_ts_excl_wins      = calculator_.globalExclusionTimeWindows();
+
+    auto targets = toTargets();
+
+    //check needed number of rows
+    size_t num_excluded_tw  = 0;
+    size_t num_excluded_req = 0;
+
+    if (global_ts_filter_enabled)
+    {
+        if (global_ts_window.valid())
+            num_excluded_tw += 2;
+
+        for (const auto& w : global_ts_excl_wins)
+            if (w.valid())
+                ++num_excluded_tw;
+    }
+
+    for (const auto& t : toTargets())
+    {
+        for (const auto& w : t.second.evalExcludedTimeWindows())
+            if (w.valid())
+                ++num_excluded_tw;
+
+        if (!t.second.evalExcludedRequirements().empty())
+            ++num_excluded_req;
+    }
+
+    //no content? => add placeholder text
+    if (num_excluded_tw == 0 && 
+        num_excluded_req == 0)
+    {
+        auto& txt = section_constraints.addText(ConstraintsPlaceholderTxtName);
+        txt.addText(ConstraintsPlaceholderTxtName);
+
+        return;
+    }
+    
+    //create excluded time window table
+    if (num_excluded_tw > 0)
+    {
+        std::vector<std::string> headings_constraints_ts;
+        headings_constraints_ts.push_back("Target");
+        headings_constraints_ts.push_back("Type");
+        headings_constraints_ts.push_back("Timestamp");
+        headings_constraints_ts.push_back("Comment");
+
+        auto& table_constraints_ts = section_constraints.addTable(ConstraintsTSTableName, 
+                                                                headings_constraints_ts.size(), 
+                                                                headings_constraints_ts);
+
+        if (global_ts_filter_enabled)
+        {
+            if (global_ts_window.valid())
+            {
+                {
+                    auto row = nlohmann::json::array();
+                    row.push_back("All");
+                    row.push_back("Timestamp Begin");
+                    row.push_back(Utils::Time::toString(global_ts_window.begin()));
+                    row.push_back("");
+
+                    table_constraints_ts.addRow(row);
+                }
+                {
+                    auto row = nlohmann::json::array();
+                    row.push_back("All");
+                    row.push_back("Timestamp End");
+                    row.push_back(Utils::Time::toString(global_ts_window.end()));
+                    row.push_back("");
+
+                    table_constraints_ts.addRow(row);
+                }
+            }
+
+            for (const auto& w : global_ts_excl_wins)
+            {
+                if (!w.valid())
+                    continue;
+
+                auto row = nlohmann::json::array();
+                row.push_back("All");
+                row.push_back("Exclusion Window");
+                row.push_back(w.asStr());
+                row.push_back(w.comment());
+
+                table_constraints_ts.addRow(row);
+            }
+        }
+
+        for (const auto& t : toTargets())
+        {
+            for (const auto& w : t.second.evalExcludedTimeWindows())
+            {
+                if (!w.valid())
+                    continue;
+
+                auto row = nlohmann::json::array();
+                row.push_back("UTN " + std::to_string(t.second.utn_));
+                row.push_back("Exclusion Window");
+                row.push_back(w.asStr());
+                row.push_back(w.comment());
+
+                table_constraints_ts.addRow(row);
+            }
+        }
+    }
+
+    //create excluded requirements table
+    if (num_excluded_req > 0)
+    {
+        std::vector<std::string> headings_constraints_req;
+        headings_constraints_req.push_back("Target");
+        headings_constraints_req.push_back("Excluded Requirements");
+
+        auto& table_constraints_req = section_constraints.addTable(ConstraintsReqTableName, 
+                                                                headings_constraints_req.size(), 
+                                                                headings_constraints_req);
+
+        for (const auto& t : toTargets())
+        {
+            if (!t.second.evalExcludedRequirements().empty())
+            {
+                QStringList strings;
+                for (const auto& s : t.second.evalExcludedRequirements())
+                    strings.push_back(QString::fromStdString(s));
+
+                auto s = strings.join(", ").toStdString();
+
+                auto row = nlohmann::json::array();
+                row.push_back("UTN " + std::to_string(t.second.utn_));
+                row.push_back(s);
+
+                table_constraints_req.addRow(row);
+            }
+        }
+    }
+}
+
+/**
+ */
+void EvaluationData::addTargetSection(std::shared_ptr<ResultReport::Report> report) const
 {
     //add target section
-    auto& section = report->getSection(SectionID);
+    auto& section_targets = report->getSection(TargetsSectionID);
 
-    //add target table
-    std::vector<std::string> headings;
+    //add on-demand target table
+    std::vector<std::string> headings_targets;
     for (const auto& h : table_columns_)
-        headings.push_back(h.toStdString());
+        headings_targets.push_back(h.toStdString());
 
-    auto& table = section.addTable(TargetsTableName, headings.size(), headings);
-    table.setOnDemand();      // on demand content
-    table.setLockStateSafe(); // can be reloaded and exported in lock state
-    table.enableTooltips();   // shows custom tooltips
-    table.setMaxRowCount(-1); // override row count
+    int sort_col = table_columns_.indexOf("Interest");
+    if (sort_col < 0)
+        sort_col = 0;
+
+    auto& table_targets = section_targets.addTable(TargetsTableName, 
+                                                   headings_targets.size(), 
+                                                   headings_targets,
+                                                   true,
+                                                   (unsigned int)sort_col,
+                                                   Qt::DescendingOrder);
+    
+    table_targets.setOnDemand();      // on demand content
+    table_targets.setLockStateSafe(); // can be reloaded and exported in lock state
+    table_targets.enableTooltips();   // shows custom tooltips
+    table_targets.setMaxRowCount(-1); // override row count
 
     //setup column groups
-    table.setColumnGroup("Duration", duration_columns_, false);
-    table.setColumnGroup("Mode S"  , mode_s_columns_  , true );
-    table.setColumnGroup("Mode A/C", mode_ac_columns_ , false);
+    table_targets.setColumnGroup("Duration", duration_columns_, false);
+    table_targets.setColumnGroup("Mode S"  , mode_s_columns_  , true );
+    table_targets.setColumnGroup("Mode A/C", mode_ac_columns_ , false);
+}
+
+/**
+ */
+void EvaluationData::addToReport(std::shared_ptr<ResultReport::Report> report) const
+{
+    addConstraintsSection(report);
+    addTargetSection(report);
 }
 
 /**

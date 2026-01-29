@@ -74,12 +74,15 @@ using namespace boost::posix_time;
  */
 EvaluationCalculator::EvaluationCalculator(const std::string& class_id, 
                                            const std::string& instance_id,
-                                           EvaluationManager& eval_man, DBContentManager& dbcontent_man)
-:   Configurable      (class_id, instance_id, &eval_man)
-,   eval_man_         (eval_man)
-,   data_             (new EvaluationData(*this, eval_man_, dbcontent_man))
-,   results_gen_      (new EvaluationResultsGenerator(*this))
-,   tst_srcs_coverage_(new dbContent::DataSourceCompoundCoverage)
+                                           EvaluationManager& eval_man, 
+                                           DBContentManager& dbcontent_man,
+                                           bool is_default_calculator)
+:   Configurable          (class_id, instance_id, &eval_man)
+,   eval_man_             (eval_man)
+,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
+,   results_gen_          (new EvaluationResultsGenerator(*this))
+,   tst_srcs_coverage_    (new dbContent::DataSourceCompoundCoverage)
+,   is_default_calculator_(is_default_calculator)
 {
     readSettings();
     createSubConfigurables();
@@ -89,12 +92,14 @@ EvaluationCalculator::EvaluationCalculator(const std::string& class_id,
  */
 EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man, 
                                            DBContentManager& dbcontent_man,
-                                           const nlohmann::json& config)
-:   Configurable      ("EvaluationManager", "EvaluationManager0", nullptr, "", &config)
-,   eval_man_         (eval_man)
-,   data_             (new EvaluationData(*this, eval_man_, dbcontent_man))
-,   results_gen_      (new EvaluationResultsGenerator(*this))
-,   tst_srcs_coverage_(new dbContent::DataSourceCompoundCoverage)
+                                           const nlohmann::json& config,
+                                           bool is_default_calculator)
+:   Configurable          ("EvaluationManager", "EvaluationManager0", nullptr, "", &config)
+,   eval_man_             (eval_man)
+,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
+,   results_gen_          (new EvaluationResultsGenerator(*this))
+,   tst_srcs_coverage_    (new dbContent::DataSourceCompoundCoverage)
+,   is_default_calculator_(is_default_calculator)
 {
     readSettings();
     createSubConfigurables();
@@ -102,9 +107,7 @@ EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man,
 
 /**
  */
-EvaluationCalculator::~EvaluationCalculator()
-{
-}
+EvaluationCalculator::~EvaluationCalculator() = default;
 
 /**
  */
@@ -133,7 +136,7 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json&
     try
     {
         //create calculator based on given config
-        c = new EvaluationCalculator(eval_man, dbc_man, config);
+        c = new EvaluationCalculator(eval_man, dbc_man, config, false);
     }
     catch(const std::exception& ex)
     {
@@ -235,13 +238,23 @@ void EvaluationCalculator::readSettings()
     registerParameter("report_split_results_by_mops", &settings_.report_split_results_by_mops_, Settings().report_split_results_by_mops_);
     registerParameter("report_split_results_by_aconly_ms", &settings_.report_split_results_by_aconly_ms_, Settings().report_split_results_by_aconly_ms_);
 
-    //grid generation
+    // grid generation
     registerParameter("grid_num_cells_x", &settings_.grid_num_cells_x, Settings().grid_num_cells_x);
     registerParameter("grid_num_cells_y", &settings_.grid_num_cells_y, Settings().grid_num_cells_y);
 
-    //histogram generation
+    // histogram generation
     registerParameter("histogram_num_bins", &settings_.histogram_num_bins, Settings().histogram_num_bins);
-    
+
+    // eval task result calculator specific
+    if (!is_default_calculator_)
+    {
+        // global and target constraints
+        registerParameter("global_time_filter_enabled", &global_time_filter_enabled_, false);
+        registerParameter("global_time_window", &global_time_window_json_, nlohmann::json());
+        registerParameter("global_exclusion_time_windows", &global_exclusion_time_windows_json_, nlohmann::json());
+        registerParameter("target_constraints", &target_constraints_json_, nlohmann::json());
+    }
+
     updateDerivedParameters();
 }
 
@@ -280,8 +293,14 @@ void EvaluationCalculator::checkSubConfigurables()
  */
 void EvaluationCalculator::updateDerivedParameters()
 {
+    //data sources
     data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
     data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
+
+    //read various constraints from config json
+    loadGlobalTimeWindow();
+    loadGlobalExclusionTimeWindows();
+    loadTargetConstraints();
 }
 
 /**
@@ -329,6 +348,8 @@ void EvaluationCalculator::reset()
     //clear data sources
     data_sources_ref_.clear();
     data_sources_tst_.clear();
+
+    custom_report_name_ = "";
 }
 
 /**
@@ -337,6 +358,14 @@ void EvaluationCalculator::clearData()
 {
     loginf;
 
+    clearEvalData();
+    clearConstraints();
+}
+
+/**
+ */
+void EvaluationCalculator::clearEvalData()
+{
     data_->clear();
     results_gen_->clear();
 
@@ -351,9 +380,57 @@ void EvaluationCalculator::clearData()
 
 /**
  */
-Result EvaluationCalculator::evaluate(bool update_report,
-                                      const std::vector<unsigned int>& utns,
-                                      const std::vector<Evaluation::RequirementResultID>& requirements)
+void EvaluationCalculator::clearConstraints()
+{
+    global_time_filter_enabled_ = false;
+
+    global_time_window_json_ = nlohmann::json();
+    global_time_window_ = Utils::TimeWindow();
+
+    global_exclusion_time_windows_json_ = nlohmann::json();
+    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
+
+    target_constraints_json_ = nlohmann::json();
+    target_constraints_.clear();
+}
+
+/**
+ * Runs a full evaluation.
+ * - Will update the used constraints
+ * - Will regenerate the report
+ */
+Result EvaluationCalculator::evaluate()
+{
+    return evaluateInternal(true, true, {}, {});
+}
+
+/**
+ * Runs a full evaluation update using the internally stored constraints.
+ * - Uses the internally stored constraints
+ * - Will regenerate the report
+ */
+Result EvaluationCalculator::update()
+{
+    return evaluateInternal(false, true, {}, {});
+}
+
+/**
+ * Reloads all needed data for specified utns and requirements.
+ * - Uses the internally stored constraints
+ * - Will NOT regenerate the report
+ */
+Result EvaluationCalculator::reloadNeededData(const std::vector<unsigned int>& utns,
+                                              const std::vector<Evaluation::RequirementResultID>& requirements)
+{
+    return evaluateInternal(false, false, utns, requirements);
+}
+
+/**
+ */
+Result EvaluationCalculator::evaluateInternal(bool update_constraints,
+                                              bool update_report,
+                                              const std::vector<unsigned int>& utns,
+                                              const std::vector<Evaluation::RequirementResultID>& requirements)
 {
     loginf;
 
@@ -373,7 +450,9 @@ Result EvaluationCalculator::evaluate(bool update_report,
         // remove previous stuff
         eval_man_.resetViewableDataConfig(true);
 
-        clearData();
+        clearEvalData();
+        if (update_constraints)
+            clearConstraints();
 
         emit resultsChanged();
 
@@ -386,6 +465,9 @@ Result EvaluationCalculator::evaluate(bool update_report,
         // update stuff before load
         updateCompoundCoverage(activeDataSourcesTst());
         updateSectorROI();
+
+        if (update_constraints)
+            updateConstraints();
 
         if (Blocking)
         {
@@ -802,7 +884,7 @@ void EvaluationCalculator::selectDataSourceTst(const std::string& name,
 
 /**
  */
-bool EvaluationCalculator::hasConstraints() const
+bool EvaluationCalculator::hasPartialResult() const
 {
     return !eval_utns_.empty() || !eval_requirements_.empty();
 }
@@ -836,13 +918,22 @@ std::string EvaluationCalculator::currentStandardName() const
 }
 
 /**
+ * Internal.
+ */
+void EvaluationCalculator::setCurrentStandardName(const std::string& name)
+{
+    settings_.current_standard_ = name;
+
+    //check if standard is present
+    if (settings_.current_standard_.size())
+        traced_assert(hasStandard(settings_.current_standard_));
+}
+
+/**
  */
 void EvaluationCalculator::currentStandardName(const std::string& current_standard)
 {
-    settings_.current_standard_ = current_standard;
-
-    if (settings_.current_standard_.size())
-        traced_assert(hasStandard(settings_.current_standard_));
+    setCurrentStandardName(current_standard);
 
     emit currentStandardChanged();
 }
@@ -857,7 +948,8 @@ void EvaluationCalculator::renameCurrentStandard (const std::string& new_name)
     traced_assert(!hasStandard(new_name));
 
     currentStandard().name(new_name);
-    settings_.current_standard_ = new_name;
+
+    setCurrentStandardName(new_name);
 
     emit standardsChanged();
     emit currentStandardChanged();
@@ -877,7 +969,7 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
 
     Configurable::generateSubConfigurableFromJSON(currentStandard(), data, "EvaluationStandard");
 
-    settings_.current_standard_ = new_name;
+    setCurrentStandardName(new_name);
 
     emit standardsChanged();
     emit currentStandardChanged();
@@ -1191,6 +1283,8 @@ const EvaluationCalculator::ResultMap& EvaluationCalculator::results() const
     return results_gen_->results(); 
 }
 
+/**
+ */
 const std::string& EvaluationCalculator::resultName() const
 {
     return results_gen_->resultName(); 
@@ -1251,6 +1345,9 @@ void EvaluationCalculator::updateResultsToChanges ()
 {
     if (evaluated_)
     {
+        //update constraints first
+        updateConstraints();
+
         results_gen_->updateToChanges();
     }
 }
@@ -1659,6 +1756,238 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
     }
 
     tst_srcs_coverage_->finalize();
+}
+
+/**
+ */
+void EvaluationCalculator::updateConstraints()
+{
+    loginf;
+
+    clearConstraints();
+
+    //obtain current constraints
+    global_time_filter_enabled_    = eval_man_.useTimestampFilter();
+    global_time_window_            = Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd());
+    global_exclusion_time_windows_ = eval_man_.excludedTimeWindows();
+    target_constraints_            = COMPASS::instance().dbContentManager().targetModel()->evaluationConstraints(true);
+
+    //update serializable json
+    storeGlobalTimeWindow();
+    storeGlobalExclusionTimeWindows();
+    storeTargetConstraints();
+}
+
+/**
+ */
+bool EvaluationCalculator::isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const
+{
+    // global time filters disabled? => not excluded
+    if (!global_time_filter_enabled_)
+        return true;
+
+    //check if ts outside of global load window => excluded
+    if (global_time_window_.valid() && !global_time_window_.contains(ts))
+        return false;
+
+    // check if ts inside global load exclusion windows => excluded
+    if (global_exclusion_time_windows_.contains(ts))
+        return false;
+
+    // not excluded
+    return true;
+}
+
+/**
+ */
+bool EvaluationCalculator::globalTimeFilterEnabled() const
+{
+    return global_time_filter_enabled_;
+}
+
+/**
+ */
+void EvaluationCalculator::storeGlobalTimeWindow()
+{
+    global_time_window_json_ = global_time_window_.valid() ? global_time_window_.getAsJson() : nlohmann::json();
+}
+
+/**
+ */
+void EvaluationCalculator::loadGlobalTimeWindow()
+{
+    global_time_window_ = Utils::TimeWindow();
+
+    if (global_time_window_json_.is_null())
+        return;
+
+    global_time_window_.setFrom(global_time_window_json_);
+}
+
+/**
+ */
+void EvaluationCalculator::storeGlobalExclusionTimeWindows()
+{
+    global_exclusion_time_windows_json_= global_exclusion_time_windows_.asJSON();
+}
+
+/**
+ */
+void EvaluationCalculator::loadGlobalExclusionTimeWindows()
+{
+    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
+
+    if (global_exclusion_time_windows_json_.is_null())
+        return;
+
+    global_exclusion_time_windows_.setFrom(global_exclusion_time_windows_json_);
+}
+
+/**
+ */
+void EvaluationCalculator::storeTargetConstraints()
+{
+    target_constraints_json_ = nlohmann::json::object();
+
+    for (const auto& tc : target_constraints_)
+    {
+        if (!tc.second.hasActiveConstraint())
+            continue;
+
+        auto key = std::to_string(tc.first);
+        target_constraints_json_[ key ] = tc.second.toJSON();
+    }
+}
+
+/**
+ */
+void EvaluationCalculator::loadTargetConstraints()
+{
+    target_constraints_.clear();
+
+    if (target_constraints_json_.is_null())
+        return;
+
+    traced_assert(target_constraints_json_.is_object());
+
+    for (const auto& tc_json : target_constraints_json_.items())
+    {
+        QString s = QString::fromStdString(tc_json.key());
+
+        bool ok;
+        auto utn = s.toUInt(&ok);
+        traced_assert(ok);
+
+        dbContent::TargetEvalConstraints tc;
+        ok = tc.fromJSON(tc_json.value());
+        traced_assert(ok);
+
+        if (!tc.hasActiveConstraint())
+            continue;
+
+        target_constraints_[ utn ] = tc;
+    }
+}
+
+/**
+ */
+const dbContent::TargetEvalConstraints* EvaluationCalculator::targetConstraint(unsigned int utn) const
+{
+    if (target_constraints_.empty())
+        return nullptr;
+
+    auto it = target_constraints_.find(utn);
+    if (it == target_constraints_.end())
+        return nullptr;
+
+    return &it->second;
+}
+
+/**
+ */
+std::string EvaluationCalculator::constraintsAsString() const
+{
+    std::stringstream ss;
+    ss << "global_time_filter_enabled: " << global_time_filter_enabled_ << "\n";
+    ss << "global_time_window_json: \n" << global_time_window_json_.dump(4) << "\n";
+    ss << "global_exclusion_time_windows_json: \n" << global_exclusion_time_windows_json_.dump(4) << "\n";
+    ss << "target_constraints_json: \n" << target_constraints_json_.dump(4) << "\n";
+
+    return ss.str();
+}
+
+/**
+ */
+void EvaluationCalculator::resetCustomReportName()
+{
+    custom_report_name_ = "";
+}
+
+/**
+ */
+void EvaluationCalculator::setCustomReportName(const std::string& name)
+{
+    custom_report_name_ = name;
+}
+
+/**
+ */
+bool EvaluationCalculator::hasCustomReportName() const
+{
+    return !custom_report_name_.empty();
+}
+
+/**
+ */
+const std::string& EvaluationCalculator::customReportName() const
+{
+    return custom_report_name_;
+}
+
+/**
+ */
+std::string EvaluationCalculator::reportName() const
+{
+    auto report_name = (custom_report_name_.empty() ? suggestReportName() : custom_report_name_);
+    traced_assert(!report_name.empty());
+
+    return report_name;
+}
+
+/**
+ */
+std::string EvaluationCalculator::suggestReportName() const
+{
+    if (settings_.current_standard_.empty() ||
+        settings_.dbcontent_name_tst_.empty() ||
+        data_sources_tst_.count(settings_.dbcontent_name_tst_) == 0 ||
+        data_sources_tst_.at(settings_.dbcontent_name_tst_).empty())
+        return "";
+
+    std::string ds_sel;
+    for (const auto& it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
+    {
+        if (it.second)
+        {
+            ds_sel = it.first;
+            break;
+        }
+    }
+
+    //no tst ds selected
+    if (ds_sel.empty())
+        return "";
+
+    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+
+    unsigned int ds_id = stoul(ds_sel);
+    traced_assert(ds_man.hasDBDataSource(ds_id));
+
+    const auto& ds_name = ds_man.dbDataSource(ds_id).name();
+
+    std::string report_name = settings_.current_standard_ + " " + ds_name + " L" + std::to_string(settings_.line_id_tst_ + 1) + " Evaluation";
+
+    return report_name;
 }
 
 /**

@@ -263,7 +263,7 @@ Result ReportExporter::visitSection(Section& section,
 
     //loginf << "exporting section '" << section.id() << "'";
 
-    setStatus("exporting section '" + section.name() + "'");
+    setStatus("Exporting section '" + section.name() + "'");
 
     //export section first
     auto res = exportSection_impl(section, 
