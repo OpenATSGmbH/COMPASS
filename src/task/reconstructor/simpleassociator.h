@@ -52,7 +52,7 @@ private:
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
         const dbContent::ReconstructorTarget& target1,
-        bool do_debug,
+        bool one_is_on_ground, bool do_debug,
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) override;
 
@@ -67,7 +67,8 @@ private:
         bool do_debug) override;
     // check passed + score (larger is better) returned
     virtual std::tuple<DistanceClassification, double> checkPositionOffsetScore
-        (double distance_m, double sum_stddev_est, bool secondary_verified) override;
+        (const dbContent::ReconstructorTarget& target0, const dbContent::ReconstructorTarget& target1,
+            double distance_m, double sum_stddev_est, bool secondary_verified, bool one_is_on_ground ) override;
 
     virtual ReconstructorBase& reconstructor() override;
 };

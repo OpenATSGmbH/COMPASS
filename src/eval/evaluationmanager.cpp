@@ -144,6 +144,8 @@ void EvaluationManager::init()
     traced_assert(!initialized_);
     initialized_ = true;
 
+    registerParameter("remove_disabled_utn_data", &remove_disabled_utn_data_, remove_disabled_utn_data_);
+
     auto& dbc_manager = COMPASS::instance().dbContentManager();
 
     connect (&dbc_manager, &DBContentManager::associationStatusChangedSignal,

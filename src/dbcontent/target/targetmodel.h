@@ -168,6 +168,8 @@ public:
 
     static std::string iconForTarget(const Target& target, bool add_placeholder_txt = false);
 
+    std::set<unsigned int> getIgnoredUTNs() const;
+
 protected:
     DBContentManager& dbcont_manager_;
 

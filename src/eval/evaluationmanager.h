@@ -132,6 +132,8 @@ public:
     void useTimestampFilter(bool value);
     std::string timestampFilterStr() const;
 
+    bool removeDisabledUTNData() const { return remove_disabled_utn_data_; } // not load disabled utn for performance hack
+
     //standards
     bool hasCurrentStandard() const;
     const EvaluationStandard& currentStandard() const;
@@ -184,6 +186,8 @@ private:
     boost::posix_time::ptime    load_timestamp_begin_;         // ts filter begin (added to timestamp load filter)
     boost::posix_time::ptime    load_timestamp_end_;           // ts filter end (added to timestamp load filter)
     Utils::TimeWindowCollection load_filtered_time_windows_;   // exclusion windows (added to exclusion windows load filter)
+
+    bool remove_disabled_utn_data_{false};
 
     std::string last_result_name_;
 };

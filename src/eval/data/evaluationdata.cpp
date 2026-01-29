@@ -95,6 +95,9 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
         return;
     }
 
+    bool remove_disabled_utns = eval_man_.removeDisabledUTNData();
+    std::set<unsigned int> ignored_uts = dbcont_man_.getIgnoredUTNs();
+
     ref_line_id_ = line_id;
     traced_assert(ref_line_id_ <= 3);
 
@@ -168,9 +171,11 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
         }
 
         utn = utn_vec.get(cnt);
-        if (!dbcont_man_.existsTarget(utn))
+        assert (dbcont_man_.existsTarget(utn));
+
+        if (remove_disabled_utns && ignored_uts.count(utn))
         {
-            logerr << "ignoring unknown utn " << utn;
+            ++num_skipped;
             continue;
         }
 
@@ -210,6 +215,9 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
         logwrn << "dbcontent has no associations";
         return;
     }
+
+    bool remove_disabled_utns = eval_man_.removeDisabledUTNData();
+    std::set<unsigned int> ignored_uts = dbcont_man_.getIgnoredUTNs();
 
     tst_line_id_ = line_id;
     traced_assert(tst_line_id_ <= 3);
@@ -277,9 +285,11 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
             }
 
             utn = utn_vec.get(cnt);
-            if (!dbcont_man_.existsTarget(utn))
+            assert (dbcont_man_.existsTarget(utn));
+
+            if (remove_disabled_utns && ignored_uts.count(utn))
             {
-                logerr << "ignoring unknown utn " << utn;
+                ++num_skipped;
                 continue;
             }
 

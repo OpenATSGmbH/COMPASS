@@ -35,9 +35,14 @@ public slots:
     void maxTimeDiffEditedSlot (const QString& text);
     void maxTimeDiffTrackerEditedSlot (int value);
 
-    void maxDistanceNotOKEditedSlot (const QString& text);
-    void maxDistanceDubiousEditedSlot (const QString& text);
-    void maxDistanceAcceptableEditedSlot (const QString& text);
+    void maxDistanceNotOKAirEditedSlot (const QString& text);
+    void maxDistanceDubiousAirEditedSlot (const QString& text);
+    void maxDistanceAcceptableAirEditedSlot (const QString& text);
+
+    void maxDistanceNotOKGroundEditedSlot (const QString& text);
+    void maxDistanceDubiousGroundEditedSlot (const QString& text);
+    void maxDistanceAcceptableGroundEditedSlot (const QString& text);
+
     void maxAltitudeDiffEditedSlot (const QString& text);
     void probMinTimeOverlapEditedSlot (const QString& text);
 
@@ -64,10 +69,14 @@ private:
     QLineEdit* max_time_diff_edit_{nullptr};
     QSpinBox* max_time_diff_tracker_edit_{nullptr};
 
-    QLineEdit* max_distance_notok_edit_{nullptr};
-    QLineEdit* max_distance_dubious_edit_{nullptr};
-    QLineEdit* max_positions_dubious_edit_{nullptr};
-    QLineEdit* max_distance_acceptable_edit_{nullptr};
+    QLineEdit* max_distance_notok_air_edit_{nullptr};
+    QLineEdit* max_distance_dubious_air_edit_{nullptr};
+    QLineEdit* max_distance_acceptable_air_edit_{nullptr};
+
+    QLineEdit* max_distance_notok_ground_edit_{nullptr};
+    QLineEdit* max_distance_dubious_ground_edit_{nullptr};
+    QLineEdit* max_distance_acceptable_ground_edit_{nullptr};
+
     QLineEdit* max_altitude_diff_edit_{nullptr};
 
     QCheckBox* do_track_number_disassociate_using_distance_box_ {nullptr};

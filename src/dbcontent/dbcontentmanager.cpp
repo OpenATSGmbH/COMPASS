@@ -1713,6 +1713,14 @@ nlohmann::json DBContentManager::utnsAsJSON() const
     return target_model_->utnsAsJSON();
 }
 
+std::set<unsigned int> DBContentManager::getIgnoredUTNs() const
+{
+    traced_assert(hasAssociations());
+    traced_assert(hasTargetsInfo());
+
+    return target_model_->getIgnoredUTNs();
+}
+
 /**
  */
 void DBContentManager::resetToStartupConfiguration()

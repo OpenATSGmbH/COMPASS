@@ -78,6 +78,18 @@ std::string TargetModel::iconForTarget(const Target& target,
     return add_placeholder_txt ? "done.png;Yes" : "done.png";
 }
 
+std::set<unsigned int> TargetModel::getIgnoredUTNs() const
+{
+    std::set<unsigned int> ignored;
+
+    for (auto& target : target_data_)
+    {
+        if (!target.useInEval())
+            ignored.insert(target.utn_);
+    }
+    return ignored;
+}
+
 /**
  */
 QVariant TargetModel::data(const QModelIndex& index, int role) const
