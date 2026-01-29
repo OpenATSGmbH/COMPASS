@@ -108,7 +108,7 @@ void EvaluationManager::generateSubConfigurable(const std::string& class_id,
     {
         traced_assert(!calculator_);
 
-        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, false);
+        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, true);
         calculator_.reset(calculator);
     }
     else
@@ -197,12 +197,19 @@ Result EvaluationManager::evaluate(bool show_dialog)
     traced_assert(initialized_);
     traced_assert(calculator_);
 
+    calculator_->resetCustomReportName();
+
     //show config dialog?
+    boost::optional<std::string> custom_report_name;
     if (show_dialog)
     {
         EvaluationDialog dlg(*calculator_);
-        if (dlg.exec() == QDialog::Rejected)
+        auto ret = dlg.exec();
+
+        if (ret == QDialog::Rejected)
             return Result::succeeded();
+
+        custom_report_name = dlg.reportName();
     }
 
     //create clone of current calculator
@@ -214,6 +221,10 @@ Result EvaluationManager::evaluate(bool show_dialog)
 
     auto calculator_local = res.result();
     traced_assert(calculator_local);
+
+    //obtained custom report name from dialog?
+    if (custom_report_name.has_value())
+        calculator_local->setCustomReportName(custom_report_name.value());
 
     //evaluate with updated constraints
     auto eval_res = calculator_local->evaluate();
@@ -314,6 +325,7 @@ void EvaluationManager::databaseOpenedSlot()
     calculator_->checkReferenceDataSources();
     calculator_->checkTestDataSources();
     calculator_->checkMinHeightFilterValid();
+    calculator_->resetCustomReportName();
 }
 
 /**

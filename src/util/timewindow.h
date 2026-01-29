@@ -75,7 +75,7 @@ public:
     bool contains(const TimeWindow& time_window);
     void erase(unsigned int index);
     void clear();
-
+    void sort();
 
     unsigned int size() const { return time_windows_.size(); }
 
@@ -88,7 +88,6 @@ public:
 
     std::vector<Utils::TimeWindow>::const_iterator cbegin() const { return time_windows_.cbegin(); }
     std::vector<Utils::TimeWindow>::const_iterator cend() const { return time_windows_.cend(); }
-
 
 protected:
     std::vector<Utils::TimeWindow> time_windows_;

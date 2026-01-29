@@ -76,14 +76,15 @@ EvaluationCalculator::EvaluationCalculator(const std::string& class_id,
                                            const std::string& instance_id,
                                            EvaluationManager& eval_man, 
                                            DBContentManager& dbcontent_man,
-                                           bool store_constraints)
-:   Configurable      (class_id, instance_id, &eval_man)
-,   eval_man_         (eval_man)
-,   data_             (new EvaluationData(*this, eval_man_, dbcontent_man))
-,   results_gen_      (new EvaluationResultsGenerator(*this))
-,   tst_srcs_coverage_(new dbContent::DataSourceCompoundCoverage)
+                                           bool is_default_calculator)
+:   Configurable          (class_id, instance_id, &eval_man)
+,   eval_man_             (eval_man)
+,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
+,   results_gen_          (new EvaluationResultsGenerator(*this))
+,   tst_srcs_coverage_    (new dbContent::DataSourceCompoundCoverage)
+,   is_default_calculator_(is_default_calculator)
 {
-    readSettings(store_constraints);
+    readSettings();
     createSubConfigurables();
 }
 
@@ -92,22 +93,21 @@ EvaluationCalculator::EvaluationCalculator(const std::string& class_id,
 EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man, 
                                            DBContentManager& dbcontent_man,
                                            const nlohmann::json& config,
-                                           bool store_constraints)
-:   Configurable      ("EvaluationManager", "EvaluationManager0", nullptr, "", &config)
-,   eval_man_         (eval_man)
-,   data_             (new EvaluationData(*this, eval_man_, dbcontent_man))
-,   results_gen_      (new EvaluationResultsGenerator(*this))
-,   tst_srcs_coverage_(new dbContent::DataSourceCompoundCoverage)
+                                           bool is_default_calculator)
+:   Configurable          ("EvaluationManager", "EvaluationManager0", nullptr, "", &config)
+,   eval_man_             (eval_man)
+,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
+,   results_gen_          (new EvaluationResultsGenerator(*this))
+,   tst_srcs_coverage_    (new dbContent::DataSourceCompoundCoverage)
+,   is_default_calculator_(is_default_calculator)
 {
-    readSettings(store_constraints);
+    readSettings();
     createSubConfigurables();
 }
 
 /**
  */
-EvaluationCalculator::~EvaluationCalculator()
-{
-}
+EvaluationCalculator::~EvaluationCalculator() = default;
 
 /**
  */
@@ -136,7 +136,7 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json&
     try
     {
         //create calculator based on given config
-        c = new EvaluationCalculator(eval_man, dbc_man, config, true);
+        c = new EvaluationCalculator(eval_man, dbc_man, config, false);
     }
     catch(const std::exception& ex)
     {
@@ -163,7 +163,7 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json&
 
 /**
  */
-void EvaluationCalculator::readSettings(bool store_constraints)
+void EvaluationCalculator::readSettings()
 {
     typedef EvaluationSettings Settings;
 
@@ -245,13 +245,16 @@ void EvaluationCalculator::readSettings(bool store_constraints)
     // histogram generation
     registerParameter("histogram_num_bins", &settings_.histogram_num_bins, Settings().histogram_num_bins);
 
-    // global and target constraints
-    if (store_constraints)
+    // eval task result calculator specific
+    if (!is_default_calculator_)
     {
+        // global and target constraints
         registerParameter("global_time_filter_enabled", &global_time_filter_enabled_, false);
         registerParameter("global_time_window", &global_time_window_json_, nlohmann::json());
         registerParameter("global_exclusion_time_windows", &global_exclusion_time_windows_json_, nlohmann::json());
         registerParameter("target_constraints", &target_constraints_json_, nlohmann::json());
+
+        registerParameter("custom_report_name", &custom_report_name_, std::string());
     }
 
     updateDerivedParameters();
@@ -347,6 +350,8 @@ void EvaluationCalculator::reset()
     //clear data sources
     data_sources_ref_.clear();
     data_sources_tst_.clear();
+
+    custom_report_name_ = "";
 }
 
 /**
@@ -915,13 +920,22 @@ std::string EvaluationCalculator::currentStandardName() const
 }
 
 /**
+ * Internal.
+ */
+void EvaluationCalculator::setCurrentStandardName(const std::string& name)
+{
+    settings_.current_standard_ = name;
+
+    //check if standard is present
+    if (settings_.current_standard_.size())
+        traced_assert(hasStandard(settings_.current_standard_));
+}
+
+/**
  */
 void EvaluationCalculator::currentStandardName(const std::string& current_standard)
 {
-    settings_.current_standard_ = current_standard;
-
-    if (settings_.current_standard_.size())
-        traced_assert(hasStandard(settings_.current_standard_));
+    setCurrentStandardName(current_standard);
 
     emit currentStandardChanged();
 }
@@ -936,7 +950,8 @@ void EvaluationCalculator::renameCurrentStandard (const std::string& new_name)
     traced_assert(!hasStandard(new_name));
 
     currentStandard().name(new_name);
-    settings_.current_standard_ = new_name;
+
+    setCurrentStandardName(new_name);
 
     emit standardsChanged();
     emit currentStandardChanged();
@@ -956,7 +971,7 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
 
     Configurable::generateSubConfigurableFromJSON(currentStandard(), data, "EvaluationStandard");
 
-    settings_.current_standard_ = new_name;
+    setCurrentStandardName(new_name);
 
     emit standardsChanged();
     emit currentStandardChanged();
@@ -1901,6 +1916,80 @@ std::string EvaluationCalculator::constraintsAsString() const
     ss << "target_constraints_json: \n" << target_constraints_json_.dump(4) << "\n";
 
     return ss.str();
+}
+
+/**
+ */
+void EvaluationCalculator::resetCustomReportName()
+{
+    custom_report_name_ = "";
+}
+
+/**
+ */
+void EvaluationCalculator::setCustomReportName(const std::string& name)
+{
+    custom_report_name_ = name;
+}
+
+/**
+ */
+bool EvaluationCalculator::hasCustomReportName() const
+{
+    return !custom_report_name_.empty();
+}
+
+/**
+ */
+const std::string& EvaluationCalculator::customReportName() const
+{
+    return custom_report_name_;
+}
+
+/**
+ */
+std::string EvaluationCalculator::reportName() const
+{
+    auto report_name = (custom_report_name_.empty() ? suggestReportName() : custom_report_name_);
+    traced_assert(!report_name.empty());
+
+    return report_name;
+}
+
+/**
+ */
+std::string EvaluationCalculator::suggestReportName() const
+{
+    if (settings_.current_standard_.empty() ||
+        settings_.dbcontent_name_tst_.empty() ||
+        data_sources_tst_.count(settings_.dbcontent_name_tst_) == 0 ||
+        data_sources_tst_.at(settings_.dbcontent_name_tst_).empty())
+        return "";
+
+    std::string ds_sel;
+    for (const auto& it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
+    {
+        if (it.second)
+        {
+            ds_sel = it.first;
+            break;
+        }
+    }
+
+    //no tst ds selected
+    if (ds_sel.empty())
+        return "";
+
+    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+
+    unsigned int ds_id = stoul(ds_sel);
+    traced_assert(ds_man.hasDBDataSource(ds_id));
+
+    const auto& ds_name = ds_man.dbDataSource(ds_id).name();
+
+    std::string report_name = settings_.current_standard_ + " " + ds_name + " L" + std::to_string(settings_.line_id_tst_ + 1);
+
+    return report_name;
 }
 
 /**

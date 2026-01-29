@@ -87,6 +87,9 @@ public:
     std::map<unsigned int, EvaluationTarget> toTargets() const;
 
     void addToReport(std::shared_ptr<ResultReport::Report> report) const;
+    void addConstraintsSection(std::shared_ptr<ResultReport::Report> report) const;
+    void addTargetSection(std::shared_ptr<ResultReport::Report> report) const;
+
     void postprocessTargetsTable(ResultReport::SectionContentTable& table) const;
     void fillTargetsTable(const std::map<unsigned int, EvaluationTarget>& targets,
                           ResultReport::SectionContentTable& table,
@@ -129,6 +132,7 @@ public:
     static const std::string ConstraintsSectionID;
     static const std::string ConstraintsTSTableName;
     static const std::string ConstraintsReqTableName;
+    static const std::string ConstraintsPlaceholderTxtName;
 
 protected:
     std::pair<nlohmann::json, unsigned int> rawCellData(const EvaluationTarget& target, 

@@ -82,6 +82,8 @@ void TimeWindowCollectionWidget::refreshList()
 
     QIcon del_icon(Files::IconProvider::getIcon("delete.png"));
 
+    collection_.sort();
+
     for (unsigned int i = 0; i < collection_.size(); ++i)
     {
         const TimeWindow& tw = collection_.get(i);

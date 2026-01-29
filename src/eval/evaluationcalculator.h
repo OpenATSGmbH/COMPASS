@@ -90,11 +90,11 @@ public:
                          const std::string& instance_id,
                          EvaluationManager& eval_man, 
                          DBContentManager& dbcontent_man,
-                         bool store_constraints);
+                         bool is_default_calculator);
     EvaluationCalculator(EvaluationManager& eval_man, 
                          DBContentManager& dbcontent_man,
                          const nlohmann::json& config,
-                         bool store_constraints);
+                         bool is_default_calculator);
     virtual ~EvaluationCalculator();
 
     ResultT<EvaluationCalculator*> clone() const;
@@ -171,6 +171,14 @@ public:
                         const std::string& group_name,
                         const std::string& req_name,
                         bool value);
+
+    // report
+    void resetCustomReportName(); 
+    void setCustomReportName(const std::string& name);
+    bool hasCustomReportName() const;
+    const std::string& customReportName() const;
+    std::string suggestReportName() const;
+    std::string reportName() const;
 
     // sectors & min height filter
     bool sectorsLoaded() const;
@@ -253,7 +261,7 @@ protected:
                             const std::vector<unsigned int>& utns,
                             const std::vector<Evaluation::RequirementResultID>& requirements);
 
-    void readSettings(bool store_constraints);
+    void readSettings();
 
     std::map<std::string, bool>& dataSourcesRef();
     std::map<std::string, bool>& dataSourcesTst();
@@ -291,6 +299,8 @@ protected:
     void clearEvalData();
     void clearConstraints();
 
+    void setCurrentStandardName(const std::string& name);
+
     EvaluationManager& eval_man_;
 
     std::vector<unsigned int>                    eval_utns_;
@@ -299,8 +309,8 @@ protected:
     EvaluationSettings settings_;
 
     //values derived from settings
-    std::map<std::string, std::map<std::string, bool>> data_sources_ref_ ;    // db_content -> ds_id -> active flag
-    std::map<std::string, std::map<std::string, bool>> data_sources_tst_;     // db_content -> ds_id -> active flag
+    std::map<std::string, std::map<std::string, bool>> data_sources_ref_; // db_content -> ds_id -> active flag
+    std::map<std::string, std::map<std::string, bool>> data_sources_tst_; // db_content -> ds_id -> active flag
 
     boost::optional<ROI> sector_roi_;
 
@@ -326,5 +336,9 @@ protected:
     nlohmann::json                                           target_constraints_json_;
     std::map<unsigned int, dbContent::TargetEvalConstraints> target_constraints_;
 
+    std::string custom_report_name_;
+
     bool use_fast_sector_inside_check_ = true;
+
+    bool is_default_calculator_ = false;
 };

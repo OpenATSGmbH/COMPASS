@@ -140,7 +140,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     clear();
 
-    result_name_ = standard.name() + " " + EvalResultName;
+    result_name_ = calculator_.reportName() + " " + EvalResultName;
 
     vector<unsigned int> used_utns;
     std::set<unsigned int> utn_set(utns.begin(), utns.end());

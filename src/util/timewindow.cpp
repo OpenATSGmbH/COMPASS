@@ -222,6 +222,9 @@ void TimeWindowCollection::clear()
     time_windows_.clear();
 }
 
+void TimeWindowCollection::sort()
+{
+    std::sort(time_windows_.begin(), time_windows_.end(), [&] (const TimeWindow& tw0, const TimeWindow& tw1) { return tw0.begin() < tw1.begin(); });
 }
 
-
+}

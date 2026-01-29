@@ -34,13 +34,27 @@
 using namespace std;
 using namespace Utils;
 
+namespace
+{
+    /**
+     */
+    std::string getLogoImage(double height_cm)
+    {
+        auto footer_img_fn = Utils::Files::getImageFilepath("logo.png");
+        return "\\includegraphics[trim={0.01cm 0.12cm 0.01cm 0.01cm},clip,height=" + std::to_string(height_cm) + "cm]{" + footer_img_fn + "}";
+    }
+}
+
 LatexDocument::LatexDocument(const std::string& path, const std::string& filename)
     : path_(path), filename_(filename)
 {
     loginf << "path '" << path_ << "' filename '" << filename_ << "'";
 
-    footer_left_  = COMPASS::instance().versionString(false, true);
-    footer_right_ = COMPASS::instance().licenseeString(true);
+    //footer_left_  = COMPASS::instance().versionString(false, true);
+    //footer_right_ = COMPASS::instance().licenseeString(true);
+
+    footer_left_  = COMPASS::instance().licenseeString(true);
+    footer_right_ = getLogoImage(0.5);
 }
 
 void LatexDocument::write()
@@ -77,7 +91,7 @@ std::string LatexDocument::toString()
 
     ss << R"(\documentclass[twoside,a4paper]{report}
           \usepackage{geometry}
-          \geometry{legalpaper, margin=1.5cm}
+          \geometry{a4paper, margin=1.5cm}
 
           \usepackage{fancyhdr}
 
@@ -106,6 +120,8 @@ std::string LatexDocument::toString()
 
     ss << R"(
           \usepackage{silence}
+
+          \hypersetup{hypertexnames=false}
 
           \pagestyle{fancy}       % Set the page style to fancy
           \fancyhf{}              % Clear default header and footer
@@ -203,11 +219,35 @@ std::string LatexDocument::toString()
           \begin{document})" << "\n";
 
     if (title_.size())
-        ss << R"(\maketitle)" << "\n";
+    {
+        //ss << R"(\maketitle)" << "\n";
+
+        ss << R"(\begin{titlepage}
+            \centering
+            \vspace*{6cm})" << "\n";
+            
+        ss << "{\\Huge \\textbf{" << title_ << "} \\par}\n";
+
+        ss << "\\vspace{1cm}\n";
+          
+        if (author_.size())
+            ss << "{\\Large " << author_ << " \\par}\n";
+
+        ss << "\\vspace{0.5cm}\n";
+        ss << "{\\large " << QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss").toStdString() << " \\par}\n";
+
+        ss << "\\vspace{12cm}\n";
+        ss << getLogoImage(1.5);
+            
+        ss << "\\vfill\n";
+        ss << "\\end{titlepage}\n";
+    }
 
     if (abstract_.size())
+    {
         ss << R"(\begin{abstract})" << "\n" << abstract_ << "\n" << R"(\end{abstract}
                                                             \ \\)"  << "\n";
+    }
 
     ss << R"(\newpage
 
