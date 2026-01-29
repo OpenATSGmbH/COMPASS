@@ -108,7 +108,7 @@ void EvaluationManager::generateSubConfigurable(const std::string& class_id,
     {
         traced_assert(!calculator_);
 
-        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_);
+        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, true);
         calculator_.reset(calculator);
     }
     else
@@ -199,12 +199,25 @@ Result EvaluationManager::evaluate(bool show_dialog)
     traced_assert(initialized_);
     traced_assert(calculator_);
 
+    calculator_->resetCustomReportName();
+
     //show config dialog?
+    std::string report_name;
     if (show_dialog)
     {
         EvaluationDialog dlg(*calculator_);
-        if (dlg.exec() == QDialog::Rejected)
+        auto ret = dlg.exec();
+
+        if (ret == QDialog::Rejected)
             return Result::succeeded();
+
+        //obtain suitable report name from dialog
+        report_name = dlg.reportName();
+    }
+    else
+    {
+        //obtain suitable report name from calculator
+        report_name = calculator_->suggestReportName();
     }
 
     //create clone of current calculator
@@ -217,8 +230,11 @@ Result EvaluationManager::evaluate(bool show_dialog)
     auto calculator_local = res.result();
     traced_assert(calculator_local);
 
-    //evaluate
-    auto eval_res = calculator_local->evaluate(true);
+    //we always set a custom report name
+    calculator_local->setCustomReportName(report_name);
+
+    //evaluate with updated constraints
+    auto eval_res = calculator_local->evaluate();
 
     if (!eval_res.ok())
     {
@@ -316,6 +332,7 @@ void EvaluationManager::databaseOpenedSlot()
     calculator_->checkReferenceDataSources();
     calculator_->checkTestDataSources();
     calculator_->checkMinHeightFilterValid();
+    calculator_->resetCustomReportName();
 }
 
 /**
@@ -1047,8 +1064,8 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
     fil_man.useFilters(true);
     fil_man.disableAllFilters();
 
-    const auto& roi      = calculator.sectorROI();
-    const auto& utns     = calculator.evaluationUTNs();
+    const auto& roi  = calculator.sectorROI();
+    const auto& utns = calculator.evaluationUTNs();
     
     // position data
     if (roi.has_value())
@@ -1088,10 +1105,10 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
         utn_fil->loadViewPointConditions(filter);
     }
 
-    // timestamp filter
-
+    // timestamp-based load filters
     if (use_timestamp_filter_)
     {
+        // configure timestamp filter
         traced_assert(fil_man.hasFilter("Timestamp"));
         DBFilter* fil = fil_man.getFilter("Timestamp");
 
@@ -1102,6 +1119,7 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
         filter["Timestamp"]["Timestamp Minimum"] = Time::toString(load_timestamp_begin_);
         filter["Timestamp"]["Timestamp Maximum"] = Time::toString(load_timestamp_end_);
 
+        // configure exclustion windows filter
         if (load_filtered_time_windows_.size())
         {
             filter["Excluded Time Windows"]["Windows"] =

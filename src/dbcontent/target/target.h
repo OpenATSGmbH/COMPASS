@@ -27,7 +27,30 @@
 
 #include <set>
 
-namespace dbContent {
+namespace dbContent 
+{
+
+/**
+ * A list of constraints used first and foremost for evaluation.
+ */
+struct TargetEvalConstraints
+{
+    /**
+     */
+    bool hasActiveConstraint() const
+    {
+        return (!use_in_eval_ ||
+                excluded_time_windows_.size() > 0 ||
+                excluded_requirements_.size() > 0);
+    }
+
+    nlohmann::json toJSON() const;
+    bool fromJSON(const nlohmann::json& j);
+
+    bool                        use_in_eval_ = true;
+    Utils::TimeWindowCollection excluded_time_windows_;
+    std::set<std::string>       excluded_requirements_;
+};
 
 class Target : public TargetBase
 {
@@ -48,6 +71,8 @@ public:
     const std::set<std::string>& evalExcludedRequirements() const;
     void evalExcludedRequirements(const std::set<std::string>& excl_req);
     void clearEvalExcludedRequirements();
+
+    const TargetEvalConstraints& evaluationConstraints() const { return eval_constraints_; }
 
     std::string comment() const;
     void comment (const std::string& value);
@@ -141,9 +166,7 @@ public:
 protected:
     nlohmann::json info_;
 
-    bool use_in_eval_;
-    Utils::TimeWindowCollection excluded_time_windows_;
-    std::set<std::string> excluded_requirements_;
+    TargetEvalConstraints eval_constraints_; 
 
     mutable std::string time_duration_str_;
 

@@ -85,12 +85,17 @@ void EvaluationTaskResult::injectCalculator(EvaluationCalculator* calculator)
  */
 Result EvaluationTaskResult::createCalculator()
 {
+    calculator_.reset();
+
     //clone calculator from config
     auto res = EvaluationCalculator::clone(config_);
     if (!res.ok())
         return res;
 
     calculator_.reset(res.result());
+
+    //always preserve report name
+    calculator_->setCustomReportName(name());
     
     //created calculator should be properly configured
     auto can_eval = calculator_->canEvaluate();
@@ -145,21 +150,26 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
     if (state == UpdateState::FullUpdateNeeded ||
         state == UpdateState::Locked)
     {
+        // sync: run full evaluation with updated constraints (also needed to remove lock)
         loginf << "running full update";
-        res = calculator_->evaluate(true);
+        res = calculator_->evaluate();
+
+        loginf << calculator_->constraintsAsString();
     }
     else if (state == UpdateState::PartialUpdateNeeded)
     {
+        // partial update: decide if full update is needed anyways
         bool needs_recompute = !calculator_->evaluated() || 
-                                calculator_->hasConstraints();
-
+                                calculator_->hasPartialResult(); // if partial results are currently stored: drop them and run a full update anyway
         if (needs_recompute)
         {
+            // full update needed, because result is yet uninitialized
             loginf << "running initial full update";
-            res = calculator_->evaluate(true);
+            res = calculator_->evaluate();
         }
         else
         {
+            // only partial update needed
             loginf << "running partial update";
             calculator_->updateResultsToChanges();
         }
@@ -247,7 +257,7 @@ namespace helpers
 
         //otherwise evaluate for specified utn and requirement
         //note: if eval fails a nullptr is returned in the next step
-        calculator->evaluate(false, { info.first }, { info.second });
+        calculator->reloadNeededData({ info.first }, { info.second });
         
         //then return result
         return calculator->singleResult(info.second, info.first);
@@ -272,7 +282,7 @@ namespace helpers
 
         //otherwise evaluate for specified requirement
         //note: if eval fails a nullptr is returned in the next step
-        calculator->evaluate(false, {}, { info });
+        calculator->reloadNeededData({}, { info });
 
         //then return result
         return calculator->joinedResult(info);
@@ -678,7 +688,7 @@ void EvaluationTaskResult::setInterestFactorEnabled(const Evaluation::Requiremen
 
     interest_factor_enabled_.at(id.req_name) = ok;
 
-    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
+    updateContent(TaskResultContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -689,7 +699,7 @@ void EvaluationTaskResult::setInterestFactorEnabled(const std::string& req_name,
 
     interest_factor_enabled_.at(req_name) = ok;
 
-    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
+    updateContent(TaskResultContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -699,7 +709,7 @@ void EvaluationTaskResult::setInterestFactorsEnabled(bool ok)
     for (auto& it : interest_factor_enabled_)
         it.second = ok;
 
-    updateContent(TaskResultContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
+    updateContent(TaskResultContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table));
 }
 
 /**
@@ -860,7 +870,7 @@ void EvaluationTaskResult::informUpdateEvalResult(int update_type)
     TaskResult::ContentID content_id;
     if (update_type == task::ContentUpdateNeeded)
     {
-        content_id = TaskResult::ContentID(EvaluationData::SectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table);
+        content_id = TaskResult::ContentID(EvaluationData::TargetsSectionID, EvaluationData::TargetsTableName, ResultReport::SectionContentType::Table);
     }
 
     //inform update

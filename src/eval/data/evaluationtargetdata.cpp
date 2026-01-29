@@ -73,7 +73,7 @@ EvaluationTargetData::EvaluationTargetData(unsigned int utn,
     ,   eval_data_ (eval_data)
     ,   accessor_  (accessor)
     ,   calculator_(calculator)
-    ,   eval_man_(eval_man)
+    ,   eval_man_  (eval_man)
     ,   dbcont_man_(dbcont_man)
     ,   ref_chain_ (accessor_, calculator_.dbContentNameRef())
     ,   tst_chain_ (accessor_, calculator_.dbContentNameTst())
@@ -131,23 +131,23 @@ void EvaluationTargetData::finalize () const
     logdbg << "tst finalize";
     tst_chain_.finalize();
 
-    logdbg << "updated acids";
+    logdbg << "update acids";
     updateACIDs();
-    logdbg << "updated acads";
+    logdbg << "update acads";
     updateACADs();
-    logdbg << "updated mas";
+    logdbg << "update mas";
     updateModeACodes();
-    logdbg << "updated mcs";
+    logdbg << "update mcs";
     updateModeCMinMax();
-    logdbg << "updated pos";
+    logdbg << "update pos";
     updatePositionMinMax();
 
-    logdbg << "updated use";
-    updateUseInfo();
+    logdbg << "update constraints";
+    updateConstraints();
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
-    logdbg << "updated mops";
+    logdbg << "update mops";
     if (dbcont_man.hasTargetsInfo()   &&
         dbcont_man.existsTarget(utn_) &&
         dbcont_man.target(utn_).hasADSBMOPS())
@@ -221,7 +221,20 @@ void EvaluationTargetData::finalize () const
 void EvaluationTargetData::updateToChanges() const
 {
     clearInterestFactors();
-    updateUseInfo();
+    updateConstraints();
+}
+
+/**
+ */
+void EvaluationTargetData::updateConstraints() const
+{
+    //fetch constraint (if available)
+    auto constraint = calculator_.targetConstraint(utn_);
+
+    if (constraint)
+        constraints_ = *constraint;
+    else
+        constraints_ = {}; //default: no constraints
 }
 
 /**
@@ -407,20 +420,9 @@ bool EvaluationTargetData::isModeACOnly () const
 
 /**
  */
-void EvaluationTargetData::updateUseInfo() const
-{
-    const auto& target = dbcont_man_.target(utn_);
-
-    use_in_eval_           = target.useInEval();
-    excluded_time_windows_ = target.evalExcludedTimeWindows();
-    excluded_requirements_ = target.evalExcludedRequirements();
-}
-
-/**
- */
 bool EvaluationTargetData::use() const
 {
-    return use_in_eval_;
+    return constraints_.use_in_eval_;
 }
 
 /**
@@ -1736,7 +1738,7 @@ void EvaluationTargetData::computeSectorInsideInfo(InsideCheckMatrix& mat,
             above_ok = false;
     }
 
-    // calc if insice test sensor coverage, true if not circles
+    // calc if inside test sensor coverage, true if not circles
     bool inside_cov = calculator_.tstSrcsCoverage().isInside(pos.latitude_, pos.longitude_);
 
     // check sector layers
@@ -1895,23 +1897,30 @@ bool EvaluationTargetData::checkInside(const SectorLayer& layer,
     return mat(idx_internal, lidx);
 }
 
+/**
+ */
 const std::set<std::string>& EvaluationTargetData::excludedRequirements() const
 {
-    return excluded_requirements_;
+    return constraints_.excluded_requirements_;
 }
 
+/**
+ */
 const Utils::TimeWindowCollection& EvaluationTargetData::excludedTimeWindows() const
 {
-    return excluded_time_windows_;
+    return constraints_.excluded_time_windows_;
 }
 
+/**
+ */
 bool EvaluationTargetData::isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const
 {
-    // check global, begin/end are excluded by load filter
-    if (eval_man_.useTimestampFilter() && eval_man_.excludedTimeWindows().contains(ts))
+    // check global constraints
+    if (!calculator_.isTimeStampNotExcluded(ts))
         return false;
 
-    return !excluded_time_windows_.contains(ts);
+    //check internal constraints
+    return !constraints_.excluded_time_windows_.contains(ts);
 }
 
 /**

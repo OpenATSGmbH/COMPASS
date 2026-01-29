@@ -42,6 +42,8 @@ public:
 
     //void updateFilterWidget();
 
+    std::string reportName() const;
+
 protected:
     EvaluationCalculator& calculator_;
 

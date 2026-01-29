@@ -103,7 +103,7 @@ void PDFGenerator::run ()
     {
 
         LatexDocument doc (report_path_, report_filename_);
-        doc.title("OpenATS COMPASS Evaluation Report");
+        doc.title("Evaluation Report");
 
         if (eval_settings_.report_author_.size())
             doc.author(eval_settings_.report_author_);

@@ -128,7 +128,7 @@ void ViewPointsReportGenerator::run ()
     try
     {
         LatexDocument doc (report_path_, report_filename_);
-        doc.title("OpenATS COMPASS View Points Report");
+        doc.title("View Points Report");
 
         if (author_.size())
             doc.author(author_);

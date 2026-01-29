@@ -19,6 +19,7 @@
 
 #include <QDialog>
 #include <QDateTimeEdit>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -30,12 +31,15 @@ class TimeWindowDialog : public QDialog
 public:
     explicit TimeWindowDialog(QWidget* parent = nullptr,
                               const boost::posix_time::ptime& begin = boost::posix_time::not_a_date_time,
-                              const boost::posix_time::ptime& end = boost::posix_time::not_a_date_time);
+                              const boost::posix_time::ptime& end = boost::posix_time::not_a_date_time,
+                              const std::string& comment = "");
 
     boost::posix_time::ptime begin() const;
     boost::posix_time::ptime end() const;
+    std::string comment() const;
 
 private:
     QDateTimeEdit* begin_edit_;
     QDateTimeEdit* end_edit_;
+    QLineEdit*     comment_edit_;
 };

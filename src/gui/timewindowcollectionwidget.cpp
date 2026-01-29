@@ -24,6 +24,7 @@
 
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QHeaderView>
 
 using namespace Utils;
 
@@ -32,11 +33,27 @@ TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& col
 {
     //list_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-
     QVBoxLayout* main_layout = new QVBoxLayout();
 
-    list_widget_ = new QListWidget();
-    main_layout->addWidget(list_widget_);
+    QStringList headers;
+    headers << "Begin";
+    headers << "End";
+    headers << "Comment";
+    headers << ""; // remove button
+
+    tree_widget_ = new QTreeWidget();
+    tree_widget_->setHeaderLabels(headers);
+
+    tree_widget_->header()->setStretchLastSection(false);
+
+    tree_widget_->header()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
+    tree_widget_->header()->setSectionResizeMode(1, QHeaderView::ResizeMode::ResizeToContents);
+    tree_widget_->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::Stretch);
+    tree_widget_->header()->setSectionResizeMode(3, QHeaderView::ResizeMode::Fixed);
+
+    tree_widget_->header()->resizeSection(3, 30);
+
+    main_layout->addWidget(tree_widget_);
 
     QHBoxLayout* button_layout = new QHBoxLayout();
     button_layout->addStretch();
@@ -49,7 +66,7 @@ TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& col
     main_layout->setContentsMargins(0,0,0,0);
 
     connect(add_button_, &QPushButton::clicked, this, &TimeWindowCollectionWidget::addTimeWindow);
-    connect(list_widget_, &QListWidget::itemDoubleClicked, this, &TimeWindowCollectionWidget::editTimeWindow);
+    connect(tree_widget_, &QTreeWidget::itemDoubleClicked, this, &TimeWindowCollectionWidget::editTimeWindow);
 
     refreshList();
 
@@ -61,15 +78,24 @@ TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& col
 
 void TimeWindowCollectionWidget::refreshList()
 {
-    list_widget_->clear();
+    tree_widget_->clear();
 
     QIcon del_icon(Files::IconProvider::getIcon("delete.png"));
+
+    collection_.sort();
 
     for (unsigned int i = 0; i < collection_.size(); ++i)
     {
         const TimeWindow& tw = collection_.get(i);
-        auto* item = new QListWidgetItem(timeWindowToString(tw), list_widget_);
-        item->setData(Qt::UserRole, QVariant::fromValue(i));
+
+        auto* item = new QTreeWidgetItem;
+        item->setText(0, timeWindowBeginToString(tw));
+        item->setText(1, timeWindowEndToString(tw));
+        item->setText(2, QString::fromStdString(tw.comment()));
+
+        item->setData(0, Qt::UserRole, QVariant::fromValue(i));
+
+        tree_widget_->addTopLevelItem(item);
 
         // Add context menu actions for edit/delete
         QWidget* item_widget = new QWidget();
@@ -79,6 +105,7 @@ void TimeWindowCollectionWidget::refreshList()
         //delete_btn->setIconSize(UI_ICON_SIZE);
         //delete_btn->setMaximumWidth(UI_ICON_BUTTON_MAX_WIDTH);
         delete_btn->setFlat(UI_ICON_BUTTON_FLAT);
+        delete_btn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
         QHBoxLayout* layout = new QHBoxLayout(item_widget);
         layout->addStretch();
@@ -86,7 +113,7 @@ void TimeWindowCollectionWidget::refreshList()
         layout->setContentsMargins(0, 0, 0, 0);
         item_widget->setLayout(layout);
 
-        list_widget_->setItemWidget(item, item_widget);
+        tree_widget_->setItemWidget(item, tree_widget_->columnCount() - 1, item_widget);
 
         connect(delete_btn, &QPushButton::clicked, [this, i]() {
             collection_.erase(i);
@@ -102,6 +129,16 @@ QString TimeWindowCollectionWidget::timeWindowToString(const TimeWindow& tw) con
         Time::qtFrom(tw.end()).toString(Time::QT_DATETIME_FORMAT_SHORT.c_str());
 }
 
+QString TimeWindowCollectionWidget::timeWindowBeginToString(const Utils::TimeWindow& tw) const
+{
+    return Time::qtFrom(tw.begin()).toString(Time::QT_DATETIME_FORMAT_SHORT.c_str());
+}
+
+QString TimeWindowCollectionWidget::timeWindowEndToString(const Utils::TimeWindow& tw) const
+{
+    return Time::qtFrom(tw.end()).toString(Time::QT_DATETIME_FORMAT_SHORT.c_str());
+}
+
 void TimeWindowCollectionWidget::addTimeWindow()
 {
     std::unique_ptr<TimeWindowDialog> dialog;
@@ -114,11 +151,13 @@ void TimeWindowCollectionWidget::addTimeWindow()
         dialog.reset(new TimeWindowDialog(this, std::get<0>(time_stamps), std::get<1>(time_stamps)));
     }
     else
+    {
         dialog.reset(new TimeWindowDialog(this));
+    }
 
     if (dialog->exec() == QDialog::Accepted)
     {
-        TimeWindow new_tw(dialog->begin(), dialog->end());
+        TimeWindow new_tw(dialog->begin(), dialog->end(), dialog->comment());
         collection_.add(new_tw);
         refreshList();
 
@@ -126,14 +165,15 @@ void TimeWindowCollectionWidget::addTimeWindow()
     }
 }
 
-void TimeWindowCollectionWidget::editTimeWindow(QListWidgetItem* item)
+void TimeWindowCollectionWidget::editTimeWindow(QTreeWidgetItem* item)
 {
-    int index = item->data(Qt::UserRole).toInt();
+    int index = item->data(0, Qt::UserRole).toInt();
     TimeWindow& tw = const_cast<TimeWindow&>(collection_.get(index));
 
-    TimeWindowDialog dialog(this, tw.begin(), tw.end());
-    if (dialog.exec() == QDialog::Accepted) {
-        tw = TimeWindow(dialog.begin(), dialog.end());
+    TimeWindowDialog dialog(this, tw.begin(), tw.end(), tw.comment());
+    if (dialog.exec() == QDialog::Accepted) 
+    {
+        tw = TimeWindow(dialog.begin(), dialog.end(), dialog.comment());
         refreshList();
 
         something_changed_flag_ = true;

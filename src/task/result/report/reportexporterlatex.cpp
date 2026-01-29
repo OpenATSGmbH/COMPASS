@@ -75,7 +75,7 @@ Result ReportExporterLatex::initExport_impl(TaskResult& result)
 
     latex_doc_.reset(new LatexDocument(exportResourceDir(), report_fn));
 
-    latex_doc_->title("OpenATS COMPASS " + result.name() + " Report");
+    latex_doc_->title(result.name() + " Report");
 
     const auto& s = settings();
 
