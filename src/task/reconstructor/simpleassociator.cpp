@@ -57,11 +57,34 @@ void SimpleAssociator::associateNewData()
     if (reconstructor().isCancelled())
         return;
 
+    // create targets with much secondary info, required for ground bit info
+
+     loginf << "associating CAT021 data";
+
+    associateTargetReports({21});
+
+    reconstructor_.targets_container_.checkACADLookup();
+
+    if (reconstructor().isCancelled())
+        return;
+
+    loginf << "associating CAT020 data";
+
+    associateTargetReports({20});
+
+    reconstructor_.targets_container_.checkACADLookup();
+
+    if (reconstructor().isCancelled())
+        return;
+
     // create tracker targets
 
-    loginf << "associating CAT062 data";
+    loginf << "associating CAT001,CAT010, CAT048, CAT062 data";
 
+    associateTargetReports({1, 10,48});
     associateTargetReports({62});
+
+    reconstructor_.targets_container_.checkACADLookup();
 
     unsigned int multiple_associated {0};
     unsigned int single_associated {0};
@@ -74,43 +97,43 @@ void SimpleAssociator::associateNewData()
             ++single_associated;
     }
 
-    if (reconstructor().isCancelled())
-        return;
-
     loginf << "tracker targets " << reconstructor_.targets_container_.targets_.size()
            << " multiple " << multiple_associated << " single " << single_associated;
 
+    // if (reconstructor().isCancelled())
+    //     return;
+
     // create non-tracker utns
-    std::set<unsigned int> sensor_dbcont_ids;
+    // std::set<unsigned int> sensor_dbcont_ids;
 
-    for (auto dbcont_it : COMPASS::instance().dbContentManager())
-    {
-        if (dbcont_it.second->id() != 62 && dbcont_it.second->id() != 255)
-            sensor_dbcont_ids.insert(dbcont_it.second->id());
-    }
+    // for (auto dbcont_it : COMPASS::instance().dbContentManager())
+    // {
+    //     if (dbcont_it.second->id() != 62 && dbcont_it.second->id() != 255)
+    //         sensor_dbcont_ids.insert(dbcont_it.second->id());
+    // }
 
-    if (reconstructor().isCancelled())
-        return;
+    // if (reconstructor().isCancelled())
+    //     return;
 
-    loginf << "associating remaining sensor data";
+    // loginf << "associating remaining sensor data";
 
-    associateTargetReports(sensor_dbcont_ids);
+    // associateTargetReports(sensor_dbcont_ids);
 
-    if (reconstructor().isCancelled())
-        return;
+    // if (reconstructor().isCancelled())
+    //     return;
 
-    multiple_associated = 0;
-    single_associated = 0;
+    // multiple_associated = 0;
+    // single_associated = 0;
 
-    for (auto& target_it : reconstructor_.targets_container_.targets_)
-    {
-        if (target_it.second.ds_ids_.size() > 1)
-            ++multiple_associated;
-        else
-            ++single_associated;
-    }
+    // for (auto& target_it : reconstructor_.targets_container_.targets_)
+    // {
+    //     if (target_it.second.ds_ids_.size() > 1)
+    //         ++multiple_associated;
+    //     else
+    //         ++single_associated;
+    // }
 
-    reconstructor_.targets_container_.checkACADLookup();
+    //reconstructor_.targets_container_.checkACADLookup();
 
     if (reconstructor().isCancelled())
         return;
@@ -255,10 +278,10 @@ boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (
     }
 
     if (one_is_on_ground)
-        return distance_m <
+        return distance_m >
            reconstructor_.settings().max_distance_acceptable_ground_ * reconstructor_.settings().tn_disassoc_distance_factor_;
     else
-        return distance_m <
+        return distance_m >
            reconstructor_.settings().max_distance_acceptable_air_ * reconstructor_.settings().tn_disassoc_distance_factor_;
 
     
