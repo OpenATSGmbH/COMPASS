@@ -120,9 +120,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     dbContent::Variable& var = variable(dbcontent_name);
 
-    //const DBTableColumn& column = var.currentDBColumn();
     std::string db_column_name = var.dbColumnName();
-    std::string db_table_name = var.dbTableName();
 
     if (!first)
     {
@@ -144,18 +142,18 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
         if (val_str.size())
         {
-            ss << variable_prefix << db_table_name << "." << db_column_name << variable_suffix;
+            ss << variable_prefix << db_column_name << variable_suffix;
             ss << " " << operator_ << val_str << " OR ";
         }
 
-        ss << variable_prefix << db_table_name << "." << db_column_name << variable_suffix;
+        ss << variable_prefix << db_column_name << variable_suffix;
         ss << " " << operator_ << " NULL";
 
         ss << ")";
     }
     else
     {
-        ss << variable_prefix << db_table_name << "." << db_column_name << variable_suffix;
+        ss << variable_prefix << db_column_name << variable_suffix;
         ss << " " << operator_ << val_str;
     }
 

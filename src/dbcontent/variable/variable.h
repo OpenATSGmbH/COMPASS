@@ -94,7 +94,7 @@ class Variable : public QObject, public Property, public Configurable
     const std::string& dbExpression() const { return db_expression_; }
     std::vector<std::string> dbExpressionVariables() const;
 
-    const std::string& dbColumnOrExpression() const;
+    std::string dbColumnOrExpression() const;
 
     bool isKey() const;
     void isKey(bool value);

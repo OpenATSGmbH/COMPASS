@@ -1047,7 +1047,7 @@
             "Variablepos_max_std_dev_m0": {
                 "parameters": {
                     "data_type_str": "DOUBLE",
-                    "db_column_name": "",
+                    "db_column_name": "xy_std_dev_max",
                     "db_expression": "greatest(x_stddev,y_stddev)",
                     "db_expression_variables": [
                         "X StdDev",
