@@ -84,6 +84,8 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(DBContent::var_cat021_mops_version_, false);
     add(DBContent::var_cat021_nacp_, false);
     add(DBContent::var_cat021_nucp_nic_, false);
+    add(DBContent::var_cat021_pos_check_failed_, false);
+
     add(DBContent::meta_var_x_stddev_, true);
     add(DBContent::meta_var_y_stddev_, true);
     add(DBContent::meta_var_xy_cov_, true);
@@ -147,6 +149,8 @@ void TargetReportAccessor::cacheVectors()
     cat021_mops_version_vec_            = varVector<unsigned char>(DBContent::var_cat021_mops_version_);
     cat021_nac_p_vec_                   = varVector<unsigned char>(DBContent::var_cat021_nacp_);
     cat021_nucp_nic_vec_                = varVector<unsigned char>(DBContent::var_cat021_nucp_nic_);
+    cat021_pos_check_failed_vec_        = varVector<bool>(DBContent::var_cat021_pos_check_failed_);
+
     meta_pos_std_dev_x_m_vec_           = metaVarVector<double>(DBContent::meta_var_x_stddev_);
     meta_pos_std_dev_y_m_vec_           = metaVarVector<double>(DBContent::meta_var_y_stddev_);
     meta_pos_std_dev_xy_corr_coeff_vec_ = metaVarVector<double>(DBContent::meta_var_xy_cov_);
@@ -226,6 +230,11 @@ boost::optional<unsigned char> TargetReportAccessor::nucp(unsigned int index) co
 boost::optional<unsigned char> TargetReportAccessor::nacp(unsigned int index) const
 {
     return getOptional<unsigned char>(cat021_nac_p_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::posCheckFailed(unsigned int index) const
+{
+    return getOptional<bool>(cat021_pos_check_failed_vec_, index);
 }
 
 boost::optional<unsigned int> TargetReportAccessor::ecat(unsigned int index) const

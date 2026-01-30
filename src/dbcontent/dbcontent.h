@@ -195,6 +195,7 @@ public:
     static const Property var_cat021_nucp_nic_;
     static const Property var_cat021_nucv_nacv_;
     static const Property var_cat021_sil_;
+    static const Property var_cat021_pos_check_failed_;
     static const Property var_cat021_geo_alt_;
     static const Property var_cat021_geo_alt_accuracy_;
     static const Property var_cat021_ecat_;
