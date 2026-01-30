@@ -51,7 +51,7 @@ bool MLATRUFilter::filters(const std::string& dbcontent_name)
     return dbcontent_name == "CAT020";
 }
 
-std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     loginf << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
            << "' match_all " << match_all_;

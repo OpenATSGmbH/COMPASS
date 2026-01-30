@@ -32,6 +32,7 @@ namespace dbContent
 {
 class Variable;
 class MetaVariable;
+class VariableSet;
 }
 
 
@@ -52,7 +53,7 @@ public:
 
     void invert();
     bool filters(const std::string& dbcontent_name);
-    std::string getConditionString(const std::string& dbcontent_name, bool& first);
+    std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first);
 
     QLabel* getLabel()
     {

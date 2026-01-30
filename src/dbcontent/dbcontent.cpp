@@ -436,6 +436,8 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
+    dbContent::VariableSet read_set_copy = read_set;
+
     if (use_datasrc_filters && (ds_man.hasDSFilter(name_) || ds_man.lineSpecificLoadingRequired(name_)))
     {
         vector<unsigned int> ds_ids_to_load = ds_man.unfilteredDS(name_);
@@ -523,7 +525,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     if (use_filters)
     {
-        string filter_sql = COMPASS::instance().filterManager().getSQLCondition(name_);
+        string filter_sql = COMPASS::instance().filterManager().getSQLCondition(name_, read_set_copy);
 
         if (filter_sql.size())
         {
@@ -542,9 +544,9 @@ void DBContent::load(dbContent::VariableSet& read_set,
         filter_clause += custom_filter_clause;
     }
 
-    logdbg << name_ << " read set " << read_set.str() << " filter_clause '" << filter_clause << "'";
+    logdbg << name_ << " read set " << read_set_copy.str() << " filter_clause '" << filter_clause << "'";
 
-    loadFiltered(read_set, filter_clause);
+    loadFiltered(read_set_copy, filter_clause);
 }
 
 /**

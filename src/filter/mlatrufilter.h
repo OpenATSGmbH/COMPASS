@@ -27,7 +27,8 @@ public:
                  Configurable* parent);
     virtual ~MLATRUFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, bool& first) override;
+    virtual std::string getConditionString(const std::string& dbcontent_name, 
+      dbContent::VariableSet& read_set, bool& first) override;
 
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
