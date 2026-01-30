@@ -95,6 +95,21 @@ EvaluationManager::~EvaluationManager()
 }
 
 /**
+ */
+Result EvaluationManager::applyJSONSettings(const nlohmann::json& settings_json)
+{
+    traced_assert(calculator_);
+
+    std::string error;
+    auto res = calculator_->reconfigure(settings_json);
+
+    if (res.first == ReconfigureError::NoError)
+        return Result::succeeded();
+
+    return Result::failed(res.second);
+}
+
+/**
 */
 void EvaluationManager::generateSubConfigurable(const std::string& class_id,
                                                 const std::string& instance_id)
@@ -328,11 +343,8 @@ void EvaluationManager::databaseOpenedSlot()
             load_timestamp_end_ = get<1>(minmax_ts);
     }
 
-    // init with false values if not in cfg
-    calculator_->checkReferenceDataSources();
-    calculator_->checkTestDataSources();
-    calculator_->checkMinHeightFilterValid();
-    calculator_->resetCustomReportName();
+    // check if configuration is still valid after db open
+    calculator_->checkConfiguration();
 }
 
 /**
