@@ -1315,9 +1315,11 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
     for (const auto& s : prediction_stats)
         ReconstructorTarget::addPredictionToGlobalStats(s);
 
-    bool do_debug = false;  // debug_utns.count(utn);
+    bool do_debug = false; // debug_utns.count(utn);
 
     float min_score = reconstructor().settings().targets_min_assoc_score_;
+
+    logdbg << "num result " << results.size() << " min score " << min_score;
 
     for (auto& res_it : results)  // usable, other utn, num updates, avg distance
     {

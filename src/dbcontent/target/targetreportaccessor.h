@@ -57,6 +57,8 @@ public:
     boost::optional<unsigned char> mopsVersion(unsigned int index) const;
     boost::optional<unsigned char> nucp(unsigned int index) const;
     boost::optional<unsigned char> nacp(unsigned int index) const;
+    boost::optional<bool> posCheckFailed(unsigned int index) const;
+
     boost::optional<unsigned int> ecat(unsigned int index) const;
     boost::optional<unsigned char> getGeoAltAcc(unsigned int index) const;
 
@@ -148,6 +150,8 @@ private:
     const NullableVector<unsigned char>* cat021_mops_version_vec_            = nullptr;
     const NullableVector<unsigned char>* cat021_nac_p_vec_                   = nullptr;
     const NullableVector<unsigned char>* cat021_nucp_nic_vec_                = nullptr;
+    const NullableVector<bool>* cat021_pos_check_failed_vec_                 = nullptr;
+
     const NullableVector<double>*        meta_pos_std_dev_x_m_vec_           = nullptr;
     const NullableVector<double>*        meta_pos_std_dev_y_m_vec_           = nullptr;
     const NullableVector<double>*        meta_pos_std_dev_xy_corr_coeff_vec_ = nullptr;

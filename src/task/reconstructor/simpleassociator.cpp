@@ -236,8 +236,11 @@ boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetT
     double distance_m = osgEarth::GeoMath::distance(target0_pos.latitude_ * DEG2RAD, target0_pos.longitude_ * DEG2RAD,
                                                     target1_pos.latitude_ * DEG2RAD, target1_pos.longitude_ * DEG2RAD);
 
-    // distance, target acc, tr acc
-    return std::tuple<double, double>(distance_m, -1);
+    // distance, sum target acc
+    if (one_is_on_ground)
+        return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_ground_);
+    else
+        return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_air_);;
 }
 
 boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (
@@ -339,7 +342,7 @@ SimpleAssociator::checkPositionOffsetScore (
             classif = DistanceClassification::Distance_Acceptable;
 
         return tuple<DistanceClassification, double>(
-            classif, settings.max_distance_acceptable_ground_ - distance_m);
+            classif, 1.0 - distance_m / settings.max_distance_acceptable_ground_ );
     }
     else
     {
@@ -353,7 +356,7 @@ SimpleAssociator::checkPositionOffsetScore (
             classif = DistanceClassification::Distance_Acceptable;
 
         return tuple<DistanceClassification, double>(
-            classif, settings.max_distance_acceptable_air_ - distance_m);
+            classif, 1.0 - distance_m / settings.max_distance_acceptable_air_);
     }
 }
 
