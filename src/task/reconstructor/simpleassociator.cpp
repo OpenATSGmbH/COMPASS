@@ -47,30 +47,26 @@ void SimpleAssociator::associateNewData()
 
     max_time_diff_ = Time::partialSeconds(reconstructor().settings().max_time_diff_);
 
-    loginf << "associating RefTraj data";
 
     if (reconstructor().isCancelled())
         return;
 
+    //associateTargetReports();
+
+    loginf << "associating data RefTraj,CAT062";
+
     associateTargetReports({255});
+
+    associateTargetReports({62});
 
     if (reconstructor().isCancelled())
         return;
 
     // create targets with much secondary info, required for ground bit info
 
-     loginf << "associating CAT021 data";
+     loginf << "associating CAT020, CAT021 data";
 
-    associateTargetReports({21});
-
-    reconstructor_.targets_container_.checkACADLookup();
-
-    if (reconstructor().isCancelled())
-        return;
-
-    loginf << "associating CAT020 data";
-
-    associateTargetReports({20});
+    associateTargetReports({21,20});
 
     reconstructor_.targets_container_.checkACADLookup();
 
@@ -79,10 +75,10 @@ void SimpleAssociator::associateNewData()
 
     // create tracker targets
 
-    loginf << "associating CAT001,CAT010, CAT048, CAT062 data";
+    loginf << "associating CAT001,CAT010, CAT048 data";
+
 
     associateTargetReports({1, 10,48});
-    associateTargetReports({62});
 
     reconstructor_.targets_container_.checkACADLookup();
 

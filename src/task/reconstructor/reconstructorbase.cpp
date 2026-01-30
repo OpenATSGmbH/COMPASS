@@ -438,6 +438,11 @@ int ReconstructorBase::TargetsContainer::assocByTrackNumber(
 
     traced_assert(tr.track_number_);
 
+    if (!tn2utn_.at(tr.ds_id_).at(tr.line_id_).count(*tr.track_number_))
+    {
+        // create new
+    }
+
     traced_assert(tn2utn_.at(tr.ds_id_).at(tr.line_id_).count(*tr.track_number_));
     std::tie(utn, timestamp_prev) = tn2utn_.at(tr.ds_id_).at(tr.line_id_).at(*tr.track_number_);
     traced_assert(targets_.count(utn));

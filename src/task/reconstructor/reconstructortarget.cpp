@@ -333,7 +333,7 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
 }
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(
-    unsigned long rec_num, bool add_to_tracker, bool reestimate)
+    unsigned long rec_num, bool add_to_chain, bool reestimate)
 {
     bool do_debug = false;
 
@@ -535,14 +535,14 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     TargetReportAddResult result = TargetReportAddResult::Skipped;
 
-    if (add_to_tracker) //!tr.doNotUsePosition()
+    if (add_to_chain) //!tr.doNotUsePosition()
     {
-        if (!hasTracker())
+        if (!hasChain())
         {
             if (do_debug)
                 loginf << "DBG add to tracker: reinit";
 
-            reinitTracker();
+            reinitChain();
         }
 
         reconstruction::UpdateStats stats;
@@ -550,7 +550,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         if (do_debug)
             loginf << "DBG add to tracker: addToTracker";
 
-        result = addNewTRToTracker(tr, reestimate, &stats);
+        result = addNewTRToChain(tr, reestimate, &stats);
 
         if (reestimate && result != TargetReportAddResult::Skipped)
         {
@@ -3032,22 +3032,22 @@ TargetBase::Category ReconstructorTarget::targetCategory() const
 }
 
 
-bool ReconstructorTarget::hasTracker() const
+bool ReconstructorTarget::hasChain() const
 {
     return (chain() != nullptr);
 }
 
-size_t ReconstructorTarget::trackerCount() const
+size_t ReconstructorTarget::chainCount() const
 {
     return chain()->size();
 }
 
-boost::posix_time::ptime ReconstructorTarget::trackerTime(size_t idx) const
+boost::posix_time::ptime ReconstructorTarget::chainTime(size_t idx) const
 {
     return chain()->getUpdate(idx).t;
 }
 
-void ReconstructorTarget::reinitTracker()
+void ReconstructorTarget::reinitChain()
 {
     chain() = reconstructor_.createConfiguredAssocChain(dynamic_insertions_);
 
@@ -3091,7 +3091,7 @@ bool ReconstructorTarget::checkChainBeforeAdd(const dbContent::targetReport::Rec
     return true;
 }
 
-ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToChain(const dbContent::targetReport::ReconstructorInfo& tr, 
                                                                                   bool reestimate,
                                                                                   reconstruction::UpdateStats* stats)
 {
@@ -3116,7 +3116,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
             {
                 //@TODO: save some reestimation runs
                 //@TODO: log fails/skips
-                addToTracker(tr_adsb_standing, standing_adsb_target_->ts_next_update, reestimate);
+                addToChain(tr_adsb_standing, standing_adsb_target_->ts_next_update, reestimate);
                 standing_adsb_target_->addUpdate();
 
                 ++num_updates;
@@ -3136,7 +3136,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
     }
 
     //add new tr to tracker
-    auto ret = addToTracker(tr, tr.timestamp_, reestimate, stats);
+    auto ret = addToChain(tr, tr.timestamp_, reestimate, stats);
 
     if (reconstructor_.settings().use_stopped_adsb_tracking_)
     {
@@ -3155,7 +3155,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
     return ret;
 }
 
-ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToChain(const dbContent::targetReport::ReconstructorInfo& tr, 
                                                                              const boost::posix_time::ptime& ts,
                                                                              bool reestimate, 
                                                                              reconstruction::UpdateStats* stats)
@@ -3318,11 +3318,6 @@ bool ReconstructorTarget::getChainState(reconstruction::Measurement& mm,
     traced_assert(ok);
 
     return ok;
-}
-
-bool ReconstructorTarget::hasChain() const
-{
-    return chain().get() != nullptr;
 }
 
 const reconstruction::KalmanChain& ReconstructorTarget::getChain() const
