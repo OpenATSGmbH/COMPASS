@@ -118,6 +118,7 @@ public:
     void checkReferenceDataSources(bool update_settings = true);
     void checkTestDataSources(bool update_settings = true);
     void checkMinHeightFilterValid();
+    void checkConfiguration();
 
     // data sources
     std::string dbContentNameRef() const;

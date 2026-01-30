@@ -77,6 +77,8 @@ public:
     EvaluationManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
     virtual ~EvaluationManager();
 
+    Result applyJSONSettings(const nlohmann::json& settings_json);
+
     void init();
     void close();
     void clearData();

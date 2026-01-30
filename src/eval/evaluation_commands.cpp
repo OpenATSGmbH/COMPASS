@@ -54,10 +54,47 @@ bool RTCommandEvaluate::run_impl()
         return false;
     }
 
+    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+
+    //try to parse configuration
+    if (!config_.empty())
+    {
+        nlohmann::json config;
+        try
+        {
+            config = nlohmann::json::parse(config_);
+
+            if (!config.is_object())
+                throw std::runtime_error("Configuration not a json object");
+        }
+        catch(const std::exception& e)
+        {
+            setResultMessage("Could not parse configuration: " + std::string(e.what()));
+            return false;
+        }
+        catch(...)
+        {
+            setResultMessage("Could not parse configuration: Unknown error");
+            return false;
+        }
+
+        loginf << "config parsed:\n" << config.dump(4);
+
+        auto wrapper = nlohmann::json::object();
+        wrapper[ Configuration::ParameterSection ] = config;
+        
+        auto res = eval_man.applyJSONSettings(wrapper);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+
+        loginf << "configuration successfully applied";
+    }
+
     if (run_filter_)
         COMPASS::instance().dbContentManager().autoFilterUTNS();
-
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
     auto can_evaluate = eval_man.canEvaluate();
     if (!can_evaluate.ok())
@@ -82,10 +119,12 @@ void RTCommandEvaluate::collectOptions_impl(OptionsDescription& options,
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as json string")
         ("run_filter,f", "run evaluation filter before evaluation");
 }
 
 void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
 {
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     RTCOMMAND_CHECK_VAR(variables, "run_filter", run_filter_)
 }

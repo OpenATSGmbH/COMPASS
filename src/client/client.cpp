@@ -67,6 +67,14 @@ namespace po = boost::program_options;
 
 std::string APP_FILENAME;
 
+namespace
+{
+    std::string jsonParam2RTCommandString(const std::string& param)
+    {
+        return QString::fromStdString(param).replace("\"", "\\\"").toStdString();
+    }
+}
+
 Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 {
     setlocale(LC_ALL, "C");
@@ -630,6 +638,8 @@ bool Client::run ()
 
             if (evaluate_run_filter_)
                 cmd += " --run_filter";
+            if (!evaluation_parameters_.empty())
+                cmd += " --config '" + jsonParam2RTCommandString(evaluation_parameters_) + "'";
 
             rt_man.addCommandFromConsole(cmd);
         }
@@ -826,36 +836,6 @@ void Client::checkAndSetupConfig()
             catch (exception& e)
             {
                 logerr << "JSON parse error in '" << import_gps_parameters_ << "'";
-                throw e;
-            }
-        }
-
-        if (evaluation_parameters_.size())
-        {
-            loginf << "overriding evaluation parameters";
-            using namespace nlohmann;
-
-            try {
-                json json_config = json::parse(evaluation_parameters_);
-
-                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
-                    "COMPASS", "COMPASS0"));
-                Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
-                    "COMPASS", "COMPASS0");
-
-                traced_assert(compass_config.hasSubConfiguration("EvaluationManager", "EvaluationManager0"));
-                Configuration& eval_man_config = compass_config.getOrCreateSubConfiguration(
-                    "EvaluationManager", "EvaluationManager0");
-
-                traced_assert(eval_man_config.hasSubConfiguration("EvaluationCalculator", "EvaluationCalculator0"));
-                Configuration& eval_calc_config = eval_man_config.getOrCreateSubConfiguration(
-                    "EvaluationCalculator", "EvaluationCalculator0");
-
-                eval_calc_config.overrideJSONParameters(json_config);
-            }
-            catch (exception& e)
-            {
-                logerr << "JSON parse error in '" << evaluation_parameters_ << "'";
                 throw e;
             }
         }

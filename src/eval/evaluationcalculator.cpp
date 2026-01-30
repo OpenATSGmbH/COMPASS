@@ -1767,8 +1767,11 @@ void EvaluationCalculator::updateConstraints()
     clearConstraints();
 
     //obtain current constraints
+    bool load_filter_valid = !eval_man_.loadTimestampBegin().is_not_a_date_time() &&
+                             !eval_man_.loadTimestampEnd().is_not_a_date_time();
+
     global_time_filter_enabled_    = eval_man_.useTimestampFilter();
-    global_time_window_            = Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd());
+    global_time_window_            = load_filter_valid ? Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd()) : Utils::TimeWindow();
     global_exclusion_time_windows_ = eval_man_.excludedTimeWindows();
     target_constraints_            = COMPASS::instance().dbContentManager().targetModel()->evaluationConstraints(true);
 
@@ -1992,6 +1995,17 @@ std::string EvaluationCalculator::suggestReportName() const
 
 /**
 */
+void EvaluationCalculator::checkConfiguration()
+{
+    checkReferenceDataSources();
+    checkTestDataSources();
+    checkMinHeightFilterValid();
+
+    resetCustomReportName();
+}
+
+/**
+*/
 void EvaluationCalculator::onConfigurationChanged(const std::vector<std::string>& changed_params)
 {
     //update some derived params after config param change
@@ -2000,8 +2014,13 @@ void EvaluationCalculator::onConfigurationChanged(const std::vector<std::string>
     //clear data & results
     clearData();
 
+    //check if current config is still valid after reconfigure
+    checkConfiguration();
+
     //for (const auto& p : changed_params)
     //    loginf << "param: " << p;
 
     //@TODO
+
+    loginf << "configuration changed, can evaluate? " << canEvaluate().ok();
 }
