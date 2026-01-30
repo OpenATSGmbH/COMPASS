@@ -717,6 +717,8 @@ std::string ReconstructorTarget::asStr() const
         ss << "'";
     }
 
+    ss << " #tr " << target_reports_.size(); 
+
 
     //    if (track_nums_.size())
     //    {
