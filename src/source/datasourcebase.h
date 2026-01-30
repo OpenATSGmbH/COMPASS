@@ -139,25 +139,30 @@ public:
 
     bool hasRadarRanges() const;
     void addRadarRanges();
-    std::map<std::string, double> radarRanges() const;
+    void addRadarRangesIfMissing();
+    std::map<std::string, double> radarRanges() const; 
     void radarRange (const std::string& key, const double range);
     void removeRadarRange(const std::string& key);
 
     bool hasRadarAccuracies() const;
     void addRadarAccuracies();
+    void addRadarAccuraciesIfMissing();
     std::map<std::string, double> radarAccuracies() const;
     void radarAccuracy (const std::string& key, const double value);
 
     // network stuff
     bool hasNetworkLines() const;
     void addNetworkLines();
+    void addNetworkLinesIfMissing(); 
     std::map<std::string, std::shared_ptr<DataSourceLineInfo>> networkLines() const;
     bool hasNetworkLine (const std::string& key) const;
     void createNetworkLine (const std::string& key);
     std::shared_ptr<DataSourceLineInfo> networkLine (const std::string& key); // creates if not exists
 
+    // remote units
     bool hasRemoteUnits() const;
     void addRemoteUnits();
+    void addRemoteUnitsIfMissing();
     std::map<int, std::shared_ptr<DataSourceRemoteUnit>> remoteUnits() const;
     bool hasRemoteUnit(int index) const;
     std::shared_ptr<DataSourceRemoteUnit> createRemoteUnit(int index);

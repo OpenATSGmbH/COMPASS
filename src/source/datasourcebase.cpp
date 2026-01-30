@@ -384,6 +384,12 @@ void DataSourceBase::addRadarRanges()
     info_[radar_range_key] = json::object();
 }
 
+void DataSourceBase::addRadarRangesIfMissing()
+{
+    if (!hasRadarRanges())
+        addRadarRanges();
+}
+
 std::map<std::string, double> DataSourceBase::radarRanges() const
 {
     traced_assert(hasRadarRanges());
@@ -412,6 +418,12 @@ void DataSourceBase::addRadarAccuracies()
     info_[radar_accuracy_key] = json::object();
 }
 
+void DataSourceBase::addRadarAccuraciesIfMissing()
+{
+    if (!hasRadarAccuracies())
+        addRadarAccuracies();
+}
+
 std::map<std::string, double> DataSourceBase::radarAccuracies() const
 {
     traced_assert(hasRadarAccuracies());
@@ -434,6 +446,12 @@ void DataSourceBase::addNetworkLines()
 {
     traced_assert(!hasNetworkLines());
     info_[network_lines_key] = json::object();
+}
+
+void DataSourceBase::addNetworkLinesIfMissing()
+{
+    if (!hasNetworkLines())
+        addNetworkLines();
 }
 
 //std::map<std::string, std::pair<std::string, unsigned int>> DataSourceBase::networkLines() const
@@ -515,6 +533,12 @@ bool DataSourceBase::hasRemoteUnits() const
 void DataSourceBase::addRemoteUnits()
 {
     info_[ remote_units_key ] = nlohmann::json::object();
+}
+
+void DataSourceBase::addRemoteUnitsIfMissing()
+{
+    if (!hasRemoteUnits())
+        addRemoteUnits();
 }
 
 std::map<int, std::shared_ptr<DataSourceRemoteUnit>> DataSourceBase::remoteUnits() const

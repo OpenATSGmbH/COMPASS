@@ -950,11 +950,11 @@ void DataSourceEditWidget::addRadarRangesSlot()
     if (current_ds_in_db_)
     {
         traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
-        ds_man_.dbDataSource(current_ds_id_).addRadarRanges();
+        ds_man_.dbDataSource(current_ds_id_).addRadarRangesIfMissing();
     }
 
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
-    ds_man_.configDataSource(current_ds_id_).addRadarRanges();
+    ds_man_.configDataSource(current_ds_id_).addRadarRangesIfMissing();
 
     updateContent();
 }
@@ -1006,11 +1006,11 @@ void DataSourceEditWidget::addRadarAccuraciesSlot()
     if (current_ds_in_db_)
     {
         traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
-        ds_man_.dbDataSource(current_ds_id_).addRadarAccuracies();
+        ds_man_.dbDataSource(current_ds_id_).addRadarAccuraciesIfMissing();
     }
 
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
-    ds_man_.configDataSource(current_ds_id_).addRadarAccuracies();
+    ds_man_.configDataSource(current_ds_id_).addRadarAccuraciesIfMissing();
 
     updateContent();
 }
@@ -1048,9 +1048,9 @@ void DataSourceEditWidget::addMLATRemoteUnitsSlot()
     traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
     if (ds_db)
-        ds_db->addRemoteUnits();
+        ds_db->addRemoteUnitsIfMissing();
     if (ds_conf)
-        ds_conf->addRemoteUnits();
+        ds_conf->addRemoteUnitsIfMissing();
 
     updateContent();
 }
@@ -1329,11 +1329,11 @@ void DataSourceEditWidget::addNetLinesSlot()
     if (current_ds_in_db_)
     {
         traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
-        ds_man_.dbDataSource(current_ds_id_).addNetworkLines();
+        ds_man_.dbDataSource(current_ds_id_).addNetworkLinesIfMissing();
     }
 
     traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
-    ds_man_.configDataSource(current_ds_id_).addNetworkLines();
+    ds_man_.configDataSource(current_ds_id_).addNetworkLinesIfMissing();
 
     updateContent();
 }
