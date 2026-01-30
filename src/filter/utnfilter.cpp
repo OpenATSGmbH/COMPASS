@@ -51,7 +51,7 @@ bool UTNFilter::filters(const std::string& dbcont_name)
     return true; // condition string for non-associated dbcontent as well
 }
 
-std::string UTNFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcontent " << dbcontent_name << " active " << active_
            << " null_wanted " << null_wanted_;

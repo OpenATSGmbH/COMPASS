@@ -30,9 +30,11 @@ class DBFilterCondition;
 class FilterManager;
 class Buffer;
 
-namespace dbContent
-{
+namespace dbContent {
+
 class Variable;
+class VariableSet;
+
 }
 
 class DBFilter : public Configurable
@@ -62,7 +64,9 @@ class DBFilter : public Configurable
     bool isGeneric() { return is_generic_; }
 
     /// where condition string for a DBContent
-    virtual std::string getConditionString(const std::string& dbcontent_name, bool& first);
+    virtual std::string getConditionString(const std::string& dbcontent_name, 
+      dbContent::VariableSet& read_set, bool& first);
+
     bool onlyHasSubFilter() { return conditions_.size() > 0; }
 
     // resets the filter (sub-filters and conditions) to their inital values.

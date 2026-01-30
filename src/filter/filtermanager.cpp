@@ -254,7 +254,7 @@ void FilterManager::checkSubConfigurables()
     }
 }
 
-std::string FilterManager::getSQLCondition(const std::string& dbcontent_name)
+std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
     traced_assert(COMPASS::instance().dbContentManager().dbContent(dbcontent_name).loadable());
 
@@ -271,7 +271,7 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name)
 
         if (filter->getActive() && filter->filters(dbcontent_name))
         {
-            condition_str = filter->getConditionString(dbcontent_name, first);
+            condition_str = filter->getConditionString(dbcontent_name, read_set, first);
 
             logdbg << "filter " << filter->instanceId()
                    << " condition '" << condition_str << "'";

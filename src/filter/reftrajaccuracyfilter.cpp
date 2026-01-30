@@ -49,7 +49,7 @@ bool RefTrajAccuracyFilter::filters(const std::string& dbcontent_name)
     return dbcontent_name == "RefTraj";
 }
 
-std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 

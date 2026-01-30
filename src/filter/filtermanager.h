@@ -36,6 +36,7 @@ class Buffer;
 namespace dbContent {
 
 class Variable;
+class VariableSet;
 
 }
 
@@ -65,7 +66,7 @@ public:
     bool useFilters() const;
     void useFilters(bool useFilters);
 
-    std::string getSQLCondition(const std::string& dbcontent_name);
+    std::string getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set);
 
     unsigned int getNumFilters();
     DBFilter* getFilter(unsigned int index);

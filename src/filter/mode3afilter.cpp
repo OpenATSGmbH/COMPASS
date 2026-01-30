@@ -48,7 +48,7 @@ bool Mode3AFilter::filters(const std::string& dbcont_name)
     return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcont_name);
 }
 
-std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 

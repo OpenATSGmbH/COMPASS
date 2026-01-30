@@ -54,7 +54,7 @@ bool TimestampFilter::filters(const std::string& dbcont_name)
                 DBContent::meta_var_timestamp_.name()).existsIn(dbcont_name);
 }
 
-std::string TimestampFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string TimestampFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 

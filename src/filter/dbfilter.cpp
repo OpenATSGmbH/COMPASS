@@ -141,7 +141,8 @@ bool DBFilter::filters(const std::string& dbcont_name)
 
 //  If active, returns concatenated condition strings from all sub-conditions and sub-filters, else
 //  returns empty string.
-std::string DBFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string DBFilter::getConditionString(
+    const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     traced_assert(!unusable_);
 
@@ -159,7 +160,7 @@ std::string DBFilter::getConditionString(const std::string& dbcontent_name, bool
             }
 
             std::string text =
-                conditions_.at(cnt)->getConditionString(dbcontent_name, first);
+                conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, first);
             ss << text;
         }
 
