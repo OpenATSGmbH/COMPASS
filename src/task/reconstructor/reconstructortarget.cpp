@@ -448,10 +448,14 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
     {
         if (ecat_)
         {
-            if (*tr.ecat_ != ecat_)
+            if (*tr.ecat_ != ecat_ && !reported_mismatches_.count("ecat"))
+            {
                 logwrn << utn_ << ": ecat mismatch, target ecat "
                        << *ecat_ << " " << String::ecatToString(*ecat_)
                        << " tr " << *tr.ecat_ << " " << String::ecatToString(*tr.ecat_) << "";
+
+                reported_mismatches_.insert("ecat");
+            }
         }
         else
             ecat_ = *tr.ecat_;
@@ -459,10 +463,12 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     if (tr.acad_)
     {
-        if (acads_.size() && !acads_.count(*tr.acad_))
+        if (acads_.size() && !acads_.count(*tr.acad_) && !reported_mismatches_.count("acad"))
         {
             logwrn << utn_ << ": acad mismatch, target "
                    << asStr() << " tr '" << tr.asStr() << "'";
+
+            reported_mismatches_.insert("acad");
         }
 
         if (!acads_.count(*tr.acad_))
@@ -2969,6 +2975,8 @@ void ReconstructorTarget::removeOutdatedTargetReports()
 
     //@TODO: check record number?
     standing_adsb_target_.reset();
+
+    reported_mismatches_.clear(); // report in each slice
 
     // if (chain())
     //     chain()->removeUpdatesBefore(reconstructor_.currentSlice().remove_before_time_);

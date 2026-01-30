@@ -311,6 +311,8 @@ public:
 
     boost::optional<unsigned int> ecat_;
 
+    std::set<std::string> reported_mismatches_;
+
     boost::posix_time::ptime total_timestamp_min_, total_timestamp_max_; // over all data
     boost::posix_time::ptime timestamp_min_, timestamp_max_; // in current slice
 
