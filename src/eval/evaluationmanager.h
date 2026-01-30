@@ -84,7 +84,7 @@ public:
     void clearData();
 
     Result canEvaluate() const;
-    Result evaluate(bool show_dialog);
+    Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
 
     // sectors
     bool sectorsLoaded() const;

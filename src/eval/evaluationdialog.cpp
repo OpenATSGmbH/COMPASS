@@ -157,6 +157,13 @@ void EvaluationDialog::updateButtons()
 
 /**
  */
+void EvaluationDialog::setReportName(const std::string& name)
+{
+    main_tab_widget_->setReportName(name);
+}
+
+/**
+ */
 std::string EvaluationDialog::reportName() const
 {
     return main_tab_widget_->reportName();

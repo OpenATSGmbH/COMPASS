@@ -59,6 +59,7 @@ public:
     void updateDataSources();
     void updateSectors();
 
+    void setReportName(const std::string& name);
     std::string reportName() const;
 
     bool isComplete() const;

@@ -101,12 +101,32 @@ Result EvaluationManager::applyJSONSettings(const nlohmann::json& settings_json)
     traced_assert(calculator_);
 
     std::string error;
-    auto res = calculator_->reconfigure(settings_json);
+    std::vector<Configuration::MissingKey> missing_subconfig_keys;
+    std::vector<Configuration::MissingKey> missing_param_keys;
+    auto res = calculator_->reconfigure(settings_json, &missing_subconfig_keys, &missing_param_keys, false, &error);
 
     if (res.first == ReconfigureError::NoError)
         return Result::succeeded();
 
-    return Result::failed(res.second);
+    if (error.empty())
+        error = "Unknown error";
+    error += " (Code " + std::to_string((int)res.first) + ")\n";
+
+    if (!missing_subconfig_keys.empty())
+    {
+        error += "missing subconfig keys:\n";
+        for (const auto& key : missing_subconfig_keys)
+            error += " - " + key.first.first + "." + key.first.second + "\n";
+    }
+
+    if (!missing_param_keys.empty())
+    {
+        error += "missing parameter keys:\n";
+        for (const auto& key : missing_param_keys)
+            error += " - " + key.first.first + "." + key.first.second + "\n";
+    }
+
+    return Result::failed(error);
 }
 
 /**
@@ -207,7 +227,8 @@ Result EvaluationManager::canEvaluate() const
 
 /**
  */
-Result EvaluationManager::evaluate(bool show_dialog)
+Result EvaluationManager::evaluate(bool show_dialog, 
+                                   const std::string& custom_result_name)
 {
     loginf;
 
@@ -221,6 +242,10 @@ Result EvaluationManager::evaluate(bool show_dialog)
     if (show_dialog)
     {
         EvaluationDialog dlg(*calculator_);
+
+        if (!custom_result_name.empty())
+            dlg.setReportName(custom_result_name);
+
         auto ret = dlg.exec();
 
         if (ret == QDialog::Rejected)
@@ -232,7 +257,7 @@ Result EvaluationManager::evaluate(bool show_dialog)
     else
     {
         //obtain suitable report name from calculator
-        report_name = calculator_->suggestReportName();
+        report_name = custom_result_name.empty() ? calculator_->suggestReportName() : custom_result_name;
     }
 
     //create clone of current calculator
