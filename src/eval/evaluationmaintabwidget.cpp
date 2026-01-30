@@ -147,6 +147,13 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
 
 /**
  */
+void EvaluationMainTabWidget::setReportName(const std::string& name)
+{
+    report_name_edit_->setText(QString::fromStdString(name));
+}
+
+/**
+ */
 std::string EvaluationMainTabWidget::reportName() const
 {
     return report_name_edit_->text().toStdString();

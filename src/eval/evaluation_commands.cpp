@@ -105,7 +105,7 @@ bool RTCommandEvaluate::run_impl()
 
     loginf << "loading evaluation data";
 
-    auto res = eval_man.evaluate(false);
+    auto res = eval_man.evaluate(false, result_name_);
     if (!res.ok())
     {
         setResultMessage(res.error());
@@ -120,11 +120,13 @@ void RTCommandEvaluate::collectOptions_impl(OptionsDescription& options,
 {
     ADD_RTCOMMAND_OPTIONS(options)
         ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as json string")
+        ("result,r", po::value<std::string>()->default_value(""), "name under which the evaluation result will be stored")
         ("run_filter,f", "run evaluation filter before evaluation");
 }
 
 void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
 {
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "result", std::string, result_name_)
     RTCOMMAND_CHECK_VAR(variables, "run_filter", run_filter_)
 }
