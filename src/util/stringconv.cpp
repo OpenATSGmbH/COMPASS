@@ -221,15 +221,15 @@ int getAppendedInt(std::string text)
     boost::sregex_token_iterator i(text.begin(), text.end(), re, 0);
     boost::sregex_token_iterator j;
 
-    unsigned count = 0;
+    //unsigned count = 0;
     while (i != j)
     {
         ret = std::stoi(*i++);
-        count++;
+        //count++;
     }
 
-    if (count == 0)
-        loginf << "no int found, returning 0";
+    // if (count == 0)
+    //     loginf << "no int found, returning 0";
 
     return ret;
 }

@@ -31,6 +31,7 @@ class QLineEdit;
 class QCheckBox;
 class QComboBox;
 class QListWidget;
+class QPushButton;
 
 typedef struct
 {
@@ -51,6 +52,8 @@ class FilterGeneratorWidget : public QWidget
   public slots:
 //    void loadMin();
 //    void loadMax();
+    void updateAddConditionButton();
+    void updateAddButton();
     void addCondition();
     void accept();
     void cancel();
@@ -60,13 +63,15 @@ class FilterGeneratorWidget : public QWidget
     virtual ~FilterGeneratorWidget();
 
   protected:
-    QLineEdit* filter_name_;
-    dbContent::VariableSelectionWidget* condition_variable_widget_;
-    QComboBox* condition_combo_;
-    QCheckBox* condition_absolute_;
-    QLineEdit* condition_value_;
-    QComboBox* condition_reset_combo_;
-    QListWidget* conditions_list_;
+    QLineEdit* filter_name_{nullptr};
+    dbContent::VariableSelectionWidget* condition_variable_widget_{nullptr};
+    QPushButton* add_condition_button_{nullptr};
+    QPushButton* add_button_{nullptr};
+    QComboBox* condition_combo_{nullptr};
+    QCheckBox* condition_absolute_{nullptr};
+    QLineEdit* condition_value_{nullptr};
+    QComboBox* condition_reset_combo_{nullptr};
+    QListWidget* conditions_list_{nullptr};
 
     std::vector<ConditionTemplate> data_conditions_;
 

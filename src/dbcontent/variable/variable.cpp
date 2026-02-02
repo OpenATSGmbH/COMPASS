@@ -788,13 +788,10 @@ void Variable::shortName(const std::string& short_name)
 
 bool Variable::hasDBContent() const
 {
-    if (db_column_name_.size())
-        return COMPASS::instance().dbInterface().hasContentIn(dbTableName(), db_column_name_);
-    else
-    {
-        traced_assert(dbcontent_);
-        traced_assert(db_expression_.size());
+    traced_assert(dbcontent_);
 
+    if (db_expression_.size())
+    {
         for (auto& var_name : db_expression_variables_)
         {
             loginf << "dbcontent " << dbcontent_->name() << " var " << var_name << " exists " << dbcontent_->hasVariable(var_name);
@@ -805,6 +802,8 @@ bool Variable::hasDBContent() const
                 return true;
         }
     }
+    else if (db_column_name_.size())
+        return COMPASS::instance().dbInterface().hasContentIn(dbTableName(), db_column_name_);
 
     return false;
 }

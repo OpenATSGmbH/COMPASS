@@ -76,7 +76,7 @@ protected:
 
     void syncFilterLayouts();
 
-    FilterManager&         filter_manager_;
+    FilterManager& filter_manager_;
     std::unique_ptr<FilterGeneratorWidget> filter_generator_widget_;
 
     QCheckBox*   filters_check_    {nullptr};
