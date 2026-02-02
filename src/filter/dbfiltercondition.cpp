@@ -125,7 +125,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     if (var.dbExpression().size())
         db_item_str = var.dbColumnName();
     else
-        db_item_str = var.dbContentName()+"."+var.dbColumnName();
+        db_item_str = var.dbTableName()+"."+var.dbColumnName();
 
     if (!first)
     {

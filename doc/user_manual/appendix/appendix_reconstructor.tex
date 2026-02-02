@@ -4,6 +4,7 @@
 \subsection{Scoring + UMKalman}
 \label{sec:appendix_reconst_simple} 
 
+\subsubsection{Association}
 The following table lists the configuration parameters available for the Scoring + UMKalman reconstructor (Simple Reconstructor) related to association.
 
 \begin{table}[H]
@@ -31,6 +32,8 @@ The following table lists the configuration parameters available for the Scoring
     \label{tab:reconst_simple_params}
     \end{table}
 
+
+\subsubsection{Reference Calculation}    
 The following table lists the configuration parameters available for the Scoring + UMKalman reconstructor related to reference trajectory calculation (Kalman filtering).
 
 \begin{table}[H]
@@ -58,3 +61,108 @@ The following table lists the configuration parameters available for the Scoring
 
 \subsection{Probabilistic + IMM}
 \label{sec:appendix_reconst_advanced}
+
+The following tables list the configuration parameters available for the Probabilistic + IMM Reconstructor (Advanced Reconstructor).
+
+\subsubsection{Association}
+\paragraph{Main}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Multiple Calculation Runs Number & Number of calculation passes per time slice to refine associations. & Intermediate & 3 & 2 -- 10 \\ \hline
+    Rescale Accuracies & If enabled, position accuracy values are rescaled based on statistical analysis. & Basic & True & True/False \\ \hline
+    Correct Radar Biases & Correct systematic radar azimuth/range biases. & Basic & True & True/False \\ \hline
+    Use ADS-B Geo.Alt. & Use ADS-B geometric altitude for slant-range correction. & Basic & True & True/False \\ \hline
+    Do Position Outlier Checks & Flag position outliers and do not use for position estimation. & Basic & True & True/False \\ \hline
+    Use Risky ADS-B & Accept lower quality ADS-B reports (if rescaling active). & Advanced & False & True/False \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
+    \end{table}
+
+\paragraph{General Association}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Comparison Time Difference & Match window size in time. & Basic & 10 s & 0 -- 1000 s \\ \hline
+    Maximum Track Time Difference & Time before a track ID is considered expired. & Intermediate & 300 s & 0 -- 1000 s \\ \hline
+    Maximum Altitude Difference & Mode C altitude tolerance. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
+    Do Track Number Disassoc. Using Distance & Reject track number matches if distance too large. & Basic & False & True/False \\ \hline
+    Track Number Disassoc. Distance Factor & Multiplier for Acceptable Distance to validate track number. & Intermediate & 3 & 1 -- 10 \\ \hline
+    Minimum Updates & Minimum number of updates for a constructed target. & Intermediate & 2 & $\ge 1$ \\ \hline
+    Minimum Time Overlap Probability & Overlap probability required to merge targets. & Advanced & 0.1 & 0 -- 1 \\ \hline
+    Max. Mahalanobis Distance (Sec. Verified) & Distance limit for verified secondary associations. & Advanced & 10.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Max. Mahalanobis Distance (Sec. Unverified) & Distance limit for unverified secondary associations. & Advanced & 3.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Max. Mahalanobis Outlier (Primary) & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Max. Mahalanobis Outlier (Secondary) & Outlier threshold for secondary targets. & Advanced & 6.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Max./Min. Pos. Std.Dev. (Air) & Bounds for position uncertainty (Air). & Advanced & 100/25 m & 0 -- 10000 m \\ \hline
+    Max./Min. Pos. Std.Dev. (Ground) & Bounds for position uncertainty (Ground). & Advanced & 20/5 m & 0 -- 1000 m \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
+    \end{table}
+
+\paragraph{Primary-Only Association}    
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    JPDA Probability of Detection & Assumed detection probability $P_D$. & Advanced & 0.9 & 0 -- 1 \\ \hline
+    JPDA Auto Clutter Density & Estimate clutter density automatically. & Advanced & True & True/False \\ \hline
+    Do Full Primary-Only Tracking & Enable tentative track creation (JPDA). & Advanced & True & True/False \\ \hline
+    Min. Update Intervals Termination & Timer to terminate weak tentative tracks. & Advanced & 5.5 & 0 -- 100 \\ \hline
+    Max. Update Intervals Coasting & Timer to terminate coasting tentative tracks. & Advanced & 3.5 & 0 -- 100 \\ \hline
+    Tentative Target Confirmation Prob. & Probability threshold to confirm tracks. & Advanced & 0.7 & 0 -- 1 \\ \hline
+    Tentative Target Termination Prob. & Probability threshold to terminate tracks. & Advanced & 0.1 & 0 -- 1 \\ \hline 
+    Tentative Target Confirmation Updates & Minimum updates to confirm tracks. & Advanced & 4 & 0 -- 1000 \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
+    \end{table}
+
+\subsubsection{Reference Calculation}
+
+The following table lists the configuration parameters available for reference trajectory calculation (Kalman filtering/smoothing) in the Probabilistic + IMM Reconstructor.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Dynamic Process Noise & Enable target state dependent process noise (Ground/Air). & Advanced & True & True/False \\ \hline
+    Process Stddev (Static) & Process noise std.dev. for static targets. & Advanced & 7.0 m & $>0$ m \\ \hline
+    Process Stddev (Ground) & Process noise std.dev. for ground targets. & Basic & 5.0 m & $>0$ m \\ \hline
+    Process Stddev (Air) & Process noise std.dev. for airborne targets. & Basic & 10.0 m & $>0$ m \\ \hline
+    Process Stddev (Unknown) & Process noise std.dev. for unknown state targets. & Basic & 7.0 m & $>0$ m \\ \hline
+    Minimum Time Step & Minimum time step for Kalman update. & Advanced & 0.001 s & $>0$ s \\ \hline
+    Maximum Time Step (Ground) & Maximum prediction time step for ground targets. & Intermediate & 5.0 s & $>0$ s \\ \hline
+    Maximum Time Step (Air) & Maximum prediction time step for airborne targets. & Intermediate & 10.0 s & $>0$ s \\ \hline
+    Maximum Distance & Maximum distance for valid updates. & Advanced & 50000 m & $>0$ m \\ \hline
+    Resample SystemTracks & Enable resampling of input system tracks. & Advanced & True & True/False \\ \hline
+    Resample Interval (Systracks) & Resampling interval for system tracks. & Advanced & 1.0 s & $\ge 0.1$ s \\ \hline
+    Max Time Step (Systracks) & Maximum interpolation gap for system tracks. & Advanced & 30.0 s & $>0$ s \\ \hline
+    Smooth Results & Apply RTS smoothing backward pass. & Basic & True & True/False \\ \hline
+    Smooth Factor & Scaling factor for smoothing covariance. & Advanced & 1.0 & 0.1 -- 1.0 \\ \hline
+    Resample Results & Enable resampling of final output trajectory. & Basic & True & True/False \\ \hline
+    Resample Interval & Time interval for the displayed output trajectory. & Basic & 2.0 s & 0.1 -- 30 s \\ \hline
+    Resample Process Stddev (Static) & Resampling process noise for static targets. & Advanced & 3.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Ground) & Resampling process noise for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Air) & Resampling process noise for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Unknown) & Resampling process noise for unknown targets. & Advanced & 3.0 m & $>0$ m \\ \hline
+    Filter Result References & Filter final trajectory points by estimated accuracy. & Intermediate & False & True/False \\ \hline
+    Max. Stddev (Filter) & Maximum allowed position standard deviation in final result. & Intermediate & 150.0 m & $>0$ m \\ \hline
+    Maximum Projection Distance & Maximum distance from projection center before re-centering. & Advanced & 20000 m & $>1$ m \\ \hline
+    \end{tabular}
+    \caption{Reference Calculation parameters}
+    \label{tab:reconst_advanced_ref_params}
+    \end{table}
