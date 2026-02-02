@@ -57,7 +57,7 @@ ViewWidget::ViewWidget(const std::string& class_id,
       view_       (view)
 {
     //generate and set a nice object name which can be used to identify the view widget in the object hierarchy
-    UI_TEST_OBJ_NAME(this, QString::fromStdString(view->classId()))
+    UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceId()))
 
     setContentsMargins(0, 0, 0, 0);
 
