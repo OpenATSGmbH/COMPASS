@@ -1,0 +1,60 @@
+\section{Appendix: Reconstructor}
+\label{sec:appendix_reconstructor}  
+
+\subsection{Scoring + UMKalman}
+\label{sec:appendix_reconst_simple} 
+
+The following table lists the configuration parameters available for the Scoring + UMKalman reconstructor (Simple Reconstructor) related to association.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Comparison Time Difference & Maximum interpolation window for associating a report to a track. & Advanced & 6.0 s & 0.1 -- 60 s \\ \hline
+    Maximum Track Time Difference & Maximum time gap to resume an existing track using its data source track number. & Intermediate & 300 s & 60 -- 3600 s \\ \hline
+    Maximum Erroneous Distance Air & Distance limit rejecting position matches (Air). & Intermediate & 9260 m & 500 -- 10000 m \\ \hline
+    Maximum Dubious Distance Air & Threshold for Dubious classification (Air). & Intermediate & 3704 m & 250 -- 25000 m \\ \hline
+    Maximum Acceptable Distance Air & Threshold for Acceptable classification (Air). Typically 1-2 NM or less. & Intermediate & 1852 m & 50 -- 10000 m \\ \hline
+    Maximum Erroneous Distance Ground & Distance limit rejecting position matches (Ground). & Intermediate & 90 m & 70 -- 200 m \\ \hline
+    Maximum Dubious Distance Ground & Threshold for Dubious classification (Ground). & Intermediate & 60 m & 30 -- 100 m \\ \hline
+    Maximum Acceptable Distance Ground & Threshold for Acceptable classification (Ground). & Intermediate & 40 m & 10 -- 50 m \\ \hline
+    Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 5000 ft \\ \hline
+    Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if spatial distance is too large. & Basic & True & True/False \\ \hline
+    Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Advanced & 3 & 1 -- 20 \\ \hline
+    Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
+    Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets. & Advanced & 0.1 & 0.05 -- 0.9 \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Scoring + UMKalman Reconstructor}
+    \label{tab:reconst_simple_params}
+    \end{table}
+
+The following table lists the configuration parameters available for the Scoring + UMKalman reconstructor related to reference trajectory calculation (Kalman filtering).
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Process Stddev (Ground) & Assumed process noise standard deviation for targets on ground (affects maneuverability allowance). & Basic & 5.0 m & $>0$ m \\ \hline
+    Process Stddev (Air) & Assumed process noise standard deviation for airborne targets. & Basic & 10.0 m & $>0$ m \\ \hline
+    Process Stddev (Unknown) & Assumed process noise standard deviation for targets with unknown state. & Basic & 7.0 m & $>0$ m \\ \hline
+    Maximum Time Step (Ground) & Maximum time interval between updates used for interpolation/prediction on ground. & Intermediate & 5.0 s & $>0$ s \\ \hline
+    Maximum Time Step (Air) & Maximum time interval between updates used for interpolation/prediction in air. & Intermediate & 10.0 s & $>0$ s \\ \hline
+    Resample Interval & Time interval for the output trajectory (if resampling enabled internally). & Basic & 2.0 s & 0.1 -- 30 s \\ \hline
+    Resample Process Stddev (Ground) & Process noise applied specifically during the resampling phase for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Air) & Process noise applied specifically during the resampling phase for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Unknown) & Process noise applied during resampling for unknown state targets. & Advanced & 3.0 m & $>0$ m \\ \hline
+    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). & Intermediate & False & True/False \\ \hline
+    Max. Stddev & Maximum allowed position standard deviation for a point to be included in the final reference. & Intermediate & 150.0 m & $>0$ m \\ \hline
+    \end{tabular}
+    \caption{Reference Calculation parameters for the Scoring + UMKalman Reconstructor}
+    \label{tab:reconst_simple_ref_params}
+    \end{table}
+
+\subsection{Probabilistic + IMM}
+\label{sec:appendix_reconst_advanced}
