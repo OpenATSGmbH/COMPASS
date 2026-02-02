@@ -1,5 +1,5 @@
 {
-    "app_version": "0.8.0",
+    "app_version": "0.9.2",
     "category": "Default",
     "description": "Contains main variables to be displayed by default, as well as Mode 3/A and Mode C garbled/valid/smoothed information.",
     "deployed": true,
