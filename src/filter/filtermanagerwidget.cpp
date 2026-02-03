@@ -258,14 +258,11 @@ void FilterManagerWidget::updateFilters()
 {
     loginf;
 
-    QLayoutItem* child;
-    while (!ds_filter_layout_->isEmpty() && (child = ds_filter_layout_->takeAt(0)))
-    
     while (!ds_filter_layout_->isEmpty())
     {
         auto item = ds_filter_layout_->takeAt(0);
 
-        //deletes only the layout item, not the contained widget
+        // deletes only the layout item, not the contained widget
         delete item;
     }
 
