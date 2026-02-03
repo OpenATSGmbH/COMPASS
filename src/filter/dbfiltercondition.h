@@ -40,11 +40,11 @@ class DBFilterCondition : public QObject, public Configurable
 {
     Q_OBJECT
 
-private slots:
-    void valueChanged();
+// private slots:
+//     void valueChanged();
 
-signals:
-    void possibleFilterChange();
+// signals:
+//     void possibleFilterChange();
 
 public:
     DBFilterCondition(const std::string& class_id, const std::string& instance_id,
@@ -67,9 +67,6 @@ public:
     }
 
     void update();
-
-    bool getChanged() { return changed_; }
-    void setChanged(bool changed) { changed_ = changed; }
 
     std::string getVariableName() const;
     void setVariableName(const std::string& variable_name);
@@ -108,7 +105,6 @@ private:
     bool display_instance_id_ {false};
 
     bool usable_{true};
-    bool changed_{true};
     bool value_invalid_{false};
 
     QLineEdit* edit_{nullptr};

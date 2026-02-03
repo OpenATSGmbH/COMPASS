@@ -32,13 +32,13 @@ using namespace nlohmann;
 
 DBFilter::DBFilter(const std::string& class_id, const std::string& instance_id,
                    Configurable* parent, bool is_generic)
-    : Configurable(class_id, instance_id, parent),
-      is_generic_(is_generic)  // filter_manager_(*filter_manager),
+    : Configurable(class_id, instance_id, parent)
 {
-    registerParameter("active", &active_, false);
-    registerParameter("changed", &changed_, false);
-    registerParameter("visible", &visible_, false);
     registerParameter("name", &name_, instance_id);
+    registerParameter("is_custom", &is_custom_, false);
+
+    registerParameter("active", &active_, false);
+    registerParameter("visible", &visible_, false);
 
     registerParameter("widget_visible", &widget_visible_, true);
 
@@ -68,40 +68,11 @@ void DBFilter::setActive(bool active)
 
     active_ = active;
 
-    changed_ = true;
-
     if (widget_)
         widget_->update();
 }
 
 bool DBFilter::getActive() { return active_ && !disabled_; }
-
-bool DBFilter::getChanged()
-{
-    traced_assert(!unusable_);
-
-    bool ret = changed_;
-
-    for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
-    {
-        ret |= conditions_.at(cnt)->getChanged();
-    }
-
-    return ret;
-}
-
-void DBFilter::setChanged(bool changed)
-{
-    traced_assert(!unusable_);
-
-    changed_ = changed;
-
-    for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
-    {
-        conditions_.at(cnt)->setChanged(changed);
-    }
-
-}
 
 bool DBFilter::getVisible() { return visible_; }
 void DBFilter::setVisible(bool visible)
@@ -220,8 +191,6 @@ void DBFilter::reset()
     {
         conditions_.at(cnt)->reset();
     }
-
-    changed_ = true;
 }
 
 void DBFilter::deleteCondition(DBFilterCondition* condition)

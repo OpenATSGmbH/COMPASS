@@ -35,22 +35,22 @@ class DBFilterWidget : public QFrame
 
 private slots:
     void toggleVisible();
-    void toggleAnd(); // not used
+    //void toggleAnd(); // not used
     void toggleActive();
 
-    void possibleSubFilterChange();
-    void reset();
-    void deleteFilter();
-    void filterEditSlot();
+    //void possibleSubFilterChange();
+    //void reset();
+    //void deleteFilter();
+    //void filterEditSlot();
 
 protected slots:
-    void showMenuSlot();
+    //void showMenuSlot();
 
-signals:
-    void possibleFilterChange();
-    void filterEdit(DBFilter* filter);
-    void deleteFilterSignal(DBFilter* filter);
-    void filterContentChanged();
+// signals:
+//     void possibleFilterChange();
+    //void filterEdit(DBFilter* filter);
+    //void deleteFilterSignal(DBFilter* filter);
+    //void filterContentChanged();
 
 public:
     DBFilterWidget(DBFilter& filter);
@@ -70,7 +70,7 @@ public:
     void setFlexibleColumnWidth(int layout_column, int width);
 
 protected:
-    void createMenu();
+    //void createMenu();
     void deleteChildrenFromLayout();
     void addNameValuePair(const std::string& label, QWidget* widget, int row = -1, int col = 0);
     void addNameValuePair(const std::string& label, const std::string& label2, int row = -1, int col = 0);
@@ -82,9 +82,9 @@ protected:
     QCheckBox* visible_checkbox_ {nullptr};
     QCheckBox* active_checkbox_ {nullptr};
 
-    QPushButton* manage_button_ {nullptr};
+    //QPushButton* manage_button_ {nullptr};
 
     QGridLayout* child_layout_ {nullptr};
 
-    QMenu menu_;
+    //QMenu menu_;
 };

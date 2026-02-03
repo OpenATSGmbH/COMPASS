@@ -175,45 +175,40 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     return ss.str();
 }
 
-/**
- * Checks if value_ is different than edit_ value, if yes sets changed_ and emits
- * possibleFilterChange.
- */
-void DBFilterCondition::valueChanged()
-{
-    logdbg;
-    traced_assert(usable_);
-    traced_assert(edit_);
+// void DBFilterCondition::valueChanged()
+// {
+//     logdbg;
+//     traced_assert(usable_);
+//     traced_assert(edit_);
 
-    std::string new_value = edit_->text().toStdString();
+//     std::string new_value = edit_->text().toStdString();
 
-    value_invalid_ = checkValueInvalid(new_value);
+//     value_invalid_ = checkValueInvalid(new_value);
 
-    if (!value_invalid_ && value_ != new_value)
-    {
-        value_ = new_value;
-        changed_ = true;
+//     if (!value_invalid_ && value_ != new_value)
+//     {
+//         value_ = new_value;
 
-        emit possibleFilterChange();
-    }
+//         //emit possibleFilterChange();
+//     }
 
-    loginf << "value '" << value_ << "' invalid "
-           << value_invalid_;
+//     loginf << "value '" << value_ << "' invalid "
+//            << value_invalid_;
 
-    if (value_invalid_)
-    {
-        edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
-    }
-    else
-    {
-        //edit_->setStyleSheet(QApplication::style()->objectName());
-        edit_->setStyleSheet("");
+//     if (value_invalid_)
+//     {
+//         edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+//     }
+//     else
+//     {
+//         //edit_->setStyleSheet(QApplication::style()->objectName());
+//         edit_->setStyleSheet("");
 
-        // edit_->setStyleSheet(
-        //             "QLineEdit { background: rgb(255, 255, 255); selection-background-color:"
-        //             " rgb(200, 200, 200); }");
-    }
-}
+//         // edit_->setStyleSheet(
+//         //             "QLineEdit { background: rgb(255, 255, 255); selection-background-color:"
+//         //             " rgb(200, 200, 200); }");
+//     }
+// }
 
 std::string DBFilterCondition::getVariableName() const
 {

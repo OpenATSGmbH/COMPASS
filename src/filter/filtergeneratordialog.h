@@ -43,11 +43,9 @@ typedef struct
     bool absolute_value_;
 } ConditionTemplate;
 
-class FilterGeneratorWidget : public QWidget
+class FilterGeneratorDialog : public QDialog
 {
     Q_OBJECT
-  signals:
-    void filterWidgetAction(bool generated);
 
   public slots:
 //    void loadMin();
@@ -55,12 +53,12 @@ class FilterGeneratorWidget : public QWidget
     void updateAddConditionButton();
     void updateAddButton();
     void addCondition();
-    void accept();
+    void accept() override;
     void cancel();
 
   public:
-    FilterGeneratorWidget(QWidget* parent = nullptr);
-    virtual ~FilterGeneratorWidget();
+    FilterGeneratorDialog(QWidget* parent = nullptr);
+    virtual ~FilterGeneratorDialog();
 
   protected:
     QLineEdit* filter_name_{nullptr};
@@ -77,5 +75,4 @@ class FilterGeneratorWidget : public QWidget
 
     void createGUIElements();
     void updateWidgetList();
-    virtual void closeEvent(QCloseEvent* event);
 };

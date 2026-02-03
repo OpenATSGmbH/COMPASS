@@ -22,7 +22,7 @@
 #include <memory>
 
 class FilterManager;
-class FilterGeneratorWidget;
+class FilterGeneratorDialog;
 
 class QVBoxLayout;
 class QCheckBox;
@@ -34,9 +34,6 @@ class QScrollArea;
 class FilterManagerWidget : public ToolBoxWidget
 {
     Q_OBJECT
-
-  public slots:
-    void filterWidgetActionSlot(bool generated);
 
 public:
     explicit FilterManagerWidget(FilterManager& manager, 
@@ -77,7 +74,6 @@ protected:
     void syncFilterLayouts();
 
     FilterManager& filter_manager_;
-    std::unique_ptr<FilterGeneratorWidget> filter_generator_widget_;
 
     QCheckBox*   filters_check_    {nullptr};
     QVBoxLayout* ds_filter_layout_ {nullptr};

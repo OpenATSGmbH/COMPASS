@@ -15,15 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "filtergeneratorwidget.h"
+#include "filtergeneratordialog.h"
 #include "compass.h"
-//#include "configurationmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "filterconditionoperatorcombobox.h"
 #include "filtermanager.h"
 #include "dbcontent/variable/metavariable.h"
-//#include "stringconv.h"
 #include "global.h"
 
 #include <QCheckBox>
@@ -39,7 +37,7 @@
 
 using namespace Utils;
 
-FilterGeneratorWidget::FilterGeneratorWidget(QWidget* parent) : QWidget(parent)
+FilterGeneratorDialog::FilterGeneratorDialog(QWidget* parent) : QDialog(parent)
 {
     setWindowTitle(tr("Add New Filter"));
 
@@ -48,9 +46,9 @@ FilterGeneratorWidget::FilterGeneratorWidget(QWidget* parent) : QWidget(parent)
     createGUIElements();
 }
 
-FilterGeneratorWidget::~FilterGeneratorWidget() {}
+FilterGeneratorDialog::~FilterGeneratorDialog() {}
 
-void FilterGeneratorWidget::createGUIElements()
+void FilterGeneratorDialog::createGUIElements()
 {
     QFont font_bold;
     font_bold.setBold(true);
@@ -63,7 +61,7 @@ void FilterGeneratorWidget::createGUIElements()
     QLabel* name_label = new QLabel(tr("Define unique filter name"));
     name_layout->addWidget(name_label);
     filter_name_ = new QLineEdit(tr("Filter0"));
-    connect(filter_name_, &QLineEdit::textChanged, this, &FilterGeneratorWidget::updateAddButton);
+    connect(filter_name_, &QLineEdit::textChanged, this, &FilterGeneratorDialog::updateAddButton);
     name_layout->addWidget(filter_name_);
     layout->addLayout(name_layout);
 
@@ -81,7 +79,7 @@ void FilterGeneratorWidget::createGUIElements()
     condition_variable_widget_->setMinimumWidth(200);
     condition_variable_widget_->showMetaVariables(true);
     condition_variable_widget_->showEmptyVariable(true);
-    connect(condition_variable_widget_, &dbContent::VariableSelectionWidget::selectionChanged, this, &FilterGeneratorWidget::updateAddConditionButton);
+    connect(condition_variable_widget_, &dbContent::VariableSelectionWidget::selectionChanged, this, &FilterGeneratorDialog::updateAddConditionButton);
     condition_layout->addWidget(condition_variable_widget_, 1, 0);
 
     // ABS
@@ -106,7 +104,7 @@ void FilterGeneratorWidget::createGUIElements()
     condition_layout->addWidget(label_val, 0, 3);
 
     condition_value_ = new QLineEdit();
-    connect(condition_value_, &QLineEdit::textChanged, this, &FilterGeneratorWidget::updateAddConditionButton);
+    connect(condition_value_, &QLineEdit::textChanged, this, &FilterGeneratorDialog::updateAddConditionButton);
     condition_layout->addWidget(condition_value_, 1, 3);
 
     // Reset Value
@@ -124,7 +122,7 @@ void FilterGeneratorWidget::createGUIElements()
 
     add_condition_button_ = new QPushButton(tr("Add condition"));
     add_condition_button_->setEnabled(false);
-    connect(add_condition_button_, &QPushButton::clicked, this, &FilterGeneratorWidget::addCondition);
+    connect(add_condition_button_, &QPushButton::clicked, this, &FilterGeneratorDialog::addCondition);
     layout->addWidget(add_condition_button_);
     // layout->addStretch(); 
 
@@ -145,14 +143,14 @@ void FilterGeneratorWidget::createGUIElements()
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel = new QPushButton(tr("Cancel"));
-    connect(cancel, &QPushButton::clicked, this, &FilterGeneratorWidget::cancel);
+    connect(cancel, &QPushButton::clicked, this, &FilterGeneratorDialog::cancel);
     button_layout->addWidget(cancel);
 
     button_layout->addStretch();
 
     add_button_ = new QPushButton(tr("Add"));
     add_button_->setEnabled(false);
-    connect(add_button_, &QPushButton::clicked, this, &FilterGeneratorWidget::accept);
+    connect(add_button_, &QPushButton::clicked, this, &FilterGeneratorDialog::accept);
     button_layout->addWidget(add_button_);
 
     layout->addLayout(button_layout);
@@ -204,7 +202,7 @@ void FilterGeneratorWidget::createGUIElements()
 //    condition_value_->setText(tr(value.c_str()));
 //}
 
-void FilterGeneratorWidget::updateAddConditionButton()
+void FilterGeneratorDialog::updateAddConditionButton()
 {
     assert(add_condition_button_);
     
@@ -223,7 +221,7 @@ void FilterGeneratorWidget::updateAddConditionButton()
     add_condition_button_->setEnabled(has_variable && has_value);
 }
 
-void FilterGeneratorWidget::updateAddButton()
+void FilterGeneratorDialog::updateAddButton()
 {
     if (!add_button_)
         return;
@@ -244,7 +242,7 @@ void FilterGeneratorWidget::updateAddButton()
         add_button_->setToolTip("Please add at least one condition");        
 }
 
-void FilterGeneratorWidget::addCondition()
+void FilterGeneratorDialog::addCondition()
 {
     traced_assert(condition_variable_widget_);
     traced_assert(condition_combo_);
@@ -276,7 +274,7 @@ void FilterGeneratorWidget::addCondition()
     updateAddButton();
 }
 
-void FilterGeneratorWidget::updateWidgetList()
+void FilterGeneratorDialog::updateWidgetList()
 {
     traced_assert(conditions_list_);
     conditions_list_->clear();
@@ -293,9 +291,7 @@ void FilterGeneratorWidget::updateWidgetList()
     }
 }
 
-void FilterGeneratorWidget::closeEvent(QCloseEvent* event) { emit filterWidgetAction(false); }
-
-void FilterGeneratorWidget::accept()
+void FilterGeneratorDialog::accept()
 {
     loginf;
 
@@ -346,10 +342,10 @@ void FilterGeneratorWidget::accept()
     //filter_man.generateSubConfigurableFromConfig(std::move(configuration));
     filter_man.generateSubConfigurable (configuration.getClassId(), configuration.getInstanceId());
 
-    emit filterWidgetAction(true);
+    QDialog::accept();
 }
 
-void FilterGeneratorWidget::cancel() 
+void FilterGeneratorDialog::cancel() 
 { 
-    emit filterWidgetAction(false); 
+    reject(); 
 }

@@ -19,7 +19,7 @@
 
 #include "dbfilter.h"
 #include "dbfilterwidget.h"
-#include "filtergeneratorwidget.h"
+#include "filtergeneratordialog.h"
 #include "filtermanager.h"
 #include "global.h"
 #include "logger.h"
@@ -44,7 +44,6 @@ FilterManagerWidget::FilterManagerWidget(FilterManager& filter_manager,
                                          Qt::WindowFlags f)
 :   ToolBoxWidget(parent)
 ,   filter_manager_         (filter_manager)
-,   filter_generator_widget_(nullptr)
 {
     QFont font_bold;
     font_bold.setBold(true);
@@ -98,8 +97,6 @@ FilterManagerWidget::FilterManagerWidget(FilterManager& filter_manager,
  */
 FilterManagerWidget::~FilterManagerWidget()
 {
-    if (filter_generator_widget_)
-        filter_generator_widget_ = nullptr;
 }
 
 /**
@@ -223,23 +220,12 @@ void FilterManagerWidget::updateUseFilters ()
 void FilterManagerWidget::addFilter()
 {
     loginf;
-    traced_assert(!filter_generator_widget_);
-
-    filter_generator_widget_.reset(new FilterGeneratorWidget());
-    connect(filter_generator_widget_.get(), SIGNAL(filterWidgetAction(bool)),
-            this, SLOT(filterWidgetActionSlot(bool)));
-
-    filter_generator_widget_->show();
-}
-
-void FilterManagerWidget::filterWidgetActionSlot(bool generated)
-{
-    loginf << "generated " << generated;
-
-    traced_assert(filter_generator_widget_);
-    filter_generator_widget_ = nullptr;
-
-    updateFilters();
+    
+    FilterGeneratorDialog filter_generator(this);
+    if (filter_generator.exec() == QDialog::Accepted)
+    {
+        updateFilters();
+    }
 }
 
 /**
@@ -268,7 +254,7 @@ void FilterManagerWidget::updateFilters()
         if (!it->getActive())
             it->widget()->collapse();
 
-        connect(it->widget(), &DBFilterWidget::filterContentChanged, this, &FilterManagerWidget::syncFilterLayouts, Qt::UniqueConnection);
+        //connect(it->widget(), &DBFilterWidget::filterContentChanged, this, &FilterManagerWidget::syncFilterLayouts, Qt::UniqueConnection);
 
         ds_filter_layout_->addWidget(it->widget());
     }
