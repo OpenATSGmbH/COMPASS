@@ -64,6 +64,7 @@ protected:
     void toggleUseFilters();
 
     void addFilter();
+    void deleteFilter(const std::string& name);
 
     void databaseOpened();
 

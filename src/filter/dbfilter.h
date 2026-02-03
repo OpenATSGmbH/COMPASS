@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 class DBFilterCondition;
 class FilterManager;
@@ -70,7 +71,7 @@ class DBFilter : public Configurable
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id);
 
-    std::vector<DBFilterCondition*>& getConditions() { return conditions_; }
+    const std::vector<std::unique_ptr<DBFilterCondition>>& getConditions() const { return conditions_; }
     unsigned int getNumConditions() { return conditions_.size(); }
     void deleteCondition(DBFilterCondition* condition);
 
@@ -102,7 +103,7 @@ protected:
 
     bool widget_visible_ {true};
 
-    std::vector<DBFilterCondition*> conditions_;
+    std::vector<std::unique_ptr<DBFilterCondition>> conditions_;
 
     // widget with configuration elements.
     std::unique_ptr<DBFilterWidget> widget_{nullptr};

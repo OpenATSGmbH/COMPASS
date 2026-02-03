@@ -75,6 +75,8 @@ public:
     bool hasFilter (const std::string& name);
     DBFilter* getFilter (const std::string& name);
 
+    void deleteFilter(const std::string& name);
+
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id);
 

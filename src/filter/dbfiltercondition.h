@@ -40,8 +40,8 @@ class DBFilterCondition : public QObject, public Configurable
 {
     Q_OBJECT
 
-// private slots:
-//     void valueChanged();
+private slots:
+    void valueChanged();
 
 // signals:
 //     void possibleFilterChange();

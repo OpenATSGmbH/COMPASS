@@ -51,11 +51,6 @@ DBFilter::~DBFilter()
     logdbg << "instance_id " << instanceId();
 
     widget_ = nullptr;
-
-    for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
-    {
-        delete conditions_.at(cnt);
-    }
     conditions_.clear();
 }
 
@@ -150,8 +145,8 @@ void DBFilter::generateSubConfigurable(const std::string& class_id, const std::s
     if (class_id == "DBFilterCondition")
     {
         logdbg << "generating condition";
-        DBFilterCondition* condition = new DBFilterCondition(class_id, instance_id, this);
-        conditions_.push_back(condition);
+        conditions_.emplace_back(std::unique_ptr<DBFilterCondition>(new DBFilterCondition(class_id, instance_id, this)));
+        DBFilterCondition* condition = conditions_.back().get();
 
         unusable_ = unusable_ | !condition->usable();
 
@@ -195,11 +190,11 @@ void DBFilter::reset()
 
 void DBFilter::deleteCondition(DBFilterCondition* condition)
 {
-    std::vector<DBFilterCondition*>::iterator it =
-        find(conditions_.begin(), conditions_.end(), condition);
+    auto it = std::find_if(conditions_.begin(), conditions_.end(),
+        [condition](const std::unique_ptr<DBFilterCondition>& ptr) { return ptr.get() == condition; });
+
     traced_assert(it != conditions_.end());
     conditions_.erase(it);
-    delete condition;
 }
 
 DBFilterWidget* DBFilter::widget()
@@ -217,7 +212,7 @@ void DBFilter::saveViewPointConditions (nlohmann::json& filters)
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
-    for (auto cond_it : conditions_)
+    for (auto& cond_it : conditions_)
     {
         traced_assert(!filter.contains(cond_it->instanceId()));
         filter[cond_it->instanceId()] = cond_it->getValue();
@@ -232,7 +227,7 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(filter.is_object());
 
     // clear previous conditions
-    for (auto cond_it : conditions_)
+    for (auto& cond_it : conditions_)
         cond_it->setValue("");
 
     for (auto& cond_it : filter.get<json::object_t>())
@@ -245,7 +240,7 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
         std::string value = cond_it.second;
 
         auto it = find_if(conditions_.begin(), conditions_.end(),
-                          [cond_name] (const DBFilterCondition* c) { return c->instanceId() == cond_name; } );
+                          [cond_name] (const std::unique_ptr<DBFilterCondition>& c) { return c->instanceId() == cond_name; } );
 
         if (it == conditions_.end())
             logerr << name_ << ": cond_name '" << cond_name << "' not found";

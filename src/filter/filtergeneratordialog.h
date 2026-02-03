@@ -68,7 +68,8 @@ class FilterGeneratorDialog : public QDialog
     QComboBox* condition_combo_{nullptr};
     QCheckBox* condition_absolute_{nullptr};
     QLineEdit* condition_value_{nullptr};
-    QComboBox* condition_reset_combo_{nullptr};
+    //QComboBox* condition_reset_combo_{nullptr};
+    
     QListWidget* conditions_list_{nullptr};
 
     std::vector<ConditionTemplate> data_conditions_;

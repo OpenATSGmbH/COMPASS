@@ -108,15 +108,15 @@ void FilterGeneratorDialog::createGUIElements()
     condition_layout->addWidget(condition_value_, 1, 3);
 
     // Reset Value
-    QLabel* label_reset = new QLabel(tr("Reset value"));
-    label_reset->setFont(font_bold);
-    condition_layout->addWidget(label_reset, 0, 4);
+    // QLabel* label_reset = new QLabel(tr("Reset value"));
+    // label_reset->setFont(font_bold);
+    // condition_layout->addWidget(label_reset, 0, 4);
 
-    condition_reset_combo_ = new QComboBox();
-    condition_reset_combo_->addItem("value");
-//    condition_reset_combo_->addItem("MIN");
-//    condition_reset_combo_->addItem("MAX");
-    condition_layout->addWidget(condition_reset_combo_, 1, 4);
+//     condition_reset_combo_ = new QComboBox();
+//     condition_reset_combo_->addItem("value");
+// //    condition_reset_combo_->addItem("MIN");
+// //    condition_reset_combo_->addItem("MAX");
+//     condition_layout->addWidget(condition_reset_combo_, 1, 4);
 
     layout->addLayout(condition_layout);
 
@@ -266,7 +266,7 @@ void FilterGeneratorDialog::addCondition()
     data_condition.absolute_value_ = condition_absolute_->checkState() == Qt::Checked;
     data_condition.operator_ = condition_combo_->currentText().toStdString();
     data_condition.value_ = condition_value_->text().toStdString();
-    data_condition.reset_value_ = condition_reset_combo_->currentText().toStdString();
+    data_condition.reset_value_ = "value"; //condition_reset_combo_->currentText().toStdString();
 
     data_conditions_.push_back(data_condition);
 
@@ -310,6 +310,7 @@ void FilterGeneratorDialog::accept()
 
     auto& configuration = filter_man.addNewSubConfiguration("DBFilter");
     configuration.addParameter<std::string>("name", filter_name);
+    configuration.addParameter<bool>("is_custom", true);
 
     for (unsigned int cnt = 0; cnt < data_conditions_.size(); cnt++)
     {

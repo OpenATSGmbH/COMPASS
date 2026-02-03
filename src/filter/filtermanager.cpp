@@ -311,6 +311,15 @@ DBFilter* FilterManager::getFilter (const std::string& name)
     return it->get();
 }
 
+void FilterManager::deleteFilter(const std::string& name)
+{
+    auto it = std::find_if(filters_.begin(), filters_.end(), 
+        [&name](const std::unique_ptr<DBFilter>& f) { return f->getName() == name; });
+
+    traced_assert(it != filters_.end());
+    filters_.erase(it);
+}
+
 
 void FilterManager::reset()
 {

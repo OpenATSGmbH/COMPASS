@@ -142,6 +142,21 @@ void FilterManagerWidget::addToConfigMenu(QMenu* menu)
     QAction* new_filter_action = menu->addAction("Add New Filter");
     connect(new_filter_action, &QAction::triggered, this, &FilterManagerWidget::addFilter);
 
+    auto delete_menu = menu->addMenu("Delete Filter");
+    bool has_custom = false;
+
+    for (const auto& filter : filter_manager_.filters())
+    {
+        if (filter->isCustom())
+        {
+            has_custom = true;
+            std::string name = filter->getName();
+            QAction* action = delete_menu->addAction(QString::fromStdString(name));
+            connect(action, &QAction::triggered, this, [this, name]() { deleteFilter(name); });
+        }
+    }
+    delete_menu->setEnabled(has_custom);
+
     menu->addSeparator();
 
     auto expand_all_action = menu->addAction("Expand All");
@@ -213,6 +228,14 @@ void FilterManagerWidget::updateUseFilters ()
     filters_check_->setChecked(filter_manager_.useFilters());
 
     emit iconChangedSignal();
+}
+
+/**
+ */
+void FilterManagerWidget::deleteFilter(const std::string& name)
+{
+    filter_manager_.deleteFilter(name);
+    updateFilters();
 }
 
 /**

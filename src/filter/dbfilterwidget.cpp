@@ -127,7 +127,7 @@ void DBFilterWidget::updateChildWidget()
 {
     deleteChildrenFromLayout();
 
-    std::vector<DBFilterCondition*>& conditions = filter_.getConditions();
+    const auto& conditions = filter_.getConditions();
     for (unsigned int cnt = 0; cnt < conditions.size(); cnt++)
     {
         auto label = conditions.at(cnt)->getLabel();
