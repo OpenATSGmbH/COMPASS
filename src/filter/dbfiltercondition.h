@@ -96,7 +96,7 @@ public:
 private:
     DBFilter* filter_parent_{nullptr};
     std::string operator_;
-    bool op_and_{true};
+    //bool op_and_{true};
     bool absolute_value_{false};
     std::string value_;
     std::string reset_value_;

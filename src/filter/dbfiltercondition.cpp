@@ -45,7 +45,7 @@ DBFilterCondition::DBFilterCondition(const std::string& class_id, const std::str
     : Configurable(class_id, instance_id, filter_parent), filter_parent_(filter_parent)
 {
     registerParameter("operator", &operator_, std::string(">"));
-    registerParameter("op_and", &op_and_, true);
+    //registerParameter("op_and", &op_and_, true);
     registerParameter("absolute_value", &absolute_value_, false);
 
     registerParameter("variable_dbcontent_name", &variable_dbcontent_name_, std::string());
@@ -129,10 +129,10 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     if (!first)
     {
-        if (op_and_)
-            ss << " AND ";
-        else
-            ss << " OR ";
+        //if (op_and_)
+        ss << " AND ";
+        //else
+        //    ss << " OR ";
     }
     first = false;
 

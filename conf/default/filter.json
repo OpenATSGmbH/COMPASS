@@ -1,19 +1,18 @@
 {
     "parameters": {
         "db_id": "",
-        "use_filters": false
+        "use_filters": true
     },
     "sub_configs": {
         "ACADFilter": {
             "Aircraft Address": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Aircraft Address",
-                    "op_and_": true,
                     "values_str": "4C8070",
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 }
             }
         },
@@ -21,12 +20,11 @@
             "Aircraft Identification": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Aircraft Identification",
-                    "op_and_": true,
                     "values_str": "AEE",
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 }
             }
         },
@@ -34,7 +32,7 @@
             "ADSBQualityFilter": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "max_nacp": 5,
                     "max_nic": 5,
                     "max_nucp": 4,
@@ -68,10 +66,10 @@
             "ADSBMOPS": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "ADSBMOPS",
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 },
                 "sub_configs": {
                     "DBFilterCondition": {
@@ -90,27 +88,26 @@
                     }
                 }
             },
-            "ARTAS Hash Code": {
+            "DBFilter1": {
                 "parameters": {
-                    "active": false,
-                    "changed": true,
-                    "name": "ARTAS Hash Code",
-                    "op_and_": true,
+                    "active": true,
+                    "is_custom": true,
+                    "name": "Ground Bit",
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 },
                 "sub_configs": {
                     "DBFilterCondition": {
-                        "HashCode Values": {
+                        "Ground BitCondition0": {
                             "parameters": {
                                 "absolute_value": false,
                                 "display_instance_id": false,
                                 "op_and": true,
-                                "operator": "LIKE",
-                                "reset_value": "%81c20819%",
-                                "value": "%81c20819%",
+                                "operator": "=",
+                                "reset_value": "1",
+                                "value": "1",
                                 "variable_dbcontent_name": "Meta",
-                                "variable_name": "ARTAS Hash"
+                                "variable_name": "Ground Bit"
                             }
                         }
                     }
@@ -119,11 +116,10 @@
             "Detection Type": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Detection Type",
-                    "op_and_": true,
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 },
                 "sub_configs": {
                     "DBFilterCondition": {
@@ -142,51 +138,13 @@
                     }
                 }
             },
-            "NonTargetReportOnly": {
-                "parameters": {
-                    "active": true,
-                    "changed": true,
-                    "name": "NonTargetReportOnly",
-                    "visible": false,
-                    "widget_visible": true
-                },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "NonTargetReportOnlyCondition0": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "IS",
-                                "reset_value": "NULL",
-                                "value": "NULL",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Latitude"
-                            }
-                        },
-                        "NonTargetReportOnlyCondition1": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "IS",
-                                "reset_value": "NULL",
-                                "value": "NULL",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Longitude"
-                            }
-                        }
-                    }
-                }
-            },
             "Position": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Position",
-                    "op_and_": true,
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 },
                 "sub_configs": {
                     "DBFilterCondition": {
@@ -244,11 +202,10 @@
             "Time of Day": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Time of Day",
-                    "op_and_": true,
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 },
                 "sub_configs": {
                     "DBFilterCondition": {
@@ -282,11 +239,10 @@
             "Track Number": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Track Number",
-                    "op_and_": true,
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 },
                 "sub_configs": {
                     "DBFilterCondition": {
@@ -306,16 +262,40 @@
                 }
             }
         },
+        "ExcludedTimeWindowsFilter": {
+            "ExcludedTimeWindowsFilter0": {
+                "parameters": {
+                    "active": false,
+                    "is_custom": false,
+                    "name": "Excluded Time Windows",
+                    "time_windows_json": [],
+                    "visible": false,
+                    "widget_visible": false
+                }
+            }
+        },
+        "MLATRUFilter": {
+            "MLATRUFilter0": {
+                "parameters": {
+                    "active": false,
+                    "is_custom": false,
+                    "match_all": false,
+                    "name": "MLAT RUs",
+                    "rus_str": "nulL,kor,schas",
+                    "visible": false,
+                    "widget_visible": false
+                }
+            }
+        },
         "Mode3AFilter": {
             "Mode 3/A Codes": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Mode 3/A Codes",
-                    "op_and_": true,
                     "values_str": "3771",
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 }
             }
         },
@@ -323,14 +303,13 @@
             "Mode C Codes": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "max_value": 3000.0,
                     "min_value": -1000.0,
                     "name": "Mode C Codes",
                     "null_wanted": false,
-                    "op_and_": true,
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 }
             }
         },
@@ -338,11 +317,47 @@
             "Primary Only": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "Primary Only",
-                    "op_and_": true,
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
+                }
+            }
+        },
+        "RefTrajAccuracyFilter": {
+            "RefTrajAccuracyFilter0": {
+                "parameters": {
+                    "active": false,
+                    "is_custom": false,
+                    "min_value": 30.0,
+                    "name": "RefTraj Accuracy",
+                    "visible": false,
+                    "widget_visible": false
+                }
+            }
+        },
+        "TimestampFilter": {
+            "TimestampFilter0": {
+                "parameters": {
+                    "active": false,
+                    "is_custom": false,
+                    "max_value": "2026-01-05 12:05:19.968",
+                    "min_value": "2026-01-05 09:59:58.752",
+                    "name": "Timestamp",
+                    "visible": false,
+                    "widget_visible": false
+                }
+            }
+        },
+        "TrackerTrackNumberFilter": {
+            "TrackerTrackNumberFilter0": {
+                "parameters": {
+                    "active": false,
+                    "is_custom": false,
+                    "name": "Tracker Track Number",
+                    "tracker_track_nums": {},
+                    "visible": false,
+                    "widget_visible": false
                 }
             }
         },
@@ -350,11 +365,11 @@
             "UTNFilter0": {
                 "parameters": {
                     "active": false,
-                    "changed": true,
+                    "is_custom": false,
                     "name": "UTNs",
                     "utns_str": "0",
                     "visible": false,
-                    "widget_visible": true
+                    "widget_visible": false
                 }
             }
         }
