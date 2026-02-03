@@ -65,7 +65,8 @@ The following tables list the configuration parameters available for the Probabi
 
 \subsubsection{Association}
 
-\paragraph{Main}
+%\paragraph{Main}
+\noindent{\small\textbf{Main}}
 
 \begin{table}[H]
     \centering
@@ -92,8 +93,10 @@ Primary Only Mode has the following options:
     \item \textbf{JPDA}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be dropped.
     \item \textbf{JPDA + Probabilistic Scoring}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be re-associated to existing targets using probabilistic distance measures at the end of a calculation pass.
 \end{itemize}
+\bigskip
 
-\paragraph{General Association} 
+%\paragraph{General Association} 
+\noindent{\small\textbf{General Association}}
 
 \begin{table}[H]
     \centering
@@ -109,20 +112,26 @@ Primary Only Mode has the following options:
     Track Number Disassoc. Distance Factor & Multiplier for Acceptable Distance to validate track number. & Intermediate & 3 & 1 -- 10 \\ \hline
     Minimum Updates & Minimum number of updates for a constructed target. & Intermediate & 2 & $\ge 1$ \\ \hline
     Minimum Time Overlap Probability & Overlap probability required to merge targets. & Advanced & 0.1 & 0 -- 1 \\ \hline
-    %@TODO: !Missing parameters!
-    Max. Mahalanobis Distance (Sec. Verified) & Distance limit for verified secondary associations. & Advanced & 10.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Max. Mahalanobis Distance (Sec. Unverified) & Distance limit for unverified secondary associations. & Advanced & 3.0 $\sigma$ & 0 -- 1000 \\ \hline
-    
-    Max. Mahalanobis Outlier (Primary) & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Max. Mahalanobis Outlier (Secondary) & Outlier threshold for secondary targets. & Advanced & 6.0 $\sigma$ & 0 -- 1000 \\ \hline
-    
-    Max./Min. Pos. Std.Dev. (Air) & Bounds for position uncertainty (Air). & Advanced & 100/25 m & 0 -- 10000 m \\ \hline
-    Max./Min. Pos. Std.Dev. (Ground) & Bounds for position uncertainty (Ground). & Advanced & 20/5 m & 0 -- 1000 m \\ \hline
+    Maximum Mahalanobis Distance for Secondary Matches & Distance limit for verified secondary associations. & Advanced & 10.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified secondary associations. & Advanced & 3.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Erroneous Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Secondary Position Outliers & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Erroneous Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Primary Position Outliers & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    Max. Std.Dev. for Association in Air & Outlier threshold for primary targets. & Advanced & 1000 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association in Air & Outlier threshold for primary targets. & Advanced & 50 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association on Ground & Outlier threshold for primary targets. & Advanced & 20 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association on Ground & Outlier threshold for primary targets. & Advanced & 5 m & 1 -- 10000 m \\ \hline
     \end{tabular}
     \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
 \end{table}
 
-\paragraph{Primary-Only Association / JPDA}
+%\paragraph{Primary-Only Association / JPDA}
+\noindent{\small\textbf{Primary-Only Association / JPDA}}
 
 \begin{table}[H]
     \centering
@@ -133,7 +142,7 @@ Primary Only Mode has the following options:
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
     Probability of Detection & Assumed detection probability $P_D$. & Advanced & 0.9 & 0 -- 1 \\ \hline
     Automatic Clutter Density & Estimate clutter density automatically. & Advanced & True & True/False \\ \hline
-    Clutter Density (Default) & Custom clutter density. & Advanced & 0 & 0 \\ \hline
+    Clutter Density (Default) & Custom clutter density. & Advanced & $1.25 \times 10^{-10}$ & 0 -- 1 \\ \hline
     Maximum Mahalanobis Distance (Candidate) for JPDA & Threshold for assigning primary plots to targets. & Advanced & 3.0 & 0 -- 1000 \\ \hline
     Maximum Mahalanobis Distance (Match) for JPDA & Threshold for merging primary plots. & Advanced & 2.0 & 0 -- 1000 \\ \hline
     Do Full Primary-Only Tracking & Enable tentative track creation (JPDA). & Intermediate & True & True/False \\ \hline
