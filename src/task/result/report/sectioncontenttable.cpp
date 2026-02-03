@@ -341,7 +341,7 @@ std::string SectionContentTable::resourceExtension() const
 void SectionContentTable::addContentUI(QVBoxLayout* layout, 
                                        bool force_ui_reset)
 {
-    loginf;
+    logdbg;
 
     traced_assert(layout);
 
@@ -2088,7 +2088,7 @@ void SectionContentTableWidget::updateColumnVisibility()
 {
     for (unsigned int c = 0; c < content_table_->numColumns(); ++c)
     {
-        loginf << "column " << c << " visible: " << content_table_->columnVisible(c);
+        logdbg << "column " << c << " visible: " << content_table_->columnVisible(c);
         table_view_->setColumnHidden(c, !content_table_->columnVisible(c));
     }
 }
