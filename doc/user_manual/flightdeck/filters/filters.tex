@@ -2,8 +2,7 @@
 \label{sec:filters} 
 
 \begin{figure}[H]
-  \hspace*{-2.5cm}
-  \includegraphics[width=19cm,frame]{figures/ui_filters.png}
+  \includegraphics[width=12cm,frame]{figures/ui_filters.png}
 \caption{Filters Overview}
 \end{figure}
 
@@ -32,6 +31,7 @@ Clicking the button opens the following menu.
 
 \begin{itemize}
   \item Add New Filter: Can be used to add a custom filter, see \nameref{sec:filter_add}
+  \item Delete Filter: Can be used to delete a custom filter, see \nameref{sec:filter_del}
   \item Expand All: Expands all filters, showing their configuration elements
   \item Collapse All: Collapses all filters, hiding their configuration elements
   \item Collapse Unused: Collapses all deselected filters, hiding their configuration elements
@@ -64,7 +64,7 @@ Target reports without a given Mode S address will not be loaded unless the valu
 \begin{figure}[H]
   \center
     \includegraphics[width=10cm,frame]{figures/filter_acid.png}
-  \caption{Callsign filter}
+  \caption{Aircraft identification filter}
 \end{figure}
 
 When active, this filter forces loading of data only from aircraft identifications matching the given expression. So e.g. 'TEST' will match 'TEST123' or 'TEST123   ' (with spaces) or 'MYTEST'. Target reports without a given aircraft identification are not restricted by this filter. If multiple values are entered (separated by comma), any in-between space characters are removed, so 'TEST1,TEST2' will give the same result as 'TEST1 , TEST2'.
@@ -89,15 +89,16 @@ When active, this filter restricts the loaded ADS-B data based on the transponde
 
 When active, this filter restricts the loaded ADS-B data based on the transponder MOPS version. Multiple values can also be given, e.g. '0', '0,1', etc. 
 
-\subsubsection{ARTAS Hash Code Filter}
+\subsubsection{Ground Bit Filter}
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=12cm,frame]{figures/filter_hashcode.png}
-  \caption{ARTAS Hash Code filter}
+    \includegraphics[width=12cm,frame]{figures/filter_ground_bit.png}
+  \caption{Ground bit filter}
 \end{figure}
 
-When active, this filter forces loading of data only from target reports with a specific ARTAS MD5 hash code, or system track updates referencing this hash code (in their TRI information). If no hash information is available (e.g. in SASS-C Verif databases or when this information was not present in the ASTERIX data), this filter should not be used.
+When active, this filter restricts the loaded data based on the ground bit. 
+
 
 \subsubsection{Detection Type Filter}
 
@@ -309,6 +310,11 @@ Now the described process can be repeated until a usable filter emerges, which i
 button. The process of adding a new filter can be canceled by using the 'Cancel' button, which discards all
 settings. When added, a new filter shows up immediately in the filter list and is saved to the configuration
 for persistence.
+
+\subsection{Deleteing a Filter}
+\label{sec:filter_del}
+
+UGA
 
 
  
