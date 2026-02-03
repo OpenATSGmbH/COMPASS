@@ -53,6 +53,8 @@ FilterManager::FilterManager(const std::string& class_id, const std::string& ins
     registerParameter("db_id", &db_id_, std::string());
 
     createSubConfigurables();
+
+    sortFilters();
 }
 
 FilterManager::~FilterManager()
@@ -74,7 +76,7 @@ bool FilterManager::useFilters() const
 void FilterManager::useFilters(bool use_filters)
 {
     use_filters_ = use_filters;
-    loginf << "start" << use_filters_;
+    loginf << "use " << use_filters_;
 
     if (widget_)
         widget_->updateUseFilters();
@@ -318,6 +320,14 @@ void FilterManager::deleteFilter(const std::string& name)
 
     traced_assert(it != filters_.end());
     filters_.erase(it);
+}
+
+void FilterManager::sortFilters()
+{
+    std::sort(filters_.begin(), filters_.end(),
+        [](const std::unique_ptr<DBFilter>& a, const std::unique_ptr<DBFilter>& b) {
+            return a->getName() < b->getName();
+        });
 }
 
 

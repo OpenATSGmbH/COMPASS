@@ -85,6 +85,8 @@ public:
 
     FilterManagerWidget* widget();
 
+    void sortFilters();
+
     void setConfigInViewPoint (nlohmann::json& data);
     void disableAllFilters ();
 
