@@ -1380,12 +1380,6 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
         data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(sector_roi_->longitude_min);
     }
 
-    // if (settings_.use_ref_traj_accuracy_filter_)
-    // {
-    //     data[ViewPoint::VP_FILTERS_KEY]["RefTraj Accuracy"]["Accuracy Minimum"] =
-    //         to_string(settings_.ref_traj_minimum_accuracy_);
-    // }
-
     // if (settings_.use_adsb_filter_)
     // {
     //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
