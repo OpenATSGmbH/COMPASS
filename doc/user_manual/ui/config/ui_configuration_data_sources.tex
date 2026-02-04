@@ -4,8 +4,8 @@
 This dialog allows management of data sources, as stored in the configuration as well as in the database. \\
 
 \begin{figure}[H]
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/configure_data_sources.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/configure_data_sources.png}
   \caption{Configure Data Sources}
 \end{figure}
 
@@ -19,10 +19,10 @@ During the import, if a data source can be found (matching SAC/SIC) in the confi
 
 Please \textbf{note} that currently the position of data sources is only required for \textbf{Radar} data sources (in the plot position calculation), for all other data sources it would suffice to have SAC/SIC and name information for display purposes. \\
 
-However, for CAT010,CAT020 and CAT062 exists the option to project from a Cartesian X/Y coordinate system to WGS84 latitude and longitudes (when not available in the ASTERIX data). To use this feature during ASTERIX import, set a latitude/longitude for the respective data source.
+However, for CAT010, CAT020 and CAT062 the option exists to project from a Cartesian X/Y coordinate system to WGS84 latitude and longitudes (when not available in the ASTERIX data). To use this feature during ASTERIX import, set a latitude/longitude for the respective data source.
+\\
 
 \paragraph {Data Sources Table Content}
-\label{sec:configure_datasources_table_content}
 
 \begin{itemize}
 \item Name: Name of the data source
@@ -38,35 +38,37 @@ However, for CAT010,CAT020 and CAT062 exists the option to project from a Cartes
 
 When a data source is selected in the table, additional details are shown in the right side, where editing is also possible. \\
 
-Please \textbf{note} that all changes to a data sources are always written to the database as well as the configuration. \\
+Please \textbf{note} that all changes to a data source are always written to the database as well as the configuration. \\
 
-Depending on the DSType, additional information can be set in a source. For all sources, the following information is given:
-
+There are several tabs present:
 \begin{itemize}
-\item Detection Type: See below
-\item Update Interval: Update interval in seconds (for correct labeling)
-\item Ground Only: Check if the data source \textbf{only} provides detection for on-ground targets (SMRs)
-\item Network Line information
+\item Main: Main information
+\item Network: Optional network line information
+\item For Radars
 \begin{itemize}
-    \item 4 different lines are possible, each with 
-    \begin{itemize}
-      \item Listen IP (defines used network interface and IGMP requests, optional when not using multicast)
-      \item Multicast IP
-      \item Multicast port
-      \item Sender IP (optional, for filtering purposes)
-    \end{itemize}
+\item Ranges: Optional detection ranges
+\item Accuracy: Optional accuracy information
 \end{itemize}
 \end{itemize}
 \ \\
 
-Please note that for using real multicast addresses (inside of 224.0.0.0 to 239.255.255.255), it is recommended to also define the Listen IP to the local address of the network interface to be used. Otherwise the multicast data might not be received, or the wrong network interface might be used, causing COMPASS to receive no data. \\
+\subsubsection {Main Tab}
+Depending on the DSType, additional information can be set in a source. For all sources, the following information is given:
 
-Please note that if e.g. only Multicast IP and port are set, and the Multicast IP is set to a non-multicast one (outside of 224.0.0.0 to 239.255.255.255), a local replay is possible (without real multi-casting). \\
+\begin{itemize}
+\item Name: Name of the data source
+\item Short Name: Short name of the data source (optional)
+\item DSType: Data source type, e.g. Radar, MLAT, ADS-B, ...
+\item SAC/SIC (DS ID): System Area Code, System Identification Code, derived data source ID
+\item Detection Type: See below
+\item Update Interval: Update interval in seconds (for correct labeling)
+\item Ground Only: Check if the data source \textbf{only} provides detection for on-ground targets (e.g. for SMRs, local MLAT)
+\end{itemize}
+\ \\
 
 For sources of DSType 'Radar', the following additional information should be provided:
 
 \begin{itemize}
-\item Ignore Range/Azimuth values: Ignore such position information (if provided erroneously)
 \item Latitude: Source center position as WGS-84 latitude, as floating point number in degrees, e.g. 42.0001
 \item Longitude: Source center position as WGS-84 longitude, as floating point number in degrees, e.g. 17.01
 \item Altitude: Source center altitude above MSL, in meters
@@ -75,9 +77,14 @@ For sources of DSType 'Radar', the following additional information should be pr
 
 Additional optional information can be provided:
 
-\subsubsection{Detection Type}
+\begin{itemize}
+\item Ignore Range/Azimuth values: Ignore such position information (if provided erroneously)
+\end{itemize}
+\ \\
 
-A detection type can be given of any data source, 'Unknown' is given as default. Currently only 'Primary Only' used during reconstruction, but it is very important to set this type for SMRs, to mitigate sub-optimal association of primary-only target reports in close distances to clutter. \\
+\paragraph{Detection Type}
+
+A detection type can be given for any data source, 'Unknown' is given as default. Currently only 'Primary Only' is used during reconstruction, but it is very important to set this type for SMRs, to mitigate sub-optimal association of primary-only target reports in close distances to clutter. \\
 
 \begin{figure}[H]
   \center
@@ -85,11 +92,11 @@ A detection type can be given of any data source, 'Unknown' is given as default.
   \caption{Configure Data Sources: Detection Type}
 \end{figure}
 
-For primary-only data sources, addition JPDA settings for the reconstructor can be given:
+For primary-only data sources, additional JPDA settings for the reconstructor can be given:
 
 \begin{itemize}
 \item JPDA PD [1]: Probability of Detection, e.g. 0.9 for 90\%
-\item Clutter Rage [1]: Rate of clutter detections per update interval, e.g. 10\\ in the given PSR Maximum range (has to be set below to take effect)
+\item Clutter Rate [1]: Rate of clutter detections per update interval, e.g. 10\\ in the given PSR Maximum range (has to be set below to take effect)
 \end{itemize}
 \ \\
 
@@ -99,13 +106,35 @@ For primary-only data sources, addition JPDA settings for the reconstructor can 
   \caption{Configure Data Sources: JPDA}
 \end{figure}
 
-
-\subsubsection{Radar Ranges \& Accuracies}
+\subsubsection {Network Tab}
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/configure_data_sources_radar_details.png}
-  \caption{Configure Data Sources: Radar details}
+    \includegraphics[width=8cm,frame]{figures/configure_network.png}
+  \caption{Configure Data Sources: Network details}
+\end{figure}
+
+\begin{itemize}
+\item 4 different lines are possible, each with 
+\begin{itemize}
+  \item Listen IP (defines used network interface and IGMP requests)
+  \item Multicast IP
+  \item Multicast port
+  \item Sender IP (optional, for filtering purposes)
+\end{itemize}
+\end{itemize}
+\ \\
+
+Please note that for using real multicast addresses (inside of 224.0.0.0 to 239.255.255.255), it is recommended to also define the Listen IP to the local address of the network interface to be used. Otherwise the multicast data might not be received, or the wrong network interface might be used, causing COMPASS to receive no data. \\
+
+Please note that if e.g. only Multicast IP and port are set, and the Multicast IP is set to a non-multicast one (outside of 224.0.0.0 to 239.255.255.255), a local replay is possible (without real multi-casting). \\
+
+\subsubsection{Radar Ranges}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=8cm,frame]{figures/configure_radar_ranges.png}
+  \caption{Configure Data Sources: Radar Ranges}
 \end{figure}
 
 \begin{itemize}
@@ -115,6 +144,17 @@ For primary-only data sources, addition JPDA settings for the reconstructor can 
 \item SSR Maximum: SSR maximum range, in nautical miles
 \item Mode S Minimum: Mode S minimum range, in nautical miles
 \item Mode S Maximum: Mode S maximum range, in nautical miles
+\end{itemize}
+
+\subsubsection{Radar Accuracies}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=8cm,frame]{figures/configure_radar_accuracies.png}
+  \caption{Configure Data Sources: Radar Accuracies}
+\end{figure}
+
+\begin{itemize}
 \item PSR Azimuth StdDev: PSR azimuth standard deviation, in degrees
 \item PSR Range StdDev: PSR range standard deviation, in meters
 \item SSR Azimuth StdDev: SSR azimuth standard deviation, in degrees
@@ -122,7 +162,7 @@ For primary-only data sources, addition JPDA settings for the reconstructor can 
 \item Mode S Azimuth StdDev: Mode S Radar azimuth standard deviation, in degrees
 \item Mode S Range StdDev: Mode S Radar range standard deviation, in meters
 \end{itemize}
-\ \\
+
 
 \subsubsection{Import/Export of Configuration Data Sources}
 \label{sec:config_ds_export}
