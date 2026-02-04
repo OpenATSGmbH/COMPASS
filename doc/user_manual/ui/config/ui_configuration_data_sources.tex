@@ -49,6 +49,10 @@ There are several tabs present:
 \item Ranges: Optional detection ranges
 \item Accuracy: Optional accuracy information
 \end{itemize}
+\item For MLAT
+\begin{itemize}
+\item MLAT Remote Units: Optional RU defintion, for contributing receivers analysis
+\end{itemize}
 \end{itemize}
 \ \\
 
@@ -163,11 +167,55 @@ Please note that if e.g. only Multicast IP and port are set, and the Multicast I
 \item Mode S Range StdDev: Mode S Radar range standard deviation, in meters
 \end{itemize}
 
+\subsubsection{MLAT Remote Units}
+\label{sec:ui_configure_ds_mlat_rus}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=12cm,frame]{figures/configure_mlat_rus.png}
+  \caption{Configure Data Sources: MLAT Remote Units}
+\end{figure}
+
+For each MLAT data source, a list of remote units can be defined. Using such definitions, the contributing receivers information can be analyzed in the Table View or Geographic View. \\
+
+For each remote unit, the following information can be provided:
+\begin{itemize}
+\item Index: Number of the RU, starting with 1 (!)
+\item Name
+\item Comment
+\item Latitude (in degrees)
+\item Longitude (in degrees)
+\item Altitude (in meters above MSL)
+\end{itemize}
+\ \\
+
+If defined, the information can be used in:
+\begin{itemize}
+\item DB Filters: Use names instead of indexes in 'MLAT RUs' filter
+\item Table View: Display names instead of indexes in 'Contributing Receivers'
+\item Geographic View: Display connection lines for target reports to each contributing receiver
+\end{itemize}
+\ \\
+
+Using the buttons on the bottom the following functions can be used:
+\begin{itemize}
+\item Add: Add a single RU
+\item Import: Import a list of RUs from a CSV file
+\item Remove All: Delete all defined RUs
+\end{itemize}
+\ \\
+
+A MLAT RUs definition file shall be defined as follows:
+\begin{lstlisting}
+1;name1;comment1;4.4157313889;1.5009816667;191.88
+2;name2;;4.2488102778;1.2440838889;68.66
+3;name3;;4.4709594444;1.6851777778;87.97
+\end{lstlisting}
 
 \subsubsection{Import/Export of Configuration Data Sources}
 \label{sec:config_ds_export}
 
-Using the 4 buttons on the bottom the following functions can be used:
+Using the buttons on the bottom the following functions can be used:
 
 \begin{itemize}
 \item Create New: Create new data source
