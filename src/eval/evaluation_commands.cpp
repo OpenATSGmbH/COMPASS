@@ -20,7 +20,6 @@
 #include "rtcommand_registry.h"
 #include "compass.h"
 #include "evaluationmanager.h"
-#include "evaluationmanagerwidget.h"
 #include "mainwindow.h"
 #include "compass.h"
 #include "dbcontentmanager.h"

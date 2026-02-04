@@ -48,27 +48,6 @@ The 'Mode 3/A Codes' filter restricts to a list of (comma-separated) Mode 3/A co
 \subsection{Default Filters}
 \label{sec:default_filters}
 
-\subsubsection{Aircraft Address Filter}
-
-\begin{figure}[H]
-  \center
-    \includegraphics[width=10cm,frame]{figures/filter_acad.png}
-  \caption{Target Address filter}
-\end{figure}
-
-When active, this filter forces loading of data with the given Mode S address(es), so it is possible to give multiple values (in hexadecimal notation, irrespective of upper or lower case characters, separated by commas), e.g. 'FEFE10' is possible, or 'FEFE10,FEFE11,FEFE12'.
-Target reports without a given Mode S address will not be loaded unless the value 'NULL' is (also) given.
-
-\subsubsection{Aircraft Identification Filter}
-
-\begin{figure}[H]
-  \center
-    \includegraphics[width=10cm,frame]{figures/filter_acid.png}
-  \caption{Aircraft identification filter}
-\end{figure}
-
-When active, this filter forces loading of data only from aircraft identifications matching the given expression. So e.g. 'TEST' will match 'TEST123' or 'TEST123   ' (with spaces) or 'MYTEST'. Target reports without a given aircraft identification are not restricted by this filter. If multiple values are entered (separated by comma), any in-between space characters are removed, so 'TEST1,TEST2' will give the same result as 'TEST1 , TEST2'.
-
 \subsubsection{ADSB Quality Filter}
 
 \begin{figure}[H]
@@ -89,16 +68,26 @@ When active, this filter restricts the loaded ADS-B data based on the transponde
 
 When active, this filter restricts the loaded ADS-B data based on the transponder MOPS version. Multiple values can also be given, e.g. '0', '0,1', etc. 
 
-\subsubsection{Ground Bit Filter}
+\subsubsection{Aircraft Address Filter}
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=12cm,frame]{figures/filter_ground_bit.png}
-  \caption{Ground bit filter}
+    \includegraphics[width=10cm,frame]{figures/filter_acad.png}
+  \caption{Target Address filter}
 \end{figure}
 
-When active, this filter restricts the loaded data based on the ground bit. 
+When active, this filter forces loading of data with the given Mode S address(es), so it is possible to give multiple values (in hexadecimal notation, irrespective of upper or lower case characters, separated by commas), e.g. 'FEFE10' is possible, or 'FEFE10,FEFE11,FEFE12'.
+Target reports without a given Mode S address will not be loaded unless the value 'NULL' is (also) given.
 
+\subsubsection{Aircraft Identification Filter}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=10cm,frame]{figures/filter_acid.png}
+  \caption{Aircraft identification filter}
+\end{figure}
+
+When active, this filter forces loading of data only from aircraft identifications matching the given expression. So e.g. 'TEST' will match 'TEST123' or 'TEST123   ' (with spaces) or 'MYTEST'. Target reports without a given aircraft identification are not restricted by this filter. If multiple values are entered (separated by comma), any in-between space characters are removed, so 'TEST1,TEST2' will give the same result as 'TEST1 , TEST2'.
 
 \subsubsection{Detection Type Filter}
 
@@ -123,37 +112,26 @@ The following detection types exist:
 
 Please note that for CAT062 data the detection type reflects the most recent detection type used to update the track (last measured detection type).
 
-\subsubsection{Position Filter}
+
+\subsubsection{Excluded Time Windows Filter}
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=12cm,frame]{figures/filter_position.png}
-  \caption{Position filter}
+    \includegraphics[width=12cm,frame]{figures/filter_excl_time_windows.png}
+  \caption{Excluded Time Windows filter}
 \end{figure}
 
-When active, this filter forces loading of data with latitude/longitude inside the given thresholds (in degrees).
+When active, this filter removes time windows, defined by begin/end timestamp and an optional comment.
 
-\subsubsection{Time of Day Filter}
+\subsubsection{Ground Bit Filter}
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=12cm,frame]{figures/filter_tod.png}
-  \caption{Time of Day filter}
+    \includegraphics[width=12cm,frame]{figures/filter_ground_bit.png}
+  \caption{Ground bit filter}
 \end{figure}
 
-When active, this filter forces loading of data with the Time of Day inside the given thresholds (in HH:MM:SS.SSS).
-
-\subsubsection{Track Number Filter}
-
-\begin{figure}[H]
-  \center
-    \includegraphics[width=12cm,frame]{figures/filter_tracknum.png}
-  \caption{Track Number filter}
-\end{figure}
-
-When active, this filter forces loading of data with the given track numbers, so it is possible to give multiple values (separated by commas). E.g. '1' is possible, or '1,2,3'. Target reports without a given track number will not be loaded unless the value 'NULL' is (also) given. \\
-
-Please note that ADS-B target reports can also contain a track number in ASTERIX, but since the information can not currently be mapped to the database (missing in schema), this filter does not influence ADS-B data loading.
+When active, this filter restricts the loaded data based on the ground bit. 
 
 \subsubsection{MLAT RUs Filter}
 
@@ -179,6 +157,7 @@ Additionally, the value 'null' or 'NULL' can be used to load target reports wher
   \caption{MLAT RUs filter example}
 \end{figure}
 
+
 \subsubsection{Mode 3/A Codes Filter}
 
 \begin{figure}[H]
@@ -201,6 +180,16 @@ Please note that ADS-B target reports can also contain Mode 3/A code information
 
 When active, this filter forces loading of data with a barometric altitude inside the given thresholds (in feet). If Target reports without a barometric altitude should not be loaded can be set using the 'NULL Values' checkbox.
 
+\subsubsection{Position Filter}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=12cm,frame]{figures/filter_position.png}
+  \caption{Position filter}
+\end{figure}
+
+When active, this filter forces loading of data with latitude/longitude inside the given thresholds (in degrees).
+
 \subsubsection{Primary Only}
 
 \begin{figure}[H]
@@ -221,6 +210,16 @@ When active, this filter forces loading of data without any secondary attributes
 
 When active, this filter forces loading of RefTraj data with a lower Square-Root-Sum value of the standard deviations than the given threshold.
 
+\subsubsection{Time of Day Filter}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=12cm,frame]{figures/filter_tod.png}
+  \caption{Time of Day filter}
+\end{figure}
+
+When active, this filter forces loading of data with the Time of Day inside the given thresholds (in HH:MM:SS.SSS).
+
 \subsubsection{Timestamp Filter}
 
 \begin{figure}[H]
@@ -231,17 +230,24 @@ When active, this filter forces loading of RefTraj data with a lower Square-Root
 
 When active, this filter forces loading of data with the EPOCH timestamp inside the given thresholds (in YYYY-mm-DD HH:MM:SS.SSS).
 
-% 
-% \subsubsection{Tracker Multiple Sources Filter}
-% 
-% \begin{figure}[H]
-%   \center
-%     \includegraphics[width=8cm,frame]{figures/filter_trackermulsrc.png}
-%   \caption{Tracker Multiple Sources filter}
-% \end{figure}
-% 
-% When active, this filter forces loading of Tracker data with the multiple sources flag, e.g. 'Y' (only track updates formed from multiple sources) or 'N' (only track updates formed using 1 source). Tracker target reports without such information will not be loaded.
-% 
+
+\subsubsection{Track Number Filter}
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=12cm,frame]{figures/filter_tracknum.png}
+  \caption{Track Number filter}
+\end{figure}
+
+When active, this filter forces loading of data with the given track numbers, so it is possible to give multiple values (separated by commas). E.g. '1' is possible, or '1,2,3'. Target reports without a given track number will not be loaded unless the value 'NULL' is (also) given. \\
+
+Please note that ADS-B target reports can also contain a track number in ASTERIX, but since the information can not currently be mapped to the database (missing in schema), this filter does not influence ADS-B data loading.
+
+
+
+
+
+
 \subsubsection{Tracker Track Number Filter}
 
 \begin{figure}[H]

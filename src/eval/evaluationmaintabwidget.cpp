@@ -16,7 +16,7 @@
  */
 
 #include "evaluationmaintabwidget.h"
-#include "evaluationmanagerwidget.h"
+
 #include "evaluationdatasourcewidget.h"
 #include "evaluationcalculator.h"
 #include "evaluationdialog.h"

@@ -16,7 +16,6 @@
  */
 
 #include "evaluationstandardtabwidget.h"
-#include "evaluationmanagerwidget.h"
 #include "evaluationmanager.h"
 #include "evaluationstandardcombobox.h"
 #include "evaluationstandard.h"
