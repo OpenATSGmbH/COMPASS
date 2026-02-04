@@ -16,7 +16,6 @@ In the 'Style' tab, several elements exist:
  \item Blend Mode: Defines the drawing blend mode, allowing clearer symbols (contour) or colors (src-over).
  \item Style: Defines how geometry is styled. Please refer to section \nameref{sec:style} for details.
  \item Render Order: Defines the drawing order of DBContents. To bottom one is drawn first, the top one last (over all others)
- \item Update button: Triggers a redraw or reload of the geometry, becomes available after a change if needed.
 \end{itemize} 
 
 \subsubsection{Layer Mode}
@@ -302,7 +301,8 @@ In the render order widget, the drawing order of the drawn geometry is specified
 Using the 'Order By' checkbox, the drawing order can be defined based on:
 \begin{itemize}
  \item DBContent: Data source type (e.g. Tracker, Radar, ...)
- \item ds\_id: Data source (e.g. Tracker1, Tracker2, Radar3, ...)
+ \item DS ID: Data source (e.g. Tracker1, Tracker2, Radar3, ...)
+ \item DS ID+Line ID: Data source and Line ID (e.g. Tracker1 L1, Tracker1 L2, ...)
 \end{itemize}
 \ \\
 

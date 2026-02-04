@@ -181,7 +181,7 @@ For each MLAT data source, a list of remote units can be defined. Using such def
 For each remote unit, the following information can be provided:
 \begin{itemize}
 \item Index: Number of the RU, starting with 1 (!)
-\item Name
+\item Remote Unit’s (short) name
 \item Comment
 \item Latitude (in degrees)
 \item Longitude (in degrees)
@@ -189,11 +189,13 @@ For each remote unit, the following information can be provided:
 \end{itemize}
 \ \\
 
+By right-clicking a specific remote unit in the list, it can be edited or removed. \\
+
 If defined, the information can be used in:
 \begin{itemize}
 \item DB Filters: Use names instead of indexes in 'MLAT RUs' filter
 \item Table View: Display names instead of indexes in 'Contributing Receivers'
-\item Geographic View: Display connection lines for target reports to each contributing receiver
+\item Geographic View: Display of remote units and connection lines for target reports to each contributing receiver
 \end{itemize}
 \ \\
 
@@ -205,11 +207,21 @@ Using the buttons on the bottom the following functions can be used:
 \end{itemize}
 \ \\
 
+A CSV file needs to be specified, which should obtain the following format.
+\begin{itemize}
+\item 6 Columns: Index, Name, Comment, Latitude, Longitude, Altitude
+\item Separated by ‘;’
+\item Indices must be unique and start with 1 (not 0)
+\item Numbers with ‘.’ decimal points
+\item Strings may be quoted with double quotes ”
+\end{itemize}
+\ \\
+
 A MLAT RUs definition file shall be defined as follows:
 \begin{lstlisting}
-1;name1;comment1;4.4157313889;1.5009816667;191.88
+1;name1;"comment1";4.4157313889;1.5009816667;191.88
 2;name2;;4.2488102778;1.2440838889;68.66
-3;name3;;4.4709594444;1.6851777778;87.97
+3;name3;"comment 3";4.4709594444;1.6851777778;87.97
 \end{lstlisting}
 
 \subsubsection{Import/Export of Configuration Data Sources}
