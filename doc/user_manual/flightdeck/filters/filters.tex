@@ -14,7 +14,7 @@ If filtering is active, this will be indicated by an additional check sign in th
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=10cm,frame]{figures/filter_active.png}
+    \includegraphics[width=14cm,frame]{figures/filter_active.png}
   \caption{Filtering enabled}
 \end{figure}
 
@@ -25,13 +25,13 @@ Clicking the button opens the following menu.
 
 \begin{figure}[H]
     \center
-    \includegraphics[width=4cm,frame]{figures/filter_config.png}
+    \includegraphics[width=3.5cm,frame]{figures/filter_config.png}
   %\caption{Data Sources Overview}
 \end{figure}
 
 \begin{itemize}
   \item Add New Filter: Can be used to add a custom filter, see \nameref{sec:filter_add}
-  \item Delete Filter: Can be used to delete a custom filter, see \nameref{sec:filter_del}
+  \item Delete Filter: Can be used to delete custom filters, if present
   \item Expand All: Expands all filters, showing their configuration elements
   \item Collapse All: Collapses all filters, hiding their configuration elements
   \item Collapse Unused: Collapses all deselected filters, hiding their configuration elements
@@ -72,7 +72,7 @@ When active, this filter restricts the loaded ADS-B data based on the transponde
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=10cm,frame]{figures/filter_acad.png}
+    \includegraphics[width=12cm,frame]{figures/filter_acad.png}
   \caption{Target Address filter}
 \end{figure}
 
@@ -83,7 +83,7 @@ Target reports without a given Mode S address will not be loaded unless the valu
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=10cm,frame]{figures/filter_acid.png}
+    \includegraphics[width=12cm,frame]{figures/filter_acid.png}
   \caption{Aircraft identification filter}
 \end{figure}
 
@@ -244,10 +244,6 @@ When active, this filter forces loading of data with the given track numbers, so
 Please note that ADS-B target reports can also contain a track number in ASTERIX, but since the information can not currently be mapped to the database (missing in schema), this filter does not influence ADS-B data loading.
 
 
-
-
-
-
 \subsubsection{Tracker Track Number Filter}
 
 \begin{figure}[H]
@@ -260,11 +256,11 @@ This filter works similar to the 'Track Number' filter, but filters only CAT062 
 
 It can be used when e.g. several Tracker runs were added in different lines, so that track numbers (from the same target) for each run can be specified separately. \\
 
-\subsubsection{UTN Filter}
+\subsubsection{UTNs Filter}
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/filter_utn.png}
+    \includegraphics[width=12cm,frame]{figures/filter_utn.png}
   \caption{UTN filter}
 \end{figure}
 
@@ -279,7 +275,7 @@ A new filter can be added by clicking the \includegraphics[width=0.5cm,frame]{..
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=14cm]{figures/filter_add.png}
+    \includegraphics[width=14cm,frame]{figures/filter_add.png}
   \caption{Adding a filter}
 \end{figure}
 
@@ -316,11 +312,6 @@ Now the described process can be repeated until a usable filter emerges, which i
 button. The process of adding a new filter can be canceled by using the 'Cancel' button, which discards all
 settings. When added, a new filter shows up immediately in the filter list and is saved to the configuration
 for persistence.
-
-\subsection{Deleteing a Filter}
-\label{sec:filter_del}
-
-UGA
 
 
  
