@@ -227,6 +227,26 @@ Without going into detail, in this section a short overview is given over the ca
 Resampling of system tracks is enabled in order to obtain similar sample rates for tracker and high-update rate (e.g. ADS-B) data, which reduces a sensor-specific bias of the Kalman filter. 
 Cubic B-splines are used to interpolate the tracker target reports in a relaxed way. In case a spline segment deviates too strongly from its interval, a linear interpolation is used instead. \\
 
+\subsubsection{Probabilistic Position Matching}
+
+Generally, static position thresholds are avoided in favor of probabilistic ones. The system employs probabilistic distance scoring utilizing Mahalanobis distances, which are based on position accuracy estimates. Thresholds are then applied to these Mahalanobis distances (e.g. 3x Standard Deviation).\\
+
+The \href{https://en.wikipedia.org/wiki/Mahalanobis_distance}{Mahalanobis distance} measures the distance between a point $P$ and a probability distribution $D$. Effectively, it indicates how many standard deviations $\sigma$ the point $P$ is away from the mean of $D$. This metric divides the distance between the target report and the target by the sum of accuracies (standard deviations). \\
+
+However, this calculation requires defined minimum and maximum accuracy parameters, otherwise the combination with Accuracy Scaling may lead spiraling into associating nothing or everything, depending on the clutter level.\\
+
+Using this distance, different match qualities can be defined: for example, an acceptable match at 3$\sigma$, a dubious match at 4$\sigma$, and an outlier at 5$\sigma$. Different thresholds can be configured for primary-only versus secondary associations, operating effectively both on ground and in-air.\\
+
+Crucially, this method relies on accurate estimates of target report and target state standard deviations, which are obtained through accuracy rescaling and multiple time-slice processing.
+
+\subsubsection{JPDA for PSR/SMR plots}
+
+Joint Probabilistic Data Association (JPDA) is applied for PSR and SMR plots to facilitate position-based association (\href{https://doi.org/10.1109/CDC.1980.271915}{“Multi-Target Tracking Using Joint Probabilistic Data Association” by Fortmann, Bar-Shalom \& Scheffe, 1980}). JPDA is an adequate solution because it provides improved position estimates in high clutter situations. By considering all feasible associations and determining the most likely hypothesis for primary plot association, it mitigates the impact of false detections and clutter. \\
+
+This probabilistic approach, when used in combination with Probabilistic Position Matching, ensures that the reconstructed reference trajectory remains stable and accurate even in challenging detection environments. \\
+
+Using Full Primary-Only Tracking, primary-only plots are not only associated to matching targets, but can generate new primary-only targets. While reconstructing a dataset with only primary-only sensors is not recommended, this feature will allow formation of primary-only UTNs based on primary-only detections only (without e.g. a related system track or secondary detection).
+
 \subsubsection{Radar Plot Position Improvements}
 
 Using the features mentioned above, the 'Correct Radar Bias' and the 'Use ADS-B geometric altitude for slant-range correction' features can for example result in the following real-life position improvements: 
