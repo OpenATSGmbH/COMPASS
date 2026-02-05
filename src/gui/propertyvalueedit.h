@@ -54,6 +54,7 @@ public:
     };
 
     bool isValid() const;
+    bool hasInput() const;
 
     PropertyDataType dataType() const;
     std::string valueAsString() const;
