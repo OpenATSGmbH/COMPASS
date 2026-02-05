@@ -40,15 +40,15 @@ In the main tab, the following parameters can be set:
     \caption{Calculate References Data Sources}
 \end{figure}
 
-In this tab, the data sources to contribute to the calculated references can be selected. \\
+In this tab, the data sources that contribute to the calculated references can be selected. \\
 
-Please \textbf{note} that de-selected data sources are still associated, but only their target report positions do not contribute to the references. \\
+Please \textbf{note} that deselected data sources are still associated, but their target report positions do not contribute to the references. \\
 
-Please also \textbf{note} that for ground surveillance datasets containing \textbf{SMRs}, it is imperative to set both the detection type to "Primary Only", as well as to set the "Ground Only" checkbox. Otherwise, SMR plots will be associated over long distances and cause sub-optimal reconstructor results.
+Please also \textbf{note} that for ground surveillance datasets containing \textbf{SMRs}, it is imperative to set the detection type to "Primary Only" as well as to enable the "Ground Only" checkbox. Otherwise, SMR plots will be associated over long distances and cause sub-optimal reconstructor results.
 
 \subsubsection{Classification}
 
-In the classification, special parameters can be set to identify the AnyAircraft and Vehicle categories. Any target (without any other class information) and any Mode C code above the given 'Minimum Aircraft Altitude' will be classified as AnyAircraft. Vehicles (without any other class information) can be set by giving a list of Mode S Aircraft Identification and/or Aircraft Addresses. \\
+In the classification tab, special parameters can be set to identify the AnyAircraft and Vehicle categories. Any target (without any other class information) and any Mode C code above the given 'Minimum Aircraft Altitude' will be classified as AnyAircraft. Vehicles (without any other class information) can be set by giving a list of Mode S Aircraft Identification and/or Aircraft Addresses. \\
 
 \begin{figure}[H]
     \center
@@ -77,12 +77,12 @@ The following table lists the configuration parameters available for the Scoring
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
     Maximum Comparison Time Difference & Maximum interpolation window for associating a report to a track. & Advanced & 10.0 s & 2 -- 60 s \\ \hline
     Maximum Track Time Difference & Maximum time gap to resume an existing track using its data source track number. & Intermediate & 300 s & 60 -- 3600 s \\ \hline
-    Maximum Erroneous Distance Air & Distance limit rejecting position matches (Air). & Intermediate & 5556m (3nm) m & 500 -- 10000 m \\ \hline
-    Maximum Dubious Distance Air & Threshold for Dubious classification (Air). & Intermediate & 3704m (2nm) & 250 -- 25000 m \\ \hline
-    Maximum Acceptable Distance Air & Threshold for Acceptable classification (Air). Typically 1-2 NM or less. & Intermediate & 1852m (1nm) & 100 -- 10000 m \\ \hline
-    Maximum Erroneous Distance Ground & Distance limit rejecting position matches (Ground). & Intermediate & 90m & 70 -- 200m \\ \hline
-    Maximum Dubious Distance Ground & Threshold for Dubious classification (Ground). & Intermediate & 60m & 30 -- 100 m \\ \hline
-    Maximum Acceptable Distance Ground & Threshold for Acceptable classification (Ground). & Intermediate & 40m & 10 -- 50m \\ \hline
+    Maximum Erroneous Distance Air & Distance limit rejecting position matches (Air). & Intermediate & 5556 m (3 nm) & 500 -- 10000 m \\ \hline
+    Maximum Dubious Distance Air & Threshold for Dubious classification (Air). & Intermediate & 3704 m (2 nm) & 250 -- 25000 m \\ \hline
+    Maximum Acceptable Distance Air & Threshold for Acceptable classification (Air). Typically 1-2 NM or less. & Intermediate & 1852 m (1 nm) & 100 -- 10000 m \\ \hline
+    Maximum Erroneous Distance Ground & Distance limit rejecting position matches (Ground). & Intermediate & 90 m & 70 -- 200 m \\ \hline
+    Maximum Dubious Distance Ground & Threshold for Dubious classification (Ground). & Intermediate & 60 m & 30 -- 100 m \\ \hline
+    Maximum Acceptable Distance Ground & Threshold for Acceptable classification (Ground). & Intermediate & 40 m & 10 -- 50 m \\ \hline
     Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 5000 ft \\ \hline
     Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
     Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Advanced & 3$\sigma$ & 1 -- 20 \\ \hline
@@ -105,7 +105,7 @@ Association of target reports to UTNs:
 \end{itemize}
 \ \\
 
-Self-associate new targets(find matching UTNs created by the same target):
+Self-associate new targets (find matching UTNs created by the same target):
 \begin{itemize}
 \item Maximum Comparison Time Difference: Maximum time difference for Mode A/C comparisons
 \item Maximum Distance (Ground/Air)
@@ -114,7 +114,7 @@ Self-associate new targets(find matching UTNs created by the same target):
 \item If too many Erroneous (5-10\%): Not associated
 \item If too many Dubious (30-50\%): Not associated
 \item If Acceptable: Consider as match
-\item Association of targets is made for best matches fulfilling a average position difference score
+\item Association of targets is made for best matches fulfilling an average position difference score
 \end{itemize}
 \item Minimum Updates: Minimum number of updates needed to consider a match
 \item Minimum Time Overlap Probability: Minimum time overlap probability for at least one of the targets to consider a match
@@ -190,7 +190,7 @@ Please \textbf{note} that a detailed discussion of the given parameters can be f
     \caption{Probabilistic + IMM Reconstruction Parameters}
 \end{figure}
 
-The given parameters are the same as discussed in the 'Scoring + UMKalman' chapter, please refer to \nameref{sec:reconst_scorum_ref_calc} for details.
+The given parameters are the same as discussed in the 'Scoring + UMKalman' chapter. Please refer to \nameref{sec:reconst_scorum_ref_calc} for details.
 
 \subsubsection{Analysis}
 
