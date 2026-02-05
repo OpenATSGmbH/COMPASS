@@ -78,9 +78,18 @@ bool PropertyValueEdit::setValue(double value)
     return setValue(v_str);
 }
 
+/**
+*/
 bool PropertyValueEdit::isValid() const
 {
     return valid_;
+}
+
+/**
+*/
+bool PropertyValueEdit::hasInput() const
+{
+    return !edit_->text().isEmpty();
 }
 
 /**

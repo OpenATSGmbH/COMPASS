@@ -272,10 +272,31 @@ void GridView::setMaxValue(const std::string& value_str, bool notify_changes)
 
 /**
  */
+void GridView::preVariableChangedEvent(int idx, const std::string& dbcont, const std::string& name)
+{
+    if (idx == 2)
+    {
+        //remember distributed var data type before var change
+        prop_data_type_before_change_ = currentDataType();
+    }
+}
+
+/**
+ */
 void GridView::postVariableChangedEvent(int idx)
 {
     if (idx == 2)
+    {
+        //check if distributed var data type changed
+        if (prop_data_type_before_change_ != currentDataType())
+        {
+            //change => reset min max values
+            setParameter(settings_.render_color_value_min, std::string(""));
+            setParameter(settings_.render_color_value_max, std::string(""));
+        }
+
         updateSettingsFromVariable();
+    }
 }
 
 /**
