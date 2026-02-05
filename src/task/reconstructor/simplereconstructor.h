@@ -28,13 +28,13 @@ class SimpleReconstructorSettings : public ReconstructorBaseSettings
   public:
     SimpleReconstructorSettings() {};
 
-    double max_distance_notok_air_ {5*NM2M};
+    double max_distance_notok_air_ {3*NM2M};
     double max_distance_dubious_air_ {2*NM2M};
     double max_distance_acceptable_air_ {1*NM2M};
 
-    double max_distance_notok_ground_ {70};
-    double max_distance_dubious_ground_ {50};
-    double max_distance_acceptable_ground_ {30};
+    double max_distance_notok_ground_ {90};
+    double max_distance_dubious_ground_ {60};
+    double max_distance_acceptable_ground_ {40};
 };
 
 class SimpleReconstructorWidget;

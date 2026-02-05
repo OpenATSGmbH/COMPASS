@@ -59,14 +59,11 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
                       settings_.unspecifc_acc_acc_fallback_);
     registerParameter("no_value_acc_fallback", &settings_.no_value_acc_fallback_, settings_.no_value_acc_fallback_);
 
-
     // reconstruction settings (check base for other settings)
     registerParameter("ref_rec_type", (int*)&referenceCalculatorSettings().kalman_type_assoc,
                       (int)kalman::KalmanType::UMKalman2D);
     registerParameter("ref_rec_type_final", (int*)&referenceCalculatorSettings().kalman_type_final,
                       (int)kalman::KalmanType::UMKalman2D);
-
-    
 }
 
 SimpleReconstructor::~SimpleReconstructor() {}
