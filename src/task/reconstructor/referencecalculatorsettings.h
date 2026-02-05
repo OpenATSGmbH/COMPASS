@@ -111,7 +111,7 @@ struct ReferenceCalculatorSettings
 
     //default noise
     double       R_std_undef       = reconstruction::KalmanEstimator::HighStdDev;
-    ProcessNoise Q_std             = ProcessNoise(7.0, 5.0, 10.0, 7.0); // (static, ground, air, unknown)
+    ProcessNoise Q_std             = ProcessNoise(5.0, 3.0, 7.0, 5.0); // (static, ground, air, unknown)
     double       Q_altitude_min_ft = 0.0;
     double       Q_altitude_max_ft = 30000.0;
 
@@ -135,7 +135,7 @@ struct ReferenceCalculatorSettings
     //result resampling related
     bool                            resample_result     = true;
     ProcessNoise                    resample_Q_std      = ProcessNoise(3.0, 2.0, 5.0, 3.0); // (static, ground, air, unknown)
-    double                          resample_dt         = 2.0;
+    double                          resample_dt         = 1.0;
     reconstruction::StateInterpMode resample_blend_mode = reconstruction::StateInterpMode::BlendVar;
 
     //dynamic projection change
@@ -155,8 +155,8 @@ struct ReferenceCalculatorSettings
     bool dynamic_process_noise = true;
 
     //final reference filter related
-    bool   filter_references_max_stddev_ {false};
-    double filter_references_max_stddev_m_ {150.0};
+    bool   filter_references_max_stddev_ {true};
+    double filter_references_max_stddev_m_ {100.0};
 
     //debug options
     bool compat_mode     = false;
