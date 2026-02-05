@@ -56,6 +56,46 @@ In the classification tab, special parameters can be set to identify the AnyAirc
     \caption{Classification Parameters}
 \end{figure}
 
+\subsubsection{Reference Calculation}
+\label{sec:reconst_scorum_ref_calc} 
+
+\begin{figure}[H]
+    \center
+      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
+    \caption{Reference Calculation parameters}
+\end{figure}
+
+In this tab, the reference calculation parameters can be set, i.e. the Kalman and reconstruction parameters used for position estimation of the references. \\
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Process Stddev (Ground) & Assumed process noise standard deviation for targets on ground (affects maneuverability allowance). & Basic & 3.0 m & $>0$ m \\ \hline
+    Process Stddev (Air) & Assumed process noise standard deviation for airborne targets. & Basic & 7.0 m & $>0$ m \\ \hline
+    Process Stddev (Unknown) & Assumed process noise standard deviation for targets with unknown state. & Basic & 5.0 m & $>0$ m \\ \hline
+    Maximum Time Step (Ground) & Maximum time interval between updates used for interpolation/prediction on ground. & Intermediate & 5.0 s & $>1$ s \\ \hline
+    Maximum Time Step (Air) & Maximum time interval between updates used for interpolation/prediction in air. & Intermediate & 10.0 s & $>1$ s \\ \hline
+    Resample Interval & Time interval for the output trajectory (if resampling enabled internally). & Basic & 1.0 s & 0.1 -- 30 s \\ \hline
+    Resample Process Stddev (Ground) & Process noise applied specifically during the resampling phase for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Air) & Process noise applied specifically during the resampling phase for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Unknown) & Process noise applied during resampling for unknown state targets. & Advanced & 3.0 m & $>0$ m \\ \hline
+    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). & Intermediate & True & True/False \\ \hline
+    Max. Stddev & Maximum allowed position standard deviation for a point to be included in the final reference. & Intermediate & 100.0 m & $>0$ m \\ \hline
+    \end{tabular}
+    \caption{Reference Calculation parameters}
+    \label{tab:reconst_params}
+\end{table}
+
+Result resampling is enabled in order to obtain reference trajectories with a homogeneous sample rate. 
+It is carried out by interpolating the Kalman states at fixed time-steps. The accuracy of the resulting samples
+follows the Kalman accuracies more closely when interpolating near the endpoints of a segment, and it will decrease
+in the middle of a segment. The amount of decrease of accuracy will depend on the time duration of the segment and the used 
+process standard deviation (parameter \textit{Resample Process Stddev}).
+
 \subsection{Scoring + UMKalman Parameters}
 
 \subsubsection{Association}
@@ -120,47 +160,6 @@ Self-associate new targets (find matching UTNs created by the same target):
 \item Minimum Time Overlap Probability: Minimum time overlap probability for at least one of the targets to consider a match
 \end{itemize}
 
-
-\subsubsection{Reference Calculation}
-\label{sec:reconst_scorum_ref_calc} 
-
-\begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
-    \caption{Scoring + UMKalman Reference Calculation Parameters}
-\end{figure}
-
-In this tab, the reference calculation parameters can be set, i.e. the Kalman and reconstruction parameters used for position estimation of the references. \\
-
-\begin{table}[H]
-    \centering
-    \footnotesize
-    \hspace*{-1.5cm}
-    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
-    \hline
-    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Process Stddev (Ground) & Assumed process noise standard deviation for targets on ground (affects maneuverability allowance). & Basic & 3.0 m & $>0$ m \\ \hline
-    Process Stddev (Air) & Assumed process noise standard deviation for airborne targets. & Basic & 7.0 m & $>0$ m \\ \hline
-    Process Stddev (Unknown) & Assumed process noise standard deviation for targets with unknown state. & Basic & 5.0 m & $>0$ m \\ \hline
-    Maximum Time Step (Ground) & Maximum time interval between updates used for interpolation/prediction on ground. & Intermediate & 5.0 s & $>1$ s \\ \hline
-    Maximum Time Step (Air) & Maximum time interval between updates used for interpolation/prediction in air. & Intermediate & 10.0 s & $>1$ s \\ \hline
-    Resample Interval & Time interval for the output trajectory (if resampling enabled internally). & Basic & 1.0 s & 0.1 -- 30 s \\ \hline
-    Resample Process Stddev (Ground) & Process noise applied specifically during the resampling phase for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
-    Resample Process Stddev (Air) & Process noise applied specifically during the resampling phase for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
-    Resample Process Stddev (Unknown) & Process noise applied during resampling for unknown state targets. & Advanced & 3.0 m & $>0$ m \\ \hline
-    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). & Intermediate & True & True/False \\ \hline
-    Max. Stddev & Maximum allowed position standard deviation for a point to be included in the final reference. & Intermediate & 100.0 m & $>0$ m \\ \hline
-    \end{tabular}
-    \caption{Reference Calculation parameters for the Scoring + UMKalman Reconstructor}
-    \label{tab:reconst_simple_ref_params}
-\end{table}
-
-Result resampling is enabled in order to obtain reference trajectories with a homogeneous sample rate. 
-It is carried out by interpolating the Kalman states at fixed time-steps. The accuracy of the resulting samples
-follows the Kalman accuracies more closely when interpolating near the endpoints of a segment, and it will decrease
-in the middle of a segment. The amount of decrease of accuracy will depend on the time duration of the segment and the used 
-process standard deviation (parameter \textit{Resample Process Stddev}).
-
 \subsection{Probabilistic + IMM Parameters}
 
 \subsubsection{Association}
@@ -179,18 +178,7 @@ process standard deviation (parameter \textit{Resample Process Stddev}).
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
-
 Please \textbf{note} that a detailed discussion of the given parameters can be found in the section \nameref{sec:appendix_reconstructor}  .
-
-\subsubsection{Reference Calculation}
-
-\begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
-    \caption{Probabilistic + IMM Reconstruction Parameters}
-\end{figure}
-
-The given parameters are the same as discussed in the 'Scoring + UMKalman' chapter. Please refer to \nameref{sec:reconst_scorum_ref_calc} for details.
 
 \subsubsection{Analysis}
 
