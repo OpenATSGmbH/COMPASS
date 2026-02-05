@@ -2,7 +2,7 @@
 
 \begin{figure}[H]
    \center
-    \includegraphics[width=9cm,frame]{figures/geoview_others_tab.png}
+    \includegraphics[width=8cm,frame]{figures/geoview_others_tab.png}
   \caption{Geographic View Others tab}
 \end{figure}
 
@@ -39,12 +39,9 @@ If no height information is given:
 
 $$ h = h_n [m]$$ 
 
-Please note that upon changes to the height usage, a manual redraw has to be performed using the 'Redraw' button.
-
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_use_height.png}
+    \includegraphics[width=12cm,frame]{figures/geoview_use_height.png}
   \caption{Geographic View use height}
 \end{figure} 
 
@@ -52,34 +49,30 @@ Please note that upon changes to the height usage, a manual redraw has to be per
 \label{sec:others_ground_speed}
 
 \begin{itemize}
- \item Load Ground Speed Variables: Defines if ground speed variables should be loaded from the database. Must be enabled to enable display of ground speed vectors.
+ \item Show Ground Speed Vectors: Defines if ground speed should be shown automatically for all data.
  \item Ground Speed Period [s]: Length of ground speed vectors, in seconds.
 \end{itemize}
 \ \\
 
-If loading is enabled (possible re-load required) the ground speed vectors can be shown using \nameref{sec:geometry_operations}:
+For specific target reports the ground speed vectors can be shown using \nameref{sec:geometry_operations}.
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_groundspeed_vectors.png}
-  \caption{Geographic View groundspeed vectors}
+    \includegraphics[width=12cm,frame]{figures/geoview_groundspeed_vectors.png}
+  \caption{Geographic View ground speed vectors}
 \end{figure} 
+
 
 \subsubsection{Position Accuracy}
 \label{sec:others_position_accuracy}
 
 \begin{itemize}
- \item Load Position Accuracy Variables: Defines if position accuracy variables should be loaded from the database. Must be enabled to enable display of position accuracy ellipses.
+ \item Show Position Accuracy Ellipses: Defines if Position Accuracy Ellipses should be shown automatically for all data.
  \item Position Accuracy Scale [sigma]: Size of accuracy ellipses, defined in standard deviations:
  \begin{itemize}
     \item 1.0 $\sigma$: 68.268 \%
-    \item 1.5 $\sigma$: 86.638 \%
     \item 2.0 $\sigma$: 95.44 \%
-    \item 2.5 $\sigma$: 98.75 \%
     \item 3.0 $\sigma$: 99.73 \%
-    \item 3.5 $\sigma$: 99.95 \%
     \item 4.0 $\sigma$: 99.9936 \%
-    \item 4.5 $\sigma$: 99.999320 \%
     \item 5.0 $\sigma$: 99.99994266 \%
 \end{itemize}  
 \item Accuracy Ellipse Num Points Factor [1]: Multiplication factor to calculate number of ellipse points based on size
@@ -87,33 +80,34 @@ If loading is enabled (possible re-load required) the ground speed vectors can b
 \end{itemize}
 \ \\
 
-If loading is enabled (possible re-load required) the position accuracy ellipses can be shown using \nameref{sec:geometry_operations}:
+For specific target reports position accuracy ellipses can be shown using \nameref{sec:geometry_operations}:
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_accuracy_ellipses.png}
+    \includegraphics[width=12cm,frame]{figures/geoview_accuracy_ellipses.png}
   \caption{Geographic View position accuracy ellipses}
 \end{figure} 
 
 How the position accuracy ellipses are generated is defined in \nameref{sec:algo_position_accuracy_ellipses}.
 
-\subsubsection{Radar Default Accuracies}
-\label{sec:others_radar_default_accuracies}
-
-In the following items, the default Radar accuracies can be set:
+\subsubsection{MLAT Contributing RUs}
+\label{sec:others_mlat_contributing_rus}
 
 \begin{itemize}
- \item Primary Azimuth StdDev [deg]: PSR azimuth standard deviation, in degrees
- \item Primary Range StdDev [m]: PSR range standard deviation, in meters
- \item Secondary Azimuth StdDev [deg]: SSR azimuth standard deviation, in degrees
- \item Secondary Range StdDev [m]: SSR range standard deviation, in meters
- \item Mode S Azimuth StdDev [deg]: Mode S Radar azimuth standard deviation, in degrees
- \item Mode S Range StdDev [m]: Mode S Radar range standard deviation, in meters
- \item Use Radar Minimum StdDev: Defines if minimum or maximum standard deviation should be used for combined plots
+ \item Show MLAT Contributing RUs: Defines if MLAT Contributing RUs should be shown automatically for all MLAT data.
 \end{itemize}
-\ \\
 
-These values are only used if the associated data source does not have custom accuracy values set (see \nameref{sec:ui_configure_data_sources}). \\
+For specific target reports position MLAT Contributing RUs can be shown using \nameref{sec:geometry_operations}:
 
-How the Radar default accuracies are used is defined in \nameref{sec:algo_position_accuracy_ellipses}.
+\begin{figure}[H]
+    \includegraphics[width=16cm,frame]{figures/geoview_mlat_rus.png}
+  \caption{Geographic View MLAT Remote Units}
+\end{figure}
 
+\subsubsection{Extra Lines Opacity}
+
+The slider changes the line opacity for the following items:
+\begin{itemize}
+ \item Ground speed vectors
+ \item Position accuracy ellipses
+ \item MLAT Contributing RUs connection lines
+\end{itemize}
