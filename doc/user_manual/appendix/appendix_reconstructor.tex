@@ -58,13 +58,13 @@ Please \textbf{note} that:
     \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Maximum Comparison Time Difference & Match window size in time. & Basic & 10 s & 0 -- 1000 s \\ \hline
-    Maximum Track Time Difference & Time before a track ID is considered expired. & Intermediate & 300 s & 0 -- 1000 s \\ \hline
-    Maximum Altitude Difference & Mode C altitude tolerance. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
-    Do Track Number Disassoc. Using Distance & Reject track number matches if distance too large. & Basic & True & True/False \\ \hline
-    Track Number Disassoc. Distance Factor & Multiplier for Acceptable Distance to validate track number. & Intermediate & 3 & 1 -- 10 \\ \hline
-    Minimum Updates & Minimum number of updates for a constructed target. & Intermediate & 2 & $\ge 1$ \\ \hline
-    Minimum Time Overlap Probability & Overlap probability required to merge targets. & Advanced & 0.1 & 0 -- 1 \\ \hline
+    Maximum Comparison Time Difference & Maximum interpolation window for associating a report to a track. & Basic & 10 s & 0 -- 1000 s \\ \hline
+    Maximum Track Time Difference & Maximum time gap to resume an existing track using its data source track number. & Intermediate & 300 s & 0 -- 1000 s \\ \hline
+    Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
+    Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
+    Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Intermediate & 3 & 1 -- 10 \\ \hline
+    Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
+    Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets & Advanced & 0.1 & 0 -- 1 \\ \hline
     \end{tabular}
 \end{table}
 
@@ -78,7 +78,7 @@ Association of target reports to UTNs:
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
     Maximum Mahalanobis Distance for Secondary Matches & Distance limit for verified secondary associations. & Advanced & 5$\sigma$ & 1 -- 10 \\ \hline
-    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified secondary associations. & Advanced & 3$\sigma$ & 1 -- 10 \\ \hline
+    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified/primary associations. & Advanced & 3$\sigma$ & 1 -- 10 \\ \hline
     \end{tabular}
 \end{table}
 % air sec: 5 * 1000 vs 1852, pri 3 * 1000 vs 1852
@@ -92,10 +92,10 @@ Self-associate new targets(find matching UTNs created by the same target):
     \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Erroneous Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 7$\sigma$ & 0 -- 1000 \\ \hline
-    Dubious Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Mahalanobis Distance for Secondary Position Outliers & Outlier threshold for primary targets. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    Erroneous Mahalanobis Distance for Secondary Matches & Distance limit rejecting secondary position matches. & Advanced & 7$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Secondary Matches & Threshold for secondary Dubious classification. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Threshold for secondary Acceptable classification. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Secondary Position Outliers & Threshold for secondary outlier position classification. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
     \end{tabular}
 \end{table}
 
@@ -106,10 +106,10 @@ Self-associate new targets(find matching UTNs created by the same target):
     \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Erroneous Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
-    Dubious Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4$\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Acceptable Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Mahalanobis Distance for Primary Position Outliers & Outlier threshold for primary targets. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    Erroneous Mahalanobis Distance for Unverified Matches & Distance limit rejecting unverified/primary position matches. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Unverified Matches &Threshold for unverified/primary Dubious classification. & Advanced & 4$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Unverified Matches & hreshold for unverified/primary Acceptable classification. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Primary Position Outliers &  Threshold for unverified/primary outlier position classification. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
     \end{tabular}
 \end{table}
 
@@ -121,12 +121,15 @@ Self-associate new targets(find matching UTNs created by the same target):
     \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Max. Std.Dev. for Association in Air & Outlier threshold for primary targets. & Advanced & 1000 m & 1 -- 10000 m \\ \hline
-    Min. Std.Dev. for Association in Air & Outlier threshold for primary targets. & Advanced & 50 m & 1 -- 10000 m \\ \hline
-    Max. Std.Dev. for Association on Ground & Outlier threshold for primary targets. & Advanced & 20 m & 1 -- 10000 m \\ \hline
-    Min. Std.Dev. for Association on Ground & Outlier threshold for primary targets. & Advanced & 5 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association in Air & Maximum standard deviation / minimum accuracy (air).  & Advanced & 1000 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association in Air & Minimum standard deviation / maximum accuracy (air). & Advanced & 50 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association on Ground & Maximum standard deviation / minimum accuracy (ground). & Advanced & 20 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association on Ground & Minimum standard deviation / maximum accuracy (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
     \end{tabular}
 \end{table}
+\ \\
+The given minimum/maximum standard deviations are required to combat the position accuracy estimation spiraling into edge cases in high clutter scenarios. Basically, estimated accuracies are bound to the given range values, to mitigate non-association due to too small standard deviations or associate-all due to too high standard deviations.
+
 
 
 \subsection{Primary-Only Association / JPDA}
