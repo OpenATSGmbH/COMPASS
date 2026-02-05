@@ -11,33 +11,43 @@ The following tables list the association configuration parameters available for
     \centering
     \footnotesize
     \hspace*{-1.5cm}
-    \begin{tabular}{|p{4.5cm}|p{4.5cm}|l|p{2.5cm}|p{2.5cm}|}
+    \begin{tabular}{|p{4cm}|p{5.5cm}|l|p{2cm}|p{2.5cm}|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
     Multiple Calculation Runs Number & Number of calculation passes per time slice to refine associations. & Intermediate & 3 & 2 -- 10 \\ \hline
     Rescale Accuracies & If enabled, position accuracy values are rescaled based on statistical analysis. & Basic & True & True/False \\ \hline
-    Correct Radar Biases & Correct systematic radar azimuth/range biases. & Basic & True & True/False \\ \hline
-    Use ADS-B Geo.Alt. for Slant-Range Correction & Use ADS-B geometric altitude for slant-range correction. & Basic & True & True/False \\ \hline
-    Do Position Outlier Checks & Flag position outliers and do not use for position estimation. & Basic & True & True/False \\ \hline
-    Use Risky ADS-B & Accept lower quality ADS-B reports (if rescaling active). & Advanced & False & True/False \\ \hline
-    Primary Only Mode & Mode deciding how primary plots are associated. & Intermediate & JPDA + Probabilistic Scoring & Probabilistic Scoring/JPDA/JPDA + Probabilistic Scoring \\ \hline
-    Do Full Primary-Only Tracking & Enable tentative track creation (JPDA). & Intermediate & True & True/False \\ \hline
+    Correct Radar Biases & Enables correction of systematic radar azimuth/range biases. & Basic & True & True/False \\ \hline
+    Use ADS-B Geo.Alt. for Slant-Range Correction & Enables usage of ADS-B geometric altitude for Radar slant-range correction. & Basic & True & True/False \\ \hline
+    Do Position Outlier Checks & Enables flagging of position outliers, which then are not used for position estimation. & Basic & True & True/False \\ \hline
+    Use Risky ADS-B & Enables position usage from lower quality ADS-B reports (only if Accuracy Rescaling is active). & Advanced & False & True/False \\ \hline
+    Primary Only Mode & Mode deciding how primary plots are associated. & Intermediate & JPDA + Probabilistic Scoring & \\ \hline
+    Do Full Primary-Only Tracking & Enables creation of primary-only UTNs (using JPDA). & Intermediate & True & True/False \\ \hline
     \end{tabular}
     \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
 \end{table}
 \ \\
 
-
-
-
 Primary Only Mode has the following options:
-
 \begin{itemize}
     \item \textbf{Probabilistic Scoring}: Primary plots are associated to existing targets using probabilistic distance measures at the end of a calculation pass. Tentative target creation will be disabled.
-    \item \textbf{JPDA}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be dropped.
     \item \textbf{JPDA + Probabilistic Scoring}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be re-associated to existing targets using probabilistic distance measures at the end of a calculation pass.
 \end{itemize}
+\ \\
+
+Please \textbf{note} that:
+\begin{itemize}
+\item All of the features above \textit{should} work as intended with the given default values
+\item Should this not be the case, disabling of certain features can be a valid workaround until the issue was resolved by a bugfix
+\item Use Risky ADS-B: This feature will allow usage of MOPS V0 and V1 transponders, as well as position data with unknown accuracy
+\begin{itemize}
+\item While accuracy determination algorithms will automatically determine usage of such "risky" ADS-B data, absolute correctness can not be guaranteed in all situations
+\item Usage of this feature is therefore disabled by default, and activation should always be accompanied with manual verification of the reconstruction results
+\end{itemize}
+\item Do Full Primary-Only Tracking: This will commonly increase computional requirements by factor 3-5. Can be disabled for large datasets or slower workstations, at cost of primary-only reconstruction quality.
+\end{itemize}
+
 \bigskip
+
 
 \subsection{General Association} 
 
@@ -51,27 +61,73 @@ Primary Only Mode has the following options:
     Maximum Comparison Time Difference & Match window size in time. & Basic & 10 s & 0 -- 1000 s \\ \hline
     Maximum Track Time Difference & Time before a track ID is considered expired. & Intermediate & 300 s & 0 -- 1000 s \\ \hline
     Maximum Altitude Difference & Mode C altitude tolerance. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
-    Do Track Number Disassoc. Using Distance & Reject track number matches if distance too large. & Basic & False & True/False \\ \hline
+    Do Track Number Disassoc. Using Distance & Reject track number matches if distance too large. & Basic & True & True/False \\ \hline
     Track Number Disassoc. Distance Factor & Multiplier for Acceptable Distance to validate track number. & Intermediate & 3 & 1 -- 10 \\ \hline
     Minimum Updates & Minimum number of updates for a constructed target. & Intermediate & 2 & $\ge 1$ \\ \hline
     Minimum Time Overlap Probability & Overlap probability required to merge targets. & Advanced & 0.1 & 0 -- 1 \\ \hline
-    Maximum Mahalanobis Distance for Secondary Matches & Distance limit for verified secondary associations. & Advanced & 10.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified secondary associations. & Advanced & 3.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Erroneous Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Dubious Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Mahalanobis Distance for Secondary Position Outliers & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Erroneous Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Dubious Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Acceptable Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
-    Maximum Mahalanobis Distance for Primary Position Outliers & Outlier threshold for primary targets. & Advanced & 4.0 $\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+Association of target reports to UTNs:
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Mahalanobis Distance for Secondary Matches & Distance limit for verified secondary associations. & Advanced & 5$\sigma$ & 1 -- 10 \\ \hline
+    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified secondary associations. & Advanced & 3$\sigma$ & 1 -- 10 \\ \hline
+    \end{tabular}
+\end{table}
+% air sec: 5 * 1000 vs 1852, pri 3 * 1000 vs 1852
+% ground sec: 5 * 20 vs 40, pri 3 * 20 vs 40
+
+Self-associate new targets(find matching UTNs created by the same target):
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Erroneous Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 7$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Outlier threshold for primary targets. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Secondary Position Outliers & Outlier threshold for primary targets. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Erroneous Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 4$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Unverified Matches & Outlier threshold for primary targets. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Primary Position Outliers & Outlier threshold for primary targets. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
     Max. Std.Dev. for Association in Air & Outlier threshold for primary targets. & Advanced & 1000 m & 1 -- 10000 m \\ \hline
     Min. Std.Dev. for Association in Air & Outlier threshold for primary targets. & Advanced & 50 m & 1 -- 10000 m \\ \hline
     Max. Std.Dev. for Association on Ground & Outlier threshold for primary targets. & Advanced & 20 m & 1 -- 10000 m \\ \hline
     Min. Std.Dev. for Association on Ground & Outlier threshold for primary targets. & Advanced & 5 m & 1 -- 10000 m \\ \hline
     \end{tabular}
-    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
 \end{table}
+
 
 \subsection{Primary-Only Association / JPDA}
 
@@ -93,6 +149,5 @@ Primary Only Mode has the following options:
     Target Confirmation Probability & Probability threshold to confirm tracks. & Advanced & 0.7 & 0 -- 1 \\ \hline
     Target Confirmation Min. Updates & Minimum updates needed to confirm tracks. & Advanced & 4 & 0 -- 1000 \\ \hline
     \end{tabular}
-    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor} 
 \end{table}
 
