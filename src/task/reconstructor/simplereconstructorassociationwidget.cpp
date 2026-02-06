@@ -18,6 +18,7 @@
 #include "simplereconstructorassociationwidget.h"
 #include "simplereconstructorwidget.h"
 #include "simplereconstructor.h"
+#include "noscrollqspinbox.h"
 
 #include <QCheckBox>
 #include <QGridLayout>
@@ -26,7 +27,6 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QSpinBox>
 
 using namespace std;
 
@@ -55,7 +55,7 @@ SimpleReconstructorAssociationWidget::SimpleReconstructorAssociationWidget(
 
     layout->addWidget(new QLabel("Maximum Track Time Difference [s]"), row, 0);
 
-    max_time_diff_tracker_edit_ = new QSpinBox();
+    max_time_diff_tracker_edit_ = new NoScrollQSpinBox();
     max_time_diff_tracker_edit_->setRange(0, 1000);
     connect(max_time_diff_tracker_edit_, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &SimpleReconstructorAssociationWidget::maxTimeDiffTrackerEditedSlot);
@@ -151,7 +151,7 @@ SimpleReconstructorAssociationWidget::SimpleReconstructorAssociationWidget(
     ++row;
     layout->addWidget(new QLabel("Track Number Disassoc. Distance Factor [1]"), row, 0);
 
-    tn_disassoc_distance_factor_edit_ = new QSpinBox();
+    tn_disassoc_distance_factor_edit_ = new NoScrollQSpinBox();
     tn_disassoc_distance_factor_edit_->setRange(1, 10);
     connect(tn_disassoc_distance_factor_edit_, QOverload<int>::of(&QSpinBox::valueChanged),
             [ & ] (int v) { this->reconstructor_.settings().tn_disassoc_distance_factor_ = v; });
