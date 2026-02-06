@@ -170,7 +170,7 @@ Self-associate new targets (find matching UTNs created by the same target):
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
-\textbf{JPDA}
+%\textbf{JPDA}
 
 \begin{figure}[H]
     \center
@@ -178,7 +178,157 @@ Self-associate new targets (find matching UTNs created by the same target):
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
-Please \textbf{note} that a detailed discussion of the given parameters can be found in the section \nameref{sec:appendix_reconstructor}  .
+The following tables list the association configuration parameters available for the Probabilistic + IMM Reconstructor (Advanced Reconstructor). \\
+
+%\subsubsection{Main}
+\noindent{\small\textbf{Main}}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4cm}|p{5.5cm}|l|p{2cm}|p{2.5cm}|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Multiple Calculation Runs Number & Number of calculation passes per time slice to refine associations. & Intermediate & 3 & 2 -- 10 \\ \hline
+    Rescale Accuracies & If enabled, position accuracy values are rescaled based on statistical analysis. & Basic & True & True/False \\ \hline
+    Correct Radar Biases & Enables correction of systematic radar azimuth/range biases. & Basic & True & True/False \\ \hline
+    Use ADS-B Geo.Alt. for Slant-Range Correction & Enables usage of ADS-B geometric altitude for Radar slant-range correction. & Basic & True & True/False \\ \hline
+    Do Position Outlier Checks & Enables flagging of position outliers, which then are not used for position estimation. & Basic & True & True/False \\ \hline
+    Use Risky ADS-B & Enables position usage from lower quality ADS-B reports (only if Accuracy Rescaling is active). & Advanced & False & True/False \\ \hline
+    Primary Only Mode & Mode deciding how primary plots are associated. & Intermediate & JPDA + Probabilistic Scoring & \\ \hline
+    Do Full Primary-Only Tracking & Enables creation of primary-only UTNs (using JPDA). & Intermediate & True & True/False \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
+\end{table}
+\ \\
+
+Primary Only Mode has the following options:
+\begin{itemize}
+    \item \textbf{Probabilistic Scoring}: Primary plots are associated to existing targets using probabilistic distance measures at the end of a calculation pass. Tentative target creation will be disabled.
+    \item \textbf{JPDA + Probabilistic Scoring}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be re-associated to existing targets using probabilistic distance measures at the end of a calculation pass.
+\end{itemize}
+\ \\
+
+Please \textbf{note} that:
+\begin{itemize}
+\item All of the features above \textit{should} work as intended with the given default values
+\item Should this not be the case, disabling of certain features can be a valid workaround until the issue was resolved by a bugfix
+\item Use Risky ADS-B: This feature will allow usage of MOPS V0 and V1 transponders, as well as position data with unknown accuracy
+\begin{itemize}
+\item While accuracy determination algorithms will automatically determine usage of such "risky" ADS-B data, absolute correctness can not be guaranteed in all situations
+\item Usage of this feature is therefore disabled by default, and activation should always be accompanied with manual verification of the reconstruction results
+\end{itemize}
+\item Do Full Primary-Only Tracking: This will commonly increase computional requirements by factor 3-5. Can be disabled for large datasets or slower workstations, at cost of primary-only reconstruction quality.
+\end{itemize}
+
+\bigskip
+
+%\subsubsection{General Association} 
+\noindent{\small\textbf{General Association}}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Comparison Time Difference & Maximum interpolation window for associating a report to a track. & Basic & 10 s & 0 -- 1000 s \\ \hline
+    Maximum Track Time Difference & Maximum time gap to resume an existing track using its data source track number. & Intermediate & 300 s & 0 -- 1000 s \\ \hline
+    Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
+    Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
+    Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Intermediate & 3 & 1 -- 10 \\ \hline
+    Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
+    Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets & Advanced & 0.1 & 0 -- 1 \\ \hline
+    \end{tabular}
+\end{table}
+
+Association of target reports to UTNs:
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Mahalanobis Distance for Secondary Matches & Distance limit for verified secondary associations. & Advanced & 5$\sigma$ & 1 -- 10 \\ \hline
+    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified/primary associations. & Advanced & 3$\sigma$ & 1 -- 10 \\ \hline
+    \end{tabular}
+\end{table}
+% air sec: 5 * 1000 vs 1852, pri 3 * 1000 vs 1852
+% ground sec: 5 * 20 vs 40, pri 3 * 20 vs 40
+
+Self-associate new targets(find matching UTNs created by the same target):
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Erroneous Mahalanobis Distance for Secondary Matches & Distance limit rejecting secondary position matches. & Advanced & 7$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Secondary Matches & Threshold for secondary Dubious classification. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Threshold for secondary Acceptable classification. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Secondary Position Outliers & Threshold for secondary outlier position classification. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Erroneous Mahalanobis Distance for Unverified Matches & Distance limit rejecting unverified/primary position matches. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Unverified Matches &Threshold for unverified/primary Dubious classification. & Advanced & 4$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Unverified Matches & hreshold for unverified/primary Acceptable classification. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Primary Position Outliers &  Threshold for unverified/primary outlier position classification. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Max. Std.Dev. for Association in Air & Maximum standard deviation / minimum accuracy (air).  & Advanced & 1000 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association in Air & Minimum standard deviation / maximum accuracy (air). & Advanced & 50 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association on Ground & Maximum standard deviation / minimum accuracy (ground). & Advanced & 20 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association on Ground & Minimum standard deviation / maximum accuracy (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
+    \end{tabular}
+\end{table}
+\ \\
+
+The given minimum/maximum standard deviations are required to combat the position accuracy estimation spiraling into edge cases in high clutter scenarios. 
+Basically, estimated accuracies are bound to the given range values, to mitigate non-association due to too small standard deviations or associate-all due to too high standard deviations. \\
+
+%\subsubsection{Primary-Only Association / JPDA}
+\noindent{\small\textbf{Primary-Only Association / JPDA}}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Probability of Detection & Assumed detection probability $P_D$. & Advanced & 0.9 & 0 -- 1 \\ \hline
+    Automatic Clutter Density & Estimate clutter density automatically. & Advanced & True & True/False \\ \hline
+    Clutter Density (Default) & Custom clutter density. & Advanced & $1.25 \times 10^{-10}$ & 0 -- 1 \\ \hline
+    Maximum Mahalanobis Distance (Candidate) for JPDA & Threshold for assigning primary plots to targets. & Advanced & 3.0 & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance (Match) for JPDA & Threshold for merging primary plots. & Advanced & 2.0 & 0 -- 1000 \\ \hline
+    Min. Update Intervals Before Termination & Minimum update intervals before termination of tentative tracks is considered. & Advanced & 5.5 & 0 -- 100 \\ \hline
+    Max. Update Intervals Coasting & Maximum update intervals after which coasting tentative tracks are terminated. & Advanced & 3.5 & 0 -- 100 \\ \hline
+    Target Termination Probability & Probability threshold to terminate tracks. & Advanced & 0.1 & 0 -- 1 \\ \hline 
+    Target Confirmation Probability & Probability threshold to confirm tracks. & Advanced & 0.7 & 0 -- 1 \\ \hline
+    Target Confirmation Min. Updates & Minimum updates needed to confirm tracks. & Advanced & 4 & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
 
 \subsubsection{Analysis}
 
