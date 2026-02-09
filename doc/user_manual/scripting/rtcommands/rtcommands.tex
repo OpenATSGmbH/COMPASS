@@ -119,7 +119,7 @@ dir \dots export directory, e.g. "/data/db2/" \\
 mode \dots export mode, e.g. "PDF" \\
 
 \textbf{export\_view\_points\_report} \\
-\textit{export view points report after with given filename, e.g. "/data/db2/report.tex"} \\
+\textit{export view points report with given filename, e.g. "/data/db2/report.tex"} \\
 filename \dots given filename, e.g. "/data/db2/report.tex" \\
 
 \textbf{get\_cfg\_data\_sources} \\
@@ -166,7 +166,7 @@ filename \dots given filename, e.g. "/data/file1.json" \\
 framing \dots imports ASTERIX file with given  ASTERIX framing, e.g. "none", "ioss", "ioss\_seq", "rff" \\
 line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ" \\
+time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 
 \textbf{import\_asterix\_files} \\
@@ -175,12 +175,12 @@ filenames \dots given filenames, e.g. '/data/file1.ff;/data/file2.ff' \\
 framing \dots imports ASTERIX file with given  ASTERIX framing, e.g. "none", "ioss", "ioss\_seq", "rff" \\
 line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ" \\
+time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 
 \textbf{import\_asterix\_network} \\
 \textit{imports ASTERIX from defined network UDP streams} \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ" \\
+time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 max\_lines \dots maximum number of lines per data source during ASTERIX network import, 1..4 \\
 ignore\_future\_ts \dots ignore future timestamps \\
 
@@ -192,32 +192,24 @@ ignore\_future\_ts \dots ignore future timestamps \\
 filename \dots given filename, e.g. "/data/file1.json" \\
 line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ" \\
-ignore\_time\_jumps \dots ignore 24h time jumps \\
-
-\textbf{import\_asterix\_pcap\_files} \\
-\textit{imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'} \\
-filenames \dots given filenames, e.g. '/data/file1.ff;/data/file2.ff' \\
-line \dots imports ASTERIX file with given line e.g. "L2" \\
-date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ" \\
+time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 
 \textbf{import\_data\_sources} \\
 \textit{imports data sources JSON file with given filename, e.g. '/data/ds1.json'} \\
-filename \dots given filename, e.g. "/data/file1.json' \\
+filename \dots given filename, e.g. "/data/file1.json" \\
 
 \textbf{import\_gps\_trail} \\
 \textit{imports gps trail NMEA with given filename, e.g. "/data/file2.txt"} \\
-filename \dots given filename, e.g. "/data/file1.nmea' \\
-name \dots optional data source name, e.g. "GPS Trail' \\
+filename \dots given filename, e.g. "/data/file1.nmea" \\
+name \dots optional data source name, e.g. "GPS Trail" \\
 sac \dots optional sac, e.g. 255 \\
 sic \dots optional sic, e.g. 0 \\
 tod\_offset \dots optional time of day offset, e.g. -10000.0 \\
-date \dots optional override date, e.g. "2025-01-01' \\
+date \dots optional override date, e.g. "2025-01-01" \\
 mode3a \dots optional mode3a code in octal, e.g.  \\
-address \dots optional aircraft address in hex, e.g. "0xffffff' \\
-id \dots optional aircraft identification, e.g. "ENTE' \\
+address \dots optional aircraft address in hex, e.g. "0xffffff" \\
+id \dots optional aircraft identification, e.g. "ENTE" \\
 
 \textbf{import\_json} \\
 \textit{imports JSON file with given filename, e.g. "/data/file1.json"} \\
@@ -246,7 +238,7 @@ index \dots index in the recent file history \\
 
 \textbf{reconstruct\_references} \\
 \textit{reconstruct references} \\
-disable\_sensors \dots optional list of sensor names to disable, e.g. "GPS Trail 1;GPS Trail 2' \\
+disable\_sensors \dots optional list of sensor names to disable, e.g. "GPS Trail 1;GPS Trail 2" \\
 
 \textbf{set\_data\_sources} \\
 \textit{sets data source descriptions} \\
@@ -326,7 +318,7 @@ Calling it without the -{}-section parameter will fetch a list of all report sec
 
 \begin{lstlisting}[basicstyle=\tiny\ttfamily]
 {
-    "sections" = [          // section id's contained in the report
+    "sections" = [          // section IDs contained in the report
         "Report:Results",
         "Report:Results:Overview",
         "Report:Results:Sectors",
