@@ -882,6 +882,9 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
                                                                         const InterpOptions& interp_options) const
 // lower/upper times, invalid ts if not existing
 {
+    if (tr_timestamps_.empty())
+        return {nullptr, nullptr};
+
     bool debug = false; //interp_options.debug();
 
     std::multimap<boost::posix_time::ptime, unsigned long>::const_iterator it_lower, it_upper;
@@ -1113,6 +1116,9 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
 ReconstructorTarget::ReferencePair ReconstructorTarget::refDataFor (ptime timestamp, time_duration d_max) const
 // lower/upper times, invalid ts if not existing
 {
+    if (references_.empty())
+        return {nullptr, nullptr};
+
     if (references_.count(timestamp))
         return {&references_.at(timestamp), nullptr}; // contains exact value
 
