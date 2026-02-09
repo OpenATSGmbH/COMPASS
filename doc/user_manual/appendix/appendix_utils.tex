@@ -9,9 +9,9 @@ For usage of the jASTERIX library/tool please refer to \href{https://github.com/
 \subsection{SDDL}
 \label{sec:sddl}
 
-The SDDL tool is a open-source ASTERIX decoder and lister, please refer to \href{https://github.com/kobelbauer/sddl/}{SDDL} for more information. This text only aims at provding a short usage guide.\\
+The SDDL tool is an open-source ASTERIX decoder and lister, please refer to \href{https://github.com/kobelbauer/sddl/}{SDDL} for more information. This text only aims at providing a short usage guide.\\
 
-While it is possible to download and build from the source code, this usage guide recommends downloading the a release AppImage from \href{https://github.com/kobelbauer/sddl/releases}{Releases}. Please make sure that at least version 1.1.0 with included JSON functions is used.
+While it is possible to download and build from the source code, this usage guide recommends downloading a release AppImage from \href{https://github.com/kobelbauer/sddl/releases}{Releases}. Please make sure that at least version 1.1.0 with included JSON functions is used.
 
 After downloading, set the executable flag on the file: 
 
@@ -212,7 +212,7 @@ JSON output can be obtained in several ways:
 \item zip-ubjson: JSON output is generated and written as UBJSON to a ZIP archive file, for which a filename must be set
 \end{itemize}
 
-For parsing in COMPASS, only the 'text' or 'zip-text' mode are currently supported. Use the first only for smaller dataset, the latter provides good compression. The resulting ZIP file will be about twice the size of the original ASTERIX file.
+For parsing in COMPASS, only the 'text' or 'zip-text' mode are currently supported. Use the first only for smaller datasets, the latter provides good compression. The resulting ZIP file will be about twice the size of the original ASTERIX file.
 
 To decode and write a JSON zip-text file 'test\_json.zip', use:
 \begin{lstlisting}

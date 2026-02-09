@@ -39,49 +39,10 @@ In older versions, the osgearth\_cache folder is located in data/maps.
 
 All application configuration is stored as JSON files, which are read during startup and saved during (correct) shutdown of the application.
 
-%TODOV7
-
 \begin{itemize}
 \item config.json: Main configuration file defining application version, sub-config location etc.
 \item log4cpp.properties: Logging configuration
 \item default/: Sub-configuration
-% \begin{itemize}
-%     \item client.json: Main client configuration, referencing other configurations
-%     \item compass.json: Main configuration, referencing other configurations
-%     \item db\_object\_adsb.json: Defines DBObject ADSB
-%     \item db\_object.json: Main DBObject configuration, referencing other configurations
-%     \item db\_object\_mlat.json: Defines DBObject MLAT
-%     \item db\_object\_radar.json: Defines DBObject Radar
-%     \item db\_object\_reftraj.json: Defines DBObject RefTraj
-%     \item db\_object\_tracker.json: Defines DBObject Tracker
-%     \item db\_schema.json: Main DBSchema configuration, referencing other configurations
-%     \item db\_schema\_scdb\_extended.json: Defines DBSchema SCDB Extended
-%     \item db\_schema\_scdb.json: Defines DBSchema SCDB
-%     \item eval.json: Main evaluation configuration, contains all standards
-%     \item eval\_results.json: Evaluation results generation configuration
-%     \item filter.json: Main filter configuration
-%     \item projection.json: Main projection configuration
-%     \item task.json: Main task configuration, referencing other configurations:
-%     \begin{itemize}
-%         \item task\_calc\_artas\_assoc.json
-%         \item task\_calc\_assoc.json
-%         \item task\_calc\_radar\_pos.json
-%         \item task\_db\_open.json
-%         \item task\_import\_asterix.json
-%         \item task\_import\_gps.json
-%         \item task\_import\_json.json
-%         \item task\_import\_mysqldb.json
-%         \item task\_import\_view\_points.json
-%         \item task\_manage\_datasources.json
-%         \item task\_manage\_dbojects.json
-%         \item task\_manage\_schema.json
-%         \item task\_manage\_sectors.json
-%         \item task\_postprocess.json
-%     \end{itemize}
-%     \item threads.json: Outdated, will be removed
-%     \item units.json: Main unit/conversion configuration
-%     \item views.json: Main view configuration, contains all views
-% \end{itemize}
 \end{itemize}
 
 \subsection{Data Folder}
@@ -91,9 +52,9 @@ The data folder contains e.g. used images, 3rd party (static) configuration etc.
 
 \begin{itemize}
 \item fonts: Used fonts
-\item gdal: GDAL libary data \& configuration
+\item gdal: GDAL library data \& configuration
 \item icons: Application icons
-\item jasterix\_definitions: jASTERIX libary definitions
+\item jasterix\_definitions: jASTERIX library definitions
 \item maps: Geographic View map files
 \item textures: Geographic View symbol textures
 \end{itemize}

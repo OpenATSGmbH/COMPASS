@@ -3,7 +3,7 @@
 
 This task allows target report association based on ARTAS tracks and the TRI information. It is \textbf{not} related to the 'Calculate Unique Targets' task, but uses a completely different mechanism. \\
 
-Please note that if no ARTAS TRI SPF information exists in the database, these steps can not be performed successfully.\\
+Please note that if no ARTAS TRI SPF information exists in the database, these steps cannot be performed successfully.\\
 
 \begin{figure}[H]
   \center
@@ -33,7 +33,7 @@ The following configuration options exist:
 
 \paragraph{Track Creation from System Track Numbers and End Track Time}: 
 
-The task should create a unique target number for every ARTAS track. The track begin/end flags therefore are used to create new tracks or finalize existing ones. To cover the case when such information is wrong or missing, the 'End Track Time' is used to check the time between track updates from one track number. If the gap is larger then the defined time, a new track is created even if no track begin/end flag was set.
+The task should create a unique target number for every ARTAS track. The track begin/end flags therefore are used to create new tracks or finalize existing ones. To cover the case when such information is wrong or missing, the 'End Track Time' is used to check the time between track updates from one track number. If the gap is larger than the defined time, a new track is created even if no track begin/end flag was set.
 
 \paragraph{Association Time Window}
 
