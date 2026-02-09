@@ -84,7 +84,7 @@ log4cpp.appender.fileAppender.layout=PatternLayout
 log4cpp.appender.fileAppender.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S.%l} [%p] %m%n
 \end{lstlisting}
 
-The log4cpp library always appends to created log files in when using FileAppender's.
+The log4cpp library always appends to created log files when using FileAppenders.
 
 
 \subsection{Rotating Log File}
@@ -115,4 +115,4 @@ log4cpp.appender.rollingFileAppender.layout=PatternLayout
 log4cpp.appender.rollingFileAppender.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S.%l} [%p] %m%n
 \end{lstlisting}
 
-The maxFileSize is the maximumum file size in bytes (100 MB in example) after which a new file will be created, of which only maxBackupIndex (5) can exist and are used in rotation.
+The maxFileSize is the maximum file size in bytes (100 MB in example) after which a new file will be created, of which only maxBackupIndex (5) can exist and are used in rotation.

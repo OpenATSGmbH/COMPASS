@@ -3,7 +3,7 @@
 
 This section defines how the view point files have to be structured and written by view point generators (applications which generate such files). \\
 
-View point files are written in the JSON format, and includes a version number. The current version number is 0.3, the previous versions 0.2, 0.1 are \textbf{not} supported. \\
+View point files are written in the JSON format, and include a version number. The current version number is 0.3, the previous versions 0.2, 0.1 are \textbf{not} supported. \\
 
 Please \textbf{note} that basic JSON format knowledge is required to understand the topics in this section. \\
 
@@ -153,7 +153,7 @@ Such an import without overrides can look as follows:
 %\ \\
 
 In this case, the first dataset will be imported into line L1 (0 as L1, default line) with a date '2021-01-02', 
-while the second dataset will be imported in to L2 and time shifted by the 'time\_offset' (as Time of Day in seconds). \\
+while the second dataset will be imported into L2 and time shifted by the 'time\_offset' (as Time of Day in seconds). \\
 
 Exact definition:
 
@@ -174,7 +174,7 @@ Exact definition:
 
 View points are stored in the 'view\_points' attribute, which is a simple list. \\
 
-A view point only has to contain and 'id' and 'type' attribute, but additional attributes make it more meaningful.
+A view point only has to contain an 'id' and 'type' attribute, but additional attributes make it more meaningful.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -258,7 +258,7 @@ If the 'data\_sources', 'data\_source\_types' or 'filters' attribute are not def
 
 \subsection{View Point Filters}
 
-The 'filters' attribute contains a JSON object, where each filter name is used as a key, and the value is again an JSON object encompassing the filter conditions. Each filter condition value is a string, the same as a user would enter in the GUI.
+The 'filters' attribute contains a JSON object, where each filter name is used as a key, and the value is again a JSON object encompassing the filter conditions. Each filter condition value is a string, the same as a user would enter in the GUI.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
@@ -852,7 +852,7 @@ In order to show each geometrical primitive in a separate color, the 'color' tag
 }
 \end{lstlisting}
 
-This example will result in each point to be displayed in a separate color.
+This example will result in each point being displayed in a separate color.
 
 \begin{figure}[H]
     \center
