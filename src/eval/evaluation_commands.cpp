@@ -58,38 +58,12 @@ bool RTCommandEvaluate::run_impl()
     //try to parse configuration
     if (!config_.empty())
     {
-        nlohmann::json config;
-        try
-        {
-            config = nlohmann::json::parse(config_);
-
-            if (!config.is_object())
-                throw std::runtime_error("Configuration not a json object");
-        }
-        catch(const std::exception& e)
-        {
-            setResultMessage("Could not parse configuration: " + std::string(e.what()));
-            return false;
-        }
-        catch(...)
-        {
-            setResultMessage("Could not parse configuration: Unknown error");
-            return false;
-        }
-
-        loginf << "config parsed:\n" << config.dump(4);
-
-        auto wrapper = nlohmann::json::object();
-        wrapper[ Configuration::ParameterSection ] = config;
-        
-        auto res = eval_man.applyJSONSettings(wrapper);
+        auto res = eval_man.calculator()->applyJSONStringParameters(config_);
         if (!res.ok())
         {
             setResultMessage("Could not apply configuration: " + res.error());
             return false;
         }
-
-        loginf << "configuration successfully applied";
     }
 
     if (run_filter_)
