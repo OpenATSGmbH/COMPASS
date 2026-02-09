@@ -95,41 +95,6 @@ EvaluationManager::~EvaluationManager()
 }
 
 /**
- */
-Result EvaluationManager::applyJSONSettings(const nlohmann::json& settings_json)
-{
-    traced_assert(calculator_);
-
-    std::string error;
-    std::vector<Configuration::MissingKey> missing_subconfig_keys;
-    std::vector<Configuration::MissingKey> missing_param_keys;
-    auto res = calculator_->reconfigure(settings_json, &missing_subconfig_keys, &missing_param_keys, false, &error);
-
-    if (res.first == ReconfigureError::NoError)
-        return Result::succeeded();
-
-    if (error.empty())
-        error = "Unknown error";
-    error += " (Code " + std::to_string((int)res.first) + ")\n";
-
-    if (!missing_subconfig_keys.empty())
-    {
-        error += "missing subconfig keys:\n";
-        for (const auto& key : missing_subconfig_keys)
-            error += " - " + key.first.first + "." + key.first.second + "\n";
-    }
-
-    if (!missing_param_keys.empty())
-    {
-        error += "missing parameter keys:\n";
-        for (const auto& key : missing_param_keys)
-            error += " - " + key.first.first + "." + key.first.second + "\n";
-    }
-
-    return Result::failed(error);
-}
-
-/**
 */
 void EvaluationManager::generateSubConfigurable(const std::string& class_id,
                                                 const std::string& instance_id)

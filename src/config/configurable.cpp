@@ -625,6 +625,115 @@ Configurable::MissingKeyMode Configurable::reconfigureParameterMode() const
     return MissingKeyMode::MustExist; 
 }
 
+namespace
+{
+    ResultT<nlohmann::json> jsonFromString(const std::string& str)
+    {
+        nlohmann::json config;
+        try
+        {
+            config = nlohmann::json::parse(str);
+
+            if (!config.is_object())
+                throw std::runtime_error("Configuration not a json object");
+        }
+        catch(const std::exception& e)
+        {
+            return ResultT<nlohmann::json>::failed("Could not parse configuration: " + std::string(e.what()));
+        }
+        catch(...)
+        {
+            return ResultT<nlohmann::json>::failed("Could not parse configuration: Unknown error");
+            return false;
+        }
+
+        return ResultT<nlohmann::json>::succeeded(config);
+    }
+}
+
+/**
+ */
+Result Configurable::applyJSONSettings(const nlohmann::json& settings_json)
+{
+    loginf << "CONFIG:\n" << settings_json.dump(4);
+
+    std::string error;
+    std::vector<Configuration::MissingKey> missing_subconfig_keys;
+    std::vector<Configuration::MissingKey> missing_param_keys;
+    auto res = reconfigure(settings_json, &missing_subconfig_keys, &missing_param_keys, false, &error);
+
+    if (res.first == ReconfigureError::NoError)
+    {
+        loginf << "configuration successfully applied";
+        return Result::succeeded();
+    }
+
+    if (error.empty())
+    {
+        if (!res.second.empty())
+            error = res.second;
+        else
+            error = "Unknown error";
+    }
+    error += " (Code " + std::to_string((int)res.first) + ")\n";
+
+    if (!missing_subconfig_keys.empty())
+    {
+        error += "missing subconfig keys:\n";
+        for (const auto& key : missing_subconfig_keys)
+            error += " - " + key.first.first + "." + key.first.second + "\n";
+    }
+
+    if (!missing_param_keys.empty())
+    {
+        error += "missing parameter keys:\n";
+        for (const auto& key : missing_param_keys)
+            error += " - " + key.first.first + "." + key.first.second + "\n";
+    }
+
+    return Result::failed(error);
+}
+
+/**
+ */
+Result Configurable::applyJSONStringSettings(const std::string& settings_json_str)
+{
+    auto r = jsonFromString(settings_json_str);
+    if (!r.ok())
+        return Result::failed(r.error());
+
+    traced_assert(r.hasResult());
+
+    loginf << "configuration successfully parsed";
+
+    return applyJSONSettings(r.result());
+}
+
+/**
+ */
+Result Configurable::applyJSONParameters(const nlohmann::json& params_json)
+{
+    auto wrapper = nlohmann::json::object();
+    wrapper[ Configuration::ParameterSection ] = params_json;
+
+    return applyJSONSettings(wrapper);
+}
+
+/**
+ */
+Result Configurable::applyJSONStringParameters(const std::string& params_json_str)
+{
+    auto r = jsonFromString(params_json_str);
+    if (!r.ok())
+        return Result::failed(r.error());
+
+    traced_assert(r.hasResult());
+
+    loginf << "configuration successfully parsed";
+
+    return applyJSONParameters(r.result());
+}
+
 // void Configurable::saveConfigurationAsTemplate (const std::string& template_name)
 //{
 //    traced_assert(parent_);

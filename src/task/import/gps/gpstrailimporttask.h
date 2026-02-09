@@ -145,6 +145,8 @@ protected:
     void parseCurrentFile ();
     //void checkParsedData (); // throws exceptions for errors
 
+    void updateDateFromString();
+
     std::string            current_filename_;
     boost::gregorian::date override_date_;
     unsigned int           line_id_ = 0;

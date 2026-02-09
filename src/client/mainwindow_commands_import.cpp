@@ -1186,50 +1186,64 @@ bool RTCommandImportGPSTrail::run_impl()
     import_task.setTargetAddress(false);
     import_task.setCallsign(false);
 
-    //reenable extra information based on whats provided
-    if (has_tod_offset_)
-    {
-        import_task.useTodOffset(true);
-        import_task.todOffset(tod_offset_);
-    }
+    loginf << "CONFIG:\n" << config_;
 
-    if (!date_.empty())
+    if (config_.empty())
     {
-        import_task.useOverrideDate(true);
-        import_task.overrideDate(boost::gregorian::from_string(date_));
-    }
+        //reenable extra information based on whats provided by parameters
+        if (has_tod_offset_)
+        {
+            import_task.useTodOffset(true);
+            import_task.todOffset(tod_offset_);
+        }
 
-    if (!mode_3a_code_.empty())
-    {
-        import_task.setMode3aCode(true);
-        import_task.mode3aCode(String::intFromOctalString(mode_3a_code_));
-    }
+        if (!date_.empty())
+        {
+            import_task.useOverrideDate(true);
+            import_task.overrideDate(boost::gregorian::from_string(date_));
+        }
 
-    if (!aircraft_address_.empty())
-    {
-        import_task.setTargetAddress(true);
-        import_task.targetAddress(String::intFromHexString(aircraft_address_));
-    }
+        if (!mode_3a_code_.empty())
+        {
+            import_task.setMode3aCode(true);
+            import_task.mode3aCode(String::intFromOctalString(mode_3a_code_));
+        }
 
-    if (!aircraft_id_.empty())
-    {
-        import_task.setCallsign(true);
-        import_task.callsign(aircraft_id_);
-    }
+        if (!aircraft_address_.empty())
+        {
+            import_task.setTargetAddress(true);
+            import_task.targetAddress(String::intFromHexString(aircraft_address_));
+        }
 
-    if (!name_.empty())
-    {
-        import_task.dsName(name_);
-    }
+        if (!aircraft_id_.empty())
+        {
+            import_task.setCallsign(true);
+            import_task.callsign(aircraft_id_);
+        }
 
-    if (sac_ >=  0)
-    {
-        import_task.dsSAC((unsigned int)sac_);
-    }
+        if (!name_.empty())
+        {
+            import_task.dsName(name_);
+        }
 
-    if (sic_ >=  0)
+        if (sac_ >=  0)
+        {
+            import_task.dsSAC((unsigned int)sac_);
+        }
+
+        if (sic_ >=  0)
+        {
+            import_task.dsSIC((unsigned int)sic_);
+        }
+    }
+    else
     {
-        import_task.dsSIC((unsigned int)sic_);
+        auto res = import_task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
     }
 
     //will parse the file
@@ -1259,7 +1273,8 @@ void RTCommandImportGPSTrail::collectOptions_impl(OptionsDescription& options,
     ("date,d", po::value<std::string>()->default_value(""), "optional override date, e.g. ’2025-01-01'")
     ("mode3a,m", po::value<std::string>()->default_value(""), "optional mode3a code in octal, e.g. ")
     ("address,a", po::value<std::string>()->default_value(""), "optional aircraft address in hex, e.g. ’0xffffff'")
-    ("id,i", po::value<std::string>()->default_value(""), "optional aircraft identification, e.g. ’ENTE'");
+    ("id,i", po::value<std::string>()->default_value(""), "optional aircraft identification, e.g. ’ENTE'")
+    ("config,c", po::value<std::string>()->default_value(""), "configuration as json string, will override existing settings or other provided parameters");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -1276,6 +1291,7 @@ void RTCommandImportGPSTrail::assignVariables_impl(const VariablesMap& variables
     RTCOMMAND_GET_VAR_OR_THROW(variables, "mode3a", std::string, mode_3a_code_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "address", std::string, aircraft_address_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "id", std::string, aircraft_id_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 }
 
 }

@@ -611,7 +611,13 @@ bool Client::run ()
             rt_man.addCommandFromConsole("import_json " + import_json_filename_);
 
         if (import_gps_trail_filename_.size())
-            rt_man.addCommandFromConsole("import_gps_trail " + import_gps_trail_filename_);
+        {
+            string cmd = "import_gps_trail --filename='" + import_gps_trail_filename_ + "'";
+            if (!import_gps_parameters_.empty())
+                cmd += " --config='" + import_gps_parameters_ + "'";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
 
         if (import_sectors_filename_.size())
             rt_man.addCommandFromConsole("import_sectors_json " + import_sectors_filename_);
@@ -806,36 +812,6 @@ void Client::checkAndSetupConfig()
             catch (exception& e)
             {
                 logerr << "JSON parse error in '" << import_asterix_parameters_ << "'";
-                throw e;
-            }
-        }
-
-        if (import_gps_parameters_.size())
-        {
-            loginf << "overriding gps import parameters";
-            using namespace nlohmann;
-
-            try {
-                json json_config = json::parse(import_gps_parameters_);
-
-                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
-                    "COMPASS", "COMPASS0"));
-                Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
-                    "COMPASS", "COMPASS0");
-
-                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
-                Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
-                    "TaskManager", "TaskManager0");
-
-                traced_assert(task_man_config.hasSubConfiguration("GPSTrailImportTask", "GPSTrailImportTask0"));
-                Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
-                    "GPSTrailImportTask", "GPSTrailImportTask0");
-
-                task_config.overrideJSONParameters(json_config);
-            }
-            catch (exception& e)
-            {
-                logerr << "JSON parse error in '" << import_gps_parameters_ << "'";
                 throw e;
             }
         }
