@@ -10,9 +10,9 @@
 
 The 'Extra Data' requirement is a recommended addition to the 'Detection' requirement, while not mandated by any standard known to the author. \\
 
-While the 'Detection' requirement detects "missing" test data, it ignores test data for which no reference exist - which might indicate issues in the reference data which might be of interest in the evaluation. \\
+While the 'Detection' requirement detects "missing" test data, it ignores test data for which no reference exists - which might indicate issues in the reference data which might be of interest in the evaluation. \\
 
-The 'Extra Data' requirement detects "extra" test data, i.e. test data for which no reference exists (and fulfills possible constraints), and calculates the number of extra target reports. Based on the number of target reports which are extra, and the number of target reports which are also detection by the reference, the Probability of Extra (PEx) data is calculated. The PEx must be less or equal than the defined 'Probability' for the requirement to pass. \\
+The 'Extra Data' requirement detects "extra" test data, i.e. test data for which no reference exists (and fulfills possible constraints), and calculates the number of extra target reports. Based on the number of target reports which are extra, and the number of target reports which are also detected by the reference, the Probability of Extra (PEx) data is calculated. The PEx must be less or equal than the defined 'Probability' for the requirement to pass. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of extra data
@@ -32,7 +32,7 @@ The 'Extra Data' requirement detects "extra" test data, i.e. test data for which
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & fir\_cut\_sim  \\ \hline
-    Reqirement Group & Name of the requirement group & Mandatory  \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory  \\ \hline
     Requirement & Name of the requirement & Extra Data  \\ \hline 
     Num Results & Total number of results & 728 \\ \hline
     Num Usable Results & Number of usable results & 250 \\ \hline
@@ -80,9 +80,9 @@ Also, a table is given for all single targets, sorted by PEx.
   \caption{Evaluation Extra Track requirement}
 \end{figure}
 
-The 'Extra Track' requirement is useful for Tracker evaluation, and detects if more than one test track exist for a target. \\
+The 'Extra Track' requirement is useful for Tracker evaluation, and detects if more than one test track exists for a target. \\
 
-First the time period of each track (by ocurrance of track number, with a maximum time difference of 5 minutes) is calculated. Then, for each test target report, it is checked if multiple track number periods match, and counted as extra update if there are more than 1. Based on the number of target reports which are extra, and the number of target reports which are also detection by the reference, the Probability of Extra (PEx) data is calculated. The PEx must be less or equal than the defined 'Probability' for the requirement to pass. \\
+First the time period of each track (by occurrence of track number, with a maximum time difference of 5 minutes) is calculated. Then, for each test target report, it is checked if multiple track number periods match, and counted as extra update if there are more than 1. Based on the number of target reports which are extra, and the number of target reports which are also detected by the reference, the Probability of Extra (PEx) data is calculated. The PEx must be less or equal than the defined 'Probability' for the requirement to pass. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of extra data
@@ -93,7 +93,7 @@ First the time period of each track (by ocurrance of track number, with a maximu
 \end{itemize}
 \ \\
 
-Please note that currently, in the case of multiple tracks existing at the same time, the requirement does not decided which track is correct and which one is extra, therefore all target reports are counted as being extra. \\
+Please note that currently, in the case of multiple tracks existing at the same time, the requirement does not decide which track is correct and which one is extra, therefore all target reports are counted as being extra. \\
 
 \subsubsection{Result Values}
 
@@ -105,7 +105,7 @@ Please note that currently, in the case of multiple tracks existing at the same 
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & fir\_cut\_sim \\ \hline
-    Reqirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory \\ \hline
     Requirement & Name of the requirement & Extra Track \\ \hline
     Num Results & Total number of results & 728 \\ \hline
     Num Usable Results & Number of usable results & 110 \\ \hline

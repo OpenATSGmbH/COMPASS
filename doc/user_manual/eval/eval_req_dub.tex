@@ -71,8 +71,8 @@ For each track, the number of target reports failing the movement checks (PDU) i
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & fir\_body\_cut \\ \hline
-    Reqirement Group & Name of the requirement group & Required \\ \hline
-    Reqirement & Name of the requirement & Dubious \\ \hline
+    Requirement Group & Name of the requirement group & Required \\ \hline
+    Requirement & Name of the requirement & Dubious \\ \hline
     Num Results & Total number of results & 690 \\ \hline
     Num Usable Results & Number of usable results & 504 \\ \hline
     Num Unusable Results & Number of unusable results & 186 \\ \hline
@@ -119,7 +119,7 @@ Also, a table is given for all single targets, sorted by PDT.
     Duration Non-Dubious [s] & Duration of non-dubious targets & 1247.36 \\ \hline
     Average Duration Dubious [s] & Average duration of dubious targets & 23.13 \\ \hline
     Duration Dubious Ratio [\%] & Duration ratio of dubious targets & 6.9 \\ \hline
-    Duration Non-Dubious Ration [\%] & Duration ratio of non-dubious targets & 93.1 \\ \hline
+    Duration Non-Dubious Ratio [\%] & Duration ratio of non-dubious targets & 93.1 \\ \hline
     PDT [\%] & Probability of dubious target &  \\ \hline
     Condition &  & <= 90.00 \\ \hline
     Condition Fulfilled &  & Failed \\ \hline
@@ -167,9 +167,9 @@ For each track number (existing in an UTN) a number of checks are performed, and
 
 \subsubsection{Calculation}
 
-As a summary, the test data is used to calculate the number of dubious tracks in relation to the total number of tracks, which gives the probability of dubios track (PDT). If this probability is larger than the required one, the requirement is failed. \\
+As a summary, the test data is used to calculate the number of dubious tracks in relation to the total number of tracks, which gives the probability of dubious track (PDT). If this probability is larger than the required one, the requirement is failed. \\
 
-A track is be ignored (from dubious detection) if the last-updating sensor parameter is active, and the track was updated by at any point by any other sensor. \\
+A track is ignored (from dubious detection) if the last-updating sensor parameter is active, and the track was updated at any point by any other sensor. \\
 
 The total track updates are marked as dubious if any of the following cases hold:
 \begin{itemize}  
@@ -202,8 +202,8 @@ For each track, the number of target reports failing the movement checks (PDU) i
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & fir\_body\_cut \\ \hline
-    Reqirement Group & Name of the requirement group & Required \\ \hline
-    Reqirement & Name of the requirement & Dubious \\ \hline
+    Requirement Group & Name of the requirement group & Required \\ \hline
+    Requirement & Name of the requirement & Dubious \\ \hline
     Num Results & Total number of results & 690 \\ \hline
     Num Usable Results & Number of usable results & 504 \\ \hline
     Num Unusable Results & Number of unusable results & 186 \\ \hline
