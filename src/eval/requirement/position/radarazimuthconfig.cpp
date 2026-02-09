@@ -33,7 +33,7 @@ namespace EvaluationRequirement
 PositionRadarAzimuthConfig::PositionRadarAzimuthConfig(
         const std::string& class_id, const std::string& instance_id,
         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : PositionBaseConfig(class_id, instance_id, group, standard, calculator)
+    : PositionBaseProbConfig(class_id, instance_id, group, standard, calculator)
 {
     registerParameter("threshold_value", &threshold_value_, 0.1);
 }

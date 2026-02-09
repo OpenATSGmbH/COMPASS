@@ -19,7 +19,7 @@
 
 #include "dbfilter.h"
 #include "dbfilterwidget.h"
-#include "filtergeneratorwidget.h"
+#include "filtergeneratordialog.h"
 #include "filtermanager.h"
 #include "global.h"
 #include "logger.h"
@@ -44,7 +44,6 @@ FilterManagerWidget::FilterManagerWidget(FilterManager& filter_manager,
                                          Qt::WindowFlags f)
 :   ToolBoxWidget(parent)
 ,   filter_manager_         (filter_manager)
-,   filter_generator_widget_(nullptr)
 {
     QFont font_bold;
     font_bold.setBold(true);
@@ -98,8 +97,6 @@ FilterManagerWidget::FilterManagerWidget(FilterManager& filter_manager,
  */
 FilterManagerWidget::~FilterManagerWidget()
 {
-    if (filter_generator_widget_)
-        filter_generator_widget_ = nullptr;
 }
 
 /**
@@ -144,6 +141,21 @@ void FilterManagerWidget::addToConfigMenu(QMenu* menu)
 {
     QAction* new_filter_action = menu->addAction("Add New Filter");
     connect(new_filter_action, &QAction::triggered, this, &FilterManagerWidget::addFilter);
+
+    auto delete_menu = menu->addMenu("Delete Filter");
+    bool has_custom = false;
+
+    for (const auto& filter : filter_manager_.filters())
+    {
+        if (filter->isCustom())
+        {
+            has_custom = true;
+            std::string name = filter->getName();
+            QAction* action = delete_menu->addAction(QString::fromStdString(name));
+            connect(action, &QAction::triggered, this, [this, name]() { deleteFilter(name); });
+        }
+    }
+    delete_menu->setEnabled(has_custom);
 
     menu->addSeparator();
 
@@ -220,26 +232,24 @@ void FilterManagerWidget::updateUseFilters ()
 
 /**
  */
+void FilterManagerWidget::deleteFilter(const std::string& name)
+{
+    filter_manager_.deleteFilter(name);
+    updateFilters();
+}
+
+/**
+ */
 void FilterManagerWidget::addFilter()
 {
     loginf;
-    traced_assert(!filter_generator_widget_);
-
-    filter_generator_widget_.reset(new FilterGeneratorWidget());
-    connect(filter_generator_widget_.get(), SIGNAL(filterWidgetAction(bool)),
-            this, SLOT(filterWidgetActionSlot(bool)));
-
-    filter_generator_widget_->show();
-}
-
-void FilterManagerWidget::filterWidgetActionSlot(bool generated)
-{
-    loginf << "generated " << generated;
-
-    traced_assert(filter_generator_widget_);
-    filter_generator_widget_ = nullptr;
-
-    updateFilters();
+    
+    FilterGeneratorDialog filter_generator(this);
+    if (filter_generator.exec() == QDialog::Accepted)
+    {
+        filter_manager_.sortFilters();
+        updateFilters();
+    }
 }
 
 /**
@@ -248,14 +258,11 @@ void FilterManagerWidget::updateFilters()
 {
     loginf;
 
-    QLayoutItem* child;
-    while (!ds_filter_layout_->isEmpty() && (child = ds_filter_layout_->takeAt(0)))
-    
     while (!ds_filter_layout_->isEmpty())
     {
         auto item = ds_filter_layout_->takeAt(0);
 
-        //deletes only the layout item, not the contained widget
+        // deletes only the layout item, not the contained widget
         delete item;
     }
 
@@ -268,7 +275,7 @@ void FilterManagerWidget::updateFilters()
         if (!it->getActive())
             it->widget()->collapse();
 
-        connect(it->widget(), &DBFilterWidget::filterContentChanged, this, &FilterManagerWidget::syncFilterLayouts, Qt::UniqueConnection);
+        //connect(it->widget(), &DBFilterWidget::filterContentChanged, this, &FilterManagerWidget::syncFilterLayouts, Qt::UniqueConnection);
 
         ds_filter_layout_->addWidget(it->widget());
     }

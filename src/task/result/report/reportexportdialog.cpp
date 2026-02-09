@@ -140,7 +140,7 @@ void ReportExportDialog::createUI()
     main_layout->addWidget(config_widget_);
     
     base_dir_button_ = new QPushButton;
-    base_dir_button_->setIcon(Utils::Files::getIcon("folder.png"));
+    base_dir_button_->setIcon(Utils::Files::createIcon("folder.png"));
 
     connect(base_dir_button_, &QPushButton::pressed, this, &ReportExportDialog::editBaseDir);
 

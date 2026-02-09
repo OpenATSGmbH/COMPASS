@@ -15,24 +15,32 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "evaluationtargetstabwidget.h"
+#pragma once
 
-#include "evaluationmanagerwidget.h"
-#include "evaluationmanager.h"
-//#include "logger.h"
+#include "result.h"
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
+#include <json.hpp>
 
-EvaluationTargetsTabWidget::EvaluationTargetsTabWidget(EvaluationManager& eval_man,
-                                                       EvaluationManagerWidget& man_widget)
-    : QWidget(nullptr), eval_man_(eval_man), man_widget_(man_widget)
+#include <QChar>
+
+class QString;
+class QStringList;
+
+namespace csv
 {
-    QVBoxLayout* main_layout = new QVBoxLayout();
 
-    main_layout->addWidget(eval_man_.calculator().data().widget());
+class CSVImport
+{
+public:
+    CSVImport() = default;
+    virtual ~CSVImport() = default;
 
-    setContentsMargins(0, 0, 0, 0);
-    setLayout(main_layout);
-}
+    ResultT<nlohmann::json> parse(const std::string& fn,
+                                  const QChar& separator = ';',
+                                  bool decimal_comma = false);
+private:
+    bool parseDecimalCommaNumber(const QString& field, double& number, bool decimal_comma) const;
+    bool parseCsvLine(QStringList& fields, const QString &line, const QChar& sep) const;
+};
+
+} // namespace csv

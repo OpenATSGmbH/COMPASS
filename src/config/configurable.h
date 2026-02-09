@@ -21,6 +21,7 @@
 
 #include "configuration.h"
 #include "rtcommand_defs.h"
+#include "result.h"
 
 #include <map>
 #include <vector>
@@ -91,6 +92,12 @@ public:
 
     virtual std::string getPath() const;
 
+    /// @brief Adds a new sub-configuration based on class id and instance id
+    Configuration& addNewSubConfiguration(const std::string& class_id,
+                                          const std::string& instance_id);
+    /// @brief Adds a new sub-configuration based on class id, instance id is generated
+    Configuration& addNewSubConfiguration(const std::string& class_id);
+
     /// @brief Override for creation of sub-configurables
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id);
@@ -135,6 +142,11 @@ public:
                                   std::vector<MissingKey>* missing_param_keys = nullptr,
                                   bool assert_on_error = false,
                                   std::string* error = nullptr);
+
+    virtual Result applyJSONSettings(const nlohmann::json& settings_json);
+    virtual Result applyJSONStringSettings(const std::string& settings_json_str);
+    virtual Result applyJSONParameters(const nlohmann::json& params_json);
+    virtual Result applyJSONStringParameters(const std::string& params_json_str);
 
     static std::string keyID(const std::string& class_id,
                              const std::string& instance_id);
@@ -205,11 +217,6 @@ private:
     /// @brief Removes a child configurable
     void removeChildConfigurable(Configurable& child, bool remove_config = true);
 
-    /// @brief Adds a new sub-configuration based on class id and instance id
-    Configuration& addNewSubConfiguration(const std::string& class_id,
-                                          const std::string& instance_id);
-    /// @brief Adds a new sub-configuration based on class id, instance id is generated
-    Configuration& addNewSubConfiguration(const std::string& class_id);
     /// @brief Adds a new sub-configuration by reference and copy constructor
     Configuration& addNewSubConfiguration(std::unique_ptr<Configuration>&& configuration);
 

@@ -311,7 +311,7 @@ protected:
     virtual void updateSlider(int& n0, int& n1) = 0;
     virtual void updateRange(QString& s0, QString& s1, RangeType limit) = 0;
 
-    static const int MinSliderSteps = 10;
+    static const int MinSliderSteps;
 
     RangeSlider* slider_ = nullptr;
 

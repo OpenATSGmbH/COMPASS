@@ -1,4 +1,3 @@
-
 \section{Targets}
 \label{sec:targets}
 
@@ -11,7 +10,7 @@
 In the 'Targets' tool, all existing unique targets are listed. If no reference data has been reconstructed, and thus no associations were calculated, the list is empty. 
 See chapter \nameref{sec:reconst} for instructions about how to reconstruct reference data. \\
 
-The table listing the targets obtains mutliple columns, which are divided into groups.
+The table listing the targets contains multiple columns, which are divided into groups.
 These groups can be hidden or shown individually for more clarity. The following groups and columns exist:
 
 \begin{itemize}  
@@ -47,7 +46,7 @@ These groups can be hidden or shown individually for more clarity. The following
 \item ADS-B: Columns regarding minimal ADS-B information
 \begin{itemize}  
   \item ADS-B: Count of associated ADS-B target reports
-  \item MOPS: ADS-B MOPS version and target report cout
+  \item MOPS: ADS-B MOPS version and target report count
 \end{itemize}
 \end{itemize}
 \ \\
@@ -117,23 +116,23 @@ In the Targets table:
  \end{itemize}
  \  \\
 
-Commonly, all targets are used in an evaluation. However, there are several method how to de-selection certain parts of the evaluated data:
+Commonly, all targets are used in an evaluation. However, there are several methods how to de-select certain parts of the evaluated data:
 \begin{itemize}
   \item Global: 'Edit Global Excluded Time Windows'
 \begin{itemize}
   \item Specify begin/end time: Nothing outside this time is evaluated
-  \item Specify exlude time window(s): Nothing inside these time windows is evaluated
+  \item Specify exclude time window(s): Nothing inside these time windows is evaluated
  \end{itemize}   
   \item For certain target(s)
 \begin{itemize}
   \item Exclude targets fully: Nothing is evaluated (for the given targets)
-  \item Specify exlude time window(s): Nothing inside these time windows is evaluated (for the given targets)
-  \item Specify exlude requirements: These requirements are not evaluated (for the given targets)
+  \item Specify exclude time window(s): Nothing inside these time windows is evaluated (for the given targets)
+  \item Specify exclude requirements: These requirements are not evaluated (for the given targets)
  \end{itemize}   
  \end{itemize} 
  \  \\
 
-The 'Evaluation' submenu provides global operations for settings Evaluation target usage and constraints for all listed targets.
+The 'Evaluation' submenu provides global operations for setting Evaluation target usage and constraints for all listed targets.
 
 \begin{figure}[H]
   \center
@@ -152,6 +151,7 @@ The 'Evaluation' submenu provides global operations for settings Evaluation targ
 \ \\
 
 \subsubsection{Global Excluded Time Windows}
+\label{sec:ui_eval_global_excl_tw}
 
 \begin{figure}[H]
   \center
@@ -164,10 +164,11 @@ The 'Evaluation' submenu provides global operations for settings Evaluation targ
   \item Timestamp End: Last timestamp to be loaded
   \item Excluded Time Windows
   \begin{itemize}
-  \item Simple list
-  \item Existing ones can be edited with double click or deleted
-  \item New ones can be added using 'Add' button
-\end{itemize} 
+    \item Simple list
+    \item Existing ones can be edited with double click or deleted
+    \item New ones can be added using 'Add' button
+    \item Specify begin timestamp, end timestamp and an optional comment
+  \end{itemize} 
 \end{itemize} 
 \ \\
 
@@ -181,10 +182,11 @@ For any number of selected targets, the operation can be performed:
 \end{figure}
 
 \subsubsection{Single Targets: Edit Excluded Time Windows}
+\label{sec:ui_eval_target_excl_tw}
 
 \begin{figure}[H]
   \center
-  \includegraphics[width=10cm,frame]{figures/eval_targets_excl_tw.png}
+  \includegraphics[width=10cm,frame]{figures/eval_targets_excl_tw.png} 
 \end{figure}
 
 For any number of selected targets, the operation can be performed:
@@ -192,16 +194,17 @@ For any number of selected targets, the operation can be performed:
   \item UTNs: List, read-only
   \item Excluded Time Windows
   \begin{itemize}
-  \item Simple list
-  \item Existing ones can be edited with double click or deleted
-  \item New ones can be added using 'Add' button
-\end{itemize} 
-  \item Comment: Set in all listed UTNs if given
+    \item Simple list
+    \item Existing ones can be edited with double click or deleted
+    \item New ones can be added using 'Add' button
+    \item Specify begin timestamp, end timestamp and an optional comment
+  \end{itemize} 
   \item Only set if 'OK' is clicked
 \end{itemize} 
 \ \\
 
 \subsubsection{Single Targets: Edit Excluded Requirements}
+\label{sec:ui_eval_target_excl_req}
 
 \begin{figure}[H]
   \center
@@ -214,7 +217,7 @@ For any number of selected targets, the operation can be performed:
   \item Excluded Requirement List
   \begin{itemize}
   \item List of requirements from \textbf{current standard}
-  \item EChecked means excluded
+  \item Checked means excluded
 \end{itemize} 
   \item Comment: Set in all listed UTNs if given
   \item Only set if 'OK' is clicked

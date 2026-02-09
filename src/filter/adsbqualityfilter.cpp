@@ -76,12 +76,12 @@ ADSBQualityFilter::~ADSBQualityFilter() {}
 
 bool ADSBQualityFilter::filters(const std::string& dbcont_name)
 {
-    loginf << dbcont_name << " " << (dbcont_name == "CAT021");
+    logdbg << dbcont_name << " " << (dbcont_name == "CAT021");
 
     return dbcont_name == "CAT021";
 }
 
-std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     loginf << "dbcont_name " << dbcontent_name << " active " << active_;
 

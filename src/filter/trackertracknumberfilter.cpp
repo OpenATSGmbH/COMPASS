@@ -49,7 +49,7 @@ bool TrackerTrackNumberFilter::filters(const std::string& dbcontent_name)
     return dbcontent_name == "CAT062";
 }
 
-std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 

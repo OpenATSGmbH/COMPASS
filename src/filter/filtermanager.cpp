@@ -53,6 +53,8 @@ FilterManager::FilterManager(const std::string& class_id, const std::string& ins
     registerParameter("db_id", &db_id_, std::string());
 
     createSubConfigurables();
+
+    sortFilters();
 }
 
 FilterManager::~FilterManager()
@@ -74,7 +76,7 @@ bool FilterManager::useFilters() const
 void FilterManager::useFilters(bool use_filters)
 {
     use_filters_ = use_filters;
-    loginf << "start" << use_filters_;
+    loginf << "use " << use_filters_;
 
     if (widget_)
         widget_->updateUseFilters();
@@ -254,7 +256,7 @@ void FilterManager::checkSubConfigurables()
     }
 }
 
-std::string FilterManager::getSQLCondition(const std::string& dbcontent_name)
+std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
     traced_assert(COMPASS::instance().dbContentManager().dbContent(dbcontent_name).loadable());
 
@@ -271,7 +273,7 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name)
 
         if (filter->getActive() && filter->filters(dbcontent_name))
         {
-            condition_str = filter->getConditionString(dbcontent_name, first);
+            condition_str = filter->getConditionString(dbcontent_name, read_set, first);
 
             logdbg << "filter " << filter->instanceId()
                    << " condition '" << condition_str << "'";
@@ -309,6 +311,23 @@ DBFilter* FilterManager::getFilter (const std::string& name)
     traced_assert(it != filters_.end());
 
     return it->get();
+}
+
+void FilterManager::deleteFilter(const std::string& name)
+{
+    auto it = std::find_if(filters_.begin(), filters_.end(), 
+        [&name](const std::unique_ptr<DBFilter>& f) { return f->getName() == name; });
+
+    traced_assert(it != filters_.end());
+    filters_.erase(it);
+}
+
+void FilterManager::sortFilters()
+{
+    std::sort(filters_.begin(), filters_.end(),
+        [](const std::unique_ptr<DBFilter>& a, const std::unique_ptr<DBFilter>& b) {
+            return a->getName() < b->getName();
+        });
 }
 
 
@@ -499,6 +518,14 @@ void FilterManager::dataSourcesChangedSlot()
         TrackerTrackNumberFilter* filter = dynamic_cast<TrackerTrackNumberFilter*>(getFilter("Tracker Track Number"));
         traced_assert(filter);
         filter->updateDataSourcesSlot();
+    }
+
+    if (hasFilter("MLAT RUs"))
+    {
+        MLATRUFilter* filter = dynamic_cast<MLATRUFilter*>(getFilter("MLAT RUs"));
+        traced_assert(filter);
+        if (filter->widget())
+            filter->widget()->update();
     }
 }
 

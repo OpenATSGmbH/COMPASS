@@ -16,6 +16,7 @@
  */
 
 #include "duckdbinstance.h"
+#include "dbinterface.h"
 #include "duckdbconnection.h"
 
 #include "logger.h"
@@ -45,9 +46,9 @@ namespace
                 duckdb_destroy_config(&config_);
         }
 
-        void configure(const DuckDBSettings& settings)
+        void configure(const DuckDBSettings& settings, const DBInterface& dbinterface, bool db_in_memory)
         {
-            settings.configure(&config_);
+            settings.configure(&config_, dbinterface, db_in_memory);
         }
 
         bool valid() const { return ok_; }
@@ -82,8 +83,10 @@ Result DuckDBInstance::open_impl(const std::string& file_name)
     if (!config.valid()) 
         return Result::failed("Could not create db configuration");
 
+    bool db_in_memory = file_name.empty();
+
     //configure
-    config.configure(settings_);
+    config.configure(settings_, interface(), db_in_memory);
 
     //open db
     char* error = nullptr;
@@ -203,6 +206,132 @@ Result DuckDBInstance::cleanupDB_impl(const std::string& db_fn)
     
     duckdb_disconnect(&con);
     duckdb_close(&db);
+
+    return Result::succeeded();
+}
+
+/**
+ */
+// Result DuckDBInstance::cleanupDBInMem_impl()
+// {
+//     loginf;
+
+//     std::string sql = std::string("ATTACH ':memory:' AS backup_db;") +
+//                       "COPY FROM DATABASE memory TO backup_db;" + 
+//                       "COPY FROM DATABASE backup_db TO memory;";
+
+//     duckdb_connection con;
+//     if (duckdb_connect(db_, &con) == DuckDBError) 
+//     {
+//         return Result::failed("Could not open connection to memory db");
+//     }
+    
+//     auto state = duckdb_query(con, sql.c_str(), nullptr);
+//     if (state != DuckDBSuccess)
+//     {
+//         return Result::failed("Compressing database failed");
+//     }
+
+//     duckdb_disconnect(&con);
+
+//     return Result::succeeded();
+// }
+
+Result DuckDBInstance::cleanupDBInMem_impl()
+{
+    loginf;
+
+    // Use /dev/shm on Linux to store the temp file in RAM
+#ifdef __linux__
+    std::string temp_path = "/dev/shm/compass_memdb_cleanup.tmp";
+#else
+    std::string temp_path = "compass_memdb_cleanup.tmp"; 
+#endif
+
+    if (Files::fileExists(temp_path)) {
+        Files::deleteFile(temp_path);
+    }
+
+    // 1. Export using a local transient connection
+    // We attach this directly to the underlying db_ handle
+    duckdb_connection con;
+    if (duckdb_connect(db_, &con) == DuckDBError) 
+    {
+        return Result::failed("Could not open connection to memory db");
+    }
+    
+    // Perform a checkpoint to flush the WAL to the main storage.
+    // This ensures that the subsequent COPY operation reads from a consistent
+    // state and avoids potential corruption from concurrent operations.
+    duckdb_query(con, "FORCE CHECKPOINT;", nullptr);
+
+    std::string sql_export = "ATTACH '" + temp_path + "' AS backup_ram;" +
+                             "COPY FROM DATABASE memory TO backup_ram;";
+
+    //loginf << "UGA1";
+    auto state = duckdb_query(con, sql_export.c_str(), nullptr);
+
+    if (state != DuckDBSuccess)
+    {
+        Files::deleteFile(temp_path);
+        return Result::failed("Exporting database to RAM buffer failed");
+    }
+
+    //loginf << "UGA2";
+    duckdb_disconnect(&con);
+
+    // 2. FORCE CLOSE ALL CONNECTIONS
+    // Call the base class close(), which destroys default_connection_, 
+    // concurrent_connections_, and custom_connections_.
+    // This is critical to ensure the old duckdb_database handle refcount hits 0.
+    //loginf << "UGA3";
+    close();
+
+    // 3. Re-open the database (creates new duckdb_database instance)
+    // Use openInMemory() instead of open("") to avoid the base class assertion failure.
+    //loginf << "UGA4";
+    auto res = openInMemory(); 
+    if (!res.ok())
+    {
+        Files::deleteFile(temp_path);
+        return Result::failed(std::string("Could not reopen memory db: ") + res.error());
+    }
+
+    //loginf << "UGA5";
+    // 4. Import using a local transient connection on the NEW db_
+    if (duckdb_connect(db_, &con) == DuckDBError) 
+    {
+        Files::deleteFile(temp_path);
+        return Result::failed("Could not connect to new memory db");
+    }
+    
+    std::string sql_import = "ATTACH '" + temp_path + "' AS backup_ram;" +
+                             "COPY FROM DATABASE backup_ram TO memory;" + 
+                             "DETACH backup_ram;";
+
+    //loginf << "UGA6";
+    state = duckdb_query(con, sql_import.c_str(), nullptr);
+
+    if (state != DuckDBSuccess)
+    {
+        return Result::failed("Restoring database failed");
+    }
+
+    //loginf << "UGA7";
+    duckdb_disconnect(&con);
+    
+    Files::deleteFile(temp_path);
+
+    //loginf << "UGA8";
+
+    // [FIX] Update the C++ cache of existing tables.
+    // openInMemory() scanned an empty DB, so the cache currently thinks no tables exist.
+    // Since we just imported them back, we must refresh the table info map.
+    auto ti_res = updateTableInfo();
+    if (!ti_res.ok())
+    {
+        return Result::failed(std::string("Updating table info failed: ") + ti_res.error());
+    }
 
     return Result::succeeded();
 }

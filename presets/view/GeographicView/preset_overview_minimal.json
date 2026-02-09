@@ -1,5 +1,5 @@
 {
-    "app_version": "0.7.6",
+    "app_version": "0.9.2",
     "category": "Default",
     "deployed": true,
     "description": "Gives an overview of the data, color by DBContent over the minimal 2D map.",
@@ -124,18 +124,6 @@
             "overlay_text_color_invert": false,
             "overload_text_color_str": "#FF0000",
             "position_accuracy_vars_scale": 2.0,
-            "radar_layer_config": {
-                "show_fft": {},
-                "show_labels": true,
-                "show_layer": true,
-                "show_radars": {},
-                "show_range_ring": true,
-                "show_range_rings": true
-            },
-            "sector_layer_config": {
-                "show_layer": false,
-                "show_layers": {}
-            },
             "selection_color": "#FFFF00",
             "status_message_font_size": 24,
             "text_background_color_str": "rgba(0,0,0,150)",

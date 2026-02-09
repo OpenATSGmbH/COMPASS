@@ -40,6 +40,7 @@ public:
         int          value_type;
 
         unsigned int grid_resolution;
+        unsigned int max_grid_resolution;
 
         std::string  render_color_value_min;
         std::string  render_color_value_max;
@@ -94,6 +95,7 @@ protected:
     virtual void checkSubConfigurables() override;
     virtual void updateSelection() override;
 
+    virtual void preVariableChangedEvent(int idx, const std::string& dbcont, const std::string& name) override;
     virtual void postVariableChangedEvent(int idx) override;
 
     virtual bool init_impl() override;
@@ -109,4 +111,6 @@ protected:
     GridViewWidget* widget_ = nullptr;
 
     Settings settings_;
+
+    PropertyDataType prop_data_type_before_change_;
 };

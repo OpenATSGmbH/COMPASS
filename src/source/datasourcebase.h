@@ -22,6 +22,9 @@
 
 #include <string>
 
+class DataSourceRemoteUnit;
+struct RemoteUnitDefinition;
+
 namespace dbContent
 {
 
@@ -81,6 +84,7 @@ public:
     void sic(unsigned int sic);
 
     virtual unsigned int id() const; // from sac/sic
+    virtual bool inDataBase() const = 0;
 
     std::string name() const;
     void name(const std::string &name);
@@ -135,22 +139,42 @@ public:
 
     bool hasRadarRanges() const;
     void addRadarRanges();
-    std::map<std::string, double> radarRanges() const;
+    void addRadarRangesIfMissing();
+    std::map<std::string, double> radarRanges() const; 
     void radarRange (const std::string& key, const double range);
     void removeRadarRange(const std::string& key);
 
     bool hasRadarAccuracies() const;
     void addRadarAccuracies();
+    void addRadarAccuraciesIfMissing();
     std::map<std::string, double> radarAccuracies() const;
     void radarAccuracy (const std::string& key, const double value);
 
     // network stuff
     bool hasNetworkLines() const;
     void addNetworkLines();
+    void addNetworkLinesIfMissing(); 
     std::map<std::string, std::shared_ptr<DataSourceLineInfo>> networkLines() const;
     bool hasNetworkLine (const std::string& key) const;
     void createNetworkLine (const std::string& key);
     std::shared_ptr<DataSourceLineInfo> networkLine (const std::string& key); // creates if not exists
+
+    // remote units
+    bool hasRemoteUnits() const;
+    void addRemoteUnits();
+    void addRemoteUnitsIfMissing();
+    std::map<int, std::shared_ptr<DataSourceRemoteUnit>> remoteUnits() const;
+    bool hasRemoteUnit(int index) const;
+    std::shared_ptr<DataSourceRemoteUnit> createRemoteUnit(int index);
+    std::shared_ptr<DataSourceRemoteUnit> createRemoteUnit(const RemoteUnitDefinition& ru_def);
+    void createRemoteUnits(const std::map<int, RemoteUnitDefinition>& ru_defs);
+    std::shared_ptr<DataSourceRemoteUnit> remoteUnit(int index); // creates if not exists
+    void removeRemoteUnit(int index);
+    void removeRemoteUnits();
+    static bool importRemoteUnitsCSV(std::map<int, RemoteUnitDefinition>& ru_defs,
+                                     const std::string& fn, 
+                                     std::string* error = nullptr);
+    std::map<std::string, std::vector<unsigned int>> mlatRUNames() const;
 
     void setFromJSONDeprecated (const nlohmann::json& j);
     void setFromJSON (const nlohmann::json& j);
@@ -162,6 +186,9 @@ public:
 
     static std::string detectionTypeToString(DetectionType type);
     static DetectionType detectionTypeFromString(const std::string& str);
+
+    static std::string dsTypeToString(DataSourceType type);
+    static DataSourceType dsTypeFromString(const std::string& str);
 
 protected:
     std::string ds_type_;
@@ -177,8 +204,10 @@ protected:
     nlohmann::json info_;
 
     std::map<std::string, std::shared_ptr<DataSourceLineInfo>> line_info_;
+    std::map<int, std::shared_ptr<DataSourceRemoteUnit>>       remote_unit_info_;
 
     void parseNetworkLineInfo();
+    void parseRemoteUnits();
 };
 
 }

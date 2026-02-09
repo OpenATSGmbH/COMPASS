@@ -333,7 +333,7 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
 }
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(
-    unsigned long rec_num, bool add_to_tracker, bool reestimate)
+    unsigned long rec_num, bool add_to_chain, bool reestimate)
 {
     bool do_debug = false;
 
@@ -448,10 +448,14 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
     {
         if (ecat_)
         {
-            if (*tr.ecat_ != ecat_)
+            if (*tr.ecat_ != ecat_ && !reported_mismatches_.count("ecat"))
+            {
                 logwrn << utn_ << ": ecat mismatch, target ecat "
                        << *ecat_ << " " << String::ecatToString(*ecat_)
                        << " tr " << *tr.ecat_ << " " << String::ecatToString(*tr.ecat_) << "";
+
+                reported_mismatches_.insert("ecat");
+            }
         }
         else
             ecat_ = *tr.ecat_;
@@ -459,10 +463,12 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     if (tr.acad_)
     {
-        if (acads_.size() && !acads_.count(*tr.acad_))
+        if (acads_.size() && !acads_.count(*tr.acad_) && !reported_mismatches_.count("acad"))
         {
             logwrn << utn_ << ": acad mismatch, target "
                    << asStr() << " tr '" << tr.asStr() << "'";
+
+            reported_mismatches_.insert("acad");
         }
 
         if (!acads_.count(*tr.acad_))
@@ -535,14 +541,14 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     TargetReportAddResult result = TargetReportAddResult::Skipped;
 
-    if (add_to_tracker) //!tr.doNotUsePosition()
+    if (add_to_chain) //!tr.doNotUsePosition()
     {
-        if (!hasTracker())
+        if (!hasChain())
         {
             if (do_debug)
                 loginf << "DBG add to tracker: reinit";
 
-            reinitTracker();
+            reinitChain();
         }
 
         reconstruction::UpdateStats stats;
@@ -550,7 +556,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         if (do_debug)
             loginf << "DBG add to tracker: addToTracker";
 
-        result = addNewTRToTracker(tr, reestimate, &stats);
+        result = addNewTRToChain(tr, reestimate, &stats);
 
         if (reestimate && result != TargetReportAddResult::Skipped)
         {
@@ -717,6 +723,8 @@ std::string ReconstructorTarget::asStr() const
         ss << "'";
     }
 
+    ss << " #tr " << target_reports_.size(); 
+
 
     //    if (track_nums_.size())
     //    {
@@ -874,6 +882,9 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
                                                                         const InterpOptions& interp_options) const
 // lower/upper times, invalid ts if not existing
 {
+    if (tr_timestamps_.empty())
+        return {nullptr, nullptr};
+
     bool debug = false; //interp_options.debug();
 
     std::multimap<boost::posix_time::ptime, unsigned long>::const_iterator it_lower, it_upper;
@@ -1105,6 +1116,9 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
 ReconstructorTarget::ReferencePair ReconstructorTarget::refDataFor (ptime timestamp, time_duration d_max) const
 // lower/upper times, invalid ts if not existing
 {
+    if (references_.empty())
+        return {nullptr, nullptr};
+
     if (references_.count(timestamp))
         return {&references_.at(timestamp), nullptr}; // contains exact value
 
@@ -2349,6 +2363,11 @@ std::map <std::string, unsigned int> ReconstructorTarget::getDBContentCounts() c
     return counts;
 }
 
+/**
+ * Returns 
+ * - the next written reference data as buffer (ref data in [slice_begin - glue_region, slice_end - glue_region])
+ * - the next glue portion of the reference data as buffer (ref data in [slice_end - glue_region, slice_end])
+ */
 std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget::createReferenceBuffer()
 {
     logdbg2 << "utn " << utn_ << " ref size " << references_.size();
@@ -2963,6 +2982,8 @@ void ReconstructorTarget::removeOutdatedTargetReports()
     //@TODO: check record number?
     standing_adsb_target_.reset();
 
+    reported_mismatches_.clear(); // report in each slice
+
     // if (chain())
     //     chain()->removeUpdatesBefore(reconstructor_.currentSlice().remove_before_time_);
 
@@ -3027,22 +3048,22 @@ TargetBase::Category ReconstructorTarget::targetCategory() const
 }
 
 
-bool ReconstructorTarget::hasTracker() const
+bool ReconstructorTarget::hasChain() const
 {
     return (chain() != nullptr);
 }
 
-size_t ReconstructorTarget::trackerCount() const
+size_t ReconstructorTarget::chainCount() const
 {
     return chain()->size();
 }
 
-boost::posix_time::ptime ReconstructorTarget::trackerTime(size_t idx) const
+boost::posix_time::ptime ReconstructorTarget::chainTime(size_t idx) const
 {
     return chain()->getUpdate(idx).t;
 }
 
-void ReconstructorTarget::reinitTracker()
+void ReconstructorTarget::reinitChain()
 {
     chain() = reconstructor_.createConfiguredAssocChain(dynamic_insertions_);
 
@@ -3086,7 +3107,7 @@ bool ReconstructorTarget::checkChainBeforeAdd(const dbContent::targetReport::Rec
     return true;
 }
 
-ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToChain(const dbContent::targetReport::ReconstructorInfo& tr, 
                                                                                   bool reestimate,
                                                                                   reconstruction::UpdateStats* stats)
 {
@@ -3111,7 +3132,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
             {
                 //@TODO: save some reestimation runs
                 //@TODO: log fails/skips
-                addToTracker(tr_adsb_standing, standing_adsb_target_->ts_next_update, reestimate);
+                addToChain(tr_adsb_standing, standing_adsb_target_->ts_next_update, reestimate);
                 standing_adsb_target_->addUpdate();
 
                 ++num_updates;
@@ -3131,7 +3152,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
     }
 
     //add new tr to tracker
-    auto ret = addToTracker(tr, tr.timestamp_, reestimate, stats);
+    auto ret = addToChain(tr, tr.timestamp_, reestimate, stats);
 
     if (reconstructor_.settings().use_stopped_adsb_tracking_)
     {
@@ -3150,7 +3171,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addNewTRToTracke
     return ret;
 }
 
-ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addToChain(const dbContent::targetReport::ReconstructorInfo& tr, 
                                                                              const boost::posix_time::ptime& ts,
                                                                              bool reestimate, 
                                                                              reconstruction::UpdateStats* stats)
@@ -3313,11 +3334,6 @@ bool ReconstructorTarget::getChainState(reconstruction::Measurement& mm,
     traced_assert(ok);
 
     return ok;
-}
-
-bool ReconstructorTarget::hasChain() const
-{
-    return chain().get() != nullptr;
 }
 
 const reconstruction::KalmanChain& ReconstructorTarget::getChain() const

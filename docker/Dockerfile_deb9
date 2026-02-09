@@ -21,7 +21,7 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
 RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \ 
   && echo 'deb-src http://archive.debian.org/debian stretch main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --no-install-recommends openssl apt-utils software-properties-common build-essential gcc g++ cmake wget liblog4cpp5-dev libssl-dev libarchive-dev libmysql++-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev build-essential libfontconfig1-dev libx11-dev libxcb1-dev libxkbcommon-dev libglu1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libegl1-mesa-drivers libxkbcommon-x11-dev libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libpcap-dev libgeographic-dev python2.7-dev sudo \
+  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ cmake wget liblog4cpp5-dev libssl-dev libarchive-dev libmysql++-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev build-essential libx11-dev libxcb1-dev libxkbcommon-dev libglu1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libegl1-mesa-drivers libxkbcommon-x11-dev libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev sudo \
   && apt-get build-dep -y libopenscenegraph-dev libosgearth-dev libboost-all-dev \
   && rm -rf /var/lib/apt/lists/*
 
@@ -114,11 +114,50 @@ RUN cd jasper && wget https://debian-security.sipwise.com/debian-security/pool/m
 RUN cd jasper && wget https://debian-security.sipwise.com/debian-security/pool/main/j/jasper/libjasper-dev_1.900.1-debian1-2.4+deb8u3_amd64.deb
 RUN cd jasper && dpkg -i *.deb
 
-RUN wget https://github.com/duckdb/duckdb/releases/download/v1.2.0/libduckdb-linux-amd64.zip
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-linux-amd64.zip
 RUN mkdir libduckdb-linux-amd64
 RUN unzip libduckdb-linux-amd64.zip -d libduckdb-linux-amd64
 RUN cd libduckdb-linux-amd64 && cp *.h /usr/include
 RUN cd libduckdb-linux-amd64 && cp lib* /usr/lib
+
+# 2. Download and Install DuckDB CLI Client
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.2.2/duckdb_cli-linux-amd64.zip
+RUN unzip duckdb_cli-linux-amd64.zip -d libduckdb-linux-amd64
+RUN mv libduckdb-linux-amd64/duckdb /usr/bin/
+RUN chmod +x /usr/bin/duckdb
+
+# Upgrade CMake (before the duckdb section)
+# RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.tar.gz \
+#  && tar xzf cmake-3.22.1-linux-x86_64.tar.gz -C /opt \
+#  && rm cmake-3.22.1-linux-x86_64.tar.gz
+# ENV PATH=/opt/cmake-3.22.1-linux-x86_64/bin:$PATH
+
+# WORKDIR /opt
+# RUN git clone https://github.com/duckdb/duckdb.git && \
+#     cd duckdb && \
+#     git checkout v1.4.3 && \
+#     git submodule update --init --recursive
+# WORKDIR /opt/duckdb
+
+# # Build directly with CMake for true parallel compilation (latest main branch)
+# RUN mkdir -p build/release && \
+#     cd build/release && \
+#     cmake -DCMAKE_BUILD_TYPE=Release \
+#           -DCMAKE_INSTALL_PREFIX=/usr \
+#           -DBUILD_TESTING=OFF \
+#           -DBUILD_UNITTESTS=OFF \
+#           -DENABLE_SANITIZER=OFF \
+#           -DENABLE_UBSAN=OFF \
+#           -DBUILD_SHELL=ON \
+#           ../.. && \
+#     cmake --build . --config Release --parallel $(nproc)
+
+# # Install artifacts system-wide
+# RUN cd build/release && cmake --install .
+
+# Verify that the JSON extension is available and functional
+# We use "LOAD json;" which initializes the statically linked extension.
+RUN duckdb -c "INSTALL json; LOAD json; SELECT json_object('status', 'success') AS json_check;"
 
 RUN ldconfig -v /usr/lib64/ /usr/local/
 RUN updatedb

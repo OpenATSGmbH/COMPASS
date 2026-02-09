@@ -31,7 +31,13 @@
 
 class COMPASS;
 class DataSourcesToolWidget;
+class DataSourcesStatusToolWidget;
 class DataSourcesConfigurationDialog;
+
+namespace dbContent
+{
+    class VariableSet;
+}
 
 class DataSourceManager : public QObject, public Configurable
 {
@@ -51,6 +57,9 @@ class DataSourceManager : public QObject, public Configurable
     {
         Config();
 
+        double sensorStatusMaxStatusAgeValue() const;
+        double sensorStatusMaxStatusAgeMaxValue() const;
+
         bool load_widget_show_counts_ {false};
         bool load_widget_show_lines_ {false};
 
@@ -60,9 +69,13 @@ class DataSourceManager : public QObject, public Configurable
         double primary_range_stddev_;     // meters
         double secondary_azimuth_stddev_; // degrees
         double secondary_range_stddev_;   // meters
-        double mode_s_azimuth_stddev_;    // degrees
+        double mode_s_azimuth_stddev_;    // degrees 
         double mode_s_range_stddev_;      // meters
 
+        nlohmann::json sensor_status_max_status_age_options_;
+        unsigned int   sensor_status_max_status_age_index_;
+        unsigned int   sensor_status_max_event_buf_size_ = 1000;
+        bool           sensor_status_show_last_updates_  = false;
     };
 
     const static std::vector<std::string> data_source_types_;
@@ -123,7 +136,8 @@ class DataSourceManager : public QObject, public Configurable
     void resetToStartupConfiguration();
 
     DataSourcesToolWidget* loadWidget();
-    void updateWidget();
+    DataSourcesStatusToolWidget* statusWidget();
+    void updateWidgets();
 
     DataSourcesConfigurationDialog* configurationDialog();
 
@@ -165,6 +179,8 @@ class DataSourceManager : public QObject, public Configurable
     void deselectAllLines();
     void selectSpecificLineSlot(unsigned int line_id);
 
+    void addSensorStatusVariables(const std::string& dbcontent_name, dbContent::VariableSet& var_set) const;
+
     DataSourceManager::Config& config();
 
   protected:
@@ -177,6 +193,7 @@ class DataSourceManager : public QObject, public Configurable
     std::vector<unsigned int> ds_ids_all_; // both from config and db, vector to have order
 
     DataSourcesToolWidget* load_widget_{nullptr}; // deleted by qt
+    DataSourcesStatusToolWidget* status_widget_{nullptr};
 
     std::unique_ptr<DataSourcesConfigurationDialog> config_dialog_;
 

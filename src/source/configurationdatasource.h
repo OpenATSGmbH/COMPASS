@@ -35,6 +35,8 @@ public:
     //ConfigurationDataSource() = default;
     virtual ~ConfigurationDataSource();
 
+    virtual bool inDataBase() const override { return false; }
+
     virtual void setFromJSON(const nlohmann::json& j);
 
     DBDataSource* getAsNewDBDS();

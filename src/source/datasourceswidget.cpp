@@ -423,7 +423,7 @@ void DataSourceLineButton::updateContent()
  * DataSourcesWidget
  **************************************************************************************************/
 
- const int DataSourcesWidget::LineButtonSize = 25;
+const int DataSourcesWidget::LineButtonSize = 25;
 
 /**
  */
@@ -593,6 +593,8 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
 
         auto item = dynamic_cast<DataSourceTypeItem*>(tree_widget_->topLevelItem(cnt));
         traced_assert(item);
+
+        
 
         changes += generateDataSourceType(item, ds_type_name);
 
@@ -857,7 +859,6 @@ void DataSourcesWidget::updateAllContent()
         updateContentRecursive(tree_widget_->topLevelItem(i));
 
 }
-
 
 /**
  */

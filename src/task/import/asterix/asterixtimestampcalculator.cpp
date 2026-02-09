@@ -57,7 +57,6 @@ void ASTERIXTimestampCalculator::calculate(
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
     traced_assert(processing_);
-
     traced_assert(source_name.size());
 
     if (prev_source_name_ != source_name && source_name != "File ''") // new file
@@ -87,6 +86,48 @@ void ASTERIXTimestampCalculator::calculate(
         previous_date_ = current_date_;
 
         current_date_set_ = true;
+    }
+
+    if (COMPASS::instance().sensorStatusTimeHack()) // required since resurf replay does not change CAT063 time
+    {
+        //@TODO: REMOVE HACK
+        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        unsigned int buffer_size;
+        boost::optional<float> tod0_cat062;
+        boost::optional<float> tod0_cat063;
+        for (auto& buf_it : buffers_)
+        {
+            buffer_size = buf_it.second->size();
+
+            traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+
+            dbContent::Variable& tod_var =
+                dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+
+            Property tod_prop {tod_var.name(), tod_var.dataType()};
+
+            traced_assert(buf_it.second->hasProperty(tod_prop));
+
+            NullableVector<float>& tod_vec = buf_it.second->get<float>(tod_var.name());
+
+            for (unsigned int index=0; index < buffer_size; ++index)
+            {
+                if (!tod_vec.isNull(index))
+                {
+                    float& tod_ref = tod_vec.getRef(index);
+
+                    if (buf_it.first == "CAT062" && !tod0_cat062.has_value())
+                        tod0_cat062 = tod_ref;
+                    else if (buf_it.first == "CAT063" && !tod0_cat063.has_value())
+                        tod0_cat063 = tod_ref;
+
+                    if (buf_it.first == "CAT063" && tod0_cat062.has_value() && tod0_cat063.has_value())
+                    {
+                        tod_ref += tod0_cat062.value() - tod0_cat063.value();
+                    }
+                }
+            }
+        }
     }
 
     doADSBTimeProcessing();

@@ -189,6 +189,7 @@ struct RTCommandImportGPSTrail : public rtcommand::RTCommand
     std::string  mode_3a_code_;
     std::string  aircraft_address_;
     std::string  aircraft_id_;
+    std::string  config_;
 
     virtual rtcommand::IsValid valid() const override;
 

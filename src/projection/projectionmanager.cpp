@@ -732,25 +732,62 @@ double ProjectionManager::geoidHeightM (double latitude_deg, double longitude_de
 {
     traced_assert(egm96_band_);
 
+    if (std::isnan(latitude_deg) || latitude_deg < -90.0 || latitude_deg > 90.0)
+    {
+        logerr << "invalid latitude " << latitude_deg;
+        return 0.0;
+    }
+
+    if (std::isnan(longitude_deg) || longitude_deg < -180.0 || longitude_deg > 180.0)
+    {
+        logerr << "invalid longitude " << longitude_deg;
+        return 0.0;
+    }
+
     double pixel_x, pixel_y;
     GDALApplyGeoTransform(egm96_band_inv_geo_transform_, longitude_deg, latitude_deg, &pixel_x, &pixel_y);
+
+    // 1. Wrap Longitude (X axis) correctly for global maps
+    // This handles cases where pixel_x is negative or exceeds width
+    if (pixel_x < 0.0 || pixel_x >= egm96_band_width_)
+    {
+        pixel_x = std::fmod(pixel_x, static_cast<double>(egm96_band_width_));
+        if (pixel_x < 0.0)
+            pixel_x += egm96_band_width_;
+    }
+    
+    // 2. Clamp Latitude (Y axis) - Float
+    // Prevents extrapolation (invalid negative offsets) if coordinate is slightly out of bounds
+    if (pixel_y < 0.0) pixel_y = 0.0;
+    if (pixel_y > egm96_band_height_ - 1.0) pixel_y = egm96_band_height_ - 1.0;
 
     // Read the pixel value using bilinear interpolation
     int x = static_cast<int>(pixel_x);
     int y = static_cast<int>(pixel_y);
+
+    // 3. Clamp Latitude (Y axis) - Integer
+    // Prevents memory access violation when reading y+1
+    if (y < 0) y = 0;
+    if (y >= egm96_band_height_ - 1) y = egm96_band_height_ - 2;
+
+    // 4. Handle interpolation neighbor wrapping (Right edge connects to Left edge)
+    int x_next = (x + 1) % egm96_band_width_;
+
     double offset_x = pixel_x - x;
     double offset_y = pixel_y - y;
 
-    traced_assert(!(x < 0 || x >= egm96_band_width_ - 1 || y < 0 || y >= egm96_band_height_ - 1));
-
     // Read the four surrounding pixels
     float values[4];
-    int px[4] = { x, x + 1, x, x + 1 };
+    int px[4] = { x, x_next, x, x_next };
     int py[4] = { y, y, y + 1, y + 1 };
 
     for (int i = 0; i < 4; ++i)
     {
-        traced_assert(egm96_band_->RasterIO(GF_Read, px[i], py[i], 1, 1, &values[i], 1, 1, GDT_Float32, 0, 0) == CE_None);
+        if(egm96_band_->RasterIO(GF_Read, px[i], py[i], 1, 1, &values[i], 1, 1, GDT_Float32, 0, 0) != CE_None)
+        {
+            logerr << "RasterIO failed for " << px[i] << "," << py[i];
+            return 0.0;
+        }
     }
 
     // Perform bilinear interpolation

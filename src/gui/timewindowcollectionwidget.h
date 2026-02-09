@@ -20,7 +20,7 @@
 #include "util/timewindow.h"
 
 #include <QWidget>
-#include <QListWidget>
+#include <QTreeWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -34,7 +34,7 @@ class TimeWindowCollectionWidget : public QWidget
 
 private slots:
     void addTimeWindow();
-    void editTimeWindow(QListWidgetItem* item);
+    void editTimeWindow(QTreeWidgetItem* item);
 
 public:
     explicit TimeWindowCollectionWidget(Utils::TimeWindowCollection& collection, QWidget* parent = nullptr);
@@ -45,9 +45,11 @@ public:
 
 private:
     QString timeWindowToString(const Utils::TimeWindow& tw) const;
+    QString timeWindowBeginToString(const Utils::TimeWindow& tw) const;
+    QString timeWindowEndToString(const Utils::TimeWindow& tw) const;
 
     Utils::TimeWindowCollection& collection_;
-    QListWidget* list_widget_;
+    QTreeWidget* tree_widget_;
     QPushButton* add_button_;
 
     bool something_changed_flag_ {false};

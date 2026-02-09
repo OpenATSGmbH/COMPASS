@@ -108,7 +108,7 @@ void EvaluationManager::generateSubConfigurable(const std::string& class_id,
     {
         traced_assert(!calculator_);
 
-        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_);
+        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, true);
         calculator_.reset(calculator);
     }
     else
@@ -143,6 +143,8 @@ void EvaluationManager::init()
 
     traced_assert(!initialized_);
     initialized_ = true;
+
+    registerParameter("remove_disabled_utn_data", &remove_disabled_utn_data_, remove_disabled_utn_data_);
 
     auto& dbc_manager = COMPASS::instance().dbContentManager();
 
@@ -190,19 +192,37 @@ Result EvaluationManager::canEvaluate() const
 
 /**
  */
-Result EvaluationManager::evaluate(bool show_dialog)
+Result EvaluationManager::evaluate(bool show_dialog, 
+                                   const std::string& custom_result_name)
 {
     loginf;
 
     traced_assert(initialized_);
     traced_assert(calculator_);
 
+    calculator_->resetCustomReportName();
+
     //show config dialog?
+    std::string report_name;
     if (show_dialog)
     {
         EvaluationDialog dlg(*calculator_);
-        if (dlg.exec() == QDialog::Rejected)
+
+        if (!custom_result_name.empty())
+            dlg.setReportName(custom_result_name);
+
+        auto ret = dlg.exec();
+
+        if (ret == QDialog::Rejected)
             return Result::succeeded();
+
+        //obtain suitable report name from dialog
+        report_name = dlg.reportName();
+    }
+    else
+    {
+        //obtain suitable report name from calculator
+        report_name = custom_result_name.empty() ? calculator_->suggestReportName() : custom_result_name;
     }
 
     //create clone of current calculator
@@ -215,8 +235,11 @@ Result EvaluationManager::evaluate(bool show_dialog)
     auto calculator_local = res.result();
     traced_assert(calculator_local);
 
-    //evaluate
-    auto eval_res = calculator_local->evaluate(true);
+    //we always set a custom report name
+    calculator_local->setCustomReportName(report_name);
+
+    //evaluate with updated constraints
+    auto eval_res = calculator_local->evaluate();
 
     if (!eval_res.ok())
     {
@@ -310,10 +333,8 @@ void EvaluationManager::databaseOpenedSlot()
             load_timestamp_end_ = get<1>(minmax_ts);
     }
 
-    // init with false values if not in cfg
-    calculator_->checkReferenceDataSources();
-    calculator_->checkTestDataSources();
-    calculator_->checkMinHeightFilterValid();
+    // check if configuration is still valid after db open
+    calculator_->checkConfiguration();
 }
 
 /**
@@ -1045,8 +1066,8 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
     fil_man.useFilters(true);
     fil_man.disableAllFilters();
 
-    const auto& roi      = calculator.sectorROI();
-    const auto& utns     = calculator.evaluationUTNs();
+    const auto& roi  = calculator.sectorROI();
+    const auto& utns = calculator.evaluationUTNs();
     
     // position data
     if (roi.has_value())
@@ -1086,10 +1107,10 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
         utn_fil->loadViewPointConditions(filter);
     }
 
-    // timestamp filter
-
+    // timestamp-based load filters
     if (use_timestamp_filter_)
     {
+        // configure timestamp filter
         traced_assert(fil_man.hasFilter("Timestamp"));
         DBFilter* fil = fil_man.getFilter("Timestamp");
 
@@ -1100,6 +1121,7 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
         filter["Timestamp"]["Timestamp Minimum"] = Time::toString(load_timestamp_begin_);
         filter["Timestamp"]["Timestamp Maximum"] = Time::toString(load_timestamp_end_);
 
+        // configure exclustion windows filter
         if (load_filtered_time_windows_.size())
         {
             filter["Excluded Time Windows"]["Windows"] =
@@ -1108,71 +1130,6 @@ void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calcula
 
         fil->loadViewPointConditions(filter);
     }
-
-    // load filters
-
-    // if (settings.use_load_filter_)
-    // {
-    //     if (settings.use_ref_traj_accuracy_filter_)
-    //     {
-    //         traced_assert(fil_man.hasFilter("RefTraj Accuracy"));
-    //         DBFilter* fil = fil_man.getFilter("RefTraj Accuracy");
-
-    //         fil->setActive(true);
-
-    //         json filter;
-
-    //         filter["RefTraj Accuracy"]["Accuracy Minimum"] = to_string(settings.ref_traj_minimum_accuracy_);
-
-    //         fil->loadViewPointConditions(filter);
-    //     }
-
-    //     if (settings.use_adsb_filter_)
-    //     {
-    //         traced_assert(fil_man.hasFilter("ADSB Quality"));
-    //         DBFilter* adsb_fil = fil_man.getFilter("ADSB Quality");
-
-    //         adsb_fil->setActive(true);
-
-    //         json filter;
-
-    //         filter["ADSB Quality"]["use_v0"] = settings.use_v0_;
-    //         filter["ADSB Quality"]["use_v1"] = settings.use_v1_;
-    //         filter["ADSB Quality"]["use_v2"] = settings.use_v2_;
-
-    //         // nucp
-    //         filter["ADSB Quality"]["use_min_nucp"] = settings.use_min_nucp_;
-    //         filter["ADSB Quality"]["min_nucp"] = settings.min_nucp_;
-    //         filter["ADSB Quality"]["use_max_nucp"] = settings.use_max_nucp_;
-    //         filter["ADSB Quality"]["max_nucp"] = settings.max_nucp_;
-
-    //         // nic
-    //         filter["ADSB Quality"]["use_min_nic"] = settings.use_min_nic_;
-    //         filter["ADSB Quality"]["min_nic"] = settings.min_nic_;
-    //         filter["ADSB Quality"]["use_max_nic"] = settings.use_max_nic_;
-    //         filter["ADSB Quality"]["max_nic"] = settings.max_nic_;
-
-    //         // nacp
-    //         filter["ADSB Quality"]["use_min_nacp"] = settings.use_min_nacp_;
-    //         filter["ADSB Quality"]["min_nacp"] = settings.min_nacp_;
-    //         filter["ADSB Quality"]["use_max_nacp"] = settings.use_max_nacp_;
-    //         filter["ADSB Quality"]["max_nacp"] = settings.max_nacp_;
-
-    //         // sil v1
-    //         filter["ADSB Quality"]["use_min_sil_v1"] = settings.use_min_sil_v1_;
-    //         filter["ADSB Quality"]["min_sil_v1"] = settings.min_sil_v1_;
-    //         filter["ADSB Quality"]["use_max_sil_v1"] = settings.use_max_sil_v1_;
-    //         filter["ADSB Quality"]["max_sil_v1"] = settings.max_sil_v1_;
-
-    //         // sil v2
-    //         filter["ADSB Quality"]["use_min_sil_v2"] = settings.use_min_sil_v2_;
-    //         filter["ADSB Quality"]["min_sil_v2"] = settings.min_sil_v2_;
-    //         filter["ADSB Quality"]["use_max_sil_v2"] = settings.use_max_sil_v2_;
-    //         filter["ADSB Quality"]["max_sil_v2"] = settings.max_sil_v2_;
-
-    //         adsb_fil->loadViewPointConditions(filter);
-    //     }
-    // }
 }
 
 /**

@@ -236,12 +236,13 @@ void ASTERIXDecoderFile::checkFile(ASTERIXImportFileInfo& file_info,
     }
 
     std::string error;
+    std::string warning;
     bool file_ok = false;
 
     //check file (open file, initially parse file, collect file sections, etc)
     try
     {
-        file_ok = checkFile(file_info, error);
+        file_ok = checkFile(file_info, error, warning);
     }
     catch(const std::exception& e)
     {
@@ -263,6 +264,8 @@ void ASTERIXDecoderFile::checkFile(ASTERIXImportFileInfo& file_info,
 
         return;
     }
+
+    file_info.warning = warning;
 
     if (check_decoding)
         checkDecoding(file_info, force_recompute, progress);
@@ -499,6 +502,32 @@ std::vector<std::string> ASTERIXDecoderFile::errors() const
     }
 
     return errors;
+}
+
+/**
+*/
+std::vector<std::string> ASTERIXDecoderFile::warnings() const
+{
+    auto warnings = ASTERIXDecoderBase::warnings();
+
+    const auto& file_infos = source_.files();
+    for (const auto& file_info : file_infos)
+    {
+        // Skip unused files
+        if (!file_info.used)
+            continue;
+
+        auto fn = boost::filesystem::path(file_info.filename).filename().string();
+
+        if (file_info.hasWarning())
+            warnings.push_back("File '" + fn + "'" + (file_info.warning.empty() ? " obtains warnings" : ": " + file_info.warning));
+        
+        for (const auto& s : file_info.sections)
+            if (s.used && !s.warning.empty())
+                warnings.push_back("File '" + fn + "' Section '" + s.description + "': " + s.warning);
+    }
+
+    return warnings;
 }
 
 /**

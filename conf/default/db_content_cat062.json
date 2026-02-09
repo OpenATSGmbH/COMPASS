@@ -1854,6 +1854,84 @@
                     "unit": ""
                 }
             },
+            "VariableNumREFCSN": {
+                "parameters": {
+                    "data_type_str": "UCHAR",
+                    "db_column_name": "num_ref_contrib_sensors",
+                    "db_expression": "",
+                    "db_expression_variables": {},
+                    "description": "From REF.CSN REP: Number of Sensors contributing to the system track and not providing a local track-number",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Num Contributing Sensors",
+                    "representation_str": "STANDARD",
+                    "short_name": "Num REF CSN",
+                    "unit": ""
+                }
+            },
+            "VariableNumREFCST": {
+                "parameters": {
+                    "data_type_str": "UCHAR",
+                    "db_column_name": "num_ref_contrib_sensors_tn",
+                    "db_expression": "",
+                    "db_expression_variables": {},
+                    "description": "From REF.CST REP: Number of Sensors contributing to the system track and providing a local track-number",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Num Contributing Sensors Track Number",
+                    "representation_str": "STANDARD",
+                    "short_name": "Num REF CST",
+                    "unit": ""
+                }
+            },
+            "VariableREFCSN": {
+                "parameters": {
+                    "data_type_str": "JSON",
+                    "db_column_name": "ref_contrib_sensors",
+                    "db_expression": "",
+                    "db_expression_variables": {},
+                    "description": "From REF.CSN: List of Sensors contributing to the system track and not providing a local track-number",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Contributing Sensors",
+                    "representation_str": "STANDARD",
+                    "short_name": "REF CSN",
+                    "unit": ""
+                }
+            },
+            "VariableREFCST": {
+                "parameters": {
+                    "data_type_str": "JSON",
+                    "db_column_name": "ref_contrib_sensors_tn",
+                    "db_expression": "",
+                    "db_expression_variables": {},
+                    "description": "From REF.CST: List of Sensors contributing to the system track and providing a local track-number",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Contributing Sensors Track Number",
+                    "representation_str": "STANDARD",
+                    "short_name": "REF CST",
+                    "unit": ""
+                }
+            },
+            "VariableSumNumContribSensors": {
+                "parameters": {
+                    "data_type_str": "UCHAR",
+                    "db_column_name": "num_contributing_sensors",
+                    "db_expression": "add(num_ref_contrib_sensors,num_ref_contrib_sensors_tn)",
+                    "db_expression_variables": [
+                        "Num Contributing Sensors",
+                        "Num Contributing Sensors Track Number"
+                    ],
+                    "description": "Total sum of number of contributing sensors",
+                    "dimension": "",
+                    "is_key": false,
+                    "name": "Sum Number Contributing Sensors",
+                    "representation_str": "STANDARD",
+                    "short_name": "Sum REF CSN CST",
+                    "unit": ""
+                }
+            },
             "VariableTrackerTimestamp0": {
                 "parameters": {
                     "data_type_str": "TIMESTAMP",
@@ -3192,7 +3270,7 @@
             "Variablepos_max_std_dev_m0": {
                 "parameters": {
                     "data_type_str": "DOUBLE",
-                    "db_column_name": "",
+                    "db_column_name": "xy_std_dev_max",
                     "db_expression": "greatest(x_stddev,y_stddev)",
                     "db_expression_variables": [
                         "X StdDev",

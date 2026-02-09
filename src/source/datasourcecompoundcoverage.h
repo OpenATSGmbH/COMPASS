@@ -34,7 +34,7 @@ public:
     void clear();
     void addRangeCircle (unsigned int ds_id, double center_lat, double center_long, double range_m);
 
-    bool isInside (double pos_lat, double pos_long) const;
+    bool isInside (double pos_lat_deg, double pos_long_deg) const;
 
     void finalize();
     bool hasCircles() const;

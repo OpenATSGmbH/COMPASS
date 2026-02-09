@@ -36,7 +36,7 @@ PositionLatency::PositionLatency(
         const std::string& name, const std::string& short_name, const std::string& group_name,
         double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
          float max_abs_value)
-    : PositionBase(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator)
+    : PositionBaseProb(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator)
     , max_abs_value_(max_abs_value)
 {
 }

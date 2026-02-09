@@ -10,7 +10,7 @@ Therefore, 95\% is equivalent to two standard deviations ($\sigma$). \\
 
 Please note that currently only the Cartesian variables are used, and are assumed to be valid for the target reports position (and north direction), not for a system center. \\
 
-The usage WGS-84 variables is included, and calculated to Cartesian values on the position of the target report.
+The usage of WGS-84 variables is included, and calculated to Cartesian values at the position of the target report.
 
 \subsection{ADS-B}
 
@@ -58,7 +58,7 @@ The accuracy values were taken from \href{https://mode-s.org/decode/adsb/uncerta
 \end{itemize}
 \ \\
 
-For the NUCp values, the taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NUCp value 0, no error ellipse is displayed, since the accuracy value is unknown.
+For the NUCp values, those taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NUCp value 0, no error ellipse is displayed, since the accuracy value is unknown.
 
 \subsubsection{V1 \& V2 Transponders}
 
@@ -91,7 +91,7 @@ For the NUCp values, the taken for display are listed in the $\sigma$ column, re
 \end{itemize}
 \ \\
 
-For the NACp values, the taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NACp value 0, no error ellipse is displayed, since the accuracy value is unknown.
+For the NACp values, those taken for display are listed in the $\sigma$ column, resulting in error circles (same value for both coordinates). Please note that for the NACp value 0, no error ellipse is displayed, since the accuracy value is unknown.
 
 \subsection{MLAT}
 
@@ -135,11 +135,11 @@ From the data source information (see \nameref{sec:configure_datasources_table_c
 
 Based on the plot type defined by 'Detection Type', one (single technology) or the minimum/maximum of the standard deviations (for combined plots, defined by 'Use Radar Minimum StdDev' flag) is used. If the 'Detection Type' is not set or is 0 (no detection), the PSR values are used. \\ 
 
-The standard deviates used for display purposes are calculated based on the range standard deviation and the azimuth standard deviation multiplied by the circumference at the given range, and are of course rotated by the measurement azimuth.
+The standard deviations used for display purposes are calculated based on the range standard deviation and the azimuth standard deviation multiplied by the circumference at the given range, and are of course rotated by the measurement azimuth.
 
 \subsection{RefTraj}
 
-Calculated as the Tracker APW values.
+Calculated using the Tracker APW values.
 
 \subsection{Tracker}
 

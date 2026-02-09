@@ -104,7 +104,7 @@ const Property DBContent::var_radar_range_ {"Range", PropertyDataType::DOUBLE};
 const Property DBContent::var_radar_azimuth_ {"Azimuth", PropertyDataType::DOUBLE};
 const Property DBContent::var_radar_altitude_ {"Mode C Code", PropertyDataType::FLOAT};
 
-const Property DBContent::var_cat020_crontrib_recv_ {"Contributing Receivers", PropertyDataType::JSON};
+const Property DBContent::var_cat020_contrib_recv_ {"Contributing Receivers", PropertyDataType::JSON};
 
 const Property DBContent::var_cat021_toa_position_ {"ToA Position", PropertyDataType::FLOAT};
 const Property DBContent::var_cat021_tomr_position_ {"ToMR Position", PropertyDataType::FLOAT};
@@ -116,6 +116,7 @@ const Property DBContent::var_cat021_nacp_ {"NACp", PropertyDataType::UCHAR};
 const Property DBContent::var_cat021_nucp_nic_ {"NUCp or NIC", PropertyDataType::UCHAR};
 const Property DBContent::var_cat021_nucv_nacv_ {"NUCr or NACv", PropertyDataType::UCHAR};
 const Property DBContent::var_cat021_sil_ {"SIL", PropertyDataType::UCHAR};
+const Property DBContent::var_cat021_pos_check_failed_ {"Position Check Failed", PropertyDataType::BOOL};
 const Property DBContent::var_cat021_geo_alt_ {"Geometric Height", PropertyDataType::FLOAT};
 const Property DBContent::var_cat021_geo_alt_accuracy_ {"Geometric Altitude Accuracy", PropertyDataType::UCHAR};
 const Property DBContent::var_cat021_ecat_ {"Emitter Category", PropertyDataType::UINT};
@@ -145,8 +146,13 @@ const Property DBContent::var_cat062_callsign_fpl_ {"Callsign FPL", PropertyData
 const Property DBContent::var_cat062_vx_stddev_ {"Vx StdDev", PropertyDataType::DOUBLE};
 const Property DBContent::var_cat062_vy_stddev_ {"Vy StdDev", PropertyDataType::DOUBLE};
 
+const Property DBContent::var_cat062_num_contrib_sensors_ {"Num Contributing Sensors", PropertyDataType::UCHAR};
+const Property DBContent::var_cat062_num_contrib_sensors_tn_ {"Num Contributing Sensors Track Number", PropertyDataType::UCHAR};
+const Property DBContent::var_cat062_sum_num_contrib_sensors_ {"Sum Number Contributing Sensors", PropertyDataType::UCHAR};
+
 const Property DBContent::var_cat063_sensor_sac_ {"Sensor SAC", PropertyDataType::UCHAR};
 const Property DBContent::var_cat063_sensor_sic_ {"Sensor SIC", PropertyDataType::UCHAR};
+const Property DBContent::var_cat063_con_        {"CON", PropertyDataType::UCHAR};
 
 const Property DBContent::var_cat065_batch_number_ {"Batch Number", PropertyDataType::UCHAR};
 
@@ -430,6 +436,8 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
 
+    dbContent::VariableSet read_set_copy = read_set;
+
     if (use_datasrc_filters && (ds_man.hasDSFilter(name_) || ds_man.lineSpecificLoadingRequired(name_)))
     {
         vector<unsigned int> ds_ids_to_load = ds_man.unfilteredDS(name_);
@@ -517,7 +525,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     if (use_filters)
     {
-        string filter_sql = COMPASS::instance().filterManager().getSQLCondition(name_);
+        string filter_sql = COMPASS::instance().filterManager().getSQLCondition(name_, read_set_copy);
 
         if (filter_sql.size())
         {
@@ -536,9 +544,9 @@ void DBContent::load(dbContent::VariableSet& read_set,
         filter_clause += custom_filter_clause;
     }
 
-    logdbg << name_ << " read set " << read_set.str() << " filter_clause '" << filter_clause << "'";
+    logdbg << name_ << " read set " << read_set_copy.str() << " filter_clause '" << filter_clause << "'";
 
-    loadFiltered(read_set, filter_clause);
+    loadFiltered(read_set_copy, filter_clause);
 }
 
 /**

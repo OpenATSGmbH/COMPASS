@@ -191,6 +191,15 @@ std::string getImageFilepath(const std::string& filename, bool verify)
     return filepath;
 }
 
+
+std::string getFontFilepath(const std::string& filename, bool verify)
+{
+    std::string filepath = HOME_DATA_DIRECTORY + "fonts/" + filename;
+    if (verify)
+        verifyFileExists(filepath);
+    return filepath;
+}
+
 void deleteFile(const std::string& filename)
 {
     QFile file(filename.c_str());
@@ -268,7 +277,7 @@ std::string join(const std::string& path0, const std::string& path1)
     return (boost::filesystem::path(path0) / boost::filesystem::path(path1)).string();
 }
 
-QIcon getIcon(const std::string& name, const QColor& color)
+QIcon createIcon(const std::string& name, const QColor& color)
 {
     QString path = getIconFilepath(name).c_str();
     if (!color.isValid())
@@ -313,26 +322,36 @@ QIcon getIcon(const std::string& name, const QColor& color)
     return QIcon(QPixmap::fromImage(img));
 }
 
-QIcon IconProvider::getIcon(const std::string& name)
+QIcon IconProvider::getIcon(const std::string& name, const boost::optional<QColor>& color)
 {
     static std::map<std::string, QIcon> icon_cache_;
 
-    if (!icon_cache_.count(name))
+    std::string name_internal = color.has_value() ? name + "_" + color.value().name().toStdString() : name;
+
+    if (!icon_cache_.count(name_internal))
     {
         QIcon icon;
-        QString path = getIconFilepath(name).c_str();
+        
+        if (color.has_value())
+        {
+            icon = createIcon(name, color.value());
+        }
+        else
+        {
+            QString path = getIconFilepath(name).c_str();
 
-        icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_ToolBarIconSize),
-                                 QApplication::style()->pixelMetric(QStyle::PM_ToolBarIconSize)));
-        icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_SmallIconSize),
-                                 QApplication::style()->pixelMetric(QStyle::PM_SmallIconSize)));
-        icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_LargeIconSize),
-                                 QApplication::style()->pixelMetric(QStyle::PM_LargeIconSize)));
+            icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_ToolBarIconSize),
+                                    QApplication::style()->pixelMetric(QStyle::PM_ToolBarIconSize)));
+            icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_SmallIconSize),
+                                    QApplication::style()->pixelMetric(QStyle::PM_SmallIconSize)));
+            icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_LargeIconSize),
+                                    QApplication::style()->pixelMetric(QStyle::PM_LargeIconSize)));
+        }
 
-        icon_cache_[name] = icon;
+        icon_cache_[name_internal] = icon;
     }
 
-    return icon_cache_.at(name);
+    return icon_cache_.at(name_internal);
 }
 
 }  // namespace Files

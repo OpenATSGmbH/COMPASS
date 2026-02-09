@@ -116,8 +116,6 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
     {
         sender_addr_ = boost::asio::ip::make_address(line_info_->senderIP(), ec);
 
-        
-
         if (ec)
         {
             logerr << "sender address error " << ec.message();
@@ -132,6 +130,12 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
                 boost::bind(&UDPReceiver::handle_receive_from, this,
                             boost::asio::placeholders::error,
                             boost::asio::placeholders::bytes_transferred));
+}
+
+UDPReceiver::~UDPReceiver()
+{
+    socket_.close();  // Cancel pending async operations
+    delete[] data_;
 }
 
 void UDPReceiver::handle_receive_from(const boost::system::error_code& error,

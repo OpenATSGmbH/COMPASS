@@ -56,6 +56,11 @@ DBInstance::~DBInstance()
     close();
 }
 
+bool DBInstance::beVerbose() const
+{
+    return interface_.logVerbose();
+}
+
 /**
  * Returns the current instance status.
  */
@@ -151,7 +156,7 @@ Result DBInstance::openInternal(const std::string& file_name)
     db_in_mem_   = in_mem;
 
     //open default connection
-    auto conn_result = createConnection(true);
+    auto conn_result = createConnection(interface_.logVerbose());
     if (!conn_result.ok())
         return conn_result;
 
@@ -271,7 +276,25 @@ Result DBInstance::cleanupDB(const std::string& db_fn)
 
 /**
  */
+Result DBInstance::cleanupDBInMem()
+{
+    traced_assert(dbOpen());
+    traced_assert(dbInMem());
+
+    return cleanupDBInMem_impl();
+}
+
+/**
+ */
 Result DBInstance::cleanupDB_impl(const std::string& db_fn)
+{
+    //derive if some special action is needed
+    return Result::succeeded();
+}
+
+/**
+ */
+Result DBInstance::cleanupDBInMem_impl()
 {
     //derive if some special action is needed
     return Result::succeeded();

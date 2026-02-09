@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <tuple>
 #include "dbfilter.h"
 
 class MLATRUFilter : public DBFilter
@@ -26,7 +27,8 @@ public:
                  Configurable* parent);
     virtual ~MLATRUFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, bool& first) override;
+    virtual std::string getConditionString(const std::string& dbcontent_name, 
+      dbContent::VariableSet& read_set, bool& first) override;
 
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
@@ -40,13 +42,17 @@ public:
     std::string rus() const;
     void rus(const std::string& rus_str);
 
+    bool checkRUs(const std::string& rus_str);
+
+    bool matchAll() const;
+    void matchAll(bool match_all);
+
 protected:
+    std::string db_column_name_;
+
     std::string rus_str_;
-    std::vector<unsigned int> values_;
-    bool null_wanted_ {false};
+    bool match_all_;
 
     virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
-
-    bool updateRUsFromStr(const std::string& values_str); // returns success
 };

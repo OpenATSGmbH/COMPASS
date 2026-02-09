@@ -280,24 +280,27 @@ void TaskResultsWidget::updateResultUI(const std::string& name)
     
     if (locked)
     {
+        // result is locked (restricted until full update)
         icon_file    = "lock.png";
         icon_color   = ResultReport::Colors::TextRed;
         icon_tooltip = "Report in read-only mode.\nRefresh to unlock.";
     }
     else if(update_needed)
     {
+        // decision about full or partial update is oblique to the user, both are shown as a needed refresh
         icon_file    = "refresh.png";
         icon_color   = ResultReport::Colors::TextOrange;
         icon_tooltip = "Refresh needed";
     }
     else
     {
+        // otherwise: up-to-date
         icon_file    = "refresh.png";
         icon_tooltip = "Up-to-date";
     }
 
     refresh_result_button_->setEnabled(update_needed);
-    refresh_result_button_->setIcon(Utils::Files::getIcon(icon_file, icon_color));
+    refresh_result_button_->setIcon(Utils::Files::createIcon(icon_file, icon_color));
     refresh_result_button_->setToolTip(icon_tooltip);
 
     QApplication::processEvents();

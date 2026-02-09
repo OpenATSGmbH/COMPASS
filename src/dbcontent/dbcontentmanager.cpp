@@ -47,6 +47,7 @@
 #include <QMessageBox>
 
 #include <algorithm>
+#include <boost/none.hpp>
 #include <string>
 
 using namespace std;
@@ -60,9 +61,6 @@ DBContentManager::DBContentManager(const std::string& class_id, const std::strin
     : Configurable(class_id, instance_id, compass, "db_content.json"), compass_(*compass)
 {
     logdbg << "creating subconfigurables";
-
-    registerParameter("max_live_data_age_cache", &max_live_data_age_cache_, 5u);
-    registerParameter("max_live_data_age_db", &max_live_data_age_db_, 60u);
 
     createSubConfigurables();
 
@@ -699,7 +697,7 @@ void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
     has_associations_ = true;
     associations_id_ = assoc_id;
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -725,7 +723,7 @@ void DBContentManager::clearAssociationsIdentifier()
 
     dbinterface.saveProperties();
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -832,7 +830,8 @@ void DBContentManager::finishInserting()
 
     // ts calc for resume action
 
-    boost::posix_time::ptime min_time_found; // for max latency calculation
+    boost::posix_time::ptime min_tr_time_found; // for max latency calculation
+    string min_tr_time_dbcont;
 
     for (auto& buf_it : insert_data_)
     {
@@ -863,10 +862,17 @@ void DBContentManager::finishInserting()
                 if (has_vec_min_max)
                 {
                     // set min time found
-                    if (min_time_found.is_not_a_date_time())
-                        min_time_found = ts_vec_min;
-                    else
-                        min_time_found = min(min_time_found, ts_vec_min);
+                    if (dbContent(buf_it.first).containsTargetReports())
+                    {
+                        logdbg << "new " << buf_it.first << " min ts with latency " << Time::toString(Time::currentUTCTime() - ts_vec_min);
+
+                        if (min_tr_time_found.is_not_a_date_time())
+                            min_tr_time_found = ts_vec_min;
+                        else
+                            min_tr_time_found = min(min_tr_time_found, ts_vec_min);
+
+                        min_tr_time_dbcont = buf_it.first;
+                    }
 
                     if (hasMinMaxTimestamp())
                     {
@@ -959,13 +965,89 @@ void DBContentManager::finishInserting()
     if (COMPASS::instance().appMode() == AppMode::Offline || COMPASS::instance().appMode() == AppMode::LivePaused)
         insert_data_.clear();
 
-    // start clearing old data
-
     if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    {
+        //live mode specific processing
+        processLiveModeSlot();
+    }
+    else
+    {
+        //non-live updates
+        COMPASS::instance().dataSourceManager().updateWidgets();
+        //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
+
+        logdbg << "update widgets + lines took "
+           << String::timeStringFromDouble(
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
+    }
+
+    logdbg << "full update took " << String::timeStringFromDouble(
+                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+}
+
+/**
+ */
+void DBContentManager::processLiveModeSlot()
+{
+    if (COMPASS::instance().appMode() != AppMode::LiveRunning)
+        return;
+
+    using namespace boost::posix_time;
+
+    auto tmp_time = microsec_clock::local_time();
+
+    //compute latency related stuff
+    boost::posix_time::ptime min_tr_time_found; // for max latency calculation
+    string min_tr_time_dbcont;
+
+    for (auto& buf_it : insert_data_)
+    {
+        string dbcont_name = buf_it.first;
+
+        traced_assert(metaCanGetVariable(dbcont_name, DBContent::meta_var_timestamp_));
+
+        // timestamp
+        {
+            Variable& var = metaGetVariable(dbcont_name, DBContent::meta_var_timestamp_);
+            if (buf_it.second->has<boost::posix_time::ptime>(var.dbColumnName()))
+            {
+                NullableVector<boost::posix_time::ptime>& data_vec = buf_it.second->get<boost::posix_time::ptime>(
+                    var.dbColumnName());
+
+                bool has_vec_min_max;
+                ptime ts_vec_min, ts_vec_max;
+
+                tie(has_vec_min_max, ts_vec_min, ts_vec_max) = data_vec.minMaxValues();
+
+                if (has_vec_min_max)
+                {
+                    // set min time found
+                    if (dbContent(buf_it.first).containsTargetReports())
+                    {
+                        logdbg << "new " << buf_it.first << " min ts with latency " << Time::toString(Time::currentUTCTime() - ts_vec_min);
+
+                        if (min_tr_time_found.is_not_a_date_time())
+                            min_tr_time_found = ts_vec_min;
+                        else
+                            min_tr_time_found = min(min_tr_time_found, ts_vec_min);
+
+                        min_tr_time_dbcont = buf_it.first;
+                    }
+                }
+            }
+        }
+    }
+
+    logdbg << "latency check took "
+           << String::timeStringFromDouble(
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
+
+    tmp_time = microsec_clock::local_time();
+
     {
         using namespace boost::posix_time;
 
-        ptime old_time = Time::currentUTCTime() - minutes(max_live_data_age_db_);
+        ptime old_time = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeDb());
 
         logdbg << "deleting data before " << Time::toString(old_time);
 
@@ -974,9 +1056,7 @@ void DBContentManager::finishInserting()
 
     logdbg << "clear old took "
            << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-           << " full " << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
     tmp_time = microsec_clock::local_time();
 
@@ -984,17 +1064,15 @@ void DBContentManager::finishInserting()
 
     bool had_data = data_.size();
 
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning) // do tod cleanup
     {
         addInsertedDataToChache();
 
         logdbg << "insert cache took "
-               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble((microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
-        buffer_cnt = 0;
+        auto buffer_cnt = 0;
         for (auto& buf_it : data_)
             buffer_cnt += buf_it.second->size();
 
@@ -1004,9 +1082,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "cut cache took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
@@ -1022,9 +1098,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "filterDataSources took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         buffer_cnt = 0;
         for (auto& buf_it : data_)
@@ -1040,9 +1114,7 @@ void DBContentManager::finishInserting()
 
             logdbg << "filter buffs took "
                    << String::timeStringFromDouble(
-                          (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-                   << " full " << String::timeStringFromDouble(
-                          (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                          (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
             tmp_time = microsec_clock::local_time();
         }
@@ -1056,9 +1128,7 @@ void DBContentManager::finishInserting()
 
         logdbg << "distribute took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
@@ -1066,27 +1136,32 @@ void DBContentManager::finishInserting()
 
         logdbg << "update cnts took "
                << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-               << " full " << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 
         tmp_time = microsec_clock::local_time();
 
-        if (!min_time_found.is_not_a_date_time())
-            loginf << "max latency "
-                   << Time::toString(Time::currentUTCTime() - min_time_found);
+        if (!min_tr_time_found.is_not_a_date_time())
+        {
+            max_latency_ = Time::currentUTCTime() - min_tr_time_found;
+            
+            loginf << "max latency " << Time::toString(*max_latency_) << " in " << min_tr_time_dbcont;
+        }
+        else
+        {
+            max_latency_ = boost::none;
+        }
     }
 
-    COMPASS::instance().dataSourceManager().updateWidget();
+    COMPASS::instance().dataSourceManager().updateWidgets();
 
     //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
-    logdbg << "update lines took "
+    logdbg << "update widgets + lines took "
            << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-           << " full " << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
+                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
 }
+
+#define ADD_INSERTED_MT
 
 /**
  */
@@ -1102,69 +1177,81 @@ void DBContentManager::addInsertedDataToChache()
     unsigned int num_buffers = insert_data_.size();
     boost::mutex data_mutex;
 
+#ifdef ADD_INSERTED_MT
     tbb::parallel_for(uint(0), num_buffers, [&](unsigned int buffer_cnt)
-                      {
-                          std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = insert_data_.begin();
-                          std::advance(buf_it, buffer_cnt);
+#else
+    for (unsigned int buffer_cnt = 0; buffer_cnt < num_buffers; ++buffer_cnt)
+#endif
+    {
+        std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = insert_data_.begin();
+        std::advance(buf_it, buffer_cnt);
 
-                          VariableSet read_set = COMPASS::instance().viewManager().getReadSet(buf_it->first);
-                          addStandardVariables(buf_it->first, read_set);
-                          //label_generator_->addVariables(buf_it->first, read_set);
+        VariableSet read_set = COMPASS::instance().viewManager().getReadSet(buf_it->first);
+        addStandardVariables(buf_it->first, read_set);
+        //label_generator_->addVariables(buf_it->first, read_set);
 
-                          vector<Property> buffer_properties_to_be_removed;
+        //sensor status
+        COMPASS::instance().dataSourceManager().addSensorStatusVariables(buf_it->first, read_set);
 
-                          // remove all unused
-                          for (const auto& prop_it : buf_it->second->properties().properties())
-                          {
-                              if (!read_set.hasDBColumnName(prop_it.name()))
-                                  buffer_properties_to_be_removed.push_back(prop_it); // remove it later
-                          }
+        // for (unsigned int i = 0; i < read_set.getSize(); ++i)
+        //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";
 
-                          for (auto& prop_it : buffer_properties_to_be_removed)
-                          {
-                              logdbg << "deleting property " << prop_it.name();
-                              buf_it->second->deleteProperty(prop_it);
-                          }
+        vector<Property> buffer_properties_to_be_removed;
 
-                          // add assoc property if required
-                          if (metaCanGetVariable(buf_it->first, DBContent::meta_var_utn_))
-                          {
-                              Variable& utn_var = metaGetVariable(buf_it->first, DBContent::meta_var_utn_);
-                              Property utn_prop (utn_var.dbColumnName(), utn_var.dataType());
+        // remove all unused
+        for (const auto& prop_it : buf_it->second->properties().properties())
+        {
+            if (!read_set.hasDBColumnName(prop_it.name()))
+            {
+                buffer_properties_to_be_removed.push_back(prop_it); // remove it later
+            }
+        }
 
-                              if (!buf_it->second->hasProperty(utn_prop))
-                                  buf_it->second->addProperty(utn_prop);
-                          }
+        for (auto& prop_it : buffer_properties_to_be_removed)
+        {
+            logdbg << buf_it->first << " deleting property " << prop_it.name();
+            buf_it->second->deleteProperty(prop_it);
+        }
 
-                          // change db column names to dbcont var names
-                          buf_it->second->transformVariables(read_set, true);
+        // add assoc property if required
+        if (metaCanGetVariable(buf_it->first, DBContent::meta_var_utn_))
+        {
+            Variable& utn_var = metaGetVariable(buf_it->first, DBContent::meta_var_utn_);
+            Property utn_prop (utn_var.dbColumnName(), utn_var.dataType());
 
-                          // add selection flags
-                          buf_it->second->addProperty(DBContent::selected_var);
+            if (!buf_it->second->hasProperty(utn_prop))
+                buf_it->second->addProperty(utn_prop);
+        }
 
-                          // add buffer to be able to distribute to views
-                          if (!data_.count(buf_it->first))
-                          {
-                              boost::mutex::scoped_lock locker(data_mutex);
-                              data_[buf_it->first] = buf_it->second;
-                          }
-                          else
-                          {
-                              data_.at(buf_it->first)->seizeBuffer(*buf_it->second.get());
+        // change db column names to dbcont var names
+        buf_it->second->transformVariables(read_set, true);
 
-                              // sort by tod
-                              traced_assert(metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        // add selection flags
+        buf_it->second->addProperty(DBContent::selected_var);
 
-                              Variable& ts_var = metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
+        // add buffer to be able to distribute to views
+        if (!data_.count(buf_it->first))
+        {
+            boost::mutex::scoped_lock locker(data_mutex);
+            data_[buf_it->first] = buf_it->second;
+        }
+        else
+        {
+            data_.at(buf_it->first)->seizeBuffer(*buf_it->second.get());
+        }
 
-                              Property ts_prop {ts_var.name(), ts_var.dataType()};
+        // sort by tod
+        traced_assert(metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        Variable& ts_var = metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
+        Property ts_prop {ts_var.name(), ts_var.dataType()};
+        traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
 
-                              traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
-
-                              data_.at(buf_it->first)->sortByProperty(ts_prop);
-                          }
-                      });
-
+        data_.at(buf_it->first)->sortByProperty(ts_prop);
+#ifdef ADD_INSERTED_MT
+    });
+#else
+    }
+#endif
 
     insert_data_.clear();
 }
@@ -1245,7 +1332,7 @@ void DBContentManager::cutCachedData()
 {
     unsigned int buffer_size;
 
-    boost::posix_time::ptime min_ts = Time::currentUTCTime() - boost::posix_time::minutes(max_live_data_age_cache_);
+    boost::posix_time::ptime min_ts = Time::currentUTCTime() - boost::posix_time::minutes(compass_.maxLiveDataAgeCache());
     // max - x minutes
 
     logdbg << "current ts " << Time::toString(Time::currentUTCTime())
@@ -1626,11 +1713,12 @@ nlohmann::json DBContentManager::utnsAsJSON() const
     return target_model_->utnsAsJSON();
 }
 
-/**
- */
-unsigned int DBContentManager::maxLiveDataAgeCache() const
+std::set<unsigned int> DBContentManager::getIgnoredUTNs() const
 {
-    return max_live_data_age_cache_;
+    traced_assert(hasAssociations());
+    traced_assert(hasTargetsInfo());
+
+    return target_model_->getIgnoredUTNs();
 }
 
 /**
@@ -1811,6 +1899,16 @@ void DBContentManager::clearSelectedRecNums()
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
         selected_vec.setAll(false);
     }
+}
+
+bool DBContentManager::hasMaxLatency() const
+{
+    return max_latency_.has_value() && !max_latency_->is_not_a_date_time();
+}
+
+boost::posix_time::time_duration DBContentManager::maxLatency() const
+{
+    return *max_latency_;
 }
 
 /**

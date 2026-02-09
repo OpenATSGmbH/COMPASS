@@ -52,7 +52,7 @@ bool ACIDFilter::filters(const std::string& dbcont_name)
                     DBContent::meta_var_acid_.name()).existsIn(dbcont_name);
 }
 
-std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 

@@ -86,17 +86,14 @@ class DBInterface : public QObject, public Configurable
 {
     Q_OBJECT
 
-signals:
-    //void databaseOpenedSignal();
-    //void databaseContentChangedSignal();
-    //void databaseClosedSignal();
-
 public:
     DBInterface(std::string class_id, std::string instance_id, COMPASS* compass);
     virtual ~DBInterface();
 
+    bool logVerbose() const;
+
     virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+                                         const std::string& instance_id) override;
 
     void openDBFile(const std::string& filename, bool overwrite);
     void openDBInMemory();
@@ -235,7 +232,25 @@ public:
 
     static const size_t TableBulkUpdateMinRows;
 
+    bool useLiveInMemDB() const { return use_live_inmem_db_; }
+    unsigned int maxRAMFileGB() const { return max_ram_file_gb_; }
+    unsigned int maxRAMinMemGB() const { return max_ram_inmem_gb_; }
+    unsigned int numThreads() const { return num_threads_; }
+    bool preserveInsertOrder() const { return preserve_insert_order_; }
+
 protected:
+    bool log_verbose_ {false};
+
+    unsigned int max_ram_file_gb_{2};
+    unsigned int max_ram_inmem_gb_{8};
+    unsigned int num_threads_{8};
+    unsigned int live_cleanup_time_min_{60};
+    bool use_live_inmem_db_{true};
+
+    bool preserve_insert_order_{true};
+
+    boost::posix_time::ptime last_live_cleanup_time_;
+
     virtual void checkSubConfigurables() override {}
 
     void openDBFileInternal(const std::string& filename, bool overwrite);

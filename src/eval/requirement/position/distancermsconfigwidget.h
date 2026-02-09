@@ -30,7 +30,7 @@ namespace EvaluationRequirement
 {
 class PositionDistanceRMSConfig;
 
-class PositionDistanceRMSConfigWidget : public PositionBaseConfigWidget
+class PositionDistanceRMSConfigWidget : public PositionBaseValueConfigWidget
 {
     Q_OBJECT
 

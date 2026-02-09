@@ -28,7 +28,7 @@ namespace EvaluationRequirement
 {
 class PositionLatencyConfig;
 
-class PositionLatencyConfigWidget : public PositionBaseConfigWidget
+class PositionLatencyConfigWidget : public PositionBaseProbConfigWidget
 {
     Q_OBJECT
 

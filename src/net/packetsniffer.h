@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "result.h"
+
 #include <vector>
 #include <map>
 #include <set>
@@ -158,12 +160,12 @@ public:
     void clear();
     bool openPCAP(const std::string& fn);
 
-    bool readFile(ReadStyle read_style = ReadStyle::Accumulate,
+    Result readFile(ReadStyle read_style = ReadStyle::Accumulate,
                   const PacketFilter& packet_filter = {},
                   const DataFilter& data_filter = {});
-    boost::optional<Chunk> readFileNext(size_t max_packets = 0, 
-                                        size_t max_bytes = 0,
-                                        const std::set<Signature>& signatures_to_read = std::set<Signature>());
+    ResultT<Chunk> readFileNext(size_t max_packets = 0, 
+                                size_t max_bytes = 0,
+                                const std::set<Signature>& signatures_to_read = std::set<Signature>());
 
     void digestPCAPPacket(const struct pcap_pkthdr* pkthdr,
                           const u_char* packet,

@@ -750,16 +750,16 @@ bool PacketSniffer::openPCAP(const std::string& fn)
 
 /**
 */
-bool PacketSniffer::readFile(ReadStyle read_style,
-                             const PacketFilter& packet_filter,
-                             const DataFilter& data_filter)
+Result PacketSniffer::readFile(ReadStyle read_style,
+                               const PacketFilter& packet_filter,
+                               const DataFilter& data_filter)
 {
     clear();
 
     if (device_ != Device::File || pcap_file_ == nullptr)
     {
         logerr << "no file device opened";
-        return false;
+        return Result::failed("no file device opened");
     }
 
     //config to be passed to packet handler
@@ -774,23 +774,79 @@ bool PacketSniffer::readFile(ReadStyle read_style,
     config.read_config.data_filter   = data_filter;
 
     //loop packets
-    if (pcap_loop(pcap_file_, 0, pcapPacketHandler, (u_char*)&config) < 0) 
-        return false;
+    // if (pcap_loop(pcap_file_, 0, pcapPacketHandler, (u_char*)&config) < 0) 
+    //     return false;
 
-    return true;
+    // return true;
+
+    struct pcap_pkthdr* pkthdr = nullptr;
+    const u_char* packet = nullptr;
+
+    std::string error;
+    std::string warning;
+
+    while (!config.chunk_ended)
+    {
+        int rc = pcap_next_ex(pcap_file_, &pkthdr, &packet);
+
+        if (rc == 1)
+        {
+            if (pkthdr->caplen < pkthdr->len)
+            {
+                logwrn << "truncated packet (" << pkthdr->caplen
+                       << " / " << pkthdr->len << " bytes), skipping";
+                continue;
+            }
+
+            pcapPacketHandler((u_char*)&config, pkthdr, packet);
+        }
+        else if (rc == 0)
+        {
+            continue; // timeout
+        }
+        else if (rc == PCAP_ERROR_BREAK)
+        {
+            loginf << "pcap_next_ex reached end of file";
+            break;
+        }
+        else
+        {
+            const char* err = pcap_geterr(pcap_file_);
+            if (err && std::string(err).find("truncated dump file") != std::string::npos)
+            {
+                FILE* fp = pcap_file(pcap_file_);
+                long pos = fp ? ftell(fp) : -1;
+                //long total = fp ? Utils::Files::fileSize(pcap_filename_) : -1;
+
+                logwrn << "truncated dump tail ignored at byte " << pos;
+                       //<< " / " << total;
+                warning = "truncated dump tail ignored";
+                break;
+            }
+
+            logerr << "pcap_next_ex error: " << (err ? err : "unknown");
+            error = std::string("pcap_next_ex error: ") + (err ? err : "unknown");
+            break;
+        }
+    }
+
+    if (!error.empty())
+        return Result::failed(error);
+
+    return Result::succeeded(warning);
 }
 
 /**
 */
-boost::optional<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_packets, 
-                                                                  size_t max_bytes, 
-                                                                  const std::set<Signature>& signatures_to_read)
+ResultT<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_packets, 
+                                                          size_t max_bytes, 
+                                                          const std::set<Signature>& signatures_to_read)
 {
     //correct device opened?
     if (device_ != Device::File || pcap_file_ == nullptr)
     {
         logerr << "no file device opened";
-        return {};
+        return ResultT<PacketSniffer::Chunk>::failed("no file device opened");
     }
 
     //already reached eof?
@@ -798,7 +854,7 @@ boost::optional<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_pac
     {
         Chunk c;
         c.eof = true;
-        return c;
+        return ResultT<PacketSniffer::Chunk>::succeeded(c);
     }
 
     //config to be passed to packet handler
@@ -823,43 +879,66 @@ boost::optional<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_pac
     struct pcap_pkthdr *pkthdr;
     const u_char *packet;
 
-    bool error = false;
+    std::string warning;
+    std::string error;
 
     //read until chunk has ended
     while (!config.chunk_ended)
     {
         int ret = pcap_next_ex(pcap_file_, &pkthdr, &packet);
 
-        //file ended?
-        if (ret == PCAP_ERROR_BREAK)
+        if (ret == 1)
+        {
+            if (pkthdr->caplen < pkthdr->len)
+            {
+                logwrn << "truncated packet (" << pkthdr->caplen
+                       << " / " << pkthdr->len << "), skipping";
+                continue;
+            }
+
+            pcapPacketHandler((u_char*)&config, pkthdr, packet);
+        }
+        else if (ret == 0)
+        {
+            continue;
+        }
+        else if (ret == PCAP_ERROR_BREAK)
         {
             loginf << "pcap_next_ex reached end of data";
             reached_eof_ = true;
             break;
         }
-        
-        //read error?
-        if (ret != 1)
+        else
         {
-            error = true;
+            const char* err = pcap_geterr(pcap_file_);
+            if (err && std::string(err).find("truncated dump file") != std::string::npos)
+            {
+                FILE* fp = pcap_file(pcap_file_);
+                long pos = fp ? ftell(fp) : -1;
+
+                logwrn << "truncated dump tail ignored at byte " << pos;
+                warning = "truncated dump tail ignored";
+                reached_eof_ = true;
+                break; 
+            }
+
+            logerr << "pcap_next_ex error: " << (err ? err : "unknown");
+            error = std::string("pcap_next_ex error: ") + (err ? err : "unknown");
             break;
         }
-
-        pcapPacketHandler((u_char*)&config, pkthdr, packet);
     }
 
     //pcap error?
-    if (error)
+    if (!error.empty())
     {
-        logerr << "pcap_next_ex error";
-        return {};
+        return ResultT<PacketSniffer::Chunk>::failed(error);
     }
 
     //no data? => strange
     if (data_.data.empty() && !reached_eof_)
     {
         logerr << "reached eof but no data retrieved";
-        return {};
+        return ResultT<PacketSniffer::Chunk>::failed("reached eof but no data retrieved");
     }
 
     loginf << "extracted " << data_.data.size() << " byte(s)";
@@ -868,5 +947,5 @@ boost::optional<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_pac
     c.chunk_data = data_;
     c.eof = false;
 
-    return c;
+    return ResultT<PacketSniffer::Chunk>::succeeded(c, warning);
 }

@@ -35,6 +35,8 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/cartesian_product_score_based.h"
         "${CMAKE_CURRENT_LIST_DIR}/probability.h"
         "${CMAKE_CURRENT_LIST_DIR}/rng.h"
+        "${CMAKE_CURRENT_LIST_DIR}/csvimport.h"
+        "${CMAKE_CURRENT_LIST_DIR}/osgtools.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/config.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/files.cpp"
@@ -58,4 +60,6 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/accuracy.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/probability.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rng.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/csvimport.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/osgtools.cpp"
 )

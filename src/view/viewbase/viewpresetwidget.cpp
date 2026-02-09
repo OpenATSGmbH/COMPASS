@@ -20,6 +20,7 @@
 #include "viewmanager.h"
 #include "view.h"
 #include "files.h"
+#include "ui_test_common.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -828,6 +829,25 @@ ViewPresetItemListWidget::ViewPresetItemListWidget(View* view,
 
 /**
 */
+int ViewPresetItemListWidget::count() const
+{
+    return (int)items_.size();
+}
+
+/**
+*/
+std::vector<ViewPresets::Key> ViewPresetItemListWidget::keys() const
+{
+    std::vector<ViewPresets::Key> keys;
+
+    for (auto item : items_)
+        keys.push_back(item->getPreset()->key());
+
+    return keys;
+}
+
+/**
+*/
 void ViewPresetItemListWidget::createUI()
 {
     QVBoxLayout* layout = new QVBoxLayout;
@@ -1100,6 +1120,8 @@ void ViewPresetItemListWidget::updateMinSize()
  * ViewPresetWidget
  ********************************************************************************************/
 
+const std::string ViewPresetWidget::NumPresetsKey = "num_presets";
+
 /**
 */
 ViewPresetWidget::ViewPresetWidget(View* view, QWidget* parent)
@@ -1107,6 +1129,8 @@ ViewPresetWidget::ViewPresetWidget(View* view, QWidget* parent)
 ,   view_  (view  )
 {
     traced_assert(view_);
+
+    UI_TEST_OBJ_NAME(this, "presets")
 
     createUI();
     updateContents();
@@ -1262,4 +1286,61 @@ nlohmann::json ViewPresetWidget::viewInfoJSON() const
     viewInfoJSON_impl(info);
 
     return info;
+}
+
+/**
+ * @TODO: improve.
+ */
+boost::optional<QString> ViewPresetWidget::uiGet(const QString& what) const
+{
+    return boost::optional<QString>();
+}
+
+/**
+ * @TODO: improve.
+ */
+nlohmann::json ViewPresetWidget::uiGetJSON(const QString& what) const
+{
+    nlohmann::json j;
+    j[ NumPresetsKey ] = preset_list_->count();
+
+    return j;
+}
+
+/**
+ * @TODO: code using ui event injections.
+ */
+bool ViewPresetWidget::uiSet(const QString& str)
+{
+    if (str.isEmpty())
+    {
+        //apply all existing presets one after another
+        for (int i = 0; i < preset_list_->count(); ++i)
+        {
+            auto idx_str = QString::number(i);
+            bool ok = uiSet(idx_str);
+            if (!ok)
+                return false;
+        }
+
+        return true;
+    }
+
+    //apply specific preset
+    bool ok;
+    auto idx = str.toUInt(&ok);
+
+    if (!ok)
+        return false;
+
+    auto n = (unsigned int)preset_list_->count();
+    if (idx >= n)
+        return false;
+
+    auto keys = preset_list_->keys();
+    
+    //apply preset
+    presetApplied(keys.at(idx));
+
+    return true;
 }

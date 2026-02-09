@@ -16,7 +16,7 @@
  */
 
 #include "evaluationmaintabwidget.h"
-#include "evaluationmanagerwidget.h"
+
 #include "evaluationdatasourcewidget.h"
 #include "evaluationcalculator.h"
 #include "evaluationdialog.h"
@@ -62,7 +62,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     connect (data_source_ref_widget_.get(), &EvaluationDataSourceWidget::dbContentNameChangedSignal,
              this, &EvaluationMainTabWidget::dbContentRefNameChangedSlot);
     connect (data_source_ref_widget_.get(), &EvaluationDataSourceWidget::usedDataSourceChangedSignal,
-            this, &EvaluationMainTabWidget::usedDataSourcesChangedSlot);
+            this, &EvaluationMainTabWidget::usedDataSourcesRefChangedSlot);
     connect (data_source_ref_widget_.get(), &EvaluationDataSourceWidget::lineChangedSignal,
              this, &EvaluationMainTabWidget::lineRefChangedSlot);
     data_sources_layout->addWidget(data_source_ref_widget_.get());
@@ -72,7 +72,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     connect (data_source_tst_widget_.get(), &EvaluationDataSourceWidget::dbContentNameChangedSignal,
              this, &EvaluationMainTabWidget::dbContentTstNameChangedSlot);
     connect (data_source_tst_widget_.get(), &EvaluationDataSourceWidget::usedDataSourceChangedSignal,
-            this, &EvaluationMainTabWidget::usedDataSourcesChangedSlot);
+            this, &EvaluationMainTabWidget::usedDataSourcesTstChangedSlot);
     connect (data_source_tst_widget_.get(), &EvaluationDataSourceWidget::lineChangedSignal,
              this, &EvaluationMainTabWidget::lineTstChangedSlot);
     data_sources_layout->addWidget(data_source_tst_widget_.get());
@@ -90,6 +90,23 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     std_layout->addWidget(standard_box_.get());
 
     main_layout->addLayout(std_layout);
+
+    // report name
+    QHBoxLayout* report_name_layout = new QHBoxLayout();
+
+    QLabel* report_name_label = new QLabel("Report Name");
+    report_name_label->setFont(font_bold);
+    report_name_layout->addWidget(report_name_label);
+
+    report_name_edit_ = new QLineEdit;
+    report_name_edit_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred); 
+    report_name_layout->addWidget(report_name_edit_);
+
+    updateReportName();
+
+    connect(report_name_edit_, &QLineEdit::textChanged, this, &EvaluationMainTabWidget::reportNameChangedSlot);
+    
+    main_layout->addLayout(report_name_layout);
 
     // minimum height filter
     QHBoxLayout* height_filter_layout = new QHBoxLayout();
@@ -126,6 +143,27 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
 
     setContentsMargins(0, 0, 0, 0);
     setLayout(main_layout);
+}
+
+/**
+ */
+void EvaluationMainTabWidget::setReportName(const std::string& name)
+{
+    report_name_edit_->setText(QString::fromStdString(name));
+}
+
+/**
+ */
+std::string EvaluationMainTabWidget::reportName() const
+{
+    return report_name_edit_->text().toStdString();
+}
+
+/**
+ */
+bool EvaluationMainTabWidget::isComplete() const
+{
+    return !reportName().empty();
 }
 
 /**
@@ -219,6 +257,13 @@ void EvaluationMainTabWidget::lineRefChangedSlot(unsigned int line_id)
 
 /**
  */
+void EvaluationMainTabWidget::usedDataSourcesRefChangedSlot()
+{
+    dialog_.updateButtons();
+}
+
+/**
+ */
 void EvaluationMainTabWidget::dbContentTstNameChangedSlot(const std::string& dbcontent_name)
 {
     loginf << "name " << dbcontent_name;
@@ -226,6 +271,7 @@ void EvaluationMainTabWidget::dbContentTstNameChangedSlot(const std::string& dbc
     calculator_.dbContentNameTst(dbcontent_name);
 
     dialog_.updateButtons();
+    updateReportName();
 }
 
 /**
@@ -235,13 +281,16 @@ void EvaluationMainTabWidget::lineTstChangedSlot(unsigned int line_id)
     loginf << "value " << line_id;
 
     calculator_.settings().line_id_tst_ = line_id;
+
+    updateReportName();
 }
 
 /**
  */
-void EvaluationMainTabWidget::usedDataSourcesChangedSlot()
+void EvaluationMainTabWidget::usedDataSourcesTstChangedSlot()
 {
     dialog_.updateButtons();
+    updateReportName();
 }
 
 /**
@@ -269,6 +318,21 @@ void EvaluationMainTabWidget::changedCurrentStandardSlot()
     sector_widget_->update();
 
     dialog_.updateButtons();
+    updateReportName();
 
     logdbg << "done";
+}
+
+/**
+ */
+void EvaluationMainTabWidget::reportNameChangedSlot()
+{
+    dialog_.updateButtons();
+}
+
+/**
+ */
+void EvaluationMainTabWidget::updateReportName()
+{
+    report_name_edit_->setText(QString::fromStdString(calculator_.suggestReportName()));
 }

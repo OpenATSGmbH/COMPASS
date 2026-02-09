@@ -895,6 +895,27 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     if (do_debug)
         loginf << "rn " << tr.record_num_;
 
+    std::set<unsigned int> already_tracked_utns;
+
+    // create lookup for already tracked utns for this data source + line
+    if (tr.dbcont_id_ == 62
+        && tr.track_number_
+        && reconstructor().targets_container_.tn2utn_.count(tr.ds_id_)
+        && reconstructor().targets_container_.tn2utn_.at(tr.ds_id_).count(tr.line_id_))
+    {
+        const boost::posix_time::time_duration track_max_time_diff =
+            Time::partialSeconds(reconstructor().settings().track_max_time_diff_);
+
+        // track num -> <utn, last tod>
+        for (const auto& tn_it : reconstructor().targets_container_.tn2utn_.at(tr.ds_id_).at(tr.line_id_))
+        {
+            if (tr.timestamp_ - tn_it.second.second < track_max_time_diff)
+            {
+                already_tracked_utns.insert(tn_it.second.first);
+            }
+        }
+    }
+
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
     tbb::parallel_for(uint(0), num_targets, [&](unsigned int target_cnt)
 #else
@@ -911,6 +932,15 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                           results[target_cnt] = tuple<bool, unsigned int, double>(false, other.utn_, 0);
 
                           if (tr.acad_ && other.hasACAD()) // has to be covered outside
+#ifdef FIND_UTN_FOR_TARGET_REPORT_MT
+                              return;
+#else
+            continue;
+#endif
+
+                          // check already "covered" other track number, if yes do not associate here
+                          if (tr.dbcont_id_ == 62 && tr.track_number_ && already_tracked_utns.count(other_utn))
+                          
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -998,11 +1028,13 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                           double distance_m{0}, tgt_est_std_dev{0}, tr_est_std_dev{0};
 
                           if (!canGetPositionOffsetTR(tr, other))
+                          {
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
             continue;
 #endif
+                          }
                           auto pos_offs = getPositionOffsetTR(tr, other, do_debug, {}, &prediction_stats[ target_cnt ]);
 
                           if (!pos_offs.has_value())
@@ -1010,7 +1042,6 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                               if (do_debug)
                                   loginf << "DBG tr " << tr.record_num_ << " other_utn " << other_utn
                                          << " no position offset";
-
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -1049,6 +1080,9 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     for (auto& res_it : results) // usable, other utn, num updates, avg distance
     {
         tie(usable, other_utn, mahalanobis_dist) = res_it;
+
+        if (do_debug)
+            loginf << "usable " << usable << " other_utn " << other_utn << " mahalanobis_dist " << String::doubleToStringPrecision(mahalanobis_dist, 2);
 
         if (!usable)
             continue;
@@ -1281,9 +1315,11 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
     for (const auto& s : prediction_stats)
         ReconstructorTarget::addPredictionToGlobalStats(s);
 
-    bool do_debug = false;  // debug_utns.count(utn);
+    bool do_debug = false; // debug_utns.count(utn);
 
     float min_score = reconstructor().settings().targets_min_assoc_score_;
+
+    logdbg << "num result " << results.size() << " min score " << min_score;
 
     for (auto& res_it : results)  // usable, other utn, num updates, avg distance
     {
@@ -1349,8 +1385,14 @@ void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget&
             continue;
         }
 
+        auto ground_bit0 = target.groundBitAt(tr.timestamp_, max_time_diff_, dbContent::ReconstructorTarget::InterpOptions());
+        auto ground_bit1 = other.groundBitAt(tr.timestamp_, max_time_diff_, dbContent::ReconstructorTarget::InterpOptions());
+
+        bool one_is_on_ground = (ground_bit0 && *ground_bit0) || (ground_bit1 && *ground_bit1);
+
         //@TODO: debug flag
-        auto pos_offs = getPositionOffsetTargets(tr.timestamp_, target, other, false, {}, stats);
+        auto pos_offs = getPositionOffsetTargets(tr.timestamp_, target, other,
+             one_is_on_ground,false, {}, stats);
         if (!pos_offs.has_value())
         {
             ++pos_skipped_cnt;
@@ -1364,7 +1406,7 @@ void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget&
         double distance_score;
 
         std::tie(score_class, distance_score) =
-            checkPositionOffsetScore(distance_m, stddev_sum_targets, secondary_verified);
+            checkPositionOffsetScore(target, other, distance_m, stddev_sum_targets, secondary_verified, one_is_on_ground);
 
         // distance_score is supposed to be positve, the higher the better
 

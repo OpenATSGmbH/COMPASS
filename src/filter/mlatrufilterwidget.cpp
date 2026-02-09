@@ -17,12 +17,12 @@
 
 #include "mlatrufilterwidget.h"
 #include "mlatrufilter.h"
-//#include "stringconv.h"
 #include "logger.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QCheckBox>
 
 using namespace std;
 //using namespace Utils;
@@ -36,6 +36,10 @@ MLATRUFilterWidget::MLATRUFilterWidget(MLATRUFilter& filter)
 
     addNameValuePair("MLAT RUs IN", value_edit_);
 
+    match_all_cb_ = new QCheckBox();
+    connect(match_all_cb_, &QCheckBox::toggled, this, &MLATRUFilterWidget::matchAllToggledSlot);
+    addNameValuePair("Require Match All", match_all_cb_);
+
     update();
 }
 
@@ -48,6 +52,14 @@ void MLATRUFilterWidget::update()
     traced_assert(value_edit_);
 
     value_edit_->setText(filter_.rus().c_str());
+
+    if (filter_.checkRUs(filter_.rus()))
+        value_edit_->setStyleSheet("");
+    else
+        value_edit_->setStyleSheet("QLineEdit { background-color: #FF6666; }");
+
+    QSignalBlocker blocker(match_all_cb_);
+    match_all_cb_->setChecked(filter_.matchAll());
 }
 
 void MLATRUFilterWidget::valueEditedSlot(const QString& value)
@@ -56,5 +68,15 @@ void MLATRUFilterWidget::valueEditedSlot(const QString& value)
 
     loginf << "'" << value_str << "'";
 
+    if (filter_.checkRUs(value_str))
+        value_edit_->setStyleSheet("");
+    else
+        value_edit_->setStyleSheet("QLineEdit { background-color: #FF6666; }");
+
     filter_.rus(value_str);
+}
+
+void MLATRUFilterWidget::matchAllToggledSlot(bool checked)
+{
+    filter_.matchAll(checked);
 }

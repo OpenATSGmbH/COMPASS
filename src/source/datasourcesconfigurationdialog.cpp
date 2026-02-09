@@ -45,7 +45,7 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
 
     setModal(true);
 
-    setMinimumSize(QSize(1000, 600));
+    setMinimumSize(QSize(1400, 600));
 
     QFont font_bold;
     font_bold.setBold(true);

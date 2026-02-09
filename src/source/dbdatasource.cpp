@@ -48,7 +48,6 @@ DBDataSource::DBDataSource()
 
 DBDataSource::~DBDataSource()
 {
-
 }
 
 void DBDataSource::counts (const std::string& counts)

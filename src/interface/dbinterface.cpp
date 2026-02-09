@@ -66,9 +66,12 @@
 #include <QElapsedTimer>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include <fstream>
+#include <tuple>
+#include <functional>
 
 using namespace Utils;
 using namespace std;
@@ -87,13 +90,28 @@ const size_t DBInterface::TableBulkUpdateMinRows = 50;
 
 /**
  */
-DBInterface::DBInterface(string class_id, 
-                         string instance_id, 
-                         COMPASS* compass)
+DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
 :   Configurable(class_id, instance_id, compass)
 ,   insert_mt_(true)
 {
+    registerParameter("log_verbose", &log_verbose_, log_verbose_);
+
     registerParameter("read_chunk_size", &read_chunk_size_, 50000u);
+    
+    registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
+    registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
+    registerParameter("num_threads", &num_threads_, num_threads_);
+    registerParameter("live_cleanup_time_min", &live_cleanup_time_min_, live_cleanup_time_min_);
+
+    registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
+    
+    if (use_live_inmem_db_)
+    {
+        logwrn << "version not reliable with live in-mem db, deactivating";
+        use_live_inmem_db_ = false; // TODO REMOVE HACK
+    }
+
+    registerParameter("preserve_insert_order", &preserve_insert_order_, preserve_insert_order_);
 
     createSubConfigurables();
 }
@@ -431,50 +449,220 @@ bool DBInterface::cleanupDB(bool show_dialog)
  */
 Result DBInterface::cleanupDBInternal()
 {
-    loginf << "cleaning db...";
+    // [FIX] Protect the critical section where the DB instance is destroyed/recreated.
+    // Also required because we call execute(), which expects the lock to be held.
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
+
+    logdbg << "cleaning db";
 
     traced_assert(ready());
     traced_assert(!cleanup_in_progress_);
-    traced_assert(!dbInMemory());
 
     cleanup_in_progress_ = true;
 
-    Result res_cleanup, res_critical;
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    try
+    std::function<std::tuple<string, string, string, unsigned long>()> get_db_status = [&]() -> std::tuple<string, string, string, unsigned long>
     {
-        auto res_reconnect = db_instance_->reconnect(true, &res_cleanup);
-
-        //reconnection shall never fail
-        if (!res_reconnect.ok())
-            throw std::runtime_error("Reconnecting to database failed: " + res_reconnect.error());
-
-        if (!res_cleanup.ok())
+        try
         {
-            //cleanup didn't work => log and return false
-            logerr << "Cleanup failed: " << res_cleanup.error();
+            DBCommand command;
+            // Query raw bytes from duckdb_memory() for precision, while keeping other info from pragma_database_size
+            command.set("SELECT (SELECT sum(memory_usage_bytes) FROM duckdb_memory()) as mem_bytes, memory_limit, wal_size FROM pragma_database_size();");
+
+            PropertyList list;
+            list.addProperty("mem_bytes", PropertyDataType::ULONGINT);
+            list.addProperty("memory_limit", PropertyDataType::STRING);
+            list.addProperty("wal_size", PropertyDataType::STRING);
+            command.list(list);
+
+            shared_ptr<DBResult> result = execute(command);
+            
+            if (result->containsData())
+            {
+                shared_ptr<Buffer> buffer = result->buffer();
+                if (buffer->size() > 0)
+                {
+                    // Get raw bytes
+                    unsigned long mem_bytes = buffer->get<unsigned long>("mem_bytes").get(0);
+                    string mem_limit = buffer->get<string>("memory_limit").get(0);
+                    string wal_size = buffer->get<string>("wal_size").get(0);
+
+                    // Convert to MB with high precision
+                    double mem_mb = mem_bytes / (1024.0 * 1024.0);
+
+                    std::stringstream ss;
+                    ss << std::fixed << std::setprecision(2) << mem_mb;
+
+                    return std::make_tuple(ss.str(), mem_limit, wal_size, mem_bytes);
+                }
+            }
+        }
+        catch(const std::exception& ex)
+        {
+            logwrn << "could not query precise db status: " << ex.what();
+        }
+        return std::make_tuple("?", "?", "?", 0);
+    };
+
+    auto get_db_file_size = [&]()
+    {
+        DBCommand command;
+        // Query raw bytes from duckdb_memory() for precision, while keeping other info from pragma_database_size
+        command.set("SELECT database_size FROM pragma_database_size();");
+
+        PropertyList list;
+        list.addProperty("database_size", PropertyDataType::STRING);
+        command.list(list);
+
+        shared_ptr<DBResult> result = execute(command);
+        if (result->containsData())
+        {
+            shared_ptr<Buffer> buffer = result->buffer();
+            if (buffer->size() > 0)
+            {
+                return buffer->get<std::string>("database_size").get(0);
+            }
         }
 
-        res_critical = Result::succeeded();
-    }
-    catch(const std::exception& ex)
+        return std::string("?");
+    };
+
+    auto get_db_row_count = [&]()
     {
-        res_critical = Result::failed(ex.what());
+        unsigned long row_count = 0;
+
+        try
+        {
+            auto info = db_instance_->defaultConnection().createTableInfo();
+            for (const auto& ti : info.result())
+            {
+                const auto& table_name = ti.second.name();
+
+                PropertyList list;
+                list.addProperty("num_rows", PropertyDataType::ULONGINT);
+
+                DBCommand command;
+                command.set("SELECT COUNT(*) FROM " + table_name);
+                command.list(list);
+
+                std::shared_ptr<DBResult> result = execute(command);
+                if (result->containsData() && result->buffer() && result->buffer()->size() > 0)
+                {
+                    row_count += result->buffer()->get<unsigned long>("num_rows").get(0);
+                }
+                else
+                {
+                    logwrn << "could not query row count for table " << table_name;
+                }
+            }
+        }
+        catch(const std::exception& ex)
+        {
+            logwrn << "could not query db row count: " << ex.what();
+        }
+
+        return row_count;
+    };
+
+    string mem_before, limit_before, wal_before;
+    unsigned long mem_bytes_before;
+    std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
+
+    auto db_size_before = get_db_file_size();
+
+    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    {
+        if (db_instance_->dbInMem())
+        {
+            auto res = execute("CHECKPOINT");
+
+            if (!res.ok())
+            {
+                logerr << "'CHECKPOINT' failed: " << res.error();
+                throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
+            }
+
+            res = execute("VACUUM");
+
+            if (!res.ok())
+            {
+                logerr << "'VACUUM' failed: " << res.error();
+                throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+            }
+        }
+        else
+        {
+            //loginf << "LIIIIIIVE IN FIIIIIIIILE";
+
+            //reconnect and cleanup to make sure the filesize does not grow
+            Result cleanup_result;
+            auto res = db_instance_->reconnect(true, &cleanup_result);
+
+            if (!res.ok() || !cleanup_result.ok())
+            {
+                logerr << "Cleanup failed: " << res.error();
+                throw runtime_error("DBInterface: cleanupDBInternal: Cleanup failed: " + res.error());
+            }
+        }
     }
+    else
+    {
+        //offline
+        // auto res = execute("CHECKPOINT");
+
+        // if (!res.ok())
+        // {
+        //     logerr << "'CHECKPOINT' failed: " << res.error();
+        //     throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
+        // }
+
+        // res = execute("VACUUM");
+
+        // if (!res.ok())
+        // {
+        //     logerr << "'VACUUM' failed: " << res.error();
+        //     throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
+        // }
+        auto res = db_instance_->reconnect(true);
+
+        if (!res.ok())
+        {
+            logerr << "'reconnect failed: '" << res.error() << "'";
+        }
+    }
+
+    boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration time_diff = elapsed_time - start_time;
+
+    string mem_after, limit_after, wal_after;
+    unsigned long mem_bytes_after;
+    std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
+
+    unsigned long total_row_count = get_db_row_count();
+    //double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
+
+    auto db_size_after = get_db_file_size();
+
+    loginf << "duckDB cleanup (" << time_diff.total_milliseconds() << "ms): "
+           << "FILE: " << db_size_before << " -> " << db_size_after
+           << " RAM: " << mem_before << " -> " << mem_after << " MB" 
+           << " (Limit: " << limit_after << ")"
+           << " " << (total_row_count / 1000.0) << "K.rows";
+           //<< " " << kb_per_row << " KB/row";
+
+    last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
 
     cleanup_in_progress_ = false;
 
-    if (!res_critical.ok())
-    {
-        //@TODO: correct way to resolve this worst case?
+    return true;
+}
 
-        reset();
-
-        logerr << "error: " << res_critical.error();
-        throw std::runtime_error(res_critical.error());
-    }
-
-    return res_cleanup;
+bool DBInterface::logVerbose() const
+{
+    return log_verbose_;
 }
 
 /**
@@ -2466,6 +2654,7 @@ void DBInterface::insertDBContent(DBContent& dbcontent, std::shared_ptr<Buffer> 
 
     traced_assert(ready());
     traced_assert(buffer);
+    traced_assert(!cleanup_in_progress_);
 
     // create table if required
     if (!existsTable(dbcontent.dbTableName()))
@@ -2484,6 +2673,7 @@ void DBInterface::insertBuffer(const string& table_name,
 
     traced_assert(ready());
     traced_assert(buffer);
+    traced_assert(!cleanup_in_progress_);
 
     if (!existsTable(table_name))
     {
@@ -2514,6 +2704,7 @@ void DBInterface::insertBuffer(const string& table_name,
 void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Buffer>>& buffers)
 {
     traced_assert(ready());
+    traced_assert (!cleanup_in_progress_);
 
     bool db_supports_mt = db_instance_->sqlConfiguration().supports_mt;
     bool exec_mt        = insert_mt_ && db_supports_mt && buffers.size() > 1;
@@ -2593,59 +2784,71 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
         }
     }
 
-    unsigned int n = insert_jobs.size();
-
-    logdbg << "created " << n << " job(s)";
-
-    //create connections for multithreading (if supported)
-    std::vector<DBConnectionWrapper> mt_connections;
-    if (db_supports_mt)
     {
-        mt_connections.resize(n);
+#ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+#endif
 
-        for (unsigned int i = 0; i < n; ++i)
+        unsigned int n = insert_jobs.size();
+
+        logdbg << "created " << n << " job(s)";
+
+        // create connections for multithreading (if supported)
+        std::vector<DBConnectionWrapper> mt_connections;
+        if (db_supports_mt)
         {
-            mt_connections[ i ] = db_instance_->concurrentConnection(i);
-            traced_assert(!mt_connections[ i ].isEmpty());
+            mt_connections.resize(n);
 
-            if (mt_connections[ i ].hasError())
+            for (unsigned int i = 0; i < n; ++i)
             {
-                logerr << "creating mt connection failed: " << mt_connections[ i ].error();
-                throw runtime_error("DBInterface: insertDBContent: creating mt connection failed: " + mt_connections[ i ].error());
+                mt_connections[i] = db_instance_->concurrentConnection(i);
+                traced_assert(!mt_connections[i].isEmpty());
+
+                if (mt_connections[i].hasError())
+                {
+                    logerr << "creating mt connection failed: " << mt_connections[i].error();
+                    throw runtime_error(
+                        "DBInterface: insertDBContent: creating mt connection failed: " +
+                        mt_connections[i].error());
+                }
             }
         }
-    }
 
-    //insert buffers
-    std::vector<Result> results(n, 0);
-    if (exec_mt)
-    {
-        //insert multithreaded (if supported)
-        tbb::parallel_for(uint(0), n, [ & ](unsigned int i) 
+        // insert buffers
+        std::vector<Result> results(n, 0);
+        if (exec_mt)
         {
-            auto& job = insert_jobs.at(i);
-            results.at(i) = mt_connections.at(i).connection().insertBuffer(job.table, job.buffer, job.idx_from, job.idx_to);
-        });
-    }
-    else
-    {
-        //single threaded insert
+            // insert multithreaded (if supported)
+            tbb::parallel_for(uint(0), n,
+                              [&](unsigned int i)
+                              {
+                                  auto& job = insert_jobs.at(i);
+                                  results.at(i) = mt_connections.at(i).connection().insertBuffer(
+                                      job.table, job.buffer, job.idx_from, job.idx_to);
+                              });
+        }
+        else
+        {
+            // single threaded insert
+            for (unsigned int i = 0; i < n; ++i)
+            {
+                auto& job = insert_jobs.at(i);
+                results.at(i) = db_instance_->defaultConnection().insertBuffer(
+                    job.table, job.buffer, job.idx_from, job.idx_to);
+            }
+        }
+
+        // check results
         for (unsigned int i = 0; i < n; ++i)
         {
-            auto& job = insert_jobs.at(i);
-            results.at(i) = db_instance_->defaultConnection().insertBuffer(job.table, job.buffer, job.idx_from, job.idx_to);
-        }
-    }
-
-    //check results
-    for (unsigned int i = 0; i < n; ++i)
-    {
-        const auto& table_name = insert_jobs.at(i).table;
-        const auto& result     = results.at(i);
-        if (!result.ok())
-        {
-            logerr << "inserting into table '" << table_name << "' failed: " << result.error();
-            throw runtime_error("DBInterface: insertBuffer: inserting into table '" + table_name + "' failed: " + result.error());
+            const auto& table_name = insert_jobs.at(i).table;
+            const auto& result = results.at(i);
+            if (!result.ok())
+            {
+                logerr << "inserting into table '" << table_name << "' failed: " << result.error();
+                throw runtime_error("DBInterface: insertBuffer: inserting into table '" +
+                                    table_name + "' failed: " + result.error());
+            }
         }
     }
 }
@@ -2787,6 +2990,7 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
                                boost::posix_time::ptime before_timestamp)
 {
     traced_assert(ready());
+    traced_assert(!cleanup_in_progress_);
 
     {
         #ifdef PROTECT_INSTANCE
@@ -2795,6 +2999,15 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
 
         std::shared_ptr<DBCommand> command = sqlGenerator().getDeleteCommand(dbcontent, before_timestamp);
         execute(*command.get());
+    }
+
+    if (last_live_cleanup_time_.is_not_a_date_time())
+        last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
+
+    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::minutes(live_cleanup_time_min_))
+    {
+        loginf << "live cleanup time reached, doing cleanup";
+        cleanupDBInternal();
     }
 }
 

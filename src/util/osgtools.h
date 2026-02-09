@@ -17,24 +17,24 @@
 
 #pragma once
 
-#include <QWidget>
-
-#include <memory>
-
-class EvaluationManager;
-class EvaluationManagerWidget;
-
-class EvaluationTargetsTabWidget : public QWidget
+namespace osg
 {
-    Q_OBJECT
+    class Image;
+}
 
-private slots:
+class QImage;
+class QPixmap;
+class QIcon;
+class QSize;
 
-public:
-    EvaluationTargetsTabWidget(EvaluationManager& eval_man, EvaluationManagerWidget& man_widget);
+namespace Utils
+{
+namespace OSG
+{
 
-protected:
-    EvaluationManager& eval_man_;
-    EvaluationManagerWidget& man_widget_;
-};
+extern osg::Image* createImage(const QImage& img);
+extern osg::Image* createImage(const QPixmap& pixmap);
+extern osg::Image* createImage(const QIcon& icon, const QSize& size);
 
+}  // namespace Files
+}  // namespace Utils

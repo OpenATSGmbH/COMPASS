@@ -1,15 +1,5 @@
 {
     "parameters": {
-        "limit_max": 1000000,
-        "limit_min": 0,
-        "max_live_data_age_cache": 5,
-        "max_live_data_age_db": 60,
-        "order_variable_dbcontent_name": "Meta",
-        "order_variable_name": "Timestamp",
-        "use_filters": false,
-        "use_limit": false,
-        "use_order": true,
-        "use_order_ascending": true
     },
     "sub_config_files": [
         {

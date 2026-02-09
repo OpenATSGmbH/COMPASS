@@ -22,6 +22,7 @@
 #include "mlatrufilter.h"
 
 class QLineEdit;
+class QCheckBox;
 
 /**
  */
@@ -31,6 +32,7 @@ class MLATRUFilterWidget : public DBFilterWidget
 
 protected slots:
     void valueEditedSlot(const QString& value);
+    void matchAllToggledSlot(bool checked);
 
 public:
     MLATRUFilterWidget(MLATRUFilter& filter);
@@ -42,4 +44,5 @@ protected:
     MLATRUFilter& filter_;
 
     QLineEdit* value_edit_ {nullptr};
+    QCheckBox* match_all_cb_ {nullptr};
 };

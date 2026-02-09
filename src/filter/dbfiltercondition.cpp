@@ -45,7 +45,7 @@ DBFilterCondition::DBFilterCondition(const std::string& class_id, const std::str
     : Configurable(class_id, instance_id, filter_parent), filter_parent_(filter_parent)
 {
     registerParameter("operator", &operator_, std::string(">"));
-    registerParameter("op_and", &op_and_, true);
+    //registerParameter("op_and", &op_and_, true);
     registerParameter("absolute_value", &absolute_value_, false);
 
     registerParameter("variable_dbcontent_name", &variable_dbcontent_name_, std::string());
@@ -100,7 +100,7 @@ bool DBFilterCondition::filters(const std::string& dbcontent_name)
     return hasVariable(dbcontent_name);
 }
 
-std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " first " << first;
     traced_assert(usable_);
@@ -120,16 +120,19 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     dbContent::Variable& var = variable(dbcontent_name);
 
-    //const DBTableColumn& column = var.currentDBColumn();
-    std::string db_column_name = var.dbColumnName();
-    std::string db_table_name = var.dbTableName();
+    std::string db_item_str;
+    
+    if (var.dbExpression().size())
+        db_item_str = var.dbColumnName();
+    else
+        db_item_str = var.dbTableName()+"."+var.dbColumnName();
 
     if (!first)
     {
-        if (op_and_)
-            ss << " AND ";
-        else
-            ss << " OR ";
+        //if (op_and_)
+        ss << " AND ";
+        //else
+        //    ss << " OR ";
     }
     first = false;
 
@@ -144,18 +147,18 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
         if (val_str.size())
         {
-            ss << variable_prefix << db_table_name << "." << db_column_name << variable_suffix;
+            ss << variable_prefix << db_item_str << variable_suffix;
             ss << " " << operator_ << val_str << " OR ";
         }
 
-        ss << variable_prefix << db_table_name << "." << db_column_name << variable_suffix;
+        ss << variable_prefix << db_item_str << variable_suffix;
         ss << " " << operator_ << " NULL";
 
         ss << ")";
     }
     else
     {
-        ss << variable_prefix << db_table_name << "." << db_column_name << variable_suffix;
+        ss << variable_prefix << db_item_str << variable_suffix;
         ss << " " << operator_ << val_str;
     }
 
@@ -163,13 +166,15 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
         loginf << instanceId() << ": '" << ss.str()
                << "'";
 
+    if (var.dbExpression().size() && !read_set.hasVariable(var))
+    {
+        loginf << "db expression, adding var " << var.name() << " to read set";
+        read_set.add(var);
+    }
+
     return ss.str();
 }
 
-/**
- * Checks if value_ is different than edit_ value, if yes sets changed_ and emits
- * possibleFilterChange.
- */
 void DBFilterCondition::valueChanged()
 {
     logdbg;
@@ -183,9 +188,8 @@ void DBFilterCondition::valueChanged()
     if (!value_invalid_ && value_ != new_value)
     {
         value_ = new_value;
-        changed_ = true;
 
-        emit possibleFilterChange();
+        //emit possibleFilterChange();
     }
 
     loginf << "value '" << value_ << "' invalid "

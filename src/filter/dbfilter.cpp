@@ -32,13 +32,13 @@ using namespace nlohmann;
 
 DBFilter::DBFilter(const std::string& class_id, const std::string& instance_id,
                    Configurable* parent, bool is_generic)
-    : Configurable(class_id, instance_id, parent),
-      is_generic_(is_generic)  // filter_manager_(*filter_manager),
+    : Configurable(class_id, instance_id, parent)
 {
-    registerParameter("active", &active_, false);
-    registerParameter("changed", &changed_, false);
-    registerParameter("visible", &visible_, false);
     registerParameter("name", &name_, instance_id);
+    registerParameter("is_custom", &is_custom_, false);
+
+    registerParameter("active", &active_, false);
+    registerParameter("visible", &visible_, false);
 
     registerParameter("widget_visible", &widget_visible_, true);
 
@@ -51,11 +51,6 @@ DBFilter::~DBFilter()
     logdbg << "instance_id " << instanceId();
 
     widget_ = nullptr;
-
-    for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
-    {
-        delete conditions_.at(cnt);
-    }
     conditions_.clear();
 }
 
@@ -68,40 +63,11 @@ void DBFilter::setActive(bool active)
 
     active_ = active;
 
-    changed_ = true;
-
     if (widget_)
         widget_->update();
 }
 
 bool DBFilter::getActive() { return active_ && !disabled_; }
-
-bool DBFilter::getChanged()
-{
-    traced_assert(!unusable_);
-
-    bool ret = changed_;
-
-    for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
-    {
-        ret |= conditions_.at(cnt)->getChanged();
-    }
-
-    return ret;
-}
-
-void DBFilter::setChanged(bool changed)
-{
-    traced_assert(!unusable_);
-
-    changed_ = changed;
-
-    for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
-    {
-        conditions_.at(cnt)->setChanged(changed);
-    }
-
-}
 
 bool DBFilter::getVisible() { return visible_; }
 void DBFilter::setVisible(bool visible)
@@ -141,7 +107,8 @@ bool DBFilter::filters(const std::string& dbcont_name)
 
 //  If active, returns concatenated condition strings from all sub-conditions and sub-filters, else
 //  returns empty string.
-std::string DBFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string DBFilter::getConditionString(
+    const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     traced_assert(!unusable_);
 
@@ -159,7 +126,7 @@ std::string DBFilter::getConditionString(const std::string& dbcontent_name, bool
             }
 
             std::string text =
-                conditions_.at(cnt)->getConditionString(dbcontent_name, first);
+                conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, first);
             ss << text;
         }
 
@@ -178,8 +145,8 @@ void DBFilter::generateSubConfigurable(const std::string& class_id, const std::s
     if (class_id == "DBFilterCondition")
     {
         logdbg << "generating condition";
-        DBFilterCondition* condition = new DBFilterCondition(class_id, instance_id, this);
-        conditions_.push_back(condition);
+        conditions_.emplace_back(std::unique_ptr<DBFilterCondition>(new DBFilterCondition(class_id, instance_id, this)));
+        DBFilterCondition* condition = conditions_.back().get();
 
         unusable_ = unusable_ | !condition->usable();
 
@@ -219,17 +186,15 @@ void DBFilter::reset()
     {
         conditions_.at(cnt)->reset();
     }
-
-    changed_ = true;
 }
 
 void DBFilter::deleteCondition(DBFilterCondition* condition)
 {
-    std::vector<DBFilterCondition*>::iterator it =
-        find(conditions_.begin(), conditions_.end(), condition);
+    auto it = std::find_if(conditions_.begin(), conditions_.end(),
+        [condition](const std::unique_ptr<DBFilterCondition>& ptr) { return ptr.get() == condition; });
+
     traced_assert(it != conditions_.end());
     conditions_.erase(it);
-    delete condition;
 }
 
 DBFilterWidget* DBFilter::widget()
@@ -247,7 +212,7 @@ void DBFilter::saveViewPointConditions (nlohmann::json& filters)
     filters[name_] = json::object();
     json& filter = filters.at(name_);
 
-    for (auto cond_it : conditions_)
+    for (auto& cond_it : conditions_)
     {
         traced_assert(!filter.contains(cond_it->instanceId()));
         filter[cond_it->instanceId()] = cond_it->getValue();
@@ -262,7 +227,7 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(filter.is_object());
 
     // clear previous conditions
-    for (auto cond_it : conditions_)
+    for (auto& cond_it : conditions_)
         cond_it->setValue("");
 
     for (auto& cond_it : filter.get<json::object_t>())
@@ -275,7 +240,7 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
         std::string value = cond_it.second;
 
         auto it = find_if(conditions_.begin(), conditions_.end(),
-                          [cond_name] (const DBFilterCondition* c) { return c->instanceId() == cond_name; } );
+                          [cond_name] (const std::unique_ptr<DBFilterCondition>& c) { return c->instanceId() == cond_name; } );
 
         if (it == conditions_.end())
             logerr << name_ << ": cond_name '" << cond_name << "' not found";

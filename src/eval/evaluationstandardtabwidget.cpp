@@ -16,7 +16,6 @@
  */
 
 #include "evaluationstandardtabwidget.h"
-#include "evaluationmanagerwidget.h"
 #include "evaluationmanager.h"
 #include "evaluationstandardcombobox.h"
 #include "evaluationstandard.h"
@@ -100,8 +99,11 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
     standards_layout_ = new QHBoxLayout();
     main_layout->addLayout(standards_layout_);
 
-    if (calculator_.hasCurrentStandard())
-        updateStandardWidget();
+    standards_placeholder_ = new QWidget;
+    standards_placeholder_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    main_layout->addWidget(standards_placeholder_);
+
+    updateStandardWidget();
 
     // connections
     connect (&calculator_, &EvaluationCalculator::standardsChanged,
@@ -303,6 +305,8 @@ void EvaluationStandardTabWidget::updateStandardWidget()
         }
         delete item;
     }
+
+    standards_placeholder_->setVisible(!calculator_.hasCurrentStandard());
 
     if (calculator_.hasCurrentStandard())
     {

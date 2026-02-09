@@ -37,6 +37,7 @@ DataSourcesToolWidget::DataSourcesToolWidget(DataSourceManager& ds_man)
 {
     createUI();
 }
+
 DataSourcesToolWidget::~DataSourcesToolWidget()
 {
 
@@ -148,6 +149,8 @@ void DataSourcesToolWidget::loadingDone()
     ds_widget_->setEnabled(true);
 }
 
+/**
+ */
 void DataSourcesToolWidget::updateContent(bool recreate_required)
 {
     ds_widget_->updateContent(recreate_required);

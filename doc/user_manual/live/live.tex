@@ -1,6 +1,8 @@
 \chapter{Live Mode}
 \label{sec:live_mode}
 
+\section{Introduction}
+
 There exist 3 application modes:
 \begin{itemize}
 \item 'Offline': Default mode, for offline analysis
@@ -16,7 +18,7 @@ There exist 3 application modes:
 \end{figure}
 
 
-The application switches in Live mode when ASTERIX data is imported from the network, as described in \nameref{sec:ui_import_asterix_network}. \\
+The application switches in Live mode when ASTERIX data is imported from the network, as described in \nameref{sec:ui_import_asterix_network}. \\ 
 
 Please note that the data sources have to be correctly set up for reading network traffic, as described in \nameref{sec:configure_datasources_table_content}. \\
 
@@ -24,21 +26,96 @@ When that Live mode is enabled and the correct network lines are setup (and acti
 
 \begin{figure}[H]
   \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/live_mode.png}
+    \includegraphics[width=19cm]{figures/live_mode.png} 
   \caption{Main Window in Live Mode}
 \end{figure}
 
-In Live mode, most application components are the same as in Offline mode (although some are deactivated), but in the main status bar the Live mode is indicated. Using the 'Pause' button the 'Live: Paused' mode can be entered and the 'Stop' button allows stopping the network recording and returning to Offline mode.
+In Live mode, most application components are the same as in Offline mode (although some are deactivated), but in the main status bar the Live mode is indicated. 
+Using the 'Pause' button the 'Live: Paused' mode can be entered and the 'Stop' button allows stopping the network recording and returning to Offline mode. \\
+
+Activating Live mode will influence the following UI components.
+
+\begin{itemize}
+\item Flight Deck - Data Sources: Additional features, see \nameref{sec:data_sources_live_mode}
+\item Flight Deck - Sensor Status: Enabled in live mode, see \nameref{sec:sensor_status_live_mode}
+\item Geographic View - Special configuration in Live mode, see \nameref{sec:geo_view_live_mode} 
+\end{itemize}
 
 \section{Data Sources \& Processing}
+\label{sec:data_sources_live_mode}
 
-For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a define Line), the respective button is disabled (greyed out). If data is received over a line, it will become active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green if current data was received during the last 2 update intervals. \\
+For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a defined Line), the respective button is disabled (greyed out). If data is received over a line, it will become active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green if current data was received during the last 2 update intervals. \\
 
 The line button can also be toggled - if a bold border is shown the data from the respective line stored not only in the database but \textbf{also} in main memory (RAM). The most recent 5 minutes of data are kept in main memory (RAM), and can be visualized in the existing Views. \\
 
 Please \textbf{note} that currently only the Geographic View displays data in live mode, for performance reasons the other Views are inactive.
 
+\section{Sensor Status Tool}
+\label{sec:sensor_status_live_mode}
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=10cm,frame]{figures/sensor_status_overview.png}
+  \caption{Sensor Status Overview}
+\end{figure}
+
+When entering Live mode, the Sensor Status tool in the Flight Deck will become available. 
+Using this tool, CAT063 sensor status information can be tracked for individual sensors, if available. \\
+
+On top, a system tracker Data Source and Line providing the needed CAT063 data can be selected. \\
+
+Below a list of sensors with their current status exists. The following sensors will be listed:
+
+\begin{itemize}
+ \item Sensors which are referenced in the selected tracker line’s CAT063 content, their current status determined by the obtained CON item.
+ \item Sensors which are contained in the database but not in the selected tracker line’s CAT063 content, their current status set to \textcolor{gray}{Unknown}.
+\end{itemize}
+\  \\
+
+CON statuses include:
+
+\begin{itemize}
+ \item \textcolor{green!50!black}{Operational}
+ \item \textcolor{orange}{Degraded}
+ \item \textcolor{blue}{Initializing}
+ \item \textcolor{red}{Not Connected}
+\end{itemize}
+\  \\
+
+Additionally, if the last received sensor update is older than a defined period, the sensor status will be set to \textcolor{gray}{Unknown} until a new sensor update is received for the respective sensor.
+
+This period can be specified by opening the tool's configuration menu \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} and selecting one of the predefined values in the sub-menu \textit{Maximum Status Age}. \\
+
+For each listed sensor, the time of day of the sensor's last received update can be displayed by selecting \textit{Show Last Update ToD} in the configuration menu. \\
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=12cm,frame]{figures/sensor_status_detail.png}
+  \caption{Sensor Status: Show Last Update ToD}
+\end{figure}
+
+Below the sensor list, two items are displayed:
+
+\begin{itemize}
+ \item Received Time of Day: The received last sensor update’s time of day
+ \item Updated Time of Day: The last time of day the display has been updated
+\end{itemize}
+\  \\
+
+At the bottom, a text box lists all important updates and status changes of the selected tracker line.
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=14cm,frame]{figures/sensor_status_log.png}
+  \caption{Sensor Status: Sensor Status Log}
+\end{figure}
+
+Status changes are displayed as:
+
+Time of Day | Sensor Name | Old State $\rightarrow$ New State
+
 \section{Geographic View}
+\label{sec:geo_view_live_mode}
 
 In Live mode, the Geographic View automatically shows the same elements as with the time filter, and the main components are the same as in Offline mode (although some are deactivated).
 
@@ -71,7 +148,7 @@ The online state text is shown if the application is in Live:Running mode and th
 
 The ASTERIX Import task as well as the Geographic View can detect and handle overload situations. If the real-time processing is not possible with the used workstation, display latency builds up - resulting in ASTERIX data queuing up. \\
 
-If such a latency is larger than 3 seconds,  existing Geographic Views skip drawing until re-synchronization is possible (display latency $<$ 3s). During such an overload, the Geographic Views show a red overload message on the bottom right, with the display latency in seconds. After such an overload, no loss of data occured and all data is displayed. \\
+If such a latency is larger than 3 seconds, existing Geographic Views skip drawing until re-synchronization is possible (display latency $<$ 3s). During such an overload, the Geographic Views show a red overload message on the bottom right, with the display latency in seconds. After such an overload, no loss of data occurred and all data is displayed. \\
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
@@ -167,5 +244,3 @@ In the file 'compass.json' the following values can be adapted to change how oft
         "auto_live_running_resume_ask_wait_time": 1,
 ...        
 \end{lstlisting}
-
-

@@ -18,6 +18,7 @@
 #include "simplereconstructorassociationwidget.h"
 #include "simplereconstructorwidget.h"
 #include "simplereconstructor.h"
+#include "noscrollqspinbox.h"
 
 #include <QCheckBox>
 #include <QGridLayout>
@@ -26,7 +27,6 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QSpinBox>
 
 using namespace std;
 
@@ -55,41 +55,74 @@ SimpleReconstructorAssociationWidget::SimpleReconstructorAssociationWidget(
 
     layout->addWidget(new QLabel("Maximum Track Time Difference [s]"), row, 0);
 
-    max_time_diff_tracker_edit_ = new QSpinBox();
+    max_time_diff_tracker_edit_ = new NoScrollQSpinBox();
     max_time_diff_tracker_edit_->setRange(0, 1000);
     connect(max_time_diff_tracker_edit_, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &SimpleReconstructorAssociationWidget::maxTimeDiffTrackerEditedSlot);
 
     layout->addWidget(max_time_diff_tracker_edit_, row, 1);
 
-    //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
-    ++row;
+    {
+        //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
+        ++row;
 
-    layout->addWidget(new QLabel("Maximum Erroneous Distance [m]"), row, 0);
+        layout->addWidget(new QLabel("Maximum Erroneous Distance Air [m]"), row, 0);
 
-    max_distance_notok_edit_ = new QLineEdit();
-    connect(max_distance_notok_edit_, &QLineEdit::textEdited,
-            this, &SimpleReconstructorAssociationWidget::maxDistanceNotOKEditedSlot);
-    layout->addWidget(max_distance_notok_edit_, row, 1);
+        max_distance_notok_air_edit_ = new QLineEdit();
+        connect(max_distance_notok_air_edit_, &QLineEdit::textEdited,
+                this, &SimpleReconstructorAssociationWidget::maxDistanceNotOKAirEditedSlot);
+        layout->addWidget(max_distance_notok_air_edit_, row, 1);
 
-    //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
-    ++row;
+        //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
+        ++row;
 
-    layout->addWidget(new QLabel("Maximum Dubious Distance [m]"), row, 0);
+        layout->addWidget(new QLabel("Maximum Dubious Distance Air [m]"), row, 0);
 
-    max_distance_dubious_edit_ = new QLineEdit();
-    connect(max_distance_dubious_edit_, &QLineEdit::textEdited,
-            this, &SimpleReconstructorAssociationWidget::maxDistanceDubiousEditedSlot);
-    layout->addWidget(max_distance_dubious_edit_, row, 1);
+        max_distance_dubious_air_edit_ = new QLineEdit();
+        connect(max_distance_dubious_air_edit_, &QLineEdit::textEdited,
+                this, &SimpleReconstructorAssociationWidget::maxDistanceDubiousAirEditedSlot);
+        layout->addWidget(max_distance_dubious_air_edit_, row, 1);
 
-    ++row;
+        ++row;
 
-    layout->addWidget(new QLabel("Maximum Acceptable Distance [m]"), row, 0);
+        layout->addWidget(new QLabel("Maximum Acceptable Distance Air [m]"), row, 0);
 
-    max_distance_acceptable_edit_ = new QLineEdit();
-    connect(max_distance_acceptable_edit_, &QLineEdit::textEdited,
-            this, &SimpleReconstructorAssociationWidget::maxDistanceAcceptableEditedSlot);
-    layout->addWidget(max_distance_acceptable_edit_, row, 1);
+        max_distance_acceptable_air_edit_ = new QLineEdit();
+        connect(max_distance_acceptable_air_edit_, &QLineEdit::textEdited,
+                this, &SimpleReconstructorAssociationWidget::maxDistanceAcceptableAirEditedSlot);
+        layout->addWidget(max_distance_acceptable_air_edit_, row, 1);
+    }
+
+    {
+        //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
+        ++row;
+
+        layout->addWidget(new QLabel("Maximum Erroneous Distance Ground [m]"), row, 0);
+
+        max_distance_notok_ground_edit_ = new QLineEdit();
+        connect(max_distance_notok_ground_edit_, &QLineEdit::textEdited,
+                this, &SimpleReconstructorAssociationWidget::maxDistanceNotOKGroundEditedSlot);
+        layout->addWidget(max_distance_notok_ground_edit_, row, 1);
+
+        //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
+        ++row;
+
+        layout->addWidget(new QLabel("Maximum Dubious Distance Ground [m]"), row, 0);
+
+        max_distance_dubious_ground_edit_ = new QLineEdit();
+        connect(max_distance_dubious_ground_edit_, &QLineEdit::textEdited,
+                this, &SimpleReconstructorAssociationWidget::maxDistanceDubiousGroundEditedSlot);
+        layout->addWidget(max_distance_dubious_ground_edit_, row, 1);
+
+        ++row;
+
+        layout->addWidget(new QLabel("Maximum Acceptable Distance Ground [m]"), row, 0);
+
+        max_distance_acceptable_ground_edit_ = new QLineEdit();
+        connect(max_distance_acceptable_ground_edit_, &QLineEdit::textEdited,
+                this, &SimpleReconstructorAssociationWidget::maxDistanceAcceptableGroundEditedSlot);
+        layout->addWidget(max_distance_acceptable_ground_edit_, row, 1);
+    }
 
     //    QLineEdit* max_altitude_diff_tracker_edit_{nullptr};
     ++row;
@@ -118,7 +151,7 @@ SimpleReconstructorAssociationWidget::SimpleReconstructorAssociationWidget(
     ++row;
     layout->addWidget(new QLabel("Track Number Disassoc. Distance Factor [1]"), row, 0);
 
-    tn_disassoc_distance_factor_edit_ = new QSpinBox();
+    tn_disassoc_distance_factor_edit_ = new NoScrollQSpinBox();
     tn_disassoc_distance_factor_edit_->setRange(1, 10);
     connect(tn_disassoc_distance_factor_edit_, QOverload<int>::of(&QSpinBox::valueChanged),
             [ & ] (int v) { this->reconstructor_.settings().tn_disassoc_distance_factor_ = v; });
@@ -170,19 +203,37 @@ void SimpleReconstructorAssociationWidget::updateValues()
     traced_assert(max_time_diff_tracker_edit_);
     max_time_diff_tracker_edit_->setValue(reconstructor_.settings().track_max_time_diff_);
 
-    //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
-    traced_assert(max_distance_notok_edit_);
-    max_distance_notok_edit_->setText(QString::number(reconstructor_.settings().max_distance_notok_));
+    {
+        //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
+        traced_assert(max_distance_notok_air_edit_);
+        max_distance_notok_air_edit_->setText(QString::number(reconstructor_.settings().max_distance_notok_air_));
 
-    //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
-    traced_assert(max_distance_dubious_edit_);
-    max_distance_dubious_edit_->setText(QString::number(
-        reconstructor_.settings().max_distance_dubious_));
+        //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
+        traced_assert(max_distance_dubious_air_edit_);
+        max_distance_dubious_air_edit_->setText(QString::number(
+            reconstructor_.settings().max_distance_dubious_air_));
 
-    //    QLineEdit* max_distance_acceptable_tracker_edit_{nullptr};
-    traced_assert(max_distance_acceptable_edit_);
-    max_distance_acceptable_edit_->setText(
-        QString::number(reconstructor_.settings().max_distance_acceptable_));
+        //    QLineEdit* max_distance_acceptable_tracker_edit_{nullptr};
+        traced_assert(max_distance_acceptable_air_edit_);
+        max_distance_acceptable_air_edit_->setText(
+            QString::number(reconstructor_.settings().max_distance_acceptable_air_));
+    }
+
+    {
+        //    QLineEdit* max_distance_quit_tracker_edit_{nullptr};
+        traced_assert(max_distance_notok_ground_edit_);
+        max_distance_notok_ground_edit_->setText(QString::number(reconstructor_.settings().max_distance_notok_ground_));
+
+        //    QLineEdit* max_distance_dubious_tracker_edit_{nullptr};
+        traced_assert(max_distance_dubious_ground_edit_);
+        max_distance_dubious_ground_edit_->setText(QString::number(
+            reconstructor_.settings().max_distance_dubious_ground_));
+
+        //    QLineEdit* max_distance_acceptable_tracker_edit_{nullptr};
+        traced_assert(max_distance_acceptable_ground_edit_);
+        max_distance_acceptable_ground_edit_->setText(
+            QString::number(reconstructor_.settings().max_distance_acceptable_ground_));
+    }
 
     //    QLineEdit* max_altitude_diff_tracker_edit_{nullptr};
     traced_assert(max_altitude_diff_edit_);
@@ -232,7 +283,7 @@ void SimpleReconstructorAssociationWidget::maxTimeDiffTrackerEditedSlot (int val
     reconstructor_.settings().track_max_time_diff_ = value;
 }
 
-void SimpleReconstructorAssociationWidget::maxDistanceNotOKEditedSlot (const QString& text)
+void SimpleReconstructorAssociationWidget::maxDistanceNotOKAirEditedSlot (const QString& text)
 {
     string value_str = text.toStdString();
 
@@ -243,13 +294,13 @@ void SimpleReconstructorAssociationWidget::maxDistanceNotOKEditedSlot (const QSt
     double value = text.toDouble(&ok);
 
     if (ok)
-        reconstructor_.settings().max_distance_notok_ = value;
+        reconstructor_.settings().max_distance_notok_air_ = value;
     else
         logwrn << "unable to parse value '"
                << value_str << "'";
 }
 
-void SimpleReconstructorAssociationWidget::maxDistanceDubiousEditedSlot (const QString& text)
+void SimpleReconstructorAssociationWidget::maxDistanceDubiousAirEditedSlot (const QString& text)
 {
     string value_str = text.toStdString();
 
@@ -260,13 +311,13 @@ void SimpleReconstructorAssociationWidget::maxDistanceDubiousEditedSlot (const Q
     double value = text.toDouble(&ok);
 
     if (ok)
-        reconstructor_.settings().max_distance_dubious_ = value;
+        reconstructor_.settings().max_distance_dubious_air_ = value;
     else
         logwrn << "unable to parse value '"
                << value_str << "'";
 }
 
-void SimpleReconstructorAssociationWidget::maxDistanceAcceptableEditedSlot (const QString& text)
+void SimpleReconstructorAssociationWidget::maxDistanceAcceptableAirEditedSlot (const QString& text)
 {
     string value_str = text.toStdString();
 
@@ -277,7 +328,56 @@ void SimpleReconstructorAssociationWidget::maxDistanceAcceptableEditedSlot (cons
     double value = text.toDouble(&ok);
 
     if (ok)
-        reconstructor_.settings().max_distance_acceptable_ = value;
+        reconstructor_.settings().max_distance_acceptable_air_ = value;
+    else
+        logwrn << "unable to parse value '"
+               << value_str << "'";
+}
+
+void SimpleReconstructorAssociationWidget::maxDistanceNotOKGroundEditedSlot (const QString& text)
+{
+        string value_str = text.toStdString();
+
+    loginf << "value '" << value_str << "'";
+
+    bool ok;
+
+    double value = text.toDouble(&ok);
+
+    if (ok)
+        reconstructor_.settings().max_distance_notok_ground_ = value;
+    else
+        logwrn << "unable to parse value '"
+               << value_str << "'";
+}
+void SimpleReconstructorAssociationWidget::maxDistanceDubiousGroundEditedSlot (const QString& text)
+{
+        string value_str = text.toStdString();
+
+    loginf << "value '" << value_str << "'";
+
+    bool ok;
+
+    double value = text.toDouble(&ok);
+
+    if (ok)
+        reconstructor_.settings().max_distance_dubious_ground_ = value;
+    else
+        logwrn << "unable to parse value '"
+               << value_str << "'";
+}
+void SimpleReconstructorAssociationWidget::maxDistanceAcceptableGroundEditedSlot (const QString& text)
+{
+        string value_str = text.toStdString();
+
+    loginf << "value '" << value_str << "'";
+
+    bool ok;
+
+    double value = text.toDouble(&ok);
+
+    if (ok)
+        reconstructor_.settings().max_distance_acceptable_ground_ = value;
     else
         logwrn << "unable to parse value '"
                << value_str << "'";

@@ -64,7 +64,7 @@ public:
 
     QPixmap renderPixmap();
 
-    static const int ConnectLinesDataCountMax = 100000;
+    static const int ConnectLinesDataCountMax;
 
     ScatterSeriesModel& dataModel();
 

@@ -20,14 +20,48 @@
 namespace EvaluationRequirement
 {
 
-PositionBase::PositionBase(const std::string& name, const std::string& short_name,
-                           const std::string& group_name, double prob_threshold,
-                           COMPARISON_TYPE prob_check_type,
-                           float ref_min_accuracy, EvaluationCalculator& calculator)
-    :ProbabilityBase(name, short_name, group_name, prob_threshold, prob_check_type, false, calculator),
-    ref_min_accuracy_(ref_min_accuracy)
+/*******************************************************************************************
+ * PositionBaseProb
+ *******************************************************************************************/
+
+/**
+ */
+PositionBaseProb::PositionBaseProb(const std::string& name, 
+                                   const std::string& short_name,
+                                   const std::string& group_name, 
+                                   double prob_threshold,
+                                   COMPARISON_TYPE prob_check_type,
+                                   float ref_min_accuracy, 
+                                   EvaluationCalculator& calculator)
+:   ProbabilityBase  (name, short_name, group_name, prob_threshold, prob_check_type, false, calculator)
+,   ref_min_accuracy_(ref_min_accuracy)
 {
 }
-PositionBase::~PositionBase() {}
+
+/**
+ */
+PositionBaseProb::~PositionBaseProb() {}
+
+/*******************************************************************************************
+ * PositionBaseValue
+ *******************************************************************************************/
+
+/**
+ */
+PositionBaseValue::PositionBaseValue(const std::string& name, 
+                                   const std::string& short_name,
+                                   const std::string& group_name, 
+                                   double threshold,
+                                   COMPARISON_TYPE thres_check_type,
+                                   float ref_min_accuracy, 
+                                   EvaluationCalculator& calculator)
+:   Base             (name, short_name, group_name, threshold, thres_check_type, calculator)
+,   ref_min_accuracy_(ref_min_accuracy)
+{
+}
+
+/**
+ */
+PositionBaseValue::~PositionBaseValue() {}
 
 }  // namespace EvaluationRequirement

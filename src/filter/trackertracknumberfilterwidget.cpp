@@ -72,8 +72,6 @@ void TrackerTrackNumberFilterWidget::update()
             //loginf << "adding track number filter for '" << (ds_name + " " + String::lineStrFrom(line_it.first)) << "'";
         }
     }
-
-    emit filterContentChanged();
 }
 
 void TrackerTrackNumberFilterWidget::valueEditedSlot(const QString& value)

@@ -25,6 +25,8 @@
 #include "evaluationresultsgenerator.h"
 #include "datasourcecompoundcoverage.h"
 
+#include "target.h"
+
 #include "result.h"
 
 #include "json_fwd.hpp"
@@ -87,31 +89,36 @@ public:
     EvaluationCalculator(const std::string& class_id, 
                          const std::string& instance_id,
                          EvaluationManager& eval_man, 
-                         DBContentManager& dbcontent_man);
+                         DBContentManager& dbcontent_man,
+                         bool is_default_calculator);
     EvaluationCalculator(EvaluationManager& eval_man, 
                          DBContentManager& dbcontent_man,
-                         const nlohmann::json& config);
+                         const nlohmann::json& config,
+                         bool is_default_calculator);
     virtual ~EvaluationCalculator();
 
     ResultT<EvaluationCalculator*> clone() const;
     static ResultT<EvaluationCalculator*> clone(const nlohmann::json& config);
 
-    bool hasConstraints() const;
+    bool hasPartialResult() const;
     bool dataLoaded() const; 
     bool evaluated() const;
     Result canEvaluate() const;
 
     void reset();
     void clearData();
-    Result evaluate(bool update_report = true,
-                    const std::vector<unsigned int>& utns = std::vector<unsigned int>(),
-                    const std::vector<Evaluation::RequirementResultID>& requirements = std::vector<Evaluation::RequirementResultID>());
+
+    Result evaluate();
+    Result update();
+    Result reloadNeededData(const std::vector<unsigned int>& utns,
+                            const std::vector<Evaluation::RequirementResultID>& requirements);
     void updateResultsToChanges();
 
     // check and correct missing information
     void checkReferenceDataSources(bool update_settings = true);
     void checkTestDataSources(bool update_settings = true);
     void checkMinHeightFilterValid();
+    void checkConfiguration();
 
     // data sources
     std::string dbContentNameRef() const;
@@ -165,6 +172,14 @@ public:
                         const std::string& group_name,
                         const std::string& req_name,
                         bool value);
+
+    // report
+    void resetCustomReportName(); 
+    void setCustomReportName(const std::string& name);
+    bool hasCustomReportName() const;
+    const std::string& customReportName() const;
+    std::string suggestReportName() const;
+    std::string reportName() const;
 
     // sectors & min height filter
     bool sectorsLoaded() const;
@@ -220,6 +235,17 @@ public:
     const boost::optional<ROI>& sectorROI() const { return sector_roi_; }
     const std::vector<unsigned int>& evaluationUTNs() const { return eval_utns_; }
 
+    bool globalTimeFilterEnabled() const;
+    const Utils::TimeWindow& globalTimeWindow() const { return global_time_window_; }
+    const Utils::TimeWindowCollection& globalExclusionTimeWindows() const { return global_exclusion_time_windows_; }
+
+    const dbContent::TargetEvalConstraints* targetConstraint(unsigned int utn) const;
+    const std::map<unsigned int, dbContent::TargetEvalConstraints>& targetConstraints() const { return target_constraints_; }
+
+    std::string constraintsAsString() const;
+
+    bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
+
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id) override;
 signals:
@@ -230,6 +256,11 @@ signals:
     
 protected:
     virtual void checkSubConfigurables() override;
+
+    Result evaluateInternal(bool update_constraints,
+                            bool update_report,
+                            const std::vector<unsigned int>& utns,
+                            const std::vector<Evaluation::RequirementResultID>& requirements);
 
     void readSettings();
 
@@ -244,9 +275,32 @@ protected:
     void updateDerivedParameters();
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
+    void updateConstraints();
+
     void loadedDataData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     Result loadingDone();
     Result evaluateData();
+
+    void storeGlobalTimeWindow();
+    void loadGlobalTimeWindow();
+
+    void storeGlobalExclusionTimeWindows();
+    void loadGlobalExclusionTimeWindows();
+
+    void storeTargetConstraints();
+    void loadTargetConstraints();
+
+    nlohmann::json globalTimeWindowAsJSON() const;
+    nlohmann::json globalExclustionTimeWindowsAsJSON() const;
+    nlohmann::json targetConstraintsAsJSON() const;
+    Utils::TimeWindow globalTimeWindowFromJSON(const nlohmann::json& j) const;
+    Utils::TimeWindowCollection globalExclustionTimeWindowsFromJSON(const nlohmann::json& j) const;
+    std::map<unsigned int, dbContent::TargetEvalConstraints> targetConstraintsFromJSON(const nlohmann::json& j) const;
+
+    void clearEvalData();
+    void clearConstraints();
+
+    void setCurrentStandardName(const std::string& name);
 
     EvaluationManager& eval_man_;
 
@@ -256,8 +310,8 @@ protected:
     EvaluationSettings settings_;
 
     //values derived from settings
-    std::map<std::string, std::map<std::string, bool>> data_sources_ref_ ;    // db_content -> ds_id -> active flag
-    std::map<std::string, std::map<std::string, bool>> data_sources_tst_;     // db_content -> ds_id -> active flag
+    std::map<std::string, std::map<std::string, bool>> data_sources_ref_; // db_content -> ds_id -> active flag
+    std::map<std::string, std::map<std::string, bool>> data_sources_tst_; // db_content -> ds_id -> active flag
 
     boost::optional<ROI> sector_roi_;
 
@@ -275,5 +329,17 @@ protected:
     std::unique_ptr<EvaluationResultsGenerator>            results_gen_;
     std::unique_ptr<dbContent::DataSourceCompoundCoverage> tst_srcs_coverage_;
 
+    bool                                                     global_time_filter_enabled_ = false;
+    nlohmann::json                                           global_time_window_json_;
+    Utils::TimeWindow                                        global_time_window_;
+    nlohmann::json                                           global_exclusion_time_windows_json_;
+    Utils::TimeWindowCollection                              global_exclusion_time_windows_;
+    nlohmann::json                                           target_constraints_json_;
+    std::map<unsigned int, dbContent::TargetEvalConstraints> target_constraints_;
+
+    std::string custom_report_name_;
+
     bool use_fast_sector_inside_check_ = true;
+
+    bool is_default_calculator_ = false;
 };

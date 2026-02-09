@@ -10,7 +10,7 @@ set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 project( COMPASS )
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "9")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+SET(CPACK_PACKAGE_VERSION_PATCH "2")
 
 message("  System: ${CMAKE_SYSTEM}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -128,6 +128,27 @@ message("  GeographicLib_LIBRARIES: ${GeographicLib_LIBRARIES}")
 find_package(DuckDB REQUIRED)
 
 add_library(compass "")
+
+# Enable C++ warnings
+# target_compile_options(compass PRIVATE
+#     -Wall
+#     -Wextra
+#     -Wpedantic
+#     -Wshadow
+#     -Wconversion
+# )
+
+# Debug + sanitizers
+# target_compile_options(compass PRIVATE
+#     -g
+#     -O0
+#     -fsanitize=address,undefined
+#     -fno-omit-frame-pointer
+# )
+
+# target_link_options(compass PRIVATE
+#     -fsanitize=address,undefined
+# )
 
 message("Install path: ${CMAKE_INSTALL_PREFIX}")
 

@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionAcrossConfig : public PositionBaseConfig
+class PositionAcrossConfig : public PositionBaseProbConfig
 {
 public:
     PositionAcrossConfig(const std::string& class_id, const std::string& instance_id,

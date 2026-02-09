@@ -16,8 +16,12 @@
  */
 
 #include "duckdbsettings.h"
+#include "dbinterface.h"
+#include "logger.h"
 
 #include <duckdb.h>
+
+using namespace std;
 
 /**
  */
@@ -35,10 +39,25 @@ std::string DuckDBSettings::sortOrderAsString(SortOrder order)
 
 /**
  */
-void DuckDBSettings::configure(duckdb_config* config) const
+void DuckDBSettings::configure(duckdb_config* config, const DBInterface& dbinterface, bool db_in_memory) const
 {
     duckdb_set_config(*config, "access_mode", DuckDBSettings::accessModeAsString(access_mode).c_str()); // or READ_ONLY
-    duckdb_set_config(*config, "threads", std::to_string(num_threads).c_str());
-    duckdb_set_config(*config, "max_memory", (std::to_string(max_ram_gb) + "GB").c_str());
+    duckdb_set_config(*config, "threads", std::to_string(dbinterface.numThreads()).c_str());
+    
+    if (db_in_memory)
+    {
+        logdbg << "duckDB in memory limit: " << dbinterface.maxRAMinMemGB() << "GB"; // % also possible
+        duckdb_set_config(*config, "memory_limit", (std::to_string(dbinterface.maxRAMinMemGB()) + "GB").c_str());
+    }
+    else
+    {
+        logdbg << "duckDB file ram limit: " << dbinterface.maxRAMFileGB() << "GB";
+        duckdb_set_config(*config, "memory_limit", (std::to_string(dbinterface.maxRAMFileGB()) + "GB").c_str());
+    }
+
+    string preserve_order = dbinterface.preserveInsertOrder() ? "true" : "false";
+
+    duckdb_set_config(*config, "preserve_insertion_order", preserve_order.c_str());
+    
     duckdb_set_config(*config, "default_order", DuckDBSettings::sortOrderAsString(sort_order_default).c_str());
 }

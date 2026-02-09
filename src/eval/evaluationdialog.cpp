@@ -149,5 +149,22 @@ void EvaluationDialog::updateButtons()
         not_eval_comment_label_->setHidden(false);
     }
 
-    run_button_->setEnabled(r.ok());
+    bool ok = r.ok() && 
+              main_tab_widget_->isComplete();
+
+    run_button_->setEnabled(ok);
+}
+
+/**
+ */
+void EvaluationDialog::setReportName(const std::string& name)
+{
+    main_tab_widget_->setReportName(name);
+}
+
+/**
+ */
+std::string EvaluationDialog::reportName() const
+{
+    return main_tab_widget_->reportName();
 }

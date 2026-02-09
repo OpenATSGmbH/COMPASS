@@ -25,6 +25,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/popupmenu.h"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/noscrollqspinbox.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"

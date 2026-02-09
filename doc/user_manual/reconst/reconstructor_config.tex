@@ -40,21 +40,61 @@ In the main tab, the following parameters can be set:
     \caption{Calculate References Data Sources}
 \end{figure}
 
-In this tab, the data sources to contribute to the calculated references can be selected. \\
+In this tab, the data sources that contribute to the calculated references can be selected. \\
 
-Please \textbf{note} that de-selected data sources are still associated, but only their target report positions do not contribute to the references. \\
+Please \textbf{note} that deselected data sources are still associated, but their target report positions do not contribute to the references. \\
 
-Please also \textbf{note} that for ground surveillance datasets containing \textbf{SMRs}, it is imperative to set both the detection type to "Primary Only", as well as to set the "Ground Only" checkbox. Otherwise, SMR plots will be associated over long distances and cause sub-optimal reconstructor results.
+Please also \textbf{note} that for ground surveillance datasets containing \textbf{SMRs}, it is imperative to set the detection type to "Primary Only" as well as to enable the "Ground Only" checkbox. Otherwise, SMR plots will be associated over long distances and cause sub-optimal reconstructor results.
 
 \subsubsection{Classification}
 
-In the classification, special parameters can be set to identify the AnyAircraft and Vehicle categories. Any target (without any other class information) and any Mode C code above the given 'Minimum Aircraft Altitude' will be classified as AnyAircraft. Vehicles (without any other class information) can be set by giving a list of Mode S Aircraft Identification and/or Aircraft Addresses. \\
+In the classification tab, special parameters can be set to identify the AnyAircraft and Vehicle categories. Any target (without any other class information) and any Mode C code above the given 'Minimum Aircraft Altitude' will be classified as AnyAircraft. Vehicles (without any other class information) can be set by giving a list of Mode S Aircraft Identification and/or Aircraft Addresses. \\
 
 \begin{figure}[H]
     \center
       \includegraphics[width=16cm,frame]{figures/dialog_class.png}
     \caption{Classification Parameters}
 \end{figure}
+
+\subsubsection{Reference Calculation}
+\label{sec:reconst_scorum_ref_calc} 
+
+\begin{figure}[H]
+    \center
+      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
+    \caption{Reference Calculation parameters}
+\end{figure}
+
+In this tab, the reference calculation parameters can be set, i.e. the Kalman and reconstruction parameters used for position estimation of the references. \\
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Process Stddev (Ground) & Assumed process noise standard deviation for targets on ground (affects maneuverability allowance). & Basic & 3.0 m & $>0$ m \\ \hline
+    Process Stddev (Air) & Assumed process noise standard deviation for airborne targets. & Basic & 7.0 m & $>0$ m \\ \hline
+    Process Stddev (Unknown) & Assumed process noise standard deviation for targets with unknown state. & Basic & 5.0 m & $>0$ m \\ \hline
+    Maximum Time Step (Ground) & Maximum time interval between updates used for interpolation/prediction on ground. & Intermediate & 5.0 s & $>1$ s \\ \hline
+    Maximum Time Step (Air) & Maximum time interval between updates used for interpolation/prediction in air. & Intermediate & 10.0 s & $>1$ s \\ \hline
+    Resample Interval & Time interval for the output trajectory (if resampling enabled internally). & Basic & 1.0 s & 0.1 -- 30 s \\ \hline
+    Resample Process Stddev (Ground) & Process noise applied specifically during the resampling phase for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Air) & Process noise applied specifically during the resampling phase for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
+    Resample Process Stddev (Unknown) & Process noise applied during resampling for unknown state targets. & Advanced & 3.0 m & $>0$ m \\ \hline
+    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). & Intermediate & True & True/False \\ \hline
+    Max. Stddev & Maximum allowed position standard deviation for a point to be included in the final reference. & Intermediate & 100.0 m & $>0$ m \\ \hline
+    \end{tabular}
+    \caption{Reference Calculation parameters}
+    \label{tab:reconst_params}
+\end{table}
+
+Result resampling is enabled in order to obtain reference trajectories with a homogeneous sample rate. 
+It is carried out by interpolating the Kalman states at fixed time-steps. The accuracy of the resulting samples
+follows the Kalman accuracies more closely when interpolating near the endpoints of a segment, and it will decrease
+in the middle of a segment. The amount of decrease of accuracy will depend on the time duration of the segment and the used 
+process standard deviation (parameter \textit{Resample Process Stddev}).
 
 \subsection{Scoring + UMKalman Parameters}
 
@@ -66,61 +106,59 @@ In the classification, special parameters can be set to identify the AnyAircraft
     \caption{Scoring + UMKalman Association Parameters}
 \end{figure}
 
-In this tab, the association parameters can be set, i.e. the thresholds used to associate target reports to targets, or targets to targets. \\
+The following table lists the configuration parameters available for the Scoring + UMKalman reconstructor (Simple Reconstructor) related to association.
 
 \begin{table}[H]
-  \center
-  \begin{tabularx}{\textwidth}{ | l | l | X |}
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
-    \textbf{Parameter} & \textbf{Default} &  \textbf{Description} \\ \hline
-    Maximum Comparison Time Difference [s] & 15 & Maximum time delta for any code/position comparison \\ \hline 
-    Maximum Track Time Difference [s] & 300 & Maximum time delta to a previously associated track \\ \hline
-    Maximum Erroneous Distance [m] & 18520 & Target/target association \\ \hline
-    Maximum Dubious Distance [m] & 5556 & Target/target association \\ \hline
-    Maximum Acceptable Distance [m] & 1852 & Target/target association \\ \hline
-    Maximum Altitude Difference [ft] & 300 & Maximum altitude difference \\ \hline
-    Do Track Number Disassoc. Using Distance & false & Whether to disassociate track numbers from targets based on position \\ \hline
-    Track Number Disassoc. Distance Factor [1] & 3 & Maximum number of standard deviations distance \\ \hline
-    Minimum Updates [1] & 2 & Target/target association \\ \hline
-    Minimum Time Overlap Probability [0-1] & 0.1 & Target/target association \\ \hline
-  \end{tabularx}
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Comparison Time Difference & Maximum interpolation window for associating a report to a track. & Advanced & 10.0 s & 2 -- 60 s \\ \hline
+    Maximum Track Time Difference & Maximum time gap to resume an existing track using its data source track number. & Intermediate & 300 s & 60 -- 3600 s \\ \hline
+    Maximum Erroneous Distance Air & Distance limit rejecting position matches (Air). & Intermediate & 5556 m (3 nm) & 500 -- 10000 m \\ \hline
+    Maximum Dubious Distance Air & Threshold for Dubious classification (Air). & Intermediate & 3704 m (2 nm) & 250 -- 25000 m \\ \hline
+    Maximum Acceptable Distance Air & Threshold for Acceptable classification (Air). Typically 1-2 NM or less. & Intermediate & 1852 m (1 nm) & 100 -- 10000 m \\ \hline
+    Maximum Erroneous Distance Ground & Distance limit rejecting position matches (Ground). & Intermediate & 90 m & 70 -- 200 m \\ \hline
+    Maximum Dubious Distance Ground & Threshold for Dubious classification (Ground). & Intermediate & 60 m & 30 -- 100 m \\ \hline
+    Maximum Acceptable Distance Ground & Threshold for Acceptable classification (Ground). & Intermediate & 40 m & 10 -- 50 m \\ \hline
+    Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 5000 ft \\ \hline
+    Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
+    Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Advanced & 3$\sigma$ & 1 -- 20 \\ \hline
+    Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
+    Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets. & Advanced & 0.1 & 0.05 -- 0.9 \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Scoring + UMKalman Reconstructor}
+    \label{tab:reconst_simple_params}
 \end{table}
+\ \\
 
-\subsubsection{Reference Calculation}
-\label{sec:reconst_scorum_ref_calc} 
+\paragraph{Parameter Usage}
 
-\begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
-    \caption{Scoring + UMKalman Reference Calculation Parameters}
-\end{figure}
+Association of target reports to UTNs:
+\begin{itemize}
+\item Maximum Comparison Time Difference: Maximum time difference for Mode A/C comparisons
+\item Maximum Track Time Difference: Maximum time difference to re-use previous system track to UTN associations
+\item Maximum Acceptable Distance (Ground/Air): Maximum distances for allowed associations
+\item Maximum Altitude Difference: Maximum Mode C difference for allowed associations
+\end{itemize}
+\ \\
 
-In this tab, the reference calculation parameters can be set, i.e. the Kalman and reconstruction parameters used for position estimation of the references. \\
-
-\begin{table}[H]
-  \center
-  \begin{tabularx}{\textwidth}{ | l | l | X |}
-    \hline
-    \textbf{Parameter} & \textbf{Default} &  \textbf{Description} \\ \hline
-    Process Stddev [m] Ground & 3 & Process noise for ground targets \\ \hline
-    Process Stddev [m] Air & 10 & Process noise for FL400 targets \\ \hline
-    Process Stddev [m] Unknown & 7 & Process noise for targets w/o altitude \\ \hline
-    Maximum Time Step (Ground) [s] & 5 & Re-init reference if no update available within given time (on ground) \\ \hline
-    Maximum Time Step (Air) [s] & 10 & Re-init reference if no update available within given time (in air) \\ \hline
-    Resample Interval[s] & 2 & Update interval for the resampled reference trajectories \\ \hline
-    Resample Process Stddev [m] Ground & 2 & Resampling process noise for ground targets \\ \hline
-    Resample Process Stddev [m] Air & 5 & Resampling process noise for FL400 targets \\ \hline
-    Resample Process Stddev [m] Unknown & 3 & Resampling process noise for targets w/o altitude \\ \hline    
-    Filter Result References& false & Whether to filter written reference trajectory updates based on maximum position standard deviation \\ \hline
-    Max. Stddev [m] & 150 & Maximum position standard deviation \\ \hline
-  \end{tabularx}
-\end{table}
-
-Result resampling is enabled in order to obtain reference trajectories with a homogeneous sample rate. 
-It is carried out by interpolating the Kalman states at fixed time-steps. The accuracy of the resulting samples
-follows the Kalman accuracies more closely when interpolating near the endpoints of a segment, and it will decrease
-in the middle of a segment. The amount of decrease of accuracy will depend on the time duration of the segment and the used 
-process standard deviation (parameter \textit{Resample Process Stddev}).
+Self-associate new targets (find matching UTNs created by the same target):
+\begin{itemize}
+\item Maximum Comparison Time Difference: Maximum time difference for Mode A/C comparisons
+\item Maximum Distance (Ground/Air)
+\begin{itemize}
+\item Acceptable/Dubious/Erroneous: Each type of distance is counted
+\item If too many Erroneous (5-10\%): Not associated
+\item If too many Dubious (30-50\%): Not associated
+\item If Acceptable: Consider as match
+\item Association of targets is made for best matches fulfilling an average position difference score
+\end{itemize}
+\item Minimum Updates: Minimum number of updates needed to consider a match
+\item Minimum Time Overlap Probability: Minimum time overlap probability for at least one of the targets to consider a match
+\end{itemize}
 
 \subsection{Probabilistic + IMM Parameters}
 
@@ -132,7 +170,7 @@ process standard deviation (parameter \textit{Resample Process Stddev}).
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
-\textbf{JPDA}
+%\textbf{JPDA}
 
 \begin{figure}[H]
     \center
@@ -140,18 +178,157 @@ process standard deviation (parameter \textit{Resample Process Stddev}).
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
+The following tables list the association configuration parameters available for the Probabilistic + IMM Reconstructor (Advanced Reconstructor). \\
 
-Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. For users with a professional license, a dedicated reconstructor user manual appendix will be provided.
+%\subsubsection{Main}
+\noindent{\small\textbf{Main}}
 
-\subsubsection{Reference Calculation}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4cm}|p{5.5cm}|l|p{2cm}|p{2.5cm}|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Multiple Calculation Runs Number & Number of calculation passes per time slice to refine associations. & Intermediate & 3 & 2 -- 10 \\ \hline
+    Rescale Accuracies & If enabled, position accuracy values are rescaled based on statistical analysis. & Basic & True & True/False \\ \hline
+    Correct Radar Biases & Enables correction of systematic radar azimuth/range biases. & Basic & True & True/False \\ \hline
+    Use ADS-B Geo.Alt. for Slant-Range Correction & Enables usage of ADS-B geometric altitude for Radar slant-range correction. & Basic & True & True/False \\ \hline
+    Do Position Outlier Checks & Enables flagging of position outliers, which then are not used for position estimation. & Basic & True & True/False \\ \hline
+    Use Risky ADS-B & Enables position usage from lower quality ADS-B reports (only if Accuracy Rescaling is active). & Advanced & False & True/False \\ \hline
+    Primary Only Mode & Mode deciding how primary plots are associated. & Intermediate & JPDA + Probabilistic Scoring & \\ \hline
+    Do Full Primary-Only Tracking & Enables creation of primary-only UTNs (using JPDA). & Intermediate & True & True/False \\ \hline
+    \end{tabular}
+    \caption{Configuration parameters for the Probabilistic + IMM Reconstructor}
+\end{table}
+\ \\
 
-\begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
-    \caption{Probabilistic + IMM Reconstruction Parameters}
-\end{figure}
+Primary Only Mode has the following options:
+\begin{itemize}
+    \item \textbf{Probabilistic Scoring}: Primary plots are associated to existing targets using probabilistic distance measures at the end of a calculation pass. Tentative target creation will be disabled.
+    \item \textbf{JPDA + Probabilistic Scoring}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be re-associated to existing targets using probabilistic distance measures at the end of a calculation pass.
+\end{itemize}
+\ \\
 
-The given parameters are the same as discussed in the 'Scoring + UMKalman' chapter, please refer to \nameref{sec:reconst_scorum_ref_calc} for details.
+Please \textbf{note} that:
+\begin{itemize}
+\item All of the features above \textit{should} work as intended with the given default values
+\item Should this not be the case, disabling of certain features can be a valid workaround until the issue is resolved by a bugfix
+\item Use Risky ADS-B: This feature will allow usage of MOPS V0 and V1 transponders, as well as position data with unknown accuracy
+\begin{itemize}
+\item While accuracy determination algorithms will automatically determine usage of such "risky" ADS-B data, absolute correctness can not be guaranteed in all situations
+\item Usage of this feature is therefore disabled by default, and activation should always be accompanied with manual verification of the reconstruction results
+\end{itemize}
+\item Do Full Primary-Only Tracking: This will commonly increase computational requirements by factor 3-5. Can be disabled for large datasets or slower workstations, at cost of primary-only reconstruction quality.
+\end{itemize}
+
+\bigskip
+
+%\subsubsection{General Association} 
+\noindent{\small\textbf{General Association}}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Comparison Time Difference & Maximum interpolation window for associating a report to a track. & Basic & 10 s & 0 -- 1000 s \\ \hline
+    Maximum Track Time Difference & Maximum time gap to resume an existing track using its data source track number. & Intermediate & 300 s & 0 -- 1000 s \\ \hline
+    Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
+    Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
+    Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Intermediate & 3 & 1 -- 10 \\ \hline
+    Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
+    Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets. & Advanced & 0.1 & 0 -- 1 \\ \hline
+    \end{tabular}
+\end{table}
+
+Association of target reports to UTNs:
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Maximum Mahalanobis Distance for Secondary Matches & Distance limit for verified secondary associations. & Advanced & 5$\sigma$ & 1 -- 10 \\ \hline
+    Maximum Mahalanobis Distance for Unverified Matches & Distance limit for unverified/primary associations. & Advanced & 3$\sigma$ & 1 -- 10 \\ \hline
+    \end{tabular}
+\end{table}
+% air sec: 5 * 1000 vs 1852, pri 3 * 1000 vs 1852
+% ground sec: 5 * 20 vs 40, pri 3 * 20 vs 40
+
+Self-associate new targets (find matching UTNs created by the same target):
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Erroneous Mahalanobis Distance for Secondary Matches & Distance limit rejecting secondary position matches. & Advanced & 7$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Secondary Matches & Threshold for secondary Dubious classification. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Secondary Matches & Threshold for secondary Acceptable classification. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Secondary Position Outliers & Threshold for secondary outlier position classification. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Erroneous Mahalanobis Distance for Unverified Matches & Distance limit rejecting unverified/primary position matches. & Advanced & 6$\sigma$ & 0 -- 1000 \\ \hline
+    Dubious Mahalanobis Distance for Unverified Matches & Threshold for unverified/primary Dubious classification. & Advanced & 4$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Acceptable Mahalanobis Distance for Unverified Matches & Threshold for unverified/primary Acceptable classification. & Advanced & 3$\sigma$ & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance for Primary Position Outliers & Threshold for unverified/primary outlier position classification. & Advanced & 5$\sigma$ & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Max. Std.Dev. for Association in Air & Maximum standard deviation / minimum accuracy (air).  & Advanced & 1000 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association in Air & Minimum standard deviation / maximum accuracy (air). & Advanced & 50 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association on Ground & Maximum standard deviation / minimum accuracy (ground). & Advanced & 20 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association on Ground & Minimum standard deviation / maximum accuracy (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
+    \end{tabular}
+\end{table}
+\ \\
+
+The given minimum/maximum standard deviations are required to combat the position accuracy estimation spiraling into edge cases in high clutter scenarios. 
+Basically, estimated accuracies are bound to the given range values, to mitigate non-association due to too small standard deviations or associate-all due to too high standard deviations. \\
+
+%\subsubsection{Primary-Only Association / JPDA}
+\noindent{\small\textbf{Primary-Only Association / JPDA}}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
+    Probability of Detection & Assumed detection probability $P_D$. & Advanced & 0.9 & 0 -- 1 \\ \hline
+    Automatic Clutter Density & Estimate clutter density automatically. & Advanced & True & True/False \\ \hline
+    Clutter Density (Default) & Custom clutter density. & Advanced & $1.25 \times 10^{-10}$ & 0 -- 1 \\ \hline
+    Maximum Mahalanobis Distance (Candidate) for JPDA & Threshold for assigning primary plots to targets. & Advanced & 3.0 & 0 -- 1000 \\ \hline
+    Maximum Mahalanobis Distance (Match) for JPDA & Threshold for merging primary plots. & Advanced & 2.0 & 0 -- 1000 \\ \hline
+    Min. Update Intervals Before Termination & Minimum update intervals before termination of tentative tracks is considered. & Advanced & 5.5 & 0 -- 100 \\ \hline
+    Max. Update Intervals Coasting & Maximum update intervals after which coasting tentative tracks are terminated. & Advanced & 3.5 & 0 -- 100 \\ \hline
+    Target Termination Probability & Probability threshold to terminate tracks. & Advanced & 0.1 & 0 -- 1 \\ \hline 
+    Target Confirmation Probability & Probability threshold to confirm tracks. & Advanced & 0.7 & 0 -- 1 \\ \hline
+    Target Confirmation Min. Updates & Minimum updates needed to confirm tracks. & Advanced & 4 & 0 -- 1000 \\ \hline
+    \end{tabular}
+\end{table}
 
 \subsubsection{Analysis}
 
@@ -161,4 +338,9 @@ The given parameters are the same as discussed in the 'Scoring + UMKalman' chapt
     \caption{Probabilistic + IMM Analysis Parameters}
 \end{figure}
 
-Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. For users with a professional license, a dedicated reconstructor user manual appendix is provided.
+In the 'Analysis' tab, additional analysis functionality for the reconstruction run can be activated.
+Setting the individual checkboxes will result in more analytical data being collected and written to
+the command line or the reconstruction report. \\
+
+Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. 
+%For users with a professional license, a dedicated reconstructor user manual appendix is provided.

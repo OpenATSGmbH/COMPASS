@@ -99,7 +99,7 @@ The status can only be set using the toolbar buttons or keyboard shortcuts, whil
 
 By clicking on a column, the View Points Table is sorted on the information in the column. Ascending/descending can be changed by clicking again on a column already used for sorting. \\
 
-Per default, the table is sorted by the 'id' column.
+By default, the table is sorted by the 'id' column.
 
 \subsection{Showing/Hiding Columns}
 
@@ -174,7 +174,7 @@ There exist 3 buttons for general functions:
 \subsection{Stepping View Points}
 
 \subsection{Management Tab} 
-When selecting a new view point, the information set 'data\_sources' and 'data\_sources\_types' attributes are used to select which DBContent is loaded. The 'filters' attribute to set the filter active flags and respective conditions. After that, a loading process is triggered. \\
+When selecting a new view point, the information set 'data\_sources' and 'data\_sources\_types' attributes are used to select which DBContent is loaded. The 'filters' attribute is used to set the filter active flags and respective conditions. After that, a loading process is triggered. \\
 
 \subsubsection{Data Selection}
 
@@ -226,7 +226,7 @@ Please note that:
 \item All active views are included, so they should be configured in a suitable manner
 \begin{itemize}  
 \item A TableView is reported as the selected data, or the first 30 rows (if no data is selected), in a table.
-\item An Geographic View is reported as a screenshot figure.
+\item A Geographic View is reported as a screenshot figure.
 \end{itemize}
 \end{itemize}
 \ \\
@@ -249,7 +249,7 @@ At the top, the following configuration options exist:
 \item Group by Type: Creates sub-section for each type of View Point.
 \item Add Overview Table: Creates table with an overview of all View Points in the beginning of the document. 
 \item Wait on Map Loading: When Geographic View screenshots are created, some maps require downloading terrain from the Internet.  This option enables to wait on completion of such activities, to generate high-quality screenshots. Disable only when operating on cached maps without an Internet connection.
-\item Add Overview Screenshot: Adds a preceding screenshot per Geographic View with an larger map overview and a data marker.
+\item Add Overview Screenshot: Adds a preceding screenshot per Geographic View with a larger map overview and a data marker.
 \item Run PDFLatex: Automatically runs the pdflatex compile process, immediately creating a PDF after finished export. Is disabled if command could not be found.
 \item Open Created PDF: Automatically opens the created PDF. Is disabled if pdflatex command could not be found.
 \end{itemize}
@@ -273,7 +273,7 @@ If pdflatex is to be run, this is indicated in the 'Status' text, which might ha
   \caption{View Points: Export PDF Dialog Status: pdflatex}
 \end{figure}
 
-The export speed of course depends on the View Points, the number of Views, hardware etc. However, even exporting (somewhat unreasonable) 1500 View Points takes about only 15 minutes on the authors hardware, so it should be adequate for any reasonable use case. \\
+The export speed of course depends on the View Points, the number of Views, hardware etc. However, even exporting (somewhat unreasonable) 1500 View Points takes about only 15 minutes on the author's hardware, so it should be adequate for any reasonable use case. \\
 
 If the export process was successful, a message is shown and the dialog is closed automatically. The report Latex file was written into the report directory, with screenshots in the 'screenshots' subfolder. If the respective options were set, a PDF was automatically generated and is opened using the default PDF application. \\
 

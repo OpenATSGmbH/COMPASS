@@ -56,6 +56,7 @@ public:
 
     Result connect();
     void disconnect();
+    Result reconnect();
 
     Result execute(const std::string& sql);
     std::shared_ptr<DBResult> execute(const std::string& sql, bool fetch_buffer);

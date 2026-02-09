@@ -41,9 +41,13 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
 {
     registerBaseSettings(settings_);
 
-    registerParameter("max_distance_notok", &settings_.max_distance_notok_, 5*NM2M); // kb 5nm
-    registerParameter("max_distance_dubious", &settings_.max_distance_dubious_, 2*NM2M);
-    registerParameter("max_distance_acceptable", &settings_.max_distance_acceptable_, 1*NM2M);
+    registerParameter("max_distance_notok_air", &settings_.max_distance_notok_air_, settings_.max_distance_notok_air_); // kb 5nm
+    registerParameter("max_distance_dubious_air", &settings_.max_distance_dubious_air_, settings_.max_distance_dubious_air_);
+    registerParameter("max_distance_acceptable_air", &settings_.max_distance_acceptable_air_, settings_.max_distance_acceptable_air_);
+
+    registerParameter("max_distance_notok_ground", &settings_.max_distance_notok_ground_, settings_.max_distance_notok_ground_);
+    registerParameter("max_distance_dubious_ground", &settings_.max_distance_dubious_ground_, settings_.max_distance_dubious_ground_);
+    registerParameter("max_distance_acceptable_ground", &settings_.max_distance_acceptable_ground_, settings_.max_distance_acceptable_ground_);
 
     registerParameter("numerical_min_std_dev", &settings_.numerical_min_std_dev_, settings_.numerical_min_std_dev_);
 
@@ -55,14 +59,11 @@ SimpleReconstructor::SimpleReconstructor(const std::string& class_id,
                       settings_.unspecifc_acc_acc_fallback_);
     registerParameter("no_value_acc_fallback", &settings_.no_value_acc_fallback_, settings_.no_value_acc_fallback_);
 
-
     // reconstruction settings (check base for other settings)
     registerParameter("ref_rec_type", (int*)&referenceCalculatorSettings().kalman_type_assoc,
                       (int)kalman::KalmanType::UMKalman2D);
     registerParameter("ref_rec_type_final", (int*)&referenceCalculatorSettings().kalman_type_final,
                       (int)kalman::KalmanType::UMKalman2D);
-
-    
 }
 
 SimpleReconstructor::~SimpleReconstructor() {}
@@ -141,6 +142,9 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
     {
         traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
         read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
+
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_ecat_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_ecat_));
     }
 
     if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_))

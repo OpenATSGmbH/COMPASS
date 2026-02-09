@@ -36,6 +36,7 @@ class Buffer;
 namespace dbContent {
 
 class Variable;
+class VariableSet;
 
 }
 
@@ -65,7 +66,7 @@ public:
     bool useFilters() const;
     void useFilters(bool useFilters);
 
-    std::string getSQLCondition(const std::string& dbcontent_name);
+    std::string getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set);
 
     unsigned int getNumFilters();
     DBFilter* getFilter(unsigned int index);
@@ -74,6 +75,8 @@ public:
     bool hasFilter (const std::string& name);
     DBFilter* getFilter (const std::string& name);
 
+    void deleteFilter(const std::string& name);
+
     virtual void generateSubConfigurable(const std::string& class_id,
                                          const std::string& instance_id);
 
@@ -81,6 +84,8 @@ public:
     void reset();
 
     FilterManagerWidget* widget();
+
+    void sortFilters();
 
     void setConfigInViewPoint (nlohmann::json& data);
     void disableAllFilters ();

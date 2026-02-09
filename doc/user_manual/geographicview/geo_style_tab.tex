@@ -16,7 +16,6 @@ In the 'Style' tab, several elements exist:
  \item Blend Mode: Defines the drawing blend mode, allowing clearer symbols (contour) or colors (src-over).
  \item Style: Defines how geometry is styled. Please refer to section \nameref{sec:style} for details.
  \item Render Order: Defines the drawing order of DBContents. To bottom one is drawn first, the top one last (over all others)
- \item Update button: Triggers a redraw or reload of the geometry, becomes available after a change if needed.
 \end{itemize} 
 
 \subsubsection{Layer Mode}
@@ -132,7 +131,7 @@ This mode (normally) makes sense in one of the following Layer modes:
 
 If the height information is used (3D view) and if target reports without height information are connected, the lines clutter the display. The 'Connect None Height' checkbox allows to set the behaviour. \\
 
-Please \textbf{note} that changes both these values requires a manual redraw using the 'Redraw' button.
+Please \textbf{note} that changing both these values requires a manual redraw using the 'Redraw' button.
 
 \subsubsection{Style}
 \label{sec:style}
@@ -148,8 +147,8 @@ There exist 3 main elements for styling:
 Each style can be composed of 3 elements:
 \begin{itemize}
  \item Default Style: Base style which sets the basic styling for all data
- \item Rule Generator: Generated e.g. layer-specific specific rules
- \item Generated Rules: Rules which which override the Default Style
+ \item Rule Generator: Generated e.g. layer-specific rules
+ \item Generated Rules: Rules which override the Default Style
 \end{itemize}
 \  \\
 
@@ -185,9 +184,10 @@ The following Target report based style presets exist:
 \begin{itemize}
  \item Color by ADS-B MOPS: Color is defined by the ADS-B MOPS version of the transponder
  \item Color by ADS-B Position Quality: Color is defined by the ADS-B NUCp/NACp value of the target report
- \item Color by Flight Level: Color is defined by the Mode C code/Flight level
- \item Color by Speed: Color is defined by groundspeed value
  \item Color by Detection Type: Color is defined by Radar detection type (PSR, SSR, PSR+SSR, ...)
+ \item Color by Flight Level: Color is defined by the Mode C code/Flight level
+ \item Color by Num Contributing Sensors: Color is defined by the number of sensors contributing to a CAT062 target report (the number of contributing sensors being defined as the sum of CAT062 REF.CSN.REP and REF.CST.REP items)
+ \item Color by Speed: Color is defined by groundspeed value
  \item Color by Track Angle: Color is defined by direction of movement value
  \item Color by Track Age Type: Color is defined by track age of variable
 \end{itemize}
@@ -276,7 +276,6 @@ To give a few examples, some interesting Layer modes and Style preset combinatio
 \end{figure}
 
 Please note, in this style one can set the following parameters (by clicking the respective value):
-In this style, one can change the following parameters:
 
 \begin{itemize}
  \item Variable used (naming as in ASTERIX)
@@ -302,7 +301,8 @@ In the render order widget, the drawing order of the drawn geometry is specified
 Using the 'Order By' checkbox, the drawing order can be defined based on:
 \begin{itemize}
  \item DBContent: Data source type (e.g. Tracker, Radar, ...)
- \item ds\_id: Data source (e.g. Tracker1, Tracker2, Radar3, ...)
+ \item DS ID: Data source (e.g. Tracker1, Tracker2, Radar3, ...)
+ \item DS ID+Line ID: Data source and Line ID (e.g. Tracker1 L1, Tracker1 L2, ...)
 \end{itemize}
 \ \\
 

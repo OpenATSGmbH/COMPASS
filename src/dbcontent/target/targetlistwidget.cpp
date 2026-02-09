@@ -500,7 +500,6 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
     auto& dbcont_man = COMPASS::instance().dbContentManager();
 
     Utils::TimeWindowCollection filtered_time_windows;
-    set<string> comments;
 
     // collect all time windows from all targets
     for (auto utn : utns)
@@ -514,9 +513,6 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
             if (!filtered_time_windows.contains(tw))
                 filtered_time_windows.add(tw);
         }
-
-        if (target.comment().size() && !comments.count(target.comment()))
-            comments.insert(target.comment());
     }
 
     // add externally provided time windows
@@ -529,18 +525,14 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
         }
     }
 
-    EvaluationTargetExcludedTimeWindowsDialog dialog (String::compress(utns, ','),
-                                                     filtered_time_windows,
-                                                     String::compress(comments, '\n'));
+    EvaluationTargetExcludedTimeWindowsDialog dialog(String::compress(utns, ','),
+                                                     filtered_time_windows);
     int result = dialog.exec();
 
     if (result == QDialog::Rejected)
         return;
 
-    string comment = dialog.comment();
-
     // set time windows for all targets
-    model_.setTargetComment(utns, comment);
     model_.setEvalExcludeTimeWindows(utns, filtered_time_windows);
 
     resizeColumnsToContents();

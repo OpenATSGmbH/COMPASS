@@ -33,7 +33,7 @@ In another variation, if the 'Use Percent Threshold if Higher' checkbox is set, 
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & fir\_cut\_sim \\ \hline
-    Reqirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory \\ \hline
     Requirement & Name of the requirement & Speed \\ \hline
     Num Results & Total number of results & 728 \\ \hline
     Num Usable Results & Number of usable results & 107 \\ \hline
@@ -120,7 +120,7 @@ The 'Track Angle' requirement is used to calculate the probability of a target r
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & units\_OPS\_2024 \\ \hline
-    Reqirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory \\ \hline
     Requirement & Name of the requirement & TrackAngle \\ \hline
     Num Results & Total number of results & 1969 \\ \hline
     Num Usable Results & Number of usable results & 1491 \\ \hline
@@ -168,8 +168,8 @@ Also, a table is given for all single targets, sorted by PCP.
     \#CF [1] & Number of updates with failed comparison & 0 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 813 \\ \hline
     PCP [\%] & Probability of passed comparison & 100.00 \\ \hline
-    Condition &  & >= 90.00
-    Condition Fulfilled;;Passed
+    Condition &  & >= 90.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
 \end{tabularx}
 \end{table}
 \end{center}
@@ -185,7 +185,7 @@ Also, a table is given for all single targets, sorted by PCP.
   \caption{Evaluation Acceleration Correct Requirement}
 \end{figure}
 
-The ’Acceleration Correct’ requirement is used to calculate the probability of a target report having an acceleration error smaller than a defined threshold. 
+The 'Acceleration Correct' requirement is used to calculate the probability of a target report having an acceleration error smaller than a defined threshold. 
 
 \begin{itemize}  
 \item Probability [1]: Probability of correct acceleration
@@ -196,7 +196,7 @@ The ’Acceleration Correct’ requirement is used to calculate the probability 
 
 \subsubsection{Calculation}
 
-The offset of the acceleration (test vs. linear interpolated reference values) is used to calculate the offset. If the value of this offset fails the defined comparison threshold, the target report is counted for the calculated probability PCAcc (probability of correct acceleration). The PCAcc must be in turn pass the check for the requirement to pass. 
+The offset of the acceleration (test vs. linear interpolated reference values) is used to calculate the offset. If the value of this offset fails the defined comparison threshold, the target report is counted for the calculated probability PCAcc (probability of correct acceleration). The PCAcc must in turn pass the check for the requirement to pass. 
 
 \subsubsection{Result Values}
 
@@ -208,7 +208,7 @@ The offset of the acceleration (test vs. linear interpolated reference values) i
     \hline
     \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
     Sector Layer & Name of the sector layer & units\_OPS\_2024 \\ \hline
-    Reqirement Group & Name of the requirement group & Mandatory \\ \hline
+    Requirement Group & Name of the requirement group & Mandatory \\ \hline
     Requirement & Name of the requirement & Acceleration Correct \\ \hline
     Num Results & Total number of results & 1969 \\ \hline
     Num Usable Results & Number of usable results & 1492 \\ \hline

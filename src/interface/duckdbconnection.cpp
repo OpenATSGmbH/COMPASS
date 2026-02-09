@@ -75,16 +75,56 @@ DuckDBInstance* DuckDBConnection::duckDBInstance()
  */
 Result DuckDBConnection::connect_impl()
 {
+    bool verbose = instance()->beVerbose();
+
+    if (verbose)
+        loginf << "getting instance";
+
     auto duck_db = duckDBInstance();
 
     traced_assert(duck_db->dbOpen());
     traced_assert(duck_db->db_);
     
+    if (verbose)
+        loginf << "connecting to db";
 
     //connect to db
     auto state = duckdb_connect(duck_db->db_, &connection_);
     if (state != DuckDBSuccess)
         return Result::failed("Could not connect to database");
+
+    if (verbose)
+        loginf << "trying to load JSON extension";
+
+    // 1. Try to LOAD directly first. 
+    // This uses the built-in extension if available, avoiding an external download.
+    state = duckdb_query(connection_, "LOAD json;", nullptr);
+    
+    // 2. Only if LOAD fails, try to INSTALL (download) and then LOAD.
+    // This is a fallback for development environments, but dangerous in AppImages.
+    // if (state != DuckDBSuccess)
+    // {
+    //     if (verbose)
+    //         loginf << "JSON extension not loaded, attempting to install...";
+    //     state = duckdb_query(connection_, "INSTALL json; LOAD json;", nullptr);
+    // }
+    // else
+    // {
+    //     if (verbose)
+    //         loginf << "JSON extension loaded";
+    // }
+
+    if (state != DuckDBSuccess)
+        return Result::failed("Could not load JSON extension");
+
+    // Verify JSON extension is functional
+    if (verbose)
+        loginf << "verifying JSON extension";
+
+    state = duckdb_query(connection_, "SELECT json_object('status', 'success') AS json_check;", nullptr);
+    if (state != DuckDBSuccess)
+        return Result::failed("JSON extension loaded but check failed (function json_object not available)");
+
 
     return Result::succeeded();
 }

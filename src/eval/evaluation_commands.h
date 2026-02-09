@@ -33,7 +33,9 @@ extern void init_evaluation_commands();
  */
 struct RTCommandEvaluate : public rtcommand::RTCommand
 {
-    bool run_filter_ {false};
+    bool        run_filter_ {false};
+    std::string config_;
+    std::string result_name_;
 
 protected:
     virtual bool run_impl() override;

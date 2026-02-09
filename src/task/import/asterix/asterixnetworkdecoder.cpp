@@ -158,7 +158,6 @@ void ASTERIXNetworkDecoder::start_impl()
 
                     *receive_buffers_copy_.at(line_id) = *receive_buffers_.at(line_id);
                     receive_copy_buffer_sizes_[line_id] = size_it.second;
-
                 }
 
                 receive_buffer_sizes_.clear();

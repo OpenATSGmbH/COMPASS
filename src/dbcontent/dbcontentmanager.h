@@ -22,6 +22,7 @@
 #include "targetmodel.h"
 #include "viewabledataconfig.h"
 
+#include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/optional.hpp>
 
 #include <QObject>
@@ -59,6 +60,8 @@ public slots:
     void deleteJobDoneSlot();
 
     void metaDialogOKSlot();
+
+    void processLiveModeSlot();
 
 signals:
     void dbContentStatusChanged();
@@ -172,7 +175,7 @@ public:
     nlohmann::json targetStatsAsJSON() const;
     nlohmann::json utnsAsJSON() const;
 
-    unsigned int maxLiveDataAgeCache() const;
+    std::set<unsigned int> getIgnoredUTNs() const;
 
     void resetToStartupConfiguration(); // only resets label generator
 
@@ -197,6 +200,9 @@ public:
 
     void storeSelectedRecNums(const std::vector<unsigned long>& selected); // to be stored for next load
     void clearSelectedRecNums();
+
+    bool hasMaxLatency() const;
+    boost::posix_time::time_duration maxLatency() const;
 
 protected:
     virtual void checkSubConfigurables() override;
@@ -233,9 +239,6 @@ protected:
     bool has_max_reftraj_track_num_ {false};
     unsigned int max_reftraj_track_num_ {0};
 
-    unsigned int max_live_data_age_cache_ {5};
-    unsigned int max_live_data_age_db_ {60};
-
     boost::optional<boost::posix_time::ptime> timestamp_min_;
     boost::optional<boost::posix_time::ptime> timestamp_max_;
     boost::optional<double> latitude_min_;
@@ -247,6 +250,8 @@ protected:
     std::map<std::string, std::set<unsigned long>> tmp_selected_rec_nums_; // for storage between loads
 
     std::map<std::string, std::shared_ptr<Buffer>> insert_data_;
+
+    boost::optional<boost::posix_time::time_duration> max_latency_;
 
     bool load_in_progress_{false};
     bool insert_in_progress_{false};

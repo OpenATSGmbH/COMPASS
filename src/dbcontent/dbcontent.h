@@ -183,7 +183,7 @@ public:
     static const Property var_radar_azimuth_;
     static const Property var_radar_altitude_;
 
-    static const Property var_cat020_crontrib_recv_;
+    static const Property var_cat020_contrib_recv_;
 
     static const Property var_cat021_toa_position_;     // "ToA Position" 071.Time of Applicability for Position
     static const Property var_cat021_tomr_position_; // "ToMR Position" 0.73 Time of Message Reception for Position
@@ -195,6 +195,7 @@ public:
     static const Property var_cat021_nucp_nic_;
     static const Property var_cat021_nucv_nacv_;
     static const Property var_cat021_sil_;
+    static const Property var_cat021_pos_check_failed_;
     static const Property var_cat021_geo_alt_;
     static const Property var_cat021_geo_alt_accuracy_;
     static const Property var_cat021_ecat_;
@@ -217,6 +218,9 @@ public:
     static const Property var_cat062_type_lm_;
     static const Property var_cat062_baro_alt_;
     static const Property var_cat062_fl_measured_; // trusted, not valid
+    static const Property var_cat062_num_contrib_sensors_;
+    static const Property var_cat062_num_contrib_sensors_tn_;
+    static const Property var_cat062_sum_num_contrib_sensors_;
 
     //Rate of Climb/Descent float feet / min
     //Ax Ay float m/s2
@@ -230,6 +234,7 @@ public:
 
     static const Property var_cat063_sensor_sac_;
     static const Property var_cat063_sensor_sic_;
+    static const Property var_cat063_con_;
 
     static const Property var_cat065_batch_number_;
 

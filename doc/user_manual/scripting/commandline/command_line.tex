@@ -28,16 +28,16 @@ Allowed options:
   --import_asterix_pcap_files arg       imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'
   --import_asterix_file_line arg        imports ASTERIX file with given line, e.g. 'L2'
   --import_asterix_date arg             imports ASTERIX file with given date, in YYYY-MM-DD format e.g. '2020-04-20'
-  --import_asterix_file_time_offset arg used time offset during ASTERIX file import Time of Day override, in  HH:MM:SS.ZZZ'
+  --import_asterix_file_time_offset arg used time offset during ASTERIX file import Time of Day override, in HH:MM:SS.ZZZ
   --import_asterix_ignore_time_jumps    imports ASTERIX file ignoring 24h time jumps
   --import_asterix_network              imports ASTERIX from defined network UDP streams
   --import_asterix_network_time_offset arg
-                                        additive time offset during ASTERIXnetwork import, in HH:MM:SS.ZZZ'
+                                        additive time offset during ASTERIX network import, in HH:MM:SS.ZZZ
   --import_asterix_network_max_lines arg
                                         maximum number of lines per data source during ASTERIX network import, 1..4
   --import_asterix_network_ignore_future_ts 
-                                        ignore future timestamps during ASTERIX network import'
-  --asterix_framing arg                 sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff. if not set configuration value is used'
+                                        ignore future timestamps during ASTERIX network import
+  --asterix_framing arg                 sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. If not set configuration value is used
   --asterix_decoder_cfg arg             sets ASTERIX decoder config using JSON string, e.g. ''{"10":{"edition":"0.31"}}'' (including one pair of single quotes)
   --import_asterix_parameters arg       ASTERIX import parameters as JSON string, e.g. ''{"filter_modec_active": true,"filter_modec_max": 50000.0,"filter_modec_min": -10000.0}'' (including one pair of single quotes)
   --import_json arg                     imports JSON file with given filename, e.g. '/data/file1.json'
@@ -48,7 +48,7 @@ Allowed options:
   --calculate_artas_tr_usage            associate target reports based on ARTAS usage
   --reconstruct_references              reconstruct references from sensor and tracker data
   --load_data                           load data after start
-  --export_view_points_report arg       export view points report after start with given filename, e.g. '/data/db2/report.tex
+  --export_view_points_report arg       export view points report after start with given filename, e.g. '/data/db2/report.tex'
   --evaluate                            run evaluation
   --evaluation_parameters arg           evaluation parameters as JSON string, e.g. ''{"current_standard": "test", "dbcontent_name_ref": "CAT062", "dbcontent_name_tst": "CAT020"}'' (including one pair of single quotes)
   --evaluate_run_filter                 run evaluation filter before evaluation
@@ -196,11 +196,11 @@ After a database was opened, adds the supplied filename and starts an import usi
 
 \subsubsection{-{}-import\_gps\_trail filename}
 
-After a database was opened, adds the supplied filename and starts an import using using the task described in \nameref{sec:ui_import_gps}.
+After a database was opened, adds the supplied filename and starts an import using the task described in \nameref{sec:ui_import_gps}.
 
 \subsubsection{-{}-import\_gps\_parameters 'str'}
 
-When an Import GPS Trail task is started the given configuration is used, in which the data source and secondary parameters for the GPS trail is defined using a JSON string.
+When an Import GPS Trail task is started the given configuration is used, in which the data source and secondary parameters for the GPS trail are defined using a JSON string.
 
 In a nice formatting the string looks like this:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
@@ -248,7 +248,7 @@ Triggers a load process after opening the database.
 
 \subsubsection{-{}-export\_view\_points\_report}
 
-After starting the application into the management window, a export View Points as PDF process is triggered as described in
+After starting the application into the management window, an export View Points as PDF process is triggered as described in
 \nameref{sec:view_points_export_pdf}.
 
 The given argument filename defines the report filename, with the report directory as the parent directory of the given filename.

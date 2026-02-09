@@ -20,7 +20,6 @@
 #include "rtcommand_registry.h"
 #include "compass.h"
 #include "evaluationmanager.h"
-#include "evaluationmanagerwidget.h"
 #include "mainwindow.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
@@ -54,10 +53,21 @@ bool RTCommandEvaluate::run_impl()
         return false;
     }
 
+    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+
+    //try to parse configuration
+    if (!config_.empty())
+    {
+        auto res = eval_man.calculator()->applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
     if (run_filter_)
         COMPASS::instance().dbContentManager().autoFilterUTNS();
-
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
 
     auto can_evaluate = eval_man.canEvaluate();
     if (!can_evaluate.ok())
@@ -68,7 +78,7 @@ bool RTCommandEvaluate::run_impl()
 
     loginf << "loading evaluation data";
 
-    auto res = eval_man.evaluate(false);
+    auto res = eval_man.evaluate(false, result_name_);
     if (!res.ok())
     {
         setResultMessage(res.error());
@@ -82,10 +92,14 @@ void RTCommandEvaluate::collectOptions_impl(OptionsDescription& options,
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as json string")
+        ("result,r", po::value<std::string>()->default_value(""), "name under which the evaluation result will be stored")
         ("run_filter,f", "run evaluation filter before evaluation");
 }
 
 void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
 {
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "result", std::string, result_name_)
     RTCOMMAND_CHECK_VAR(variables, "run_filter", run_filter_)
 }

@@ -45,21 +45,42 @@ void SimpleAssociator::associateNewData()
 {
     unassoc_rec_nums_.clear();
 
-    loginf << "associating RefTraj data";
+    max_time_diff_ = Time::partialSeconds(reconstructor().settings().max_time_diff_);
+
 
     if (reconstructor().isCancelled())
         return;
 
+    //associateTargetReports();
+
+    loginf << "associating data RefTraj,CAT062";
+
     associateTargetReports({255});
+
+    associateTargetReports({62});
+
+    if (reconstructor().isCancelled())
+        return;
+
+    // create targets with much secondary info, required for ground bit info
+
+     loginf << "associating CAT020, CAT021 data";
+
+    associateTargetReports({21,20});
+
+    reconstructor_.targets_container_.checkACADLookup();
 
     if (reconstructor().isCancelled())
         return;
 
     // create tracker targets
 
-    loginf << "associating CAT062 data";
+    loginf << "associating CAT001,CAT010, CAT048 data";
 
-    associateTargetReports({62});
+
+    associateTargetReports({1, 10,48});
+
+    reconstructor_.targets_container_.checkACADLookup();
 
     unsigned int multiple_associated {0};
     unsigned int single_associated {0};
@@ -72,43 +93,43 @@ void SimpleAssociator::associateNewData()
             ++single_associated;
     }
 
-    if (reconstructor().isCancelled())
-        return;
-
     loginf << "tracker targets " << reconstructor_.targets_container_.targets_.size()
            << " multiple " << multiple_associated << " single " << single_associated;
 
+    // if (reconstructor().isCancelled())
+    //     return;
+
     // create non-tracker utns
-    std::set<unsigned int> sensor_dbcont_ids;
+    // std::set<unsigned int> sensor_dbcont_ids;
 
-    for (auto dbcont_it : COMPASS::instance().dbContentManager())
-    {
-        if (dbcont_it.second->id() != 62 && dbcont_it.second->id() != 255)
-            sensor_dbcont_ids.insert(dbcont_it.second->id());
-    }
+    // for (auto dbcont_it : COMPASS::instance().dbContentManager())
+    // {
+    //     if (dbcont_it.second->id() != 62 && dbcont_it.second->id() != 255)
+    //         sensor_dbcont_ids.insert(dbcont_it.second->id());
+    // }
 
-    if (reconstructor().isCancelled())
-        return;
+    // if (reconstructor().isCancelled())
+    //     return;
 
-    loginf << "associating remaining sensor data";
+    // loginf << "associating remaining sensor data";
 
-    associateTargetReports(sensor_dbcont_ids);
+    // associateTargetReports(sensor_dbcont_ids);
 
-    if (reconstructor().isCancelled())
-        return;
+    // if (reconstructor().isCancelled())
+    //     return;
 
-    multiple_associated = 0;
-    single_associated = 0;
+    // multiple_associated = 0;
+    // single_associated = 0;
 
-    for (auto& target_it : reconstructor_.targets_container_.targets_)
-    {
-        if (target_it.second.ds_ids_.size() > 1)
-            ++multiple_associated;
-        else
-            ++single_associated;
-    }
+    // for (auto& target_it : reconstructor_.targets_container_.targets_)
+    // {
+    //     if (target_it.second.ds_ids_.size() > 1)
+    //         ++multiple_associated;
+    //     else
+    //         ++single_associated;
+    // }
 
-    reconstructor_.targets_container_.checkACADLookup();
+    //reconstructor_.targets_container_.checkACADLookup();
 
     if (reconstructor().isCancelled())
         return;
@@ -198,7 +219,7 @@ boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetT
     const boost::posix_time::ptime& ts,
     const dbContent::ReconstructorTarget& target0,
     const dbContent::ReconstructorTarget& target1,
-    bool do_debug,
+    bool one_is_on_ground, bool do_debug,
     const boost::optional<unsigned int>& thread_id,
     reconstruction::PredictionStats* stats)
 {
@@ -215,8 +236,11 @@ boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetT
     double distance_m = osgEarth::GeoMath::distance(target0_pos.latitude_ * DEG2RAD, target0_pos.longitude_ * DEG2RAD,
                                                     target1_pos.latitude_ * DEG2RAD, target1_pos.longitude_ * DEG2RAD);
 
-    // distance, target acc, tr acc
-    return std::tuple<double, double>(distance_m, -1);
+    // distance, sum target acc
+    if (one_is_on_ground)
+        return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_ground_);
+    else
+        return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_air_);;
 }
 
 boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (
@@ -231,8 +255,35 @@ boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (
 
     std::tie(distance_m, tgt_est_std_dev, tr_est_std_dev) = pos_offs.value();
 
-    return distance_m <
-           reconstructor_.settings().max_distance_acceptable_ * reconstructor_.settings().tn_disassoc_distance_factor_;
+    bool one_is_on_ground = tr.isOnGround();
+
+    const auto& target = reconstructor_.targets_container_.targets_.at(utn);
+
+    TargetBase::Category target_category = TargetBase::Category::Unknown;
+
+    target_category = target.targetCategory();
+
+    if (!one_is_on_ground && target_category != TargetBase::Category::Unknown)
+        one_is_on_ground = TargetBase::isGroundOnly(target_category);
+
+    if (!one_is_on_ground)
+    {
+        boost::optional<bool> utn_gbs = target.groundBitAt(
+            tr.timestamp_, max_time_diff_,
+            dbContent::ReconstructorTarget::InterpOptions().enableDebug(do_debug));
+
+        if (utn_gbs)
+            one_is_on_ground = *utn_gbs;
+    }
+
+    if (one_is_on_ground)
+        return distance_m >
+           reconstructor_.settings().max_distance_acceptable_ground_ * reconstructor_.settings().tn_disassoc_distance_factor_;
+    else
+        return distance_m >
+           reconstructor_.settings().max_distance_acceptable_air_ * reconstructor_.settings().tn_disassoc_distance_factor_;
+
+    
 }
 
 boost::optional<std::pair<bool, double>> SimpleAssociator::calculatePositionOffsetScore (
@@ -240,29 +291,73 @@ boost::optional<std::pair<bool, double>> SimpleAssociator::calculatePositionOffs
     double distance_m, double tgt_est_std_dev, double tr_est_std_dev, bool secondary_verified,
     bool do_debug)
 {
-    return std::pair<bool, double> (distance_m < reconstructor_.settings().max_distance_acceptable_,
-                                   distance_m - reconstructor_.settings().max_distance_acceptable_);
+    bool one_is_on_ground = tr.isOnGround();
+
+    traced_assert(reconstructor_.targets_container_.targets_.count(other_utn));
+    const auto& target = reconstructor_.targets_container_.targets_.at(other_utn);
+
+    TargetBase::Category target_category = TargetBase::Category::Unknown;
+
+    target_category = target.targetCategory();
+
+    if (!one_is_on_ground && target_category != TargetBase::Category::Unknown)
+        one_is_on_ground = TargetBase::isGroundOnly(target_category);
+
+    if (!one_is_on_ground)
+    {
+        boost::optional<bool> utn_gbs = target.groundBitAt(
+            tr.timestamp_, max_time_diff_,
+            dbContent::ReconstructorTarget::InterpOptions().enableDebug(do_debug));
+
+        if (utn_gbs)
+            one_is_on_ground = *utn_gbs;
+    }
+
+    if (one_is_on_ground)
+        return std::pair<bool, double> (distance_m < reconstructor_.settings().max_distance_acceptable_ground_,
+                                    distance_m - reconstructor_.settings().max_distance_acceptable_ground_);
+    else
+        return std::pair<bool, double> (distance_m < reconstructor_.settings().max_distance_acceptable_air_,
+                                    distance_m - reconstructor_.settings().max_distance_acceptable_air_);
 }
 
 std::tuple<ReconstructorAssociatorBase::DistanceClassification, double>
-SimpleAssociator::checkPositionOffsetScore (double distance_m, double sum_stddev_est,
-                                           bool secondary_verified)
+SimpleAssociator::checkPositionOffsetScore (
+    const dbContent::ReconstructorTarget& target0, const dbContent::ReconstructorTarget& target1,
+    double distance_m, double sum_stddev_est, bool secondary_verified, bool one_is_on_ground)
 {
     const auto& settings = reconstructor_.settings();
 
     DistanceClassification classif;
 
-    if (distance_m > settings.max_distance_notok_)
-        classif = DistanceClassification::Distance_NotOK;
-    else if (distance_m > settings.max_distance_dubious_)
-        classif = DistanceClassification::Distance_Dubious;
-    else if (distance_m < settings.max_distance_acceptable_)
-        classif = DistanceClassification::Distance_Good;
-    else
-        classif = DistanceClassification::Distance_Acceptable;
+    if (one_is_on_ground)
+    {
+        if (distance_m > settings.max_distance_notok_ground_)
+            classif = DistanceClassification::Distance_NotOK;
+        else if (distance_m > settings.max_distance_dubious_ground_)
+            classif = DistanceClassification::Distance_Dubious;
+        else if (distance_m < settings.max_distance_acceptable_ground_)
+            classif = DistanceClassification::Distance_Good;
+        else
+            classif = DistanceClassification::Distance_Acceptable;
 
-    return tuple<DistanceClassification, double>(
-        classif, settings.max_distance_acceptable_ - distance_m);
+        return tuple<DistanceClassification, double>(
+            classif, 1.0 - distance_m / settings.max_distance_acceptable_ground_ );
+    }
+    else
+    {
+        if (distance_m > settings.max_distance_notok_air_)
+            classif = DistanceClassification::Distance_NotOK;
+        else if (distance_m > settings.max_distance_dubious_air_)
+            classif = DistanceClassification::Distance_Dubious;
+        else if (distance_m < settings.max_distance_acceptable_air_)
+            classif = DistanceClassification::Distance_Good;
+        else
+            classif = DistanceClassification::Distance_Acceptable;
+
+        return tuple<DistanceClassification, double>(
+            classif, 1.0 - distance_m / settings.max_distance_acceptable_air_);
+    }
 }
 
 

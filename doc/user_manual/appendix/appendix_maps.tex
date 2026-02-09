@@ -8,7 +8,7 @@ As with all configuration, a local version is kept in the home folder of the use
   \caption{Maps Folder}
 \end{figure}
 
-In this folder, the previosly discussed maps exist as osgEarth '.earth' files. If new .earth files are added, or the content of such files is changed, they can be used from the Geographic View after a restart.
+In this folder, the previously discussed maps exist as osgEarth '.earth' files. If new .earth files are added, or the content of such files is changed, they can be used from the Geographic View after a restart.
 
 \subsection{Map Example}
 The easiest example is the 'minimal\_new.earth' file, which uses an ESRI shapefile from the subfolder 'shapefiles' to display the national borders.
@@ -57,7 +57,7 @@ The easiest example is the 'minimal\_new.earth' file, which uses an ESRI shapefi
 
 \subsection{Editing Map Example}
 
-The world background colour is set using the 'terrain color' tag. The name of the shapefile is given using the 'url' tag, the line colour and width is set in the style below. Basically a user can add their own files to the 'shapefiles' folder, and simply duplicate the 'feature\_model' part with their own ESRI shapefiles. This could the look like this:
+The world background colour is set using the 'terrain color' tag. The name of the shapefile is given using the 'url' tag, the line colour and width is set in the style below. Basically a user can add their own files to the 'shapefiles' folder, and simply duplicate the 'feature\_model' part with their own ESRI shapefiles. This could then look like this:
 
 \begin{lstlisting}
 <map name="Wordwide Line Vectors" type="geocentric">
@@ -185,20 +185,20 @@ Please note that due to osgEarth constraints the graticule is not always display
 
 \subsection{Offline OpenStreetMap Example}
 
-There exist a number of options how OpenStreetMap maps can be made available in an offline environment. The most convinient option the author found was using the QGIS tool (\href{https://www.qgis.org/}{Link}), which should be available in all common Linux distributions. \\
+There exist a number of options how OpenStreetMap maps can be made available in an offline environment. The most convenient option the author found was using the QGIS tool (\href{https://www.qgis.org/}{Link}), which should be available in all common Linux distributions. \\
 
 Using this tool, OpenStreetMap tiles can be downloaded and saved in a number of formats. To allow for efficient usage, the MBTiles format was used successfully. In this format, OpenStreetMap (and other online tile-based maps) can be stored in a single file and transferred to an offline environment.
 
 \subsubsection{Use QGIS to Generate MBTiles Map}
 
-In this example description, QGIS 3.22 was used. First, QGIS is start in an environment with internet access. Then, OpenStreetMap is selected as background layer by double-clicking on XYZ Tiles $\rightarrow$ OpenStreetMap).
+In this example description, QGIS 3.22 was used. First, QGIS is started in an environment with internet access. Then, OpenStreetMap is selected as background layer by double-clicking on XYZ Tiles $\rightarrow$ OpenStreetMap).
 
 \begin{figure}[H]
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/qgis_osm1.png}
 \end{figure}
 
-Then, XYZ tiles are written as MBTiles using the 'Processing' toolbox, which is started/displayed using the menu bar 'Processing' $\rightarrow$ 'Processing' (or already displayed in the bottom right. \\
+Then, XYZ tiles are written as MBTiles using the 'Processing' toolbox, which is started/displayed using the menu bar 'Processing' $\rightarrow$ 'Processing' (or already displayed in the bottom right). \\
 
 If the menu entry is missing, it has to be activated once using the menu bar 'Plugins' $\rightarrow$ 'Manage and Install Plugins' dialog (find 'Processing' entry and check the checkbox). \\
 
@@ -217,15 +217,15 @@ Double-click the entry 'Generate XYZ Tiles (MBTiles)' to start the following dia
 
 The following (important) options can be set:
 \begin{itemize}
- \item Extend: Latitude/Longitude bounding rectangle to export
+ \item Extent: Latitude/Longitude bounding rectangle to export
  \item Minimum zoom: Minimum level of detail, e.g. 1
- \item Maxmimum zoom: Maximum level of detail, e.g. 12-15 (changes creation time and resulting file size)
+ \item Maximum zoom: Maximum level of detail, e.g. 12-15 (changes creation time and resulting file size)
  \item Tile Format: Graphics for using, e.g. JPG (to reduce file size)
  \item Output file: MBTiles file to be written
 \end{itemize}
  \ \\
 
-Please note that for higher level of details, the application crashed with a SQLite locked error message. This can be mitigated (might not be required in newer versions of QGIS) using the menu bar 'Settins' $\rightarrow$ 'Options' dialog. In the top left search bar 'threads' can be entered to then change the 'Max Threads' variable to '1'. \\
+Please note that for higher level of details, the application crashed with a SQLite locked error message. This can be mitigated (might not be required in newer versions of QGIS) using the menu bar 'Settings' $\rightarrow$ 'Options' dialog. In the top left search bar 'threads' can be entered to then change the 'Max Threads' variable to '1'. \\
 
 \begin{figure}[H]
     \includegraphics[width=14cm,frame]{figures/qgis_osm4.png}
@@ -235,7 +235,7 @@ After these options were set, the 'Run' button can be clicked. \\
 
 Please review and consider the OpenStreetMap copyright and license when creating such offline maps (\href{https://www.openstreetmap.org/copyright}{Link}). \\
 
-After successful complete of this task, the resulting MBTiles file has to be copied to any \textasciitilde'/.compass location and be used in a .earth file like the following:
+After successful completion of this task, the resulting MBTiles file has to be copied to any \textasciitilde'/.compass location and be used in a .earth file like the following:
 
 \begin{lstlisting}
 <map name="OpenStreetMap" type="projected" version="2">
@@ -253,14 +253,14 @@ After successful complete of this task, the resulting MBTiles file has to be cop
 </map>
 \end{lstlisting}
 
-Then such a map is selected in the Geographic View, only in the selected QGIS extend map data is available.
+Then such a map is selected in the Geographic View, only in the selected QGIS extent map data is available.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_qgis_osm1.png}
 \end{figure}
 
-Such a map could be enhanced by combining it with the minimal\_2d.earth map, to overlay national border - to give location awareness where no OpenStreetMap data is available.
+Such a map could be enhanced by combining it with the minimal\_2d.earth map, to overlay national borders - to give location awareness where no OpenStreetMap data is available.
 
 \begin{lstlisting}
 <map name="OpenStreetMap" type="projected" version="2">

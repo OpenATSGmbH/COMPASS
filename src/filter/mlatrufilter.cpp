@@ -17,12 +17,15 @@
 
 #include "mlatrufilter.h"
 #include "compass.h"
+#include "datasourcemanager.h"
 #include "mlatrufilterwidget.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/metavariable.h"
 #include "logger.h"
 #include "stringconv.h"
+
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace Utils;
@@ -34,7 +37,7 @@ MLATRUFilter::MLATRUFilter(const std::string& class_id, const std::string& insta
     : DBFilter(class_id, instance_id, parent, false)
 {
     registerParameter("rus_str", &rus_str_, std::string());
-    updateRUsFromStr(rus_str_);
+    registerParameter("match_all", &match_all_, false);
 
     name_ = "MLAT RUs";
 
@@ -48,66 +51,167 @@ bool MLATRUFilter::filters(const std::string& dbcontent_name)
     return dbcontent_name == "CAT020";
 }
 
-std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, bool& first)
+std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
-    logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
+    loginf << "dbcont_name " << dbcontent_name << " active " << active_ << " rus_str '" << rus_str_
+           << "' match_all " << match_all_;
+
+    if (!active_)
+        return "";
+
+    traced_assert(dbcontent_name == "CAT020");
+
+    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+
+    traced_assert(
+        dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
+
+    std::string contrib_dbcol_name =
+        dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_).dbColumnName();
+
+    traced_assert(
+        dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+
+    std::string dsid_dbcol_name =
+        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).dbColumnName();        
+
+    vector<string> split_str = String::split(rus_str_, ',');
+    
+    vector<vector<unsigned int>> numbers; // raw numbers that need no converion
+
+    // check if null wanted, and keep only rest
+    bool null_wanted = false;
+    bool ok;
+
+    // add only numbers which do not need conversion, and remove them
+    for (auto it = split_str.begin(); it != split_str.end();)
+    {
+        string tmp = *it;
+
+        boost::algorithm::trim(tmp);
+        boost::algorithm::to_lower(tmp);
+
+        if (!tmp.size())
+            continue;
+
+        if (tmp == "null")
+        {
+            null_wanted = true;
+            it = split_str.erase(it);
+            continue;
+        }
+        
+        // check if number
+        unsigned int num_tmp = QString(it->c_str()).toInt(&ok);
+
+        if (ok)
+        {
+            numbers.push_back({num_tmp});
+            it = split_str.erase(it);
+            continue;
+        }
+
+        ++it;
+    }
+
+    loginf << "numbers " << numbers.size() << " null " << null_wanted;
+
+    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+
+    std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> ru_lookup; // ds id -> ru name -> {ru indexes}
+
+    for (auto& db_src_it : ds_man.dbDataSources())
+    {
+        if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
+            ru_lookup[db_src_it->id()] = db_src_it->mlatRUNames();
+    }
 
     stringstream ss;
 
-    if (active_ && (values_.size() || null_wanted_))
+    if (!first)
+        ss << " AND";
+
+    ss << " (";
+
+    bool first_in_filter = true;
+
+    // add null wanted
+    if (null_wanted)
     {
-        traced_assert(dbcontent_name == "CAT020");
+        ss << contrib_dbcol_name << " IS NULL";
+        first_in_filter = false;
+    }
 
-        DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    for (auto& ds_it : ru_lookup)
+    {
+        // already entered numbers
+        vector<vector<unsigned int>> ds_numbers = numbers;
 
-        traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_));
-        std::string dbcol_name =
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_crontrib_recv_).dbColumnName();
+        // add all ru names as numbers
+        for (string ru_name : split_str)
+        {
+            boost::algorithm::trim(ru_name);
+            boost::algorithm::to_lower(ru_name);
 
-        if (!first)
+            if (ds_it.second.count(ru_name))
+                ds_numbers.push_back(ds_it.second.at(ru_name));
+        }
+
+        if (ds_numbers.size())
+        {
+            if (!first_in_filter)
+                ss << " OR";
+                
+            ss << " (";
+
+            ss << dsid_dbcol_name << " = " << ds_it.first;
             ss << " AND";
 
-        // SELECT * FROM data WHERE json_contains(json_list, '3') OR json_contains(json_list, '7');
-        // SELECT * FROM data WHERE json_contains_any(json_list, '[3, 7]');
+            // SELECT * FROM data WHERE json_contains(json_list, '3') OR json_contains(json_list, '7');
 
-        ss << " (";
+            bool first_value{true};
 
-        bool first_value=true;
-
-        if (values_.size() == 1)
-        {
-            ss << "json_contains(" << dbcol_name << ", '" << rus_str_ << "')";
-
-            first_value = false;
-        }
-        else if (values_.size() > 1)
-        {
-            for (auto& value : values_)
+            for (auto& values : ds_numbers)
             {
                 if (!first_value)
-                    ss << " OR ";
+                    ss << (match_all_ ? " AND" : " OR");
 
-                ss << "json_contains(" << dbcol_name << ", '" << value << "')";
+                assert (values.size());
+
+                if (values.size() == 1)
+                    ss << " json_contains(" << contrib_dbcol_name << ", '" << values.at(0) << "')";
+                else
+                {
+                    ss << " (";
+
+                    for (unsigned int cnt=0; cnt < values.size(); cnt++) // any of these indexes corresond to a matching name
+                    {
+                        if (cnt != 0)
+                            ss << " OR";
+
+                        ss << " json_contains(" << contrib_dbcol_name << ", '" << values.at(cnt) << "')";
+                    }
+
+                    ss << ")";
+                }
 
                 first_value = false;
             }
+            ss << ")";
+
+            first_in_filter = false;
         }
-
-        if (null_wanted_)
-        {
-            if (!first_value)
-                ss << " OR ";
-
-            ss << dbcol_name << " IS NULL";
-        }
-
-        ss << ")";
-
-        first = false;
     }
 
-    logerr << "here '" << ss.str() << "'";
+    ss << ")";
 
+    if (first_in_filter)
+        return "";
+
+    first = false;
+
+    loginf << "'" << ss.str() << "'";
+    
     return ss.str();
 }
 
@@ -146,6 +250,7 @@ void MLATRUFilter::saveViewPointConditions (nlohmann::json& filters)
     json& filter = filters.at(name_);
 
     filter["rus"] = rus_str_;
+    filter["match_all"] = match_all_;
 }
 
 void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
@@ -158,7 +263,10 @@ void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(filter.contains("rus"));
     rus_str_ = filter.at("rus");
 
-    updateRUsFromStr(rus_str_);
+    if (filter.contains("match_all"))
+        match_all_ = filter.at("match_all");
+    else
+        match_all_ = false;
 
     if (widget())
         widget()->update();
@@ -169,53 +277,73 @@ std::string MLATRUFilter::rus() const
     return rus_str_;
 }
 
+bool MLATRUFilter::checkRUs(const std::string& rus_str)
+{
+    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    std::set<std::string> known_ru_names;
+
+    for (auto& db_src_it : ds_man.dbDataSources())
+    {
+        if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
+        {
+            for (auto const& pair : db_src_it->mlatRUNames())
+            {
+                if (!known_ru_names.count(pair.first))
+                    known_ru_names.insert(pair.first);
+            }
+        }
+    }
+
+    vector<string> split_str = String::split(rus_str, ',');
+
+    bool ok;
+    
+    // check if null wanted, and keep only rest
+    for (string str : split_str)
+    {
+        boost::algorithm::trim(str);
+        boost::algorithm::to_lower(str);
+
+        if (!str.size())
+            continue;
+
+        // check if null
+        if (str == "null")
+            continue;
+
+        // check if number
+        unsigned int num_tmp = QString(str.c_str()).toInt(&ok);
+
+        if (ok)
+            continue;
+
+        // else a name
+
+        if (!known_ru_names.count(str))
+        {
+            loginf << "ru '" << str << "' not in '" << String::compress(known_ru_names,',') << "'";
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void MLATRUFilter::rus(const std::string& rus_str)
 {
-    if (!updateRUsFromStr(rus_str)) // false on failure
-    {
-//        if (widget_)
-//            widget_->update();
-
-        return;
-    }
+    loginf << "'" << rus_str << "'";
 
     rus_str_ = rus_str;
 }
 
-bool MLATRUFilter::updateRUsFromStr(const std::string& values_str)
+bool MLATRUFilter::matchAll() const
 {
-    values_.clear();
-
-    vector<unsigned int> values_tmp;
-    vector<string> split_str = String::split(values_str, ',');
-
-    bool ok = true;
-
-    null_wanted_ = false;
-
-    for (auto& tmp_str : split_str)
-    {
-        if (String::trim(tmp_str) == "NULL" || String::trim(tmp_str) == "null")
-        {
-            null_wanted_ = true;
-            continue;
-        }
-
-        unsigned int utn_tmp = QString(tmp_str.c_str()).toInt(&ok);
-
-        if (!ok)
-        {
-            logerr << "utn '" << tmp_str << "' not valid";
-            break;
-        }
-
-        values_tmp.push_back(utn_tmp);
-    }
-
-    if (!ok)
-        return false;
-
-    values_ = values_tmp;
-
-    return true;
+    return match_all_;
 }
+
+void MLATRUFilter::matchAll(bool match_all)
+{
+    match_all_ = match_all;
+}
+
+

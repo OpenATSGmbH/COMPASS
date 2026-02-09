@@ -37,7 +37,7 @@ PositionDistance::PositionDistance(
             double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
             float threshold_value, COMPARISON_TYPE threshold_value_check_type,
             bool failed_values_of_interest)
-    : PositionBase(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator),
+    : PositionBaseProb(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator),
       threshold_value_(threshold_value), threshold_value_check_type_(threshold_value_check_type),
       failed_values_of_interest_(failed_values_of_interest)
 {
@@ -68,6 +68,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
     time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
+
+    logdbg << "'" << name_ << "': utn " << target_data.utn_ << " test data size " << tst_data.size();
 
     unsigned int num_pos {0};
     unsigned int num_no_ref {0};

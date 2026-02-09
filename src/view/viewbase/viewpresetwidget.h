@@ -21,6 +21,8 @@
 #include "viewpresets.h"
 #include "json_fwd.hpp"
 
+#include "ui_test_testable.h"
+
 #include <QWidget>
 #include <QDialog>
 #include <QImage>
@@ -158,6 +160,9 @@ public:
 
     void updateContents();
 
+    int count() const;
+    std::vector<ViewPresets::Key> keys() const;
+
     static const double WidgetWFraction;
     static const double WidgetHFraction;
 
@@ -192,7 +197,7 @@ private:
 /**
  * Widget governing a view's presets.
 */
-class ViewPresetWidget : public QWidget, public ViewComponent
+class ViewPresetWidget : public QWidget, public ViewComponent, public ui_test::UITestable
 {
 public:
     ViewPresetWidget(View* view,
@@ -203,8 +208,14 @@ public:
 
     nlohmann::json viewInfoJSON() const override final;
 
+    static const std::string NumPresetsKey;
+
 protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
+
+    boost::optional<QString> uiGet(const QString& what = QString()) const override;
+    nlohmann::json uiGetJSON(const QString& what = QString()) const override;
+    bool uiSet(const QString& str) override;
 
 private:
     void createUI();

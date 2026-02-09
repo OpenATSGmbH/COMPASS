@@ -40,6 +40,7 @@
 #include "result.h"
 #include "dbinstance.h"
 #include "logwidget.h"
+#include "util/system.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -52,7 +53,7 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-const bool COMPASS::is_app_image_ = {getenv("APPDIR") != nullptr};
+const bool COMPASS::is_app_image_ = {Utils::System::appDir() != nullptr};
 
 COMPASS::COMPASS()
     : Configurable("COMPASS", "COMPASS0", 0, "compass.json"), log_store_(!is_app_image_)
@@ -89,6 +90,9 @@ COMPASS::COMPASS()
     registerParameter("disable_geographicview_rotate", &disable_geographicview_rotate_, false);
 
     registerParameter("disable_add_remove_views", &disable_add_remove_views_, false);
+
+    registerParameter("max_live_data_age_cache", &max_live_data_age_cache_, 5u);
+    registerParameter("max_live_data_age_db", &max_live_data_age_db_, 60u);
 
     registerParameter("auto_live_running_resume_ask_time", &auto_live_running_resume_ask_time_, 60u);
     registerParameter("auto_live_running_resume_ask_wait_time", &auto_live_running_resume_ask_wait_time_, 1u);
@@ -368,6 +372,17 @@ void COMPASS::checkSubConfigurables()
 LogStore& COMPASS::logStore()
 {
     return log_store_;
+}
+
+bool COMPASS::sensorStatusTimeHack() const
+{
+    return sensor_status_time_hack_;
+}
+void COMPASS::sensorStatusTimeHack(bool value)
+{
+    loginf << "value " << value;
+
+    sensor_status_time_hack_ = value;
 }
 
 bool COMPASS::disableNativeDialogs() const
@@ -1039,7 +1054,7 @@ void COMPASS::appMode(const AppMode& app_mode)
             msg_box->show();
 
             boost::posix_time::ptime min_ts =
-                    Time::currentUTCTime() - boost::posix_time::minutes(dbcontent_manager_->maxLiveDataAgeCache());
+                    Time::currentUTCTime() - boost::posix_time::minutes(max_live_data_age_cache_);
 
             string custom_filter = "timestamp >= " + to_string(Time::toLong(min_ts));
 

@@ -341,7 +341,7 @@ std::string SectionContentTable::resourceExtension() const
 void SectionContentTable::addContentUI(QVBoxLayout* layout, 
                                        bool force_ui_reset)
 {
-    loginf;
+    logdbg;
 
     traced_assert(layout);
 
@@ -907,10 +907,11 @@ void SectionContentTable::setColumnGroup(const std::string& name,
 
     auto& col_group = column_groups_[ name ];
 
-    col_group         = {};
-    col_group.name    = name;
-    col_group.columns = columns;
-    col_group.enabled = enabled;
+    col_group                 = {};
+    col_group.name            = name;
+    col_group.columns         = columns;
+    col_group.enabled         = enabled;
+    col_group.enabled_on_init = enabled;
     
     updateGroupColumns();
 }
@@ -2086,7 +2087,10 @@ void SectionContentTableWidget::resizeContent()
 void SectionContentTableWidget::updateColumnVisibility()
 {
     for (unsigned int c = 0; c < content_table_->numColumns(); ++c)
+    {
+        logdbg << "column " << c << " visible: " << content_table_->columnVisible(c);
         table_view_->setColumnHidden(c, !content_table_->columnVisible(c));
+    }
 }
 
 /**

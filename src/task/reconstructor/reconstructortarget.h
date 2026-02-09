@@ -311,6 +311,8 @@ public:
 
     boost::optional<unsigned int> ecat_;
 
+    std::set<std::string> reported_mismatches_;
+
     boost::posix_time::ptime total_timestamp_min_, total_timestamp_max_; // over all data
     boost::posix_time::ptime timestamp_min_, timestamp_max_; // in current slice
 
@@ -464,8 +466,8 @@ public:
     virtual Category targetCategory() const override;
 
     // online reconstructor
-    size_t trackerCount() const;
-    boost::posix_time::ptime trackerTime(size_t idx) const;
+    size_t chainCount() const;
+    boost::posix_time::ptime chainTime(size_t idx) const;
     bool canPredict(boost::posix_time::ptime ts) const;
     bool hasChainState(boost::posix_time::ptime ts) const;
     bool predictPositionClose(boost::posix_time::ptime ts, double lat, double lon) const;
@@ -534,14 +536,13 @@ protected:
 
     static GlobalStats global_stats_;
 
-    bool hasTracker() const;
-    void reinitTracker();
+    void reinitChain();
     //void reinitChain();
 
-    TargetReportAddResult addNewTRToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+    TargetReportAddResult addNewTRToChain(const dbContent::targetReport::ReconstructorInfo& tr, 
                                             bool reestimate = true,
                                             reconstruction::UpdateStats* stats = nullptr);
-    TargetReportAddResult addToTracker(const dbContent::targetReport::ReconstructorInfo& tr, 
+    TargetReportAddResult addToChain(const dbContent::targetReport::ReconstructorInfo& tr, 
                                        const boost::posix_time::ptime& ts,
                                        bool reestimate = true,
                                        reconstruction::UpdateStats* stats = nullptr);
@@ -554,7 +555,7 @@ protected:
                              std::pair<int, int>& idxs_remove) const;
 
     TargetReportAddResult addTargetReportInternal (unsigned long rec_num,
-                                                   bool add_to_tracker, // false if internal re-add
+                                                   bool add_to_chain, // false if internal re-add
                                                    bool reestimate);
 
     TargetReportSkipResult skipTargetReport (const dbContent::targetReport::ReconstructorInfo& tr,

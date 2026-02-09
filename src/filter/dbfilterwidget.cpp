@@ -68,14 +68,15 @@ DBFilterWidget::DBFilterWidget(DBFilter& filter)
     config_layout->addWidget(visible_checkbox_);
     config_layout->addStretch();
 
-    manage_button_ = new QPushButton();
-    manage_button_->setVisible(false); // TODO_ASSERT
-    manage_button_->setIcon(Files::IconProvider::getIcon("edit.png"));
-    manage_button_->setFixedSize(UI_ICON_SIZE);
-    manage_button_->setFlat(UI_ICON_BUTTON_FLAT);
-    manage_button_->setToolTip(tr("Manage filter"));
-    connect(manage_button_, SIGNAL(clicked()), this, SLOT(showMenuSlot()));
-    config_layout->addWidget(manage_button_);
+    // manage_button_ = new QPushButton();
+    // manage_button_->setVisible(false); // TODO_ASSERT
+    // manage_button_->setIcon(Files::IconProvider::getIcon("edit.png"));
+    // manage_button_->setFixedSize(UI_ICON_SIZE);
+    // manage_button_->setFlat(UI_ICON_BUTTON_FLAT);
+    // manage_button_->setToolTip(tr("Manage filter"));
+    // connect(manage_button_, SIGNAL(clicked()), this, SLOT(showMenuSlot()));
+    // config_layout->addWidget(manage_button_);
+     
     main_layout->addLayout(config_layout);
 
     child_ = new QWidget();
@@ -97,27 +98,24 @@ DBFilterWidget::DBFilterWidget(DBFilter& filter)
 //    connect(this, SIGNAL(deleteFilterSignal(DBFilter*)), &COMPASS::instance().filterManager(),
 //            SLOT(deleteFilterSlot(DBFilter*)), Qt::QueuedConnection);
 
-    createMenu();
+    //createMenu();
 
     update();
 }
 
 DBFilterWidget::~DBFilterWidget() {}
 
-void DBFilterWidget::createMenu()
-{
-    if (!filter_.isGeneric())
-        return;
+// void DBFilterWidget::createMenu()
+// {
+//     QAction* reset_action = menu_.addAction(tr("Reset"));
+//     connect(reset_action, SIGNAL(triggered()), this, SLOT(reset()));
 
-    QAction* reset_action = menu_.addAction(tr("Reset"));
-    connect(reset_action, SIGNAL(triggered()), this, SLOT(reset()));
+//     QAction* edit_action = menu_.addAction(tr("Edit"));
+//     connect(edit_action, SIGNAL(triggered()), this, SLOT(filterEditSlot()));
 
-    QAction* edit_action = menu_.addAction(tr("Edit"));
-    connect(edit_action, SIGNAL(triggered()), this, SLOT(filterEditSlot()));
-
-    QAction* delete_action = menu_.addAction(tr("Delete"));
-    connect(delete_action, SIGNAL(triggered()), this, SLOT(deleteFilter()));
-}
+//     QAction* delete_action = menu_.addAction(tr("Delete"));
+//     connect(delete_action, SIGNAL(triggered()), this, SLOT(deleteFilter()));
+// }
 
 void DBFilterWidget::addChildWidget(QWidget* widget)
 {
@@ -129,7 +127,7 @@ void DBFilterWidget::updateChildWidget()
 {
     deleteChildrenFromLayout();
 
-    std::vector<DBFilterCondition*>& conditions = filter_.getConditions();
+    const auto& conditions = filter_.getConditions();
     for (unsigned int cnt = 0; cnt < conditions.size(); cnt++)
     {
         auto label = conditions.at(cnt)->getLabel();
@@ -142,8 +140,8 @@ void DBFilterWidget::updateChildWidget()
         child_layout_->addWidget(label, row, 0);
         child_layout_->addWidget(edit , row, 1);
 
-        connect(conditions.at(cnt), SIGNAL(possibleFilterChange()), this,
-                SLOT(possibleSubFilterChange()), Qt::UniqueConnection);
+        // connect(conditions.at(cnt), SIGNAL(possibleFilterChange()), this,
+        //         SLOT(possibleSubFilterChange()), Qt::UniqueConnection);
     }
 }
 
@@ -154,24 +152,24 @@ void DBFilterWidget::toggleVisible()
     child_->setVisible(filter_.widgetVisible());
 }
 
-void DBFilterWidget::toggleAnd()
-{
-    logdbg;
+// void DBFilterWidget::toggleAnd()
+// {
+//     logdbg;
 
-    // checked is or is false
-    // unchecked is and is true
-    /*
-  filter_.setAnd(and_checkbox_->checkState() == Qt::Unchecked);
-     */
-    emit possibleFilterChange();
-}
+//     // checked is or is false
+//     // unchecked is and is true
+//     /*
+//   filter_.setAnd(and_checkbox_->checkState() == Qt::Unchecked);
+//      */
+//     emit possibleFilterChange();
+// }
 
 void DBFilterWidget::toggleActive()
 {
     logdbg;
     filter_.setActive(active_checkbox_->checkState() == Qt::Checked);
 
-    emit possibleFilterChange();
+    //emit possibleFilterChange();
 }
 
 void DBFilterWidget::update(void)
@@ -207,28 +205,28 @@ void DBFilterWidget::expand()
     child_->setVisible(true);
 }
 
-void DBFilterWidget::possibleSubFilterChange()
-{
-    logdbg;
-    emit possibleFilterChange();
-}
+// void DBFilterWidget::possibleSubFilterChange()
+// {
+//     logdbg;
+//     //emit possibleFilterChange();
+// }
 
-void DBFilterWidget::reset()
-{
-    filter_.reset();
-    updateChildWidget();
-    emit possibleFilterChange();
-}
+// void DBFilterWidget::reset()
+// {
+//     filter_.reset();
+//     updateChildWidget();
+//     emit possibleFilterChange();
+// }
 
-void DBFilterWidget::showMenuSlot() { menu_.exec(QCursor::pos()); }
+// void DBFilterWidget::showMenuSlot() { menu_.exec(QCursor::pos()); }
 
-void DBFilterWidget::deleteFilter() { emit deleteFilterSignal(&filter_); }
+// void DBFilterWidget::deleteFilter() { emit deleteFilterSignal(&filter_); }
 
-void DBFilterWidget::filterEditSlot()
-{
-    logdbg;
-    emit filterEdit(&filter_);
-}
+// void DBFilterWidget::filterEditSlot()
+// {
+//     logdbg;
+//     emit filterEdit(&filter_);
+// }
 
 namespace
 {

@@ -1,11 +1,13 @@
 \chapter{Reconstructor}
 \label{sec:reconst} 
 
+\section{Introduction}
+
 The reconstructor associates all available target reports to unique targets, each identified by a \textbf{U}nique \textbf{T}arget \textbf{N}umber (\textbf{UTN}). For each of the targets, reference trajectories ("optimal" position estimates akin to system track updates) are calculated and written to the database. \\
 
 Reference trajectories are calculated based on available sensors and System Trackers, as selected by the user. \\
 
-2 different reconstructors exist, but the advanced reference trajectory calculation feature (Probabilistic + IMM Reconstructor) is only available under a commercial professional license. In the free license, a basic reconstructor (Scoring + UMKalman) is available. Please refer to \nameref{sec:ui_configure_licenses} for licensing information. \\
+Two different reconstructors exist, but the advanced reference trajectory calculation feature (Probabilistic + IMM Reconstructor) is only available under a commercial professional license. In the free license, a basic reconstructor (Scoring + UMKalman) is available. Please refer to \nameref{sec:ui_configure_licenses} for licensing information. \\
 
 \begin{itemize}  
    \item Basic: Scoring + UMKalman
@@ -25,11 +27,9 @@ Reference trajectories are calculated based on available sensors and System Trac
 
 For optimal performance, the processing of the target reports and reconstruction is time-sliced. In (commonly) 15 minute intervals, all target reports are loaded, associated to UTNs, references are calculated and written to the database, after which the next time-slice is loaded. \\
 
-In the 'Probabilistic + IMM' reconstructor, each data slice is processed multiple times, to re-estimate correctable bias' as well as to rescale target report accuracies. \\
+In the 'Probabilistic + IMM' reconstructor, each data slice is processed multiple times, to re-estimate correctable biases as well as to rescale target report accuracies. \\
 
-\subfile{reconstructor_config}
-
-\section{Workflow}
+\subsection{Workflow}
 For each processed slice, the following general steps are performed:
 
 \begin{itemize}
@@ -55,6 +55,9 @@ For each processed slice, the following general steps are performed:
 
 There are several algorithmic features of interest, which are described in the following chapters, but deeper discussion is outside the scope of this document.
 
+\subfile{reconstructor_config}
+
+\section{Details}
 \subsection{Associate Target Reports to Targets}
 
 The following steps are performed for each target report:
@@ -114,7 +117,7 @@ This enables merging of created targets even if single target reports (e.g. duri
 
 \subsection{Target Type}
 
-A target type is defined based the following information (if available):
+A target type is defined based on the following information (if available):
 
 \begin{itemize}
 \item ADS-B emitter category (ECAT)
@@ -139,8 +142,8 @@ The following target types exist:
 \item HighVortexLargeAircraft
 \item HeavyAircraft
 \item HighSpeedManoeuvrable
-\item Rotocraft
-\item OtherAirborne (Gliders, UAVs, ultralights, lighter-than-air, etc. )
+\item Rotorcraft
+\item OtherAirborne (Gliders, UAVs, ultralights, lighter-than-air, etc.)
 \item Vehicle
 \item Obstacle
 \end{itemize}
@@ -172,9 +175,11 @@ If this information is erroneous, the created association will be sub-optimal or
 
 Also, when associating non-Mode S target reports a trade-off has to be made for the 'Maximum Acceptable Distance' parameter, 
 especially if the target reports are primary-only. The parameter should be set within the limits of Reference/Tracker error plus maximum sensor error (which can still include radar biases), and the used target separation minima. 
-This is of course not well-suited for strongly varied sensors accuracies and separations (e.g. when mixing ground and air surveillance data). \\
+This is of course not well-suited for strongly varied sensor accuracies and separations (e.g. when mixing ground and air surveillance data). \\
 
-\section{Probabilistic + IMM Features}
+
+
+\subsection{Probabilistic + IMM Features}
 
 Without going into detail, in this section a short overview is given over the capabilities of the advanced reconstructor. The main improvements are:
 
@@ -184,13 +189,13 @@ Without going into detail, in this section a short overview is given over the ca
 \item Assess / verify accuracy of tracked data sources
 \item Assess / verify accuracy of ADS-B position quality indicators, per transponder
 \item Estimate radar plot position accuracy
-\item Using parameters based models as well as 2D accuracy maps
+\item Using parameter-based models as well as 2D accuracy maps
 \end{itemize}
 \item Correct Radar biases: Estimate and correct azimuth bias, range bias \& gain
 \item Joint Probabilistic Data Association (JPDA)
 \begin{itemize}
 \item Method based on published paper: \href{https://doi.org/10.1109/CDC.1980.271915}{“Multi-Target Tracking Using Joint Probabilistic Data Association” by Fortmann, Bar-Shalom \& Scheffe, 1980}
-\item Computes the marginal probabilities of all feasible measurement-to-target associations, considering under clutter and missed detections
+\item Computes the marginal probabilities of all feasible measurement-to-target associations, considering clutter and missed detections
 \item Updates each target state by weighting measurements by those probabilities and saves optimal associations
 \end{itemize}
 \item Use ADS-B geometric altitude for slant-range correction
@@ -200,7 +205,7 @@ Without going into detail, in this section a short overview is given over the ca
 \end{itemize}
 \item Do position outlier checks: Associate outlier positions, but do not use them for reference computation
 \begin{itemize}
-\item Based on estimated target position estimate accuracy and (re-scaled) target report accuracy
+\item Based on estimated target position estimate and (re-scaled) target report accuracy
 \end{itemize}
 \item Use Risky ADS-B: (disabled by default) Estimate ADS-B accuracy of transponders without usable position quality indicators
 \begin{itemize}
@@ -222,7 +227,27 @@ Without going into detail, in this section a short overview is given over the ca
 Resampling of system tracks is enabled in order to obtain similar sample rates for tracker and high-update rate (e.g. ADS-B) data, which reduces a sensor-specific bias of the Kalman filter. 
 Cubic B-splines are used to interpolate the tracker target reports in a relaxed way. In case a spline segment deviates too strongly from its interval, a linear interpolation is used instead. \\
 
-\subsection{Radar Plot Position Improvements}
+\subsubsection{Probabilistic Position Matching}
+
+Generally, static position thresholds are avoided in favor of probabilistic ones. The system employs probabilistic distance scoring utilizing Mahalanobis distances, which are based on position accuracy estimates. Thresholds are then applied to these Mahalanobis distances (e.g. 3x Standard Deviation).\\
+
+The \href{https://en.wikipedia.org/wiki/Mahalanobis_distance}{Mahalanobis distance} measures the distance between a point $P$ and a probability distribution $D$. Effectively, it indicates how many standard deviations $\sigma$ the point $P$ is away from the mean of $D$. This metric divides the distance between the target report and the target by the sum of accuracies (standard deviations). \\
+
+However, this calculation requires defined minimum and maximum accuracy parameters, otherwise the combination with Accuracy Scaling may lead to spiraling into associating nothing or everything, depending on the clutter level.\\
+
+Using this distance, different match qualities can be defined: for example, an acceptable match at 3$\sigma$, a dubious match at 4$\sigma$, and an outlier at 5$\sigma$. Different thresholds can be configured for primary-only versus secondary associations, operating effectively both on ground and in-air.\\
+
+Crucially, this method relies on accurate estimates of target report and target state standard deviations, which are obtained through accuracy rescaling and multiple time-slice processing.
+
+\subsubsection{JPDA for PSR/SMR plots}
+
+Joint Probabilistic Data Association (JPDA) is applied for PSR and SMR plots to facilitate position-based association (\href{https://doi.org/10.1109/CDC.1980.271915}{“Multi-Target Tracking Using Joint Probabilistic Data Association” by Fortmann, Bar-Shalom \& Scheffe, 1980}). JPDA is an adequate solution because it provides improved position estimates in high clutter situations. By considering all feasible associations and determining the most likely hypothesis for primary plot association, it mitigates the impact of false detections and clutter. \\
+
+This probabilistic approach, when used in combination with Probabilistic Position Matching, ensures that the reconstructed reference trajectory remains stable and accurate even in challenging detection environments. \\
+
+Using Full Primary-Only Tracking, primary-only plots are not only associated to matching targets, but can generate new primary-only targets. While reconstructing a dataset with only primary-only sensors is not recommended, this feature will allow formation of primary-only UTNs based on primary-only detections only (without e.g. a related system track or secondary detection).
+
+\subsubsection{Radar Plot Position Improvements}
 
 Using the features mentioned above, the 'Correct Radar Bias' and the 'Use ADS-B geometric altitude for slant-range correction' features can for example result in the following real-life position improvements: 
 median org (original) error vs. median cor (corrected) error in [meters], for 10 different Radars:
@@ -260,9 +285,9 @@ Rad10 estimateXYStdDev: median error
 	 cor avg 47.39 mad 24.76 cnt 39444
 \end{lstlisting}
 
-\subsection{Rescaling Accuracies}
+\subsubsection{Rescaling Accuracies}
 
-Depending on the data source type (ADS-B, MLAT, Radar,Tracker) different accuracy scaling methods are used. The goal is to estimate the optimal target report accuracy, to in turn achieve the optimal reconstruction accuracy. 
+Depending on the data source type (ADS-B, MLAT, Radar, Tracker) different accuracy scaling methods are used. The goal is to estimate the optimal target report accuracy, to in turn achieve the optimal reconstruction accuracy. 
 Commonly, 2D accuracy maps of varying resolution are used. If per-target-report accuracy is given, scaling factors are used to factor out over/underestimation of the target report accuracy by the data source.
 
 \begin{itemize}
@@ -271,8 +296,6 @@ Commonly, 2D accuracy maps of varying resolution are used. If per-target-report 
 \item For ADS-B: Model per-quality-indicator-value accuracies for each transponder, estimate scaling factors to rescale the given target report accuracy
 \end{itemize}
 \ \\
-
-\subsubsection{2D Map Examples}
 
 A common Radar accuracy map can look as follows, with this particular Radar showing a distinct accuracy decrease in a certain azimuth angle:
 \begin{figure}[H]
@@ -297,7 +320,7 @@ showing a nice common accuracy region, with slightly increased errors in some re
   \caption{Tracked Source Average Error Scaling: 1 [m] (green) - 878 [m] (red)}
 \end{figure} 
 
-\subsection{Target Example}
+\subsubsection{Target Example}
 
 \begin{figure}[H]
     \hspace*{-2.5cm}

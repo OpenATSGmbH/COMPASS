@@ -28,6 +28,7 @@ class EvaluationSectorWidget;
 class EvaluationDialog;
 
 class QComboBox;
+class QLineEdit;
 
 /**
 */
@@ -41,9 +42,12 @@ private slots:
     void dbContentTstNameChangedSlot(const std::string& dbcontent_name);
     void lineTstChangedSlot(unsigned int line_id);
 
-    void usedDataSourcesChangedSlot(); // to be called by data source widgets
+    void usedDataSourcesRefChangedSlot(); // to be called by data source widget
+    void usedDataSourcesTstChangedSlot(); // to be called by data source widget
 
     void minHeightFilterChangedSlot(int idx);
+
+    void reportNameChangedSlot();
 
     void changedStandardsSlot(); // eval man
     void changedCurrentStandardSlot(); // eval man
@@ -55,8 +59,14 @@ public:
     void updateDataSources();
     void updateSectors();
 
+    void setReportName(const std::string& name);
+    std::string reportName() const;
+
+    bool isComplete() const;
+
 protected:
     void updateMinHeightFilterCombo();
+    void updateReportName();
 
     EvaluationCalculator& calculator_;
     EvaluationDialog& dialog_;
@@ -68,5 +78,6 @@ protected:
     std::unique_ptr<EvaluationSectorWidget> sector_widget_ {nullptr};
 
     QComboBox* min_height_filter_combo_ {nullptr};
+    QLineEdit* report_name_edit_ {nullptr};
 };
 

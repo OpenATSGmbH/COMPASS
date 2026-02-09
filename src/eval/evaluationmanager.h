@@ -22,7 +22,6 @@
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
-#include "evaluationmanagerwidget.h"
 #include "eval/results/report/pdfgenerator.h"
 #include "sector.h"
 #include "result.h"
@@ -77,12 +76,15 @@ public:
     EvaluationManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
     virtual ~EvaluationManager();
 
+    const EvaluationCalculator* calculator() const { return calculator_.get(); }
+    EvaluationCalculator* calculator() { return calculator_.get(); }
+
     void init();
     void close();
     void clearData();
 
     Result canEvaluate() const;
-    Result evaluate(bool show_dialog);
+    Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
 
     // sectors
     bool sectorsLoaded() const;
@@ -132,6 +134,8 @@ public:
     void useTimestampFilter(bool value);
     std::string timestampFilterStr() const;
 
+    bool removeDisabledUTNData() const { return remove_disabled_utn_data_; } // not load disabled utn for performance hack
+
     //standards
     bool hasCurrentStandard() const;
     const EvaluationStandard& currentStandard() const;
@@ -180,10 +184,12 @@ private:
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;
 
-    bool use_timestamp_filter_ {false};
-    boost::posix_time::ptime load_timestamp_begin_;
-    boost::posix_time::ptime load_timestamp_end_;
-    Utils::TimeWindowCollection load_filtered_time_windows_;
+    bool                        use_timestamp_filter_ {false}; // enables/disables BOTH application of timestamp load filter and exclusion windows load filter
+    boost::posix_time::ptime    load_timestamp_begin_;         // ts filter begin (added to timestamp load filter)
+    boost::posix_time::ptime    load_timestamp_end_;           // ts filter end (added to timestamp load filter)
+    Utils::TimeWindowCollection load_filtered_time_windows_;   // exclusion windows (added to exclusion windows load filter)
+
+    bool remove_disabled_utn_data_{false};
 
     std::string last_result_name_;
 };

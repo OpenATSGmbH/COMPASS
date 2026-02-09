@@ -20,6 +20,7 @@
 #include "dbcontent/target/targetreportchain.h"
 #include "evaluationdefs.h"
 #include "timewindow.h"
+#include "target.h"
 
 #include "boost/date_time/posix_time/ptime.hpp"
 #include <boost/optional.hpp>
@@ -104,7 +105,7 @@ public:
     bool isModeS () const;
     bool isModeACOnly () const;
 
-    void updateUseInfo() const; // updates evaluation use information
+    void updateConstraints() const;
     bool use() const;
     const Utils::TimeWindowCollection& excludedTimeWindows() const;
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
@@ -174,8 +175,8 @@ public:
     bool mappedRefPosInside(const SectorLayer& layer, 
                             const dbContent::TargetReport::Chain::DataID& id) const;
 
-    static const int InterpGroundBitMaxSeconds = 15;
-    static const int InterestFactorPrecision   = 3;
+    static const int InterpGroundBitMaxSeconds;
+    static const int InterestFactorPrecision;
 
     // targets of interest
     void clearInterestFactors() const;
@@ -258,9 +259,7 @@ protected:
     mutable bool has_mops_versions_ {false};
     mutable std::set<unsigned int> mops_versions_;
 
-    mutable bool use_in_eval_;
-    mutable Utils::TimeWindowCollection excluded_time_windows_;
-    mutable std::set<std::string> excluded_requirements_;
+    mutable dbContent::TargetEvalConstraints constraints_;
 
     mutable InsideCheckMatrix                    inside_ref_;
     mutable InsideCheckMatrix                    inside_tst_;

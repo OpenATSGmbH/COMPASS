@@ -32,6 +32,7 @@ namespace dbContent
 {
 class Variable;
 class MetaVariable;
+class VariableSet;
 }
 
 
@@ -42,8 +43,8 @@ class DBFilterCondition : public QObject, public Configurable
 private slots:
     void valueChanged();
 
-signals:
-    void possibleFilterChange();
+// signals:
+//     void possibleFilterChange();
 
 public:
     DBFilterCondition(const std::string& class_id, const std::string& instance_id,
@@ -52,7 +53,7 @@ public:
 
     void invert();
     bool filters(const std::string& dbcontent_name);
-    std::string getConditionString(const std::string& dbcontent_name, bool& first);
+    std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first);
 
     QLabel* getLabel()
     {
@@ -66,9 +67,6 @@ public:
     }
 
     void update();
-
-    bool getChanged() { return changed_; }
-    void setChanged(bool changed) { changed_ = changed; }
 
     std::string getVariableName() const;
     void setVariableName(const std::string& variable_name);
@@ -98,7 +96,7 @@ public:
 private:
     DBFilter* filter_parent_{nullptr};
     std::string operator_;
-    bool op_and_{true};
+    //bool op_and_{true};
     bool absolute_value_{false};
     std::string value_;
     std::string reset_value_;
@@ -107,7 +105,6 @@ private:
     bool display_instance_id_ {false};
 
     bool usable_{true};
-    bool changed_{true};
     bool value_invalid_{false};
 
     QLineEdit* edit_{nullptr};

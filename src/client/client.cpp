@@ -67,6 +67,14 @@ namespace po = boost::program_options;
 
 std::string APP_FILENAME;
 
+namespace
+{
+    std::string jsonParam2RTCommandString(const std::string& param)
+    {
+        return QString::fromStdString(param).replace("\"", "\\\"").toStdString();
+    }
+}
+
 Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 {
     setlocale(LC_ALL, "C");
@@ -218,6 +226,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("throw", po::bool_switch(&do_throw_), "")
         ("numerical_crash", po::bool_switch(&do_numerical_crash_), "")
         ("segfault", po::bool_switch(&do_segfault_), "")
+        ("sensor_status_hack", po::bool_switch(&do_sensor_status_hack_), "")
         ;
 
     // Print full command line for debugging
@@ -403,7 +412,7 @@ bool Client::run ()
         }
 
         // make system your application font (applies to all widgets)
-        if (getenv("APPDIR") != nullptr)
+        if (Utils::System::appDir() != nullptr)
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
@@ -434,6 +443,9 @@ bool Client::run ()
 
     if (expert_mode_)
         COMPASS::instance().expertMode(true);
+
+    if (do_sensor_status_hack_)
+        COMPASS::instance().sensorStatusTimeHack(do_sensor_status_hack_);
 
     MainWindow& main_window = COMPASS::instance().mainWindow();
     splash.raise();
@@ -599,7 +611,13 @@ bool Client::run ()
             rt_man.addCommandFromConsole("import_json " + import_json_filename_);
 
         if (import_gps_trail_filename_.size())
-            rt_man.addCommandFromConsole("import_gps_trail " + import_gps_trail_filename_);
+        {
+            string cmd = "import_gps_trail --filename='" + import_gps_trail_filename_ + "'";
+            if (!import_gps_parameters_.empty())
+                cmd += " --config='" + jsonParam2RTCommandString(import_gps_parameters_) + "'";
+
+            rt_man.addCommandFromConsole(cmd);
+        }
 
         if (import_sectors_filename_.size())
             rt_man.addCommandFromConsole("import_sectors_json " + import_sectors_filename_);
@@ -626,6 +644,8 @@ bool Client::run ()
 
             if (evaluate_run_filter_)
                 cmd += " --run_filter";
+            if (!evaluation_parameters_.empty())
+                cmd += " --config='" + jsonParam2RTCommandString(evaluation_parameters_) + "'";
 
             rt_man.addCommandFromConsole(cmd);
         }
@@ -703,7 +723,7 @@ void Client::checkAndSetupConfig()
 #if USE_EXPERIMENTAL_SOURCE == true
         cout << "COMPASSClient: includes experimental features" << endl;
 
-        const char* appdir = getenv("APPDIR");
+        const char* appdir = Utils::System::appDir();
         if (appdir)
         {
             cout << "COMPASSClient: assuming fuse environment in '" << appdir << "'" << endl;
@@ -792,66 +812,6 @@ void Client::checkAndSetupConfig()
             catch (exception& e)
             {
                 logerr << "JSON parse error in '" << import_asterix_parameters_ << "'";
-                throw e;
-            }
-        }
-
-        if (import_gps_parameters_.size())
-        {
-            loginf << "overriding gps import parameters";
-            using namespace nlohmann;
-
-            try {
-                json json_config = json::parse(import_gps_parameters_);
-
-                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
-                    "COMPASS", "COMPASS0"));
-                Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
-                    "COMPASS", "COMPASS0");
-
-                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
-                Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
-                    "TaskManager", "TaskManager0");
-
-                traced_assert(task_man_config.hasSubConfiguration("GPSTrailImportTask", "GPSTrailImportTask0"));
-                Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
-                    "GPSTrailImportTask", "GPSTrailImportTask0");
-
-                task_config.overrideJSONParameters(json_config);
-            }
-            catch (exception& e)
-            {
-                logerr << "JSON parse error in '" << import_gps_parameters_ << "'";
-                throw e;
-            }
-        }
-
-        if (evaluation_parameters_.size())
-        {
-            loginf << "overriding evaluation parameters";
-            using namespace nlohmann;
-
-            try {
-                json json_config = json::parse(evaluation_parameters_);
-
-                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
-                    "COMPASS", "COMPASS0"));
-                Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
-                    "COMPASS", "COMPASS0");
-
-                traced_assert(compass_config.hasSubConfiguration("EvaluationManager", "EvaluationManager0"));
-                Configuration& eval_man_config = compass_config.getOrCreateSubConfiguration(
-                    "EvaluationManager", "EvaluationManager0");
-
-                traced_assert(eval_man_config.hasSubConfiguration("EvaluationCalculator", "EvaluationCalculator0"));
-                Configuration& eval_calc_config = eval_man_config.getOrCreateSubConfiguration(
-                    "EvaluationCalculator", "EvaluationCalculator0");
-
-                eval_calc_config.overrideJSONParameters(json_config);
-            }
-            catch (exception& e)
-            {
-                logerr << "JSON parse error in '" << evaluation_parameters_ << "'";
                 throw e;
             }
         }

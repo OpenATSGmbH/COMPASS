@@ -58,6 +58,7 @@ protected:
     QPushButton* remove_button_ {nullptr};
 
     QHBoxLayout* standards_layout_{nullptr};
+    QWidget*     standards_placeholder_{nullptr};
 
     void updateButtons();
     void updateStandardWidget();

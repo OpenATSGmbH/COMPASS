@@ -91,7 +91,7 @@ class ReconstructorBaseSettings
     // maximimum time difference between track updates, otherwise considered new track
     double track_max_time_diff_ {300.0};
     // do track number disassociation based on distance
-    bool do_track_number_disassociate_using_distance_ {false};
+    bool do_track_number_disassociate_using_distance_ {true};
     // if do tn disassc, factor for "normal" assoc threshold to calc threshold
     float tn_disassoc_distance_factor_ {3};
 

@@ -138,6 +138,42 @@ std::vector<std::string> ASTERIXDecoderBase::errors() const
 }
 
 /**
+ * Returns the number of warnings logged since starting the decoder.
+*/
+size_t ASTERIXDecoderBase::numWarnings() const
+{
+    return num_warnings_;
+}
+
+/**
+ * Checks if an warning has been logged.
+*/
+bool ASTERIXDecoderBase::warning() const
+{
+    return warning_;
+}
+
+/**
+ * Returns the currently set warning message.
+*/
+std::string ASTERIXDecoderBase::warningMessage() const
+{
+    return warning_message_;
+}
+
+/**
+ */
+std::vector<std::string> ASTERIXDecoderBase::warnings() const
+{
+    std::vector<std::string> warnings;
+
+    if (warning())
+        warnings.push_back("General decoder warning: " + (warningMessage().empty() ? "Unknown warning" : warningMessage()));
+
+    return warnings;
+}
+
+/**
  * Stores the given error and increments the error count.
 */
 void ASTERIXDecoderBase::logError(const std::string& err)
@@ -147,6 +183,18 @@ void ASTERIXDecoderBase::logError(const std::string& err)
 
     ++num_errors_;
     error_ = true;
+}
+
+/**
+ * Stores the given error and increments the error count.
+*/
+void ASTERIXDecoderBase::logWarning(const std::string& wrn)
+{
+    if (!wrn.empty())
+        warning_message_ = wrn;
+
+    ++num_warnings_;
+    warning_ = true;
 }
 
 /**
