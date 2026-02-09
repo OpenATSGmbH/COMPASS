@@ -44,7 +44,7 @@ Activating Live mode will influence the following UI components.
 \section{Data Sources \& Processing}
 \label{sec:data_sources_live_mode}
 
-For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a define Line), the respective button is disabled (greyed out). If data is received over a line, it will become active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green if current data was received during the last 2 update intervals. \\
+For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a defined Line), the respective button is disabled (greyed out). If data is received over a line, it will become active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green if current data was received during the last 2 update intervals. \\
 
 The line button can also be toggled - if a bold border is shown the data from the respective line stored not only in the database but \textbf{also} in main memory (RAM). The most recent 5 minutes of data are kept in main memory (RAM), and can be visualized in the existing Views. \\
 
@@ -148,7 +148,7 @@ The online state text is shown if the application is in Live:Running mode and th
 
 The ASTERIX Import task as well as the Geographic View can detect and handle overload situations. If the real-time processing is not possible with the used workstation, display latency builds up - resulting in ASTERIX data queuing up. \\
 
-If such a latency is larger than 3 seconds,  existing Geographic Views skip drawing until re-synchronization is possible (display latency $<$ 3s). During such an overload, the Geographic Views show a red overload message on the bottom right, with the display latency in seconds. After such an overload, no loss of data occured and all data is displayed. \\
+If such a latency is larger than 3 seconds, existing Geographic Views skip drawing until re-synchronization is possible (display latency $<$ 3s). During such an overload, the Geographic Views show a red overload message on the bottom right, with the display latency in seconds. After such an overload, no loss of data occurred and all data is displayed. \\
 
 \begin{figure}[H]
     \hspace*{-2.5cm}

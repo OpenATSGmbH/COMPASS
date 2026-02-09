@@ -36,7 +36,7 @@ The reply for the issued command will be encoded as JSON string data of the foll
 }
 \end{lstlisting}
 
-A second reply will be send after the command has been completed. It takes the following form.
+A second reply will be sent after the command has been completed. It takes the following form.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
   {
@@ -73,7 +73,7 @@ and pressing ENTER. The reply then looks as follows.
 %\caption{Example}
 \end{figure}
 
-As one can see two JSON objects are send back, the first one 
+As one can see two JSON objects are sent back, the first one 
 indicating that the command was successfully issued, the second one that the command 
 was successfully executed. As one can also see, the \textbf{open\_db} command does not 
 send back reply data, so the 'reply' variable is set to \textit{null}.
@@ -152,7 +152,7 @@ utn \dots UTN of the target to retrieve information for \\
 \textit{retrieves statistics for the current targets} \\
 
 \textbf{get\_utns} \\
-\textit{retrieves UTNS with (optional) target descriptions} \\
+\textit{retrieves UTNs with (optional) target descriptions} \\
 nodesc \dots Return a list of existing UTNs without target descriptions \\
 
 \textbf{help} \\
@@ -431,7 +431,7 @@ filename = '/home/user/path_to_db_file'
 # the reply variable will hold the command's reply data as a python dictionary
 reply, ok, err = compass_instance.interface.sendCommandAndUnpack('open_db \"' + filename + '\"')
 
-# handly any errors 
+# handle any errors 
 
 # get result overview section of existing evaluation report
 report_name = 'test Evaluation'
