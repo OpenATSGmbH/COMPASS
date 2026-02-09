@@ -1,7 +1,7 @@
 \subsection{Import ASTERIX Recording}
 \label{sec:ui_import_asterix}
 
-This task allows importing of ASTERIX data recording files into the opened database. \\
+This task allows importing ASTERIX data recording files into the opened database. \\
 
 \begin{figure}[H]
   \center
@@ -10,7 +10,7 @@ This task allows importing of ASTERIX data recording files into the opened datab
   \caption{Import ASTERIX data}
 \end{figure}
 
-There exist four tabs:
+There are four tabs:
 
 \begin{itemize}
 \item Main: File label(s) and status, input line
@@ -96,7 +96,7 @@ However, it does not work well when importing 'mixed days' from different data s
 \end{itemize}
 \ \\
 
- In this case, a time-jump would be detected and MLAT would erroneously be imported as during Day 2. For this reason, the 'Reset Date Between Files' option was added, force a reset to the specified UTC Day as start day for each file. \\
+ In this case, a time-jump would be detected and MLAT would erroneously be imported as during Day 2. For this reason, the 'Reset Date Between Files' option was added, to force a reset to the specified UTC Day as start day for each file. \\
 
 
 \subsubsection{Decoder}
@@ -135,7 +135,7 @@ Using the 'Edit Data Block' button, the ASTERIX data block definition is opened 
 
 Using the 'Edit Categories' button, the ASTERIX definitions file is opened in a text editor. \\
 
-Using the 'Refresh' button, all of the jASTERIX definitions are re-loaded from harddisk (e.g. to update after file changes were made). \\
+Using the 'Refresh' button, all of the jASTERIX definitions are reloaded from the hard disk (e.g. to update after file changes were made). \\
 
 \subsubsection{Override / Filter Tab}
 \label{sec:task_import_asterix_override}
@@ -173,7 +173,7 @@ These features should only be used in very specific circumstances.
 Please \textbf{note} that the filtering is applied after the (optional) 'Time of Day' correction is performed. Also, if any filters are active, the import status dialog may not be updated for some time and show wrong time estimates.
 \\
 
-Please also \textbf{note} that the obfuscation function only currently overrides the main DBContent variables, i.e. the one used for labels. Other additional secondary values could still be set in the database, therefore this function exists mainly for presentation purposes, not to safeguard against all use cases. Also, to create a time-shift in the data, it is recommended to set a wrong 'UTC Day' as well as to add a random 'Time of Day' override offset.
+Please also \textbf{note} that the obfuscation function currently only overrides the main DBContent variables, i.e. the one used for labels. Other additional secondary values could still be set in the database, therefore this function exists mainly for presentation purposes, not to safeguard against all use cases. Also, to create a time-shift in the data, it is recommended to set a wrong 'UTC Day' as well as to add a random 'Time of Day' override offset.
 
 
 
@@ -191,7 +191,7 @@ At the top, the GUI elements can be used to show/add/remove ASTERIX JSON parsers
 An ASTERIX JSON parser in this context is the function that parses the JSON content created by the jASTERIX parser, and creates DBContent from it. 
 For each ASTERIX category a dedicated parser defines the mapping from JSON to a DBContent. \\
 
-For the common user interaction is normally not recommended, but sometimes it might be interesting to know what DBContent is created from which ASTERIX data.
+For the common user, interaction is normally not recommended, but sometimes it might be interesting to know what DBContent is created from which ASTERIX data.
 
 \paragraph{Top Elements}
 
@@ -221,9 +221,9 @@ Using the 'Show DBContent Variable' button the variable can be inspected in deta
 
 \subsubsection{Running}
 
-The 'Cancel' button aborts the import.  The 'Import' button triggers the import of the selected files into into the database with the given options, but is only available if all selected files can be decoded correctly. \\
+The 'Cancel' button aborts the import.  The 'Import' button triggers the import of the selected files into the database with the given options, but is only available if all selected files can be decoded correctly. \\
 
-Using the 'Import' button the import task can be performed. During import a status indication will be shown. \\
+Using the 'Import' button, the import task can be performed. During import a status indication will be shown. \\
 
 \begin{figure}[H]
   \center
@@ -241,6 +241,6 @@ The (truncated) timestamps of CAT001 are calculated in a simple algorithm based 
 
 This task can be run several times, e.g. if multiple ASTERIX recordings from different data sources are to be imported. \\
 
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that currently not all data fields (as shown in the JSON object parsers) are imported.\\
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that currently not all data fields (as shown in the JSON object parsers) are imported.
 
 
