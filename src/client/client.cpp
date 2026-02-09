@@ -614,7 +614,7 @@ bool Client::run ()
         {
             string cmd = "import_gps_trail --filename='" + import_gps_trail_filename_ + "'";
             if (!import_gps_parameters_.empty())
-                cmd += " --config='" + import_gps_parameters_ + "'";
+                cmd += " --config='" + jsonParam2RTCommandString(import_gps_parameters_) + "'";
 
             rt_man.addCommandFromConsole(cmd);
         }
@@ -645,7 +645,7 @@ bool Client::run ()
             if (evaluate_run_filter_)
                 cmd += " --run_filter";
             if (!evaluation_parameters_.empty())
-                cmd += " --config '" + jsonParam2RTCommandString(evaluation_parameters_) + "'";
+                cmd += " --config='" + jsonParam2RTCommandString(evaluation_parameters_) + "'";
 
             rt_man.addCommandFromConsole(cmd);
         }
