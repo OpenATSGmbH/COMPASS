@@ -96,7 +96,6 @@ GPSTrailImportTask::GPSTrailImportTask(const std::string& class_id,
 
     registerParameter("use_override_date", &settings_.use_override_date, Settings().use_override_date);
     registerParameter("override_date_str", &settings_.override_date_str, Settings().override_date_str);
-    override_date_ = boost::gregorian::from_string(settings_.override_date_str);
 
     registerParameter("set_mode_3a_code", &settings_.set_mode_3a_code, Settings().set_mode_3a_code);
     registerParameter("mode_3a_code", &settings_.mode_3a_code, Settings().mode_3a_code);
@@ -107,6 +106,7 @@ GPSTrailImportTask::GPSTrailImportTask(const std::string& class_id,
     registerParameter("set_callsign", &settings_.set_callsign, Settings().set_callsign);
     registerParameter("callsign", &settings_.callsign, Settings().callsign);
 
+    updateDateFromString();
     createSubConfigurables();
 }
 
@@ -988,8 +988,17 @@ void GPSTrailImportTask::dialogCancelSlot()
 
 /**
 */
+void GPSTrailImportTask::updateDateFromString()
+{
+    override_date_ = boost::gregorian::from_string(settings_.override_date_str);
+}
+
+/**
+*/
 void GPSTrailImportTask::onConfigurationChanged(const std::vector<std::string>& changed_params)
 {
+    updateDateFromString();
+
     emit configChanged();
 }
 
