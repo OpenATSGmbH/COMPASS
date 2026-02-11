@@ -131,7 +131,23 @@ Notes:
 
 For each Radar plot, the DBContent Variables 'DS ID' and 'Detection Type' are used to define from which data source the plot originated, and what type of plot was measured. \\
 
-From the data source information (see \nameref{sec:configure_datasources_table_content}) the radar standard deviations are collected. If no data source specific values are set, the default values (see \nameref{sec:others_radar_default_accuracies}) are used. \\
+From the data source information (see \nameref{sec:configure_datasources_radar_ranges}) the radar standard deviations are collected. If no data source specific values are set, the following default values are used. \\
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | X | l | l | }
+    \hline
+    \textbf{Std.Dev.} & \textbf{Value} & \textbf{Unit} \\ \hline
+     Primary azimuth & 0.05 & [deg]\\ \hline
+     Primaryr range & 120.0  & [m] \\ \hline
+     Secondar azimuth & 0.025 & [deg] \\ \hline
+     Secondary range & 70.0 & [m] \\ \hline
+     Mode S azimuth & 0.02  & [deg] \\ \hline
+     Mode S range & 50 & [m] \\ \hline
+\end{tabularx}
+  \caption{Radar Default Accuracies}
+\end{table}
+\end{center}
 
 Based on the plot type defined by 'Detection Type', one (single technology) or the minimum/maximum of the standard deviations (for combined plots, defined by 'Use Radar Minimum StdDev' flag) is used. If the 'Detection Type' is not set or is 0 (no detection), the PSR values are used. \\ 
 
