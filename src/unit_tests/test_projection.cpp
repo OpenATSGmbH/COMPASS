@@ -584,6 +584,158 @@ TEST_CASE("coordinate systems at different positions", "[projection][rs2g]")
 }
 
 // ---------------------------------------------------------------------------
+// Altitude difference: radar elevated, target at WGS84 height 0
+// ---------------------------------------------------------------------------
+TEST_CASE("rs2gElevation with target below radar", "[projection][rs2g][altitude]")
+{
+    // Radar at 500 m altitude
+    RS2GCoordinateSystem cs(1, 48.1, 16.5, 500.0);
+
+    // Target at height 0 (on ellipsoid surface), various slant ranges
+    double ranges[] = {5000.0, 10000.0, 30000.0, 50000.0, 100000.0};
+
+    for (double rho : ranges)
+    {
+        INFO("slant_range=" << rho);
+
+        // target below radar → negative elevation
+        double elev = cs.rs2gElevation(0.0, rho);
+        REQUIRE(elev < 0.0);
+
+        // target at radar height → near-zero elevation (only earth curvature effect)
+        double elev_same = cs.rs2gElevation(500.0, rho);
+        REQUIRE(fabs(elev_same) < fabs(elev));
+
+        // target above radar → positive elevation
+        double elev_above = cs.rs2gElevation(5000.0, rho);
+        REQUIRE(elev_above > elev);
+    }
+}
+
+TEST_CASE("getGroundRange with target at WGS84 height 0", "[projection][rs2g][altitude]")
+{
+    // Radar at 500 m
+    RS2GCoordinateSystem cs(1, 48.1, 16.5, 500.0);
+
+    double slant_range = 50000.0;
+
+    // Target at height 0 (below radar)
+    double gr_below, adj_alt_below;
+    cs.getGroundRange(slant_range, true, 0.0, gr_below, adj_alt_below);
+
+    // Target at radar height (same altitude)
+    double gr_same, adj_alt_same;
+    cs.getGroundRange(slant_range, true, 500.0, gr_same, adj_alt_same);
+
+    // Target at 10km (above radar)
+    double gr_above, adj_alt_above;
+    cs.getGroundRange(slant_range, true, 10000.0, gr_above, adj_alt_above);
+
+    // All ground ranges should be less than slant range
+    REQUIRE(gr_below < slant_range);
+    REQUIRE(gr_same <= slant_range); // approximately equal for same height
+    REQUIRE(gr_above < slant_range);
+
+    // Higher targets have larger elevation angles → shorter ground range
+    REQUIRE(gr_above < gr_below);
+
+    // Same-height should be closest to slant range
+    REQUIRE(gr_same > gr_below);
+    REQUIRE(gr_same > gr_above);
+
+    // Adjusted altitude for target below radar: h_r + slant*sin(elev).
+    // Includes earth curvature effect so can be well below 0 at long ranges.
+    REQUIRE(adj_alt_below < 500.0);
+    REQUIRE(adj_alt_below > -500.0);
+}
+
+TEST_CASE("full pipeline roundtrip with target at WGS84 height 0", "[projection][rs2g][altitude]")
+{
+    // Radar elevated at 500m, targets on the ellipsoid surface (height 0)
+    double radar_lat = 48.1, radar_lon = 16.5, radar_alt = 500.0;
+    RS2GCoordinateSystem cs(1, radar_lat, radar_lon, radar_alt);
+
+    // A reference point at WGS84 height 0, roughly 40 km NE of radar
+    double ref_lat_deg = 48.35;
+    double ref_lon_deg = 16.85;
+    double ref_height = 0.0;
+
+    // Convert reference to local cartesian
+    double lx, ly, lz;
+    cs.geodesic2LocalCart(ref_lat_deg * DEG2RAD_T, ref_lon_deg * DEG2RAD_T, ref_height,
+                          lx, ly, lz);
+
+    // local z should be negative (target is below the radar).
+    // It is more negative than -radar_alt due to earth curvature at ~40 km distance:
+    // surface drops by ~d²/(2*R) ≈ 40000²/(2*6370000) ≈ 126 m
+    REQUIRE(lz < 0.0);
+    REQUIRE(lz < -radar_alt); // more negative than just the height difference
+
+    // Get radar slant parameters
+    double az_rad, slant_range, ground_range, alt_out;
+    cs.localCart2RadarSlant(lx, ly, lz, az_rad, slant_range, ground_range, alt_out);
+
+    // alt_out = h_r_ + lz, which is an approximation of the target height.
+    // At ~40 km distance, earth curvature causes ~126 m difference between the
+    // local tangent plane and the ellipsoid surface, so alt_out is not exactly 0.
+    REQUIRE(alt_out < radar_alt);  // target is below radar
+
+    // slant range should be greater than ground range (height difference)
+    REQUIRE(slant_range > ground_range);
+
+    // Now do the forward path: polar → ECEF → geodetic
+    double gr_fwd, ecef_x, ecef_y, ecef_z;
+    bool ok = cs.calculateRadSlt2Geocentric(
+        az_rad, slant_range, true, ref_height,
+        gr_fwd, ecef_x, ecef_y, ecef_z);
+    REQUIRE(ok);
+
+    double lat_out, lon_out, h_out;
+    ok = cs.geocentric2Geodesic(ecef_x, ecef_y, ecef_z, lat_out, lon_out, h_out);
+    REQUIRE(ok);
+
+    // Should recover the original reference position
+    REQUIRE(lat_out == Approx(ref_lat_deg).margin(0.001)); // ~100m
+    REQUIRE(lon_out == Approx(ref_lon_deg).margin(0.001));
+}
+
+TEST_CASE("slant-to-ground range correction consistency with altitude", "[projection][rs2g][altitude]")
+{
+    // Verify that radarSlant2LocalCart and getGroundRange give consistent results
+    RS2GCoordinateSystem cs(1, 48.1, 16.5, 500.0);
+
+    double azimuths_deg[] = {0.0, 45.0, 90.0, 180.0, 270.0};
+    double target_heights[] = {0.0, 100.0, 500.0, 2000.0, 10000.0};
+    double slant_range = 50000.0;
+
+    for (double az_deg : azimuths_deg)
+    {
+        for (double target_h : target_heights)
+        {
+            INFO("az=" << az_deg << " target_h=" << target_h);
+
+            double az_rad = az_deg * DEG2RAD_T;
+
+            // Method 1: radarSlant2LocalCart gives ground_range directly
+            double gr1, lx, ly, lz;
+            cs.radarSlant2LocalCart(az_rad, slant_range, true, target_h,
+                                    gr1, lx, ly, lz);
+
+            // Method 2: getGroundRange
+            double gr2, adj_alt;
+            cs.getGroundRange(slant_range, true, target_h, gr2, adj_alt);
+
+            // Both should give the same ground range
+            REQUIRE(gr1 == Approx(gr2).epsilon(1e-10));
+
+            // Ground range should be consistent with local xy
+            double gr_from_xy = sqrt(lx * lx + ly * ly);
+            REQUIRE(gr_from_xy == Approx(gr1).epsilon(1e-10));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // calculateRadSlt2Geocentric with bias
 // ---------------------------------------------------------------------------
 TEST_CASE("calculateRadSlt2Geocentric with bias", "[projection][rs2g]")

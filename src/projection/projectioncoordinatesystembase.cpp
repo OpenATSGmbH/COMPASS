@@ -38,18 +38,18 @@ ProjectionCoordinateSystemBase::ProjectionCoordinateSystemBase(unsigned int id,
     // best earth radius
     R_T_ = EE_A * (1 - EE_E2) / sqrt(pow(1 - EE_E2 * pow(sin(latitude_deg_ * DEG2RAD), 2), 3));
 
-    h_r_ = altitude_m_;
+    h_r_m_ = altitude_m_;
 }
 
 // from SSS D.3
-double ProjectionCoordinateSystemBase::rs2gElevation(double H, double rho)
+double ProjectionCoordinateSystemBase::rs2gElevation(double H_m, double rho_m)
 {
     double El_rad = 0.0; // elevation angle
 
-    if (rho >= ALMOST_ZERO)
+    if (rho_m >= ALMOST_ZERO)
     {
-        double x = (2 * R_T_ * (H - h_r_) + pow(H, 2) - pow(h_r_, 2) - pow(rho, 2)) /
-                   (2 * rho * (R_T_ + h_r_));
+        double x = (2 * R_T_ * (H_m - h_r_m_) + pow(H_m, 2) - pow(h_r_m_, 2) - pow(rho_m, 2)) /
+                   (2 * rho_m * (R_T_ + h_r_m_));
 
         if (fabs(x) <= 1.0)
             El_rad = asin(x);
@@ -85,13 +85,13 @@ void ProjectionCoordinateSystemBase::getGroundRange(
     if (has_altitude)
         elevation_m = altitude_m;
     else
-        elevation_m = h_r_;  // the Z value has not been filled so use at least the radar height
+        elevation_m = h_r_m_;  // the Z value has not been filled so use at least the radar height
 
     double elev_angle_rad = rs2gElevation(elevation_m, slant_range_m);
 
     ground_range_m = slant_range_m * cos(elev_angle_rad);
 
-    adjusted_altitude_m = h_r_ + slant_range_m * sin(elev_angle_rad);
+    adjusted_altitude_m = h_r_m_ + slant_range_m * sin(elev_angle_rad);
 
     if (debug)
         loginf << "has_altitude " << has_altitude

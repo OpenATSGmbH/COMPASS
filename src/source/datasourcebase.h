@@ -111,13 +111,13 @@ public:
 
     bool hasPosition() const;
 
-    void latitude (double value);
+    void latitude (double value); // degree
     double latitude () const;
 
-    void longitude (double value);
+    void longitude (double value); // degree
     double longitude () const;
 
-    void altitude (double value);
+    void altitude (double value); // meters
     double altitude () const;
 
     // radar stuff

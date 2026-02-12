@@ -449,3 +449,215 @@ TEST_CASE("radar bias estimation and correction end-to-end", "[number][bias][e2e
         REQUIRE(cor_median < 5.0);
     }
 }
+
+// ---------------------------------------------------------------------------
+// End-to-end: bias estimation + correction with altitude difference
+// Radar at MSL altitude, reference positions at WGS84 height 0
+// ---------------------------------------------------------------------------
+
+TEST_CASE("bias estimation and correction with altitude difference", "[number][bias][e2e][altitude]")
+{
+    const unsigned int num_iterations = 20;
+    std::mt19937 rng(123); // different seed from flat test
+
+    std::uniform_real_distribution<double> lat_dist(-60.0, 70.0);
+    std::uniform_real_distribution<double> lon_dist(-170.0, 170.0);
+    std::uniform_real_distribution<double> alt_dist(50.0, 800.0);  // radar always elevated
+    std::uniform_real_distribution<double> az_bias_dist(-2.0, 2.0);
+    std::uniform_real_distribution<double> rng_bias_dist(-400.0, 400.0);
+    std::uniform_real_distribution<double> rng_gain_dist(-0.02, 0.02);
+
+    for (unsigned int iter = 0; iter < num_iterations; ++iter)
+    {
+        double radar_lat = lat_dist(rng);
+        double radar_lon = lon_dist(rng);
+        double radar_alt = alt_dist(rng);  // meters MSL, used as WGS84 h for the projection
+
+        double true_az_bias_deg  = az_bias_dist(rng);
+        double true_range_bias_m = rng_bias_dist(rng);
+        double true_range_gain   = rng_gain_dist(rng);
+
+        INFO("iteration " << iter
+             << " radar=(" << radar_lat << ", " << radar_lon << ", " << radar_alt << ")"
+             << " az_bias=" << true_az_bias_deg
+             << " rng_bias=" << true_range_bias_m
+             << " rng_gain=" << true_range_gain);
+
+        RS2GCoordinateSystem cs(iter + 1, radar_lat, radar_lon, radar_alt);
+
+        // Key difference: targets at WGS84 height 0, NOT at radar altitude
+        const double target_wgs84_height = 0.0;
+
+        struct Position { double lat_deg; double lon_deg; };
+
+        std::vector<double> ref_azms_deg, tst_azms_deg;
+        std::vector<double> ref_ground_ranges, tst_ground_ranges;
+        std::vector<Position> ref_positions, tst_positions;
+
+        // generate targets at 24 azimuths x 8 ranges = 192 points
+        for (double az_deg = 5.0; az_deg < 360.0; az_deg += 15.0)
+        {
+            for (double ground_dist = 10000.0; ground_dist <= 80000.0; ground_dist += 10000.0)
+            {
+                double az_rad = az_deg * M_PI / 180.0;
+
+                // Create a reference position at WGS84 height 0 at roughly ground_dist away.
+                // Use local cartesian: target is on the ground (below radar).
+                // First, generate reference lat/lon by projecting from radar at ground level.
+                double ref_lx = ground_dist * std::sin(az_rad);
+                double ref_ly = ground_dist * std::cos(az_rad);
+                // local z for a point at WGS84 height 0: approximately -(radar_alt)
+                // but to be precise, we use geodesic2LocalCart after getting the position.
+
+                // Convert local cart (at radar height plane) to ECEF, then geodesic
+                double ref_ex, ref_ey, ref_ez;
+                cs.localCart2Geocentric(ref_lx, ref_ly, 0.0, ref_ex, ref_ey, ref_ez);
+
+                double approx_lat, approx_lon, approx_h;
+                bool ok = cs.geocentric2Geodesic(ref_ex, ref_ey, ref_ez,
+                                                  approx_lat, approx_lon, approx_h);
+                REQUIRE(ok);
+
+                // Now create the TRUE reference position at WGS84 height 0 at this lat/lon
+                double ref_lat = approx_lat;
+                double ref_lon = approx_lon;
+                ref_positions.push_back({ref_lat, ref_lon});
+
+                // Convert reference position (at height 0) back to radar polar coordinates
+                double lx, ly, lz;
+                cs.geodesic2LocalCart(ref_lat * M_PI / 180.0, ref_lon * M_PI / 180.0,
+                                      target_wgs84_height, lx, ly, lz);
+
+                double ref_az_rad, ref_sr, ref_gr, ref_alt_out;
+                cs.localCart2RadarSlant(lx, ly, lz, ref_az_rad, ref_sr, ref_gr, ref_alt_out);
+
+                // altitude out = h_r_ + local_z; includes earth curvature so
+                // it won't be exactly 0 but should be in the right ballpark
+                REQUIRE(ref_alt_out < radar_alt);  // below radar
+                // slant range > ground range (target below radar)
+                REQUIRE(ref_sr >= ref_gr);
+
+                double ref_az_d = ref_az_rad * 180.0 / M_PI;
+                if (ref_az_d < 0) ref_az_d += 360.0;
+
+                ref_azms_deg.push_back(ref_az_d);
+                ref_ground_ranges.push_back(ref_gr);
+
+                // Simulate radar measurement: use slant range (what the radar actually measures)
+                // then compute ground range from slant range + target altitude
+                // This mimics what the real code does in radarSlant2LocalCart
+                double tst_slant_range = ref_sr;
+
+                // Compute the "measured" ground range as the radar would see it
+                // (from slant range, assuming target at given altitude)
+                double tst_gr_raw, tst_adj_alt;
+                cs.getGroundRange(tst_slant_range, true, target_wgs84_height,
+                                  tst_gr_raw, tst_adj_alt);
+
+                // Apply bias to the ground range
+                double tst_az_d = ref_az_d + true_az_bias_deg;
+                double tst_gr = tst_gr_raw * (1.0 + true_range_gain) + true_range_bias_m;
+
+                tst_azms_deg.push_back(tst_az_d);
+                tst_ground_ranges.push_back(tst_gr);
+
+                // Convert biased measurement back to a WGS-84 position
+                // Use radarSlant2LocalCart with biased values (no bias correction applied)
+                double tst_az_rad = tst_az_d * M_PI / 180.0;
+                double tst_lx = tst_gr * std::sin(tst_az_rad);
+                double tst_ly = tst_gr * std::cos(tst_az_rad);
+                double tst_lz = tst_slant_range * std::sin(
+                    cs.rs2gElevation(target_wgs84_height, tst_slant_range));
+
+                double tst_ex, tst_ey, tst_ez;
+                cs.localCart2Geocentric(tst_lx, tst_ly, tst_lz, tst_ex, tst_ey, tst_ez);
+
+                double tst_lat, tst_lon, tst_h;
+                ok = cs.geocentric2Geodesic(tst_ex, tst_ey, tst_ez, tst_lat, tst_lon, tst_h);
+                REQUIRE(ok);
+                tst_positions.push_back({tst_lat, tst_lon});
+            }
+        }
+
+        size_t n = ref_positions.size();
+        REQUIRE(n == 192);
+
+        // --- Step 1: Estimate biases ---
+
+        auto az_result = estimateAzimuthBias(ref_azms_deg, tst_azms_deg);
+        REQUIRE(az_result.valid);
+        REQUIRE(az_result.azimuth_bias_deg == Approx(true_az_bias_deg).epsilon(0.01));
+
+        auto rg_result = estimateRangeBiasGain(tst_ground_ranges, ref_ground_ranges);
+        REQUIRE(rg_result.valid);
+        REQUIRE(rg_result.range_bias_m == Approx(true_range_bias_m).epsilon(0.01));
+        REQUIRE(rg_result.range_gain   == Approx(true_range_gain).epsilon(0.01));
+
+        // --- Step 2: Apply bias correction ---
+
+        RadarBiasInfo estimated_bias;
+        estimated_bias.azimuth_bias_valid_ = true;
+        estimated_bias.azimuth_bias_deg_   = az_result.azimuth_bias_deg;
+        estimated_bias.range_bias_valid_   = true;
+        estimated_bias.range_bias_m_       = rg_result.range_bias_m;
+        estimated_bias.range_gain_         = rg_result.range_gain;
+
+        std::vector<Position> cor_positions;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            // Use the biased slant range to reconstruct the corrected position
+            // via the projection's bias-corrected path
+            double tst_az_rad = tst_azms_deg[i] * M_PI / 180.0;
+
+            // The radarSlant2LocalCart with bias does:
+            //   ground_range = slant * cos(elev)
+            //   ground_range_corrected = (ground_range - bias) / (1 + gain)
+            //   azimuth_corrected = azimuth - azimuth_bias
+            // We pass the biased ground range as slant_range since for the bias
+            // correction path, we're already working with ground ranges
+            double cor_lx, cor_ly, cor_lz;
+            cs.radarSlant2LocalCart(tst_az_rad, tst_ground_ranges[i],
+                                    true, target_wgs84_height, estimated_bias,
+                                    cor_lx, cor_ly, cor_lz);
+
+            double cor_ex, cor_ey, cor_ez;
+            cs.localCart2Geocentric(cor_lx, cor_ly, cor_lz, cor_ex, cor_ey, cor_ez);
+
+            double cor_lat, cor_lon, cor_h;
+            cs.geocentric2Geodesic(cor_ex, cor_ey, cor_ez, cor_lat, cor_lon, cor_h);
+            cor_positions.push_back({cor_lat, cor_lon});
+        }
+
+        // --- Step 3: Compute errors ---
+
+        std::vector<double> org_errors, cor_errors;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            org_errors.push_back(haversineDistance(
+                tst_positions[i].lat_deg, tst_positions[i].lon_deg,
+                ref_positions[i].lat_deg, ref_positions[i].lon_deg));
+
+            cor_errors.push_back(haversineDistance(
+                cor_positions[i].lat_deg, cor_positions[i].lon_deg,
+                ref_positions[i].lat_deg, ref_positions[i].lon_deg));
+        }
+
+        auto org_stats = getMedianStatistics(org_errors);
+        auto cor_stats = getMedianStatistics(cor_errors);
+
+        double org_median = std::get<0>(org_stats);
+        double cor_median = std::get<0>(cor_stats);
+
+        INFO("org median=" << org_median << " cor median=" << cor_median);
+
+        // original error must be significant
+        REQUIRE(org_median > 10.0);
+
+        // corrected error must be much smaller than original
+        REQUIRE(cor_median < org_median);
+        // Allow slightly larger tolerance than flat test due to altitude effects
+        REQUIRE(cor_median < 20.0);
+    }
+}

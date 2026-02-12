@@ -27,7 +27,7 @@ public:
                                    double altitude_m);
 
 
-    double rs2gElevation(double H, double rho);
+    double rs2gElevation(double H_m, double rho_m);
 
     void getGroundRange(double slant_range_m,
                           bool has_altitude, double altitude_m,
@@ -46,7 +46,7 @@ protected:
     double longitude_deg_{0};
     double altitude_m_{0};
 
-    double h_r_;                 // height of selected radar
+    double h_r_m_;               // height of selected radar in meters
     double R_T_;                 // earth radius of tangent sphere at the selected radar
 
 };
