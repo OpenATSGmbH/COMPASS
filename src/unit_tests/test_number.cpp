@@ -140,3 +140,120 @@ TEST_CASE("convertLongitude", "[number][conversion]")
     REQUIRE(ok);
     REQUIRE(lon == Approx(-8.57376).epsilon(1e-4));
 }
+
+// --- Azimuth Bias Estimation ---
+
+TEST_CASE("estimateAzimuthBias zero bias", "[number][bias]")
+{
+    std::vector<double> ref = {10.0, 50.0, 120.0, 200.0, 300.0};
+    std::vector<double> tst = {10.0, 50.0, 120.0, 200.0, 300.0};
+
+    auto result = estimateAzimuthBias(ref, tst);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(0.0).margin(1e-10));
+}
+
+TEST_CASE("estimateAzimuthBias known bias", "[number][bias]")
+{
+    // bias = tst - ref = +2.0 deg
+    std::vector<double> ref = {10.0, 50.0, 120.0, 200.0, 300.0};
+    std::vector<double> tst = {12.0, 52.0, 122.0, 202.0, 302.0};
+
+    auto result = estimateAzimuthBias(ref, tst);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(2.0).epsilon(1e-6));
+}
+
+TEST_CASE("estimateAzimuthBias wraparound", "[number][bias]")
+{
+    // bias of +1.5 deg near 0/360 boundary
+    std::vector<double> ref = {359.0, 0.5, 1.0, 358.0};
+    std::vector<double> tst = {0.5,   2.0, 2.5, 359.5};
+
+    auto result = estimateAzimuthBias(ref, tst);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(1.5).epsilon(1e-6));
+}
+
+TEST_CASE("estimateAzimuthBias outlier filtering", "[number][bias]")
+{
+    // 4 good pairs with +1.0 bias, 1 outlier with 50 deg diff
+    std::vector<double> ref = {10.0, 50.0, 120.0, 200.0, 300.0};
+    std::vector<double> tst = {11.0, 51.0, 121.0, 201.0, 350.0}; // last is outlier
+
+    auto result = estimateAzimuthBias(ref, tst, 30.0);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(1.0).epsilon(1e-6));
+}
+
+TEST_CASE("estimateAzimuthBias too high", "[number][bias]")
+{
+    // all diffs are ~35 deg, exceeding max_bias_deg=30
+    std::vector<double> ref = {10.0, 50.0, 120.0};
+    std::vector<double> tst = {45.0, 85.0, 155.0};
+
+    auto result = estimateAzimuthBias(ref, tst, 40.0, 30.0);
+    REQUIRE_FALSE(result.valid);
+}
+
+TEST_CASE("estimateAzimuthBias empty input", "[number][bias]")
+{
+    auto result = estimateAzimuthBias({}, {});
+    REQUIRE_FALSE(result.valid);
+}
+
+// --- Range Bias/Gain Estimation ---
+
+TEST_CASE("estimateRangeBiasGain zero bias", "[number][bias]")
+{
+    std::vector<double> ranges = {10000.0, 20000.0, 30000.0, 50000.0, 80000.0};
+
+    auto result = estimateRangeBiasGain(ranges, ranges);
+    REQUIRE(result.valid);
+    REQUIRE(result.range_bias_m == Approx(0.0).margin(1.0));
+    REQUIRE(result.range_gain == Approx(0.0).margin(1e-6));
+}
+
+TEST_CASE("estimateRangeBiasGain known bias and gain", "[number][bias]")
+{
+    // tst = ref * (1 + gain) + bias
+    // with gain = 0.01, bias = 50.0
+    double gain = 0.01;
+    double bias = 50.0;
+
+    std::vector<double> ref_ranges = {10000.0, 20000.0, 30000.0, 50000.0, 80000.0};
+    std::vector<double> tst_ranges;
+
+    for (double r : ref_ranges)
+        tst_ranges.push_back(r * (1.0 + gain) + bias);
+
+    auto result = estimateRangeBiasGain(tst_ranges, ref_ranges);
+    REQUIRE(result.valid);
+    REQUIRE(result.range_bias_m == Approx(bias).epsilon(1e-4));
+    REQUIRE(result.range_gain == Approx(gain).epsilon(1e-6));
+}
+
+TEST_CASE("estimateRangeBiasGain outlier filtering", "[number][bias]")
+{
+    // 4 good pairs (no bias), 1 outlier with 2x range ratio
+    std::vector<double> ref = {10000.0, 20000.0, 30000.0, 50000.0, 80000.0};
+    std::vector<double> tst = {10000.0, 20000.0, 30000.0, 50000.0, 160000.0}; // last is 2x
+
+    auto result = estimateRangeBiasGain(tst, ref, 0.1);
+    REQUIRE(result.valid);
+    REQUIRE(result.range_bias_m == Approx(0.0).margin(1.0));
+    REQUIRE(result.range_gain == Approx(0.0).margin(1e-6));
+}
+
+TEST_CASE("estimateRangeBiasGain empty input", "[number][bias]")
+{
+    auto result = estimateRangeBiasGain({}, {});
+    REQUIRE_FALSE(result.valid);
+}
+
+TEST_CASE("estimateRangeBiasGain single point", "[number][bias]")
+{
+    // need at least 2 points for linear regression
+    auto result = estimateRangeBiasGain({10000.0}, {10000.0});
+    REQUIRE_FALSE(result.valid);
+}
