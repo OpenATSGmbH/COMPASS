@@ -241,6 +241,10 @@ target_compile_definitions(compass PRIVATE
 
 # target_link_options(compass PRIVATE -rdynamic)
 
+# unit tests
+enable_testing()
+add_subdirectory(src/unit_tests)
+
 # installation stuff
 
 message("Installing using prefix: ${CMAKE_INSTALL_PREFIX}")
