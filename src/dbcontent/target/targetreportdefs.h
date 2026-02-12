@@ -253,7 +253,10 @@ struct ReconstructorInfo : public BaseInfo
     bool data_source_is_ground_only_ {false};
 
     // adsb
-    boost::optional<unsigned int> mops_;
+    boost::optional<unsigned char> mops_;
+    boost::optional<unsigned char> nacp_;
+    boost::optional<unsigned char> nucp_nic_;
+
     boost::optional<unsigned int> ecat_;
 
     static const double GroundSpeedMin;
@@ -273,6 +276,8 @@ struct ReconstructorInfo : public BaseInfo
     bool isMoving() const;   // true if unknown
 
     bool doNotUsePosition() const;
+
+    bool isRiskyADSB() const;
 };
 
 // tmp list
