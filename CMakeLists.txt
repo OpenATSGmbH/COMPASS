@@ -245,6 +245,10 @@ target_compile_definitions(compass PRIVATE
 enable_testing()
 add_subdirectory(src/unit_tests)
 
+IF (EXPERIMENTAL_SRC)
+    add_subdirectory(experimental_src/unit_tests)
+ENDIF()
+
 # installation stuff
 
 message("Installing using prefix: ${CMAKE_INSTALL_PREFIX}")
