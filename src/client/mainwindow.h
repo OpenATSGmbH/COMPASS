@@ -23,6 +23,8 @@
 
 #include <memory>
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+
 class QLabel;
 class QPushButton;
 class QTabWidget;
@@ -58,6 +60,7 @@ public slots:
     void quitSlot();
 
     void loadButtonSlot();
+    void loadingStartedSlot();
     void loadingDoneSlot();
 
     void livePauseResumeSlot();
@@ -173,6 +176,7 @@ protected:
     QMenu* ui_menu_ {nullptr};
 
     bool loading_ {false};
+    boost::posix_time::ptime loading_start_time_;
 
     QLabel* db_label_ {nullptr};
     QLabel* status_label_ {nullptr};

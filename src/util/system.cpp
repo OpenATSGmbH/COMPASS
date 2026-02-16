@@ -77,6 +77,30 @@ float getFreeRAMinGB()
     return 0;  // nothing found
 }
 
+float getProcessRAMinGB()
+{
+    std::string token;
+    std::ifstream file("/proc/self/status");
+    while (file >> token)
+    {
+        if (token == "VmRSS:")
+        {
+            unsigned long mem;
+
+            if (file >> mem)  // returns in kB
+            {
+                return mem / megabyte;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+    return 0;
+}
+
 std::string exec(const std::string& cmd)
 {
     std::array<char, 128> buffer;

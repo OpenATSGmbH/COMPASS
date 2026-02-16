@@ -28,6 +28,7 @@ namespace Utils
 namespace System
 {
 extern float getFreeRAMinGB();
+extern float getProcessRAMinGB();
 
 extern std::string exec(const std::string& cmd);
 
