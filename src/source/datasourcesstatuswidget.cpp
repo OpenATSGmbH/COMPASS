@@ -570,7 +570,7 @@ void DataSourcesStatusWidget::dataLoaded()
                 continue;
             }
 
-            auto& ts = ts_vec.getRef(i);
+            const auto& ts = ts_vec.getRef(i);
 
             //!timestamps are expected to be ordered!
             traced_assert(last_ts.is_not_a_date_time() || ts <= last_ts);

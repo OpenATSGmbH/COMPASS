@@ -917,5 +917,5 @@ void JSONDataMapping::pushBackValue(const nlohmann::json& val_ref, NullableVecto
         array_list.set(row_cnt, list);
     }
     else
-        array_list.getRef(row_cnt).push_back(val_ref);
+        array_list.pushBack(row_cnt, val_ref);
 }

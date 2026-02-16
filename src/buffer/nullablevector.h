@@ -51,9 +51,7 @@ public:
 
     const T get(unsigned int index) const;
 
-    //template<typename T_ = T, typename std::enable_if<!std::is_integral<T_>::value>::type* = nullptr>
-    //T_& getRef(unsigned int index)
-    T& getRef(unsigned int index)
+    const T& getRef(unsigned int index) const
     {
         logdbg2 << property_.name() << ": index " << index;
         if (BUFFER_PEDANTIC_CHECKING)
@@ -86,6 +84,8 @@ public:
     void append(unsigned int index, T value);
     void appendFromFormat(unsigned int index, const std::string& format,
                           const std::string& value_str);
+
+    void pushBack(unsigned int index, const T& value);
 
     void setNull(unsigned int index);
     void setAllNull();
@@ -393,6 +393,14 @@ void NullableVector<T>::appendFromFormat(unsigned int index, const std::string& 
     }
 
     append(index, value);
+}
+
+template <class T>
+void NullableVector<T>::pushBack(unsigned int index, const T& value)
+{
+    T tmp = get(index);
+    tmp.push_back(value);
+    set(index, std::move(tmp));
 }
 
 template <class T>

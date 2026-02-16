@@ -197,16 +197,15 @@ TEST_CASE("NullableVector<int> setAll and setAllNull", "[nullablevector][int]")
     REQUIRE(nv.isAlwaysNull());
 }
 
-TEST_CASE("NullableVector<int> getRef", "[nullablevector][int]")
+TEST_CASE("NullableVector<int> getRef returns const ref", "[nullablevector][int]")
 {
     Buffer buf = makeBuffer("val", PropertyDataType::INT);
     auto& nv = buf.get<int>("val");
 
     nv.set(0, 5);
-    int& ref = nv.getRef(0);
+    const int& ref = nv.getRef(0);
     REQUIRE(ref == 5);
-    ref = 10;
-    REQUIRE(nv.get(0) == 10);
+    REQUIRE(&ref == &nv.getRef(0)); // same address — true reference
 }
 
 // ============================================================================

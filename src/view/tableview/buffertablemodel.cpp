@@ -369,7 +369,7 @@ bool BufferTableModel::getSpecialRepresentation(std::string& repr,
         if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))
             return false;
 
-        auto& contrib_receivers = buffer.get<nlohmann::json>(property_name).getRef(buffer_idx);
+        const auto& contrib_receivers = buffer.get<nlohmann::json>(property_name).getRef(buffer_idx);
 
         //valid receivers?
         if (!contrib_receivers.is_array() || contrib_receivers.empty())

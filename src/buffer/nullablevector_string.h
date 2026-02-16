@@ -45,6 +45,7 @@ public:
     void clearData();
 
     const std::string get(unsigned int index) const;
+    const std::string& getRef(unsigned int index) const;
     const std::string getAsString(unsigned int index) const;
 
     void set(unsigned int index, std::string value);
@@ -159,6 +160,25 @@ inline const std::string NullableVector<std::string>::get(unsigned int index) co
     if (isNull(index))
     {
         logerr << property_.name() << ": get: index " << index << " is null";
+        traced_assert(false);
+    }
+
+    return dictionary_[indices_[index]];
+}
+
+inline const std::string& NullableVector<std::string>::getRef(unsigned int index) const
+{
+    logdbg2 << property_.name() << ": index " << index;
+    if (BUFFER_PEDANTIC_CHECKING)
+    {
+        traced_assert(indices_.size() <= buffer_.size_);
+        traced_assert(null_flags_.size() <= buffer_.size_);
+        traced_assert(index < indices_.size());
+    }
+
+    if (isNull(index))
+    {
+        logerr << property_.name() << ": getRef: index " << index << " is null";
         traced_assert(false);
     }
 

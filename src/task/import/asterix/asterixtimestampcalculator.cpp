@@ -114,16 +114,17 @@ void ASTERIXTimestampCalculator::calculate(
             {
                 if (!tod_vec.isNull(index))
                 {
-                    float& tod_ref = tod_vec.getRef(index);
+                    float tod_val = tod_vec.get(index);
 
                     if (buf_it.first == "CAT062" && !tod0_cat062.has_value())
-                        tod0_cat062 = tod_ref;
+                        tod0_cat062 = tod_val;
                     else if (buf_it.first == "CAT063" && !tod0_cat063.has_value())
-                        tod0_cat063 = tod_ref;
+                        tod0_cat063 = tod_val;
 
                     if (buf_it.first == "CAT063" && tod0_cat062.has_value() && tod0_cat063.has_value())
                     {
-                        tod_ref += tod0_cat062.value() - tod0_cat063.value();
+                        tod_val += tod0_cat062.value() - tod0_cat063.value();
+                        tod_vec.set(index, tod_val);
                     }
                 }
             }
@@ -266,18 +267,20 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
         {
             if (!tod_vec.isNull(index))
             {
-                float& tod_ref = tod_vec.getRef(index);
+                float tod_val = tod_vec.get(index);
 
-                tod_ref += override_tod_offset;
+                tod_val += override_tod_offset;
 
                 // check for out-of-bounds because of midnight-jump
-                while (tod_ref < 0.0f)
-                    tod_ref += tod_24h;
-                while (tod_ref > tod_24h)
-                    tod_ref -= tod_24h;
+                while (tod_val < 0.0f)
+                    tod_val += tod_24h;
+                while (tod_val > tod_24h)
+                    tod_val -= tod_24h;
 
-                traced_assert(tod_ref >= 0.0f);
-                traced_assert(tod_ref <= tod_24h);
+                traced_assert(tod_val >= 0.0f);
+                traced_assert(tod_val <= tod_24h);
+
+                tod_vec.set(index, tod_val);
             }
         }
     }
