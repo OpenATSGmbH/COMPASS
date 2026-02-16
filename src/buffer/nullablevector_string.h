@@ -243,6 +243,11 @@ inline void NullableVector<std::string>::append(unsigned int index, std::string 
             resizeNullTo(index + 1);
 
         resizeIndicesTo(index + 1);
+
+        // newly created entry — just set the value
+        indices_[index] = getOrInsert(value);
+        unsetNull(index);
+        return;
     }
 
     if (isNull(index))
