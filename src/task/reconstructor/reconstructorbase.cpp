@@ -27,10 +27,10 @@
 #include "reconstructorassociatorbase.h"
 
 #include "taskmanager.h"
-#include "report/report.h"
-#include "report/section.h"
-#include "report/sectioncontenttext.h"
-#include "report/sectioncontenttable.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttext.h"
+#include "task/result/report/sectioncontenttable.h"
 
 #include "kalman_chain.h"
 #include "kalman_online_tracker.h"

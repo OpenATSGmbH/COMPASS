@@ -3,7 +3,7 @@ include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/allbuffertablemodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/allbuffertablewidget.h"

@@ -1,3 +1,4 @@
+add_library(compass_task "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/assoc/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/calc/CMakeLists.txt")
@@ -10,7 +11,7 @@ include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/taskdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/taskmanager.h"
@@ -20,4 +21,18 @@ target_sources(compass
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/taskmanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asynctask.cpp"
+)
+
+target_include_directories(compass_task PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+
+target_link_libraries(compass_task
+    PUBLIC
+        compass_core
+        compass_db
+        compass_reconstruction
+        compass_import
+        compass_gui
+        compass_filter
+        NemaTode::NemaTode
+        ${LibArchive_LIBRARIES}
 )

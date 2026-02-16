@@ -16,11 +16,11 @@
  */
 
 #include "reportwidget.h"
-#include "report/treeitem.h"
-#include "report/report.h"
-#include "report/section.h"
-#include "report/sectioncontentfigure.h"
-#include "report/sectioncontenttable.h"
+#include "task/result/report/treeitem.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontentfigure.h"
+#include "task/result/report/sectioncontenttable.h"
 #include "files.h"
 #include "logger.h"
 #include "popupmenu.h"

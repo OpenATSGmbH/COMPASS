@@ -4,6 +4,7 @@ message("  Path: ${COMPASS_PATH}")
 SET(CMAKE_EXPORT_COMPILE_COMMANDS, ON)
 
 cmake_minimum_required(VERSION 3.3)
+cmake_policy(SET CMP0079 NEW)
 
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
@@ -55,7 +56,7 @@ message("  Boost_LIBRARIES: ${Boost_LIBRARIES}")
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS -DBOOST_GEOMETRY_DISABLE_DEPRECATED_03_WARNING") # suppress internal boost deprecated warnings
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH};${COMPASS_PATH}/cmake_modules)
-message("  CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}") 
+message("  CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};/usr/local/lib/cmake/;/usr/lib/x86_64-linux-gnu/)
 message("  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
@@ -67,7 +68,7 @@ message("  SQLite3_LIBRARY_DIR: ${SQLITE3_LIBRARIES}")
 
 find_package ( LOG4CPP REQUIRED )
 message("  LOG4CPP_INCLUDE_DIR: ${LOG4CPP_INCLUDE_DIR}")
-message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}") 
+message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}")
 
 find_package ( GDAL REQUIRED )
 message("  GDAL_INCLUDE_DIRS: ${GDAL_INCLUDE_DIRS}")
@@ -127,55 +128,9 @@ message("  GeographicLib_LIBRARIES: ${GeographicLib_LIBRARIES}")
 #find_package(Parquet REQUIRED)
 find_package(DuckDB REQUIRED)
 
-add_library(compass "")
-
-# Enable C++ warnings
-# target_compile_options(compass PRIVATE
-#     -Wall
-#     -Wextra
-#     -Wpedantic
-#     -Wshadow
-#     -Wconversion
-# )
-
-# Debug + sanitizers
-# target_compile_options(compass PRIVATE
-#     -g
-#     -O0
-#     -fsanitize=address,undefined
-#     -fno-omit-frame-pointer
-# )
-
-# target_link_options(compass PRIVATE
-#     -fsanitize=address,undefined
-# )
-
 message("Install path: ${CMAKE_INSTALL_PREFIX}")
 
-include(lib/CMakeLists.txt)
-include(src/CMakeLists.txt)
-
-set (EXPERIMENTAL_SRC true)
-message("Experimental source: ${EXPERIMENTAL_SRC}")
-
-IF (EXPERIMENTAL_SRC)
-    IF(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/experimental_src")
-        MESSAGE(STATUS "Experimental source found")
-    ELSE()
-        MESSAGE(STATUS "Experimental source not found found, deactivating")
-        set (EXPERIMENTAL_SRC false)
-    ENDIF()
-ENDIF()
-
-IF (EXPERIMENTAL_SRC)
-    MESSAGE(STATUS "Including experimental source")
-    include(experimental_src/CMakeLists.txt)
-ENDIF()
-
-configure_file(src/util/global.h.in include/global.h)
-
-# includes and library linking
-
+# Global include directories (for all targets)
 include_directories (
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -205,41 +160,106 @@ link_directories(
     ${jASTERIX_LIBRARIES}
     )
 
-target_link_libraries ( compass
-    Qt5::Widgets
-    Qt5::Core
-    Qt5::OpenGL
-    Qt5::Charts
-    Qt5::Test
-    ${jASTERIX_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
-    ${GDAL_LIBRARIES}
-    ${SQLITE3_LIBRARIES}
-    ${LibArchive_LIBRARIES}
-    ${JSONCPP_LIBRARY}
-    ${PCAP_LIBRARY}
-    ${TBB_LIBRARIES}
-    TBB::tbb
-    ${OPENSSL_CRYPTO_LIBRARY}
-    NemaTode::NemaTode
-    Threads::Threads
-    ${OPENSCENEGRAPH_LIBRARIES}
-    #${OSGQT_LIBRARIES}
-    ${OSGEARTH_LIBRARY}
-    ${GeographicLib_LIBRARIES}
-    #Arrow::arrow_static 
-    #Parquet::parquet_static
-    ${DUCKDB_LIBRARIES}
-    )
+# Third-party headers
+include(lib/CMakeLists.txt)
 
+# Keep src/ include path for backward compatibility
+include(src/CMakeLists.txt)
+
+# Collect ALL subdirectories under src/ to replicate old monolithic include behavior.
+# The old build used include() which kept all include_directories() in root scope.
+# With add_subdirectory(), we need to explicitly add them globally.
+file(GLOB_RECURSE _all_src_headers "src/*.h")
+if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/experimental_src")
+    file(GLOB_RECURSE _all_exp_headers "experimental_src/*.h")
+    list(APPEND _all_src_headers ${_all_exp_headers})
+endif()
+set(_all_src_dirs "")
+foreach(_f ${_all_src_headers})
+    get_filename_component(_d "${_f}" DIRECTORY)
+    list(APPEND _all_src_dirs "${_d}")
+endforeach()
+list(REMOVE_DUPLICATES _all_src_dirs)
+list(SORT _all_src_dirs)
+include_directories(
+    ${_all_src_dirs}
+    # Library root dirs (may not contain .h files directly but needed for
+    # path-prefixed includes like #include "dbcontent/variable/variable.h")
+    "${CMAKE_CURRENT_LIST_DIR}/src/core"
+    "${CMAKE_CURRENT_LIST_DIR}/src/db"
+    "${CMAKE_CURRENT_LIST_DIR}/src/reconstruction"
+    "${CMAKE_CURRENT_LIST_DIR}/src/import"
+    "${CMAKE_CURRENT_LIST_DIR}/src/gui"
+    "${CMAKE_CURRENT_LIST_DIR}/src/filter"
+    "${CMAKE_CURRENT_LIST_DIR}/src/task"
+    "${CMAKE_CURRENT_LIST_DIR}/src/eval"
+    "${CMAKE_CURRENT_LIST_DIR}/src/view"
+    "${CMAKE_CURRENT_LIST_DIR}/src/app"
+)
+
+# Component libraries (order matters: dependencies first)
+add_subdirectory(src/core)
+add_subdirectory(src/db)
+add_subdirectory(src/reconstruction)
+add_subdirectory(src/import)
+add_subdirectory(src/gui)
+add_subdirectory(src/filter)
+add_subdirectory(src/task)
+add_subdirectory(src/eval)
+add_subdirectory(src/view)
+
+# Aggregation library for experimental_src backward compatibility
+# experimental_src still adds target_sources(compass ...) so we keep this target
+add_library(compass "")
+target_link_libraries(compass
+    PUBLIC
+        compass_core
+        compass_db
+        compass_reconstruction
+        compass_import
+        compass_gui
+        compass_filter
+        compass_task
+        compass_eval
+        compass_view
+        Qt5::Widgets
+        Qt5::Core
+        Qt5::OpenGL
+        Qt5::Charts
+        Qt5::Test
+        ${OPENSCENEGRAPH_LIBRARIES}
+        ${OSGEARTH_LIBRARY}
+)
 target_compile_definitions(compass PRIVATE
     BOOST_STACKTRACE_USE_BACKTRACE
-    #BOOST_ENABLE_ASSERT_HANDLER
     BOOST_STACKTRACE_LINK
 )
 
-# target_link_options(compass PRIVATE -rdynamic)
+# Experimental source (adds to 'compass' target)
+set (EXPERIMENTAL_SRC true)
+message("Experimental source: ${EXPERIMENTAL_SRC}")
+
+IF (EXPERIMENTAL_SRC)
+    IF(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/experimental_src")
+        MESSAGE(STATUS "Experimental source found")
+    ELSE()
+        MESSAGE(STATUS "Experimental source not found found, deactivating")
+        set (EXPERIMENTAL_SRC false)
+    ENDIF()
+ENDIF()
+
+IF (EXPERIMENTAL_SRC)
+    MESSAGE(STATUS "Including experimental source")
+    include(experimental_src/CMakeLists.txt)
+ENDIF()
+
+configure_file(src/core/util/global.h.in include/global.h)
+
+# Application executables
+add_subdirectory(src/app)
+
+# Link compass_app against the aggregation library (includes experimental sources)
+target_link_libraries(compass_app PUBLIC compass)
 
 # unit tests
 enable_testing()
@@ -265,21 +285,6 @@ include (InstallRequiredSystemLibraries)
 set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 include (CPack)
-
-# add a target to generate API documentation with Doxygen
-#find_package(Doxygen)
-#if(DOXYGEN_FOUND)
-#    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in @ONLY)
-#    add_custom_target(doc
-#        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile
-#        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
-#        COMMENT "Generating API documentation with Doxygen" VERBATIM
-#        )
-#endif(DOXYGEN_FOUND)
-
-#file(GLOB DOT ".*")
-#file(GLOB TILD "*~")
-#file(GLOB TEMP "*.cmake")
 
 message("Installing handler")
 

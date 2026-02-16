@@ -4,7 +4,7 @@ include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/viewabledataconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewpoint.h"

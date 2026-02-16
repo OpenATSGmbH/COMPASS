@@ -1,9 +1,10 @@
+add_library(compass_filter "")
 
 include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_filter
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/dbfilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/filtermanager.h"
@@ -71,4 +72,11 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilterwidget.cpp"
 )
 
+target_include_directories(compass_filter PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 
+target_link_libraries(compass_filter
+    PUBLIC
+        compass_core
+        compass_db
+        compass_gui
+)

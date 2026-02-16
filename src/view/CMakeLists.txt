@@ -1,3 +1,4 @@
+add_library(compass_view "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/tableview/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/histogramview/CMakeLists.txt")
@@ -10,7 +11,7 @@ include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/viewmanager.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewmanagerwidget.h"
@@ -23,4 +24,13 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainerwidget.cpp"
 )
 
+target_include_directories(compass_view PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 
+target_link_libraries(compass_view
+    PUBLIC
+        compass_core
+        compass_db
+        compass_gui
+        compass_task
+        compass_eval
+)
