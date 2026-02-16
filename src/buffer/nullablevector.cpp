@@ -105,39 +105,6 @@ void NullableVector<bool>::append(unsigned int index, bool value)
 }
 
 template <>
-void NullableVector<std::string>::append(unsigned int index, std::string value)
-{
-    logdbg2 << property_.name() << ": index " << index << " value '"
-           << value << "'";
-
-    if (BUFFER_PEDANTIC_CHECKING)
-    {
-        traced_assert(data_.size() <= buffer_.size_);
-        traced_assert(null_flags_.size() <= buffer_.size_);
-    }
-
-    if (index >= data_.size())  // allocate new stuff, fill all new with not null
-    {
-        if (index != data_.size())  // some where left out
-            resizeNullTo(index + 1);
-
-        resizeDataTo(index + 1);
-    }
-
-    if (BUFFER_PEDANTIC_CHECKING)
-        traced_assert(index < data_.size());
-
-    if (data_.at(index).size())
-        data_.at(index) += ";" + value;
-    else
-        data_.at(index) = value;
-
-    unsetNull(index);
-
-    // logdbg2 << "size " << size_ << " max_size " << max_size_;
-}
-
-template <>
 nlohmann::json NullableVector<boost::posix_time::ptime>::asJSON(unsigned int max_size)
 {
     nlohmann::json list = nlohmann::json::array();

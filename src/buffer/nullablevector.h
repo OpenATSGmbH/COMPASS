@@ -154,6 +154,8 @@ private:
     NullableVector(Property& property, Buffer& buffer);
 };
 
+#include "nullablevector_string.h"
+
 template <class T>
 NullableVector<T>::NullableVector(Property& property, Buffer& buffer)
     : property_(property), buffer_(buffer)
@@ -1337,9 +1339,6 @@ NullableVector<bool>& NullableVector<bool>::operator*=(double factor);
 
 template <>
 void NullableVector<bool>::append(unsigned int index, bool value);
-
-template <>
-void NullableVector<std::string>::append(unsigned int index, std::string value);
 
 template <>
 nlohmann::json NullableVector<boost::posix_time::ptime>::asJSON(unsigned int max_size);

@@ -774,7 +774,11 @@ void ASTERIXPostprocessJob::doObfuscate()
                     continue;
 
                 // obfuscate
-                obfuscateACID(var_vec.getRef(cnt));
+                {
+                    std::string tmp = var_vec.get(cnt);
+                    obfuscateACID(tmp);
+                    var_vec.set(cnt, tmp);
+                }
             }
         }
     }

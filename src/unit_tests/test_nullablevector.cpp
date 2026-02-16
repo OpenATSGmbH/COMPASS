@@ -396,18 +396,6 @@ TEST_CASE("NullableVector<string> null semantics", "[nullablevector][string]")
     REQUIRE(nv.isNull(3));
 }
 
-TEST_CASE("NullableVector<string> getRef", "[nullablevector][string]")
-{
-    Buffer buf = makeBuffer("sval", PropertyDataType::STRING);
-    auto& nv = buf.get<std::string>("sval");
-
-    nv.set(0, "original");
-    std::string& ref = nv.getRef(0);
-    REQUIRE(ref == "original");
-    ref = "modified";
-    REQUIRE(nv.get(0) == "modified");
-}
-
 // ============================================================================
 // NullableVector<nlohmann::json>
 // ============================================================================
