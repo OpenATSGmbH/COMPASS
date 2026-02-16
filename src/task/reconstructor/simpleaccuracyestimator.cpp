@@ -31,18 +31,9 @@ void SimpleAccuracyEstimator::validate (
 {
     traced_assert(reconstructor_);
 
-    if (tr.dbcont_id_ == 21)
-    {
-        boost::optional<unsigned char> mops_version = reconstructor_->accessor(tr).mopsVersion(tr.buffer_index_);
+    if (tr.isRiskyADSB())
+        tr.invalidated_pos_ = true;
 
-        if (mops_version && *mops_version == 0)
-            tr.invalidated_pos_ = true;
-
-        boost::optional<bool> pos_check_failed = reconstructor_->accessor(tr).posCheckFailed(tr.buffer_index_);
-
-        if (pos_check_failed && *pos_check_failed)
-            tr.invalidated_pos_ = true;
-    }
 }
 
 dbContent::targetReport::PositionAccuracy SimpleAccuracyEstimator::positionAccuracy (

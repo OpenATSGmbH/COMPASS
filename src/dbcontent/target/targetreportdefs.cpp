@@ -320,6 +320,29 @@ std::string PositionAccuracy::asStr() const
            +" cov " + String::doubleToStringPrecision(xy_cov_, 2);
 }
 
+bool ReconstructorInfo::isRiskyADSB() const
+{
+    if (dbcont_id_ != 21)
+        return false;
+    
+    if (!mops_) // no mops
+        return true;
+
+    if (*mops_ == 0) // mops risky
+        return true;
+
+    if (!nacp_ && !nucp_nic_) // no quality info
+        return true;
+
+    if (nacp_) // got the good stuff
+        return *nacp_ == 0;
+
+    if (nucp_nic_)
+        return *nucp_nic_ == 0;
+
+    return true; // got no stuff
+}
+
 } // namespace TargetReport
 
 } // namespace dbContent

@@ -1162,8 +1162,16 @@ void ReconstructorBase::createTargetReports()
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
                 info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
+                // adsb stuff
                 info.mops_ = tgt_acc.mopsVersion(cnt);
+                info.nacp_ = tgt_acc.nacp(cnt);
+                info.nucp_nic_ = tgt_acc.nucp(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
+
+                boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
+
+                if (pos_check_failed && *pos_check_failed)
+                    info.invalidated_pos_ = true;
 
                 // insert info
                 target_reports_[record_num] = info;

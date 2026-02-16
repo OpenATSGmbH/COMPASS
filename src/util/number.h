@@ -101,6 +101,32 @@ extern std::pair<unsigned int, unsigned int> computeGeoWindowResolution(
 extern double convertLatitude(const std::string& latStr, bool& ok);
 extern double convertLongitude(const std::string& lonStr, bool& ok);
 
+struct AzimuthBiasResult
+{
+    bool valid {false};
+    double azimuth_bias_deg {0};
+};
+
+extern AzimuthBiasResult estimateAzimuthBias(
+    const std::vector<double>& ref_azimuths_deg,
+    const std::vector<double>& tst_azimuths_deg,
+    double max_diff_deg = 30.0,
+    double max_bias_deg = 30.0);
+
+struct RangeBiasGainResult
+{
+    bool valid {false};
+    double range_bias_m {0};
+    double range_gain {0};
+};
+
+extern RangeBiasGainResult estimateRangeBiasGain(
+    const std::vector<double>& tst_ranges_m,
+    const std::vector<double>& ref_ranges_m,
+    double max_range_ratio_diff = 0.1,
+    double max_gain = 0.05,
+    double max_bias_m = 5000.0);
+
 //template <typename T>
 //double getStatistics(const std::vector<>);
 

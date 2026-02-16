@@ -140,3 +140,5 @@ void AccuracyEstimatorBase::printStatistics (
     loginf << name << " SRC " << name_ << ": "  << " avg " << String::doubleToStringPrecision(mean, 2)
            << " stddev " << String::doubleToStringPrecision(stdev, 2) << " min " << min << " max " << max;
 }
+
+

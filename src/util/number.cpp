@@ -24,6 +24,7 @@
 #include <QString>
 
 #include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include <cmath>
 #include <stdlib.h>
@@ -667,6 +668,127 @@ double convertLongitude(const std::string& lon_str, bool& ok) {
     ok = true;
     return (hemisphere == 'W') ? -decimal_degrees : decimal_degrees;
 }
+AzimuthBiasResult estimateAzimuthBias(
+    const std::vector<double>& ref_azimuths_deg,
+    const std::vector<double>& tst_azimuths_deg,
+    double max_diff_deg,
+    double max_bias_deg)
+{
+    AzimuthBiasResult result;
+
+    size_t n = std::min(ref_azimuths_deg.size(), tst_azimuths_deg.size());
+    if (n == 0)
+        return result;
+
+    std::vector<double> diff_values;
+    diff_values.reserve(n);
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        double diff = calculateMinAngleDifference(ref_azimuths_deg[i], tst_azimuths_deg[i]);
+
+        if (std::fabs(diff) > max_diff_deg)
+            continue;
+        if (!std::isfinite(diff))
+            continue;
+
+        diff_values.push_back(diff);
+    }
+
+    if (diff_values.empty())
+        return result;
+
+    double bias = std::accumulate(diff_values.begin(), diff_values.end(), 0.0)
+                  / static_cast<double>(diff_values.size());
+
+    if (std::fabs(bias) > max_bias_deg)
+        return result;
+
+    result.valid = true;
+    result.azimuth_bias_deg = bias;
+    return result;
+}
+
+RangeBiasGainResult estimateRangeBiasGain(
+    const std::vector<double>& tst_ranges_m,
+    const std::vector<double>& ref_ranges_m,
+    double max_range_ratio_diff,
+    double max_gain,
+    double max_bias_m)
+{
+    RangeBiasGainResult result;
+
+    size_t n = std::min(tst_ranges_m.size(), ref_ranges_m.size());
+    if (n == 0)
+        return result;
+
+    double min_ratio = 1.0 - max_range_ratio_diff;
+    double max_ratio = 1.0 + max_range_ratio_diff;
+
+    std::vector<double> filt_tst, filt_ref;
+    filt_tst.reserve(n);
+    filt_ref.reserve(n);
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        if (ref_ranges_m[i] == 0.0)
+            continue;
+
+        double ratio = tst_ranges_m[i] / ref_ranges_m[i];
+
+        if (ratio < min_ratio || ratio > max_ratio)
+            continue;
+
+        filt_tst.push_back(tst_ranges_m[i]);
+        filt_ref.push_back(ref_ranges_m[i]);
+    }
+
+    unsigned int nf = filt_tst.size();
+    if (nf < 2)
+        return result;
+
+    // Model: ref = a * tst + b
+    // a = 1/(1+gain), b = -bias/(1+gain)
+    Eigen::MatrixXd X(nf, 2);
+    Eigen::VectorXd Y(nf);
+
+    for (unsigned int i = 0; i < nf; ++i)
+    {
+        X(i, 0) = filt_tst[i];
+        X(i, 1) = 1.0;
+        Y(i) = filt_ref[i];
+    }
+
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> dec(X);
+
+    if (dec.info() != Eigen::Success)
+        return result;
+
+    if (dec.rank() < X.cols())
+        return result;
+
+    Eigen::Vector2d beta = dec.solve(Y);
+    if (dec.info() != Eigen::Success)
+        return result;
+
+    double a = beta(0);
+    double b = beta(1);
+
+    if (std::fabs(a) < 1e-12)
+        return result;
+
+    double gain = (1.0 / a) - 1.0;
+    double bias = -b / a;
+
+    if (std::fabs(gain) > max_gain || std::fabs(bias) > max_bias_m)
+        return result;
+
+    result.valid = true;
+    result.range_bias_m = bias;
+    result.range_gain = gain;
+    return result;
+}
+
 }  // namespace Number
 
 //void convert(const std::string& conversion_type, NullableVector<unsigned int>& array_list) {}

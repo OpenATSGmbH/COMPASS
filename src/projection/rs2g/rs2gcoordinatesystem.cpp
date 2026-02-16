@@ -73,7 +73,7 @@ RS2GCoordinateSystem::RS2GCoordinateSystem(unsigned int id, double latitude_deg,
     // from setradar
     rs2gFillVec(lat_rad, long_rad, altitude_m_, rs2g_bi_);
 
-    h_r_ = altitude_m_;
+    h_r_m_ = altitude_m_;
 }
 
 double RS2GCoordinateSystem::azimuth(double x_m, double y_m)
@@ -130,7 +130,7 @@ void RS2GCoordinateSystem::radarSlant2LocalCart(double azimuth_rad, double rho_m
     if (has_altitude)
         elevation_m = altitude_m;
     else
-        elevation_m = h_r_;  // the Z value has not been filled so use at least the radar height
+        elevation_m = h_r_m_;  // the Z value has not been filled so use at least the radar height
 
     double elev_angle_rad = rs2gElevation(elevation_m, rho_m);
 
@@ -168,7 +168,7 @@ void RS2GCoordinateSystem::radarSlant2LocalCart(double azimuth_rad, double rho_m
     if (has_altitude)
         elevation_m = altitude_m;
     else
-        elevation_m = h_r_;  // the Z value has not been filled so use at least the radar height
+        elevation_m = h_r_m_;  // the Z value has not been filled so use at least the radar height
 
     double elev_angle_rad = rs2gElevation(elevation_m, rho_m);
 
@@ -206,9 +206,9 @@ void RS2GCoordinateSystem::localCart2RadarSlant(double local_x, double local_y, 
 
     azimuth_rad = azimuth(local_x, local_y);
 
-    ground_range_m =  sqrt(local_x*local_x + local_y*local_y); //getGroundRange(slant_range_m, true, h_r_ + local_z, debug);
+    ground_range_m =  sqrt(local_x*local_x + local_y*local_y); //getGroundRange(slant_range_m, true, h_r_m_ + local_z, debug);
 
-    altitude_m = h_r_ + local_z;
+    altitude_m = h_r_m_ + local_z;
 }
 
 // void RS2GCoordinateSystem::sysCart2SysStereo(Eigen::Vector3d& b, double* x, double* y)
