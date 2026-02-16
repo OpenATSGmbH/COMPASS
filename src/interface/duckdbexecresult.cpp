@@ -254,6 +254,120 @@ bool DuckDBExecResult::hasChunk() const
 }
 
 /**
+ * Check if a row is valid in a DuckDB validity bitmap.
+ * Returns true if validity is nullptr (all valid) or the bit is set.
+ */
+static inline bool isDuckDBValid(const uint64_t* validity, size_t row)
+{
+    return !validity || (validity[row / 64] & (1ULL << (row % 64)));
+}
+
+/**
+ * Bulk load a column of fixed-width type T using memcpy.
+ * Works for: char, uchar, int, uint, long, ulong, float, double (and bool via specialization).
+ */
+template <typename T>
+static void bulkLoadColumn(Buffer& buffer, const std::string& name,
+                           void* data, uint64_t* validity,
+                           size_t dst_offset, size_t src_offset, size_t count)
+{
+    buffer.get<T>(name).bulkSet(
+        static_cast<unsigned int>(dst_offset),
+        static_cast<const T*>(data) + src_offset,
+        validity, src_offset, count);
+}
+
+/**
+ * Bulk load a string column from DuckDB's duckdb_string_t format.
+ */
+static void bulkLoadStringColumn(Buffer& buffer, const std::string& name,
+                                 void* data, uint64_t* validity,
+                                 size_t dst_offset, size_t src_offset, size_t count)
+{
+    auto& vec = buffer.get<std::string>(name);
+    vec.ensureMinSize(static_cast<unsigned int>(dst_offset + count));
+
+    const duckdb_string_t* strs = static_cast<const duckdb_string_t*>(data);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        size_t src_row = src_offset + i;
+        unsigned int dst_idx = static_cast<unsigned int>(dst_offset + i);
+
+        if (isDuckDBValid(validity, src_row))
+        {
+            duckdb_string_t str = strs[src_row];
+            if (duckdb_string_is_inlined(str))
+                vec.set(dst_idx, std::string(str.value.inlined.inlined, str.value.inlined.length));
+            else
+                vec.set(dst_idx, std::string(str.value.pointer.ptr, str.value.pointer.length));
+        }
+        else
+        {
+            vec.setNull(dst_idx);
+        }
+    }
+}
+
+/**
+ * Bulk load a JSON column from DuckDB's duckdb_string_t format.
+ */
+static void bulkLoadJSONColumn(Buffer& buffer, const std::string& name,
+                               void* data, uint64_t* validity,
+                               size_t dst_offset, size_t src_offset, size_t count)
+{
+    auto& vec = buffer.get<nlohmann::json>(name);
+    vec.ensureMinSize(static_cast<unsigned int>(dst_offset + count));
+
+    const duckdb_string_t* strs = static_cast<const duckdb_string_t*>(data);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        size_t src_row = src_offset + i;
+        unsigned int dst_idx = static_cast<unsigned int>(dst_offset + i);
+
+        if (isDuckDBValid(validity, src_row))
+        {
+            duckdb_string_t str = strs[src_row];
+            std::string s;
+            if (duckdb_string_is_inlined(str))
+                s = std::string(str.value.inlined.inlined, str.value.inlined.length);
+            else
+                s = std::string(str.value.pointer.ptr, str.value.pointer.length);
+            vec.set(dst_idx, nlohmann::json::parse(s));
+        }
+        else
+        {
+            vec.setNull(dst_idx);
+        }
+    }
+}
+
+/**
+ * Bulk load a timestamp column. DuckDB stores as int64_t microseconds.
+ */
+static void bulkLoadTimestampColumn(Buffer& buffer, const std::string& name,
+                                    void* data, uint64_t* validity,
+                                    size_t dst_offset, size_t src_offset, size_t count)
+{
+    auto& vec = buffer.get<boost::posix_time::ptime>(name);
+    vec.ensureMinSize(static_cast<unsigned int>(dst_offset + count));
+
+    const long* timestamps = static_cast<const long*>(data);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        size_t src_row = src_offset + i;
+        unsigned int dst_idx = static_cast<unsigned int>(dst_offset + i);
+
+        if (isDuckDBValid(validity, src_row))
+            vec.set(dst_idx, Utils::Time::fromLong(timestamps[src_row]));
+        else
+            vec.setNull(dst_idx);
+    }
+}
+
+/**
  */
 ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
                                               size_t max_entries)
@@ -262,12 +376,6 @@ ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
 
     const auto& properties = buffer.properties();
     size_t np = properties.size();
-
-    // loginf << "reading...";
-    // loginf << "   chunk idx:   " << chunk_idx_;
-    // loginf << "   chunk rows:  " << chunk_num_rows_;
-    // loginf << "   max entries: " << max_entries;
-    // loginf << "   num props:   " << np;
 
     std::vector<void*>     data_vectors;
     std::vector<uint64_t*> valid_vectors;
@@ -284,61 +392,84 @@ ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
     if (!hasChunk())
         return ResultT<bool>::succeeded(false);
 
-    #define UpdateFuncNextChunk(PDType, DType, Suffix)                                                \
-        auto& vec = buffer.get<DType>(pname);                                                         \
-        NullableVector<DType>* vec_ptr = &vec;                                                        \
-        auto data_vec  = data_vectors[ c ];                                                           \
-        auto valid_vec = valid_vectors[ c ];                                                          \
-                                                                                                      \
-        auto cb = [ vec_ptr, data_vec, valid_vec, this ] (size_t row, size_t buf_idx)                 \
-        {                                                                                             \
-            bool is_null = !duckdb_validity_row_is_valid(valid_vec, row);                             \
-            if (!is_null) vec_ptr->set(buf_idx, this->readVector<DType>(data_vec, row));              \
-        };                                                                                            \
-                                                                                                      \
-        readers[ c ] = cb;
-
-    #define NotFoundFuncNextChunk                                                                         \
-        logerr << "unknown property type " << Property::asString(dtype); \
-        traced_assert(false);
-
-    std::vector<std::function<void(size_t, size_t)>> readers(np);
-
-    auto updateReaders = [ & ] ()
+    //read data until we reach end of result or max entries
+    size_t buf_idx = 0;
+    while (buf_idx < max_entries && chunk_.value() != nullptr)
     {
+        size_t rows_avail  = chunk_num_rows_ - chunk_idx_;
+        size_t rows_needed = max_entries - buf_idx;
+        size_t rows_to_copy = std::min(rows_avail, rows_needed);
+
+        //bulk load each column
         for (idx_t c = 0; c < np; ++c)
         {
             const auto& p = properties.at(c);
             auto dtype = p.dataType();
             const auto& pname = p.name();
 
-            SwitchPropertyDataType(dtype, UpdateFuncNextChunk, NotFoundFuncNextChunk)
+            switch (dtype)
+            {
+                case PropertyDataType::BOOL:
+                    bulkLoadColumn<bool>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                         buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::CHAR:
+                    bulkLoadColumn<char>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                         buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::UCHAR:
+                    bulkLoadColumn<unsigned char>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                                  buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::INT:
+                    bulkLoadColumn<int>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                        buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::UINT:
+                    bulkLoadColumn<unsigned int>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                                 buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::LONGINT:
+                    bulkLoadColumn<long int>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                             buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::ULONGINT:
+                    bulkLoadColumn<unsigned long int>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                                      buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::FLOAT:
+                    bulkLoadColumn<float>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                          buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::DOUBLE:
+                    bulkLoadColumn<double>(buffer, pname, data_vectors[c], valid_vectors[c],
+                                           buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::STRING:
+                    bulkLoadStringColumn(buffer, pname, data_vectors[c], valid_vectors[c],
+                                         buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::JSON:
+                    bulkLoadJSONColumn(buffer, pname, data_vectors[c], valid_vectors[c],
+                                       buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                case PropertyDataType::TIMESTAMP:
+                    bulkLoadTimestampColumn(buffer, pname, data_vectors[c], valid_vectors[c],
+                                            buf_idx, chunk_idx_, rows_to_copy);
+                    break;
+                default:
+                    logerr << "unknown property type " << Property::asString(dtype);
+                    traced_assert(false);
+            }
         }
-    };
 
-    updateReaders();
-
-    //read data until we reach end of result or max entries
-    size_t buf_idx = 0;
-    while (buf_idx < max_entries && chunk_.value() != nullptr)
-    {
-        //read until chunk's end
-        for (size_t r = chunk_idx_; r < chunk_num_rows_; ++r, ++buf_idx, ++chunk_idx_)
-        {
-            //reached max entries? => break
-            if (buf_idx == max_entries)
-                break;
-
-            //fetch row data
-            for (idx_t c = 0; c < np; ++c)
-                readers[ c ] (r, buf_idx);
-        }
+        buf_idx    += rows_to_copy;
+        chunk_idx_ += rows_to_copy;
 
         //fetch next chunk?
         if (chunk_idx_ >= chunk_num_rows_)
         {
             nextChunk(data_vectors, valid_vectors, np);
-            updateReaders(); //new chunk - new data vectors - new readers
         }
     }
 

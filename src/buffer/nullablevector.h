@@ -27,6 +27,7 @@
 
 #include <boost/optional.hpp>
 
+#include <cstring>
 #include <map>
 #include <set>
 #include <vector>
@@ -76,6 +77,11 @@ public:
     void set(unsigned int index, T value);
     void setFromFormat(unsigned int index, const std::string& format, const std::string& value_str, bool debug=false);
     void setAll(T value);
+
+    void bulkSet(unsigned int dst_offset, const void* src, const uint64_t* validity,
+                 size_t src_offset, size_t count);
+
+    void ensureMinSize(unsigned int size);
 
     void append(unsigned int index, T value);
     void appendFromFormat(unsigned int index, const std::string& format,
@@ -289,6 +295,37 @@ void NullableVector<T>::setAll(T value)
         data_.at(index) = value;
         unsetNull(index);
     }
+}
+
+template <class T>
+void NullableVector<T>::bulkSet(unsigned int dst_offset, const void* src,
+                                const uint64_t* validity, size_t src_offset, size_t count)
+{
+    if (!count)
+        return;
+
+    resizeDataTo(dst_offset + count);
+    std::memcpy(data_.data() + dst_offset, src, count * sizeof(T));
+
+    if (validity)
+    {
+        resizeNullTo(dst_offset + count);
+        for (size_t i = 0; i < count; i++)
+        {
+            size_t src_bit = src_offset + i;
+            null_flags_[dst_offset + i] = !(validity[src_bit / 64] & (1ULL << (src_bit % 64)));
+        }
+    }
+
+    if (buffer_.size_ < data_.size())
+        buffer_.size_ = data_.size();
+}
+
+template <class T>
+void NullableVector<T>::ensureMinSize(unsigned int size)
+{
+    if (size > data_.size())
+        resizeDataTo(size);
 }
 
 template <class T>
@@ -1267,6 +1304,32 @@ void NullableVector<T>::unsetNull(unsigned int index)
 
     if (index < null_flags_.size())  // if was already set
         null_flags_.at(index) = false;
+}
+
+template <>
+inline void NullableVector<bool>::bulkSet(unsigned int dst_offset, const void* src,
+                                          const uint64_t* validity, size_t src_offset, size_t count)
+{
+    if (!count)
+        return;
+
+    const uint8_t* bools = static_cast<const uint8_t*>(src);
+    resizeDataTo(dst_offset + count);
+    for (size_t i = 0; i < count; i++)
+        data_[dst_offset + i] = (bools[i] != 0);
+
+    if (validity)
+    {
+        resizeNullTo(dst_offset + count);
+        for (size_t i = 0; i < count; i++)
+        {
+            size_t src_bit = src_offset + i;
+            null_flags_[dst_offset + i] = !(validity[src_bit / 64] & (1ULL << (src_bit % 64)));
+        }
+    }
+
+    if (buffer_.size_ < data_.size())
+        buffer_.size_ = data_.size();
 }
 
 template <>
