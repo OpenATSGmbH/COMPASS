@@ -68,14 +68,14 @@ WORKDIR /
 RUN wget https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.6.5.zip
 RUN unzip OpenSceneGraph-3.6.5.zip
 RUN mkdir OpenSceneGraph-OpenSceneGraph-3.6.5/build
-RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_DISABLE_FIND_PACKAGE_GIFLIB=TRUE --config Release -DGIFLIB_FOUND="" -DCMAKE_CXX_STANDARD=11 ..
+RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_DISABLE_FIND_PACKAGE_GIFLIB=TRUE -DCMAKE_BUILD_TYPE=Release -DGIFLIB_FOUND="" -DCMAKE_CXX_STANDARD=11 ..
 RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && make -j $(nproc)
 RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && make install
 
 RUN wget https://github.com/openscenegraph/osgQt/archive/Qt4.zip
 RUN unzip Qt4.zip
 RUN mkdir osgQt-Qt4/build
-RUN cd osgQt-Qt4/build && cmake -DCMAKE_INSTALL_PREFIX=/usr --config Release ..
+RUN cd osgQt-Qt4/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
 RUN cd osgQt-Qt4/build && make -j $(nproc)
 RUN cd osgQt-Qt4/build && make install
 
@@ -98,7 +98,7 @@ RUN echo 'endif()' >> /usr/share/cmake-3.7/Modules/FindProtobuf.cmake
 RUN wget https://github.com/gwaldron/osgearth/archive/osgearth-3.2.zip
 RUN unzip osgearth-3.2.zip
 RUN mkdir osgearth-osgearth-3.2/build
-RUN cd osgearth-osgearth-3.2/build && cmake -DCMAKE_CXX_FLAGS=-std=c++11 -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=/usr --config Release ..
+RUN cd osgearth-osgearth-3.2/build && cmake -DCMAKE_CXX_FLAGS=-std=c++11 -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
 RUN cd osgearth-osgearth-3.2/build && make -j $(nproc)
 RUN cd osgearth-osgearth-3.2/build && make install
 

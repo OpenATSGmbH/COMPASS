@@ -24,4 +24,19 @@ target_sources(compass_app
 )
 
 add_executable ( compass_client "${CMAKE_CURRENT_LIST_DIR}/main.cpp")
-target_link_libraries ( compass_client compass_app)
+
+# The library split introduced circular cross-library symbol references
+# (e.g. compass_db ↔ compass_eval, compass_reconstruction ↔ experimental
+# sources in compass, compass_core ↔ experimental sources).  Wrapping with
+# --start-group / --end-group makes the linker rescan archives until all
+# symbols are resolved, regardless of link order.
+target_link_libraries ( compass_client
+    -Wl,--start-group
+    compass_app compass compass_core compass_db compass_reconstruction
+    compass_import compass_gui compass_filter compass_task compass_eval compass_view
+    -Wl,--end-group
+    ${jASTERIX_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
+install (TARGETS compass_client DESTINATION bin)

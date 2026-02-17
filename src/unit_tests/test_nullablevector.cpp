@@ -1,6 +1,8 @@
 #include "catch.hpp"
 #include "buffer.h"
 
+#include <tuple>
+
 // Helper: create a Buffer with a single property of the given type and name
 static Buffer makeBuffer(const std::string& name, PropertyDataType type)
 {
@@ -508,7 +510,8 @@ TEST_CASE("NullableVector<double> minMaxValues", "[nullablevector][double]")
     // index 2 null
     nv.set(3, 10.0);
 
-    auto [valid, min_val, max_val] = nv.minMaxValues();
+    bool valid; double min_val, max_val;
+    std::tie(valid, min_val, max_val) = nv.minMaxValues();
     REQUIRE(valid);
     REQUIRE(min_val == Approx(-3.0));
     REQUIRE(max_val == Approx(10.0));

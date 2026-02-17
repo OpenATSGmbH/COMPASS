@@ -1,6 +1,8 @@
 #include "catch.hpp"
 #include "buffer.h"
 
+#include <tuple>
+
 static Buffer makeStrBuffer(const std::string& name = "sv")
 {
     PropertyList pl;
@@ -170,7 +172,8 @@ TEST_CASE("DictNullableVector minMaxValues", "[dictvec]")
     // index 2 null
     dv.set(3, "cherry");
 
-    auto [valid, min_val, max_val] = dv.minMaxValues();
+    bool valid; std::string min_val, max_val;
+    std::tie(valid, min_val, max_val) = dv.minMaxValues();
     REQUIRE(valid);
     REQUIRE(min_val == "apple");
     REQUIRE(max_val == "cherry");
@@ -181,7 +184,8 @@ TEST_CASE("DictNullableVector minMaxValues empty", "[dictvec]")
     Buffer buf = makeStrBuffer();
     auto& dv = buf.get<std::string>("sv");
 
-    auto [valid, min_val, max_val] = dv.minMaxValues();
+    bool valid; std::string min_val, max_val;
+    std::tie(valid, min_val, max_val) = dv.minMaxValues();
     REQUIRE_FALSE(valid);
 }
 
@@ -393,7 +397,8 @@ TEST_CASE("DictNullableVector high repetition efficiency", "[dictvec]")
         REQUIRE(counts[v] == 1000);
 
     // min/max
-    auto [valid, min_v, max_v] = dv.minMaxValues();
+    bool valid; std::string min_v, max_v;
+    std::tie(valid, min_v, max_v) = dv.minMaxValues();
     REQUIRE(valid);
     REQUIRE(min_v == "AAL");
     REQUIRE(max_v == "UAE");

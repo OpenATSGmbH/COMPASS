@@ -4,7 +4,6 @@ message("  Path: ${COMPASS_PATH}")
 SET(CMAKE_EXPORT_COMPILE_COMMANDS, ON)
 
 cmake_minimum_required(VERSION 3.3)
-cmake_policy(SET CMP0079 NEW)
 
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
@@ -258,8 +257,7 @@ configure_file(src/core/util/global.h.in include/global.h)
 # Application executables
 add_subdirectory(src/app)
 
-# Link compass_app against the aggregation library (includes experimental sources)
-target_link_libraries(compass_app PUBLIC compass)
+# compass_app links against 'compass' aggregation library inside src/app/CMakeLists.txt
 
 # unit tests
 enable_testing()
@@ -278,23 +276,11 @@ install(DIRECTORY "data" DESTINATION compass)
 install (TARGETS compass DESTINATION lib
     PUBLIC_HEADER DESTINATION include/compass)
 
-install (TARGETS compass_client DESTINATION bin)
+# compass_client and compass_handler install() moved to src/app/client/ and
+# src/app/watchdog/ respectively (CMake <3.13 requires install() in same scope as target)
 
 # build a CPack driven installer package
 include (InstallRequiredSystemLibraries)
 set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 include (CPack)
-
-message("Installing handler")
-
-target_link_libraries ( compass_handler
-    Qt5::Widgets
-    Qt5::Core
-    Qt5::OpenGL
-    Qt5::Charts
-    Qt5::Test
-    ${Boost_LIBRARIES}
-    )
-
-install (TARGETS compass_handler DESTINATION bin)

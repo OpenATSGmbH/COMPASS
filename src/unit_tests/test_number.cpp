@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <random>
+#include <tuple>
 
 using namespace Utils::Number;
 
@@ -78,7 +79,8 @@ TEST_CASE("dsId encoding/decoding", "[number]")
 TEST_CASE("bearing2Vec and vec2Bearing", "[number]")
 {
     // North (0 deg) -> dx=0, dy=1
-    auto [dx, dy] = bearing2Vec(0.0);
+    double dx, dy;
+    std::tie(dx, dy) = bearing2Vec(0.0);
     REQUIRE(dx == Approx(0.0).margin(1e-10));
     REQUIRE(dy == Approx(1.0));
 
