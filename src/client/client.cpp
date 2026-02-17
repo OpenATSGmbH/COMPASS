@@ -43,12 +43,16 @@
 #include <QStyleFactory>
 #include <QThreadPool>
 #include <QFontDatabase>
+#include <QGLFormat>
 
 #include "util/tbbhack.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include "boost/date_time/posix_time/posix_time.hpp"
+
+#include <osgEarth/Capabilities>
+#include <osgEarth/Registry>
 
 #include <string>
 #include <locale.h>
@@ -81,18 +85,22 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
     APP_FILENAME = argv[0];
 
-    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    QSurfaceFormat surf_format = QSurfaceFormat::defaultFormat();
+    QGLFormat      gl_format   = QGLFormat::defaultFormat();
 
  #ifdef OSG_GL3_AVAILABLE
     cout << "COMPASSClient: OSG_GL3_AVAILABLE true, version "
-         << format.version().first << "." << format.version().second << endl;
+         << gl_format.majorVersion() << "." << gl_format.minorVersion() << endl;
 
-//     format.setVersion(3, 3);
-//     format.setProfile(QSurfaceFormat::CoreProfile);
-//     format.setRenderableType(QSurfaceFormat::OpenGL);
+    gl_format.setVersion(3, 3);
+    gl_format.setProfile(QGLFormat::CoreProfile);
 
-//     osg::DisplaySettings::instance()->setGLContextVersion("3.3");
-//     osg::DisplaySettings::instance()->setShaderHint(osg::DisplaySettings::SHADER_GL3);
+     //format.setVersion(3, 3);
+     //format.setProfile(QSurfaceFormat::CoreProfile);
+     //format.setRenderableType(QSurfaceFormat::OpenGL);
+
+     //osg::DisplaySettings::instance()->setGLContextVersion("3.3");
+     //osg::DisplaySettings::instance()->setShaderHint(osg::DisplaySettings::SHADER_GL3);
 
  #else
     cout << "COMPASSClient: OSG_GL3_AVAILABLE false, version "
@@ -108,10 +116,12 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     //format.setDepthBufferSize(32); // scatterplot stops working if active
     //format.setAlphaBufferSize(8);
 
-    format.setSamples(8);
-    format.setStencilBufferSize(8);
-    format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-    QSurfaceFormat::setDefaultFormat(format);
+    surf_format.setSamples(8);
+    surf_format.setStencilBufferSize(8);
+    surf_format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+
+    QSurfaceFormat::setDefaultFormat(surf_format);
+    QGLFormat::setDefaultFormat(gl_format);
 
     //    QApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
@@ -140,6 +150,25 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     //    bool quit {false};
 
     cout << "COMPASSClient: qt platform in use " << QGuiApplication::platformName().toStdString() << endl;
+
+    {
+        const osgEarth::Capabilities& caps = osgEarth::Registry::instance()->capabilities();
+
+        std::cout << "--- osgEarth Runtime Capabilities ---" << std::endl;
+        std::cout << "Vendor:   " << caps.getVendor() << std::endl;
+        std::cout << "Renderer: " << caps.getRenderer() << std::endl;
+        std::cout << "Version:  " << caps.getVersion() << std::endl;
+
+        if (caps.isCoreProfile()) 
+        {
+            std::cout << "Profile:  CORE (GL3+)" << std::endl;
+        } else 
+        {
+            std::cout << "Profile:  COMPATIBILITY / LEGACY" << std::endl;
+        }
+
+        std::cout << "GLSL Version: " << caps.getGLSLVersion() << std::endl;
+    }
 
     po::options_description desc("Allowed options");
     po::options_description hidden_options("Hidden options");
