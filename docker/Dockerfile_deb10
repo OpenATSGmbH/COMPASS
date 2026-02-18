@@ -14,10 +14,14 @@ RUN echo ">>> USER_NAME=${USER_NAME}" \
  && echo ">>> USER_ID=${USER_ID}" \
  && echo ">>> USER_GROUP_ID=${USER_GROUP_ID}"
 
-RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \ 
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+           -e 's|security.debian.org|archive.debian.org/|g' \
+           -e '/buster-updates/d' /etc/apt/sources.list
+
+RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \
   && echo 'deb-src http://archive.debian.org/debian buster main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --no-install-recommends openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libssl-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev gedit libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev sudo \
+  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev sudo \
   && apt-get build-dep -y libopenscenegraph-dev libosgearth-dev libboost-all-dev \
   && rm -rf /var/lib/apt/lists/*
 
@@ -52,14 +56,30 @@ RUN cd boost_1_83_0/ && ./bootstrap.sh --prefix=/usr/local/
 RUN cd boost_1_83_0/ && ./b2 headers cxxflags="-std=c++17 -march=x86-64 -mtune=generic"
 RUN cd boost_1_83_0/ && ./b2 install cxxflags="-std=c++17 -march=x86-64 -mtune=generic"
 
-RUN wget https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.6.5.zip
-RUN unzip OpenSceneGraph-3.6.5.zip
-RUN mkdir OpenSceneGraph-OpenSceneGraph-3.6.5/build
-RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
-RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && make -j$(nproc)
-RUN cd OpenSceneGraph-OpenSceneGraph-3.6.5/build && make install
+RUN git clone --branch OpenSceneGraph-3.6 --depth 1 https://github.com/openscenegraph/OpenSceneGraph.git OpenSceneGraph-3.6
+RUN mkdir OpenSceneGraph-3.6/build
+RUN cd OpenSceneGraph-3.6/build && cmake \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_FLAGS="-DGL_COMPRESSED_SRGB_S3TC_DXT1_EXT=0x8C4C -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT=0x8C4D -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT=0x8C4E -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT=0x8C4F" \
+    -DOPENGL_PROFILE=GLCORE \
+    -DOSG_GLU_AVAILABLE=OFF \
+    -DOSG_GL1_AVAILABLE=OFF \
+    -DOSG_GL2_AVAILABLE=OFF \
+    -DOSG_GL3_AVAILABLE=ON \
+    -DOSG_GLES1_AVAILABLE=OFF \
+    -DOSG_GLES2_AVAILABLE=OFF \
+    -DOSG_GL_DISPLAYLISTS_AVAILABLE=OFF \
+    -DOSG_GL_MATRICES_AVAILABLE=OFF \
+    -DOSG_GL_VERTEX_FUNCS_AVAILABLE=OFF \
+    -DOSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE=OFF \
+    -DOSG_GL_FIXED_FUNCTION_AVAILABLE=OFF \
+    ..
+RUN cd OpenSceneGraph-3.6/build && make -j$(nproc)
+RUN cd OpenSceneGraph-3.6/build && make install
 
-RUN rm -rf OpenSceneGraph-OpenSceneGraph-3.6.5/build/lib
+RUN rm -rf OpenSceneGraph-3.6/build/lib
 
 RUN wget https://github.com/openscenegraph/osgQt/archive/Qt4.zip
 RUN unzip Qt4.zip
@@ -77,12 +97,11 @@ RUN cd protobuf-3.19.1 && make -j$(nproc)
 RUN cd protobuf-3.19.1 && make install
 RUN cd protobuf-3.19.1 && ldconfig # refresh shared library cache.
 
-RUN wget https://github.com/gwaldron/osgearth/archive/osgearth-3.2.zip
-RUN unzip osgearth-3.2.zip
-RUN mkdir osgearth-osgearth-3.2/build
-RUN cd osgearth-osgearth-3.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DOPENTHREADS_INCLUDE_DIR=/usr/include   -DOPENTHREADS_LIBRARY=/usr/lib/libOpenThreads.so \-DCMAKE_BUILD_TYPE=Release ..
-RUN cd osgearth-osgearth-3.2/build && make -j$(nproc)
-RUN cd osgearth-osgearth-3.2/build && make install
+RUN git clone --branch osgearth-3.7.2 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.7.2
+RUN mkdir osgearth-3.7.2/build
+RUN cd osgearth-3.7.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
+RUN cd osgearth-3.7.2/build && make -j$(nproc)
+RUN cd osgearth-3.7.2/build && make install
 
 RUN wget https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip
 RUN unzip master.zip
@@ -96,6 +115,15 @@ RUN mkdir libduckdb-linux-amd64
 RUN unzip libduckdb-linux-amd64.zip -d libduckdb-linux-amd64
 RUN cd libduckdb-linux-amd64 && cp *.h /usr/include
 RUN cd libduckdb-linux-amd64 && cp lib* /usr/lib
+
+# Download and Install DuckDB CLI Client
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.3.1/duckdb_cli-linux-amd64.zip
+RUN unzip duckdb_cli-linux-amd64.zip -d libduckdb-linux-amd64
+RUN mv libduckdb-linux-amd64/duckdb /usr/bin/
+RUN chmod +x /usr/bin/duckdb
+
+# Verify that the JSON extension is available and functional
+RUN duckdb -c "INSTALL json; LOAD json; SELECT json_object('status', 'success') AS json_check;"
 
 RUN ldconfig -v /usr/lib64/ /usr/local/
 RUN updatedb
