@@ -2,7 +2,7 @@ include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/createartasassociationstask.h"
         "${CMAKE_CURRENT_LIST_DIR}/createartasassociationstaskwidget.h"

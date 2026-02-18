@@ -1,6 +1,8 @@
 #include "catch.hpp"
 #include "buffer.h"
 
+#include <tuple>
+
 // Helper: create a Buffer with a single property of the given type and name
 static Buffer makeBuffer(const std::string& name, PropertyDataType type)
 {
@@ -197,16 +199,15 @@ TEST_CASE("NullableVector<int> setAll and setAllNull", "[nullablevector][int]")
     REQUIRE(nv.isAlwaysNull());
 }
 
-TEST_CASE("NullableVector<int> getRef", "[nullablevector][int]")
+TEST_CASE("NullableVector<int> getRef returns const ref", "[nullablevector][int]")
 {
     Buffer buf = makeBuffer("val", PropertyDataType::INT);
     auto& nv = buf.get<int>("val");
 
     nv.set(0, 5);
-    int& ref = nv.getRef(0);
+    const int& ref = nv.getRef(0);
     REQUIRE(ref == 5);
-    ref = 10;
-    REQUIRE(nv.get(0) == 10);
+    REQUIRE(&ref == &nv.getRef(0)); // same address — true reference
 }
 
 // ============================================================================
@@ -396,18 +397,6 @@ TEST_CASE("NullableVector<string> null semantics", "[nullablevector][string]")
     REQUIRE(nv.isNull(3));
 }
 
-TEST_CASE("NullableVector<string> getRef", "[nullablevector][string]")
-{
-    Buffer buf = makeBuffer("sval", PropertyDataType::STRING);
-    auto& nv = buf.get<std::string>("sval");
-
-    nv.set(0, "original");
-    std::string& ref = nv.getRef(0);
-    REQUIRE(ref == "original");
-    ref = "modified";
-    REQUIRE(nv.get(0) == "modified");
-}
-
 // ============================================================================
 // NullableVector<nlohmann::json>
 // ============================================================================
@@ -521,7 +510,8 @@ TEST_CASE("NullableVector<double> minMaxValues", "[nullablevector][double]")
     // index 2 null
     nv.set(3, 10.0);
 
-    auto [valid, min_val, max_val] = nv.minMaxValues();
+    bool valid; double min_val, max_val;
+    std::tie(valid, min_val, max_val) = nv.minMaxValues();
     REQUIRE(valid);
     REQUIRE(min_val == Approx(-3.0));
     REQUIRE(max_val == Approx(10.0));

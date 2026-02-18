@@ -698,7 +698,11 @@ void ASTERIXPostprocessJob::doObfuscate()
                     continue;
                 }
                 else // obfuscate
-                    obfuscateM3A(var_vec.getRef(cnt));
+                {
+                    unsigned int tmp = var_vec.get(cnt);
+                    obfuscateM3A(tmp);
+                    var_vec.set(cnt, tmp);
+                }
             }
 
             buffer->removeIndexes(to_be_removed);
@@ -737,7 +741,11 @@ void ASTERIXPostprocessJob::doObfuscate()
                     continue;
 
                 // obfuscate
-                obfuscateACAD(var_vec.getRef(cnt));
+                {
+                    unsigned int tmp = var_vec.get(cnt);
+                    obfuscateACAD(tmp);
+                    var_vec.set(cnt, tmp);
+                }
             }
         }
     }
@@ -774,7 +782,11 @@ void ASTERIXPostprocessJob::doObfuscate()
                     continue;
 
                 // obfuscate
-                obfuscateACID(var_vec.getRef(cnt));
+                {
+                    std::string tmp = var_vec.get(cnt);
+                    obfuscateACID(tmp);
+                    var_vec.set(cnt, tmp);
+                }
             }
         }
     }

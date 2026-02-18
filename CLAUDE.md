@@ -34,6 +34,8 @@ make -C build -j$(nproc)
 
 Build output goes to `build/bin/` (executables) and `build/lib/` (libraries).
 
+**C++ standard constraint**: All code must compile with **C++11** (`-std=c++11`). The AppImage is built inside a Debian 9 Docker container (see `docker/Dockerfile_deb9`) using GCC 6.3, which does not support C++17 features. Do not use C++17 constructs such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, etc. Use `std::tie` instead of structured bindings. Local builds use `-std=c++17` for convenience but the Debian 9 Docker build is the compatibility baseline.
+
 **Targets:**
 - `compass` — main library
 - `compass_client` — GUI application

@@ -1,9 +1,10 @@
+add_library(compass_gui "")
 
 include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_gui
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/invalidqlineedit.h"
@@ -42,4 +43,14 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/popupmenu.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.cpp"
+)
+
+target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+
+target_link_libraries(compass_gui
+    PUBLIC
+        compass_core
+        compass_db
+        Qt5::Widgets
+        Qt5::Charts
 )

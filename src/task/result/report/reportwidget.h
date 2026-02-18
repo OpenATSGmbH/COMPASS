@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "report/treemodel.h"
+#include "task/result/report/treemodel.h"
 #include "json_fwd.hpp"
 
 #include <boost/optional.hpp>

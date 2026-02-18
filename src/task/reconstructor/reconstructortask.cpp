@@ -41,9 +41,9 @@
 #include "licensemanager.h"
 #include "sectorlayer.h"
 
-#include "report/report.h"
-#include "report/section.h"
-#include "report/sectioncontenttable.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttable.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmreconstructor.h"
