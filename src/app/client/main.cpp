@@ -24,19 +24,29 @@
 #include <QThread>
 #include <QTimer>
 
-#include <osgEarth/Registry>
-
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include <boost/stacktrace.hpp>
 
 #include <iostream>
 #include <signal.h>
+#include <unistd.h>
+#include <execinfo.h>
 
 using namespace std;
 
-void signalHandler(int signum) 
+void signalHandler(int signum)
 {
-    std::cerr << "Caught signal " << signum << std::endl;
+    // write signal number (write() is async-signal-safe)
+    const char msg[] = "\nCaught signal: ";
+    const char nl[] = "\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    char digit = '0' + signum;
+    write(STDERR_FILENO, &digit, 1);
+    write(STDERR_FILENO, nl, 1);
+
+    // async-signal-safe stacktrace via glibc backtrace
+    void* frames[128];
+    int count = backtrace(frames, 128);
+    backtrace_symbols_fd(frames, count, STDERR_FILENO);
 
     // invoke the default handler and process the signal
     signal(signum, SIG_DFL);
@@ -71,35 +81,23 @@ int main(int argc, char** argv)
         // Enable Qt high-DPI scaling
         QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-        // 1) Force-initialize the GDAL mutex (and register its atexit-hook)
-        //osgEarth::getGDALMutex();
-
-        // 2) Then initialize the Registry (which registers its destructor next)
-        //osgEarth::Registry::instance();
-
         Client client(argc, argv);
 
         if (client.quitRequested())
             return 0;
+            // Alternative: _exit(0) to skip static destructors entirely
 
         // note: do not use COMPASS::instance functions here
 
         if (!client.run())
         {
-            // // process events a bit to allow for correct cleanup
-            // auto start_time = boost::posix_time::microsec_clock::local_time();
-            // while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
-            //         < 50)
-            // {
-            //     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-            //     QThread::msleep(1);
-            // }
             COMPASS::instance().shutdown();
-
             return -1;
+            // Alternative: _exit(1) to skip static destructors entirely
         }
 
         return client.exec();
+        // Alternative: _exit(ret) to skip static destructors entirely
     }
     catch (std::exception& ex)
     {

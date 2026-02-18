@@ -25,6 +25,9 @@ target_sources(compass_app
 
 add_executable ( compass_client "${CMAKE_CURRENT_LIST_DIR}/main.cpp")
 
+# export symbols so backtrace_symbols_fd() can resolve function names on crash
+set_target_properties(compass_client PROPERTIES ENABLE_EXPORTS TRUE)
+
 # The library split introduced circular cross-library symbol references
 # (e.g. compass_db ↔ compass_eval, compass_reconstruction ↔ experimental
 # sources in compass, compass_core ↔ experimental sources).  Wrapping with
