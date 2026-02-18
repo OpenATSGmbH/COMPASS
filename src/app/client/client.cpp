@@ -104,7 +104,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
  #else
     cout << "COMPASSClient: OSG_GL3_AVAILABLE false, version "
-         << format.version().first << "." << format.version().second << endl;
+         << gl_format.majorVersion() << "." << gl_format.minorVersion() << endl;
     // format.setVersion(2, 0);
     // format.setProfile(QSurfaceFormat::CompatibilityProfile);
     // format.setRenderableType(QSurfaceFormat::OpenGL);
