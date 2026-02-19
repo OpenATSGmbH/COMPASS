@@ -58,6 +58,7 @@ class BufferTableModel : public BaseBufferTableModel
                          dbContent::Variable*& out_var) const override;
     QVariant dataColumnHeader(unsigned int data_col) const override;
     void applyRowPermutation(const std::vector<unsigned int>& perm) override;
+    void sortRowIndexes() override;
 
   private:
     DBContent& object_;

@@ -22,12 +22,50 @@
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "global.h"
 #include "jobmanager.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
 #include "tableviewdatawidget.h"
+
+namespace
+{
+
+/// Dispatches NullableVector<T>::sortIndices for the correct T based on PropertyDataType.
+template <typename T>
+void sortBufferIndices(Buffer& buffer, const std::string& var_name,
+                       std::vector<unsigned int>& indices, bool ascending)
+{
+    if (buffer.has<T>(var_name))
+        buffer.get<T>(var_name).sortIndices(indices, ascending);
+}
+
+void sortByVariable(Buffer& buffer, dbContent::Variable& var,
+                    std::vector<unsigned int>& indices, bool ascending)
+{
+    const std::string& name = var.name();
+
+    switch (var.dataType())
+    {
+    case PropertyDataType::BOOL:      sortBufferIndices<bool>(buffer, name, indices, ascending); break;
+    case PropertyDataType::CHAR:      sortBufferIndices<char>(buffer, name, indices, ascending); break;
+    case PropertyDataType::UCHAR:     sortBufferIndices<unsigned char>(buffer, name, indices, ascending); break;
+    case PropertyDataType::INT:       sortBufferIndices<int>(buffer, name, indices, ascending); break;
+    case PropertyDataType::UINT:      sortBufferIndices<unsigned int>(buffer, name, indices, ascending); break;
+    case PropertyDataType::LONGINT:   sortBufferIndices<long int>(buffer, name, indices, ascending); break;
+    case PropertyDataType::ULONGINT:  sortBufferIndices<unsigned long int>(buffer, name, indices, ascending); break;
+    case PropertyDataType::FLOAT:     sortBufferIndices<float>(buffer, name, indices, ascending); break;
+    case PropertyDataType::DOUBLE:    sortBufferIndices<double>(buffer, name, indices, ascending); break;
+    case PropertyDataType::STRING:    sortBufferIndices<std::string>(buffer, name, indices, ascending); break;
+    case PropertyDataType::JSON:      sortBufferIndices<nlohmann::json>(buffer, name, indices, ascending); break;
+    case PropertyDataType::TIMESTAMP: sortBufferIndices<boost::posix_time::ptime>(buffer, name, indices, ascending); break;
+    default: break;
+    }
+}
+
+} // anonymous namespace
 
 BufferTableModel::BufferTableModel(BufferTableWidget* table_widget,
                                    DBContent& object,
@@ -210,6 +248,33 @@ void BufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm
     for (unsigned int i = 0; i < perm.size(); ++i)
         new_indexes[i] = row_indexes_[perm[i]];
     row_indexes_ = std::move(new_indexes);
+}
+
+void BufferTableModel::sortRowIndexes()
+{
+    if (sort_column_ < 0 || row_indexes_.empty() || !buffer_)
+        return;
+
+    unsigned int col = static_cast<unsigned int>(sort_column_);
+    bool ascending = (sort_order_ == Qt::AscendingOrder);
+
+    if (col == 0)  // checkbox column
+    {
+        if (buffer_->has<bool>(DBContent::selected_var.name()))
+            buffer_->get<bool>(DBContent::selected_var.name()).sortIndices(row_indexes_, ascending);
+        return;
+    }
+
+    // col < prefixColumnCount() has no other prefix columns for BufferTableModel (count == 1)
+
+    unsigned int data_col = col - prefixColumnCount();
+    dbContent::Variable* var = nullptr;
+
+    if (resolveVariable(data_col, object_.name(), var) && var &&
+        buffer_->properties().hasProperty(var->name()))
+    {
+        sortByVariable(*buffer_, *var, row_indexes_, ascending);
+    }
 }
 
 void BufferTableModel::saveAsCSV(const std::string& file_name)

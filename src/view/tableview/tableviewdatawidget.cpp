@@ -154,7 +154,7 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
 
-    loginf << "all buffer with " << num_records << " records in "
+    logdbg << "all buffer with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 
     for (auto& buf_it : viewData())
@@ -165,7 +165,7 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
         stop_time = boost::posix_time::microsec_clock::local_time();
         elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
 
-        loginf << buf_it.first << " buffer with " << buf_it.second->size() << " records in "
+        logdbg << buf_it.first << " buffer with " << buf_it.second->size() << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
     }
 

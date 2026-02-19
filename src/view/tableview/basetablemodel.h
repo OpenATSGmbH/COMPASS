@@ -110,7 +110,7 @@ class BaseBufferTableModel : public QAbstractTableModel
     /// Sorts row_indexes_ in-place by the stored sort column/order.
     /// Call after building row_indexes_ (in rebuild/setData) to re-apply the active sort.
     /// No-op if no sort is active (sort_column_ < 0).
-    void sortRowIndexes();
+    virtual void sortRowIndexes();
 
     /// Wrappers around beginResetModel/endResetModel that track reset state.
     /// Use these instead of calling beginResetModel/endResetModel directly,

@@ -31,9 +31,103 @@
 #include "tableview.h"
 #include "tableviewdatasource.h"
 
+#include "json.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <algorithm>
+#include <numeric>
+
+namespace
+{
+
+/// Extracts native-typed keys from multiple buffers and sorts row_indexes in-place.
+/// Each row references a (dbcont_num, buffer_index) pair; the NullableVector for each
+/// dbcont_num is resolved once via nvec_map to avoid per-row map lookups.
+template <typename T>
+void typedSortPairs(
+    std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
+    const std::map<unsigned int, std::string>& number_to_dbcont,
+    const std::map<std::string, std::shared_ptr<Buffer>>& buffers,
+    const std::map<unsigned int, std::string>& dbcont_num_to_var_name,
+    bool ascending)
+{
+    unsigned int n = row_indexes.size();
+
+    // pre-resolve NullableVector<T>* per dbcont_num
+    std::map<unsigned int, NullableVector<T>*> nvec_map;
+    for (const auto& p : dbcont_num_to_var_name)
+    {
+        const auto& dbcont_name = number_to_dbcont.at(p.first);
+        Buffer& buf = *buffers.at(dbcont_name);
+        if (buf.has<T>(p.second))
+            nvec_map[p.first] = &buf.get<T>(p.second);
+    }
+
+    // extract typed keys
+    std::vector<T> values(n);
+    std::vector<bool> nulls(n, true);
+
+    for (unsigned int i = 0; i < n; ++i)
+    {
+        auto nvec_it = nvec_map.find(row_indexes[i].first);
+        if (nvec_it == nvec_map.end())
+            continue;
+
+        unsigned int buf_idx = row_indexes[i].second;
+        NullableVector<T>& nvec = *nvec_it->second;
+
+        if (!nvec.isNull(buf_idx))
+        {
+            values[i] = nvec.get(buf_idx);
+            nulls[i] = false;
+        }
+    }
+
+    // sort permutation by typed keys
+    std::vector<unsigned int> perm(n);
+    std::iota(perm.begin(), perm.end(), 0);
+
+    std::stable_sort(perm.begin(), perm.end(), [&](unsigned int a, unsigned int b)
+    {
+        if (nulls[a] && nulls[b]) return false;
+        if (nulls[a]) return ascending;
+        if (nulls[b]) return !ascending;
+        return ascending ? (values[a] < values[b]) : (values[b] < values[a]);
+    });
+
+    // apply permutation
+    std::vector<std::pair<unsigned int, unsigned int>> new_indexes(n);
+    for (unsigned int i = 0; i < n; ++i)
+        new_indexes[i] = row_indexes[perm[i]];
+    row_indexes = std::move(new_indexes);
+}
+
+void dispatchTypedSort(
+    std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
+    const std::map<unsigned int, std::string>& number_to_dbcont,
+    const std::map<std::string, std::shared_ptr<Buffer>>& buffers,
+    const std::map<unsigned int, std::string>& dbcont_num_to_var_name,
+    PropertyDataType dt, bool ascending)
+{
+    switch (dt)
+    {
+    case PropertyDataType::BOOL:      typedSortPairs<bool>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::CHAR:      typedSortPairs<char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::UCHAR:     typedSortPairs<unsigned char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::INT:       typedSortPairs<int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::UINT:      typedSortPairs<unsigned int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::LONGINT:   typedSortPairs<long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::ULONGINT:  typedSortPairs<unsigned long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::FLOAT:     typedSortPairs<float>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::DOUBLE:    typedSortPairs<double>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::STRING:    typedSortPairs<std::string>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::JSON:      typedSortPairs<nlohmann::json>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    case PropertyDataType::TIMESTAMP: typedSortPairs<boost::posix_time::ptime>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
+    default: break;
+    }
+}
+
+} // anonymous namespace
 
 AllBufferTableModel::AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget,
                                          TableViewDataSource& data_source)
@@ -279,6 +373,69 @@ void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& p
     for (unsigned int i = 0; i < perm.size(); ++i)
         new_indexes[i] = row_indexes_[perm[i]];
     row_indexes_ = std::move(new_indexes);
+}
+
+void AllBufferTableModel::sortRowIndexes()
+{
+    if (sort_column_ < 0 || row_indexes_.empty())
+        return;
+
+    unsigned int col = static_cast<unsigned int>(sort_column_);
+    bool ascending = (sort_order_ == Qt::AscendingOrder);
+
+    if (col == 0)  // checkbox column
+    {
+        std::map<unsigned int, std::string> var_names;
+        for (const auto& p : number_to_dbcont_)
+            var_names[p.first] = DBContent::selected_var.name();
+
+        typedSortPairs<bool>(row_indexes_, number_to_dbcont_, buffers_, var_names, ascending);
+        return;
+    }
+
+    if (col == 1)  // DBContent name column
+    {
+        unsigned int n = row_indexes_.size();
+
+        std::vector<std::string> keys(n);
+        for (unsigned int i = 0; i < n; ++i)
+            keys[i] = number_to_dbcont_.at(row_indexes_[i].first);
+
+        std::vector<unsigned int> perm(n);
+        std::iota(perm.begin(), perm.end(), 0);
+
+        std::stable_sort(perm.begin(), perm.end(), [&](unsigned int a, unsigned int b)
+        {
+            return ascending ? (keys[a] < keys[b]) : (keys[b] < keys[a]);
+        });
+
+        applyRowPermutation(perm);
+        return;
+    }
+
+    // data column — resolve variable per DBContent, dispatch on type
+    unsigned int data_col = col - prefixColumnCount();
+    std::map<unsigned int, std::string> dbcont_num_to_var_name;
+    PropertyDataType dt = PropertyDataType::BOOL;  // will be overwritten
+    bool have_type = false;
+
+    for (const auto& p : number_to_dbcont_)
+    {
+        dbContent::Variable* var = nullptr;
+        if (resolveVariable(data_col, p.second, var) && var &&
+            buffers_.count(p.second) && buffers_.at(p.second)->properties().hasProperty(var->name()))
+        {
+            dbcont_num_to_var_name[p.first] = var->name();
+            if (!have_type)
+            {
+                dt = var->dataType();
+                have_type = true;
+            }
+        }
+    }
+
+    if (have_type)
+        dispatchTypedSort(row_indexes_, number_to_dbcont_, buffers_, dbcont_num_to_var_name, dt, ascending);
 }
 
 void AllBufferTableModel::saveAsCSV(const std::string& file_name)

@@ -96,6 +96,8 @@ public:
     std::vector<unsigned int> sortPermutation();
     void sortByPermutation(const std::vector<unsigned int>& perm);
 
+    void sortIndices(std::vector<unsigned int>& indices, bool ascending) const;
+
     nlohmann::json asJSON(unsigned int max_size = 0);
 
     // dictionary-specific accessor
@@ -615,6 +617,22 @@ inline std::vector<unsigned int> NullableVector<std::string>::sortPermutation()
         return dictionary_[indices_[i]] < dictionary_[indices_[j]];
     });
     return p;
+}
+
+inline void NullableVector<std::string>::sortIndices(std::vector<unsigned int>& indices,
+                                                      bool ascending) const
+{
+    std::stable_sort(indices.begin(), indices.end(),
+        [this, ascending](unsigned int a, unsigned int b)
+        {
+            bool a_null = isNull(a);
+            bool b_null = isNull(b);
+            if (a_null && b_null) return false;
+            if (a_null) return ascending;
+            if (b_null) return !ascending;
+            return ascending ? (dictionary_[indices_[a]] < dictionary_[indices_[b]])
+                             : (dictionary_[indices_[b]] < dictionary_[indices_[a]]);
+        });
 }
 
 inline void NullableVector<std::string>::sortByPermutation(const std::vector<unsigned int>& perm)
