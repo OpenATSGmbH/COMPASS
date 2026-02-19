@@ -26,6 +26,8 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <boost/stacktrace.hpp>
+
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
@@ -33,22 +35,40 @@
 
 using namespace std;
 
-void signalHandler(int signum)
+// async-signal-safe stacktrace for signals where the stack may be corrupted
+void safeSignalHandler(int signum)
 {
-    // write signal number (write() is async-signal-safe)
     const char msg[] = "\nCaught signal: ";
     const char nl[] = "\n";
     write(STDERR_FILENO, msg, sizeof(msg) - 1);
-    char digit = '0' + signum;
-    write(STDERR_FILENO, &digit, 1);
+
+    // print signum as decimal digits (async-signal-safe)
+    char buf[16];
+    int pos = sizeof(buf);
+    int val = signum < 0 ? -signum : signum;
+    do {
+        buf[--pos] = '0' + (val % 10);
+        val /= 10;
+    } while (val > 0);
+    if (signum < 0)
+        buf[--pos] = '-';
+    write(STDERR_FILENO, buf + pos, sizeof(buf) - pos);
     write(STDERR_FILENO, nl, 1);
 
-    // async-signal-safe stacktrace via glibc backtrace
     void* frames[128];
     int count = backtrace(frames, 128);
     backtrace_symbols_fd(frames, count, STDERR_FILENO);
 
-    // invoke the default handler and process the signal
+    signal(signum, SIG_DFL);
+    raise(signum);
+}
+
+// boost::stacktrace handler for signals where the stack is likely intact
+void signalHandler(int signum)
+{
+    std::cerr << "\nCaught signal: " << signum << std::endl;
+    std::cerr << boost::stacktrace::stacktrace() << std::endl;
+
     signal(signum, SIG_DFL);
     raise(signum);
 }
@@ -57,9 +77,9 @@ int main(int argc, char** argv)
 {
     try
     {
-        signal(SIGSEGV, signalHandler);
-        signal(SIGABRT, signalHandler);
-        signal(SIGTERM, signalHandler);
+        signal(SIGSEGV, safeSignalHandler);  // stack likely corrupted
+        signal(SIGABRT, signalHandler);      // stack likely intact
+        signal(SIGTERM, signalHandler);      // stack likely intact
         
         const bool is_app_image = Utils::System::appDir() != nullptr;
 
