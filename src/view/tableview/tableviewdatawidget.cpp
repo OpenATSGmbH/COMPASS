@@ -143,7 +143,7 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
     for (auto& buf_it : viewData())
         num_records += buf_it.second->size();
 
-    loginf << "start - recompute = " << recompute << " records " << num_records;
+    loginf << "start - recompute " << recompute << " records " << num_records;
 
     traced_assert(all_buffer_table_widget_);
 
@@ -151,18 +151,30 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
 
     all_buffer_table_widget_->show(viewData());
 
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+    loginf << "all buffer with " << num_records << " records in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
+
     for (auto& buf_it : viewData())
     {
         traced_assert(buffer_tables_.count(buf_it.first) > 0);
         buffer_tables_.at(buf_it.first)->show(buf_it.second);
+
+        stop_time = boost::posix_time::microsec_clock::local_time();
+        elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+        loginf << buf_it.first << " buffer with " << buf_it.second->size() << " records in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
     }
 
     selectFirstSelectedRow();
 
     setUpdatesEnabled(true);
 
-    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
-    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+    stop_time = boost::posix_time::microsec_clock::local_time();
+    elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
 
     loginf << "done with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);

@@ -19,8 +19,6 @@
 
 #include "basetablemodel.h"
 
-#include "boost/date_time/posix_time/ptime.hpp"
-
 #include <map>
 #include <memory>
 
@@ -66,10 +64,7 @@ class AllBufferTableModel : public BaseBufferTableModel
     std::map<unsigned int, std::string> number_to_dbcont_;
     std::map<std::string, unsigned int> dbcont_to_number_;
 
-    std::multimap<boost::posix_time::ptime, std::pair<unsigned int, unsigned int>> time_to_indexes_;
-    // timestamp -> [dbcont num,index]
-    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> dbcont num,index
+    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> [dbcont num, buffer index]
 
-    void updateTimeIndexes();
-    void rebuildRowIndexes();
+    void buildRowIndexes();
 };

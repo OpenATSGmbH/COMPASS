@@ -26,8 +26,14 @@
 #include "dbcontent/variable/metavariable.h"
 #include "global.h"
 #include "jobmanager.h"
+#include "logger.h"
+#include "stringconv.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
+
+#include "boost/date_time/posix_time/posix_time.hpp"
+
+#include <algorithm>
 
 AllBufferTableModel::AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget,
                                          TableViewDataSource& data_source)
@@ -137,7 +143,6 @@ void AllBufferTableModel::clearData()
 
     beginCustomResetModel();
 
-    time_to_indexes_.clear();
     row_indexes_.clear();
     buffers_.clear();
 
@@ -164,23 +169,27 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
 
     buffers_ = buffers;
 
-    updateTimeIndexes();
-    rebuildRowIndexes();
+    buildRowIndexes();
     sortRowIndexes();
 
     endCustomResetModel();
 }
 
-void AllBufferTableModel::updateTimeIndexes()
+void AllBufferTableModel::buildRowIndexes()
 {
-    logdbg;
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    unsigned int buffer_index;
-    std::string dbcontent_name;
-    unsigned int dbcont_num;
-    unsigned int buffer_size;
+    row_indexes_.clear();
 
-    unsigned int num_time_none;
+    // count total records to reserve vector capacity
+    unsigned int total_size = 0;
+    for (auto& buf_it : buffers_)
+        total_size += buf_it.second->size();
+
+    // build (timestamp, dbcont_num, buffer_index) entries in a flat vector
+    using TimedEntry = std::pair<boost::posix_time::ptime, std::pair<unsigned int, unsigned int>>;
+    std::vector<TimedEntry> timed_entries;
+    timed_entries.reserve(total_size);
 
     DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
@@ -190,82 +199,75 @@ void AllBufferTableModel::updateTimeIndexes()
             && !dbcont_man.metaCanGetVariable(buf_it.first, DBContent::meta_var_latitude_))
             continue;
 
-        buffer_index = 0;
-        dbcontent_name = buf_it.first;
-        num_time_none = 0;
+        const std::string& dbcontent_name = buf_it.first;
 
         traced_assert(dbcont_to_number_.count(dbcontent_name) == 1);
-        dbcont_num = dbcont_to_number_.at(dbcontent_name);
+        unsigned int dbcont_num = dbcont_to_number_.at(dbcontent_name);
 
-        buffer_size = buf_it.second->size();
+        unsigned int buffer_size = buf_it.second->size();
+        if (buffer_size == 0)
+            continue;
 
-        if (buffer_size > buffer_index + 1)
+        const dbContent::Variable& ts_var =
+                dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(dbcontent_name);
+
+        traced_assert(buf_it.second->has<boost::posix_time::ptime>(ts_var.name()));
+        NullableVector<boost::posix_time::ptime>& ts_vec =
+            buf_it.second->get<boost::posix_time::ptime>(ts_var.name());
+
+        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+
+        unsigned int num_time_none = 0;
+
+        for (unsigned int buffer_index = 0; buffer_index < buffer_size; ++buffer_index)
         {
-            logdbg << "new " << dbcontent_name
-                   << " data, last index " << buffer_index << " size " << buf_it.second->size();
-
-            const dbContent::Variable& ts_var =
-                    dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(dbcontent_name);
-
-            traced_assert(buf_it.second->has<boost::posix_time::ptime>(ts_var.name()));
-            NullableVector<boost::posix_time::ptime>& ts_vec =
-                buf_it.second->get<boost::posix_time::ptime>(ts_var.name());
-
-            traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
-
-            boost::posix_time::ptime ts;
-
-            for (; buffer_index < buffer_size; ++buffer_index)
+            if (view_.settings().show_only_selected_)
             {
-                if (ts_vec.isNull(buffer_index))
-                {
-                    ts = boost::posix_time::ptime(boost::posix_time::not_a_date_time);
-                    num_time_none++;
-                }
-                else
-                    ts = ts_vec.get(buffer_index);
-
-                if (view_.settings().show_only_selected_)
-                {
-                    if (selected_vec.isNull(buffer_index))
-                        continue;
-
-                    if (selected_vec.get(buffer_index))
-                        time_to_indexes_.insert(
-                            std::make_pair(ts, std::make_pair(dbcont_num, buffer_index)));
-                }
-                else
-                    time_to_indexes_.insert(
-                        std::make_pair(ts, std::make_pair(dbcont_num, buffer_index)));
+                if (selected_vec.isNull(buffer_index) || !selected_vec.get(buffer_index))
+                    continue;
             }
 
-            if (num_time_none)
-                loginf << "new " << dbcontent_name << " skipped "
-                       << num_time_none << " indexes with no time";
+            boost::posix_time::ptime ts;
+            if (ts_vec.isNull(buffer_index))
+            {
+                ts = boost::posix_time::ptime(boost::posix_time::not_a_date_time);
+                num_time_none++;
+            }
+            else
+                ts = ts_vec.get(buffer_index);
+
+            timed_entries.emplace_back(ts, std::make_pair(dbcont_num, buffer_index));
         }
-    }
-}
 
-void AllBufferTableModel::rebuildRowIndexes()
-{
-    row_indexes_.clear();
-
-    for (auto& time_index_it : time_to_indexes_)
-    {
-        row_indexes_.push_back(time_index_it.second);
+        if (num_time_none)
+            loginf << dbcontent_name << " skipped " << num_time_none << " indexes with no time";
     }
+
+    // sort by timestamp (stable_sort preserves insertion order for equal timestamps)
+    std::stable_sort(timed_entries.begin(), timed_entries.end(),
+        [](const TimedEntry& a, const TimedEntry& b)
+        {
+            return a.first < b.first;
+        });
+
+    // extract row index map (strip timestamps)
+    row_indexes_.resize(timed_entries.size());
+    for (unsigned int i = 0; i < timed_entries.size(); ++i)
+        row_indexes_[i] = timed_entries[i].second;
+
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+    loginf << "built " << row_indexes_.size() << " row indexes in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
 }
 
 void AllBufferTableModel::rebuild()
 {
     beginCustomResetModel();
 
-    time_to_indexes_.clear();
-    row_indexes_.clear();
-
-    updateTimeIndexes();
-    rebuildRowIndexes();
+    buildRowIndexes();
     sortRowIndexes();
 
     endCustomResetModel();
