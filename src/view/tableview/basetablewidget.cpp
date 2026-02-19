@@ -39,6 +39,7 @@ BaseBufferTableWidget::BaseBufferTableWidget(TableView& view, TableViewDataSourc
     table_ = new QTableView(this);
     table_->setSelectionBehavior(QAbstractItemView::SelectItems);
     table_->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    table_->setCornerButtonEnabled(false);
 
     layout->addWidget(table_);
     table_->show();
