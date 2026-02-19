@@ -28,12 +28,96 @@
 
 #include <boost/stacktrace.hpp>
 
+#include <dlfcn.h>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
 #include <execinfo.h>
 
 using namespace std;
+
+// ---------------------------------------------------------------------------
+// __cxa_throw interception — captures a stacktrace at every throw site so
+// that terminate/signal handlers can report where the exception originated,
+// even after the stack has been unwound.
+// ---------------------------------------------------------------------------
+
+thread_local boost::stacktrace::stacktrace last_throw_trace;
+
+// guard against recursion (boost::stacktrace itself may throw internally)
+thread_local bool in_cxa_throw_hook = false;
+
+using cxa_throw_fn = void (*)(void*, void*, void (*)(void*));
+
+static cxa_throw_fn real_cxa_throw()
+{
+    static cxa_throw_fn fn =
+        reinterpret_cast<cxa_throw_fn>(dlsym(RTLD_NEXT, "__cxa_throw"));
+    return fn;
+}
+
+extern "C" void __cxa_throw(void* thrown_exception,
+                             void* tinfo,
+                             void (*dest)(void*))
+{
+    if (!in_cxa_throw_hook)
+    {
+        in_cxa_throw_hook = true;
+        last_throw_trace = boost::stacktrace::stacktrace();
+        in_cxa_throw_hook = false;
+    }
+
+    real_cxa_throw()(thrown_exception, tinfo, dest);
+    __builtin_unreachable();
+}
+
+// ---------------------------------------------------------------------------
+// Terminate handler — called by the runtime when an exception is uncaught
+// (e.g. escaping a noexcept boundary or a worker thread).  Prints the
+// throw-site stacktrace captured by the __cxa_throw hook above, plus the
+// exception message if available.
+// ---------------------------------------------------------------------------
+
+void terminateHandler()
+{
+    std::cerr << "\n=== std::terminate called ===" << std::endl;
+
+    // print the throw-site stacktrace (captured by __cxa_throw hook)
+    if (!last_throw_trace.empty())
+    {
+        std::cerr << "\nStacktrace at throw site:\n"
+                  << last_throw_trace << std::endl;
+    }
+
+    // try to print the exception message
+    if (auto eptr = std::current_exception())
+    {
+        try
+        {
+            std::rethrow_exception(eptr);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Exception: " << e.what() << std::endl;
+        }
+        catch (...)
+        {
+            std::cerr << "Unknown exception type" << std::endl;
+        }
+    }
+
+    std::cerr << "\nStacktrace at terminate:\n"
+              << boost::stacktrace::stacktrace() << std::endl;
+
+    // reset SIGABRT to default so abort() doesn't trigger our signal handler
+    // (we already printed everything useful above)
+    signal(SIGABRT, SIG_DFL);
+    std::abort();
+}
+
+// ---------------------------------------------------------------------------
+// Signal handlers
+// ---------------------------------------------------------------------------
 
 // async-signal-safe stacktrace for signals where the stack may be corrupted
 void safeSignalHandler(int signum)
@@ -67,7 +151,15 @@ void safeSignalHandler(int signum)
 void signalHandler(int signum)
 {
     std::cerr << "\nCaught signal: " << signum << std::endl;
-    std::cerr << boost::stacktrace::stacktrace() << std::endl;
+
+    if (!last_throw_trace.empty())
+    {
+        std::cerr << "\nStacktrace at throw site:\n"
+                  << last_throw_trace << std::endl;
+    }
+    else
+        std::cerr << "\nStacktrace at signal:\n"
+                << boost::stacktrace::stacktrace() << std::endl;
 
     signal(signum, SIG_DFL);
     raise(signum);
@@ -77,6 +169,8 @@ int main(int argc, char** argv)
 {
     try
     {
+        std::set_terminate(terminateHandler);
+
         signal(SIGSEGV, safeSignalHandler);  // stack likely corrupted
         signal(SIGABRT, signalHandler);      // stack likely intact
         signal(SIGTERM, signalHandler);      // stack likely intact
