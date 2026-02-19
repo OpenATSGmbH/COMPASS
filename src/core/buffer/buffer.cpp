@@ -405,8 +405,9 @@ void Buffer::sortByProperty(const Property& property)
 
 void Buffer::seizeBuffer(Buffer& org_buffer)
 {
-    logdbg << dbcontent_name_ << " size " << size() << " num prop " << properties_.size() 
-     << " other size " << org_buffer.size() << " num prop " << properties_.size() ;
+    logdbg << "seizeBuffer: " << dbcontent_name_
+           << " this size=" << size_ << " props=" << properties_.size()
+           << " other size=" << org_buffer.size_ << " other props=" << org_buffer.properties_.size();
 
     seizeArrayListMap<bool>(org_buffer);
     seizeArrayListMap<char>(org_buffer);
@@ -417,23 +418,31 @@ void Buffer::seizeBuffer(Buffer& org_buffer)
     seizeArrayListMap<unsigned long int>(org_buffer);
     seizeArrayListMap<float>(org_buffer);
     seizeArrayListMap<double>(org_buffer);
+
+    logdbg << "seizeBuffer: " << dbcontent_name_
+           << " before string seize, this size_=" << size_
+           << " org_buffer.size_=" << org_buffer.size_;
+
     seizeArrayListMap<string>(org_buffer);
+
+    logdbg << "seizeBuffer: " << dbcontent_name_
+           << " after string seize, this size_=" << size_;
+
     seizeArrayListMap<json>(org_buffer);
     seizeArrayListMap<boost::posix_time::ptime>(org_buffer);
 
     org_buffer.properties_.clear();
 
-    if (BUFFER_PEDANTIC_CHECKING)
-    {
-        loginf << "size_ " << size_ << " org_buffer.size_ " << org_buffer.size_
-               << " new size " << size_ + org_buffer.size_;
-    }
+    logdbg << "seizeBuffer: " << dbcontent_name_
+           << " size_=" << size_ << " + org_buffer.size_=" << org_buffer.size_
+           << " = " << size_ + org_buffer.size_;
 
     size_ += org_buffer.size_;
 
     org_buffer.size_ = 0;
 
-    logdbg << dbcontent_name_ << " end size " << size() << " num prop " << properties_.size();
+    logdbg << "seizeBuffer: " << dbcontent_name_
+           << " done, final size=" << size_ << " props=" << properties_.size();
 }
 
 size_t Buffer::size() const { return size_; }

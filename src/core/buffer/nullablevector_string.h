@@ -741,6 +741,26 @@ inline void NullableVector<std::string>::addData(NullableVector<std::string>& ot
         traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
+    // empty dictionary means all entries are null — indices may contain junk 0s
+    // from ensureMinSize/resizeIndicesTo, so skip index remapping entirely
+    if (other.dictionary_.empty())
+    {
+        logdbg2 << property_.name() << ": other dict empty, treating as all-null";
+        resizeNullTo(buffer_.size_);
+
+        if (other.null_flags_.size())
+        {
+            null_flags_.insert(null_flags_.end(), other.null_flags_.begin(),
+                               other.null_flags_.end());
+        }
+        else
+        {
+            // no null flags and no dictionary — synthesise nulls for other's rows
+            null_flags_.resize(null_flags_.size() + other.buffer_.size_, true);
+        }
+        return;
+    }
+
     if (!other.indices_.size() && other.null_flags_.size())
     {
         logdbg2 << property_.name() << ": 1: other no data resizing null";
