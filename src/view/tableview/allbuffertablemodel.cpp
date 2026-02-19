@@ -135,18 +135,18 @@ void AllBufferTableModel::clearData()
 {
     logdbg;
 
-    beginResetModel();
+    beginCustomResetModel();
 
     time_to_indexes_.clear();
     row_indexes_.clear();
     buffers_.clear();
 
-    endResetModel();
+    endCustomResetModel();
 }
 
 void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    beginResetModel();
+    beginCustomResetModel();
 
     for (auto& buf_it : buffers)
     {
@@ -168,7 +168,7 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
     rebuildRowIndexes();
     sortRowIndexes();
 
-    endResetModel();
+    endCustomResetModel();
 }
 
 void AllBufferTableModel::updateTimeIndexes()
@@ -259,7 +259,7 @@ void AllBufferTableModel::rebuildRowIndexes()
 
 void AllBufferTableModel::rebuild()
 {
-    beginResetModel();
+    beginCustomResetModel();
 
     time_to_indexes_.clear();
     row_indexes_.clear();
@@ -268,7 +268,7 @@ void AllBufferTableModel::rebuild()
     rebuildRowIndexes();
     sortRowIndexes();
 
-    endResetModel();
+    endCustomResetModel();
 }
 
 void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)

@@ -157,8 +157,8 @@ BaseBufferTableModel::~BaseBufferTableModel() {}
 
 void BaseBufferTableModel::setChangedSlot()
 {
-    beginResetModel();
-    endResetModel();
+    beginCustomResetModel();
+    endCustomResetModel();
     traced_assert(table_widget_);
     table_widget_->resizeColumns();
 }
@@ -331,8 +331,20 @@ bool BaseBufferTableModel::setData(const QModelIndex& index, const QVariant& val
 
 void BaseBufferTableModel::reset()
 {
+    beginCustomResetModel();
+    endCustomResetModel();
+}
+
+void BaseBufferTableModel::beginCustomResetModel()
+{
+    resetting_model_ = true;
     beginResetModel();
+}
+
+void BaseBufferTableModel::endCustomResetModel()
+{
     endResetModel();
+    resetting_model_ = false;
 }
 
 void BaseBufferTableModel::exportJobObsoleteSlot()
@@ -416,8 +428,20 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
 
 void BaseBufferTableModel::sort(int column, Qt::SortOrder order)
 {
+    // sort() can be called by Qt automatically after endResetModel() when sorting is enabled,
+    // in which case resetting_model_ is true and cursor/reset are already managed by the caller
+    if (resetting_model_)
+    {
+        sort_column_ = column;
+        sort_order_ = order;
+        sortRowIndexes();
+        return;
+    }
+
     sort_column_ = column;
     sort_order_ = order;
+
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -425,15 +449,17 @@ void BaseBufferTableModel::sort(int column, Qt::SortOrder order)
 
     loginf << "sorting column " << column << " with " << num_records << " records";
 
-    beginResetModel();
+    beginCustomResetModel();
     sortRowIndexes();
-    endResetModel();
+    endCustomResetModel();
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
 
     loginf << "sorting done with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
+
+    QApplication::restoreOverrideCursor();
 }
 
 void BaseBufferTableModel::sortRowIndexes()

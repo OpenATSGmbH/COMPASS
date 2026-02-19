@@ -30,6 +30,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QTabWidget>

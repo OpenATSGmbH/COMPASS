@@ -47,12 +47,12 @@ void BufferTableModel::setChangedSlot()
 {
     logdbg;
 
-    beginResetModel();
+    beginCustomResetModel();
     read_set_ = data_source_.getSet()->getFor(object_.name());
 
     logdbg << "read set size " << read_set_.getSize();
 
-    endResetModel();
+    endCustomResetModel();
     traced_assert(table_widget_);
     table_widget_->resizeColumns();
 }
@@ -119,25 +119,25 @@ QVariant BufferTableModel::dataColumnHeader(unsigned int data_col) const
 
 void BufferTableModel::clearData()
 {
-    beginResetModel();
+    beginCustomResetModel();
 
     buffer_ = nullptr;
     updateRows();
 
-    endResetModel();
+    endCustomResetModel();
 }
 
 void BufferTableModel::setData(std::shared_ptr<Buffer> buffer)
 {
     logdbg;
     traced_assert(buffer);
-    beginResetModel();
+    beginCustomResetModel();
 
     buffer_ = buffer;
     updateRows();
     sortRowIndexes();
 
-    endResetModel();
+    endCustomResetModel();
 }
 
 bool BufferTableModel::hasData() const
@@ -195,13 +195,13 @@ void BufferTableModel::updateRows()
 
 void BufferTableModel::rebuild()
 {
-    beginResetModel();
+    beginCustomResetModel();
 
     row_indexes_.clear();
     updateRows();
     sortRowIndexes();
 
-    endResetModel();
+    endCustomResetModel();
 }
 
 void BufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)

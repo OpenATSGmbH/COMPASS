@@ -657,7 +657,7 @@ void DBContentManager::metaDialogOKSlot()
  */
 void DBContentManager::finishLoading()
 {
-    loginf << "all done";
+    loginf << "start";
     load_in_progress_ = false;
 
     tmp_selected_rec_nums_.clear();
@@ -675,6 +675,8 @@ void DBContentManager::finishLoading()
     QApplication::restoreOverrideCursor();
 
     loading_done_ = true;
+
+    loginf << "done";
 }
 
 /**

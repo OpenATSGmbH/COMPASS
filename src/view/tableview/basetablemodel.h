@@ -112,10 +112,17 @@ class BaseBufferTableModel : public QAbstractTableModel
     /// No-op if no sort is active (sort_column_ < 0).
     void sortRowIndexes();
 
+    /// Wrappers around beginResetModel/endResetModel that track reset state.
+    /// Use these instead of calling beginResetModel/endResetModel directly,
+    /// so that sort() can detect when it is called as a side effect of endResetModel().
+    void beginCustomResetModel();
+    void endCustomResetModel();
+
     TableView& view_;
     BaseBufferTableWidget* table_widget_{nullptr};
     TableViewDataSource& data_source_;
 
     int sort_column_{-1};
     Qt::SortOrder sort_order_{Qt::AscendingOrder};
+    bool resetting_model_{false};
 };
