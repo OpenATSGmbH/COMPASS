@@ -26,6 +26,9 @@
 #include "dbcontent/dbcontentmanager.h"
 //#include "tableviewdatasource.h"
 #include "logger.h"
+#include "stringconv.h"
+
+#include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -110,7 +113,13 @@ void TableViewDataWidget::updateData_impl(bool requires_reset)
 
 void TableViewDataWidget::loadingDone_impl()
 {
-    logdbg << "begin";
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
+    unsigned int num_records = 0;
+    for (auto& buf_it : viewData())
+        num_records += buf_it.second->size();
+
+    loginf << "begin with " << num_records << " records";
 
     //default behavior
     ViewDataWidget::loadingDone_impl();
@@ -118,14 +127,27 @@ void TableViewDataWidget::loadingDone_impl()
     for (auto& buf_widget : buffer_tables_)
         showTab(buf_widget.second, buf_widget.second->hasData());
 
-    logdbg << "end";
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+    loginf << "done with " << num_records << " records in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
 }
 
 ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
 {
-    logdbg << "start - recompute = " << recompute;
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
+    unsigned int num_records = 0;
+    for (auto& buf_it : viewData())
+        num_records += buf_it.second->size();
+
+    loginf << "start - recompute = " << recompute << " records " << num_records;
 
     traced_assert(all_buffer_table_widget_);
+
+    setUpdatesEnabled(false);
+
     all_buffer_table_widget_->show(viewData());
 
     for (auto& buf_it : viewData())
@@ -136,7 +158,13 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
 
     selectFirstSelectedRow();
 
-    logdbg << "end";
+    setUpdatesEnabled(true);
+
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+    loginf << "done with " << num_records << " records in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
 
     return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
 }

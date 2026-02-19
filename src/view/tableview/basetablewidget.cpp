@@ -54,6 +54,7 @@ void BaseBufferTableWidget::initModel(BaseBufferTableModel* model)
     model_ = model;
 
     table_->setModel(model_);
+    table_->horizontalHeader()->setResizeContentsPrecision(100); // sample first 100 rows only
     table_->setSortingEnabled(true);
 
     // default sort by Timestamp column

@@ -29,6 +29,9 @@
 #include "tableview.h"
 #include "tableviewdatasource.h"
 
+#include "logger.h"
+#include "stringconv.h"
+
 #include "json.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
@@ -416,9 +419,21 @@ void BaseBufferTableModel::sort(int column, Qt::SortOrder order)
     sort_column_ = column;
     sort_order_ = order;
 
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
+    unsigned int num_records = dataRowCount();
+
+    loginf << "sorting column " << column << " with " << num_records << " records";
+
     beginResetModel();
     sortRowIndexes();
     endResetModel();
+
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+    loginf << "sorting done with " << num_records << " records in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
 }
 
 void BaseBufferTableModel::sortRowIndexes()
