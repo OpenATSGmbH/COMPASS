@@ -17,70 +17,53 @@
 
 #pragma once
 
+#include "basetablemodel.h"
 #include "dbcontent/variable/variableset.h"
-
-#include <QAbstractTableModel>
 
 #include <memory>
 
-class TableView;
-class Buffer;
 class DBContent;
 class BufferCSVExportJob;
-class TableViewDataSource;
 class BufferTableWidget;
 
-class BufferTableModel : public QAbstractTableModel
+class BufferTableModel : public BaseBufferTableModel
 {
     Q_OBJECT
-
-  signals:
-    void exportDoneSignal(bool cancelled);
-
-  public slots:
-    void setChangedSlot();
-    void exportJobObsoleteSlot();
-    void exportJobDoneSlot();
 
   public:
     BufferTableModel(BufferTableWidget* table_widget, DBContent& object,
                      TableView& view, TableViewDataSource& data_source);
     virtual ~BufferTableModel();
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const;
-    int columnCount(const QModelIndex& parent = QModelIndex()) const;
-    virtual Qt::ItemFlags flags(const QModelIndex& index) const;
-    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
-    virtual bool setData(const QModelIndex& index, const QVariant& value, int role);
-    virtual QVariant headerData(int section, Qt::Orientation orientation,
-                                int role = Qt::DisplayRole) const;
+    using BaseBufferTableModel::setData;
 
-    void clearData();
+    void clearData() override;
     void setData(std::shared_ptr<Buffer> buffer);
     bool hasData() const;
 
-    void saveAsCSV(const std::string& file_name);
+    void saveAsCSV(const std::string& file_name) override;
+    void rebuild() override;
 
-    void reset();
-    void rebuild();
+  public slots:
+    void setChangedSlot() override;
 
-    static bool getSpecialRepresentation(std::string& repr,
-                                         dbContent::Variable& var,
-                                         Buffer& buffer,
-                                         unsigned int buffer_idx);
   protected:
-    BufferTableWidget* table_widget_{nullptr};
-    DBContent& object_;
-    TableView& view_;
-    TableViewDataSource& data_source_;
+    unsigned int dataRowCount() const override;
+    RowData resolveRow(int row) const override;
+    unsigned int prefixColumnCount() const override;
+    unsigned int dataColumnCount() const override;
+    QVariant prefixColumnData(unsigned int col, const RowData& row_data) const override;
+    QVariant prefixColumnHeader(unsigned int col) const override;
+    bool resolveVariable(unsigned int data_col, const std::string& dbcontent_name,
+                         dbContent::Variable*& out_var) const override;
+    QVariant dataColumnHeader(unsigned int data_col) const override;
 
+  private:
+    DBContent& object_;
     std::shared_ptr<Buffer> buffer_;
     dbContent::VariableSet read_set_;
-
     std::shared_ptr<BufferCSVExportJob> export_job_;
-
     std::vector<unsigned int> row_indexes_;
 
     void updateRows();
 };
-

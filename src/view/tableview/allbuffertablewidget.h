@@ -17,61 +17,34 @@
 
 #pragma once
 
-#include <QWidget>
+#include "basetablewidget.h"
+
 #include <memory>
+#include <map>
+#include <vector>
+#include <string>
 
-class QTableView;
 class AllBufferTableModel;
-class QStringList;
 class Buffer;
-class VariableSet;
-class DBContent;
-class TableView;
-class TableViewDataSource;
 
-class AllBufferTableWidget : public QWidget
+class AllBufferTableWidget : public BaseBufferTableWidget
 {
     Q_OBJECT
-
-  signals:
-    void exportDoneSignal(bool cancelled);
-
-  public slots:
-    void exportSlot();
-    void exportDoneSlot(bool cancelled);
 
   public:
     AllBufferTableWidget(TableView& view, TableViewDataSource& data_source, QWidget* parent = nullptr,
                          Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~AllBufferTableWidget();
 
-    void updateToSettingsChange();
-
-    void clear();
     void show(std::map<std::string, std::shared_ptr<Buffer>> buffers);
-
-    void resetModel();
-    void updateToSelection();
-
-    TableView& view() const;
-    void resizeColumns();
 
     void selectSelectedRows();
 
     int rowCount() const;
 
-    std::vector<std::vector<std::string>> getSelectedText (); // first is header
-    std::vector<std::vector<std::string>> getText (unsigned int max_rows=30); // first is header
+    std::vector<std::vector<std::string>> getSelectedText(); // first is header
+    std::vector<std::vector<std::string>> getText(unsigned int max_rows=30); // first is header
 
-    const QTableView* table() const { return table_; }
-
-  protected:
-    TableView& view_;
-    TableViewDataSource& data_source_;
-
-    QTableView* table_{nullptr};
-    AllBufferTableModel* model_{nullptr};
-
-
-    virtual void keyPressEvent(QKeyEvent* event);
+  private:
+    AllBufferTableModel* all_buffer_model_{nullptr};
 };

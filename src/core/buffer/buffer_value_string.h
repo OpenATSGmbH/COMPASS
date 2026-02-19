@@ -17,28 +17,24 @@
 
 #pragma once
 
-#include "basetablewidget.h"
+#include <string>
 
-#include <memory>
-
-class BufferTableModel;
 class Buffer;
-class DBContent;
 
-class BufferTableWidget : public BaseBufferTableWidget
+namespace dbContent {
+class Variable;
+}
+
+namespace buffer_utils
 {
-    Q_OBJECT
 
-  public:
-    BufferTableWidget(DBContent& object, TableView& view, TableViewDataSource& data_source,
-                      QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
-    virtual ~BufferTableWidget();
+/// Returns the string representation of a variable's value from a buffer row.
+/// Sets is_null to true and returns "" if the property is not present in the buffer
+/// or the value is null at the given index.
+std::string getValueString(dbContent::Variable& variable,
+                           Buffer& buffer,
+                           unsigned int buffer_index,
+                           bool use_presentation,
+                           bool& is_null);
 
-    void show(std::shared_ptr<Buffer> buffer);
-
-    bool hasData() const;
-
-  private:
-    DBContent& object_;
-    BufferTableModel* buffer_model_{nullptr};
-};
+} // namespace buffer_utils
