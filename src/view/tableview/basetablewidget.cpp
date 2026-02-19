@@ -24,6 +24,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QFileDialog>
+#include <QHeaderView>
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QTableView>
@@ -51,7 +52,23 @@ void BaseBufferTableWidget::initModel(BaseBufferTableModel* model)
 {
     traced_assert(model);
     model_ = model;
+
     table_->setModel(model_);
+    table_->setSortingEnabled(true);
+
+    // default sort by Timestamp column
+    int ts_col = -1;
+    for (int col = 0; col < model_->columnCount(); ++col)
+    {
+        if (model_->headerData(col, Qt::Horizontal).toString() == "Timestamp")
+        {
+            ts_col = col;
+            break;
+        }
+    }
+    if (ts_col >= 0)
+        table_->sortByColumn(ts_col, Qt::AscendingOrder);
+
     connect(model_, &BaseBufferTableModel::exportDoneSignal,
             this, &BaseBufferTableWidget::exportDoneSlot);
 }

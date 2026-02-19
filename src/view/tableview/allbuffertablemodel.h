@@ -56,6 +56,7 @@ class AllBufferTableModel : public BaseBufferTableModel
     bool resolveVariable(unsigned int data_col, const std::string& dbcontent_name,
                          dbContent::Variable*& out_var) const override;
     QVariant dataColumnHeader(unsigned int data_col) const override;
+    void applyRowPermutation(const std::vector<unsigned int>& perm) override;
 
   private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;

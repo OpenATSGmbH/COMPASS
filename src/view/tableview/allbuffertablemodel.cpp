@@ -166,6 +166,7 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
 
     updateTimeIndexes();
     rebuildRowIndexes();
+    sortRowIndexes();
 
     endResetModel();
 }
@@ -265,8 +266,17 @@ void AllBufferTableModel::rebuild()
 
     updateTimeIndexes();
     rebuildRowIndexes();
+    sortRowIndexes();
 
     endResetModel();
+}
+
+void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)
+{
+    std::vector<std::pair<unsigned int, unsigned int>> new_indexes(perm.size());
+    for (unsigned int i = 0; i < perm.size(); ++i)
+        new_indexes[i] = row_indexes_[perm[i]];
+    row_indexes_ = std::move(new_indexes);
 }
 
 void AllBufferTableModel::saveAsCSV(const std::string& file_name)

@@ -29,7 +29,115 @@
 #include "tableview.h"
 #include "tableviewdatasource.h"
 
+#include "json.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
+
 #include <QApplication>
+
+#include <algorithm>
+#include <numeric>
+
+namespace
+{
+
+/// Returns a raw QVariant value from the buffer for efficient sort key extraction.
+/// Numeric types are returned as their native QVariant type (int, double, qlonglong, etc.)
+/// rather than formatted strings, avoiding expensive string conversion during sort.
+QVariant getRawSortValue(dbContent::Variable& var, Buffer& buffer, unsigned int idx)
+{
+    PropertyDataType dt = var.dataType();
+    const std::string& name = var.name();
+
+    switch (dt)
+    {
+    case PropertyDataType::BOOL:
+        if (!buffer.has<bool>(name) || buffer.get<bool>(name).isNull(idx))
+            return QVariant();
+        return QVariant(buffer.get<bool>(name).get(idx));
+
+    case PropertyDataType::CHAR:
+        if (!buffer.has<char>(name) || buffer.get<char>(name).isNull(idx))
+            return QVariant();
+        return QVariant(static_cast<int>(buffer.get<char>(name).get(idx)));
+
+    case PropertyDataType::UCHAR:
+        if (!buffer.has<unsigned char>(name) || buffer.get<unsigned char>(name).isNull(idx))
+            return QVariant();
+        return QVariant(static_cast<int>(buffer.get<unsigned char>(name).get(idx)));
+
+    case PropertyDataType::INT:
+        if (!buffer.has<int>(name) || buffer.get<int>(name).isNull(idx))
+            return QVariant();
+        return QVariant(buffer.get<int>(name).get(idx));
+
+    case PropertyDataType::UINT:
+        if (!buffer.has<unsigned int>(name) || buffer.get<unsigned int>(name).isNull(idx))
+            return QVariant();
+        return QVariant(buffer.get<unsigned int>(name).get(idx));
+
+    case PropertyDataType::LONGINT:
+        if (!buffer.has<long int>(name) || buffer.get<long int>(name).isNull(idx))
+            return QVariant();
+        return QVariant(static_cast<qlonglong>(buffer.get<long int>(name).get(idx)));
+
+    case PropertyDataType::ULONGINT:
+        if (!buffer.has<unsigned long int>(name) || buffer.get<unsigned long int>(name).isNull(idx))
+            return QVariant();
+        return QVariant(static_cast<qulonglong>(buffer.get<unsigned long int>(name).get(idx)));
+
+    case PropertyDataType::FLOAT:
+        if (!buffer.has<float>(name) || buffer.get<float>(name).isNull(idx))
+            return QVariant();
+        return QVariant(static_cast<double>(buffer.get<float>(name).get(idx)));
+
+    case PropertyDataType::DOUBLE:
+        if (!buffer.has<double>(name) || buffer.get<double>(name).isNull(idx))
+            return QVariant();
+        return QVariant(buffer.get<double>(name).get(idx));
+
+    case PropertyDataType::STRING:
+        if (!buffer.has<std::string>(name) || buffer.get<std::string>(name).isNull(idx))
+            return QVariant();
+        return QVariant(QString::fromStdString(buffer.get<std::string>(name).get(idx)));
+
+    case PropertyDataType::TIMESTAMP:
+    {
+        if (!buffer.has<boost::posix_time::ptime>(name) ||
+            buffer.get<boost::posix_time::ptime>(name).isNull(idx))
+            return QVariant();
+        boost::posix_time::ptime ts = buffer.get<boost::posix_time::ptime>(name).get(idx);
+        static const boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
+        return QVariant(static_cast<qlonglong>((ts - epoch).total_microseconds()));
+    }
+
+    case PropertyDataType::JSON:
+        if (!buffer.has<nlohmann::json>(name) || buffer.get<nlohmann::json>(name).isNull(idx))
+            return QVariant();
+        return QVariant(QString::fromStdString(
+            buffer.get<nlohmann::json>(name).get(idx).dump()));
+
+    default:
+        return QVariant();
+    }
+}
+
+/// Type-aware QVariant comparison matching Qt's internal isVariantLessThan.
+bool variantLessThan(const QVariant& l, const QVariant& r)
+{
+    switch (l.type())
+    {
+    case QVariant::Int:       return l.toInt() < r.toInt();
+    case QVariant::UInt:      return l.toUInt() < r.toUInt();
+    case QVariant::LongLong:  return l.toLongLong() < r.toLongLong();
+    case QVariant::ULongLong: return l.toULongLong() < r.toULongLong();
+    case QVariant::Double:    return l.toDouble() < r.toDouble();
+    case QVariant::Bool:      return !l.toBool() && r.toBool();
+    case QVariant::String:    return l.toString() < r.toString();
+    default:                  return l.toString() < r.toString();
+    }
+}
+
+} // anonymous namespace
 
 BaseBufferTableModel::BaseBufferTableModel(TableView& view, BaseBufferTableWidget* table_widget,
                                            TableViewDataSource& data_source)
@@ -301,4 +409,74 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
     }
 
     return false;
+}
+
+void BaseBufferTableModel::sort(int column, Qt::SortOrder order)
+{
+    sort_column_ = column;
+    sort_order_ = order;
+
+    beginResetModel();
+    sortRowIndexes();
+    endResetModel();
+}
+
+void BaseBufferTableModel::sortRowIndexes()
+{
+    if (sort_column_ < 0)
+        return;
+
+    unsigned int n = dataRowCount();
+    if (n == 0)
+        return;
+
+    unsigned int col = static_cast<unsigned int>(sort_column_);
+
+    // extract sort keys once (N calls) instead of per-comparison (N*logN calls)
+    std::vector<QVariant> keys(n);
+    for (unsigned int i = 0; i < n; ++i)
+    {
+        RowData rd = resolveRow(i);
+
+        if (col == 0)  // checkbox column
+        {
+            if (rd.buffer->has<bool>(DBContent::selected_var.name()) &&
+                !rd.buffer->get<bool>(DBContent::selected_var.name()).isNull(rd.buffer_index))
+                keys[i] = QVariant(rd.buffer->get<bool>(DBContent::selected_var.name()).get(rd.buffer_index));
+        }
+        else if (col < prefixColumnCount())
+        {
+            keys[i] = prefixColumnData(col, rd);
+        }
+        else
+        {
+            unsigned int data_col = col - prefixColumnCount();
+            dbContent::Variable* var = nullptr;
+            if (resolveVariable(data_col, rd.dbcontent_name, var) && var &&
+                rd.buffer->properties().hasProperty(var->name()))
+            {
+                keys[i] = getRawSortValue(*var, *rd.buffer, rd.buffer_index);
+            }
+        }
+    }
+
+    // build permutation and sort by pre-extracted keys
+    std::vector<unsigned int> perm(n);
+    std::iota(perm.begin(), perm.end(), 0);
+
+    bool ascending = (sort_order_ == Qt::AscendingOrder);
+    std::stable_sort(perm.begin(), perm.end(), [&](unsigned int a, unsigned int b)
+    {
+        bool a_valid = keys[a].isValid();
+        bool b_valid = keys[b].isValid();
+        if (!a_valid && !b_valid) return false;
+        if (!a_valid) return ascending;   // nulls first in ascending
+        if (!b_valid) return !ascending;
+        if (ascending)
+            return variantLessThan(keys[a], keys[b]);
+        else
+            return variantLessThan(keys[b], keys[a]);
+    });
+
+    applyRowPermutation(perm);
 }

@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 class TableView;
 class Buffer;
@@ -55,6 +56,7 @@ class BaseBufferTableModel : public QAbstractTableModel
     bool setData(const QModelIndex& index, const QVariant& value, int role) override;
     QVariant headerData(int section, Qt::Orientation orientation,
                         int role = Qt::DisplayRole) const override;
+    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
     virtual void clearData() = 0;
     virtual void saveAsCSV(const std::string& file_name) = 0;
@@ -101,7 +103,19 @@ class BaseBufferTableModel : public QAbstractTableModel
     /// Returns header text for a data column
     virtual QVariant dataColumnHeader(unsigned int data_col) const = 0;
 
+    /// Reorders the subclass's row_indexes_ according to a permutation vector.
+    /// perm[i] = j means new row i takes the value from old row j.
+    virtual void applyRowPermutation(const std::vector<unsigned int>& perm) = 0;
+
+    /// Sorts row_indexes_ in-place by the stored sort column/order.
+    /// Call after building row_indexes_ (in rebuild/setData) to re-apply the active sort.
+    /// No-op if no sort is active (sort_column_ < 0).
+    void sortRowIndexes();
+
     TableView& view_;
     BaseBufferTableWidget* table_widget_{nullptr};
     TableViewDataSource& data_source_;
+
+    int sort_column_{-1};
+    Qt::SortOrder sort_order_{Qt::AscendingOrder};
 };

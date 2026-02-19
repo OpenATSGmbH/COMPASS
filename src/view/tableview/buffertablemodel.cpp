@@ -135,6 +135,7 @@ void BufferTableModel::setData(std::shared_ptr<Buffer> buffer)
 
     buffer_ = buffer;
     updateRows();
+    sortRowIndexes();
 
     endResetModel();
 }
@@ -198,8 +199,17 @@ void BufferTableModel::rebuild()
 
     row_indexes_.clear();
     updateRows();
+    sortRowIndexes();
 
     endResetModel();
+}
+
+void BufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)
+{
+    std::vector<unsigned int> new_indexes(perm.size());
+    for (unsigned int i = 0; i < perm.size(); ++i)
+        new_indexes[i] = row_indexes_[perm[i]];
+    row_indexes_ = std::move(new_indexes);
 }
 
 void BufferTableModel::saveAsCSV(const std::string& file_name)
