@@ -172,8 +172,11 @@ int main(int argc, char** argv)
         std::set_terminate(terminateHandler);
 
         signal(SIGSEGV, safeSignalHandler);  // stack likely corrupted
+        signal(SIGBUS,  safeSignalHandler);  // stack likely corrupted
+        signal(SIGFPE,  safeSignalHandler);  // arithmetic fault
         signal(SIGABRT, signalHandler);      // stack likely intact
         signal(SIGTERM, signalHandler);      // stack likely intact
+        signal(SIGPIPE, SIG_IGN);           // prevent crash on broken socket
         
         const bool is_app_image = Utils::System::appDir() != nullptr;
 
