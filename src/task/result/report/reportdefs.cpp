@@ -83,6 +83,8 @@ ReportExportMode reportExportModeFromString(const std::string& str)
         return ReportExportMode::Latex;
     else if (str == "PDF")
         return ReportExportMode::LatexPDF;
+    else if (str == "DOCX")
+        return ReportExportMode::DOCX;
     else if (str == "CSV")
         return ReportExportMode::CSV;
 
@@ -103,6 +105,8 @@ std::string reportExportMode2String(ReportExportMode mode)
             return "Latex";
         case ReportExportMode::LatexPDF:
             return "PDF";
+        case ReportExportMode::DOCX:
+            return "DOCX";
         case ReportExportMode::CSV:
             return "CSV";
     }
@@ -122,6 +126,8 @@ std::string reportExportMode2Extension(ReportExportMode mode)
             return ".tex";
         case ReportExportMode::LatexPDF:
             return ".pdf";
+        case ReportExportMode::DOCX:
+            return ".docx";
         case ReportExportMode::CSV:
             return ".csv";
     }

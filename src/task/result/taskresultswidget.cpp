@@ -105,17 +105,20 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     bool pdflatex_found = Utils::System::exec("which pdflatex").size();
 
     auto action_export_json  = export_menu->addAction("Export as JSON");
+    auto action_export_docx  = export_menu->addAction("Export as DOCX");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");
 
     action_export_pdf->setEnabled(pdflatex_found);
     action_export_pdf->setToolTip(pdflatex_found ? "" : "pdflatex not installed");
 
-    connect(action_export_json, &QAction::triggered, 
+    connect(action_export_json, &QAction::triggered,
         [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::JSONFile); });
-    connect(action_export_latex, &QAction::triggered, 
+    connect(action_export_docx, &QAction::triggered,
+        [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::DOCX); });
+    connect(action_export_latex, &QAction::triggered,
         [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::Latex); });
-    connect(action_export_pdf, &QAction::triggered, 
+    connect(action_export_pdf, &QAction::triggered,
         [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::LatexPDF); });
 
     export_result_button_->setMenu(export_menu);

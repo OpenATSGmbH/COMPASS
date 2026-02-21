@@ -261,13 +261,14 @@ void ReportExportDialog::configureUI(const boost::optional<std::string>& export_
     bool is_latex_mode = export_mode_ == ReportExportMode::Latex ||
                          export_mode_ == ReportExportMode::LatexPDF;
     bool is_pdf_mode   = export_mode_ == ReportExportMode::LatexPDF;
+    bool is_docx_mode  = export_mode_ == ReportExportMode::DOCX;
 
     config_widget_->setVisible(export_mode_ != ReportExportMode::JSONBlob);
     config_spacer_->setVisible(export_mode_ != ReportExportMode::JSONBlob);
 
     setRowVisible(latex_max_rows_edit_, is_latex_mode);
     setRowVisible(latex_max_colw_edit_, is_latex_mode);
-    setRowVisible(open_file_box_      , is_pdf_mode  );
+    setRowVisible(open_file_box_      , is_pdf_mode || is_docx_mode);
 
     loadSettings();
 }

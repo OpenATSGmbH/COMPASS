@@ -82,6 +82,7 @@ namespace ResultReport
         JSONBlob,
         Latex,
         LatexPDF,
+        DOCX,
         CSV //@TODO: to be fully implemented
     };
 

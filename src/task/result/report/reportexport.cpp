@@ -19,6 +19,7 @@
 #include "task/result/report/reportexporter.h"
 #include "task/result/report/reportexporterjson.h"
 #include "task/result/report/reportexporterlatex.h"
+#include "task/result/report/reportexporterdocx.h"
 
 #include "taskmanager.h"
 
@@ -108,6 +109,10 @@ std::unique_ptr<ReportExporter> ReportExport::createExporter(ReportExportMode mo
     else if (mode == ReportExportMode::LatexPDF)
     {
         return std::unique_ptr<ReportExporter>(new ReportExporterLatexPDF(this, fn, resource_dir, interaction_mode));
+    }
+    else if (mode == ReportExportMode::DOCX)
+    {
+        return std::unique_ptr<ReportExporter>(new ReportExporterDocxFile(this, fn, resource_dir, interaction_mode));
     }
 
     return std::unique_ptr<ReportExporter>();
