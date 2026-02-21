@@ -50,6 +50,12 @@ public:
     std::string abstract() const;
     void abstract(const std::string& abstract);
 
+    void footerLeft(const std::string& text);
+    void footerRightLogo(const std::string& logo_path);
+
+    std::string footerRelId() const;
+    bool hasFooter() const;
+
     // hierarchical section access: "Foo:Bar:Baz" creates Foo → Bar → Baz
     DocxSection& getSection(const std::string& id);
 
@@ -71,14 +77,24 @@ protected:
     std::string author_;
     std::string abstract_;
 
+    std::string footer_left_;   // left footer text (e.g. licensee)
+    std::string footer_right_logo_path_; // right footer logo image path
+
     std::vector<DocxImageEntry> images_;
-    int next_rel_id_ = 4; // rId1-3 reserved for styles/numbering/settings
+    int next_rel_id_ = 5; // rId1=styles, rId2=footer, rId3=reserved; images start at rId5+
+
+    std::string footer_rel_id_;       // relationship ID for footer part
+    std::string footer_logo_rel_id_;  // relationship ID for logo image inside footer
 
     std::string generateContentTypes() const;
     std::string generateRels() const;
     std::string generateDocumentRels() const;
+    std::string generateFooterRels() const;
     std::string generateStyles() const;
     std::string generateDocumentXml();
+    std::string generateFooterXml() const;
+
+    std::string sectionPropertiesXml(bool landscape) const;
 
     void addZipEntry(struct archive* a, const std::string& name, const std::string& data) const;
     void addZipFile(struct archive* a, const std::string& archive_name, const std::string& disk_path) const;

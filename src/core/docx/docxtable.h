@@ -36,6 +36,7 @@ public:
 
     void setWideTable(bool wide_table);
     void setMaxRowCount(int max_row_count);
+    void setFooterRefId(const std::string& id);
 
 protected:
     std::string name_;
@@ -43,6 +44,7 @@ protected:
     std::vector<std::string> headings_;
     bool wide_table_ = false;
     int num_max_rows_ = -1;
+    std::string footer_ref_id_;
 
     std::vector<std::vector<std::string>> rows_;
     std::vector<std::vector<unsigned int>> row_styles_;

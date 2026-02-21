@@ -29,6 +29,7 @@
 #include "docximage.h"
 #include "docxtable.h"
 
+#include "compass.h"
 #include "files.h"
 #include "stringconv.h"
 #include "logger.h"
@@ -74,6 +75,15 @@ Result ReportExporterDocx::initExport_impl(TaskResult& result)
 
     if (s.abstract.size())
         docx_doc_->abstract(s.abstract);
+
+    // footer: licensee (left), page number (center), logo (right)
+    auto licensee = COMPASS::instance().licenseeString(true);
+    if (!licensee.empty())
+        docx_doc_->footerLeft(licensee);
+
+    auto logo_path = Utils::Files::getImageFilepath("logo.png");
+    if (boost::filesystem::exists(logo_path))
+        docx_doc_->footerRightLogo(logo_path);
 
     return Result::succeeded();
 }
@@ -259,6 +269,9 @@ Result ReportExporterDocx::exportTable_impl(SectionContentTable& table,
 
             current_table->setMaxRowCount(max_row_count);
             current_table->setWideTable(wide_table);
+
+            if (docx_doc_->hasFooter())
+                current_table->setFooterRefId(docx_doc_->footerRelId());
         }
 
         // export row content using DOCX mode

@@ -55,6 +55,7 @@ std::string DocxTable::name() const { return name_; }
 
 void DocxTable::setWideTable(bool wide_table) { wide_table_ = wide_table; }
 void DocxTable::setMaxRowCount(int max_row_count) { num_max_rows_ = max_row_count; }
+void DocxTable::setFooterRefId(const std::string& id) { footer_ref_id_ = id; }
 
 void DocxTable::addRow(std::vector<std::string> row, std::vector<unsigned int> cell_styles)
 {
@@ -151,11 +152,16 @@ std::string DocxTable::toXml()
 {
     std::stringstream ss;
 
-    // section break for landscape if wide table
+    // in OOXML, sectPr in a paragraph defines the section that ENDS at that paragraph.
+    // to make the table landscape: close the preceding portrait section, then after the
+    // table close the landscape section so the next content resumes portrait.
     if (wide_table_)
     {
-        ss << "<w:p><w:pPr><w:sectPr>"
-           << R"(<w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>)"
+        // end preceding section as portrait
+        ss << "<w:p><w:pPr><w:sectPr>";
+        if (!footer_ref_id_.empty())
+            ss << R"(<w:footerReference w:type="default" r:id=")" << footer_ref_id_ << R"("/>)";
+        ss << R"(<w:pgSz w:w="11906" w:h="16838"/>)"
            << R"(<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="709" w:footer="709" w:gutter="0"/>)"
            << "</w:sectPr></w:pPr></w:p>\n";
     }
@@ -247,11 +253,13 @@ std::string DocxTable::toXml()
 
     ss << "</w:tbl>\n";
 
-    // return to portrait after wide table
+    // end the landscape section (contains the table) so next content resumes portrait
     if (wide_table_)
     {
-        ss << "<w:p><w:pPr><w:sectPr>"
-           << R"(<w:pgSz w:w="11906" w:h="16838"/>)"
+        ss << "<w:p><w:pPr><w:sectPr>";
+        if (!footer_ref_id_.empty())
+            ss << R"(<w:footerReference w:type="default" r:id=")" << footer_ref_id_ << R"("/>)";
+        ss << R"(<w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>)"
            << R"(<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="709" w:footer="709" w:gutter="0"/>)"
            << "</w:sectPr></w:pPr></w:p>\n";
     }
