@@ -87,7 +87,7 @@ private:
     
     std::string export_report_name_; // 'EUROCAE ED-87E Evaluation'
     std::string export_report_directory_;
-    std::string export_report_mode_{"PDF"}; // JSON','Latex','PDF'
+    std::string export_report_mode_{"PDF"}; // 'DOCX','JSON','Latex','PDF'
 
     bool no_config_save_ {false};
 

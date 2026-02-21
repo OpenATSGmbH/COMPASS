@@ -573,7 +573,7 @@ void RTCommandExportReport::collectOptions_impl(OptionsDescription& options,
     ADD_RTCOMMAND_OPTIONS(options)
         ("report,r", po::value<std::string>()->required(), "report name, e.g. 'EUROCAE ED-87E Evaluation'")
         ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. '/data/report2/'")
-        ("mode,m", po::value<std::string>()->required(), "export mode, i.e. 'JSON','Latex','PDF'");
+        ("mode,m", po::value<std::string>()->required(), "export mode, i.e. 'DOCX','JSON','Latex','PDF'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "report")
     ADD_RTCOMMAND_POS_OPTION(positional, "dir"   )
