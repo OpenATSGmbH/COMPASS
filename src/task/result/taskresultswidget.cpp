@@ -104,8 +104,8 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
 
     bool pdflatex_found = Utils::System::exec("which pdflatex").size();
 
-    auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_docx  = export_menu->addAction("Export as DOCX");
+    auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");
 

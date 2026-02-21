@@ -470,39 +470,47 @@ std::string DocxDocument::generateFooterXml() const
        << R"( xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main")"
        << R"( xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">)";
 
-    // single paragraph with tab stops: left | center | right
-    ss << "<w:p><w:pPr>"
-       << "<w:tabs>"
-       << R"(<w:tab w:val="center" w:pos="4819"/>)"
-       << R"(<w:tab w:val="right" w:pos="9638"/>)"
-       << "</w:tabs>"
-       << R"(<w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>)"
-       << "</w:pPr>";
+    // 3-column borderless table: adapts to any page width (portrait or landscape)
+    ss << "<w:tbl>"
+       << "<w:tblPr>"
+       << R"(<w:tblW w:w="5000" w:type="pct"/>)"
+       << "<w:tblBorders>"
+       << R"(<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>)"
+       << R"(<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>)"
+       << R"(<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>)"
+       << R"(<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>)"
+       << R"(<w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>)"
+       << R"(<w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>)"
+       << "</w:tblBorders>"
+       << "</w:tblPr>"
+       << "<w:tblGrid><w:gridCol/><w:gridCol/><w:gridCol/></w:tblGrid>"
+       << "<w:tr>";
 
-    // left: licensee text
+    // left cell: licensee text
+    ss << "<w:tc><w:p>"
+       << R"(<w:pPr><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr>)";
     if (!footer_left_.empty())
     {
         ss << R"(<w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>)"
            << R"(<w:t xml:space="preserve">)" << xmlEscape(footer_left_) << "</w:t></w:r>";
     }
+    ss << "</w:p></w:tc>";
 
-    // tab to center
-    ss << "<w:r><w:tab/></w:r>";
-
-    // center: page number field
-    ss << R"(<w:fldSimple w:instr=" PAGE ">)"
+    // center cell: page number
+    ss << R"(<w:tc><w:p><w:pPr><w:jc w:val="center"/>)"
+       << R"(<w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr>)"
+       << R"(<w:fldSimple w:instr=" PAGE ">)"
        << R"(<w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>)"
-       << "<w:t>1</w:t></w:r></w:fldSimple>";
+       << "<w:t>1</w:t></w:r></w:fldSimple>"
+       << "</w:p></w:tc>";
 
-    // tab to right
-    ss << "<w:r><w:tab/></w:r>";
-
-    // right: logo image
+    // right cell: logo image
+    ss << R"(<w:tc><w:p><w:pPr><w:jc w:val="right"/>)"
+       << R"(<w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr>)";
     if (!footer_right_logo_path_.empty())
     {
-        // compute logo dimensions — target height ~0.5cm = 180000 EMU
-        int logo_h_emu = 180000;
-        int logo_w_emu = 180000; // default square
+        int logo_h_emu = 180000;  // ~0.5cm
+        int logo_w_emu = 180000;
 
         QImage logo_img(QString::fromStdString(footer_right_logo_path_));
         if (!logo_img.isNull() && logo_img.height() > 0)
@@ -529,8 +537,9 @@ std::string DocxDocument::generateFooterXml() const
            << "</a:graphicData></a:graphic>"
            << "</wp:inline></w:drawing></w:r>";
     }
+    ss << "</w:p></w:tc>";
 
-    ss << "</w:p></w:ftr>";
+    ss << "</w:tr></w:tbl></w:ftr>";
     return ss.str();
 }
 
