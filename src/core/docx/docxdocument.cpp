@@ -301,18 +301,21 @@ std::string DocxDocument::generateDocumentXml()
     // title page
     if (!title_.empty())
     {
+        // vertical space before title (~6cm)
+        ss << "<w:p><w:pPr><w:spacing w:before=\"3400\"/></w:pPr></w:p>\n";
+
+        // title - bold centered text (32pt), no heading style
         ss << "<w:p><w:pPr>"
-           << "<w:pStyle w:val=\"Heading1\"/>"
            << "<w:jc w:val=\"center\"/>"
            << "</w:pPr>"
-           << "<w:r><w:rPr><w:sz w:val=\"48\"/><w:szCs w:val=\"48\"/></w:rPr>"
+           << "<w:r><w:rPr><w:b/><w:sz w:val=\"64\"/><w:szCs w:val=\"64\"/></w:rPr>"
            << "<w:t xml:space=\"preserve\">" << xmlEscape(title_) << "</w:t>"
            << "</w:r></w:p>\n";
 
         if (!author_.empty())
         {
-            ss << "<w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr>"
-               << "<w:r><w:rPr><w:sz w:val=\"24\"/></w:rPr>"
+            ss << "<w:p><w:pPr><w:jc w:val=\"center\"/><w:spacing w:before=\"200\"/></w:pPr>"
+               << "<w:r><w:rPr><w:sz w:val=\"24\"/><w:szCs w:val=\"24\"/></w:rPr>"
                << "<w:t xml:space=\"preserve\">" << xmlEscape(author_) << "</w:t>"
                << "</w:r></w:p>\n";
         }
@@ -320,7 +323,7 @@ std::string DocxDocument::generateDocumentXml()
         // date
         auto date = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm").toStdString();
         ss << "<w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr>"
-           << "<w:r><w:rPr><w:sz w:val=\"22\"/></w:rPr>"
+           << "<w:r><w:rPr><w:sz w:val=\"22\"/><w:szCs w:val=\"22\"/></w:rPr>"
            << "<w:t xml:space=\"preserve\">" << xmlEscape(date) << "</w:t>"
            << "</w:r></w:p>\n";
 
@@ -328,17 +331,17 @@ std::string DocxDocument::generateDocumentXml()
         {
             // spacing before abstract
             ss << "<w:p/>\n";
-            ss << "<w:p>"
+            ss << "<w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr>"
                << "<w:r><w:rPr><w:i/></w:rPr>"
                << "<w:t xml:space=\"preserve\">" << xmlEscape(abstract_) << "</w:t>"
                << "</w:r></w:p>\n";
         }
 
-        // logo centered on title page
+        // logo centered in bottom third of page
         if (!title_logo_rel_id_.empty())
         {
-            for (int i = 0; i < 4; ++i)
-                ss << "<w:p/>\n";
+            // spacing to push logo into bottom third (~8.8cm)
+            ss << "<w:p><w:pPr><w:spacing w:before=\"5000\"/></w:pPr></w:p>\n";
 
             int logo_h_emu = 1080000;  // ~3cm
             int logo_w_emu = 1080000;
