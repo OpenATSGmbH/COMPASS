@@ -48,18 +48,21 @@ void DocxDocument::abstract(const std::string& abstract) { abstract_ = abstract;
 
 void DocxDocument::footerLeft(const std::string& text) { footer_left_ = text; }
 
-void DocxDocument::footerRightLogo(const std::string& logo_path)
+void DocxDocument::setLogo(const std::string& logo_path)
 {
-    footer_right_logo_path_ = logo_path;
+    logo_path_ = logo_path;
     footer_rel_id_      = "rId3"; // document → footer1.xml
     footer_logo_rel_id_ = "rId1"; // footer → logo image
+
+    // also register as document body image for the title page
+    title_logo_rel_id_ = addImageFile(logo_path);
 }
 
 std::string DocxDocument::footerRelId() const { return footer_rel_id_; }
 
 bool DocxDocument::hasFooter() const
 {
-    return !footer_left_.empty() || !footer_right_logo_path_.empty();
+    return !footer_left_.empty() || !logo_path_.empty();
 }
 
 std::string DocxDocument::path() const { return path_; }
@@ -285,6 +288,8 @@ std::string DocxDocument::generateDocumentXml()
        << R"( xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math")"
        << R"( xmlns:v="urn:schemas-microsoft-com:vml")"
        << R"( xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing")"
+       << R"( xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main")"
+       << R"( xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture")"
        << R"( xmlns:w10="urn:schemas-microsoft-com:office:word")"
        << R"( xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main")"
        << R"( xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml")"
@@ -327,6 +332,42 @@ std::string DocxDocument::generateDocumentXml()
                << "<w:r><w:rPr><w:i/></w:rPr>"
                << "<w:t xml:space=\"preserve\">" << xmlEscape(abstract_) << "</w:t>"
                << "</w:r></w:p>\n";
+        }
+
+        // logo centered on title page
+        if (!title_logo_rel_id_.empty())
+        {
+            for (int i = 0; i < 4; ++i)
+                ss << "<w:p/>\n";
+
+            int logo_h_emu = 1080000;  // ~3cm
+            int logo_w_emu = 1080000;
+
+            QImage logo_img(QString::fromStdString(logo_path_));
+            if (!logo_img.isNull() && logo_img.height() > 0)
+            {
+                double aspect = (double)logo_img.width() / logo_img.height();
+                logo_w_emu = (int)(logo_h_emu * aspect);
+            }
+
+            ss << "<w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr>"
+               << "<w:r><w:drawing>"
+               << R"(<wp:inline distT="0" distB="0" distL="0" distR="0">)"
+               << R"(<wp:extent cx=")" << logo_w_emu << R"(" cy=")" << logo_h_emu << R"("/>)"
+               << R"(<wp:docPr id="1001" name="Title Logo"/>)"
+               << "<a:graphic>"
+               << R"(<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">)"
+               << "<pic:pic>"
+               << R"(<pic:nvPicPr><pic:cNvPr id="1001" name="title_logo"/><pic:cNvPicPr/></pic:nvPicPr>)"
+               << R"(<pic:blipFill><a:blip r:embed=")" << title_logo_rel_id_ << R"("/>)"
+               << "<a:stretch><a:fillRect/></a:stretch></pic:blipFill>"
+               << "<pic:spPr>"
+               << R"(<a:xfrm><a:off x="0" y="0"/><a:ext cx=")" << logo_w_emu << R"(" cy=")" << logo_h_emu << R"("/></a:xfrm>)"
+               << R"(<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>)"
+               << "</pic:spPr>"
+               << "</pic:pic>"
+               << "</a:graphicData></a:graphic>"
+               << "</wp:inline></w:drawing></w:r></w:p>\n";
         }
 
         // page break after title
@@ -418,12 +459,12 @@ void DocxDocument::write()
     {
         addZipEntry(a, "word/footer1.xml", generateFooterXml());
 
-        if (!footer_right_logo_path_.empty())
+        if (!logo_path_.empty())
         {
             addZipEntry(a, "word/_rels/footer1.xml.rels", generateFooterRels());
 
-            auto ext = boost::filesystem::path(footer_right_logo_path_).extension().string();
-            addZipFile(a, "word/media/footer_logo" + ext, footer_right_logo_path_);
+            auto ext = boost::filesystem::path(logo_path_).extension().string();
+            addZipFile(a, "word/media/footer_logo" + ext, logo_path_);
         }
     }
 
@@ -507,12 +548,12 @@ std::string DocxDocument::generateFooterXml() const
     // right cell: logo image
     ss << R"(<w:tc><w:p><w:pPr><w:jc w:val="right"/>)"
        << R"(<w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr>)";
-    if (!footer_right_logo_path_.empty())
+    if (!logo_path_.empty())
     {
         int logo_h_emu = 180000;  // ~0.5cm
         int logo_w_emu = 180000;
 
-        QImage logo_img(QString::fromStdString(footer_right_logo_path_));
+        QImage logo_img(QString::fromStdString(logo_path_));
         if (!logo_img.isNull() && logo_img.height() > 0)
         {
             double aspect = (double)logo_img.width() / logo_img.height();
@@ -549,9 +590,9 @@ std::string DocxDocument::generateFooterRels() const
     ss << R"(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>)"
        << R"(<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">)";
 
-    if (!footer_right_logo_path_.empty())
+    if (!logo_path_.empty())
     {
-        auto ext = boost::filesystem::path(footer_right_logo_path_).extension().string();
+        auto ext = boost::filesystem::path(logo_path_).extension().string();
         ss << R"(<Relationship Id=")" << footer_logo_rel_id_
            << R"(" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/footer_logo)"
            << ext << R"("/>)";

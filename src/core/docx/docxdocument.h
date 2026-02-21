@@ -51,7 +51,7 @@ public:
     void abstract(const std::string& abstract);
 
     void footerLeft(const std::string& text);
-    void footerRightLogo(const std::string& logo_path);
+    void setLogo(const std::string& logo_path);
 
     std::string footerRelId() const;
     bool hasFooter() const;
@@ -78,13 +78,14 @@ protected:
     std::string abstract_;
 
     std::string footer_left_;   // left footer text (e.g. licensee)
-    std::string footer_right_logo_path_; // right footer logo image path
+    std::string logo_path_; // logo image path (used in footer and title page)
 
     std::vector<DocxImageEntry> images_;
     int next_rel_id_ = 5; // rId1=styles, rId2=footer, rId3=reserved; images start at rId5+
 
     std::string footer_rel_id_;       // relationship ID for footer part
     std::string footer_logo_rel_id_;  // relationship ID for logo image inside footer
+    std::string title_logo_rel_id_;   // relationship ID for logo on title page (document body)
 
     std::string generateContentTypes() const;
     std::string generateRels() const;

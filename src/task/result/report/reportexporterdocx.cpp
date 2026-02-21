@@ -83,7 +83,7 @@ Result ReportExporterDocx::initExport_impl(TaskResult& result)
 
     auto logo_path = Utils::Files::getImageFilepath("logo.png");
     if (boost::filesystem::exists(logo_path))
-        docx_doc_->footerRightLogo(logo_path);
+        docx_doc_->setLogo(logo_path);
 
     return Result::succeeded();
 }

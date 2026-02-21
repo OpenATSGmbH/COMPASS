@@ -30,8 +30,21 @@ std::string DocxContent::toXml()
 {
     std::stringstream ss;
 
-    for (auto& cont_it : sub_content_)
-        ss << cont_it->toXml();
+    for (size_t i = 0; i < sub_content_.size(); ++i)
+    {
+        ss << sub_content_[i]->toXml();
+
+        // insert spacing paragraph when a table is immediately followed by an image or another table
+        if (i + 1 < sub_content_.size())
+        {
+            bool cur_is_table = dynamic_cast<DocxTable*>(sub_content_[i].get()) != nullptr;
+            bool next_is_image = dynamic_cast<DocxImage*>(sub_content_[i + 1].get()) != nullptr;
+            bool next_is_table = dynamic_cast<DocxTable*>(sub_content_[i + 1].get()) != nullptr;
+
+            if (cur_is_table && (next_is_image || next_is_table))
+                ss << "<w:p/>\n";
+        }
+    }
 
     return ss.str();
 }
