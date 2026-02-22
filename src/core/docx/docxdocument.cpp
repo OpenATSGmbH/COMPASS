@@ -197,7 +197,8 @@ std::string DocxDocument::generateContentTypes() const
        << R"(<Default Extension="jpg" ContentType="image/jpeg"/>)"
        << R"(<Default Extension="jpeg" ContentType="image/jpeg"/>)"
        << R"(<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>)"
-       << R"(<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>)";
+       << R"(<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>)"
+       << R"(<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>)";
 
     if (hasFooter())
         ss << R"(<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>)";
@@ -219,7 +220,8 @@ std::string DocxDocument::generateDocumentRels() const
     std::stringstream ss;
     ss << R"(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>)"
        << R"(<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">)"
-       << R"(<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>)";
+       << R"(<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>)"
+       << R"(<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>)";
 
     if (hasFooter())
     {
@@ -273,6 +275,14 @@ std::string DocxDocument::generateStyles() const
 
     ss << "</w:styles>";
     return ss.str();
+}
+
+std::string DocxDocument::generateSettings() const
+{
+    return R"(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>)"
+           R"(<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">)"
+           R"(<w:updateFields w:val="true"/>)"
+           R"(</w:settings>)";
 }
 
 std::string DocxDocument::generateDocumentXml()
@@ -375,6 +385,29 @@ std::string DocxDocument::generateDocumentXml()
 
         // page break after title
         ss << "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n";
+
+        // table of contents
+        ss << "<w:sdt><w:sdtPr>"
+           << "<w:docPartObj><w:docPartGallery w:val=\"Table of Contents\"/><w:docPartUnique/></w:docPartObj>"
+           << "</w:sdtPr><w:sdtContent>\n";
+
+        // TOC heading
+        ss << "<w:p><w:pPr><w:pStyle w:val=\"TOCHeading\"/></w:pPr>"
+           << "<w:r><w:t>Table of Contents</w:t></w:r></w:p>\n";
+
+        // TOC field (levels 1-4, hyperlinks)
+        ss << "<w:p>"
+           << "<w:r><w:fldChar w:fldCharType=\"begin\"/></w:r>"
+           << R"(<w:r><w:instrText xml:space="preserve"> TOC \o "1-4" \h \z \u </w:instrText></w:r>)"
+           << "<w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>"
+           << "<w:r><w:t>Update table of contents to see entries.</w:t></w:r>"
+           << "<w:r><w:fldChar w:fldCharType=\"end\"/></w:r>"
+           << "</w:p>\n";
+
+        ss << "</w:sdtContent></w:sdt>\n";
+
+        // page break after TOC
+        ss << "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n";
     }
 
     // all sections and content
@@ -455,6 +488,7 @@ void DocxDocument::write()
     addZipEntry(a, "_rels/.rels",                generateRels());
     addZipEntry(a, "word/document.xml",          generateDocumentXml());
     addZipEntry(a, "word/styles.xml",            generateStyles());
+    addZipEntry(a, "word/settings.xml",          generateSettings());
     addZipEntry(a, "word/_rels/document.xml.rels", generateDocumentRels());
 
     // write footer parts

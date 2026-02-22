@@ -92,6 +92,7 @@ protected:
     std::string generateDocumentRels() const;
     std::string generateFooterRels() const;
     std::string generateStyles() const;
+    std::string generateSettings() const;
     std::string generateDocumentXml();
     std::string generateFooterXml() const;
 
