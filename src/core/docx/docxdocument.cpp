@@ -114,7 +114,22 @@ DocxSection& DocxDocument::getSection(const std::string& id)
         current = &current->getSubSection(parts[i]);
     }
 
+    // assign bookmark for the deepest (returned) section
+    if (current->bookmarkName().empty())
+        current->setBookmarkName(sectionBookmark(id));
+
     return *current;
+}
+
+std::string DocxDocument::sectionBookmark(const std::string& section_path)
+{
+    auto it = section_bookmarks_.find(section_path);
+    if (it != section_bookmarks_.end())
+        return it->second;
+
+    std::string name = "_Ref_" + std::to_string(next_section_bookmark_id_++);
+    section_bookmarks_[section_path] = name;
+    return name;
 }
 
 bool DocxDocument::hasSubSection(const std::string& heading)
@@ -271,6 +286,12 @@ std::string DocxDocument::generateStyles() const
     ss << R"(<w:style w:type="paragraph" w:styleId="TOCHeading">)"
        << R"(<w:name w:val="TOC Heading"/>)"
        << R"(<w:basedOn w:val="Heading1"/>)"
+       << "</w:style>";
+
+    // hyperlink character style (blue, underlined)
+    ss << R"(<w:style w:type="character" w:styleId="Hyperlink">)"
+       << R"(<w:name w:val="Hyperlink"/>)"
+       << R"(<w:rPr><w:color w:val="0000FF"/><w:u w:val="single"/></w:rPr>)"
        << "</w:style>";
 
     ss << "</w:styles>";

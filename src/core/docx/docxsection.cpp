@@ -23,14 +23,20 @@
 #include <sstream>
 #include <cassert>
 
+int DocxSection::next_bookmark_id_ = 0;
+
 DocxSection::DocxSection(int level, const std::string& heading)
-:   level_  (level)
-,   heading_(heading)
+:   level_      (level)
+,   heading_    (heading)
+,   bookmark_id_(next_bookmark_id_++)
 {
 }
 
 int DocxSection::level() const { return level_; }
 std::string DocxSection::heading() const { return heading_; }
+int DocxSection::bookmarkId() const { return bookmark_id_; }
+std::string DocxSection::bookmarkName() const { return bookmark_name_; }
+void DocxSection::setBookmarkName(const std::string& name) { bookmark_name_ = name; }
 
 bool DocxSection::hasSubSection(const std::string& heading)
 {
@@ -114,8 +120,15 @@ std::string DocxSection::toXml()
     std::string style = "Heading" + std::to_string(std::min(level_, 6));
 
     ss << "<w:p>"
-       << "<w:pPr><w:pStyle w:val=\"" << style << "\"/></w:pPr>"
-       << "<w:r>"
+       << "<w:pPr><w:pStyle w:val=\"" << style << "\"/></w:pPr>";
+
+    if (!bookmark_name_.empty())
+    {
+        ss << "<w:bookmarkStart w:id=\"" << bookmark_id_ << "\" w:name=\"" << bookmark_name_ << "\"/>"
+           << "<w:bookmarkEnd w:id=\"" << bookmark_id_ << "\"/>";
+    }
+
+    ss << "<w:r>"
        << "<w:t xml:space=\"preserve\">" << escaped << "</w:t>"
        << "</w:r>"
        << "</w:p>\n";

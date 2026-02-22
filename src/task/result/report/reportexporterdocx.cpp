@@ -321,6 +321,7 @@ Result ReportExporterDocx::exportTable_impl(SectionContentTable& table,
 
         std::vector<std::string> row_strings(num_cols);
         std::vector<unsigned int> cell_styles(num_cols, 0);
+        std::vector<std::string> cell_links(num_cols);
 
         for (unsigned int cnt = 0; cnt < num_cols; ++cnt)
         {
@@ -337,7 +338,11 @@ Result ReportExporterDocx::exportTable_impl(SectionContentTable& table,
                 cell_styles[cnt] |= CellStyleTextColorRed;
         }
 
-        current_table->addRow(std::move(row_strings), std::move(cell_styles));
+        // add section hyperlink on column 0 (Sector Layer) if available
+        if (table.hasReference(row))
+            cell_links[0] = docx_doc_->sectionBookmark(table.reference(row));
+
+        current_table->addRow(std::move(row_strings), std::move(cell_styles), std::move(cell_links));
     }
 
     return Result::succeeded();

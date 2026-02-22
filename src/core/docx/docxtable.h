@@ -28,7 +28,8 @@ public:
     DocxTable(const std::string& name, unsigned int num_columns,
               std::vector<std::string> headings);
 
-    void addRow(std::vector<std::string> row, std::vector<unsigned int> cell_styles = {});
+    void addRow(std::vector<std::string> row, std::vector<unsigned int> cell_styles = {},
+                std::vector<std::string> cell_links = {});
 
     std::string toXml() override;
 
@@ -48,9 +49,10 @@ protected:
 
     std::vector<std::vector<std::string>> rows_;
     std::vector<std::vector<unsigned int>> row_styles_;
+    std::vector<std::vector<std::string>> row_links_;  // per-cell bookmark anchor (empty = no link)
 
     static std::string xmlEscape(const std::string& s);
-    static std::string cellRunXml(const std::string& text, unsigned int style);
+    static std::string cellRunXml(const std::string& text, unsigned int style, bool as_hyperlink = false);
     static std::string cellShadingXml(unsigned int style);
     static std::string colorToHex(int r, int g, int b);
 };

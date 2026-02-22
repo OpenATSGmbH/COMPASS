@@ -50,9 +50,17 @@ public:
     void addImage(const std::string& filename, const std::string& caption,
                   const std::string& rel_id, int width_emu, int height_emu);
 
+    int bookmarkId() const;
+    std::string bookmarkName() const;
+    void setBookmarkName(const std::string& name);
+
     std::string toXml() override;
 
 protected:
     int level_;
     std::string heading_;
+    int bookmark_id_;
+    std::string bookmark_name_;
+
+    static int next_bookmark_id_;
 };

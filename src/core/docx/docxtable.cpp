@@ -57,10 +57,12 @@ void DocxTable::setWideTable(bool wide_table) { wide_table_ = wide_table; }
 void DocxTable::setMaxRowCount(int max_row_count) { num_max_rows_ = max_row_count; }
 void DocxTable::setFooterRefId(const std::string& id) { footer_ref_id_ = id; }
 
-void DocxTable::addRow(std::vector<std::string> row, std::vector<unsigned int> cell_styles)
+void DocxTable::addRow(std::vector<std::string> row, std::vector<unsigned int> cell_styles,
+                       std::vector<std::string> cell_links)
 {
     rows_.push_back(std::move(row));
     row_styles_.push_back(std::move(cell_styles));
+    row_links_.push_back(std::move(cell_links));
 }
 
 std::string DocxTable::xmlEscape(const std::string& s)
@@ -108,19 +110,26 @@ std::string DocxTable::cellShadingXml(unsigned int style)
     return "";
 }
 
-std::string DocxTable::cellRunXml(const std::string& text, unsigned int style)
+std::string DocxTable::cellRunXml(const std::string& text, unsigned int style, bool as_hyperlink)
 {
     std::stringstream ss;
     ss << "<w:r>";
 
     // run properties
-    bool has_props = (style & (StyleTextBold | StyleTextItalic | StyleTextStrikeOut |
-                               StyleTextColorRed | StyleTextColorOrange |
-                               StyleTextColorGreen | StyleTextColorGray |
-                               StyleInactive)) != 0;
+    bool has_props = as_hyperlink || (style & (StyleTextBold | StyleTextItalic | StyleTextStrikeOut |
+                                               StyleTextColorRed | StyleTextColorOrange |
+                                               StyleTextColorGreen | StyleTextColorGray |
+                                               StyleInactive)) != 0;
     if (has_props)
     {
         ss << "<w:rPr>";
+
+        if (as_hyperlink)
+        {
+            ss << R"(<w:rStyle w:val="Hyperlink"/>)";
+            ss << R"(<w:color w:val="0000FF"/>)";
+            ss << R"(<w:u w:val="single"/>)";
+        }
 
         if (style & StyleTextBold)
             ss << "<w:b/>";
@@ -129,17 +138,20 @@ std::string DocxTable::cellRunXml(const std::string& text, unsigned int style)
         if (style & StyleTextStrikeOut)
             ss << "<w:strike/>";
 
-        // text color
-        if (style & StyleInactive)
-            ss << R"(<w:color w:val="808080"/>)"; // darkGray
-        else if (style & StyleTextColorRed)
-            ss << R"(<w:color w:val=")" << colorToHex(220,20,60) << R"("/>)";
-        else if (style & StyleTextColorOrange)
-            ss << R"(<w:color w:val=")" << colorToHex(255,140,0) << R"("/>)";
-        else if (style & StyleTextColorGreen)
-            ss << R"(<w:color w:val=")" << colorToHex(0,128,0) << R"("/>)";
-        else if (style & StyleTextColorGray)
-            ss << R"(<w:color w:val="808080"/>)";
+        // text color (skip if hyperlink — already has blue)
+        if (!as_hyperlink)
+        {
+            if (style & StyleInactive)
+                ss << R"(<w:color w:val="808080"/>)"; // darkGray
+            else if (style & StyleTextColorRed)
+                ss << R"(<w:color w:val=")" << colorToHex(220,20,60) << R"("/>)";
+            else if (style & StyleTextColorOrange)
+                ss << R"(<w:color w:val=")" << colorToHex(255,140,0) << R"("/>)";
+            else if (style & StyleTextColorGreen)
+                ss << R"(<w:color w:val=")" << colorToHex(0,128,0) << R"("/>)";
+            else if (style & StyleTextColorGray)
+                ss << R"(<w:color w:val="808080"/>)";
+        }
 
         ss << "</w:rPr>";
     }
@@ -228,9 +240,23 @@ std::string DocxTable::toXml()
                 ss << "<w:tcPr>" << shading << "</w:tcPr>";
 
             // cell content
+            const auto& links = row_links_[row];
+            bool has_link = col < links.size() && !links[col].empty();
+
             ss << "<w:p>";
+            if (has_link)
+                ss << "<w:hyperlink w:anchor=\"" << xmlEscape(links[col]) << "\">";
+
             if (col < row_data.size())
-                ss << cellRunXml(row_data[col], style);
+            {
+                if (has_link)
+                    ss << cellRunXml(row_data[col], style, true);
+                else
+                    ss << cellRunXml(row_data[col], style);
+            }
+
+            if (has_link)
+                ss << "</w:hyperlink>";
             ss << "</w:p>";
 
             ss << "</w:tc>";

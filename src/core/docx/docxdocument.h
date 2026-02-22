@@ -66,6 +66,9 @@ public:
     // register an image file — returns the relationship ID
     std::string addImageFile(const std::string& source_path);
 
+    // get or create a bookmark name for a section path (e.g. "Results:Sectors:...")
+    std::string sectionBookmark(const std::string& section_path);
+
     std::string path() const;
     std::string filename() const;
 
@@ -86,6 +89,9 @@ protected:
     std::string footer_rel_id_;       // relationship ID for footer part
     std::string footer_logo_rel_id_;  // relationship ID for logo image inside footer
     std::string title_logo_rel_id_;   // relationship ID for logo on title page (document body)
+
+    std::map<std::string, std::string> section_bookmarks_;  // section path → bookmark name
+    int next_section_bookmark_id_ = 0;
 
     std::string generateContentTypes() const;
     std::string generateRels() const;
