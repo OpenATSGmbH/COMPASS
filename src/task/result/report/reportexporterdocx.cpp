@@ -132,7 +132,7 @@ Result ReportExporterDocx::initExport_impl(TaskResult& result)
  */
 ResultT<nlohmann::json> ReportExporterDocx::finalizeExport_impl(TaskResult& result)
 {
-    setStatus("Writing DOCX file");
+    setStatus("Writing DocX file");
 
     try
     {
@@ -140,7 +140,7 @@ ResultT<nlohmann::json> ReportExporterDocx::finalizeExport_impl(TaskResult& resu
     }
     catch (const std::exception& e)
     {
-        return Result::failed("DOCX write failed: " + std::string(e.what()));
+        return Result::failed("DocX write failed: " + std::string(e.what()));
     }
 
     if (settings().open_created_file && hasInteraction())

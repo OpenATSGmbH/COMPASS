@@ -28,7 +28,6 @@
 #include "asynctask.h"
 #include "compass.h"
 #include "reportdefs.h"
-#include "system.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -102,9 +101,9 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
 
     QMenu* export_menu = new QMenu(export_result_button_);
 
-    bool pdflatex_found = Utils::System::exec("which pdflatex").size();
+    bool pdflatex_found = COMPASS::instance().pdflatexFound();
 
-    auto action_export_docx  = export_menu->addAction("Export as DOCX");
+    auto action_export_docx  = export_menu->addAction("Export as DocX");
     auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");

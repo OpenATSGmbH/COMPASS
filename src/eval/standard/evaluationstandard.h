@@ -20,7 +20,6 @@
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
 #include "evaluationstandardrootitem.h"
-#include "eval/results/report/rootitem.h"
 
 #include <QObject>
 

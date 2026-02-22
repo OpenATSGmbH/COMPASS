@@ -16,7 +16,6 @@
  */
 
 #include "evaluationmanager.h"
-#include "eval/results/report/pdfgeneratordialog.h"
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
 #include "eval/requirement/group.h"

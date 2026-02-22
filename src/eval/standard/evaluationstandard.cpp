@@ -33,7 +33,6 @@
 #include <QTreeView>
 
 using namespace std;
-using namespace EvaluationResultsReport;
 
 EvaluationStandard::EvaluationStandard(const std::string& class_id, 
                                        const std::string& instance_id,

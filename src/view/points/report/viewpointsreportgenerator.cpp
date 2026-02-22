@@ -87,7 +87,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
     registerParameter("run_pdflatex", &run_pdflatex_, true);
     registerParameter("open_created_pdf", &open_created_pdf_, false);
 
-    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+    pdflatex_found_ = COMPASS::instance().pdflatexFound();
 
     if (!pdflatex_found_)
     {

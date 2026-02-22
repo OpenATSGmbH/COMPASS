@@ -29,7 +29,7 @@
 #include "eval/results/base/single.h"
 #include "eval/results/base/joined.h"
 
-#include "eval/results/report/evalsectionid.h"
+#include "eval/results/evalsectionid.h"
 
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
@@ -61,7 +61,6 @@
 
 using namespace std;
 using namespace EvaluationRequirementResult;
-using namespace EvaluationResultsReport;
 using namespace Utils;
 
 /**

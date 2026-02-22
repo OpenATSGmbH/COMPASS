@@ -62,6 +62,8 @@ COMPASS::COMPASS()
 
     std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
 
+    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+
     simple_config_.reset(new SimpleConfig("config.json"));
 
     registerParameter("last_db_filename", &last_db_filename_, std::string());
@@ -966,6 +968,11 @@ bool COMPASS::disableGeographicViewRotate() const
 bool COMPASS::disableMenuConfigSave() const
 {
     return disable_menu_config_save_;
+}
+
+bool COMPASS::pdflatexFound() const
+{
+    return pdflatex_found_;
 }
 
 bool COMPASS::disableLiveToOfflineSwitch() const

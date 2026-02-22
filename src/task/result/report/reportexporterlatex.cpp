@@ -29,6 +29,7 @@
 #include "lateximage.h"
 #include "latextable.h"
 
+#include "compass.h"
 #include "files.h"
 #include "stringconv.h"
 #include "util/system.h"
@@ -67,8 +68,7 @@ ReportExporterLatex::~ReportExporterLatex()
  */
 Result ReportExporterLatex::initExport_impl(TaskResult& result)
 {
-    bool pdflatex_found = Utils::System::exec("which pdflatex").size();
-    if (write_pdf_ && !pdflatex_found)
+    if (write_pdf_ && !COMPASS::instance().pdflatexFound())
         return Result::failed("Cannot generate PDF: pdflatex not installed");
 
     std::string report_fn = boost::filesystem::path(exportFilename()).stem().string() + ".tex";

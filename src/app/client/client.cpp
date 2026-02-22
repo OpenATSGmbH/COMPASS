@@ -241,7 +241,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         
         ("export_report", po::value<std::string>(&export_report_name_), "report name to export, e.g. 'EUROCAE ED-87E Evaluation', PDF per default")
         ("export_report_directory", po::value<std::string>(&export_report_directory_), "export directory, e.g. '/data/report2/'")
-        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'DOCX','JSON','Latex','PDF'")
+        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'DocX','JSON','Latex','PDF'")
         
          ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
         ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
@@ -681,6 +681,9 @@ bool Client::run ()
 
         if (export_report_name_.size())
         {
+            if (export_report_mode_ == "PDF" && !COMPASS::instance().pdflatexFound())
+                throw runtime_error("Cannot export as PDF: pdflatex not installed");
+
             string cmd = "export_report --report '"+export_report_name_+"'";
 
             if (export_report_directory_.size())

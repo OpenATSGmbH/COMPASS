@@ -58,7 +58,7 @@ PDFGenerator::PDFGenerator(EvaluationManager& eval_manager, EvaluationManagerSet
 {
     report_filename_ = "report.tex";
 
-    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+    pdflatex_found_ = COMPASS::instance().pdflatexFound();
 }
 
 PDFGeneratorDialog& PDFGenerator::dialog()
