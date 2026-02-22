@@ -17,6 +17,7 @@
 
 #include "client.h"
 #include "compass.h"
+#include "cxa_throw_hook.h"
 #include "logger.h"
 #include "msghandler.h"
 #include "util/system.h"
@@ -26,8 +27,6 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
-#include <boost/stacktrace.hpp>
-
 #include <dlfcn.h>
 #include <iostream>
 #include <signal.h>
@@ -35,41 +34,6 @@
 #include <execinfo.h>
 
 using namespace std;
-
-// ---------------------------------------------------------------------------
-// __cxa_throw interception — captures a stacktrace at every throw site so
-// that terminate/signal handlers can report where the exception originated,
-// even after the stack has been unwound.
-// ---------------------------------------------------------------------------
-
-thread_local boost::stacktrace::stacktrace last_throw_trace;
-
-// guard against recursion (boost::stacktrace itself may throw internally)
-thread_local bool in_cxa_throw_hook = false;
-
-using cxa_throw_fn = void (*)(void*, void*, void (*)(void*));
-
-static cxa_throw_fn real_cxa_throw()
-{
-    static cxa_throw_fn fn =
-        reinterpret_cast<cxa_throw_fn>(dlsym(RTLD_NEXT, "__cxa_throw"));
-    return fn;
-}
-
-extern "C" void __cxa_throw(void* thrown_exception,
-                             void* tinfo,
-                             void (*dest)(void*))
-{
-    if (!in_cxa_throw_hook)
-    {
-        in_cxa_throw_hook = true;
-        last_throw_trace = boost::stacktrace::stacktrace();
-        in_cxa_throw_hook = false;
-    }
-
-    real_cxa_throw()(thrown_exception, tinfo, dest);
-    __builtin_unreachable();
-}
 
 // ---------------------------------------------------------------------------
 // Terminate handler — called by the runtime when an exception is uncaught
@@ -220,11 +184,17 @@ int main(int argc, char** argv)
     {
         cerr << "main: caught exception '" << ex.what() << "'" << endl;
 
+        if (!last_throw_trace.empty())
+            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
+
         return -1;
     }
     catch (...)
     {
         cerr << "main: caught exception" << endl;
+
+        if (!last_throw_trace.empty())
+            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
 
         return -1;
     }
