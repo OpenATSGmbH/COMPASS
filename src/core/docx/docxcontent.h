@@ -17,30 +17,26 @@
 
 #pragma once
 
-#include <list>
+#include <string>
+#include <memory>
+#include <vector>
 
-#include "DBJob.h"
+class DocxSection;
+class DocxTable;
+class DocxImage;
 
-class Buffer;
-
-/**
- * @brief Buffer write job
- *
- * Writes buffer's data contents to a database table
- */
-class WriteBufferDBJob : public DBJob
+class DocxContent
 {
-  public:
-    WriteBufferDBJob(JobOrderer* orderer, boost::function<void(Job*)> done_function,
-                     boost::function<void(Job*)> obsolete_function, DBInterface* db_interface,
-                     Buffer* buffer);
+public:
+    DocxContent();
+    virtual ~DocxContent() = default;
 
-    virtual ~WriteBufferDBJob();
+    virtual std::string toXml();
 
-    virtual void execute();
+protected:
+    std::vector<std::unique_ptr<DocxContent>> sub_content_;
 
-    Buffer* getBuffer() { return buffer_; }
-
-  protected:
-    Buffer* buffer_;
+    DocxSection* findSubSection(const std::string& heading);
+    DocxTable* findTable(const std::string& name);
+    DocxImage* findImage(const std::string& filename);
 };

@@ -88,8 +88,21 @@ public:
         //set thread affinity
         job::setThreadAffinity(thread_affinity_, job_id_);
 
-        //invoke derived
-        run_impl();
+        //invoke derived — catch exceptions to prevent std::terminate in worker threads
+        try
+        {
+            run_impl();
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "Job: " << name_ << ": exception: " << e.what();
+            done_ = true;
+        }
+        catch (...)
+        {
+            logerr << "Job: " << name_ << ": unknown exception";
+            done_ = true;
+        }
     }
 
     void setJobID(size_t id)

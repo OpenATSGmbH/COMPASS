@@ -238,10 +238,23 @@ void JobManagerAsync::AsyncJob::exec()
     traced_assert(job_);
     traced_assert(!is_running_);
 
-    future_ = std::async(std::launch::async, [ this ] 
-    { 
-        this->job_->run();
-        return true; 
+    future_ = std::async(std::launch::async, [ this ]
+    {
+        try
+        {
+            this->job_->run();
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "AsyncJob: exception in job '" << this->job_->name() << "': " << e.what();
+            return false;
+        }
+        catch (...)
+        {
+            logerr << "AsyncJob: unknown exception in job '" << this->job_->name() << "'";
+            return false;
+        }
     });
 
     is_running_ = true;

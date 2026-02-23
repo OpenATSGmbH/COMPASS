@@ -236,12 +236,10 @@ void Buffer::renameArrayListMapEntry(const std::string& id, const std::string& i
 template <typename T>
 void Buffer::seizeArrayListMap(Buffer& other_buffer)
 {
-    //assert(getArrayListMap<T>().size() == other_buffer.getArrayListMap<T>().size());
-
-    //    loginf << "this properties";
-    //    printProperties();
-    //    loginf << "other properties";
-    //    other_buffer.printProperties();
+    logdbg << "seizeArrayListMap: this size_=" << size_
+           << " other size_=" << other_buffer.size_
+           << " this map entries=" << getArrayListMap<T>().size()
+           << " other map entries=" << other_buffer.getArrayListMap<T>().size();
 
     // add all properties of other vector
     for(auto& prop_it : other_buffer.properties().properties())
@@ -259,11 +257,12 @@ void Buffer::seizeArrayListMap(Buffer& other_buffer)
 
     for (auto& it : other_buffer.getArrayListMap<T>())
     {
-        logdbg << "seizing '" << it.first << "'";
+        logdbg << "seizing '" << it.first << "' this size_=" << size_;
         traced_assert(other_buffer.properties().hasProperty(it.first));
 
         traced_assert(getArrayListMap<T>().count(it.first));
         getArrayListMap<T>().at(it.first)->addData(*it.second);
+        logdbg << "seized '" << it.first << "' this size_=" << size_;
     }
 
     other_buffer.getArrayListMap<T>().clear();

@@ -22,7 +22,6 @@
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
-#include "eval/results/report/pdfgenerator.h"
 #include "sector.h"
 #include "result.h"
 #include "util/timewindow.h"

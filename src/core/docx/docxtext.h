@@ -15,35 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/report/treeitem.h"
-#include "logger.h"
+#pragma once
 
-namespace EvaluationResultsReport
+#include "docxcontent.h"
+
+class DocxText : public DocxContent
 {
-    TreeItem::TreeItem(const string& name, TreeItem* parent_item)
-        : name_(name), parent_item_(parent_item)
-    {
-        if (parent_item_)
-            id_ = parent_item_->id()+":"+name_;
-        else
-            id_ = name_;
+public:
+    DocxText(const std::string& text);
 
-        logdbg << "id '" << id_ << "'";
-    }
+    std::string toXml() override;
 
-    TreeItem* TreeItem::parentItem()
-    {
-        return parent_item_;
-    }
-
-    string TreeItem::name() const
-    {
-        return name_;
-    }
-    
-    string TreeItem::id() const
-    {
-        return id_;
-    }
-}
-
+protected:
+    std::string text_;
+};

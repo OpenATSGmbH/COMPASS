@@ -15,21 +15,26 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/report/sectioncontent.h"
-#include "eval/results/report/section.h"
+#pragma once
 
-#include "traced_assert.h"
+#include <string>
 
-namespace EvaluationResultsReport
-{
-    SectionContent::SectionContent(const string& name, Section* parent_section, EvaluationManager& eval_man)
-        : name_(name), parent_section_(parent_section), eval_man_(eval_man)
-    {
-        traced_assert(parent_section_);
-    }
+class Buffer;
 
-    string SectionContent::name() const
-    {
-        return name_;
-    }
+namespace dbContent {
+class Variable;
 }
+
+namespace buffer_utils
+{
+
+/// Returns the string representation of a variable's value from a buffer row.
+/// Sets is_null to true and returns "" if the property is not present in the buffer
+/// or the value is null at the given index.
+std::string getValueString(dbContent::Variable& variable,
+                           Buffer& buffer,
+                           unsigned int buffer_index,
+                           bool use_presentation,
+                           bool& is_null);
+
+} // namespace buffer_utils

@@ -18,11 +18,6 @@
 #include "eval/results/base/correctbase.h"
 #include "eval/results/base/featuredefinitions.h"
 
-#include "eval/results/report/rootitem.h"
-#include "eval/results/report/section.h"
-#include "eval/results/report/sectioncontenttext.h"
-#include "eval/results/report/sectioncontenttable.h"
-
 #include "eval/requirement/base/base.h"
 
 #include "evaluationtargetdata.h"

@@ -131,6 +131,10 @@ public:
     std::vector<unsigned int> sortPermutation();
     void sortByPermutation(const std::vector<unsigned int>& perm);
 
+    /// Sorts a vector of buffer indices in-place by comparing the values at those indices.
+    /// Null entries are sorted to the front (ascending) or back (descending).
+    void sortIndices(std::vector<unsigned int>& indices, bool ascending) const;
+
     nlohmann::json asJSON(unsigned int max_size=0);
 
 private:
@@ -1218,6 +1222,22 @@ std::vector<unsigned int> NullableVector<T>::sortPermutation()
             return data_.at(i) < data_.at(j);
     });
     return p;
+}
+
+template <class T>
+void NullableVector<T>::sortIndices(std::vector<unsigned int>& indices, bool ascending) const
+{
+    std::stable_sort(indices.begin(), indices.end(),
+        [this, ascending](unsigned int a, unsigned int b)
+        {
+            bool a_null = isNull(a);
+            bool b_null = isNull(b);
+            if (a_null && b_null) return false;
+            if (a_null) return ascending;   // nulls first in ascending
+            if (b_null) return !ascending;
+            return ascending ? (data_.at(a) < data_.at(b))
+                             : (data_.at(b) < data_.at(a));
+        });
 }
 
 template <class T>

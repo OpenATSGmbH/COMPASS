@@ -22,7 +22,7 @@
 #include "task/result/report/sectioncontenttable.h"
 #include "task/result/report/section.h"
 
-#include "eval/results/report/evalsectionid.h"
+#include "eval/results/evalsectionid.h"
 
 #include "eval/requirement/base/base.h"
 

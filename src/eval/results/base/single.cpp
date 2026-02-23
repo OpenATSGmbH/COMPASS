@@ -25,7 +25,7 @@
 #include "task/result/report/sectioncontentfigure.h"
 #include "task/result/report/sectioncontenttext.h"
 
-#include "eval/results/report/evalsectionid.h"
+#include "eval/results/evalsectionid.h"
 
 #include "eval/requirement/base/base.h"
 

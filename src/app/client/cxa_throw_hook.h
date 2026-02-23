@@ -17,33 +17,9 @@
 
 #pragma once
 
-#include <QVariant>
+#include <boost/stacktrace.hpp>
 
-#include <memory>
-
-namespace EvaluationResultsReport
-{
-    using namespace std;
-
-    class TreeItem
-    {
-    public:
-        TreeItem(const string& name, TreeItem* parent_item);
-
-        virtual TreeItem *child(int row) = 0;
-        virtual int childCount() const = 0;
-        virtual int columnCount() const = 0;
-        virtual QVariant data(int column) const = 0;
-        virtual int row() const = 0;
-        TreeItem* parentItem();
-
-        string name() const;
-        string id() const; // (parent_id):name
-
-    protected:
-        string name_;
-        string id_;
-
-        TreeItem* parent_item_ {nullptr};
-    };
-}
+// Populated by the __cxa_throw hook (cxa_throw_hook.cpp) at every throw site.
+// Signal/terminate handlers in main.cpp read this to report where the
+// exception originated, even after the stack has been unwound.
+extern thread_local boost::stacktrace::stacktrace last_throw_trace;

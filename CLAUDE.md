@@ -5,8 +5,8 @@ OpenATS COMPASS is a C++ application for air traffic surveillance data inspectio
 ## Platform & distribution
 
 - **OS**: Linux 64-bit (x86_64) only — no Windows or macOS support
-- **Tested distributions**: Debian 9+, Ubuntu 18.04+, Linux Mint 18.3+
-- **Distribution format**: AppImage — single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 9 (Stretch) via Docker to maximize glibc compatibility across distributions.
+- **Tested distributions**: Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+
+- **Distribution format**: AppImage — single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
 - **No plugin system**: Extensions require source code modification. The Geographic View is a proprietary closed-source module included only in the AppImage binary, not in source builds.
 - **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is proprietary (AppImage only). Free for all use including commercial.
 - **Hardware requirements**: Minimum 2+ physical CPU cores, dedicated NVidia or ATI GPU (native drivers, OpenGL 3.0+), 8 GB RAM. Recommended: Intel i5+, 16 GB+ RAM. Large datasets (>1M reports/hour): 32 GB RAM.
@@ -34,7 +34,7 @@ make -C build -j$(nproc)
 
 Build output goes to `build/bin/` (executables) and `build/lib/` (libraries).
 
-**C++ standard constraint**: All code must compile with **C++11** (`-std=c++11`). The AppImage is built inside a Debian 9 Docker container (see `docker/Dockerfile_deb9`) using GCC 6.3, which does not support C++17 features. Do not use C++17 constructs such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, etc. Use `std::tie` instead of structured bindings. Local builds use `-std=c++17` for convenience but the Debian 9 Docker build is the compatibility baseline.
+**C++ standard**: The project uses **C++17** (`-std=c++17`). The AppImage is built inside a Debian 10 Docker container (see `docker/Dockerfile_deb10`) using GCC 8.3. C++17 features such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, and `std::any` are available and may be used freely.
 
 **Targets:**
 - `compass` — main library
@@ -119,6 +119,17 @@ doc/                    Documentation and user manual (LaTeX)
 - **Smart pointers:** prefer `std::unique_ptr` and `std::shared_ptr`
 - **Buffer/NullableVector<T>:** columnar data storage — the central data structure for surveillance records. Supports bool, char, uchar, int, uint, long, ulong, float, double, string, json, ptime.
 - **PropertyList / PropertyDataType:** type-safe schema for Buffer columns
+
+### Logging
+Use the LOG4CPP-based stream macros defined in `logger.h`. They auto-prepend the function name and are used like C++ output streams:
+- `logerr` — errors (always printed)
+- `logwrn` — warnings
+- `loginf` — informational messages
+- `logdbg` — debug (compiled in, but filtered by runtime log level)
+
+Usage: `loginf << "loaded " << count << " records";`
+
+Do **not** use `std::cout`, `std::cerr`, `printf`, or `qDebug()` for application logging.
 
 ### License header
 All source files must include the GPL-3.0 header (see any existing `.h`/`.cpp` file).

@@ -17,6 +17,8 @@
 
 #include "reportdefs.h"
 
+#include <stdexcept>
+
 namespace ResultReport
 {
 
@@ -83,10 +85,13 @@ ReportExportMode reportExportModeFromString(const std::string& str)
         return ReportExportMode::Latex;
     else if (str == "PDF")
         return ReportExportMode::LatexPDF;
+    else if (str == "DocX")
+        return ReportExportMode::DOCX;
     else if (str == "CSV")
         return ReportExportMode::CSV;
 
-    return ReportExportMode::LatexPDF;
+    throw std::runtime_error("Unknown report export mode '" + str
+                             + "', valid modes are: DocX, JSON, Latex, PDF, CSV");
 }
 
 /**
@@ -103,6 +108,8 @@ std::string reportExportMode2String(ReportExportMode mode)
             return "Latex";
         case ReportExportMode::LatexPDF:
             return "PDF";
+        case ReportExportMode::DOCX:
+            return "DocX";
         case ReportExportMode::CSV:
             return "CSV";
     }
@@ -122,6 +129,8 @@ std::string reportExportMode2Extension(ReportExportMode mode)
             return ".tex";
         case ReportExportMode::LatexPDF:
             return ".pdf";
+        case ReportExportMode::DOCX:
+            return ".docx";
         case ReportExportMode::CSV:
             return ".csv";
     }

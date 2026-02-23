@@ -20,11 +20,6 @@
 
 #include "eval/results/evaluationdetail.h"
 
-#include "eval/results/report/rootitem.h"
-#include "eval/results/report/section.h"
-#include "eval/results/report/sectioncontenttext.h"
-#include "eval/results/report/sectioncontenttable.h"
-
 #include "eval/requirement/base/base.h"
 #include "eval/requirement/base/intervalbase.h"
 

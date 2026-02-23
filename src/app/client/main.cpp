@@ -17,6 +17,7 @@
 
 #include "client.h"
 #include "compass.h"
+#include "cxa_throw_hook.h"
 #include "logger.h"
 #include "msghandler.h"
 #include "util/system.h"
@@ -26,6 +27,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <dlfcn.h>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
@@ -33,22 +35,96 @@
 
 using namespace std;
 
-void signalHandler(int signum)
+// ---------------------------------------------------------------------------
+// Terminate handler — called by the runtime when an exception is uncaught
+// (e.g. escaping a noexcept boundary or a worker thread).  Prints the
+// throw-site stacktrace captured by the __cxa_throw hook above, plus the
+// exception message if available.
+// ---------------------------------------------------------------------------
+
+void terminateHandler()
 {
-    // write signal number (write() is async-signal-safe)
+    std::cerr << "\n=== std::terminate called ===" << std::endl;
+
+    // print the throw-site stacktrace (captured by __cxa_throw hook)
+    if (!last_throw_trace.empty())
+    {
+        std::cerr << "\nStacktrace at throw site:\n"
+                  << last_throw_trace << std::endl;
+    }
+
+    // try to print the exception message
+    if (auto eptr = std::current_exception())
+    {
+        try
+        {
+            std::rethrow_exception(eptr);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Exception: " << e.what() << std::endl;
+        }
+        catch (...)
+        {
+            std::cerr << "Unknown exception type" << std::endl;
+        }
+    }
+
+    std::cerr << "\nStacktrace at terminate:\n"
+              << boost::stacktrace::stacktrace() << std::endl;
+
+    // reset SIGABRT to default so abort() doesn't trigger our signal handler
+    // (we already printed everything useful above)
+    signal(SIGABRT, SIG_DFL);
+    std::abort();
+}
+
+// ---------------------------------------------------------------------------
+// Signal handlers
+// ---------------------------------------------------------------------------
+
+// async-signal-safe stacktrace for signals where the stack may be corrupted
+void safeSignalHandler(int signum)
+{
     const char msg[] = "\nCaught signal: ";
     const char nl[] = "\n";
     write(STDERR_FILENO, msg, sizeof(msg) - 1);
-    char digit = '0' + signum;
-    write(STDERR_FILENO, &digit, 1);
+
+    // print signum as decimal digits (async-signal-safe)
+    char buf[16];
+    int pos = sizeof(buf);
+    int val = signum < 0 ? -signum : signum;
+    do {
+        buf[--pos] = '0' + (val % 10);
+        val /= 10;
+    } while (val > 0);
+    if (signum < 0)
+        buf[--pos] = '-';
+    write(STDERR_FILENO, buf + pos, sizeof(buf) - pos);
     write(STDERR_FILENO, nl, 1);
 
-    // async-signal-safe stacktrace via glibc backtrace
     void* frames[128];
     int count = backtrace(frames, 128);
     backtrace_symbols_fd(frames, count, STDERR_FILENO);
 
-    // invoke the default handler and process the signal
+    signal(signum, SIG_DFL);
+    raise(signum);
+}
+
+// boost::stacktrace handler for signals where the stack is likely intact
+void signalHandler(int signum)
+{
+    std::cerr << "\nCaught signal: " << signum << std::endl;
+
+    if (!last_throw_trace.empty())
+    {
+        std::cerr << "\nStacktrace at throw site:\n"
+                  << last_throw_trace << std::endl;
+    }
+    else
+        std::cerr << "\nStacktrace at signal:\n"
+                << boost::stacktrace::stacktrace() << std::endl;
+
     signal(signum, SIG_DFL);
     raise(signum);
 }
@@ -57,9 +133,14 @@ int main(int argc, char** argv)
 {
     try
     {
-        signal(SIGSEGV, signalHandler);
-        signal(SIGABRT, signalHandler);
-        signal(SIGTERM, signalHandler);
+        std::set_terminate(terminateHandler);
+
+        signal(SIGSEGV, safeSignalHandler);  // stack likely corrupted
+        signal(SIGBUS,  safeSignalHandler);  // stack likely corrupted
+        signal(SIGFPE,  safeSignalHandler);  // arithmetic fault
+        signal(SIGABRT, signalHandler);      // stack likely intact
+        signal(SIGTERM, signalHandler);      // stack likely intact
+        signal(SIGPIPE, SIG_IGN);           // prevent crash on broken socket
         
         const bool is_app_image = Utils::System::appDir() != nullptr;
 
@@ -103,11 +184,17 @@ int main(int argc, char** argv)
     {
         cerr << "main: caught exception '" << ex.what() << "'" << endl;
 
+        if (!last_throw_trace.empty())
+            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
+
         return -1;
     }
     catch (...)
     {
         cerr << "main: caught exception" << endl;
+
+        if (!last_throw_trace.empty())
+            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
 
         return -1;
     }

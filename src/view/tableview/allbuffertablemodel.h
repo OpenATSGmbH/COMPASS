@@ -17,59 +17,47 @@
 
 #pragma once
 
-#include <QAbstractTableModel>
+#include "basetablemodel.h"
 
-#include "boost/date_time/posix_time/ptime.hpp"
-
+#include <map>
 #include <memory>
 
-class TableView;
-class Buffer;
-class DBContent;
 class AllBufferCSVExportJob;
-class TableViewDataSource;
 class AllBufferTableWidget;
 
-class AllBufferTableModel : public QAbstractTableModel
+class AllBufferTableModel : public BaseBufferTableModel
 {
     Q_OBJECT
 
-  signals:
-    void exportDoneSignal(bool cancelled);
-
-  public slots:
-    void setChangedSlot();
-    void exportJobObsoleteSlot();
-    void exportJobDoneSlot();
-
   public:
-    AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget, TableViewDataSource& data_source);
+    AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget,
+                        TableViewDataSource& data_source);
     virtual ~AllBufferTableModel();
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const;
-    int columnCount(const QModelIndex& parent = QModelIndex()) const;
-    virtual Qt::ItemFlags flags(const QModelIndex& index) const;
-    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
-    virtual bool setData(const QModelIndex& index, const QVariant& value, int role);
-    virtual QVariant headerData(int section, Qt::Orientation orientation,
-                                int role = Qt::DisplayRole) const;
+    using BaseBufferTableModel::setData;
 
-    void clearData();
+    void clearData() override;
     void setData(std::map<std::string, std::shared_ptr<Buffer>> buffers);
 
-    void saveAsCSV(const std::string& file_name);
+    void saveAsCSV(const std::string& file_name) override;
+    void rebuild() override;
 
-    void reset();
-
-    void rebuild();
-
-    std::pair<int,int> getSelectedRows(); // min, max, selected row
+    std::pair<int,int> getSelectedRows(); // min, max selected row
 
   protected:
-    TableView& view_;
-    AllBufferTableWidget* table_widget_{nullptr};
-    TableViewDataSource& data_source_;
+    unsigned int dataRowCount() const override;
+    RowData resolveRow(int row) const override;
+    unsigned int prefixColumnCount() const override;
+    unsigned int dataColumnCount() const override;
+    QVariant prefixColumnData(unsigned int col, const RowData& row_data) const override;
+    QVariant prefixColumnHeader(unsigned int col) const override;
+    bool resolveVariable(unsigned int data_col, const std::string& dbcontent_name,
+                         dbContent::Variable*& out_var) const override;
+    QVariant dataColumnHeader(unsigned int data_col) const override;
+    void applyRowPermutation(const std::vector<unsigned int>& perm) override;
+    void sortRowIndexes() override;
 
+  private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;
 
     std::shared_ptr<AllBufferCSVExportJob> export_job_;
@@ -77,11 +65,7 @@ class AllBufferTableModel : public QAbstractTableModel
     std::map<unsigned int, std::string> number_to_dbcont_;
     std::map<std::string, unsigned int> dbcont_to_number_;
 
-    std::multimap<boost::posix_time::ptime, std::pair<unsigned int, unsigned int>> time_to_indexes_;
-    // timestamp -> [dbcont num,index]
-    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> dbcont num,index
+    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> [dbcont num, buffer index]
 
-    void updateTimeIndexes();
-    void rebuildRowIndexes();
+    void buildRowIndexes();
 };
-

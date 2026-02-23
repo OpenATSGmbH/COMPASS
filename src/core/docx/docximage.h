@@ -17,30 +17,25 @@
 
 #pragma once
 
-#include "eval/results/report/sectioncontent.h"
+#include "docxcontent.h"
 
-#include <vector>
+#include <string>
 
-namespace EvaluationResultsReport
+class DocxImage : public DocxContent
 {
-    using namespace std;
+public:
+    DocxImage(const std::string& filename, const std::string& caption,
+              const std::string& rel_id, int width_emu, int height_emu);
 
-    class SectionContentText : public SectionContent
-    {
-    public:
-        SectionContentText(const string& name, Section* parent_section, EvaluationManager& eval_man);
+    std::string toXml() override;
 
-        void addText (const string& text);
+    std::string filename() const;
+    std::string relId() const;
 
-        virtual void addToLayout (QVBoxLayout* layout) override;
-        virtual void accept(LatexVisitor& v) override;
-
-        const vector<string>& texts() const;
-
-    protected:
-        vector<string> texts_;
-
-    };
-
-
-}
+protected:
+    std::string filename_;
+    std::string caption_;
+    std::string rel_id_;
+    int width_emu_;
+    int height_emu_;
+};

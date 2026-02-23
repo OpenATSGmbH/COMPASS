@@ -126,6 +126,8 @@ public:
     bool isShutDown() const;
     bool isRunning() const;
 
+    bool pdflatexFound() const;
+
     bool disableLiveToOfflineSwitch() const;
     bool disableMenuConfigSave() const;
     bool disableGeographicViewRotate() const;
@@ -185,6 +187,7 @@ protected:
     bool db_opened_{false};
     bool db_inmem_{false};
     bool expert_mode_ {false};
+    bool pdflatex_found_ {false};
 
     bool dark_mode_ {false};
 

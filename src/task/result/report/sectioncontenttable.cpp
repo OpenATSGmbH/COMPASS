@@ -1614,7 +1614,7 @@ nlohmann::json SectionContentTable::exportContent(unsigned int row,
 
         j = s;
     }
-    else if (mode == ReportExportMode::JSONFile || 
+    else if (mode == ReportExportMode::JSONFile ||
              mode == ReportExportMode::JSONBlob)
     {
         //cell export for json
@@ -1633,11 +1633,39 @@ nlohmann::json SectionContentTable::exportContent(unsigned int row,
             auto c = cellChecked(j);
             if (!c.has_value())
                 return {};
-            
+
             j = c.value() ? "Yes" : "No";
         }
 
         //else = just return data directly as json
+    }
+    else if (mode == ReportExportMode::DOCX)
+    {
+        // cell export for docx — plain text, styling applied separately via cellStyle()
+        std::string s;
+
+        if (SectionContentTable::cellShowsIcon(style))
+        {
+            auto fn = SectionContentTable::cellIconFn(j);
+            if (!fn.has_value())
+                return {};
+
+            s = fn.value().second;
+        }
+        else if (cellShowsCheckBox(style))
+        {
+            auto c = cellChecked(j);
+            if (!c.has_value())
+                return {};
+
+            s = c.value() ? "Yes" : "No";
+        }
+        else
+        {
+            s = data((int)row, (int)col, Qt::DisplayRole).toString().toStdString();
+        }
+
+        j = s;
     }
     else
     {

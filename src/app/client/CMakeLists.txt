@@ -23,7 +23,10 @@ target_sources(compass_app
         "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.cpp"
 )
 
-add_executable ( compass_client "${CMAKE_CURRENT_LIST_DIR}/main.cpp")
+add_executable ( compass_client
+    "${CMAKE_CURRENT_LIST_DIR}/main.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/cxa_throw_hook.cpp"
+)
 
 # export symbols so backtrace_symbols_fd() can resolve function names on crash
 set_target_properties(compass_client PROPERTIES ENABLE_EXPORTS TRUE)
