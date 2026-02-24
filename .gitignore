@@ -16,7 +16,6 @@ Testing/
 *.pdf
 *.json
 *.sh
-*.txt
 *.cmake
 *.user
 *.AppImage
