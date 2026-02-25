@@ -177,11 +177,9 @@ void DBContentManagerWidget::addDBContSlot()
 
         std::string instance = "DBContent" + name + "0";
 
-        auto config = Configuration::create("DBContent", instance);
-        config->addParameter<std::string>("name", name);
-        //config->addParameter<std::string> ("meta_table", meta_table_name); // TODO add db_table_name
-
-        object_manager_.generateSubConfigurableFromConfig(std::move(config));
+        auto& child_json = object_manager_.addNewSubConfiguration("DBContent", instance);
+        child_json[Configuration::ParameterSection]["name"] = name;
+        object_manager_.generateSubConfigurable(child_json);
 
         updateDBContentsSlot();
     }
@@ -353,10 +351,9 @@ void DBContentManagerWidget::addAllMetaVariablesSlot()
 
                     std::string instance = "MetaVariable" + var_it.first + "0";
 
-                    auto config = Configuration::create("MetaVariable", instance);
-                    config->addParameter<std::string>("name", var_it.first);
-
-                    object_manager_.generateSubConfigurableFromConfig(std::move(config));
+                    auto& child_json = object_manager_.addNewSubConfiguration("MetaVariable", instance);
+                    child_json[Configuration::ParameterSection]["name"] = var_it.first;
+                    object_manager_.generateSubConfigurable(child_json);
                 }
 
                 traced_assert(object_manager_.existsMetaVariable(var_it.first));

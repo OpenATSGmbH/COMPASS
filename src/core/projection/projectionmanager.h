@@ -45,8 +45,7 @@ public:
 
     virtual ~ProjectionManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     ProjectionManagerWidget* widget();
     void deleteWidget();

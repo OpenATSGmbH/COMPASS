@@ -19,18 +19,13 @@
 
 #include "projection.h"
 
-class ProjectionManager;
 class GeoCoordinateSystem;
 
 class GeoProjection : public Projection
 {
 public:
-    GeoProjection(const std::string& class_id, const std::string& instance_id,
-                  ProjectionManager& proj_manager);
+    GeoProjection(nlohmann::json& config, ProjectionManager* parent);
     virtual ~GeoProjection();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual std::vector<unsigned int> ids() override;
 
@@ -50,6 +45,5 @@ public:
 protected:
     std::map<unsigned int, std::unique_ptr<GeoCoordinateSystem>> coordinate_systems_;
 
-    virtual void checkSubConfigurables() override;
 };
 

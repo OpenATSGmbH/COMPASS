@@ -34,10 +34,9 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace std;
 
-ManageSectorsTask::ManageSectorsTask(const std::string& class_id, const std::string& instance_id,
-                                     TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_manage_sectors.json")
+ManageSectorsTask::ManageSectorsTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     registerParameter("db_file_list", &file_list_, json::array());
     registerParameter("current_filename", &current_filename_, std::string());
@@ -90,12 +89,6 @@ void ManageSectorsTask::dialogDoneSlot()
     dialog_->hide();
 
     emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
-}
-
-void ManageSectorsTask::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
-{
-    throw std::runtime_error("ManageSectorsTask: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 bool ManageSectorsTask::hasFile(const std::string& filename) const

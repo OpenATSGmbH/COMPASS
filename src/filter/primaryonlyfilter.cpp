@@ -25,9 +25,8 @@
 using namespace std;
 using namespace nlohmann;
 
-PrimaryOnlyFilter::PrimaryOnlyFilter(const std::string& class_id, const std::string& instance_id,
-                                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+PrimaryOnlyFilter::PrimaryOnlyFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
 
     createSubConfigurables();
@@ -130,17 +129,6 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
     return ss.str();
 }
 
-void PrimaryOnlyFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("PrimaryOnlyFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void PrimaryOnlyFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* PrimaryOnlyFilter::createWidget()
 {

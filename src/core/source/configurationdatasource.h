@@ -30,8 +30,7 @@ class DBDataSource;
 class ConfigurationDataSource : public Configurable, public DataSourceBase
 {
 public:
-    ConfigurationDataSource(const std::string& class_id, const std::string& instance_id,
-                            DataSourceManager& ds_manager);
+    ConfigurationDataSource(nlohmann::json& config, DataSourceManager* parent);
     //ConfigurationDataSource() = default;
     virtual ~ConfigurationDataSource();
 

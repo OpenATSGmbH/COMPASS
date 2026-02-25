@@ -57,12 +57,16 @@ public slots:
 public:
     GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
                        TaskManager& task_manager);
+    GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
+                     nlohmann::json& config, TaskManager& task_manager,
+                     const std::string& parent_path = "");
     virtual ~GPSImportCSVTask();
 
     GPSImportCSVTaskDialog* dialog();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(const std::string& class_id,
+                                 const std::string& instance_id,
+                                 nlohmann::json& child_json) override;
 
     bool canImportFile();
 

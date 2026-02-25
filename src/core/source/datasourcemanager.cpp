@@ -122,10 +122,8 @@ double DataSourceManager::Config::sensorStatusMaxStatusAgeMaxValue() const
     return (double)value;
 }
 
-DataSourceManager::DataSourceManager(const std::string& class_id, const std::string& instance_id,
-                                     COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "data_sources.json"), compass_(*compass)
-
+DataSourceManager::DataSourceManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent)
 {
     registerParameter("load_widget_show_counts", &config_.load_widget_show_counts_, Config().load_widget_show_counts_);
     registerParameter("load_widget_show_lines", &config_.load_widget_show_lines_, Config().load_widget_show_lines_);
@@ -140,8 +138,6 @@ DataSourceManager::DataSourceManager(const std::string& class_id, const std::str
 
     registerParameter("mode_s_azimuth_stddev", &config_.mode_s_azimuth_stddev_, Config().mode_s_azimuth_stddev_);
     registerParameter("mode_s_range_stddev", &config_.mode_s_range_stddev_, Config().mode_s_range_stddev_);
-
-    //registerParameter("use_radar_min_stddev", &config_.use_radar_min_stddev_, Config().use_radar_min_stddev_);
 
     registerParameter("sensor_status_max_status_age_options", &config_.sensor_status_max_status_age_options_, Config().sensor_status_max_status_age_options_);
     registerParameter("sensor_status_max_status_age_index", &config_.sensor_status_max_status_age_index_, Config().sensor_status_max_status_age_index_);
@@ -166,18 +162,19 @@ DataSourceManager::~DataSourceManager()
     status_widget_ = nullptr; // deleted by qt
 }
 
-void DataSourceManager::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void DataSourceManager::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "ConfigurationDataSource")
     {
-        unique_ptr<dbContent::ConfigurationDataSource> ds {
-            new dbContent::ConfigurationDataSource(class_id, instance_id, *this)};
+        auto ds = std::make_unique<dbContent::ConfigurationDataSource>(child_json, this);
+
         logdbg << "adding config ds "
-                   << ds->name() << " sac/sic " <<  ds->sac() << "/" << ds->sic();
+               << ds->name() << " sac/sic " << ds->sac() << "/" << ds->sic();
 
         traced_assert(!hasConfigDataSource(Number::dsIdFrom(ds->sac(), ds->sic())));
-        config_data_sources_.emplace_back(move(ds));
+        config_data_sources_.emplace_back(std::move(ds));
     }
     else
         throw std::runtime_error("DataSourceManager: generateSubConfigurable: unknown class_id " +
@@ -797,14 +794,14 @@ void DataSourceManager::createConfigDataSource(unsigned int ds_id)
 {
     traced_assert(!hasConfigDataSource(ds_id));
 
-    auto new_cfg = Configuration::create("ConfigurationDataSource");
+    auto& child_json = addNewSubConfiguration("ConfigurationDataSource");
+    auto& params = child_json[Configuration::ParameterSection];
+    params["ds_type"] = std::string("Other");
+    params["sac"] = Number::sacFromDsId(ds_id);
+    params["sic"] = Number::sicFromDsId(ds_id);
+    params["name"] = std::string("Unknown ("+to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id))+")");
 
-    new_cfg->addParameter<std::string>("ds_type", "Other");
-    new_cfg->addParameter<unsigned int>("sac", Number::sacFromDsId(ds_id));
-    new_cfg->addParameter<unsigned int>("sic", Number::sicFromDsId(ds_id));
-    new_cfg->addParameter<std::string>("name", "Unknown ("+to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id))+")");
-
-    generateSubConfigurableFromConfig(std::move(new_cfg));
+    generateSubConfigurable(child_json);
 
     updateDSIdsAll();
 }

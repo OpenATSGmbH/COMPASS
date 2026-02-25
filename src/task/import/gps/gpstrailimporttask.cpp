@@ -79,11 +79,9 @@ GPSTrailImportTask::Settings::Settings()
 
 /**
 */
-GPSTrailImportTask::GPSTrailImportTask(const std::string& class_id, 
-                                       const std::string& instance_id,
-                                       TaskManager& task_manager)
-:   Task        (task_manager)
-,   Configurable(class_id, instance_id, &task_manager, "task_import_gps.json")
+GPSTrailImportTask::GPSTrailImportTask(nlohmann::json& config, TaskManager* parent)
+:   Task        (*parent)
+,   Configurable(config, parent)
 {
     tooltip_ = "Allows importing of GPS trails as NMEA into the opened database.";
 
@@ -113,14 +111,6 @@ GPSTrailImportTask::GPSTrailImportTask(const std::string& class_id,
 /**
 */
 GPSTrailImportTask::~GPSTrailImportTask() = default;
-
-/**
-*/
-void GPSTrailImportTask::generateSubConfigurable(const std::string& class_id,
-                                                 const std::string& instance_id)
-{
-    throw std::runtime_error("GPSTrailImportTask: generateSubConfigurable: unknown class_id " + class_id);
-}
 
 /**
 */

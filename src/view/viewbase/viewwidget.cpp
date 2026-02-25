@@ -39,22 +39,9 @@
 const int ViewWidget::DataWidgetStretch   = 3;
 const int ViewWidget::ConfigWidgetStretch = 1;
 
-/**
-@brief Constructor.
-@param class_id Configurable class id.
-@param instance_id Configurable instance id.
-@param config_parent Configurable parent.
-@param view The view the view widget is part of.
-@param parent The widgets parent.
-*/
-ViewWidget::ViewWidget(const std::string& class_id, 
-                       const std::string& instance_id,
-                       Configurable* config_parent, 
-                       View* view, 
-                       QWidget* parent)
-    : QWidget     (parent),
-      Configurable(class_id, instance_id, config_parent),
-      view_       (view)
+ViewWidget::ViewWidget(View* view, QWidget* parent)
+    : QWidget(parent),
+      view_  (view)
 {
     //generate and set a nice object name which can be used to identify the view widget in the object hierarchy
     UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceId()))

@@ -72,10 +72,9 @@ const std::string ReconstructorTask::ScoringUMReconstructorName {"Scoring + UMKa
 const std::string ReconstructorTask::ProbImmReconstructorName {"Probabilistic + IMM"};
 #endif
 
-ReconstructorTask::ReconstructorTask(const std::string& class_id, const std::string& instance_id,
-                                     TaskManager& task_manager)
-    : Task(task_manager),
-    Configurable(class_id, instance_id, &task_manager, "task_reconstructor.json")
+ReconstructorTask::ReconstructorTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+    Configurable(config, parent)
 {
     tooltip_ = "Associate target reports and calculate reference trajectories based on all DB Content.";
 
@@ -148,9 +147,9 @@ ReconstructorTask::~ReconstructorTask()
 {
 }
 
-void ReconstructorTask::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
     if (class_id == "SimpleReconstructor")
     {
         traced_assert(!simple_reconstructor_);
@@ -158,7 +157,7 @@ void ReconstructorTask::generateSubConfigurable(const std::string& class_id,
         std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
         acc_estimator.reset(new SimpleAccuracyEstimator());
 
-        simple_reconstructor_.reset(new SimpleReconstructor(class_id, instance_id, *this, std::move(acc_estimator)));
+        simple_reconstructor_.reset(new SimpleReconstructor(child_json, std::move(acc_estimator), this));
         traced_assert(simple_reconstructor_);
 
         connect(simple_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
@@ -172,7 +171,7 @@ void ReconstructorTask::generateSubConfigurable(const std::string& class_id,
         std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
         acc_estimator.reset(new ComplexAccuracyEstimator());
 
-        probimm_reconstructor_.reset(new ProbIMMReconstructor(class_id, instance_id, *this, std::move(acc_estimator)));
+        probimm_reconstructor_.reset(new ProbIMMReconstructor(child_json, std::move(acc_estimator), this));
         traced_assert(probimm_reconstructor_);
 
         connect(probimm_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
@@ -1490,14 +1489,14 @@ void ReconstructorTask::checkSubConfigurables()
 {
     if (!simple_reconstructor_)
     {
-        generateSubConfigurable("SimpleReconstructor", "SimpleReconstructor0");
+        generateSubConfigurableFromConfig("SimpleReconstructor", "SimpleReconstructor0");
         traced_assert(simple_reconstructor_);
     }
 
 #if USE_EXPERIMENTAL_SOURCE == true
     if (!probimm_reconstructor_)
     {
-        generateSubConfigurable("ProbIMMReconstructor", "ProbIMMReconstructor0");
+        generateSubConfigurableFromConfig("ProbIMMReconstructor", "ProbIMMReconstructor0");
         traced_assert(probimm_reconstructor_);
     }
 #endif

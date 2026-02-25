@@ -86,12 +86,47 @@ GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::strin
         parseCurrentFile();
 }
 
+GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
+                                   nlohmann::json& config, TaskManager& task_manager,
+                                   const std::string& parent_path)
+    : Task(task_manager),
+      Configurable(class_id, instance_id, config, parent_path)
+{
+    tooltip_ = "Allows importing of GPS trails as CSV into the opened database.";
+
+    registerParameter("current_filename", &current_filename_, std::string());
+    registerParameter("timestamp_format", &timestamp_format_, std::string("%m/%d/%y %H:%M:%S%F"));
+
+    registerParameter("ds_name", &ds_name_, std::string("GPS Trail"));
+    registerParameter("ds_sac", &ds_sac_, 0u);
+    registerParameter("ds_sic", &ds_sic_, 0u);
+
+    registerParameter("tod_offset", &tod_offset_, 0.0f);
+
+    registerParameter("set_mode_3a_code", &set_mode_3a_code_, false);
+    registerParameter("mode_3a_code", &mode_3a_code_, 0u);
+
+    registerParameter("set_target_address", &set_target_address_, false);
+    registerParameter("target_address", &target_address_, 0u);
+
+    registerParameter("set_callsign", &set_callsign_, false);
+    registerParameter("callsign", &callsign_, std::string());
+
+    //registerParameter("line_id", &line_id_, 0); always defaults to 0
+
+    createSubConfigurables();
+
+    if (current_filename_.size())
+        parseCurrentFile();
+}
+
 GPSImportCSVTask::~GPSImportCSVTask()
 {
 }
 
 void GPSImportCSVTask::generateSubConfigurable(const std::string& class_id,
-                                               const std::string& instance_id)
+                                               const std::string& instance_id,
+                                               nlohmann::json& child_json)
 {
     throw std::runtime_error("GPSImportCSVTask: generateSubConfigurable: unknown class_id " +
                              class_id);

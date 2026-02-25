@@ -87,13 +87,10 @@ class DBInterface : public QObject, public Configurable
     Q_OBJECT
 
 public:
-    DBInterface(std::string class_id, std::string instance_id, COMPASS* compass);
+    DBInterface(nlohmann::json& config, COMPASS* parent);
     virtual ~DBInterface();
 
     bool logVerbose() const;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     void openDBFile(const std::string& filename, bool overwrite);
     void openDBInMemory();
@@ -250,8 +247,6 @@ protected:
     bool preserve_insert_order_{true};
 
     boost::posix_time::ptime last_live_cleanup_time_;
-
-    virtual void checkSubConfigurables() override {}
 
     void openDBFileInternal(const std::string& filename, bool overwrite);
 

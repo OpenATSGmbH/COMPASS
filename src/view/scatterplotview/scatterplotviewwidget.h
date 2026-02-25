@@ -38,12 +38,7 @@ public:
         ZoomRectMode
     };
 
-    /// @brief Constructor
-    ScatterPlotViewWidget(const std::string& class_id, 
-                          const std::string& instance_id,
-                          Configurable* config_parent, 
-                          ScatterPlotView* view, 
-                          QWidget* parent = NULL);
+    ScatterPlotViewWidget(ScatterPlotView* view, QWidget* parent = nullptr);
     /// @brief Destructor
     virtual ~ScatterPlotViewWidget();
 

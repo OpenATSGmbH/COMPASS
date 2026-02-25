@@ -31,9 +31,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-RefTrajAccuracyFilter::RefTrajAccuracyFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+RefTrajAccuracyFilter::RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("min_value", &min_value_, 30.0f);
 
@@ -82,22 +81,9 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
     return ss.str();
 }
 
-void RefTrajAccuracyFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("RefTrajAccuracyFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* RefTrajAccuracyFilter::createWidget()
 {
     return new RefTrajAccuracyFilterWidget(*this);
-}
-
-
-void RefTrajAccuracyFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 

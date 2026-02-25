@@ -16,6 +16,7 @@
  */
 
 #include "scatterplotviewdatasource.h"
+#include "scatterplotview.h"
 
 #include <QMessageBox>
 
@@ -37,10 +38,15 @@
 using namespace std;
 using namespace nlohmann;
 
-ScatterPlotViewDataSource::ScatterPlotViewDataSource(const std::string& class_id,
-                                             const std::string& instance_id, Configurable* parent)
+// ScatterPlotViewDataSource::ScatterPlotViewDataSource(const std::string& class_id,
+//                                              const std::string& instance_id, Configurable* parent)
+//     : QObject(),
+//       Configurable(class_id, instance_id, parent)
+
+ScatterPlotViewDataSource::ScatterPlotViewDataSource(nlohmann::json& config,
+                                                     ScatterPlotView* parent)
     : QObject(),
-      Configurable(class_id, instance_id, parent)
+      Configurable(config, parent)
 {
     createSubConfigurables();
 }
@@ -56,16 +62,17 @@ ScatterPlotViewDataSource::~ScatterPlotViewDataSource()
     }
 }
 
-void ScatterPlotViewDataSource::generateSubConfigurable(const std::string& class_id,
-                                                    const std::string& instance_id)
+void ScatterPlotViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
     logdbg << "class_id " << class_id
            << " instance_id " << instance_id;
 
     if (class_id.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
-        set_ = new dbContent::VariableOrderedSet(class_id, instance_id, this);
+        set_ = new dbContent::VariableOrderedSet(child_json, this);
     }
     else
         throw std::runtime_error(
@@ -76,7 +83,7 @@ void ScatterPlotViewDataSource::checkSubConfigurables()
 {
     if (set_ == nullptr)
     {
-        generateSubConfigurable("VariableOrderedSet", "VariableOrderedSet0");
+        generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();

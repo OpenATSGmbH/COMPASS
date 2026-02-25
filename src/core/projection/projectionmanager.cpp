@@ -16,6 +16,7 @@
  */
 
 #include "projectionmanager.h"
+#include "configurationmanager.h"
 #include "global.h"
 #include "logger.h"
 #include "projectionmanagerwidget.h"
@@ -43,7 +44,7 @@ const string ProjectionManager::RS2G_NAME = "RS2G";
 //const string ProjectionManager::GEO_NAME = "Geo";
 
 ProjectionManager::ProjectionManager()
-    : Configurable("ProjectionManager", "ProjectionManager0", 0, "projection.json"),
+    : Configurable(ConfigurationManager::getInstance().getRootConfigJSON("ProjectionManager", "ProjectionManager0").json(), nullptr),
     mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
 {
     loginf;
@@ -102,32 +103,23 @@ ProjectionManager::~ProjectionManager()
     egm96_band_ = nullptr;
 }
 
-void ProjectionManager::generateSubConfigurable(const string& class_id,
-                                                const string& instance_id)
+void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "RS2GProjection")
     {
-        string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<string>("name");
+        string name = child_json[Configuration::ParameterSection].value("name", string());
 
         traced_assert(!projections_.count(name));
 
-        projections_[name].reset(new RS2GProjection(class_id, instance_id, *this));
+        projections_[name].reset(new RS2GProjection(child_json, this));
     }
     else if (class_id == "OGRProjection")
     {
-        // string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<string>("name");
-
-        // traced_assert(!projections_.count(name));
-
-        // projections_[name].reset(new OGRProjection(class_id, instance_id, *this));
     }
     else if (class_id == "GeoProjection")
     {
-        // string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<string>("name");
-
-        // traced_assert(!projections_.count(name));
-
-        // projections_[name].reset(new GeoProjection(class_id, instance_id, *this));
     }
     else
         throw runtime_error("DBContent: generateSubConfigurable: unknown class_id " + class_id);
@@ -137,10 +129,9 @@ void ProjectionManager::checkSubConfigurables()
 {
     if (!projections_.count(RS2G_NAME))
     {
-        auto configuration = Configuration::create("RS2GProjection");
-
-        configuration->addParameter<string>("name", RS2G_NAME);
-        generateSubConfigurableFromConfig(std::move(configuration));
+        auto& child_json = addNewSubConfiguration("RS2GProjection", "RS2GProjection0");
+        child_json[Configuration::ParameterSection]["name"] = RS2G_NAME;
+        generateSubConfigurable(child_json);
     }
 
     // if (!projections_.count(OGR_NAME))

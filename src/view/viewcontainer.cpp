@@ -51,15 +51,23 @@
 using namespace Utils;
 using namespace std;
 
-ViewContainer::ViewContainer(const std::string& class_id, 
-                             const std::string& instance_id,
-                             Configurable* parent, 
-                             ViewManager* view_manager,
-                             QTabWidget* tab_widget, 
+// ViewContainer::ViewContainer(const std::string& class_id,
+//                              const std::string& instance_id,
+//                              Configurable* parent,
+//                              ViewManager* view_manager,
+//                              QTabWidget* tab_widget,
+//                              int window_cnt)
+//     : QObject(),
+//       Configurable(class_id, instance_id, parent),
+//       view_manager_(*view_manager),
+
+ViewContainer::ViewContainer(nlohmann::json& config,
+                             ViewManager& view_manager,
+                             QTabWidget* tab_widget,
                              int window_cnt)
     : QObject(),
-      Configurable(class_id, instance_id, parent),
-      view_manager_(*view_manager),
+      Configurable(config, &view_manager),
+      view_manager_(view_manager),
       tab_widget_(tab_widget),
       window_cnt_(window_cnt)
 {
@@ -108,10 +116,11 @@ void ViewContainer::addView(const std::string& class_id)
 {
     traced_assert(!disable_add_remove_views_);
 
-    auto config = Configuration::create(class_id, view_manager_.newViewInstanceId(class_id),
-                          view_manager_.newViewName(class_id));
-
-    generateSubConfigurableFromConfig(std::move(config));
+    std::string instance_id = view_manager_.newViewInstanceId(class_id);
+    std::string view_name = view_manager_.newViewName(class_id);
+    auto& child_json = addNewSubConfiguration(class_id, instance_id);
+    child_json[Configuration::ParameterSection]["name"] = view_name;
+    generateSubConfigurable(child_json);
 }
 
 void ViewContainer::enableViewTab(QWidget* widget, bool value)
@@ -231,33 +240,34 @@ void ViewContainer::addNewViewSlot()
 
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }
 
-void ViewContainer::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void ViewContainer::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "TableView")
     {
-        views_.emplace_back(new TableView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new TableView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
     else if (class_id == "HistogramView")
     {
-        views_.emplace_back(new HistogramView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new HistogramView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
     else if (class_id == "ScatterPlotView")
     {
-        views_.emplace_back(new ScatterPlotView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new ScatterPlotView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
     else if (class_id == "GridView")
     {
-        views_.emplace_back(new GridView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new GridView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
@@ -266,7 +276,7 @@ void ViewContainer::generateSubConfigurable(const std::string& class_id,
     {
 #if USE_EXPERIMENTAL_SOURCE == true
 
-        views_.emplace_back(new GeographicView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new GeographicView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());

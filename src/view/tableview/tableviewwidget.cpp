@@ -27,12 +27,8 @@
 
 /*
  */
-TableViewWidget::TableViewWidget(const std::string& class_id, 
-                                     const std::string& instance_id,
-                                     Configurable* config_parent, 
-                                     TableView* view,
-                                     QWidget* parent)
-:   ViewWidget(class_id, instance_id, config_parent, view, parent)
+TableViewWidget::TableViewWidget(TableView* view, QWidget* parent)
+:   ViewWidget(view, parent)
 {
     auto data_widget = new TableViewDataWidget(this);
     setDataWidget(data_widget);

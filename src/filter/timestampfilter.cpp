@@ -28,9 +28,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-TimestampFilter::TimestampFilter(const std::string& class_id, const std::string& instance_id,
-                                 Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+TimestampFilter::TimestampFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("min_value", &min_value_str_, std::string());
     registerParameter("max_value", &max_value_str_, std::string());
@@ -90,23 +89,9 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
     return ss.str();
 }
 
-
-void TimestampFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("TimestampFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* TimestampFilter::createWidget()
 {
     return new TimestampFilterWidget(*this);
-}
-
-
-void TimestampFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 

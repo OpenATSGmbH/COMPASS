@@ -30,18 +30,13 @@ using namespace std;
 namespace dbContent
 {
 
-MetaVariable::MetaVariable(const std::string& class_id, const std::string& instance_id,
-                                 DBContentManager* object_manager)
-    : Configurable(class_id, instance_id, object_manager),
-      object_manager_(*object_manager),
+MetaVariable::MetaVariable(nlohmann::json& config, DBContentManager* parent)
+    : Configurable(config, parent),
+      object_manager_(*parent),
       widget_(nullptr)
 {
     registerParameter("name", &name_, std::string());
-
     registerParameter("dbcont_variables", &dbcont_variables_, nlohmann::json::object());
-
-    // DBContVAR LOWERCASE HACK
-    // boost::algorithm::to_lower(name_);
 
     traced_assert(name_.size() > 0);
 
@@ -57,25 +52,22 @@ MetaVariable::MetaVariable(const std::string& class_id, const std::string& insta
 
         if (!object_manager_.existsDBContent(dbcontent_name))
         {
-            logerr << "name " << name_ << " dbcontvariable definition " << instance_id
+            logerr << "name " << name_ << " dbcontvariable definition " << instanceId()
                    << " has unknown dbcont, ignoring";
-            // delete definition;
             return;
         }
 
         if (!object_manager_.dbContent(dbcontent_name).hasVariable(dbcontvar_name))
         {
-            logerr << "name " << name_ << " dbcontvariable definition " << instance_id
+            logerr << "name " << name_ << " dbcontvariable definition " << instanceId()
                    << " has unknown dbcont variable, ignoring";
-            // delete definition;
             return;
         }
 
         if (variables_.find(dbcontent_name) != variables_.end())
         {
-            logerr << "name " << name_ << " dbcontvariable definition " << instance_id
+            logerr << "name " << name_ << " dbcontvariable definition " << instanceId()
                    << " has already defined dbcont, ignoring";
-            // delete definition;
             return;
         }
 
@@ -100,17 +92,6 @@ MetaVariable::~MetaVariable()
     }
 
     variables_.clear();
-}
-
-void MetaVariable::checkSubConfigurables()
-{
-    // nothing to do here
-}
-
-void MetaVariable::generateSubConfigurable(const std::string& class_id,
-                                              const std::string& instance_id)
-{
-    throw std::runtime_error("MetaVariable: generateSubConfigurable: unknown class_id " + class_id);
 }
 
 bool MetaVariable::existsIn(const std::string& dbcontent_name)

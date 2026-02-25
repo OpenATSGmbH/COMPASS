@@ -25,15 +25,11 @@
 class ACIDFilter : public DBFilter
 {
 public:
-    ACIDFilter(const std::string& class_id, const std::string& instance_id,
-               Configurable* parent);
+    ACIDFilter(nlohmann::json& config, FilterManager* parent);
      virtual ~ACIDFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-     virtual void generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id) override;
 
      virtual bool filters(const std::string& dbcontent_name) override;
      virtual void reset() override;
@@ -53,7 +49,6 @@ protected:
     std::set<std::string> values_; // parts w/o %
     bool null_wanted_ {false};  // indicates NULL in values
 
-    virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
 
     bool updateValuesFromStr(const std::string& values); // returns success

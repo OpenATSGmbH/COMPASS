@@ -42,6 +42,7 @@ class EvaluationManager;
 class MainWindow;
 class FFTManager;
 class LicenseManager;
+class ConfigJSON;
 
 namespace rtcommand
 {
@@ -60,8 +61,7 @@ signals:
 public:
     virtual ~COMPASS();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
     std::string getPath() const override final;
 
     bool openDBFile(const std::string& filename);
@@ -229,6 +229,8 @@ protected:
     std::unique_ptr<rtcommand::RTCommandRunner> rt_cmd_runner_;
 
     LogStore log_store_;
+
+    std::unique_ptr<ConfigJSON> config_json_;
 
     std::string last_db_filename_;
     std::string inmem_future_filename_;

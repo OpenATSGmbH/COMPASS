@@ -30,9 +30,10 @@ using namespace std;
 namespace EvaluationRequirement
 {
 
-ModeCFalseConfig::ModeCFalseConfig(const std::string& class_id, const std::string& instance_id,
-                                   Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+ModeCFalseConfig::ModeCFalseConfig(
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     registerParameter("maximum_probability_false", &maximum_probability_false_, 0.01f);
 

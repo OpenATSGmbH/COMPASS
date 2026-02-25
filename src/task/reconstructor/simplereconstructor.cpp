@@ -16,6 +16,7 @@
  */
 
 #include "simplereconstructor.h"
+#include "reconstructortask.h"
 #include "simplereconstructorwidget.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
@@ -31,11 +32,10 @@
 using namespace std;
 using namespace Utils;
 
-SimpleReconstructor::SimpleReconstructor(const std::string& class_id, 
-                                         const std::string& instance_id,
-                                         ReconstructorTask& task, 
-                                         std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
-    : ReconstructorBase(class_id, instance_id, task, std::move(acc_estimator))
+SimpleReconstructor::SimpleReconstructor(nlohmann::json& config,
+                                         std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
+                                         ReconstructorTask* parent)
+    : ReconstructorBase(config, *parent, std::move(acc_estimator), parent)
     , associatior_   (*this)
     , ref_calculator_(*this)
 {

@@ -24,9 +24,8 @@
 
 //#include "cpl_conv.h"
 
-OGRProjection::OGRProjection(const std::string& class_id, const std::string& instance_id,
-                             ProjectionManager& proj_manager)
-    : Projection(class_id, instance_id, proj_manager)
+OGRProjection::OGRProjection(nlohmann::json& config, ProjectionManager* parent)
+    : Projection(config, parent)
 {
     // registerParameter ("epsg_value", &epsg_value_, 31258); // 	MGI Austria GK M31.prj 	BMN –
     // M31 Greenwich
@@ -40,13 +39,6 @@ OGRProjection::OGRProjection(const std::string& class_id, const std::string& ins
 }
 
 OGRProjection::~OGRProjection() {}
-
-void OGRProjection::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
-{
-}
-
-void OGRProjection::checkSubConfigurables() {}
 
 std::vector<unsigned int> OGRProjection::ids()
 {

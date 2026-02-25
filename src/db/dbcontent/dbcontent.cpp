@@ -172,15 +172,10 @@ const Property DBContent::var_reftraj_update_age_modes_{"Mode S Update Age", Pro
 
 const Property DBContent::selected_var {"selected", PropertyDataType::BOOL};
 
-/**
- */
-DBContent::DBContent(COMPASS& compass, 
-                     const string& class_id, 
-                     const string& instance_id,
-                     DBContentManager* manager)
-:   Configurable   (class_id, instance_id, manager, "db_content_" + boost::algorithm::to_lower_copy(instance_id) + ".json")
-,   compass_       (compass)
-,   dbcont_manager_(*manager)
+DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
+    : Configurable(config, parent)
+    , compass_(*parent->parentConfigurable())
+    , dbcont_manager_(*parent)
 {
     registerParameter("name", &name_, std::string("Undefined"));
     registerParameter("id", &id_, 0u);
@@ -209,8 +204,7 @@ DBContent::DBContent(COMPASS& compass,
 
     createSubConfigurables();
 
-    logdbg << "created with instance_id " << instanceId() << " name "
-           << name_;
+    logdbg << "created with instance_id " << instanceId() << " name " << name_;
 
     checkStaticVariable(DBContent::meta_var_ds_id_);
 
@@ -220,11 +214,6 @@ DBContent::DBContent(COMPASS& compass,
         checkStaticVariable(DBContent::meta_var_longitude_);
         checkStaticVariable(DBContent::meta_var_utn_);
     }
-
-    // if (contains_status_content_) // not in CAT063
-    // {
-    //     checkStaticVariable(DBContent::meta_var_message_type_);
-    // }
 
     is_reftraj_content_ = name_ == "RefTraj";
 
@@ -245,21 +234,21 @@ DBContent::~DBContent()
 
 /**
  */
-void DBContent::generateSubConfigurable(const string& class_id, 
-                                        const string& instance_id)
+void DBContent::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "generating variable " << instance_id;
+    const auto& class_id = Configuration::getClassName(child_json);
+    logdbg << "generating variable " << class_id;
     if (class_id == "Variable")
     {
-        Variable* var = new Variable(class_id, instance_id, this);
+        Variable* var = new Variable(child_json, this, name_);
 
         if (hasVariable(var->name()))
-            logerr << "duplicate variable " << instance_id
+            logerr << "duplicate variable " << var->instanceId()
                    << " with name '" << var->name() << "'";
 
         traced_assert(!hasVariable(var->name()));
 
-        logdbg << "generating variable " << instance_id
+        logdbg << "generating variable " << var->instanceId()
                << " with name " << var->name();
 
         variables_.emplace(std::piecewise_construct,
@@ -270,13 +259,6 @@ void DBContent::generateSubConfigurable(const string& class_id,
     {
         throw runtime_error("DBContent: generateSubConfigurable: unknown class_id " + class_id);
     }
-}
-
-/**
- */
-void DBContent::checkSubConfigurables()
-{
-    // nothing to see here
 }
 
 /**

@@ -90,21 +90,21 @@ const size_t DBInterface::TableBulkUpdateMinRows = 50;
 
 /**
  */
-DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
-:   Configurable(class_id, instance_id, compass)
-,   insert_mt_(true)
+// DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
+//     : Configurable(class_id, instance_id, compass), ...
+
+DBInterface::DBInterface(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent)
+    , insert_mt_(true)
 {
     registerParameter("log_verbose", &log_verbose_, log_verbose_);
-
     registerParameter("read_chunk_size", &read_chunk_size_, 50000u);
-    
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
     registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
     registerParameter("live_cleanup_time_min", &live_cleanup_time_min_, live_cleanup_time_min_);
-
     registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
-    
+
     if (use_live_inmem_db_)
     {
         logwrn << "version not reliable with live in-mem db, deactivating";
@@ -664,16 +664,6 @@ bool DBInterface::logVerbose() const
 {
     return log_verbose_;
 }
-
-/**
- */
-void DBInterface::generateSubConfigurable(const string& class_id,
-                                          const string& instance_id)
-{
-    throw std::runtime_error("DBInterface: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-
 
 /**
  * !Protect by mutex when calling!

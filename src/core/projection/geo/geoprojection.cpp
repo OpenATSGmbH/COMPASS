@@ -23,20 +23,12 @@
 
 //#include "cpl_conv.h"
 
-GeoProjection::GeoProjection(const std::string& class_id, const std::string& instance_id,
-                             ProjectionManager& proj_manager)
-    : Projection(class_id, instance_id, proj_manager)
+GeoProjection::GeoProjection(nlohmann::json& config, ProjectionManager* parent)
+    : Projection(config, parent)
 {
 }
 
 GeoProjection::~GeoProjection() {}
-
-void GeoProjection::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
-{
-}
-
-void GeoProjection::checkSubConfigurables() {}
 
 std::vector<unsigned int> GeoProjection::ids()
 {

@@ -28,33 +28,10 @@
 
 #include "json_fwd.hpp"
 
-/**
- * @brief Configuration storage and retrieval functionality with sub-class generation
- *
- * @details A Configurable is a super-class that is used for configuration storage and retrieval for
- * any number of parameters. Also can have sub-configurables as children, which are automatically
- * generated at startup.
- *
- * A second constructor exists which should only be used if NO configuration will be saved or used.
- * The idea behind this is that, based on the configuration, sub-configurables are generated, which
- * can be cloned. Since the clones are not to be saved, they can use the simple constructor
- * Configurable (), which disables all Configurable functionality.
- *
- * Holds and uses a Configuration for managing the configuration parameters.
- *
- * If a class is derived from Configurable, it should override the following functions (if required)
- * @code
- * public:
- *   virtual void generateSubConfigurable (std::string class_id, std::string instance_id);
- * protected:
- *   virtual void checkSubConfigurables ();
- * @endcode
- * and call createSubConfigurables() in its constructor. Also, its constructor has to be adapted to
- * supply the required arguments for the Configurable constructor.
- *
- */
 class Configurable
 {
+    friend class Configuration;  // Configuration::reconfigure_internal needs access to configuration_
+
 public:
     typedef Configuration::JSONExportType       JSONExportType;
     typedef Configuration::JSONExportFilterType JSONExportFilterType;
@@ -66,15 +43,12 @@ public:
     typedef Configuration::ReconfigureError     ReconfigureError;
     typedef Configuration::ReconfigureResult    ReconfigureResult;
     typedef Configuration::InstanceDescr        InstanceDescr;
-    
-    /// @brief Constructor
-    Configurable(const std::string& class_id, 
-                 const std::string& instance_id,
-                 Configurable* parent = nullptr,
-                 const std::string& root_configuration_filename = "",
-                 const nlohmann::json* config = nullptr);
 
-    /// @brief Default constructor, for STL containers
+    /// Creates a Configuration from config_json, registers with parent (if non-null)
+    /// or with ConfigurationManager as a root configurable.
+    Configurable(nlohmann::json& config_json, Configurable* parent);
+
+    /// Default constructor — leaves the object in transient (uninitialized) state.
     Configurable() = default;
 
     Configurable(const Configurable&) = delete;
@@ -82,67 +56,79 @@ public:
     Configurable& operator=(const Configurable& other) = delete;
     Configurable& operator=(Configurable&& other) = delete;
 
-    /// @brief Destructor
     virtual ~Configurable();
 
+    /// True if this Configurable was default-constructed and has no backing Configuration.
     bool isTransient() const { return is_transient_; }
 
-    /// @brief Reset parameters to their reset values
+    Configurable* parentConfigurable() const { return parent_; }
+
+    void addChild(Configurable* child);
+    void removeChild(Configurable* child);
+
+    void writeBackConfig();
+    /// Writes back config bottom-up: children first, then self. This ensures nested
+    /// sub_configs are complete before the parent rebuilds its own sub_configs array.
+    void writeBackConfigRecursive();
+
     virtual void resetToDefault();
 
     virtual std::string getPath() const;
 
-    /// @brief Adds a new sub-configuration based on class id and instance id
-    Configuration& addNewSubConfiguration(const std::string& class_id,
-                                          const std::string& instance_id);
-    /// @brief Adds a new sub-configuration based on class id, instance id is generated
-    Configuration& addNewSubConfiguration(const std::string& class_id);
+    nlohmann::json& addNewSubConfiguration(const std::string& class_id,
+                                           const std::string& instance_id);
+    nlohmann::json& addNewSubConfiguration(const std::string& class_id);
+    void removeSubConfigurations(const std::string& class_id);
 
-    /// @brief Override for creation of sub-configurables
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
-    void generateSubConfigurableFromConfig(std::unique_ptr<Configuration>&& config);
+    /// Returns a reference to the sub-config entry, creating it if it doesn't exist yet.
+    nlohmann::json& ensureSubConfig(const std::string& class_id,
+                                    const std::string& instance_id);
+    /// Creates an empty sub-config entry and calls generateSubConfigurable() on it.
     void generateSubConfigurableFromConfig(const std::string& class_id,
                                            const std::string& instance_id);
+    /// Clones the given configurable's JSON representation, merges additional_data,
+    /// adds it as a sub-config entry, and generates the child configurable from it.
     void generateSubConfigurableFromJSON(const Configurable& configurable,
-                                         const nlohmann::json& additional_data = nlohmann::json(),
-                                         const std::string& class_id = std::string());
-    /// @brief Returns if a specified sub-configurable exists
+                                         const nlohmann::json& additional_data = nlohmann::json());
     bool hasSubConfigurable(const std::string& class_id, const std::string& instance_id) const;
-    // finds by approx name, either exact instance id or first matching class id
+    /// Walks a dot-separated path of instance/class names to find a descendant.
     std::pair<rtcommand::FindObjectErrCode, Configurable*> findSubConfigurablePath(const std::string& path);
+    /// Searches for a child by name, then recurses into children if not found directly.
     std::pair<rtcommand::FindObjectErrCode, Configurable*> findSubConfigurableName(const std::string& name);
-    // returns nullptr if not found
+    /// Case-insensitive lookup: tries exact instance_id match first, then first class_id match.
     Configurable* getApproximateChildNamed(const std::string& approx_name);
     const Configurable& getChild(const std::string& class_id,
                                  const std::string& instance_id) const;
     Configurable& getChild(const std::string& class_id,
                            const std::string& instance_id);
 
+    /// Override to control how reconfigure() handles sub-configs missing from the target
+    /// hierarchy. Default: MustExist (fail on missing). Alternatives: CreateIfMissing, SkipIfMissing.
     virtual MissingKeyMode reconfigureSubConfigMode() const;
+    /// Same as reconfigureSubConfigMode() but for parameters.
     virtual MissingKeyMode reconfigureParameterMode() const;
 
-    /// @brief Saves the current configuration as template at its parent
-    // void saveConfigurationAsTemplate (const std::string& template_name);
-
-    /// @brief Returns instance identifier
     const std::string& instanceId() const { return instance_id_; }
-    /// @brief Returns class identifier
     const std::string& classId() const { return class_id_; }
-    /// @brief Returns key identifier (class_id + instance_id)
     const std::string& keyId() const { return key_id_; }
 
-    void setTmpDisableRemoveConfigOnDelete(bool value); // disabled removal of cfg on delete of instance
+    /// Prevents config removal from the parent's sub_config_storage_ when this instance is
+    /// destroyed. Propagates to all children. Used during bulk teardown/rebuild scenarios.
+    void setTmpDisableRemoveConfigOnDelete(bool value);
 
     void writeJSON(nlohmann::json& parent_json, JSONExportType export_type = JSONExportType::General) const;
     void generateJSON(nlohmann::json& target, JSONExportType export_type = JSONExportType::General) const;
 
+    /// Applies a full JSON config tree (parameters + sub_configs) to this configurable and its
+    /// descendants. Delegates to Configuration::reconfigure() which does a precheck then apply.
     ReconfigureResult reconfigure(const nlohmann::json& config,
                                   std::vector<MissingKey>* missing_subconfig_keys = nullptr,
                                   std::vector<MissingKey>* missing_param_keys = nullptr,
                                   bool assert_on_error = false,
                                   std::string* error = nullptr);
 
+    /// Convenience wrappers: apply a full settings JSON (parameters + sub_configs) or just
+    /// parameters to this configurable. String variants parse from a JSON string first.
     virtual Result applyJSONSettings(const nlohmann::json& settings_json);
     virtual Result applyJSONStringSettings(const std::string& settings_json_str);
     virtual Result applyJSONParameters(const nlohmann::json& params_json);
@@ -154,55 +140,49 @@ public:
     static const char ConfigurablePathSeparator;
 
 protected:
-    /// @brief Creates sub-configurables according to configuration
+    /// Override to instantiate the correct subclass from a child's JSON config.
+    /// Called by createSubConfigurables() for each entry in sub_config_storage_.
+    virtual void generateSubConfigurable(nlohmann::json& child_json);
+    /// Iterates sub_config_storage_ and calls generateSubConfigurable() for each entry.
+    /// Finishes with checkSubConfigurables().
     void createSubConfigurables();
 
-    /// @brief Override to enforce a custom sub-configurable creation order inside createSubConfigurables()
-    virtual std::vector<Configuration::Key> subConfigurableCreationOrder() const { return {}; }
-
-    /// @brief Registers a parameter of given type
     template <typename T>
     void registerParameter(const std::string& parameter_id, T* pointer, const T& default_value);
     template <typename T>
     T getParameterConfigValue(const std::string& parameter_id) const;
 
-    /// @brief Explicitely sets a parameter value
+    /// Assigns value to param and triggers notifyModifications() if the value changed.
     template <typename T>
     void setParameter(T& param, const T& value);
 
-    /// @brief Override to check if required sub-configurables exist
+    /// Override to create any sub-configurables that must exist but may be absent from the config
+    /// (e.g. newly added mandatory children). Called at the end of createSubConfigurables().
     virtual void checkSubConfigurables();
 
-    /// @brief Reacts on configuration changes, override as needed
+    /// Called after reconfigure() applies parameter changes. Override to react
+    /// (e.g. update widgets). changed_params contains dot-separated parameter paths.
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) {}
-    
-    /// @brief Reacts on modification of the configurable or one of its subconfigurables
+
+    /// Called when this configurable or any descendant is modified via setParameter().
     virtual void onModified() {}
 
-    /// @brief Returns the given sub-configuration (e.g. in order to check certain parameter values in generateSubConfigurable())
-    const Configuration& getSubConfiguration(const std::string& class_id,
-                                             const std::string& instance_id) const;
-
-    void addJSONExportFilter(JSONExportType export_type, 
+    void addJSONExportFilter(JSONExportType export_type,
                              JSONExportFilterType filter_type,
                              const std::string& id);
-    void addJSONExportFilter(JSONExportType export_type, 
+    void addJSONExportFilter(JSONExportType export_type,
                              JSONExportFilterType filter_type,
                              const std::vector<std::string>& ids);
 
+    /// Invokes onModified() on this configurable and propagates up to the root parent.
     void notifyModifications();
 
-    /// @brief Saves the specified child's configuration as template
-    // void saveTemplateConfiguration (Configurable *child, const std::string& template_name);
-
-    /// @brief Returns configuration for this class (const version)
     const Configuration& getConfiguration() const
     {
         traced_assert(configuration_);
         return *configuration_;
     }
 
-    /// @brief Returns the parent configurable for this class (const version)
     const Configurable& getParent() const
     {
         traced_assert(parent_);
@@ -212,47 +192,24 @@ protected:
 private:
     void configurationChanged(const std::vector<std::string>& changed_params);
 
-    /// @brief Adds a configurable as a child
-    Configuration& registerSubConfigurable(Configurable& child, bool config_must_exist = false);
-    /// @brief Removes a child configurable
-    void removeChildConfigurable(Configurable& child, bool remove_config = true);
-
-    /// @brief Adds a new sub-configuration by reference and copy constructor
-    Configuration& addNewSubConfiguration(std::unique_ptr<Configuration>&& configuration);
-
-    /// @brief Returns configuration for this class
     Configuration& configuration()
     {
         traced_assert(configuration_);
         return *configuration_;
     }
 
-    /// @brief Returns the parent configurable for this class
-    Configurable& parent()
-    {
-        traced_assert(parent_);
-        return *parent_;
-    }
-
-    void parent(Configurable& parent) { parent_ = &parent; }
-
-    /// Class identifier
     std::string class_id_;
-    /// Instance identifier
     std::string instance_id_;
-    /// Key identifier
-    std::string key_id_;
-    /// Parent pointer, null if Singleton or empty
+    std::string key_id_;                            ///< class_id + instance_id
     Configurable* parent_{nullptr};
-    /// Configuration
-    Configuration* configuration_{nullptr};
-    bool is_root_{false};
-    bool is_transient_{true};
+    std::string path_str_;                          ///< Dot-separated path from root
+    Configuration* configuration_{nullptr};         ///< Owned. Created in constructor, deleted in destructor.
+    bool is_root_{false};                           ///< True if registered with ConfigurationManager as a root
+    bool is_transient_{true};                       ///< True until json-backed constructor runs
 
     bool tmp_disable_remove_config_on_delete_ {false};
 
-    /// Container for all sub-configurables (class id + instance id -> Configurable)
-    std::map<std::string, Configurable&> children_;
+    std::vector<Configurable*> children_vec_;       ///< Non-owning pointers to json-backed children
 
     boost::signals2::connection changed_connection_;
 };

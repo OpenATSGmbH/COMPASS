@@ -52,8 +52,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace std;
 
-ViewManager::ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "views.json"), compass_(*compass)
+ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass), compass_(compass)
 {
     logdbg;
 
@@ -168,9 +168,11 @@ ViewManager::~ViewManager()
     view_points_widget_ = nullptr;
 }
 
-void ViewManager::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
+void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
+
     logdbg << "class_id " << class_id << " instance_id "
            << instance_id;
 
@@ -179,7 +181,7 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     if (class_id == "ViewContainer")
     {
         ViewContainer* container =
-                new ViewContainer(class_id, instance_id, this, this, main_tab_widget_, 0);
+                new ViewContainer(child_json, *this, main_tab_widget_, 0);
         traced_assert(containers_.count(instance_id) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(instance_id, container));
 
@@ -190,7 +192,7 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "ViewContainerWidget")
     {
         ViewContainerWidget* container_widget =
-                new ViewContainerWidget(class_id, instance_id, this);
+                new ViewContainerWidget(child_json, *this);
         traced_assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(
                                container_widget->viewContainer().instanceId(), &container_widget->viewContainer()));
@@ -206,7 +208,7 @@ void ViewManager::generateSubConfigurable(const std::string& class_id,
     {
         traced_assert(!view_points_report_gen_);
 
-        view_points_report_gen_.reset(new ViewPointsReportGenerator(class_id, instance_id, *this));
+        view_points_report_gen_.reset(new ViewPointsReportGenerator(child_json, this));
         traced_assert(view_points_report_gen_);
     }
     else

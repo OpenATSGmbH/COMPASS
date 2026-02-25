@@ -18,10 +18,9 @@ namespace EvaluationRequirement
 
 /**
  */
-PositionBaseProbConfig::PositionBaseProbConfig(const std::string& class_id, const std::string& instance_id,
-                                               Group& group, EvaluationStandard& standard,
-                                               EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+PositionBaseProbConfig::PositionBaseProbConfig(nlohmann::json& config,
+                                               Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     registerParameter("ref_min_accuracy", &ref_min_accuracy_, ref_min_accuracy_);
 }
@@ -52,10 +51,9 @@ void PositionBaseProbConfig::addToReport(std::shared_ptr<ResultReport::Report> r
 
 /**
  */
-PositionBaseValueConfig::PositionBaseValueConfig(const std::string& class_id, const std::string& instance_id,
-                                                 Group& group, EvaluationStandard& standard,
-                                                 EvaluationCalculator& calculator)
-    : BaseConfig(class_id, instance_id, group, standard, calculator)
+PositionBaseValueConfig::PositionBaseValueConfig(nlohmann::json& config,
+                                                 Group* parent)
+    : BaseConfig(config, parent)
 {
     registerParameter("ref_min_accuracy", &ref_min_accuracy_, ref_min_accuracy_);
 }

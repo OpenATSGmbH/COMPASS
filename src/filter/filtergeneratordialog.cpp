@@ -17,12 +17,14 @@
 
 #include "filtergeneratordialog.h"
 #include "compass.h"
+#include "configuration.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "filterconditionoperatorcombobox.h"
 #include "filtermanager.h"
 #include "dbcontent/variable/metavariable.h"
 #include "global.h"
+#include "json.hpp"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -308,9 +310,9 @@ void FilterGeneratorDialog::accept()
     //     return;
     // }
 
-    auto& configuration = filter_man.addNewSubConfiguration("DBFilter");
-    configuration.addParameter<std::string>("name", filter_name);
-    configuration.addParameter<bool>("is_custom", true);
+    auto& child_json = filter_man.addNewSubConfiguration("DBFilter");
+    child_json[Configuration::ParameterSection]["name"] = filter_name;
+    child_json[Configuration::ParameterSection]["is_custom"] = true;
 
     for (unsigned int cnt = 0; cnt < data_conditions_.size(); cnt++)
     {
@@ -320,12 +322,13 @@ void FilterGeneratorDialog::accept()
         loginf << "creating condition with operator '"
                << data_condition.operator_ << "'";
 
-        Configuration& condition_configuration = configuration.addNewSubConfiguration("DBFilterCondition", condition_name);
-        condition_configuration.addParameter<std::string>("operator", data_condition.operator_);
-        condition_configuration.addParameter<std::string>("variable_name", data_condition.variable_name_);
-        condition_configuration.addParameter<std::string>("variable_dbcontent_name", data_condition.variable_dbcont_name_);
-        condition_configuration.addParameter<bool>("absolute_value", data_condition.absolute_value_);
-        condition_configuration.addParameter<std::string>("value", data_condition.value_);
+        auto& condition_json = Configuration::addSubConfigEntry(
+            child_json, "DBFilterCondition", condition_name);
+        condition_json[Configuration::ParameterSection]["operator"] = data_condition.operator_;
+        condition_json[Configuration::ParameterSection]["variable_name"] = data_condition.variable_name_;
+        condition_json[Configuration::ParameterSection]["variable_dbcontent_name"] = data_condition.variable_dbcont_name_;
+        condition_json[Configuration::ParameterSection]["absolute_value"] = data_condition.absolute_value_;
+        condition_json[Configuration::ParameterSection]["value"] = data_condition.value_;
 
         std::string reset_value;
         if (data_condition.reset_value_.compare("MIN") == 0 ||
@@ -333,15 +336,14 @@ void FilterGeneratorDialog::accept()
             reset_value = data_condition.reset_value_;
         else
             reset_value = data_condition.value_;
-        
-        condition_configuration.addParameter<std::string>("reset_value", reset_value);
+
+        condition_json[Configuration::ParameterSection]["reset_value"] = reset_value;
 
         // configuration.addSubConfigurable ("DBFilterCondition", condition_name,
         // condition_config_name);
     }
 
-    //filter_man.generateSubConfigurableFromConfig(std::move(configuration));
-    filter_man.generateSubConfigurable (configuration.getClassId(), configuration.getInstanceId());
+    filter_man.generateSubConfigurable(child_json);
 
     QDialog::accept();
 }

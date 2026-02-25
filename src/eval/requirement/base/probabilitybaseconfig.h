@@ -25,11 +25,8 @@ namespace EvaluationRequirement {
 class ProbabilityBaseConfig : public BaseConfig
 {
 public:
-    ProbabilityBaseConfig(const std::string& class_id, 
-                          const std::string& instance_id,
-                          Group& group, 
-                          EvaluationStandard& standard,
-                          EvaluationCalculator& calculator);
+    ProbabilityBaseConfig(nlohmann::json& config,
+                          Group* parent);
     virtual ~ProbabilityBaseConfig() {}
 
     double prob() const;

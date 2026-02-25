@@ -31,9 +31,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-TrackerTrackNumberFilter::TrackerTrackNumberFilter(const std::string& class_id, const std::string& instance_id,
-                                                   Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+TrackerTrackNumberFilter::TrackerTrackNumberFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("tracker_track_nums", &tracker_track_nums_, json::object());
 
@@ -114,23 +113,9 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
     return ss.str();
 }
 
-
-void TrackerTrackNumberFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("TrackerTrackNumberFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* TrackerTrackNumberFilter::createWidget()
 {
     return new TrackerTrackNumberFilterWidget(*this);
-}
-
-
-void TrackerTrackNumberFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 

@@ -46,10 +46,7 @@ public:
         std::vector<Annotation> annotations;
     };
 
-    VariableView(const std::string& class_id, 
-                 const std::string& instance_id,
-                 ViewContainer* w,
-                 ViewManager& view_manager);
+    VariableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~VariableView();
 
     virtual void loadingDone() override final;

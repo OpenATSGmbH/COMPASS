@@ -34,12 +34,10 @@ class ViewContainer;
 class ViewContainerWidget : public QWidget, public Configurable
 {
   public:
-    ViewContainerWidget(const std::string& class_id, const std::string& instance_id,
-                        ViewManager* parent);
+    ViewContainerWidget(nlohmann::json& config, ViewManager& view_manager);
     virtual ~ViewContainerWidget();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     const std::string& name() { return name_; }
     ViewContainer& viewContainer() const;

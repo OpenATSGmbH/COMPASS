@@ -34,8 +34,8 @@ namespace EvaluationRequirement
 class IdentificationFalseConfig : public ProbabilityBaseConfig
 {
 public:
-    IdentificationFalseConfig(const std::string& class_id, const std::string& instance_id,
-                              Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    IdentificationFalseConfig(nlohmann::json& config,
+                              Group* parent);
 
     std::shared_ptr<Base> createRequirement() override;
 

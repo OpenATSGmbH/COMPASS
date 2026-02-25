@@ -16,13 +16,24 @@
  */
 
 #include "unitmanager.h"
+#include "compass.h"
 #include "dimension.h"
+#include "configurationmanager.h"
 #include "logger.h"
 
 #include <math.h>
 
+// Legacy constructor removed
+// UnitManager::UnitManager() : Configurable("UnitManager", "UnitManager0", 0, "units.json") { ... }
 
-UnitManager::UnitManager() : Configurable("UnitManager", "UnitManager0", 0, "units.json")
+UnitManager::UnitManager()
+    : Configurable(ConfigurationManager::getInstance().getRootConfigJSON("UnitManager", "UnitManager0").json(), nullptr)
+{
+    createSubConfigurables();
+}
+
+UnitManager::UnitManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent)
 {
     createSubConfigurables();
 }
@@ -34,12 +45,13 @@ UnitManager::~UnitManager()
     dimensions_.clear();
 }
 
-void UnitManager::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
+void UnitManager::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "Dimension")
     {
-        Dimension* dimension = new Dimension(class_id, instance_id, this);
+        Dimension* dimension = new Dimension(child_json, this);
         traced_assert(dimensions_.find(dimension->instanceId()) == dimensions_.end());
         dimensions_.insert(std::pair<std::string, Dimension*>(dimension->instanceId(), dimension));
     }

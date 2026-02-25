@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class PositionRadarAzimuthConfig : public PositionBaseProbConfig
 {
 public:
-    PositionRadarAzimuthConfig(const std::string& class_id, const std::string& instance_id,
-                        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionRadarAzimuthConfig(nlohmann::json& config,
+                        Group* parent);
     virtual ~PositionRadarAzimuthConfig();
 
     std::shared_ptr<Base> createRequirement() override;

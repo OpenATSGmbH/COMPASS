@@ -19,18 +19,13 @@
 
 #include "projection.h"
 
-class ProjectionManager;
 class RS2GCoordinateSystem;
 
 class RS2GProjection : public Projection
 {
 public:
-    RS2GProjection(const std::string& class_id, const std::string& instance_id,
-                   ProjectionManager& proj_manager);
+    RS2GProjection(nlohmann::json& config, ProjectionManager* parent);
     virtual ~RS2GProjection();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual std::vector<unsigned int> ids() override;
 
@@ -68,6 +63,6 @@ public:
 protected:
     std::map<unsigned int, std::unique_ptr<RS2GCoordinateSystem>> coordinate_systems_;
 
-    virtual void checkSubConfigurables() override;
 };
+
 

@@ -24,15 +24,11 @@
 class ModeCFilter : public DBFilter
 {
 public:
-    ModeCFilter(const std::string& class_id, const std::string& instance_id,
-                Configurable* parent);
+    ModeCFilter(nlohmann::json& config, FilterManager* parent);
     virtual ~ModeCFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
@@ -58,6 +54,5 @@ protected:
     float max_value_ {0};
     bool null_wanted_ {false};
 
-    virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
 };

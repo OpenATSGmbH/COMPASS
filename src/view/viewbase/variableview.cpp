@@ -29,11 +29,8 @@
 
 /**
 */
-VariableView::VariableView(const std::string& class_id, 
-                           const std::string& instance_id,
-                           ViewContainer* w, 
-                           ViewManager& view_manager)
-:   View(class_id, instance_id, w, view_manager)
+VariableView::VariableView(nlohmann::json& config, ViewContainer* parent)
+:   View(config, parent)
 {
 }
 

@@ -45,11 +45,8 @@ public:
         UseAnyTarget = 1 << 4
     };
 
-    IntervalBaseConfig(const std::string& class_id, 
-                       const std::string& instance_id,
-                       Group& group, 
-                       EvaluationStandard& standard,
-                       EvaluationCalculator& calculator);
+    IntervalBaseConfig(nlohmann::json& config,
+                       Group* parent);
     virtual ~IntervalBaseConfig() = default;
 
     float updateInterval() const;

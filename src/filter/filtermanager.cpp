@@ -43,9 +43,12 @@
 using namespace std;
 using namespace nlohmann;
 
-FilterManager::FilterManager(const std::string& class_id, const std::string& instance_id,
-                             COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "filter.json")
+// FilterManager::FilterManager(const std::string& class_id, const std::string& instance_id,
+//                              COMPASS* compass)
+//     : Configurable(class_id, instance_id, compass, "filter.json") ...
+
+FilterManager::FilterManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent)
 {
     logdbg;
 
@@ -82,9 +85,11 @@ void FilterManager::useFilters(bool use_filters)
         widget_->updateUseFilters();
 }
 
-void FilterManager::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
+
     if (hasSubConfigurable(class_id, instance_id))
     {
         logerr << "filter " << instance_id
@@ -96,88 +101,68 @@ void FilterManager::generateSubConfigurable(const std::string& class_id,
 
     if (class_id == "DBFilter")
     {
-        DBFilter* filter = new DBFilter(class_id, instance_id, this);
+        DBFilter* filter = new DBFilter(child_json, true, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "ADSBQualityFilter")
     {
-        ADSBQualityFilter* filter = new ADSBQualityFilter(class_id, instance_id, this);
+        ADSBQualityFilter* filter = new ADSBQualityFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "ACADFilter")
     {
-        ACADFilter* filter = new ACADFilter(class_id, instance_id, this);
+        ACADFilter* filter = new ACADFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "ACIDFilter")
     {
-        ACIDFilter* filter = new ACIDFilter(class_id, instance_id, this);
+        ACIDFilter* filter = new ACIDFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "Mode3AFilter")
     {
-        Mode3AFilter* filter = new Mode3AFilter(class_id, instance_id, this);
+        Mode3AFilter* filter = new Mode3AFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "ModeCFilter")
     {
-        ModeCFilter* filter = new ModeCFilter(class_id, instance_id, this);
+        ModeCFilter* filter = new ModeCFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "TimestampFilter")
     {
-        TimestampFilter* filter = new TimestampFilter(class_id, instance_id, this);
+        TimestampFilter* filter = new TimestampFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "TrackerTrackNumberFilter")
     {
-        TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(class_id, instance_id, this);
+        TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "UTNFilter")
     {
-        if (hasSubConfigurable(class_id, instance_id))
-        {
-            logerr << "utn filter "
-                   << instance_id << " already present";
-            return;
-        }
-
-        UTNFilter* filter = new UTNFilter(class_id, instance_id, this);
-
-        filters_.emplace_back(filter);
-    }
-    else if (class_id == "ADSBQualityFilter")
-    {
-        if (hasSubConfigurable(class_id, instance_id))
-        {
-            logerr << "adsb quality filter "
-                   << instance_id << " already present";
-            return;
-        }
-
-        ADSBQualityFilter* filter = new ADSBQualityFilter(class_id, instance_id, this);
+        UTNFilter* filter = new UTNFilter(child_json, this);
 
         filters_.emplace_back(filter);
     }
     else if (class_id == "PrimaryOnlyFilter")
     {
-        PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(class_id, instance_id, this);
+        PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "RefTrajAccuracyFilter")
     {
-        RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(class_id, instance_id, this);
+        RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "MLATRUFilter")
     {
-        MLATRUFilter* filter = new MLATRUFilter(class_id, instance_id, this);
+        MLATRUFilter* filter = new MLATRUFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else if (class_id == "ExcludedTimeWindowsFilter")
     {
-        ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(class_id, instance_id, this);
+        ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else
@@ -206,54 +191,22 @@ bool FilterManager::checkDBContent (const std::string& dbcontent_name)
 
 void FilterManager::checkSubConfigurables()
 {
-    // check for UTN filter
-
-    string classid = "UTNFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    { // no UTN filter
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-    classid = "TimestampFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
+    auto ensureFilter = [this](const std::string& classid)
     {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
+        if (std::find_if(filters_.begin(), filters_.end(),
+                         [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
+        {
+            auto& child_json = addNewSubConfiguration(classid, classid+"0");
+            generateSubConfigurable(child_json);
+        }
+    };
 
-    classid = "TrackerTrackNumberFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-    classid = "RefTrajAccuracyFilter";
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-    classid = "MLATRUFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-   classid = "ExcludedTimeWindowsFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
+    ensureFilter("UTNFilter");
+    ensureFilter("TimestampFilter");
+    ensureFilter("TrackerTrackNumberFilter");
+    ensureFilter("RefTrajAccuracyFilter");
+    ensureFilter("MLATRUFilter");
+    ensureFilter("ExcludedTimeWindowsFilter");
 }
 
 std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set)

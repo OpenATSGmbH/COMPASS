@@ -39,13 +39,10 @@ class VariableOrderedSet : public QObject, public Configurable
     void variableMovedSignal();
 
   public:
-    VariableOrderedSet(const std::string& class_id, 
-                       const std::string& instance_id,
-                       Configurable* parent);
+    VariableOrderedSet(nlohmann::json& config, Configurable* parent = nullptr);
     virtual ~VariableOrderedSet();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void add(Variable& var);
     void add(MetaVariable& var);

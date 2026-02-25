@@ -16,6 +16,7 @@
  */
 
 #include "rtcommand_manager.h"
+#include "configjson.h"
 #include "rtcommand_string.h"
 #include "rtcommand_runner.h"
 #include "tcpserver.h"
@@ -41,10 +42,16 @@ RTCommandManager::CommandId RTCommandManager::command_count_ = 0;
 
 const std::string RTCommandManager::PingName = "ping";
 
-/**
- */
+static ConfigJSON& rtCommandManagerConfigJSON()
+{
+    static std::unique_ptr<ConfigJSON> s_config;
+    if (!s_config)
+        s_config = std::make_unique<ConfigJSON>("rtcommand.json");
+    return *s_config;
+}
+
 RTCommandManager::RTCommandManager()
-    : Configurable("RTCommandManager", "RTCommandManager0", 0, "rtcommand.json")
+    : Configurable(rtCommandManagerConfigJSON().json(), nullptr)
 {
     logdbg;
 
@@ -63,7 +70,7 @@ RTCommandManager::~RTCommandManager()
  */
 void RTCommandManager::run()
 {
-    loginf << "starting io context";
+    loginf << "run";
 
     boost::asio::io_context io_context;
 

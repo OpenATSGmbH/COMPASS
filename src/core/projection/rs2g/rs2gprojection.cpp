@@ -22,20 +22,12 @@
 #include "projectionmanager.h"
 #include "rs2gcoordinatesystem.h"
 
-RS2GProjection::RS2GProjection(const std::string& class_id, const std::string& instance_id,
-                               ProjectionManager& proj_manager)
-    : Projection(class_id, instance_id, proj_manager)
+RS2GProjection::RS2GProjection(nlohmann::json& config, ProjectionManager* parent)
+    : Projection(config, parent)
 {
 }
 
 RS2GProjection::~RS2GProjection() {}
-
-void RS2GProjection::generateSubConfigurable(const std::string& class_id,
-                                             const std::string& instance_id)
-{
-}
-
-void RS2GProjection::checkSubConfigurables() {}
 
 std::vector<unsigned int> RS2GProjection::ids()
 {

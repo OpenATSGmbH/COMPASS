@@ -27,9 +27,8 @@ using namespace std;
 using namespace Utils;
 using namespace nlohmann;
 
-ExcludedTimeWindowsFilter::ExcludedTimeWindowsFilter(const std::string& class_id, const std::string& instance_id,
-                                                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ExcludedTimeWindowsFilter::ExcludedTimeWindowsFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("time_windows_json", &time_windows_json_, json::array());
 
@@ -92,23 +91,9 @@ std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbc
     return ss.str();
 }
 
-
-void ExcludedTimeWindowsFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ExcludedTimeWindowsFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* ExcludedTimeWindowsFilter::createWidget()
 {
     return new ExcludedTimeWindowsFilterWidget(*this);
-}
-
-
-void ExcludedTimeWindowsFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 

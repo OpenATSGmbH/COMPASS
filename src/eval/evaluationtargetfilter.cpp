@@ -27,8 +27,8 @@ using namespace nlohmann;
 using namespace std;
 using namespace Utils;
 
-EvaluationTargetFilter::EvaluationTargetFilter(const std::string& class_id, const std::string& instance_id, EvaluationManager& eval_manager)
-    : Configurable(class_id, instance_id, &eval_manager), eval_manager_(eval_manager)
+EvaluationTargetFilter::EvaluationTargetFilter(nlohmann::json& config, EvaluationManager& eval_manager)
+    : Configurable(config, &eval_manager), eval_manager_(eval_manager)
 {
     // shorts
     registerParameter("remove_short_targets", &remove_short_targets_, true);
@@ -53,7 +53,6 @@ EvaluationTargetFilter::EvaluationTargetFilter(const std::string& class_id, cons
     registerParameter("remove_not_detected_dbcont_values", &remove_not_detected_dbcont_values_, json::object());
 
     createSubConfigurables();
-
 }
 
 void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)

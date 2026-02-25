@@ -34,8 +34,8 @@ namespace EvaluationRequirement
 class ModeCFalseConfig : public ProbabilityBaseConfig
 {
 public:
-    ModeCFalseConfig(const std::string& class_id, const std::string& instance_id,
-                     Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    ModeCFalseConfig(nlohmann::json& config,
+                     Group* parent);
 
     std::shared_ptr<Base> createRequirement() override;
 

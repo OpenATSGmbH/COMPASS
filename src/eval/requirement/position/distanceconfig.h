@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class PositionDistanceConfig : public PositionBaseProbConfig
 {
 public:
-    PositionDistanceConfig(const std::string& class_id, const std::string& instance_id,
-                        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionDistanceConfig(nlohmann::json& config,
+                           Group* parent);
     virtual ~PositionDistanceConfig();
 
     std::shared_ptr<Base> createRequirement() override;

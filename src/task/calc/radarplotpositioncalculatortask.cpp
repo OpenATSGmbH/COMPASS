@@ -40,18 +40,15 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(const std::string& class_id,
-                                                                 const std::string& instance_id,
-                                                                 TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_calc_radar_pos.json")
+RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(nlohmann::json& config,
+                                                                 TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     tooltip_ =
             "Allows calculation of Radar plot position information based on the defined data sources.";
 
     qRegisterMetaType<std::shared_ptr<Buffer>>("std::shared_ptr<Buffer>");
-    // qRegisterMetaType<DBContent>("DBContent");
-
 }
 
 RadarPlotPositionCalculatorTask::~RadarPlotPositionCalculatorTask() {}

@@ -76,10 +76,7 @@ public:
         UnknownError
     };
 
-    View(const std::string& class_id, 
-         const std::string& instance_id,
-         ViewContainer* container,
-         ViewManager& view_manager);
+    View(nlohmann::json& config, ViewContainer* parent);
     virtual ~View();
 
     bool init();

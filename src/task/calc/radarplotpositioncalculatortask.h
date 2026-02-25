@@ -52,8 +52,7 @@ public slots:
     void updateDoneSlot(DBContent& db_content);
 
 public:
-    RadarPlotPositionCalculatorTask(const std::string& class_id, const std::string& instance_id,
-                                    TaskManager& task_manager);
+    RadarPlotPositionCalculatorTask(nlohmann::json& config, TaskManager* parent);
     virtual ~RadarPlotPositionCalculatorTask();
 
     bool isCalculating();

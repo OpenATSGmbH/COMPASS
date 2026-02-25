@@ -47,8 +47,7 @@ private slots:
 //     void possibleFilterChange();
 
 public:
-    DBFilterCondition(const std::string& class_id, const std::string& instance_id,
-                      DBFilter* filter_parent);
+    DBFilterCondition(nlohmann::json& config, DBFilter* parent);
     virtual ~DBFilterCondition();
 
     void invert();

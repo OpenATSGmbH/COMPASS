@@ -72,14 +72,12 @@ class JSONImportTask : public Task, public Configurable
     void insertDoneSlot();
 
   public:
-    JSONImportTask(const std::string& class_id, const std::string& instance_id,
-                   TaskManager& task_manager);
+    JSONImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~JSONImportTask();
 
     JSONImportTaskDialog* dialog();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     bool canImportFile();
 
@@ -170,7 +168,5 @@ class JSONImportTask : public Task, public Configurable
     void updateMsgBox();
 
     bool maxLoadReached();
-
-    virtual void checkSubConfigurables() override {}
 };
 

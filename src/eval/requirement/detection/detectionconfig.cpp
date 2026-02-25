@@ -35,9 +35,9 @@ namespace EvaluationRequirement
 {
 
 DetectionConfig::DetectionConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     registerParameter("update_interval", &update_interval_s_, 1.0f);
 

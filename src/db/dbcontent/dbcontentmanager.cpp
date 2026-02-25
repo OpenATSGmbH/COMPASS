@@ -54,11 +54,13 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-/**
- */
-DBContentManager::DBContentManager(const std::string& class_id, const std::string& instance_id,
-                                   COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "db_content.json"), compass_(*compass)
+COMPASS* DBContentManager::parentConfigurable() const
+{
+    return static_cast<COMPASS*>(Configurable::parentConfigurable());
+}
+
+DBContentManager::DBContentManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent), compass_(*parent)
 {
     logdbg << "creating subconfigurables";
 
@@ -106,15 +108,14 @@ DBContentManager::~DBContentManager()
 
 /**
  */
-void DBContentManager::generateSubConfigurable(const std::string& class_id,
-                                               const std::string& instance_id)
+void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
+    const auto& class_id = Configuration::getClassName(child_json);
+    logdbg << "class_id " << class_id;
 
     if (class_id == "DBContent")
     {
-        DBContent* object = new DBContent(compass_, class_id, instance_id, this);
+        DBContent* object = new DBContent(child_json, this);
         loginf << "adding content " << object->name()
                << " id " << object->id();
         traced_assert(!dbcontent_.count(object->name()));
@@ -125,7 +126,7 @@ void DBContentManager::generateSubConfigurable(const std::string& class_id,
     }
     else if (class_id == "MetaVariable")
     {
-        MetaVariable* meta_var = new MetaVariable(class_id, instance_id, this);
+        MetaVariable* meta_var = new MetaVariable(child_json, this);
         logdbg << "adding meta var type "
                << meta_var->name();
 
@@ -141,12 +142,6 @@ void DBContentManager::generateSubConfigurable(const std::string& class_id,
     else
         throw std::runtime_error("DBContentManager: generateSubConfigurable: unknown class_id " +
                                  class_id);
-}
-
-/**
- */
-void DBContentManager::checkSubConfigurables()
-{
 }
 
 /**

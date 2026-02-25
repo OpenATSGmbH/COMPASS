@@ -39,12 +39,8 @@ public slots:
     void dialogDoneSlot();
 
 public:
-    ManageSectorsTask(const std::string& class_id, const std::string& instance_id,
-                      TaskManager& task_manager);
+    ManageSectorsTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ManageSectorsTask();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
 
     ManageSectorsTaskDialog* dialog();
 
@@ -76,8 +72,6 @@ protected:
     std::string layer_name_;
     bool exclude_;
     QColor color_;
-
-    virtual void checkSubConfigurables() {}
 
     void parseCurrentFile (bool import);
 

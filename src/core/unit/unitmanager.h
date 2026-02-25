@@ -20,6 +20,7 @@
 #include "configurable.h"
 #include "singleton.h"
 
+class COMPASS;
 class Dimension;
 
 /**
@@ -30,6 +31,8 @@ class Dimension;
 class UnitManager : public Configurable, public Singleton
 {
   public:
+    /// @brief Constructor backed by a json reference (for testing / standalone use)
+    UnitManager(nlohmann::json& config, COMPASS* parent);
     /// @brief Destructor
     virtual ~UnitManager();
 
@@ -44,14 +47,13 @@ class UnitManager : public Configurable, public Singleton
     /// @brief Return container with all units
     const std::map<std::string, Dimension*>& dimensions() { return dimensions_; }
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
   protected:
     /// Container with all units (unit name (length, time) -> unit)
     std::map<std::string, Dimension*> dimensions_;
 
-    virtual void checkSubConfigurables();
+    void checkSubConfigurables() override;
 
     /// @brief Constructor
     UnitManager();

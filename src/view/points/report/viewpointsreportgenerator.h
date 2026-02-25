@@ -25,11 +25,9 @@ class ViewPointsReportGeneratorDialog;
 class ViewPointsReportGenerator : public Configurable
 {
 public:
-    ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
-                              ViewManager& view_manager);
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    // ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
+    //                           ViewManager& view_manager);
+    ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent);
 
     ViewPointsReportGeneratorDialog& dialog();
 
@@ -105,6 +103,4 @@ protected:
     bool show_done_ {true};
 
     bool pdf_created_ {false};
-
-    virtual void checkSubConfigurables();
 };

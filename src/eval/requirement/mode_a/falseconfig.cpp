@@ -30,9 +30,10 @@ using namespace std;
 namespace EvaluationRequirement
 {
 
-ModeAFalseConfig::ModeAFalseConfig(const std::string& class_id, const std::string& instance_id,
-                                   Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+ModeAFalseConfig::ModeAFalseConfig(
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
 
 }

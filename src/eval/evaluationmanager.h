@@ -72,7 +72,7 @@ public slots:
     void lockResultsSlot();
 
 public:
-    EvaluationManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    EvaluationManager(nlohmann::json& config, COMPASS& compass);
     virtual ~EvaluationManager();
 
     const EvaluationCalculator* calculator() const { return calculator_.get(); }
@@ -143,8 +143,7 @@ public:
     EvaluationTargetFilter& targetFilter() const;
     const std::string& lastResultName() const { return last_result_name_; }
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 protected:
     friend class EvaluationCalculator;
 

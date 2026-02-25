@@ -16,6 +16,7 @@
  */
 
 #include "scatterplotview.h"
+#include "viewcontainer.h"
 
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -38,11 +39,14 @@ const std::string ScatterPlotView::ParamUseConnectionLines = "use_connection_lin
 
 /**
 */
-ScatterPlotView::ScatterPlotView(const std::string& class_id, 
-                                 const std::string& instance_id,
-                                 ViewContainer* w, 
-                                 ViewManager& view_manager)
-:   VariableView(class_id, instance_id, w, view_manager)
+// ScatterPlotView::ScatterPlotView(const std::string& class_id,
+//                                  const std::string& instance_id,
+//                                  ViewContainer* w,
+//                                  ViewManager& view_manager)
+// :   VariableView(class_id, instance_id, w, view_manager)
+
+ScatterPlotView::ScatterPlotView(nlohmann::json& config, ViewContainer* parent)
+:   VariableView(config, parent)
 {
     registerParameter(ParamUseConnectionLines, &settings_.use_connection_lines, Settings().use_connection_lines);
 
@@ -121,20 +125,16 @@ bool ScatterPlotView::init_impl()
 
 /**
 */
-void ScatterPlotView::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void ScatterPlotView::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
     logdbg << "class_id " << class_id << " instance_id "
            << instance_id;
     if (class_id == "ScatterPlotViewDataSource")
     {
         traced_assert(!data_source_);
-        data_source_ = new ScatterPlotViewDataSource(class_id, instance_id, this);
-    }
-    else if (class_id == "ScatterPlotViewWidget")
-    {
-        widget_ = new ScatterPlotViewWidget(class_id, instance_id, this, this, central_widget_);
-        setWidget(widget_);
+        data_source_ = new ScatterPlotViewDataSource(child_json, this);
     }
     else
         throw std::runtime_error("ScatterPlotView: generateSubConfigurable: unknown class_id " +
@@ -147,12 +147,13 @@ void ScatterPlotView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurable("ScatterPlotViewDataSource", "ScatterPlotViewDataSource0");
+        generateSubConfigurableFromConfig("ScatterPlotViewDataSource", "ScatterPlotViewDataSource0");
     }
 
     if (!widget_)
     {
-        generateSubConfigurable("ScatterPlotViewWidget", "ScatterPlotViewWidget0");
+        widget_ = new ScatterPlotViewWidget(this, central_widget_);
+        setWidget(widget_);
     }
 }
 

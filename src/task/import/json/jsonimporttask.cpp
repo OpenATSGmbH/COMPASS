@@ -18,19 +18,14 @@
 #include "jsonimporttask.h"
 #include "compass.h"
 #include "buffer.h"
-//#include "createartasassociationstask.h"
 #include "dbinterface.h"
-//#include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-//#include "dbcontent/variable/variable.h"
 #include "files.h"
 #include "jobmanager.h"
 #include "jsonimporttaskdialog.h"
 #include "jsonmappingjob.h"
 #include "jsonparsejob.h"
 #include "jsonparsingschema.h"
-//#include "propertylist.h"
-//#include "radarplotpositioncalculatortask.h"
 #include "readjsonfilejob.h"
 #include "stringconv.h"
 #include "taskmanager.h"
@@ -53,10 +48,9 @@ using namespace std;
 
 const unsigned int num_objects_chunk = 10000;
 
-JSONImportTask::JSONImportTask(const std::string& class_id, const std::string& instance_id,
-                               TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_import_json.json")
+JSONImportTask::JSONImportTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     tooltip_ = "Allows importing of JSON data in several variants into the opened database.";
 
@@ -71,22 +65,28 @@ JSONImportTask::~JSONImportTask()
 {
 }
 
-void JSONImportTask::generateSubConfigurable(const std::string& class_id,
-                                             const std::string& instance_id)
+void JSONImportTask::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
+
     if (class_id == "JSONParsingSchema")
     {
-        std::string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<std::string>("name");
+        std::string name;
+        if (child_json.contains("parameters") && child_json["parameters"].contains("name"))
+            name = child_json["parameters"]["name"].get<std::string>();
 
+        traced_assert(name.size());
         traced_assert(schemas_.find(name) == schemas_.end());
 
         logdbg << "generating schema " << instance_id
                << " with name " << name;
 
-        schemas_[name] = make_shared<JSONParsingSchema>(class_id, instance_id, this);
+        auto schema = make_shared<JSONParsingSchema>(child_json, this);
+        schemas_[name] = std::move(schema);
     }
     else
-        throw std::runtime_error("JSONImporterTask: generateSubConfigurable: unknown class_id " +
+        throw std::runtime_error("JSONImportTask: generateSubConfigurable: unknown class_id " +
                                  class_id);
 }
 

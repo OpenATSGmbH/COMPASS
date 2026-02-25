@@ -71,12 +71,11 @@ using namespace boost::posix_time;
 
 /**
  */
-EvaluationCalculator::EvaluationCalculator(const std::string& class_id, 
-                                           const std::string& instance_id,
-                                           EvaluationManager& eval_man, 
+EvaluationCalculator::EvaluationCalculator(nlohmann::json& config,
+                                           EvaluationManager& eval_man,
                                            DBContentManager& dbcontent_man,
                                            bool is_default_calculator)
-:   Configurable          (class_id, instance_id, &eval_man)
+:   Configurable          (config, &eval_man)
 ,   eval_man_             (eval_man)
 ,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
 ,   results_gen_          (new EvaluationResultsGenerator(*this))
@@ -89,11 +88,18 @@ EvaluationCalculator::EvaluationCalculator(const std::string& class_id,
 
 /**
  */
-EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man, 
+static nlohmann::json& configCopy(const nlohmann::json& src)
+{
+    static nlohmann::json s_copy;
+    s_copy = src;
+    return s_copy;
+}
+
+EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man,
                                            DBContentManager& dbcontent_man,
                                            const nlohmann::json& config,
                                            bool is_default_calculator)
-:   Configurable          ("EvaluationManager", "EvaluationManager0", nullptr, "", &config)
+:   Configurable          (configCopy(config), nullptr)
 ,   eval_man_             (eval_man)
 ,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
 ,   results_gen_          (new EvaluationResultsGenerator(*this))
@@ -259,12 +265,13 @@ void EvaluationCalculator::readSettings()
 
 /**
  */
-void EvaluationCalculator::generateSubConfigurable(const std::string& class_id,
-                                                   const std::string& instance_id)
+void EvaluationCalculator::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "EvaluationStandard")
     {
-        EvaluationStandard* standard = new EvaluationStandard(class_id, instance_id, *this);
+        EvaluationStandard* standard = new EvaluationStandard(child_json, this);
         logdbg << "adding standard " << standard->name();
 
         traced_assert(!hasStandard(standard->name()));
@@ -292,9 +299,16 @@ void EvaluationCalculator::checkSubConfigurables()
  */
 void EvaluationCalculator::updateDerivedParameters()
 {
-    //data sources
-    data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
-    data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
+    //data sources — default-constructed json is null, only parse if object
+    if (settings_.active_sources_ref_.is_object())
+        data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
+    else
+        data_sources_ref_.clear();
+
+    if (settings_.active_sources_tst_.is_object())
+        data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
+    else
+        data_sources_tst_.clear();
 
     //read various constraints from config json
     loadGlobalTimeWindow();
@@ -966,7 +980,7 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
     nlohmann::json data;
     data["parameters"]["name"] = new_name;
 
-    Configurable::generateSubConfigurableFromJSON(currentStandard(), data, "EvaluationStandard");
+    Configurable::generateSubConfigurableFromJSON(currentStandard(), data);
 
     setCurrentStandardName(new_name);
 
@@ -1026,10 +1040,10 @@ void EvaluationCalculator::addStandard(const std::string& name)
 
     std::string instance = "EvaluationStandard" + name + "0";
 
-    auto config = Configuration::create("EvaluationStandard", instance);
-    config->addParameter<std::string>("name", name);
+    auto& child_json = addNewSubConfiguration("EvaluationStandard", instance);
+    child_json[Configuration::ParameterSection]["name"] = name;
 
-    generateSubConfigurableFromConfig(std::move(config));
+    generateSubConfigurable(child_json);
 
     emit standardsChanged();
 

@@ -33,6 +33,7 @@
 class DBContent;
 class Buffer;
 class ASTERIXImportTask;
+class ASTERIXJSONParsingSchema;
 
 class ASTERIXJSONParser : public QAbstractItemModel, public Configurable
 {
@@ -50,8 +51,9 @@ public:
         ExistingMapping=0, UnmappedJSONKey, UnmappedDBContentVariable
     };
 
-    ASTERIXJSONParser(const std::string& class_id, const std::string& instance_id,
-                      Configurable* parent, ASTERIXImportTask& task);
+    /// @brief Constructor backed by a json reference
+    ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
+                      ASTERIXJSONParsingSchema* parent);
 
     DBContent& dbContent() const;
 
@@ -72,8 +74,7 @@ public:
     std::shared_ptr<Buffer> getNewBuffer() const;
     void appendVariablesToBuffer(Buffer& buffer) const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     ASTERIXJSONParserWidget* createWidget();
 
@@ -163,7 +164,7 @@ private:
                                      bool is_in_array = false);
 
 protected:
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 
 };
 

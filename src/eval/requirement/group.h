@@ -46,14 +46,13 @@ signals:
 //     void deleteRequirementSlot();
 
 public:
-    Group(const std::string& class_id, 
-          const std::string& instance_id,
-          EvaluationStandard& standard, 
-          EvaluationCalculator& calculator);
+    Group(nlohmann::json& config,
+          EvaluationStandard* parent);
+
+    EvaluationStandard* parentConfigurable() const;
     virtual ~Group();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void use(bool ok) override;
     bool used() const override;

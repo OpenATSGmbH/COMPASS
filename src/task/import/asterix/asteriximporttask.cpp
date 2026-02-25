@@ -99,11 +99,105 @@ ASTERIXImportTaskSettings::ASTERIXImportTaskSettings()
 
 /**
 */
-ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id, 
-                                     const std::string& instance_id,
-                                     TaskManager& task_manager)
-    : Task(task_manager),
-    Configurable(class_id, instance_id, &task_manager, "task_import_asterix.json")
+// (old constructor removed)
+// {
+//     tooltip_ = "Allows importing of ASTERIX data recording files into the opened database.";
+
+//     registerParameter("reset_date_between_files", &settings_.reset_date_between_files_,
+//                       ASTERIXImportTaskSettings().reset_date_between_files_);
+//     registerParameter("debug_jasterix", &settings_.debug_jasterix_, ASTERIXImportTaskSettings().debug_jasterix_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "debug_jasterix");
+
+//     registerParameter("current_file_framing", &settings_.current_file_framing_, ASTERIXImportTaskSettings().current_file_framing_);
+
+//     registerParameter("num_packets_overload", &settings_.num_packets_overload_, ASTERIXImportTaskSettings().num_packets_overload_);
+
+//     registerParameter("override_tod_active", &settings_.override_tod_active_,
+//                       ASTERIXImportTaskSettings().override_tod_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "override_tod_active");
+//     registerParameter("override_tod_offset", &settings_.override_tod_offset_,
+//                       ASTERIXImportTaskSettings().override_tod_offset_);
+
+//     registerParameter("filter_tod_active", &settings_.filter_tod_active_,
+//                       ASTERIXImportTaskSettings().filter_tod_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_tod_active");
+//     registerParameter("filter_tod_min", &settings_.filter_tod_min_, ASTERIXImportTaskSettings().filter_tod_min_);
+//     registerParameter("filter_tod_max", &settings_.filter_tod_max_, ASTERIXImportTaskSettings().filter_tod_max_);
+
+//     registerParameter("filter_position_rec_active", &settings_.filter_position_rec_active_,
+//                       ASTERIXImportTaskSettings().filter_position_rec_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_rec_active");
+//     registerParameter("filter_rec_latitude_min", &settings_.filter_rec_latitude_min_,
+//                       ASTERIXImportTaskSettings().filter_rec_latitude_min_);
+//     registerParameter("filter_rec_latitude_max", &settings_.filter_rec_latitude_max_,
+//                       ASTERIXImportTaskSettings().filter_rec_latitude_max_);
+//     registerParameter("filter_rec_longitude_min", &settings_.filter_rec_longitude_min_,
+//                       ASTERIXImportTaskSettings().filter_rec_longitude_min_);
+//     registerParameter("filter_rec_longitude_max", &settings_.filter_rec_longitude_max_,
+//                       ASTERIXImportTaskSettings().filter_rec_longitude_max_);
+
+//     registerParameter("filter_position_circ_active", &settings_.filter_position_circ_active_,
+//                       ASTERIXImportTaskSettings().filter_position_circ_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_circ_active");
+//     registerParameter("filter_circ_latitude", &settings_.filter_circ_latitude_,
+//                       ASTERIXImportTaskSettings().filter_circ_latitude_);
+//     registerParameter("filter_circ_longitude", &settings_.filter_circ_longitude_,
+//                       ASTERIXImportTaskSettings().filter_circ_longitude_);
+//     registerParameter("filter_circ_range", &settings_.filter_circ_range_,
+//                       ASTERIXImportTaskSettings().filter_circ_range_);
+
+//     registerParameter("filter_modec_active", &settings_.filter_modec_active_,
+//                       ASTERIXImportTaskSettings().filter_modec_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_modec_active");
+//     registerParameter("filter_modec_min", &settings_.filter_modec_min_, ASTERIXImportTaskSettings().filter_modec_min_);
+//     registerParameter("filter_modec_max", &settings_.filter_modec_max_, ASTERIXImportTaskSettings().filter_modec_max_);
+
+//     registerParameter("file_line_id", &settings_.file_line_id_, ASTERIXImportTaskSettings().file_line_id_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "file_line_id");
+//     registerParameter("date_str", &settings_.date_str_, ASTERIXImportTaskSettings().date_str_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "date_str");
+
+//     if (settings_.date_str_.size())
+//         settings_.date_ = Time::fromDateString(settings_.date_str_);
+//     if (settings_.date_.is_not_a_date_time())
+//         settings_.date_ = boost::posix_time::ptime(boost::gregorian::day_clock::universal_day());
+
+//     registerParameter("network_ignore_future_ts", &settings_.network_ignore_future_ts_,
+//                       ASTERIXImportTaskSettings().network_ignore_future_ts_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "network_ignore_future_ts");
+//     registerParameter("obfuscate_secondary_info", &settings_.obfuscate_secondary_info_,
+//                       ASTERIXImportTaskSettings().obfuscate_secondary_info_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "obfuscate_secondary_info");
+
+//     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
+//     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
+
+//     std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+
+//     loginf << "jasterix definition path '"
+//            << jasterix_definition_path << "'";
+//     traced_assert(Files::directoryExists(jasterix_definition_path));
+
+//     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
+//     jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
+
+//     refreshjASTERIX(); // needed for available framings check etc.
+
+//     createSubConfigurables();
+
+//     connect(&source_, &ASTERIXImportSource::changed, this, &ASTERIXImportTask::sourceChanged);
+//     connect(&source_, &ASTERIXImportSource::fileUsageChanged, this, &ASTERIXImportTask::sourceUsageChanged);
+
+//     registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
+//                       settings_.max_packets_in_processing_);
+
+//     logdbg << "thread " << QThread::currentThreadId()
+//            << " main " << QApplication::instance()->thread()->currentThreadId();
+// }
+
+ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+    Configurable(config, parent)
 {
     tooltip_ = "Allows importing of ASTERIX data recording files into the opened database.";
 
@@ -111,23 +205,18 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
                       ASTERIXImportTaskSettings().reset_date_between_files_);
     registerParameter("debug_jasterix", &settings_.debug_jasterix_, ASTERIXImportTaskSettings().debug_jasterix_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "debug_jasterix");
-
     registerParameter("current_file_framing", &settings_.current_file_framing_, ASTERIXImportTaskSettings().current_file_framing_);
-
     registerParameter("num_packets_overload", &settings_.num_packets_overload_, ASTERIXImportTaskSettings().num_packets_overload_);
-
     registerParameter("override_tod_active", &settings_.override_tod_active_,
                       ASTERIXImportTaskSettings().override_tod_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "override_tod_active");
     registerParameter("override_tod_offset", &settings_.override_tod_offset_,
                       ASTERIXImportTaskSettings().override_tod_offset_);
-
     registerParameter("filter_tod_active", &settings_.filter_tod_active_,
                       ASTERIXImportTaskSettings().filter_tod_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_tod_active");
     registerParameter("filter_tod_min", &settings_.filter_tod_min_, ASTERIXImportTaskSettings().filter_tod_min_);
     registerParameter("filter_tod_max", &settings_.filter_tod_max_, ASTERIXImportTaskSettings().filter_tod_max_);
-
     registerParameter("filter_position_rec_active", &settings_.filter_position_rec_active_,
                       ASTERIXImportTaskSettings().filter_position_rec_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_rec_active");
@@ -139,7 +228,6 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
                       ASTERIXImportTaskSettings().filter_rec_longitude_min_);
     registerParameter("filter_rec_longitude_max", &settings_.filter_rec_longitude_max_,
                       ASTERIXImportTaskSettings().filter_rec_longitude_max_);
-
     registerParameter("filter_position_circ_active", &settings_.filter_position_circ_active_,
                       ASTERIXImportTaskSettings().filter_position_circ_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_circ_active");
@@ -149,13 +237,11 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
                       ASTERIXImportTaskSettings().filter_circ_longitude_);
     registerParameter("filter_circ_range", &settings_.filter_circ_range_,
                       ASTERIXImportTaskSettings().filter_circ_range_);
-
     registerParameter("filter_modec_active", &settings_.filter_modec_active_,
                       ASTERIXImportTaskSettings().filter_modec_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_modec_active");
     registerParameter("filter_modec_min", &settings_.filter_modec_min_, ASTERIXImportTaskSettings().filter_modec_min_);
     registerParameter("filter_modec_max", &settings_.filter_modec_max_, ASTERIXImportTaskSettings().filter_modec_max_);
-
     registerParameter("file_line_id", &settings_.file_line_id_, ASTERIXImportTaskSettings().file_line_id_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "file_line_id");
     registerParameter("date_str", &settings_.date_str_, ASTERIXImportTaskSettings().date_str_);
@@ -172,7 +258,6 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
     registerParameter("obfuscate_secondary_info", &settings_.obfuscate_secondary_info_,
                       ASTERIXImportTaskSettings().obfuscate_secondary_info_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "obfuscate_secondary_info");
-
     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
 
@@ -194,9 +279,6 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
 
     registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
                       settings_.max_packets_in_processing_);
-
-    logdbg << "thread " << QThread::currentThreadId()
-           << " main " << QApplication::instance()->thread()->currentThreadId();
 }
 
 /**
@@ -208,12 +290,13 @@ ASTERIXImportTask::~ASTERIXImportTask()
 
 /**
 */
-void ASTERIXImportTask::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
     if (class_id == "ASTERIXCategoryConfig")
     {
-        unsigned int category = getSubConfiguration(class_id, instance_id).getParameterConfigValue<unsigned int>("category");
+        unsigned int category = child_json.at(Configuration::ParameterSection).at("category").get<unsigned int>();
 
         traced_assert(category_configs_.find(category) == category_configs_.end());
 
@@ -222,8 +305,8 @@ void ASTERIXImportTask::generateSubConfigurable(const std::string& class_id,
 
         category_configs_.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(category),                                // args for key
-            std::forward_as_tuple(category, class_id, instance_id, this));  // args for mapped value
+            std::forward_as_tuple(category),              // args for key
+            std::forward_as_tuple(child_json, this));     // args for mapped value
 
         logdbg << "cat " << category << " decode "
                << category_configs_.at(category).decode() << " edition '"
@@ -232,7 +315,7 @@ void ASTERIXImportTask::generateSubConfigurable(const std::string& class_id,
     }
     else if (class_id == "ASTERIXJSONParsingSchema")
     {
-        std::string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<std::string>("name");
+        std::string name = child_json.at(Configuration::ParameterSection).at("name").get<std::string>();
 
         traced_assert(schema_ == nullptr);
         traced_assert(name == "jASTERIX");
@@ -240,7 +323,7 @@ void ASTERIXImportTask::generateSubConfigurable(const std::string& class_id,
         logdbg << "generating schema " << instance_id
                << " with name " << name;
 
-        schema_.reset(new ASTERIXJSONParsingSchema(class_id, instance_id, *this));
+        schema_.reset(new ASTERIXJSONParsingSchema(child_json, *this));
     }
     else
     {
@@ -354,9 +437,9 @@ void ASTERIXImportTask::checkSubConfigurables()
 {
     if (schema_ == nullptr)
     {
-        auto config = Configuration::create("JSONParsingSchema", "JSONParsingSchemajASTERIX0");
-        config->addParameter<std::string>("name", "jASTERIX");
-        generateSubConfigurableFromConfig(std::move(config));
+        auto& child_json = addNewSubConfiguration("ASTERIXJSONParsingSchema", "JSONParsingSchemajASTERIX0");
+        child_json[Configuration::ParameterSection]["name"] = "jASTERIX";
+        generateSubConfigurable(child_json);
     }
 }
 
@@ -498,13 +581,13 @@ void ASTERIXImportTask::decodeCategory(unsigned int category, bool decode)
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", decode);
-        new_cfg->addParameter<std::string>("edition", jasterix_->category(category)->defaultEdition());
-        new_cfg->addParameter<std::string>("ref", jasterix_->category(category)->defaultREFEdition());
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = decode;
+        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
+        cj[Configuration::ParameterSection]["ref"] = jasterix_->category(category)->defaultREFEdition();
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -541,13 +624,13 @@ void ASTERIXImportTask::editionForCategory(unsigned int category, const std::str
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", false);
-        new_cfg->addParameter<std::string>("edition", edition);
-        new_cfg->addParameter<std::string>("ref", jasterix_->category(category)->defaultREFEdition());
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = false;
+        cj[Configuration::ParameterSection]["edition"] = edition;
+        cj[Configuration::ParameterSection]["ref"] = jasterix_->category(category)->defaultREFEdition();
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -585,13 +668,13 @@ void ASTERIXImportTask::refEditionForCategory(unsigned int category, const std::
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", false);
-        new_cfg->addParameter<std::string>("edition", jasterix_->category(category)->defaultEdition());
-        new_cfg->addParameter<std::string>("ref", ref);
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = false;
+        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
+        cj[Configuration::ParameterSection]["ref"] = ref;
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -630,13 +713,13 @@ void ASTERIXImportTask::spfEditionForCategory(unsigned int category, const std::
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", false);
-        new_cfg->addParameter<std::string>("edition", jasterix_->category(category)->defaultEdition());
-        new_cfg->addParameter<std::string>("spf", spf);
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = false;
+        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
+        cj[Configuration::ParameterSection]["spf"] = spf;
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else

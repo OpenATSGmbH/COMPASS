@@ -38,11 +38,8 @@ public:
         ModeA
     };
 
-    IdentificationCorrectPeriodConfig(const std::string& class_id, 
-                                      const std::string& instance_id,
-                                      Group& group, 
-                                      EvaluationStandard& standard,
-                                      EvaluationCalculator& calculator);
+    IdentificationCorrectPeriodConfig(nlohmann::json& config,
+                                      Group* parent);
     virtual ~IdentificationCorrectPeriodConfig() = default;
 
     IdentificationType identificationType() const { return identification_type_; }

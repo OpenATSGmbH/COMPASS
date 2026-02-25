@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class PositionRadarRangeConfig : public PositionBaseProbConfig
 {
 public:
-    PositionRadarRangeConfig(const std::string& class_id, const std::string& instance_id,
-                        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionRadarRangeConfig(nlohmann::json& config,
+                        Group* parent);
     virtual ~PositionRadarRangeConfig();
 
     std::shared_ptr<Base> createRequirement() override;

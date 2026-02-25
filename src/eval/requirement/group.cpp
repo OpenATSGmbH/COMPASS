@@ -17,6 +17,7 @@
 
 #include "eval/requirement/group.h"
 #include "evaluationstandard.h"
+#include "evaluationcalculator.h"
 #include "eval/requirement/detection/detectionconfig.h"
 #include "eval/requirement/position/distanceconfig.h"
 #include "eval/requirement/position/distancermsconfig.h"
@@ -83,10 +84,12 @@ const std::map<std::string, std::string> Group::requirement_type_mapping_
     {"EvaluationRequirementCoastingCorrectConfig", "Track Coasting Correct"}
 };
 
-Group::Group(const std::string& class_id, const std::string& instance_id,
-                                                       EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : Configurable(class_id, instance_id, &standard), EvaluationStandardTreeItem(&standard), standard_(standard),
-      calculator_(calculator)
+Group::Group(nlohmann::json& config,
+             EvaluationStandard* parent)
+    : Configurable(config, parent),
+      EvaluationStandardTreeItem(parent),
+      standard_(*parent),
+      calculator_(*standard_.parentConfigurable())
 {
     registerParameter("name", &name_, std::string());
     registerParameter("use", &use_, true);
@@ -94,6 +97,11 @@ Group::Group(const std::string& class_id, const std::string& instance_id,
     traced_assert(name_.size());
 
     createSubConfigurables();
+}
+
+EvaluationStandard* Group::parentConfigurable() const
+{
+    return static_cast<EvaluationStandard*>(Configurable::parentConfigurable());
 }
 
 Group::~Group()
@@ -115,14 +123,15 @@ bool Group::checkable() const
     return true;
 }
 
-void Group::generateSubConfigurable(const std::string& class_id,
-                                                         const std::string& instance_id)
+void Group::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "EvaluationRequirementExtraDataConfig")
     {
         EvaluationRequirement::ExtraDataConfig* config =
                 new EvaluationRequirement::ExtraDataConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -132,7 +141,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ExtraTrackConfig* config =
                 new EvaluationRequirement::ExtraTrackConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -142,7 +151,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::DubiousTrackConfig* config =
                 new EvaluationRequirement::DubiousTrackConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -152,7 +161,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::DubiousTargetConfig* config =
                 new EvaluationRequirement::DubiousTargetConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -162,7 +171,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::DetectionConfig* config =
                 new EvaluationRequirement::DetectionConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -172,7 +181,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionDistanceConfig* config =
                 new EvaluationRequirement::PositionDistanceConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -182,7 +191,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionDistanceRMSConfig* config =
                 new EvaluationRequirement::PositionDistanceRMSConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -192,7 +201,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionRadarRangeConfig* config =
                 new EvaluationRequirement::PositionRadarRangeConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -202,7 +211,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionRadarAzimuthConfig* config =
                 new EvaluationRequirement::PositionRadarAzimuthConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -212,7 +221,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionAlongConfig* config =
                 new EvaluationRequirement::PositionAlongConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -222,7 +231,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionAcrossConfig* config =
                 new EvaluationRequirement::PositionAcrossConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -232,7 +241,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::PositionLatencyConfig* config =
                 new EvaluationRequirement::PositionLatencyConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -242,7 +251,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::SpeedConfig* config =
                 new EvaluationRequirement::SpeedConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -252,7 +261,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::TrackAngleConfig* config =
                 new EvaluationRequirement::TrackAngleConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -262,7 +271,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::IdentificationCorrectConfig* config =
                 new EvaluationRequirement::IdentificationCorrectConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -272,7 +281,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::IdentificationFalseConfig* config =
                 new EvaluationRequirement::IdentificationFalseConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -282,7 +291,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::IdentificationCorrectPeriodConfig* config =
                 new EvaluationRequirement::IdentificationCorrectPeriodConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -292,7 +301,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ModeAPresentConfig* config =
                 new EvaluationRequirement::ModeAPresentConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -302,7 +311,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ModeAFalseConfig* config =
                 new EvaluationRequirement::ModeAFalseConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -312,7 +321,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ModeCPresentConfig* config =
                 new EvaluationRequirement::ModeCPresentConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -322,7 +331,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ModeCCorrectConfig* config =
                 new EvaluationRequirement::ModeCCorrectConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -332,7 +341,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ModeCFalseConfig* config =
                 new EvaluationRequirement::ModeCFalseConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -342,7 +351,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     {
         EvaluationRequirement::ModeCCorrectPeriodConfig* config =
                 new EvaluationRequirement::ModeCCorrectPeriodConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -351,7 +360,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "EvaluationRequirementMoMLongAccConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-                class_id, instance_id, "MomLongAccCorrect", *this, standard_, calculator_);
+                child_json, "MomLongAccCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -360,7 +369,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "EvaluationRequirementMoMTransAccConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-            class_id, instance_id, "MomTransAccCorrect", *this, standard_, calculator_);
+                child_json, "MomTransAccCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -369,7 +378,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "EvaluationRequirementMoMVertRateConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-            class_id, instance_id, "MomVertRateCorrect", *this, standard_, calculator_);
+                child_json, "MomVertRateCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -378,7 +387,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "EvaluationRequirementCoastingCorrectConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-            class_id, instance_id, "CoastingCorrect", *this, standard_, calculator_);
+                child_json, "CoastingCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -387,7 +396,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "EvaluationRequirementROCDCorrectConfig")
     {
         EvaluationRequirement::GenericDoubleConfig* config = new EvaluationRequirement::GenericDoubleConfig(
-            class_id, instance_id, "ROCDCorrect", *this, standard_, calculator_);
+                child_json, "ROCDCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -396,7 +405,7 @@ void Group::generateSubConfigurable(const std::string& class_id,
     else if (class_id == "EvaluationRequirementAccelerationCorrectConfig")
     {
         EvaluationRequirement::GenericDoubleConfig* config = new EvaluationRequirement::GenericDoubleConfig(
-            class_id, instance_id, "AccelerationCorrect", *this, standard_, calculator_);
+                child_json, "AccelerationCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
@@ -430,11 +439,11 @@ void Group::addRequirementConfig (const std::string& class_id, const std::string
 
     std::string instance = class_id + name + "0";
 
-    auto config = Configuration::create(class_id, instance);
-    config->addParameter<std::string>("name", name);
-    config->addParameter<std::string>("short_name", short_name);
+    auto& child_json = addNewSubConfiguration(class_id, instance);
+    child_json[Configuration::ParameterSection]["name"] = name;
+    child_json[Configuration::ParameterSection]["short_name"] = short_name;
 
-    generateSubConfigurableFromConfig(std::move(config));
+    generateSubConfigurable(child_json);
 
     sortConfigs();
 

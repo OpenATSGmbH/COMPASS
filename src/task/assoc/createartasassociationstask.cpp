@@ -40,31 +40,23 @@ using namespace dbContent;
 
 const std::string CreateARTASAssociationsTask::DONE_PROPERTY_NAME = "artas_associations_created"; // really needed
 
-CreateARTASAssociationsTask::CreateARTASAssociationsTask(const std::string& class_id,
-                                                         const std::string& instance_id,
-                                                         TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_calc_artas_assoc.json")
+CreateARTASAssociationsTask::CreateARTASAssociationsTask(nlohmann::json& config,
+                                                         TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     tooltip_ = "Allows creation of target report association based on ARTAS tracks and the TRI "
                "information.";
 
     registerParameter("current_data_source_name", &settings_.current_data_source_name_, Settings().current_data_source_name_);
     registerParameter("current_data_source_line_id", &settings_.current_data_source_line_id_, Settings().current_data_source_line_id_);
-
-    // time stuff
     registerParameter("end_track_time", &settings_.end_track_time_, Settings().end_track_time_);
-
     registerParameter("association_time_past", &settings_.association_time_past_, Settings().association_time_past_);
     registerParameter("association_time_future", &settings_.association_time_future_, Settings().association_time_future_);
-
     registerParameter("misses_acceptable_time", &settings_.misses_acceptable_time_, Settings().misses_acceptable_time_);
-
     registerParameter("associations_dubious_distant_time", &settings_.associations_dubious_distant_time_, Settings().associations_dubious_distant_time_);
     registerParameter("association_dubious_close_time_past", &settings_.association_dubious_close_time_past_, Settings().association_dubious_close_time_past_);
     registerParameter("association_dubious_close_time_future", &settings_.association_dubious_close_time_future_, Settings().association_dubious_close_time_future_);
-
-    // track flag stuff
     registerParameter("ignore_track_end_associations", &settings_.ignore_track_end_associations_, Settings().ignore_track_end_associations_);
     registerParameter("mark_track_end_associations_dubious", &settings_.mark_track_end_associations_dubious_, Settings().mark_track_end_associations_dubious_);
     registerParameter("ignore_track_coasting_associations", &settings_.ignore_track_coasting_associations_, Settings().ignore_track_coasting_associations_);

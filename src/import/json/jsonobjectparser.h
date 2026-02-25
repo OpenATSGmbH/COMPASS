@@ -31,6 +31,7 @@
 
 class Buffer;
 class DBContent;
+class JSONParsingSchema;
 
 namespace dbContent {
 
@@ -44,8 +45,8 @@ class JSONObjectParser : public Configurable
     using MappingIterator = std::vector<std::unique_ptr<JSONDataMapping>>::iterator;
 
   public:
-    JSONObjectParser(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent);
+    /// @brief Constructor backed by a json reference
+    JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent);
     JSONObjectParser() = default;
 
     DBContent& dbContent() const;
@@ -82,8 +83,7 @@ class JSONObjectParser : public Configurable
     std::shared_ptr<Buffer> getNewBuffer() const;
     void appendVariablesToBuffer(Buffer& buffer) const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     JSONObjectParserWidget* widget();
 
@@ -135,5 +135,5 @@ private:
                                      bool is_in_array = false);
 
   protected:
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 };

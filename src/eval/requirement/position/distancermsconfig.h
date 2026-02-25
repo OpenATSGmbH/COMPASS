@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class PositionDistanceRMSConfig : public PositionBaseValueConfig
 {
 public:
-    PositionDistanceRMSConfig(const std::string& class_id, const std::string& instance_id,
-                        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionDistanceRMSConfig(nlohmann::json& config,
+                        Group* parent);
     virtual ~PositionDistanceRMSConfig();
 
     std::shared_ptr<Base> createRequirement() override;

@@ -21,9 +21,9 @@ namespace EvaluationRequirement
 {
 
 ProbabilityBaseConfig::ProbabilityBaseConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : BaseConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : BaseConfig(config, parent)
 {
     registerParameter("prob", &prob_, 0.9);
     registerParameter("prob_check_type", (unsigned int*)&prob_check_type_,

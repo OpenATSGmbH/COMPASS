@@ -50,9 +50,12 @@
 using namespace std;
 using namespace Utils;
 
-ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
-                                                     ViewManager& view_manager)
-    : Configurable(class_id, instance_id, &view_manager), view_manager_(view_manager)
+// ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
+//                                                      ViewManager& view_manager)
+//     : Configurable(class_id, instance_id, &view_manager), view_manager_(view_manager)
+
+ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent)
+    : Configurable(config, parent), view_manager_(*parent)
 {
     registerParameter("author", &author_, std::string());
 
@@ -62,10 +65,6 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
         author_ = "User";
 
     registerParameter("abstract", &abstract_, std::string());
-
-    //@TODO: remove?
-    //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&COMPASS::instance().dbInterface().connection());
-    //assert (db_con);
 
     string current_filename = COMPASS::instance().lastDbFilename();
 
@@ -97,17 +96,6 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
 }
 
 
-void ViewPointsReportGenerator::generateSubConfigurable(const std::string& class_id,
-                                                        const std::string& instance_id)
-{
-    throw std::runtime_error("ViewPointsReportGenerator: generateSubConfigurable: unknown class_id " +
-                             class_id);
-}
-
-void ViewPointsReportGenerator::checkSubConfigurables()
-{
-    // move along sir
-}
 
 
 ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()

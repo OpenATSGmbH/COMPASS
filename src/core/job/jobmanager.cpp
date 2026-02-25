@@ -16,6 +16,7 @@
  */
 
 #include "jobmanager.h"
+#include "configurationmanager.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -901,10 +902,8 @@ void JobManagerThreadPool::setJobsObsolete()
  * JobManager
  *************************************************************************************/
 
-/**
- */
 JobManager::JobManager()
-:   Configurable("JobManager", "JobManager0", 0, "threads.json")
+:   Configurable(ConfigurationManager::getInstance().getRootConfigJSON("JobManager", "JobManager0").json(), nullptr)
 {
     logdbg;
 }

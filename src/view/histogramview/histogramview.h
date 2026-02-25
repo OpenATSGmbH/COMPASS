@@ -48,16 +48,11 @@ public:
         DataVar = 0,
     };
 
-    /// @brief Constructor
-    HistogramView(const std::string& class_id, 
-                  const std::string& instance_id, 
-                  ViewContainer* w,
-                  ViewManager& view_manager);
+    HistogramView(nlohmann::json& config, ViewContainer* parent);
     /// @brief Destructor
     virtual ~HistogramView() override;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     /// @brief Returns the used data source
     HistogramViewDataSource* getDataSource()

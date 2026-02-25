@@ -86,12 +86,9 @@ public:
     typedef std::map<std::string, std::map<std::string, ResultPtr>> ResultMap;
     typedef ResultMap::const_iterator                               ResultIterator;
 
-    EvaluationCalculator(const std::string& class_id, 
-                         const std::string& instance_id,
-                         EvaluationManager& eval_man, 
-                         DBContentManager& dbcontent_man,
-                         bool is_default_calculator);
-    EvaluationCalculator(EvaluationManager& eval_man, 
+    EvaluationCalculator(nlohmann::json& config, EvaluationManager& eval_man,
+                         DBContentManager& dbcontent_man, bool is_default_calculator);
+    EvaluationCalculator(EvaluationManager& eval_man,
                          DBContentManager& dbcontent_man,
                          const nlohmann::json& config,
                          bool is_default_calculator);
@@ -246,8 +243,7 @@ public:
 
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 signals:
     void standardsChanged();
     void currentStandardChanged();

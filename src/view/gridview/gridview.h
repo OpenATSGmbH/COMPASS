@@ -27,6 +27,7 @@
 class GridViewWidget;
 class GridViewDataSource;
 class GridViewDataWidget;
+class ViewContainer;
 
 /**
 */
@@ -55,10 +56,7 @@ public:
         DataVarZ
     };
 
-    GridView(const std::string& class_id, 
-             const std::string& instance_id, 
-             ViewContainer* w,
-             ViewManager& view_manager);
+    GridView(nlohmann::json& config, ViewContainer* parent);
     virtual ~GridView() override;
 
     void setValueType(grid2d::ValueType type, bool notify_changes);
@@ -74,9 +72,6 @@ public:
 
     PropertyDataType currentDataType() const; 
     PropertyDataType currentLegendDataType() const; 
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual void accept(LatexVisitor& v) override;
 

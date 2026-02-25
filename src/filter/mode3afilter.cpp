@@ -29,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-Mode3AFilter::Mode3AFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+Mode3AFilter::Mode3AFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -93,17 +92,6 @@ std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, 
     return ss.str();
 }
 
-void Mode3AFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("Mode3AFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void Mode3AFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* Mode3AFilter::createWidget()
 {

@@ -35,12 +35,18 @@
 
 using namespace Utils;
 
-ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
-                                         const std::string& instance_id, 
-                                         ViewManager* view_manager)
+// ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
+//                                          const std::string& instance_id,
+//                                          ViewManager* view_manager)
+//     : QWidget(nullptr),
+//       Configurable(class_id, instance_id, view_manager),
+//       view_manager_(*view_manager)
+
+ViewContainerWidget::ViewContainerWidget(nlohmann::json& config,
+                                         ViewManager& view_manager)
     : QWidget(nullptr),
-      Configurable(class_id, instance_id, view_manager),
-      view_manager_(*view_manager)
+      Configurable(config, &view_manager),
+      view_manager_(view_manager)
 {
     logdbg << "instance " << instanceId();
 
@@ -95,14 +101,15 @@ ViewContainerWidget::~ViewContainerWidget()
     loginf << "done";
 }
 
-void ViewContainerWidget::generateSubConfigurable(const std::string& class_id,
-                                                  const std::string& instance_id)
+void ViewContainerWidget::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id.compare("ViewContainer") == 0)
     {
         traced_assert(tab_widget_);
         traced_assert(!view_container_);
-        view_container_ = new ViewContainer(class_id, instance_id, this, &view_manager_,
+        view_container_ = new ViewContainer(child_json, view_manager_,
                                             tab_widget_, String::getAppendedInt(instanceId()));
         traced_assert(view_container_);
     }
@@ -115,7 +122,7 @@ void ViewContainerWidget::checkSubConfigurables()
 {
     if (!view_container_)
     {
-        generateSubConfigurable("ViewContainer", instanceId() + "ViewContainer0");
+        generateSubConfigurableFromConfig("ViewContainer", instanceId() + "ViewContainer0");
         traced_assert(view_container_);
     }
 }

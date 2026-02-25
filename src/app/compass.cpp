@@ -37,6 +37,7 @@
 #include "fftmanager.h"
 #include "util/async.h"
 #include "licensemanager.h"
+#include "configurationmanager.h"
 #include "result.h"
 #include "dbinstance.h"
 #include "logwidget.h"
@@ -56,7 +57,8 @@ using namespace Utils;
 const bool COMPASS::is_app_image_ = {Utils::System::appDir() != nullptr};
 
 COMPASS::COMPASS()
-    : Configurable("COMPASS", "COMPASS0", 0, "compass.json"), log_store_(!is_app_image_)
+    : Configurable(ConfigurationManager::getInstance().getRootConfigJSON("COMPASS", "COMPASS0").json(), nullptr),
+      log_store_(!is_app_image_)
 {
     logdbg;
 
@@ -260,62 +262,63 @@ std::string COMPASS::getPath() const
     return "";
 }
 
-void COMPASS::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
+void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
+    const auto& class_id = Configuration::getClassName(child_json);
+
+    logdbg << "class_id " << class_id;
     if (class_id == "DBInterface")
     {
         traced_assert(!db_interface_);
-        db_interface_.reset(new DBInterface(class_id, instance_id, this));
+        db_interface_.reset(new DBInterface(child_json, this));
         traced_assert(db_interface_);
     }
     else if (class_id == "DBContentManager")
     {
         traced_assert(!dbcontent_manager_);
-        dbcontent_manager_.reset(new DBContentManager(class_id, instance_id, this));
+        dbcontent_manager_.reset(new DBContentManager(child_json, this));
         traced_assert(dbcontent_manager_);
     }
     else if (class_id == "DataSourceManager")
     {
         traced_assert(!ds_manager_);
-        ds_manager_.reset(new DataSourceManager(class_id, instance_id, this));
+        ds_manager_.reset(new DataSourceManager(child_json, this));
         traced_assert(ds_manager_);
     }
     else if (class_id == "FilterManager")
     {
         traced_assert(!filter_manager_);
-        filter_manager_.reset(new FilterManager(class_id, instance_id, this));
+        filter_manager_.reset(new FilterManager(child_json, this));
         traced_assert(filter_manager_);
     }
     else if (class_id == "TaskManager")
     {
         traced_assert(!task_manager_);
-        task_manager_.reset(new TaskManager(class_id, instance_id, this));
+        task_manager_.reset(new TaskManager(child_json, this));
         traced_assert(task_manager_);
     }
     else if (class_id == "ViewManager")
     {
         traced_assert(!view_manager_);
-        view_manager_.reset(new ViewManager(class_id, instance_id, this));
+        view_manager_.reset(new ViewManager(child_json, *this));
         traced_assert(view_manager_);
     }
     else if (class_id == "EvaluationManager")
     {
         traced_assert(!eval_manager_);
-        eval_manager_.reset(new EvaluationManager(class_id, instance_id, this));
+        eval_manager_.reset(new EvaluationManager(child_json, *this));
         traced_assert(eval_manager_);
     }
     else if (class_id == "FFTManager")
     {
         traced_assert(!fft_manager_);
-        fft_manager_.reset(new FFTManager(class_id, instance_id, this));
+        fft_manager_.reset(new FFTManager(child_json, this));
         traced_assert(fft_manager_);
     }
     else if (class_id == "LicenseManager")
     {
         traced_assert(!license_manager_);
-        license_manager_.reset(new LicenseManager(class_id, instance_id, this));
+        license_manager_.reset(new LicenseManager(child_json, this));
         traced_assert(license_manager_);
     }
     else

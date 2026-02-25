@@ -31,9 +31,10 @@ using namespace std;
 namespace EvaluationRequirement
 {
 
-DubiousTrackConfig::DubiousTrackConfig(const std::string& class_id, const std::string& instance_id,
-                                       Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+DubiousTrackConfig::DubiousTrackConfig(
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     prob_check_type_ = COMPARISON_TYPE::LESS_THAN_OR_EQUAL;
 

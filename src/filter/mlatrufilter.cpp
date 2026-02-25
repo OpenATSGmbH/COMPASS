@@ -32,9 +32,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-MLATRUFilter::MLATRUFilter(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+MLATRUFilter::MLATRUFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("rus_str", &rus_str_, std::string());
     registerParameter("match_all", &match_all_, false);
@@ -213,20 +212,6 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     loginf << "'" << ss.str() << "'";
     
     return ss.str();
-}
-
-void MLATRUFilter::generateSubConfigurable(const std::string& class_id,
-                                           const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("MLATRUFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void MLATRUFilter::checkSubConfigurables()
-{
-    logdbg;
-
 }
 
 DBFilterWidget* MLATRUFilter::createWidget()

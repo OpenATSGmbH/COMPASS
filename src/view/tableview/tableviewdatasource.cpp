@@ -16,6 +16,7 @@
  */
 
 #include "tableviewdatasource.h"
+#include "tableview.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -35,11 +36,16 @@ using namespace dbContent;
 
 const string DEFAULT_SET_NAME {"Default"};
 
-TableViewDataSource::TableViewDataSource(const std::string& class_id,
-                                             const std::string& instance_id, 
-                                             Configurable* parent)
+// TableViewDataSource::TableViewDataSource(const std::string& class_id,
+//                                              const std::string& instance_id,
+//                                              Configurable* parent)
+// :   QObject()
+// ,   Configurable(class_id, instance_id, parent)
+
+TableViewDataSource::TableViewDataSource(nlohmann::json& config,
+                                         TableView* parent)
 :   QObject()
-,   Configurable(class_id, instance_id, parent)
+,   Configurable(config, parent)
 {
     createSubConfigurables();
 }
@@ -49,9 +55,10 @@ TableViewDataSource::~TableViewDataSource()
     unshowViewPoint(nullptr); // removes tmps TODO not done yet
 }
 
-void TableViewDataSource::generateSubConfigurable(const std::string& class_id,
-                                                    const std::string& instance_id)
+void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
     logdbg << "class_id " << class_id
            << " instance_id " << instance_id;
 
@@ -59,7 +66,7 @@ void TableViewDataSource::generateSubConfigurable(const std::string& class_id,
     {
         traced_assert(!set_);
 
-        set_.reset(new VariableOrderedSet(class_id, instance_id, this));
+        set_.reset(new VariableOrderedSet(child_json, this));
 
         connect(set_.get(), &VariableOrderedSet::setChangedSignal, this,
                 &TableViewDataSource::setChangedSignal, Qt::UniqueConnection);
@@ -81,7 +88,7 @@ void TableViewDataSource::checkSubConfigurables()
 
     if (!set_)
     {
-        generateSubConfigurable("VariableOrderedSet", DEFAULT_SET_NAME);
+        generateSubConfigurableFromConfig("VariableOrderedSet", DEFAULT_SET_NAME);
         traced_assert(set_);
         addDefaultVariables(*set_.get());
     }

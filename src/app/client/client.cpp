@@ -826,20 +826,22 @@ void Client::checkAndSetupConfig()
             try {
                 json json_config = json::parse(import_asterix_parameters_);
 
-                traced_assert(ConfigurationManager::getInstance().hasRootConfiguration(
+                traced_assert(ConfigurationManager::getInstance().hasRootConfigJSON(
                     "COMPASS", "COMPASS0"));
-                Configuration& compass_config = ConfigurationManager::getInstance().getRootConfiguration(
-                    "COMPASS", "COMPASS0");
+                auto& compass_json = ConfigurationManager::getInstance()
+                    .getRootConfigJSON("COMPASS", "COMPASS0").json();
 
-                traced_assert(compass_config.hasSubConfiguration("TaskManager", "TaskManager0"));
-                Configuration& task_man_config = compass_config.getOrCreateSubConfiguration(
-                    "TaskManager", "TaskManager0");
+                auto* task_man_ptr = Configuration::findSubConfigEntry(
+                    compass_json, "TaskManager", "TaskManager0");
+                traced_assert(task_man_ptr);
 
-                traced_assert(task_man_config.hasSubConfiguration("ASTERIXImportTask", "ASTERIXImportTask0"));
-                Configuration& task_config = task_man_config.getOrCreateSubConfiguration(
-                    "ASTERIXImportTask", "ASTERIXImportTask0");
+                auto* task_ptr = Configuration::findSubConfigEntry(
+                    *task_man_ptr, "ASTERIXImportTask", "ASTERIXImportTask0");
+                traced_assert(task_ptr);
+                auto& task_params = (*task_ptr)[Configuration::ParameterSection];
 
-                task_config.overrideJSONParameters(json_config);
+                for (auto& [key, val] : json_config.items())
+                    task_params[key] = val;
             }
             catch (exception& e)
             {

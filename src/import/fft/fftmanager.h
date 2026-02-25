@@ -53,11 +53,13 @@ public slots:
     void configurationDialogDoneSlot();
 
 public:
-    FFTManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // Old legacy constructor — removed, use json-backed constructor below
+    // FFTManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    /// @brief Constructor backed by a json reference
+    FFTManager(nlohmann::json& config, COMPASS* parent);
     virtual ~FFTManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     bool hasConfigFFT(const std::string& name);
     void createConfigFFT(const std::string& name);
@@ -90,7 +92,7 @@ public:
     // returns flag, altitude in ft if true
 
 protected:
-    COMPASS& compass_;
+    COMPASS* compass_{nullptr};
 
     std::vector<std::unique_ptr<ConfigurationFFT>> config_ffts_;
     std::vector<std::unique_ptr<DBFFT>> db_ffts_;
@@ -101,7 +103,7 @@ protected:
 
     const double max_fft_plot_distance_m_ {10000}; // lat/lon distance in degress
 
-    virtual void checkSubConfigurables();
+    void checkSubConfigurables() override;
 
     void loadDBFFTs();
     void sortDBFFTs();

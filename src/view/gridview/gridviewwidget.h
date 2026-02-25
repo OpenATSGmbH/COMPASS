@@ -28,11 +28,7 @@ class GridViewDataWidget;
 class GridViewWidget : public VariableViewWidget
 {
 public:
-    GridViewWidget(const std::string& class_id, 
-                   const std::string& instance_id,
-                   Configurable* config_parent, 
-                   GridView* view, 
-                   QWidget* parent = NULL);
+    GridViewWidget(GridView* view, QWidget* parent = nullptr);
     virtual ~GridViewWidget();
 
     GridViewDataWidget* getViewDataWidget();

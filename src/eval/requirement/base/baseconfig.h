@@ -46,15 +46,11 @@ class BaseConfig : public QObject, public Configurable, public EvaluationStandar
 {
     Q_OBJECT
 public:
-    BaseConfig(const std::string& class_id, 
-               const std::string& instance_id,
-               Group& group, 
-               EvaluationStandard& standard,
-               EvaluationCalculator& calculator);
-    virtual ~BaseConfig();
+    BaseConfig(nlohmann::json& config,
+               Group* parent);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    Group* parentConfigurable() const;
+    virtual ~BaseConfig();
 
     void use(bool ok) override;
     bool used() const override;

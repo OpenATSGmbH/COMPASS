@@ -74,7 +74,7 @@ class ViewManager : public QObject, public Configurable
         bool automatic_redraw = true;
     };
 
-    ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    ViewManager(nlohmann::json& config, COMPASS& compass);
     virtual ~ViewManager();
 
     void init(QTabWidget* main_tab_widget);
@@ -93,8 +93,7 @@ class ViewManager : public QObject, public Configurable
     void deleteContainerWidget(std::string instance_id);
     void removeContainerWidget(std::string instance_id);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void viewShutdown(View* view, const std::string& err = "");
 

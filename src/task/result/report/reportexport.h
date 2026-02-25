@@ -45,9 +45,11 @@ class ReportExport : public QObject, public Configurable
 {
     Q_OBJECT
 public:
-    ReportExport(const std::string& class_id, 
-                 const std::string& instance_id, 
-                 TaskManager* task_manager);
+    // ReportExport(const std::string& class_id,
+    //              const std::string& instance_id,
+    //              TaskManager* task_manager);
+    /// @brief Constructor backed by a json reference
+    ReportExport(nlohmann::json& config, TaskManager* parent);
     virtual ~ReportExport();
 
     ResultT<nlohmann::json> exportReport(TaskResult& result,

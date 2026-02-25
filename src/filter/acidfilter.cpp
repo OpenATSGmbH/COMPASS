@@ -29,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-ACIDFilter::ACIDFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ACIDFilter::ACIDFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -122,17 +121,6 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
     return ss.str();
 }
 
-void ACIDFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ACIDFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void ACIDFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* ACIDFilter::createWidget()
 {

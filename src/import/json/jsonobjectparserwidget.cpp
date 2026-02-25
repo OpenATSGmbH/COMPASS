@@ -361,11 +361,11 @@ void JSONObjectParserWidget::addNewMappingSlot()
 {
     traced_assert(parser_);
 
-    auto config = Configuration::create("JSONDataMapping");
-    config->addParameter<std::string>("json_key", config->getInstanceId());
-    config->addParameter<std::string>("dbcontent_name", parser_->dbContentName());
+    auto& child_json = parser_->addNewSubConfiguration("JSONDataMapping");
+    child_json[Configuration::ParameterSection]["json_key"] = Configuration::getInstanceName(child_json);
+    child_json[Configuration::ParameterSection]["dbcontent_name"] = parser_->dbContentName();
 
-    parser_->generateSubConfigurableFromConfig(std::move(config));
+    parser_->generateSubConfigurable(child_json);
 
     updateMappingsGrid();
 }

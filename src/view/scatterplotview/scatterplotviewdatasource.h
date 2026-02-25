@@ -25,6 +25,7 @@
 #include "dbcontent/variable/variableorderedset.h"
 
 class Job;
+class ScatterPlotView;
 class ViewableDataConfig;
 
 class ScatterPlotViewDataSource : public QObject, public Configurable
@@ -35,14 +36,13 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
   signals:
 
   public:
-    /// @brief Constructor
-    ScatterPlotViewDataSource(const std::string& class_id, const std::string& instance_id,
-                          Configurable* parent);
+    // ScatterPlotViewDataSource(const std::string& class_id, const std::string& instance_id,
+    //                       Configurable* parent);
+    ScatterPlotViewDataSource(nlohmann::json& config, ScatterPlotView* parent);
     /// @brief Destructor
     virtual ~ScatterPlotViewDataSource();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json);
 
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()

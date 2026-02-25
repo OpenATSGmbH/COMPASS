@@ -43,14 +43,11 @@ unsigned int View::cnt_ = 0;
 @param instance_id Configurable instance id.
 @param w ViewContainerWidget the view is embedded in, configurable parent.
  */
-View::View(const std::string& class_id, 
-           const std::string& instance_id, 
-           ViewContainer* container,
-           ViewManager& view_manager)
-    : Configurable(class_id, instance_id, container),
-      view_manager_(view_manager),
+View::View(nlohmann::json& config, ViewContainer* parent)
+    : Configurable(config, parent),
+      view_manager_(parent->viewManager()),
       widget_(nullptr),
-      container_(container)
+      container_(parent)
 {
     logdbg;
 

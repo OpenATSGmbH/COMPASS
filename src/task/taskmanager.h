@@ -72,11 +72,12 @@ public slots:
     void databaseClosedSlot();
 
 public:
-    TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    TaskManager(nlohmann::json& config, Configurable* parent = nullptr);
 
     virtual ~TaskManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id, const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void init();
     void shutdown();

@@ -43,15 +43,13 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-ViewPointsImportTask::ViewPointsImportTask(const std::string& class_id, const std::string& instance_id,
-                                           TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_import_view_points.json")
+ViewPointsImportTask::ViewPointsImportTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
-    tooltip_ =
-            "Allows import of view points and associated datasets.";
+    tooltip_ = "Allows import of view points and associated datasets.";
 
-    createSubConfigurables(); // no thing
+    createSubConfigurables();
 
     current_error_ = "No filename set";
 
@@ -79,13 +77,6 @@ void ViewPointsImportTask::showDialog()
 
 //     run();
 // }
-
-void ViewPointsImportTask::generateSubConfigurable(const std::string& class_id,
-                                                   const std::string& instance_id)
-{
-    throw std::runtime_error("ViewPointsImportTask: generateSubConfigurable: unknown class_id " +
-                             class_id);
-}
 
 void ViewPointsImportTask::importFilename(const std::string& filename)
 {

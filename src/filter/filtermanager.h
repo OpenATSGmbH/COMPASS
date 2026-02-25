@@ -60,7 +60,8 @@ public slots:
     void showViewPointSlot (const ViewableDataConfig* vp);
 
 public:
-    FilterManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // FilterManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    FilterManager(nlohmann::json& config, COMPASS* parent);
     virtual ~FilterManager();
 
     bool useFilters() const;
@@ -77,8 +78,7 @@ public:
 
     void deleteFilter(const std::string& name);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     // resets all filters
     void reset();

@@ -47,8 +47,9 @@ class SimpleReconstructor : public ReconstructorBase
     void updateWidgetsSignal();
 
   public:
-    SimpleReconstructor(const std::string& class_id, const std::string& instance_id,
-                        ReconstructorTask& task, std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator);
+    SimpleReconstructor(nlohmann::json& config,
+                        std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
+                        ReconstructorTask* parent);
     virtual ~SimpleReconstructor();
 
     virtual SimpleAssociator& associator() override;

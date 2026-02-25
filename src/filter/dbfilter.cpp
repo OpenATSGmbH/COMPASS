@@ -30,11 +30,15 @@
 
 using namespace nlohmann;
 
-DBFilter::DBFilter(const std::string& class_id, const std::string& instance_id,
-                   Configurable* parent, bool is_generic)
-    : Configurable(class_id, instance_id, parent)
+// DBFilter::DBFilter(const std::string& class_id, const std::string& instance_id,
+//                    Configurable* parent, bool is_generic)
+//     : Configurable(class_id, instance_id, parent) ...
+
+DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
+                   FilterManager* parent)
+    : Configurable(config, parent)
 {
-    registerParameter("name", &name_, instance_id);
+    registerParameter("name", &name_, instanceId());
     registerParameter("is_custom", &is_custom_, false);
 
     registerParameter("active", &active_, false);
@@ -138,14 +142,16 @@ std::string DBFilter::getConditionString(
     return ss.str();
 }
 
-void DBFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
+void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     logdbg << "start" << classId() << " instance " << instanceId();
 
     if (class_id == "DBFilterCondition")
     {
         logdbg << "generating condition";
-        conditions_.emplace_back(std::unique_ptr<DBFilterCondition>(new DBFilterCondition(class_id, instance_id, this)));
+        conditions_.emplace_back(std::unique_ptr<DBFilterCondition>(new DBFilterCondition(child_json, this)));
         DBFilterCondition* condition = conditions_.back().get();
 
         unusable_ = unusable_ | !condition->usable();
@@ -163,10 +169,6 @@ void DBFilter::generateSubConfigurable(const std::string& class_id, const std::s
     }
     else
         throw std::runtime_error("DBFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void DBFilter::checkSubConfigurables()
-{
 }
 
 DBFilterWidget* DBFilter::createWidget()

@@ -26,10 +26,10 @@ class EvaluationManager;
 class EvaluationTargetFilter : public Configurable
 {
   public:
-    EvaluationTargetFilter(const std::string& class_id, const std::string& instance_id, EvaluationManager& eval_manager);
+    EvaluationTargetFilter(nlohmann::json& config, EvaluationManager& eval_manager);
     virtual ~EvaluationTargetFilter() {}
 
-    virtual void generateSubConfigurable(const std::string& class_id, const std::string& instance_id) override {};
+    void generateSubConfigurable(nlohmann::json& child_json) override {};
 
     void setUse(dbContent::TargetCache& target_data);
 

@@ -75,12 +75,10 @@ const std::string EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS {"excluded_windows"};
 
 /**
  */
-EvaluationManager::EvaluationManager(const std::string& class_id, 
-                                     const std::string& instance_id, 
-                                     COMPASS* compass)
-:   Configurable(class_id, instance_id, compass, "eval.json")
-//,   compass_    (*compass)
-    , dbcontent_man_(compass->dbContentManager())
+EvaluationManager::EvaluationManager(nlohmann::json& config,
+                                     COMPASS& compass)
+    : Configurable(config, &compass)
+    , dbcontent_man_(compass.dbContentManager())
 {
     createSubConfigurables();
     init_evaluation_commands();
@@ -95,19 +93,20 @@ EvaluationManager::~EvaluationManager()
 
 /**
 */
-void EvaluationManager::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void EvaluationManager::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+
     if (class_id == "EvaluationTargetFilter")
     {
         traced_assert(!target_filter_);
-        target_filter_.reset(new EvaluationTargetFilter(class_id, instance_id, *this));
+        target_filter_.reset(new EvaluationTargetFilter(child_json, *this));
     }
     else if (class_id == "EvaluationCalculator")
     {
         traced_assert(!calculator_);
 
-        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, true);
+        EvaluationCalculator* calculator = new EvaluationCalculator(child_json, *this, dbcontent_man_, true);
         calculator_.reset(calculator);
     }
     else
@@ -122,14 +121,14 @@ void EvaluationManager::checkSubConfigurables()
 {
     if (!target_filter_)
     {
-        generateSubConfigurable("EvaluationTargetFilter", "EvaluationTargetFilter0");
+        generateSubConfigurableFromConfig("EvaluationTargetFilter", "EvaluationTargetFilter0");
         traced_assert(target_filter_);
     }
 
     if (!calculator_)
     {
         //generate default calculator
-        generateSubConfigurable("EvaluationCalculator", "EvaluationCalculator0");
+        generateSubConfigurableFromConfig("EvaluationCalculator", "EvaluationCalculator0");
         traced_assert(calculator_);
     }
 }

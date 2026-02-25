@@ -30,12 +30,8 @@
 
 /**
  */
-GridViewWidget::GridViewWidget(const std::string& class_id, 
-                               const std::string& instance_id,
-                               Configurable* config_parent, 
-                               GridView* view,
-                               QWidget* parent)
-:   VariableViewWidget(class_id, instance_id, config_parent, view, parent)
+GridViewWidget::GridViewWidget(GridView* view, QWidget* parent)
+:   VariableViewWidget(view, parent)
 {
     auto data_widget = new GridViewDataWidget(this);
     setDataWidget(data_widget);

@@ -16,6 +16,7 @@
  */
 
 #include "histogramviewdatasource.h"
+#include "histogramview.h"
 #include "compass.h"
 //#include "configuration.h"
 //#include "configurationmanager.h"
@@ -38,10 +39,15 @@ using namespace std;
 using namespace nlohmann;
 using namespace dbContent;
 
-HistogramViewDataSource::HistogramViewDataSource(const std::string& class_id,
-                                             const std::string& instance_id, Configurable* parent)
+// HistogramViewDataSource::HistogramViewDataSource(const std::string& class_id,
+//                                              const std::string& instance_id, Configurable* parent)
+//     : QObject(),
+//       Configurable(class_id, instance_id, parent)
+
+HistogramViewDataSource::HistogramViewDataSource(nlohmann::json& config,
+                                                 HistogramView* parent)
     : QObject(),
-      Configurable(class_id, instance_id, parent)
+      Configurable(config, parent)
 {
     createSubConfigurables();
 }
@@ -57,16 +63,17 @@ HistogramViewDataSource::~HistogramViewDataSource()
     }
 }
 
-void HistogramViewDataSource::generateSubConfigurable(const std::string& class_id,
-                                                    const std::string& instance_id)
+void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
+    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& instance_id = Configuration::getInstanceName(child_json);
     logdbg << "class_id " << class_id
            << " instance_id " << instance_id;
 
     if (class_id.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
-        set_ = new VariableOrderedSet(class_id, instance_id, this);
+        set_ = new VariableOrderedSet(child_json, this);
     }
     else
         throw std::runtime_error(
@@ -77,7 +84,7 @@ void HistogramViewDataSource::checkSubConfigurables()
 {
     if (set_ == nullptr)
     {
-        generateSubConfigurable("VariableOrderedSet", "VariableOrderedSet0");
+        generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
