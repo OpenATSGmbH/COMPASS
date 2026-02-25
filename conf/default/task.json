@@ -1,4 +1,6 @@
 {
+    "class_name": "TaskManager",
+    "instance_name": "TaskManager0",
     "parameters": {
         "expert_mode": false
     },
@@ -37,11 +39,27 @@
             "class_id": "ReconstructorTask",
             "instance_id": "ReconstructorTask0",
             "path": "task_reconstructor.json"
-        },        
+        },
         {
             "class_id": "ViewPointsImportTask",
             "instance_id": "ViewPointsImportTask0",
             "path": "task_import_view_points.json"
+        }
+    ],
+    "sub_configs": [
+        {
+            "class_name": "ReportExport",
+            "instance_name": "ReportExport0",
+            "parameters": {
+                "author": "sk",
+                "json_table_max_cols_inline": 0,
+                "json_table_max_rows_inline": 0,
+                "latex_pdf_max_reruns": 3,
+                "latex_table_max_col_width": 24,
+                "latex_table_max_rows": 500,
+                "latex_table_min_cols_wide": 9,
+                "open_created_file": true
+            }
         }
     ]
 }

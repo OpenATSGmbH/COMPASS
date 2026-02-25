@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT001",
     "parameters": {
         "contains_status_content": false,
         "contains_target_reports": true,
@@ -7,713 +9,805 @@
         "info": "",
         "name": "CAT001"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable10": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "antenna",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.ANT\n\n0 Target report from antenna\n1 Target report from antenna 2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Antenna",
-                    "representation_str": "STANDARD",
-                    "short_name": "ANT",
-                    "unit": ""
-                }
-            },
-            "Variable11": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "ds1_ds2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.DS1/DS2\n\n0 Default\n1 Unlawful interference (code 7500)\n2 Radio-communication failure (code 7600)\n3 Emergency (code 7700)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS1/DS2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable12": {
-                "parameters": {
-                    "data_type_str": "INT",
-                    "db_column_name": "received_power",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 131.POWER\n\nDecimal logarithm of the power received in dBm.\n POWER = 0 for 0 dBm",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Received Power",
-                    "representation_str": "STANDARD",
-                    "short_name": "Power",
-                    "unit": ""
-                }
-            },
-            "Variable13": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "truncated_time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 141.Truncated Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Truncated Time of Day",
-                    "representation_str": "STANDARD",
-                    "short_name": "Trun ToD",
-                    "unit": ""
-                }
-            },
-            "Variable14": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "rdp_chain",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.RDPC\n\nRadar Data Processing Chain\n0 RDP Chain 1\n1 RDP Chain 2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RDP Chain",
-                    "representation_str": "STANDARD",
-                    "short_name": "RDP",
-                    "unit": ""
-                }
-            },
-            "Variable15": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.TYP\n\n0 Plot\n1 Track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable16": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "w_e_value",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 030.Warning/Error Conditions.W/E Value\n\n0 no warning nor error condition;\n1 garbled reply;\n2 reflection;\n3 sidelobe reply;\n4 split plot;\n5 second time around reply;\n6 angels;\n7 terrestrial vehicles.\n64 possible wrong code in Mode-3/A;\n65 possible wrong altitude information, transmitted when the Code C credibility check fails together with the Mode-C code in binary notation;\n66 possible phantom MSSR plot;\n80 fixed PSR plot;\n81 slow PSR plot;\n82 low quality PSR plot.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "W/E Value",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable17": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "track_quality",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 210.Track Quality.Value\n\nQuality indicator\nActual bit signification is application dependent.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Quality",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable18": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "plot_characteristics",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 130.Radar Plot Characteristics.Value\n\nThis Data Item may contain parameters such as plot runlength (primary and secondary), difference between primary and secondary derived azimuth, pulse amplitude, etc.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Plot Characteristics",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable3": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 042.X-Component\n\nMax. range = +/-256 NM",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "X",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "Variable4": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "y",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 042.Y-Component\n\nMax. range = +/-256 NM",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Y",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "Variable7": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "track_sensor_types",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.RAD\n\nType of Sensor(s) maintaining Track\n0 Combined Track\n1 PSR Track\n2 SSR/Mode S Track\n3 Invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Sensor Types",
-                    "representation_str": "STANDARD",
-                    "short_name": "RAD",
-                    "unit": ""
-                }
-            },
-            "VariableRadarTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarUTN0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "utn",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique Target Number",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "UTN",
-                    "representation_str": "STANDARD",
-                    "short_name": "UTN",
-                    "unit": ""
-                }
-            },
-            "VariableRadardetection_type0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.TYP\n\nFrom 020.SSR/PSR\n\nRadar detection in last antenna scan, as follows:\n0 No detection;\n1 Sole primary detection;\n2 Sole secondary detection;\n3 Combined primary and secondary detection.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "TYP",
-                    "unit": ""
-                }
-            },
-            "VariableRadards_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarfrom_fft0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "fft",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.RAB\n\n0 Report from aircraft transponder\n1 Report from field monitor(fixed transponder)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FFT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarhash_code0": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "artas_hash",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From artas_md5\n\nARTAS MD5 Hash Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ARTAS Hash",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "COMMUNICATION LINE ID determines the origin of the record, see table COMMS",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmil_emergency0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "military_emergency",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.ME\n\n0 No military emergency \n1 Military emergency",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Military Emergency",
-                    "representation_str": "STANDARD",
-                    "short_name": "ME",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmil_ident0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "military_identification",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.MI\n\n0 No military identification\n1 Military identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Military Identification",
-                    "representation_str": "STANDARD",
-                    "short_name": "MI",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmode3a_code0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "mode_3a_code",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.Mode-3/A reply\n\n070.Mode-3/A reply in decimal\nrepresentation",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Code",
-                    "representation_str": "DEC_TO_OCTAL",
-                    "short_name": "MA",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmode3a_g0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_garbled",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.G\n\n0 Default\n1 Garbled code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Garbled",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA G",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmode3a_smo0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_smoothed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.L\n\n0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Smoothed",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA S",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmode3a_v0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_valid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.V\n\n0 Code not validated\n1 Code validated\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Valid",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA V",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmodec_code_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "mode_c_code",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.Mode-C HEIGHT\n\nFrom 090.Flight Level\n\nThis data item shall be sent when Mode C code or Mode S altitude code is present and decodable. It represents the flight level of the plot, even if associated\nwith a track.",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Mode C Code",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "MC",
-                    "unit": "Feet"
-                }
-            },
-            "VariableRadarmodec_g0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_c_garbled",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.G\n\n0 Default\n1 Garbled code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode C Garbled",
-                    "representation_str": "STANDARD",
-                    "short_name": "MC G",
-                    "unit": ""
-                }
-            },
-            "VariableRadarmodec_v0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_c_valid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.V\n\n0 Code not validated\n1 Code validated",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode C Valid",
-                    "representation_str": "STANDARD",
-                    "short_name": "MC V",
-                    "unit": ""
-                }
-            },
-            "VariableRadarpos_azm_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "azimuth",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 040.THETA\n\nMeasured position of an aircraft in local polar co-ordinates",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Azimuth",
-                    "representation_str": "STANDARD",
-                    "short_name": "Azm",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRadarpos_lat_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "latitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated from 040.RHO/040.THETA \n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Latitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lat",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRadarpos_lon_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "longitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated from 040.RHO/040.THETA \n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Longitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lon",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRadarpos_range_nm0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "range",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 040.RHO\n\nMeasured position of an aircraft in local polar co-ordinates\n\nMax. range = 256 NM",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Range",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Nautical Mile"
-                }
-            },
-            "VariableRadarrec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarsac0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nData Source Identifier System Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarsic0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nData Source Identifier System Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarsimulated_target0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "simulated",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.SIM\n\n0  Actual target report\n1 Simulated target report",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Simulated",
-                    "representation_str": "STANDARD",
-                    "short_name": "SIM",
-                    "unit": ""
-                }
-            },
-            "VariableRadarspi0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "spi",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.SPI\n\n0 Absence of SPI\n1 Special Position Identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SPI",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadartest_target0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "test",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.TST\n\n0 Real target report\n1 Test target report",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Test",
-                    "representation_str": "STANDARD",
-                    "short_name": "TST",
-                    "unit": ""
-                }
-            },
-            "VariableRadartod0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 140.Time-of-Day\n\nAbsolute time stamping expressed as Co-ordinated Universal Time (UTC)",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Day",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "ToD",
-                    "unit": "Second"
-                }
-            },
-            "VariableRadartrack_confirmed0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_confirmed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CON\n\nFrom 170.CNF\n\nConfirmed vs. Tentative Track\n0 Tentative Track\n1 Confirmed Track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Confirmed",
-                    "representation_str": "STANDARD",
-                    "short_name": "CNF",
-                    "unit": ""
-                }
-            },
-            "VariableRadartrack_doubtful0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "track_doubtful",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.DOU\n\nSignals level of confidence in plot to track association process\n0 Normal confidence\n1 Low confidence in plot to track association.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Doubtful",
-                    "representation_str": "STANDARD",
-                    "short_name": "DOU",
-                    "unit": ""
-                }
-            },
-            "VariableRadartrack_end0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_end",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.TRE\n\nSignal for End_of_Track\n0 Track still alive\n1 End of track lifetime(last report for this track)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track End",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadartrack_ghost_target0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_ghost_target",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.GHO\n\nGhost vs. true target\n0 True target track.\n1 Ghost target track.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Ghost Target",
-                    "representation_str": "STANDARD",
-                    "short_name": "GHO",
-                    "unit": ""
-                }
-            },
-            "VariableRadartrack_groundspeed_kt0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "track_groundspeed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 200.CALCULATED GROUNDSPEED\n\nCalculated track velocity expressed in polar co-ordinates.",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Track Groundspeed",
-                    "representation_str": "FLOAT_PREC1",
-                    "short_name": "GSpd",
-                    "unit": "Knots"
-                }
-            },
-            "VariableRadartrack_heading_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "track_angle",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 200.CALCULATED HEADING\n\nCalculated track velocity expressed in polar co-ordinates.\n\nWas called Track Heading previously, but renamed since it refers to  the direction of movement.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Track Angle",
-                    "representation_str": "FLOAT_PREC1",
-                    "short_name": "Ang",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRadartrack_manoeuvre_hori0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_horizontal_manoeuvre",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.MAN\n\nFrom 170.MAH\n\nManoeuvre detection in Horizontal Sense\n0 No horizontal man.sensed\n1 Horizontal man. sensed",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Horizontal Manoeuvre",
-                    "representation_str": "STANDARD",
-                    "short_name": "MAH",
-                    "unit": ""
-                }
-            },
-            "VariableRadartrack_num0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "track_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 161.TRACK/PLOT NUMBER\n\nAn integer value representing a unique reference to a\ntrack/plot record within a particular track/plot file.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "TN",
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "antenna",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.ANT\n\n0 Target report from antenna\n1 Target report from antenna 2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Antenna",
+                "representation_str": "STANDARD",
+                "short_name": "ANT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "ds1_ds2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.DS1/DS2\n\n0 Default\n1 Unlawful interference (code 7500)\n2 Radio-communication failure (code 7600)\n3 Emergency (code 7700)",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS1/DS2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "INT",
+                "db_column_name": "received_power",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 131.POWER\n\nDecimal logarithm of the power received in dBm.\n POWER = 0 for 0 dBm",
+                "dimension": "",
+                "is_key": false,
+                "name": "Received Power",
+                "representation_str": "STANDARD",
+                "short_name": "Power",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "truncated_time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 141.Truncated Time of Day",
+                "dimension": "",
+                "is_key": false,
+                "name": "Truncated Time of Day",
+                "representation_str": "STANDARD",
+                "short_name": "Trun ToD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "rdp_chain",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.RDPC\n\nRadar Data Processing Chain\n0 RDP Chain 1\n1 RDP Chain 2",
+                "dimension": "",
+                "is_key": false,
+                "name": "RDP Chain",
+                "representation_str": "STANDARD",
+                "short_name": "RDP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.TYP\n\n0 Plot\n1 Track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "w_e_value",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 030.Warning/Error Conditions.W/E Value\n\n0 no warning nor error condition;\n1 garbled reply;\n2 reflection;\n3 sidelobe reply;\n4 split plot;\n5 second time around reply;\n6 angels;\n7 terrestrial vehicles.\n64 possible wrong code in Mode-3/A;\n65 possible wrong altitude information, transmitted when the Code C credibility check fails together with the Mode-C code in binary notation;\n66 possible phantom MSSR plot;\n80 fixed PSR plot;\n81 slow PSR plot;\n82 low quality PSR plot.",
+                "dimension": "",
+                "is_key": false,
+                "name": "W/E Value",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "track_quality",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 210.Track Quality.Value\n\nQuality indicator\nActual bit signification is application dependent.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Quality",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "plot_characteristics",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 130.Radar Plot Characteristics.Value\n\nThis Data Item may contain parameters such as plot runlength (primary and secondary), difference between primary and secondary derived azimuth, pulse amplitude, etc.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Plot Characteristics",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 042.X-Component\n\nMax. range = +/-256 NM",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "X",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "y",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 042.Y-Component\n\nMax. range = +/-256 NM",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Y",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "track_sensor_types",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.RAD\n\nType of Sensor(s) maintaining Track\n0 Combined Track\n1 PSR Track\n2 SSR/Mode S Track\n3 Invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Sensor Types",
+                "representation_str": "STANDARD",
+                "short_name": "RAD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp based on Time of Day",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarUTN0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "utn",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique Target Number",
+                "dimension": "",
+                "is_key": false,
+                "name": "UTN",
+                "representation_str": "STANDARD",
+                "short_name": "UTN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadardetection_type0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.TYP\n\nFrom 020.SSR/PSR\n\nRadar detection in last antenna scan, as follows:\n0 No detection;\n1 Sole primary detection;\n2 Sole secondary detection;\n3 Combined primary and secondary detection.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Type",
+                "representation_str": "STANDARD",
+                "short_name": "TYP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadards_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From ds_id\n\nData Source ID",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarfrom_fft0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "fft",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.RAB\n\n0 Report from aircraft transponder\n1 Report from field monitor(fixed transponder)",
+                "dimension": "",
+                "is_key": false,
+                "name": "FFT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarhash_code0",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "artas_hash",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From artas_md5\n\nARTAS MD5 Hash Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "ARTAS Hash",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "COMMUNICATION LINE ID determines the origin of the record, see table COMMS",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmil_emergency0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "military_emergency",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.ME\n\n0 No military emergency \n1 Military emergency",
+                "dimension": "",
+                "is_key": false,
+                "name": "Military Emergency",
+                "representation_str": "STANDARD",
+                "short_name": "ME",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmil_ident0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "military_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.MI\n\n0 No military identification\n1 Military identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "Military Identification",
+                "representation_str": "STANDARD",
+                "short_name": "MI",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmode3a_code0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_3a_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.Mode-3/A reply\n\n070.Mode-3/A reply in decimal\nrepresentation",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Code",
+                "representation_str": "DEC_TO_OCTAL",
+                "short_name": "MA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmode3a_g0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.G\n\n0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "MA G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmode3a_smo0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.L\n\n0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "MA S",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmode3a_v0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.V\n\n0 Code not validated\n1 Code validated\n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Valid",
+                "representation_str": "STANDARD",
+                "short_name": "MA V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmodec_code_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_c_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 090.Mode-C HEIGHT\n\nFrom 090.Flight Level\n\nThis data item shall be sent when Mode C code or Mode S altitude code is present and decodable. It represents the flight level of the plot, even if associated\nwith a track.",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Mode C Code",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "MC",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmodec_g0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 090.G\n\n0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "MC G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarmodec_v0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 090.V\n\n0 Code not validated\n1 Code validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Valid",
+                "representation_str": "STANDARD",
+                "short_name": "MC V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarpos_azm_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "azimuth",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 040.THETA\n\nMeasured position of an aircraft in local polar co-ordinates",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Azimuth",
+                "representation_str": "STANDARD",
+                "short_name": "Azm",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarpos_lat_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated from 040.RHO/040.THETA \n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "Lat",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarpos_lon_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated from 040.RHO/040.THETA \n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "Lon",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarpos_range_nm0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "range",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 040.RHO\n\nMeasured position of an aircraft in local polar co-ordinates\n\nMax. range = 256 NM",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Range",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarrec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarsac0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SAC\n\nData Source Identifier System Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarsic0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SIC\n\nData Source Identifier System Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarsimulated_target0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "simulated",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.SIM\n\n0  Actual target report\n1 Simulated target report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Simulated",
+                "representation_str": "STANDARD",
+                "short_name": "SIM",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarspi0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "spi",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.SPI\n\n0 Absence of SPI\n1 Special Position Identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "SPI",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartest_target0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "test",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.TST\n\n0 Real target report\n1 Test target report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Test",
+                "representation_str": "STANDARD",
+                "short_name": "TST",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartod0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 140.Time-of-Day\n\nAbsolute time stamping expressed as Co-ordinated Universal Time (UTC)",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "ToD",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_confirmed0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_confirmed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CON\n\nFrom 170.CNF\n\nConfirmed vs. Tentative Track\n0 Tentative Track\n1 Confirmed Track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Confirmed",
+                "representation_str": "STANDARD",
+                "short_name": "CNF",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_doubtful0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "track_doubtful",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.DOU\n\nSignals level of confidence in plot to track association process\n0 Normal confidence\n1 Low confidence in plot to track association.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Doubtful",
+                "representation_str": "STANDARD",
+                "short_name": "DOU",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_end0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_end",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.TRE\n\nSignal for End_of_Track\n0 Track still alive\n1 End of track lifetime(last report for this track)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track End",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_ghost_target0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_ghost_target",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.GHO\n\nGhost vs. true target\n0 True target track.\n1 Ghost target track.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Ghost Target",
+                "representation_str": "STANDARD",
+                "short_name": "GHO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_groundspeed_kt0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "track_groundspeed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 200.CALCULATED GROUNDSPEED\n\nCalculated track velocity expressed in polar co-ordinates.",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Track Groundspeed",
+                "representation_str": "FLOAT_PREC1",
+                "short_name": "GSpd",
+                "unit": "Knots"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_heading_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "track_angle",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 200.CALCULATED HEADING\n\nCalculated track velocity expressed in polar co-ordinates.\n\nWas called Track Heading previously, but renamed since it refers to  the direction of movement.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Track Angle",
+                "representation_str": "FLOAT_PREC1",
+                "short_name": "Ang",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_manoeuvre_hori0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_horizontal_manoeuvre",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.MAN\n\nFrom 170.MAH\n\nManoeuvre detection in Horizontal Sense\n0 No horizontal man.sensed\n1 Horizontal man. sensed",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Horizontal Manoeuvre",
+                "representation_str": "STANDARD",
+                "short_name": "MAH",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadartrack_num0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "track_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 161.TRACK/PLOT NUMBER\n\nAn integer value representing a unique reference to a\ntrack/plot record within a particular track/plot file.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Number",
+                "representation_str": "STANDARD",
+                "short_name": "TN",
+                "unit": ""
             }
         }
-    }
+    ]
 }

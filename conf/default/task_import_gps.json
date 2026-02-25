@@ -1,15 +1,21 @@
 {
+    "class_name": "GPSTrailImportTask",
+    "instance_name": "GPSTrailImportTask0",
     "parameters": {
+        "callsign": "",
         "callsign_": "ENTRPRSE",
         "current_filename": "",
         "ds_name": "GPS Trail",
         "ds_sac": 255,
         "ds_sic": 0,
         "mode_3a_code": 961,
+        "override_date_str": "1970-01-01",
         "set_callsign": true,
         "set_mode_3a_code": true,
         "set_target_address": true,
         "target_address": 16702992,
-        "tod_offset": -43200.0
+        "tod_offset": -43200.0,
+        "use_override_date": false,
+        "use_tod_offset": false
     }
 }

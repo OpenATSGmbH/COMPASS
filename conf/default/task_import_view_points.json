@@ -1,4 +1,6 @@
 {
+    "class_name": "ViewPointsImportTask",
+    "instance_name": "ViewPointsImportTask0",
     "parameters": {
         "current_filename": ""
     }

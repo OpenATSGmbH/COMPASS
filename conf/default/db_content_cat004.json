@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT004",
     "parameters": {
         "contains_status_content": false,
         "contains_target_reports": false,
@@ -7,1463 +9,1655 @@
         "info": "",
         "name": "CAT004"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable1": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "message_type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 000.Message Type\n\n1 Alive Message\n2 Route Adherence Monitor Longitudinal Deviation\n3 Route Adherence Monitor Heading Deviation\n4 Minimum Safe Altitude Warning\n5 Area Proximity Warning\n6 Clearance Level Adherence Monitor\n7 Short Term Conflict Alert\n8 Approach Funnel Deviation Alert\n9 RIMCAS Arrival / Landing Monitor (ALM)\n10 RIMCAS Arrival / Departure Wrong Runway Alert (WRA)\n11 RIMCAS Arrival / Departure Opposite Traffic Alert (OTA)\n12 RIMCAS Departure Monitor (RDM)\n13 RIMCAS Runway / Taxiway Crossing Monitor (RCM)\n14 RIMCAS Taxiway Separation Monitor (TSM)\n15 RIMCAS Unauthorized Taxiway Movement Monitor(UTMM)\n16 RIMCAS Stop Bar Overrun Alert (SBOA)\n17 End Of Conflict (EOC)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Message Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable10": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "alert_status",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 045.Alert status\n\nStatus of the alert",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Alert Status",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable11": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "afda_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.AFDA\n\n0 Default\n1 AFDA function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "AFDA Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable12": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "apw_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.APW\n\n0 Default\n1 APW function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "APW Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable13": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "clam_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.CLAM\n\n0 Default\n1 CLAM function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CLAM Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable14": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mrva_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.MRVA\n\n0 Default\n1 MRVA function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MRVA Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable15": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "msaw_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.MSAW\n\n0 Default\n1 MSAW function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MSAW Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable16": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "of",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.OF\n\n0 Default\n1 Overflow error",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OF",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable17": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ol",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.OL\n\n0 Default\n1 Overload error",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OL",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable18": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ramhd_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.RAMHD\n\n0 Default\n1 RAMHD function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RAMHD Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable19": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ramld_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.RAMLD\n\n0 Default\n1 RAMLD function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RAMLD Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable2": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable20": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "rimca_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.RIMCA\n\n0 Default\n1 RIMCA function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RIMCA Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable21": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "stca_func",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.STCA\n\n0 Default\n1 STCA function",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "STCA Func",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable22": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_to_conflict",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.TC.TIME TO CONFLICT",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time to Conflict",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable23": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_to_closest_approach",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.TCA.TIME TO CLOSEST APPROACH",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time to Closest Approach",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable24": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "current_horizontal_separation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.CHS.Current Horizontal Separation\n\nunit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Current Horizontal Separation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable25": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "estimated_min__horizontal_separation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.MHS.Estimated minimum horizontal separation\n\nunit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Estimated Min. Horizontal Separation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable26": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "current_vertical_separation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.CVS.Current Vertical Separation\n\nunit: feet",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Current Vertical Separation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable27": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "estimated_min__vertical_separation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.MVS.Estimated minimum vertical separation\n\nunit: feet",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Estimated Min. Vertical Separation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable28": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "longitudinal_deviation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 074.Longitudinal deviation\n\nunit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Longitudinal Deviation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable29": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "transversal_distance_deviation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 075.Transversal Distance Deviation\n\nunit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Transversal Distance Deviation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable3": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable30": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "vertical_deviation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 076.Vertical deviation\n\nunit: feet",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Vertical Deviation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable31": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "area_name",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.AN.Area Name",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Area Name",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable32": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "crossing_area_name",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.CAN.Crossing Area Name",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Crossing Area Name",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable33": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "gate_designator",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.G.Gate Designator",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Gate Designator",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable34": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "rwy_twy_designator_1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.RT1.Runway/Taxiway Designator 1",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RWY/TWY Designator 1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable35": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "rwy_twy_designator_2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.RT2.Runway/Taxiway Designator 2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RWY/TWY Designator 2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable36": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "stop_bar_designator",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.SB.Stop Bar Designator",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Stop Bar Designator",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable37": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "fdps_centre",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 110.FDPS Sector Control Identification.Centre\n\nCentre identification code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FDPS Centre",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable38": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "fdps_position",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 110.FDPS Sector Control Identification.Position\n\nControl position identification code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FDPS Position",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable39": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "table_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CC.Table Id\n\nIdentification of conflict categories definition table\n\nFor STCA, Table Id = 0000:\n001 major separation infringement and not (crossed and diverging)\n010 minor separation infringement and not (crossed and diverging)\n011 major separation infringement and (crossed and diverging)\n100 minor separation infringement and (crossed and diverging)\n\nFor STCA, Table Id = 0001:\nbits-4  (LPF)  Linear Prediction Filter:  0 Filter not set, 1 Filter set\nbits-3 (CPF)  Current Proximity Filter:  0 Filter not set, 1 Filter set\nbits-2 (MHF) Manoeuvre Hazard Filter:  0 Filter not set, 1 Filter set\n\nFor RIMCAS, Table Id = 0010 defines the following alert stages:\nbits-4  (RAS) RIMCAS Alert Stage: 0 Stage One Alert, 1 Stage Two Alert\n\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Table Id",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable4": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "sdps_sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 015.SDPS Identifier.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SDPS SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable40": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "severity_class",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CC.Severity Class\n\nConflict Severity Class",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Severity Class",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable41": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "conflict_severity",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CC.CS\n\nConflict Severity\n0 LOW\n1 HIGH",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Conflict Severity",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable42": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "conflict_probability",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CP.Probability\n\nConflict probability (%)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Conflict Probability",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable43": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "conflict_duration",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CD.Duration\n\nThe duration of the conflict is the elapsed time since the declaration of the conflict",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Conflict Duration",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable44": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "cas",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.CAS\n\nConflict location in civil airspace\n0 conflict not predicted to occur in civil airspace\n1 conflict predicted to occur in civil airspace",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CAS",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable45": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "cross",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.Cross\n\nCrossing test\n0 Aircraft have not crossed at starting time of conflict\n1 Aircraft have crossed at starting time of conflict",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Cross",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable46": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "div",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.Div\n\nDivergence test\n0 Aircraft are not diverging at starting time of conflict\n1 Aircraft are diverging at starting time of conflict",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Div",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable47": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "fld",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.FLD\n\nFast lateral divergence\n0 Aircraft are not fast diverging laterally at current time\n1 Aircraft are fast diverging laterally at current time",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FLD",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable48": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "fvd",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.FVD\n\nFast vertical divergence\n0 Aircraft are not fast diverging vertically at current time\n1 Aircraft are fast diverging vertically at current time",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FVD",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable49": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mas",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.MAS\n\nConflict location in military airspace\n0 conflict not predicted to occur in military airspace\n1 conflict predicted to occur in military airspace",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MAS",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable5": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "sdps_sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 015.SDPS Identifier.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SDPS SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable50": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mrva",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.MRVA\n\n0 Default\n1 Msg Type 4 (MSAW) indicates MRVA",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MRVA",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable51": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "rrc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.RRC\n\nRunway/Runway crossing in RIMCAS\n0 Default\n1 Runway/Runway Crossing",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RRC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable52": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "rtc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.RTC\n\nRunway/Taxiway Crossing in RIMCAS\n0 Default\n1 Runway/Taxiway Crossing",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RTC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable53": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.CN.Type\n\nType of separation infringement\n0 Minor separation infringement\n1 Major separation infringement",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable54": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "aircraft_identifier_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AI1.Aircraft Identifier #1",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Aircraft Identifier AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable55": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "mode_3_a_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.M31.Mode-3/A reply #1",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A AC1",
-                    "representation_str": "DEC_TO_OCTAL",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable56": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "predicted_conflict_latitude_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CPW.Latitude #1\n\nIn WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Latitude AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable57": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "predicted_conflict_longitude_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CPW.Longitude #1\n\nIn WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Longitude AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable58": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_pos__x_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CPC.X-position #1\n\nStarting X-Position of Conflict. unit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Pos. X AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable59": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_pos__y_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CPC.Y-Position #1\n\nStarting Y-Position of Conflict. unit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Pos. Y AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable6": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_message",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.TIME OF MESSAGE",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Message",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable60": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_pos__z_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CPC.Z-Position #1\n\nStarting Z-Position of Conflict. unit: feet",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Pos. Z AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable61": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_to_threshold_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.TT1.TIME TO THRESHOLD #1\n\nTime to runway threshold for first approaching aircraft in a RIMCA",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time to Threshold AC1",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable62": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "distance_to_threshold_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.DT1.Distance to Threshold #1\n\nDistance from threshold for Aircraft 1 involved in a RIMCA. unit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Distance to Threshold AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable63": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "gat_oat_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.GAT/OAT #1\n\n00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "GAT/OAT AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable64": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "fr1_fr2_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.FR1/FR2 #1\n\n00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FR1/FR2 AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable65": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "rvsm_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.RVSM #1\n\n00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RVSM AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable66": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "hpr_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.HPR #1\n\n0 Normal Priority Flight\n1 High Priority Flight",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "HPR AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable67": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "cdm_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.CDM #1\n\nClimbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CDM AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable68": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "pri_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.PRI #1\n\n0 Non primary target\n1 Primary target",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "PRI AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable69": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "gv_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.AC1.GV #1\n\n0 Default\n1 Ground Vehicle",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "GV AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable7": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "track_number_1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 030.Track Number 1\n\nrange: 0 to 65535",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Number 1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable70": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "mode_s_identifier_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.MS1.Mode S Identifier Aircraft #1",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode S Identifier AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable71": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "fpl_number_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.FP1.NBR #1\n\nNumber from 0 to 99 999 999",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FPL Number AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable72": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "cfl_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CF1.CFL #1\n\nCleared Flight Level for Aircraft 1 Involved in the Conflict. unit: FL",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CFL AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable73": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_altitude_ac1",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CPW.Altitude #1\n\nAltitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Altitude AC1",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable74": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "cdm_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.CDM #2\n\nClimbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CDM AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable75": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "fr1_fr2_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.FR1/FR2 #2\n\n00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FR1/FR2 AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable76": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "gat_oat_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.GAT/OAT #2\n\n00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "GAT/OAT AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable77": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "gv_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.GV #2\n\n0 Default\n1 Ground Vehicle",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "GV AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable78": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "hpr_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.HPR #2\n\n0 Normal Priority Flight\n1 High Priority Flight",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "HPR AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable79": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "pri_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.PRI #2\n\n0 Non primary target\n1 Primary target",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "PRI AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable8": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "track_number_2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 035.Track Number 2\n\nrange: 0 to 65535",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Number 2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable80": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "rvsm_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AC2.RVSM #2\n\n00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RVSM AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable81": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "aircraft_identifier_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.AI2.Aircraft Identifier #2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Aircraft Identifier AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable82": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "cfl_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CF2.CFL #2\n\nCleared Flight Level for Aircraft 2 Involved in the Conflict. unit: FL",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CFL AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable83": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_pos__x_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CPC.X-position #2\n\nStarting X-Position of Conflict. unit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Pos. X AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable84": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_pos__y_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CPC.Y-Position #2\n\nStarting Y-Position of Conflict. unit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Pos. Y AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable85": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_pos__z_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CPC.Z-Position #2\n\nStarting Z-Position of Conflict. unit: feet",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Pos. Z AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable86": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "predicted_conflict_altitude_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CPW.Altitude #2\n\nAltitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Altitude AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable87": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "predicted_conflict_latitude_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CPW.Latitude #2\n\nIn WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Latitude AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable88": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "predicted_conflict_longitude_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.CPW.Longitude #2\n\nIn WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Predicted Conflict Longitude AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable89": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "distance_to_threshold_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.DT2.Distance to Threshold #2\n\nDistance from threshold for Aircraft 2 involved in a RIMCA. unit: metres",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Distance to Threshold AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable9": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "alert_identifier",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 040.Alert Identifier\n\nrange: 0 to 65535",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Alert Identifier",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable90": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "fpl_number_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.FP2.NBR #2\n\nNumber from 0 to 99 999 999",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FPL Number AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable91": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "mode_3_a_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.M32.Mode-3/A reply #2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A AC2",
-                    "representation_str": "DEC_TO_OCTAL",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable92": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "mode_s_identifier_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.MS2.Mode S Identifier Aircraft #2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode S Identifier AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable93": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_to_threshold_ac2",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 171.TT2.TIME TO THRESHOLD #2\n\nTime to runway threshold for first approaching aircraft in a RIMCA",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Time to Threshold AC2",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableds_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "COMMUNICATION LINE ID determines the origin of the record",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variablerec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable1",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "message_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 000.Message Type\n\n1 Alive Message\n2 Route Adherence Monitor Longitudinal Deviation\n3 Route Adherence Monitor Heading Deviation\n4 Minimum Safe Altitude Warning\n5 Area Proximity Warning\n6 Clearance Level Adherence Monitor\n7 Short Term Conflict Alert\n8 Approach Funnel Deviation Alert\n9 RIMCAS Arrival / Landing Monitor (ALM)\n10 RIMCAS Arrival / Departure Wrong Runway Alert (WRA)\n11 RIMCAS Arrival / Departure Opposite Traffic Alert (OTA)\n12 RIMCAS Departure Monitor (RDM)\n13 RIMCAS Runway / Taxiway Crossing Monitor (RCM)\n14 RIMCAS Taxiway Separation Monitor (TSM)\n15 RIMCAS Unauthorized Taxiway Movement Monitor(UTMM)\n16 RIMCAS Stop Bar Overrun Alert (SBOA)\n17 End Of Conflict (EOC)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Message Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "alert_status",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 045.Alert status\n\nStatus of the alert",
+                "dimension": "",
+                "is_key": false,
+                "name": "Alert Status",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "afda_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.AFDA\n\n0 Default\n1 AFDA function",
+                "dimension": "",
+                "is_key": false,
+                "name": "AFDA Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "apw_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.APW\n\n0 Default\n1 APW function",
+                "dimension": "",
+                "is_key": false,
+                "name": "APW Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "clam_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.CLAM\n\n0 Default\n1 CLAM function",
+                "dimension": "",
+                "is_key": false,
+                "name": "CLAM Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mrva_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.MRVA\n\n0 Default\n1 MRVA function",
+                "dimension": "",
+                "is_key": false,
+                "name": "MRVA Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "msaw_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.MSAW\n\n0 Default\n1 MSAW function",
+                "dimension": "",
+                "is_key": false,
+                "name": "MSAW Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "of",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.OF\n\n0 Default\n1 Overflow error",
+                "dimension": "",
+                "is_key": false,
+                "name": "OF",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ol",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.OL\n\n0 Default\n1 Overload error",
+                "dimension": "",
+                "is_key": false,
+                "name": "OL",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ramhd_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.RAMHD\n\n0 Default\n1 RAMHD function",
+                "dimension": "",
+                "is_key": false,
+                "name": "RAMHD Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable19",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ramld_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.RAMLD\n\n0 Default\n1 RAMLD function",
+                "dimension": "",
+                "is_key": false,
+                "name": "RAMLD Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable2",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SAC\n\nSystem Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable20",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "rimca_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.RIMCA\n\n0 Default\n1 RIMCA function",
+                "dimension": "",
+                "is_key": false,
+                "name": "RIMCA Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable21",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "stca_func",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.STCA\n\n0 Default\n1 STCA function",
+                "dimension": "",
+                "is_key": false,
+                "name": "STCA Func",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable22",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_to_conflict",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.TC.TIME TO CONFLICT",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time to Conflict",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable23",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_to_closest_approach",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.TCA.TIME TO CLOSEST APPROACH",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time to Closest Approach",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable24",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "current_horizontal_separation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.CHS.Current Horizontal Separation\n\nunit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Current Horizontal Separation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable25",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "estimated_min__horizontal_separation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.MHS.Estimated minimum horizontal separation\n\nunit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Estimated Min. Horizontal Separation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable26",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "current_vertical_separation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.CVS.Current Vertical Separation\n\nunit: feet",
+                "dimension": "",
+                "is_key": false,
+                "name": "Current Vertical Separation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable27",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "estimated_min__vertical_separation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.MVS.Estimated minimum vertical separation\n\nunit: feet",
+                "dimension": "",
+                "is_key": false,
+                "name": "Estimated Min. Vertical Separation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable28",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "longitudinal_deviation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 074.Longitudinal deviation\n\nunit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Longitudinal Deviation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable29",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "transversal_distance_deviation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 075.Transversal Distance Deviation\n\nunit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Transversal Distance Deviation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SIC\n\nSystem Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable30",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "vertical_deviation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 076.Vertical deviation\n\nunit: feet",
+                "dimension": "",
+                "is_key": false,
+                "name": "Vertical Deviation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable31",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "area_name",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 100.AN.Area Name",
+                "dimension": "",
+                "is_key": false,
+                "name": "Area Name",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable32",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "crossing_area_name",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 100.CAN.Crossing Area Name",
+                "dimension": "",
+                "is_key": false,
+                "name": "Crossing Area Name",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable33",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "gate_designator",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 100.G.Gate Designator",
+                "dimension": "",
+                "is_key": false,
+                "name": "Gate Designator",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable34",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "rwy_twy_designator_1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 100.RT1.Runway/Taxiway Designator 1",
+                "dimension": "",
+                "is_key": false,
+                "name": "RWY/TWY Designator 1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable35",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "rwy_twy_designator_2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 100.RT2.Runway/Taxiway Designator 2",
+                "dimension": "",
+                "is_key": false,
+                "name": "RWY/TWY Designator 2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable36",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "stop_bar_designator",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 100.SB.Stop Bar Designator",
+                "dimension": "",
+                "is_key": false,
+                "name": "Stop Bar Designator",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable37",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "fdps_centre",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 110.FDPS Sector Control Identification.Centre\n\nCentre identification code",
+                "dimension": "",
+                "is_key": false,
+                "name": "FDPS Centre",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable38",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "fdps_position",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 110.FDPS Sector Control Identification.Position\n\nControl position identification code",
+                "dimension": "",
+                "is_key": false,
+                "name": "FDPS Position",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable39",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "table_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CC.Table Id\n\nIdentification of conflict categories definition table\n\nFor STCA, Table Id = 0000:\n001 major separation infringement and not (crossed and diverging)\n010 minor separation infringement and not (crossed and diverging)\n011 major separation infringement and (crossed and diverging)\n100 minor separation infringement and (crossed and diverging)\n\nFor STCA, Table Id = 0001:\nbits-4  (LPF)  Linear Prediction Filter:  0 Filter not set, 1 Filter set\nbits-3 (CPF)  Current Proximity Filter:  0 Filter not set, 1 Filter set\nbits-2 (MHF) Manoeuvre Hazard Filter:  0 Filter not set, 1 Filter set\n\nFor RIMCAS, Table Id = 0010 defines the following alert stages:\nbits-4  (RAS) RIMCAS Alert Stage: 0 Stage One Alert, 1 Stage Two Alert\n\n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Table Id",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "sdps_sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 015.SDPS Identifier.SAC\n\nSystem Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SDPS SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable40",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "severity_class",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CC.Severity Class\n\nConflict Severity Class",
+                "dimension": "",
+                "is_key": false,
+                "name": "Severity Class",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable41",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "conflict_severity",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CC.CS\n\nConflict Severity\n0 LOW\n1 HIGH",
+                "dimension": "",
+                "is_key": false,
+                "name": "Conflict Severity",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable42",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "conflict_probability",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CP.Probability\n\nConflict probability (%)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Conflict Probability",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable43",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "conflict_duration",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CD.Duration\n\nThe duration of the conflict is the elapsed time since the declaration of the conflict",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Conflict Duration",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable44",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "cas",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.CAS\n\nConflict location in civil airspace\n0 conflict not predicted to occur in civil airspace\n1 conflict predicted to occur in civil airspace",
+                "dimension": "",
+                "is_key": false,
+                "name": "CAS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable45",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "cross",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.Cross\n\nCrossing test\n0 Aircraft have not crossed at starting time of conflict\n1 Aircraft have crossed at starting time of conflict",
+                "dimension": "",
+                "is_key": false,
+                "name": "Cross",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable46",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "div",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.Div\n\nDivergence test\n0 Aircraft are not diverging at starting time of conflict\n1 Aircraft are diverging at starting time of conflict",
+                "dimension": "",
+                "is_key": false,
+                "name": "Div",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable47",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "fld",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.FLD\n\nFast lateral divergence\n0 Aircraft are not fast diverging laterally at current time\n1 Aircraft are fast diverging laterally at current time",
+                "dimension": "",
+                "is_key": false,
+                "name": "FLD",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable48",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "fvd",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.FVD\n\nFast vertical divergence\n0 Aircraft are not fast diverging vertically at current time\n1 Aircraft are fast diverging vertically at current time",
+                "dimension": "",
+                "is_key": false,
+                "name": "FVD",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable49",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mas",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.MAS\n\nConflict location in military airspace\n0 conflict not predicted to occur in military airspace\n1 conflict predicted to occur in military airspace",
+                "dimension": "",
+                "is_key": false,
+                "name": "MAS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable5",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "sdps_sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 015.SDPS Identifier.SIC\n\nSystem Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SDPS SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable50",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mrva",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.MRVA\n\n0 Default\n1 Msg Type 4 (MSAW) indicates MRVA",
+                "dimension": "",
+                "is_key": false,
+                "name": "MRVA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable51",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "rrc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.RRC\n\nRunway/Runway crossing in RIMCAS\n0 Default\n1 Runway/Runway Crossing",
+                "dimension": "",
+                "is_key": false,
+                "name": "RRC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable52",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "rtc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.RTC\n\nRunway/Taxiway Crossing in RIMCAS\n0 Default\n1 Runway/Taxiway Crossing",
+                "dimension": "",
+                "is_key": false,
+                "name": "RTC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable53",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 120.CN.Type\n\nType of separation infringement\n0 Minor separation infringement\n1 Major separation infringement",
+                "dimension": "",
+                "is_key": false,
+                "name": "Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable54",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "aircraft_identifier_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AI1.Aircraft Identifier #1",
+                "dimension": "",
+                "is_key": false,
+                "name": "Aircraft Identifier AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable55",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_3_a_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.M31.Mode-3/A reply #1",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A AC1",
+                "representation_str": "DEC_TO_OCTAL",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable56",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "predicted_conflict_latitude_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CPW.Latitude #1\n\nIn WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Latitude AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable57",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "predicted_conflict_longitude_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CPW.Longitude #1\n\nIn WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Longitude AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable58",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_pos__x_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CPC.X-position #1\n\nStarting X-Position of Conflict. unit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Pos. X AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable59",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_pos__y_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CPC.Y-Position #1\n\nStarting Y-Position of Conflict. unit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Pos. Y AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable6",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_message",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 020.TIME OF MESSAGE",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Message",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable60",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_pos__z_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CPC.Z-Position #1\n\nStarting Z-Position of Conflict. unit: feet",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Pos. Z AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable61",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_to_threshold_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.TT1.TIME TO THRESHOLD #1\n\nTime to runway threshold for first approaching aircraft in a RIMCA",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time to Threshold AC1",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable62",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "distance_to_threshold_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.DT1.Distance to Threshold #1\n\nDistance from threshold for Aircraft 1 involved in a RIMCA. unit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Distance to Threshold AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable63",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "gat_oat_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.GAT/OAT #1\n\n00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
+                "dimension": "",
+                "is_key": false,
+                "name": "GAT/OAT AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable64",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "fr1_fr2_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.FR1/FR2 #1\n\n00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
+                "dimension": "",
+                "is_key": false,
+                "name": "FR1/FR2 AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable65",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "rvsm_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.RVSM #1\n\n00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
+                "dimension": "",
+                "is_key": false,
+                "name": "RVSM AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable66",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "hpr_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.HPR #1\n\n0 Normal Priority Flight\n1 High Priority Flight",
+                "dimension": "",
+                "is_key": false,
+                "name": "HPR AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable67",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "cdm_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.CDM #1\n\nClimbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "CDM AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable68",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "pri_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.PRI #1\n\n0 Non primary target\n1 Primary target",
+                "dimension": "",
+                "is_key": false,
+                "name": "PRI AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable69",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "gv_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.AC1.GV #1\n\n0 Default\n1 Ground Vehicle",
+                "dimension": "",
+                "is_key": false,
+                "name": "GV AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "track_number_1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 030.Track Number 1\n\nrange: 0 to 65535",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Number 1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable70",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "mode_s_identifier_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.MS1.Mode S Identifier Aircraft #1",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S Identifier AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable71",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "fpl_number_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.FP1.NBR #1\n\nNumber from 0 to 99 999 999",
+                "dimension": "",
+                "is_key": false,
+                "name": "FPL Number AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable72",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "cfl_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CF1.CFL #1\n\nCleared Flight Level for Aircraft 1 Involved in the Conflict. unit: FL",
+                "dimension": "",
+                "is_key": false,
+                "name": "CFL AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable73",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_altitude_ac1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 170.CPW.Altitude #1\n\nAltitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Altitude AC1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable74",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "cdm_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.CDM #2\n\nClimbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "CDM AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable75",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "fr1_fr2_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.FR1/FR2 #2\n\n00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
+                "dimension": "",
+                "is_key": false,
+                "name": "FR1/FR2 AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable76",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "gat_oat_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.GAT/OAT #2\n\n00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
+                "dimension": "",
+                "is_key": false,
+                "name": "GAT/OAT AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable77",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "gv_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.GV #2\n\n0 Default\n1 Ground Vehicle",
+                "dimension": "",
+                "is_key": false,
+                "name": "GV AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable78",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "hpr_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.HPR #2\n\n0 Normal Priority Flight\n1 High Priority Flight",
+                "dimension": "",
+                "is_key": false,
+                "name": "HPR AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable79",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "pri_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.PRI #2\n\n0 Non primary target\n1 Primary target",
+                "dimension": "",
+                "is_key": false,
+                "name": "PRI AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable8",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "track_number_2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 035.Track Number 2\n\nrange: 0 to 65535",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Number 2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable80",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "rvsm_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AC2.RVSM #2\n\n00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
+                "dimension": "",
+                "is_key": false,
+                "name": "RVSM AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable81",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "aircraft_identifier_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.AI2.Aircraft Identifier #2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Aircraft Identifier AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable82",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "cfl_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CF2.CFL #2\n\nCleared Flight Level for Aircraft 2 Involved in the Conflict. unit: FL",
+                "dimension": "",
+                "is_key": false,
+                "name": "CFL AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable83",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_pos__x_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CPC.X-position #2\n\nStarting X-Position of Conflict. unit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Pos. X AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable84",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_pos__y_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CPC.Y-Position #2\n\nStarting Y-Position of Conflict. unit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Pos. Y AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable85",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_pos__z_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CPC.Z-Position #2\n\nStarting Z-Position of Conflict. unit: feet",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Pos. Z AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable86",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "predicted_conflict_altitude_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CPW.Altitude #2\n\nAltitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Altitude AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable87",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "predicted_conflict_latitude_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CPW.Latitude #2\n\nIn WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Latitude AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable88",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "predicted_conflict_longitude_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.CPW.Longitude #2\n\nIn WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Predicted Conflict Longitude AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable89",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "distance_to_threshold_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.DT2.Distance to Threshold #2\n\nDistance from threshold for Aircraft 2 involved in a RIMCA. unit: metres",
+                "dimension": "",
+                "is_key": false,
+                "name": "Distance to Threshold AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable9",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "alert_identifier",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 040.Alert Identifier\n\nrange: 0 to 65535",
+                "dimension": "",
+                "is_key": false,
+                "name": "Alert Identifier",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable90",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "fpl_number_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.FP2.NBR #2\n\nNumber from 0 to 99 999 999",
+                "dimension": "",
+                "is_key": false,
+                "name": "FPL Number AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable91",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_3_a_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.M32.Mode-3/A reply #2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A AC2",
+                "representation_str": "DEC_TO_OCTAL",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable92",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "mode_s_identifier_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.MS2.Mode S Identifier Aircraft #2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S Identifier AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable93",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_to_threshold_ac2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 171.TT2.TIME TO THRESHOLD #2\n\nTime to runway threshold for first approaching aircraft in a RIMCA",
+                "dimension": "",
+                "is_key": false,
+                "name": "Time to Threshold AC2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp based on Time of Day",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From ds_id\n\nData Source ID",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "COMMUNICATION LINE ID determines the origin of the record",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablerec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
             }
         }
-    }
+    ]
 }

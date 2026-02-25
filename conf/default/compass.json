@@ -1,9 +1,23 @@
 {
+    "class_name": "COMPASS",
+    "instance_name": "COMPASS0",
     "parameters": {
         "app_font_scale": 1.149999976158142,
+        "auto_live_running_resume_ask_time": 60,
+        "auto_live_running_resume_ask_wait_time": 1,
+        "dark_mode": false,
         "db_file_list": [
         ],
-        "last_db_filename": "",
+        "disable_add_remove_views": false,
+        "disable_confirm_reset_views": false,
+        "disable_geographicview_rotate": false,
+        "disable_live_to_offline_switch": false,
+        "disable_menu_config_save": false,
+        "disable_native_dialogs": false,
+        "last_db_filename": "b",
+        "last_path": "",
+        "max_live_data_age_cache": 5,
+        "max_live_data_age_db": 60,
         "min_app_height": 800,
         "min_app_width": 1600,
         "unspecific_acids": [
@@ -29,9 +43,19 @@
             "path": "eval.json"
         },
         {
+            "class_id": "FFTManager",
+            "instance_id": "FFTManager0",
+            "path": "ffts.json"
+        },
+        {
             "class_id": "FilterManager",
             "instance_id": "FilterManager0",
             "path": "filter.json"
+        },
+        {
+            "class_id": "LicenseManager",
+            "instance_id": "LicenseManager0",
+            "path": "licenses.json"
         },
         {
             "class_id": "TaskManager",
@@ -44,15 +68,20 @@
             "path": "views.json"
         }
     ],
-    "sub_configs": {
-        "DBInterface": {
-            "DBInterface0": {
-                "parameters": {
-                    "read_chunk_size": 100000
-                },
-                "sub_configs": {
-                }
+    "sub_configs": [
+        {
+            "class_name": "DBInterface",
+            "instance_name": "DBInterface0",
+            "parameters": {
+                "live_cleanup_time_min": 5,
+                "log_verbose": false,
+                "max_ram_file_gb": 2,
+                "max_ram_inmem_gb": 8,
+                "num_threads": 8,
+                "preserve_insert_order": true,
+                "read_chunk_size": 100000,
+                "use_live_inmem_db": false
             }
         }
-    }
+    ]
 }

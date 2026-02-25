@@ -14,7 +14,6 @@ Testing/
 *.backup
 *.toc
 *.pdf
-*.json
 *.sh
 *.cmake
 *.user

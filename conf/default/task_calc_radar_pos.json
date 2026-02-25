@@ -1,4 +1,6 @@
 {
+    "class_name": "RadarPlotPositionCalculatorTask",
+    "instance_name": "RadarPlotPositionCalculatorTask0",
     "parameters": {
         "altitude_var_str": "modec_code_ft",
         "azimuth_var_str": "pos_azm_deg",
