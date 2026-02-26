@@ -999,7 +999,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 */
 void ASTERIXImportTask::decodeASTERIXDoneSlot()
 {
-    logdbg;
+    loginf << "called";
 
     if (!decode_job_) // called twice?
         return;
@@ -1120,6 +1120,11 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
     else
         keys = {"frames", "content", "data_blocks", "content", "records"};
 
+    logdbg << "ASTERIXImportTask: addDecodedASTERIXSlot: framing '" << settings_.activeFileFraming()
+           << "' isNetworkType " << source_.isNetworkType()
+           << " num parsers " << schema_->parsers().size()
+           << " num extracted_data " << extracted_data.size();
+
     std::shared_ptr<ASTERIXJSONMappingJob> json_map_job =
         make_shared<ASTERIXJSONMappingJob>(std::move(extracted_data), source_name, keys, schema_->parsers());
 
@@ -1141,7 +1146,7 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 */
 void ASTERIXImportTask::mapJSONDoneSlot()
 {
-    logdbg;
+    logdbg << "called, stopped " << stopped_;
 
     if (stopped_)
     {
@@ -1165,14 +1170,17 @@ void ASTERIXImportTask::mapJSONDoneSlot()
     map_job = nullptr;
     json_map_jobs_.erase(json_map_jobs_.begin()); // remove
 
-    logdbg << "processing, num buffers " << job_buffers.size();
+    logdbg << "num buffers " << job_buffers.size();
 
     if (!job_buffers.size())
     {
+        logdbg << "empty buffers, returning early";
         traced_assert(num_packets_in_processing_);
         num_packets_in_processing_--;
         return;
     }
+
+    logdbg << "starting ts calc";
 
     traced_assert(!ts_calculator_.processing());
     ts_calculator_.setBuffers(std::move(job_buffers));
@@ -1187,6 +1195,8 @@ void ASTERIXImportTask::mapJSONDoneSlot()
                              settings_.override_tod_active_, settings_.override_tod_offset_,
                              settings_.ignore_time_jumps_, check_future_ts,
                              compass_);
+
+    logdbg << "ts calc done, calling timestampCalculationDoneSlot";
 
     timestampCalculationDoneSlot();
 
@@ -1274,7 +1284,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
 */
 void ASTERIXImportTask::postprocessDoneSlot()
 {
-    logdbg;
+    logdbg << "called";
 
     if (stopped_)
     {
@@ -1453,7 +1463,7 @@ void ASTERIXImportTask::postprocessObsoleteSlot()
 */
 void ASTERIXImportTask::insertData()
 {
-    logdbg << "thread " << QThread::currentThreadId();
+    logdbg << "called";
 
     traced_assert(!insert_active_);
     insert_active_ = true;
@@ -1515,7 +1525,7 @@ void ASTERIXImportTask::insertData()
 */
 void ASTERIXImportTask::insertDoneSlot()
 {
-    logdbg;
+    logdbg << "called";
 
     traced_assert(insert_slot_connected_);
 

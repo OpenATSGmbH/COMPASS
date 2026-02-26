@@ -73,8 +73,7 @@ ASTERIXPostprocessJob::~ASTERIXPostprocessJob()
 
 void ASTERIXPostprocessJob::run_impl()
 {
-    logdbg << "run on thread " << QThread::currentThreadId()
-           << " on cpu " << sched_getcpu();
+    logdbg << "start";
 
     unsigned cnt=0;
 
@@ -116,6 +115,7 @@ void ASTERIXPostprocessJob::run_impl()
            << " full " << String::timeStringFromDouble(num_secs, true)
            << " " << ((float) num_processed) / num_secs << " rec/s";
 
+    logdbg << "done";
     done_ = true;
 }
 

@@ -106,6 +106,31 @@ void ConfigJSON::loadFromPath(const std::string& path)
 void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
                                        std::vector<SubConfigFile>& file_info)
 {
+    // First, recurse into existing inline sub_configs entries that may have their own sub_config_files
+    if (json.contains(Configuration::SubConfigSection) && json[Configuration::SubConfigSection].is_array())
+    {
+        for (auto& entry : json[Configuration::SubConfigSection])
+        {
+            if (entry.is_object())
+            {
+                std::vector<SubConfigFile> nested_info;
+                resolveSubConfigFiles(entry, nested_info);
+
+                if (!nested_info.empty())
+                {
+                    // Track as inline parent with file-backed children (empty filename = inline)
+                    SubConfigFile scf;
+                    scf.class_id    = Configuration::getClassName(entry);
+                    scf.instance_id = Configuration::getInstanceName(entry);
+                    scf.filename    = "";
+                    scf.children    = std::move(nested_info);
+                    file_info.push_back(std::move(scf));
+                }
+            }
+        }
+    }
+
+    // Then resolve sub_config_files at this level
     if (!json.contains(ConfigJSON::SubConfigFileSection))
         return;
 
@@ -253,36 +278,104 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
 
                 if (it != file_backed.end())
                 {
-                    bool child_has_sc = child_json.contains(Configuration::SubConfigSection);
-                    size_t child_sc_count = 0;
-                    if (child_has_sc && child_json[Configuration::SubConfigSection].is_array())
-                        child_sc_count = child_json[Configuration::SubConfigSection].size();
+                    if (it->second->filename.empty())
+                    {
+                        // Inline parent with file-backed children: save inline but
+                        // reconstruct sub_config_files for its children
+                        loginf << "'" << file_path << "' inline parent with file-backed children: class '"
+                               << cid << "' instance '" << iid
+                               << "' children=" << it->second->children.size();
 
-                    loginf << "'" << file_path << "' saving file-backed child: class '"
-                           << cid << "' instance '" << iid
-                           << "' -> '" << it->second->filename << "'"
-                           << " child_has_sub_configs=" << child_has_sc
-                           << " child_sub_configs_count=" << child_sc_count
-                           << " child_file_info_children=" << it->second->children.size()
-                           << " child_keys=[";
-                    for (auto& [k, v] : child_json.items())
-                        loginf << " " << k;
-                    loginf << " ]";
+                        nlohmann::json inline_entry;
 
-                    // File-backed child: save to its own file recursively
-                    saveToFile(child_json,
-                               CURRENT_CONF_DIRECTORY + it->second->filename,
-                               it->second->children);
+                        // Copy all keys except sub_configs
+                        for (auto& [k, v] : child_json.items())
+                        {
+                            if (k == Configuration::SubConfigSection ||
+                                k == ConfigJSON::SubConfigFileSection)
+                                continue;
+                            inline_entry[k] = v;
+                        }
 
-                    // Add sub_config_files entry in output
-                    if (!output.contains(ConfigJSON::SubConfigFileSection))
-                        output[ConfigJSON::SubConfigFileSection] = nlohmann::json::array();
+                        // Build file-backed lookup for the inline parent's children
+                        std::map<std::pair<std::string, std::string>, const SubConfigFile*> child_file_backed;
+                        for (const auto& cscf : it->second->children)
+                            child_file_backed[{cscf.class_id, cscf.instance_id}] = &cscf;
 
-                    output[ConfigJSON::SubConfigFileSection].push_back({
-                        {Configuration::ClassID,          cid},
-                        {Configuration::InstanceID,       iid},
-                        {ConfigJSON::SubConfigFilePath, it->second->filename}
-                    });
+                        // Process inline parent's sub_configs
+                        if (child_json.contains(Configuration::SubConfigSection) &&
+                            child_json[Configuration::SubConfigSection].is_array())
+                        {
+                            for (auto& grandchild : child_json[Configuration::SubConfigSection])
+                            {
+                                auto gcid = Configuration::getClassName(grandchild);
+                                auto giid = Configuration::getInstanceName(grandchild);
+                                auto gkey = std::make_pair(gcid, giid);
+                                auto git  = child_file_backed.find(gkey);
+
+                                if (git != child_file_backed.end())
+                                {
+                                    // File-backed grandchild: save to its own file
+                                    saveToFile(grandchild,
+                                               CURRENT_CONF_DIRECTORY + git->second->filename,
+                                               git->second->children);
+
+                                    if (!inline_entry.contains(ConfigJSON::SubConfigFileSection))
+                                        inline_entry[ConfigJSON::SubConfigFileSection] = nlohmann::json::array();
+
+                                    inline_entry[ConfigJSON::SubConfigFileSection].push_back({
+                                        {Configuration::ClassID,        gcid},
+                                        {Configuration::InstanceID,     giid},
+                                        {ConfigJSON::SubConfigFilePath, git->second->filename}
+                                    });
+                                }
+                                else
+                                {
+                                    // Inline grandchild
+                                    if (!inline_entry.contains(Configuration::SubConfigSection))
+                                        inline_entry[Configuration::SubConfigSection] = nlohmann::json::array();
+                                    inline_entry[Configuration::SubConfigSection].push_back(grandchild);
+                                }
+                            }
+                        }
+
+                        if (!output.contains(Configuration::SubConfigSection))
+                            output[Configuration::SubConfigSection] = nlohmann::json::array();
+                        output[Configuration::SubConfigSection].push_back(std::move(inline_entry));
+                    }
+                    else
+                    {
+                        bool child_has_sc = child_json.contains(Configuration::SubConfigSection);
+                        size_t child_sc_count = 0;
+                        if (child_has_sc && child_json[Configuration::SubConfigSection].is_array())
+                            child_sc_count = child_json[Configuration::SubConfigSection].size();
+
+                        loginf << "'" << file_path << "' saving file-backed child: class '"
+                               << cid << "' instance '" << iid
+                               << "' -> '" << it->second->filename << "'"
+                               << " child_has_sub_configs=" << child_has_sc
+                               << " child_sub_configs_count=" << child_sc_count
+                               << " child_file_info_children=" << it->second->children.size()
+                               << " child_keys=[";
+                        for (auto& [k, v] : child_json.items())
+                            loginf << " " << k;
+                        loginf << " ]";
+
+                        // File-backed child: save to its own file recursively
+                        saveToFile(child_json,
+                                   CURRENT_CONF_DIRECTORY + it->second->filename,
+                                   it->second->children);
+
+                        // Add sub_config_files entry in output
+                        if (!output.contains(ConfigJSON::SubConfigFileSection))
+                            output[ConfigJSON::SubConfigFileSection] = nlohmann::json::array();
+
+                        output[ConfigJSON::SubConfigFileSection].push_back({
+                            {Configuration::ClassID,          cid},
+                            {Configuration::InstanceID,       iid},
+                            {ConfigJSON::SubConfigFilePath, it->second->filename}
+                        });
+                    }
                 }
                 else
                 {
