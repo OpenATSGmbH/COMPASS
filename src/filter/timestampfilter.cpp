@@ -49,7 +49,7 @@ TimestampFilter::~TimestampFilter() {}
 
 bool TimestampFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(
+    return dbContentManager().metaVariable(
                 DBContent::meta_var_timestamp_.name()).existsIn(dbcont_name);
 }
 
@@ -57,7 +57,7 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = dbContentManager();
 
     if (!dbcont_man.metaVariable(
                 DBContent::meta_var_timestamp_.name()).existsIn(dbcontent_name))
@@ -97,7 +97,7 @@ DBFilterWidget* TimestampFilter::createWidget()
 
 void TimestampFilter::reset()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbContentManager();
 
     loginf << "has db min/max " << dbcont_man.hasMinMaxTimestamp();
 

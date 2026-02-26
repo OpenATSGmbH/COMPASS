@@ -144,6 +144,10 @@ public:
     const std::string& lastResultName() const { return last_result_name_; }
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
+
+    COMPASS& compass() { return compass_; }
+    DBContentManager& dbContentManager() { return dbcontent_man_; }
+
 protected:
     friend class EvaluationCalculator;
 
@@ -164,6 +168,7 @@ private:
     void configureLoadFilters(const EvaluationCalculator& calculator);
     void loadingDone();
 
+    COMPASS& compass_;
     DBContentManager& dbcontent_man_;
 
     bool sectors_loaded_ {false};

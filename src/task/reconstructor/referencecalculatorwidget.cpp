@@ -18,6 +18,8 @@
 #include "referencecalculatorwidget.h"
 
 #include "reconstructorbase.h"
+#include "reconstructortask.h"
+#include "taskmanager.h"
 
 #include "compass.h"
 
@@ -37,7 +39,7 @@ ReferenceCalculatorWidget::ReferenceCalculatorWidget(ReconstructorBase& reconstr
 {
     auto* settings = &reconstructor_.referenceCalculatorSettings();
 
-    bool add_optionals = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
+    bool add_optionals = !COMPASS::isAppImage() || reconstructor_.task().manager().compass().expertMode();
 
     auto layout = new QFormLayout;
     setLayout(layout);

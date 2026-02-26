@@ -69,6 +69,8 @@ public:
 
     bool hasDBContent() const;
 
+    DBContentManager& dbContentManager() { return object_manager_; }
+
 protected:
     std::string name_;
     std::string description_;

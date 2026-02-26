@@ -20,6 +20,8 @@
 #include <QMenu>
 #include <QPushButton>
 
+class UnitManager;
+
 /**
  * @brief Sets a Unit using a context menu
  */
@@ -28,28 +30,22 @@ class UnitSelectionWidget : public QPushButton
     Q_OBJECT
 
   protected slots:
-    /// @brief Called when menu action is executed
     void triggerSlot(QAction* action);
-    /// @brief Shows the context menu
     void showMenuSlot();
 
   public:
-    /// @brief Constructor TODO HACK references directly used
-    UnitSelectionWidget(std::string& dimension, std::string& unit);
-    UnitSelectionWidget();
-    /// @brief Destructor
+    UnitSelectionWidget(UnitManager& unit_man, std::string& dimension, std::string& unit);
+    UnitSelectionWidget(UnitManager& unit_man);
     virtual ~UnitSelectionWidget();
 
     void update(std::string& dimension, std::string& unit);
     void clear();
 
   protected:
+    UnitManager& unit_man_;
     bool pointers_set_ {false};
 
-    /// Unit dimension reference
     std::string* dimension_ {nullptr};
-
-    /// Unit unit reference
     std::string* unit_ {nullptr};
 
     QMenu menu_;

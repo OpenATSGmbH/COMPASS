@@ -19,6 +19,7 @@
 #include "util/timeconv.h"
 #include "timewindowcollectionwidget.h"
 #include "evaluationmanager.h"
+#include "compass.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -61,7 +62,7 @@ EvaluationTimestampConditionsDialog::EvaluationTimestampConditionsDialog(Evaluat
     connect(time_end_edit_, &QDateTimeEdit::dateTimeChanged, this, &EvaluationTimestampConditionsDialog::timeEndEditedSlot);
     form_layout->addRow("Timestamp End", time_end_edit_);
 
-    tw_widget_ = new TimeWindowCollectionWidget(eval_man.excludedTimeWindows());
+    tw_widget_ = new TimeWindowCollectionWidget(eval_man.compass().dbContentManager(), eval_man.excludedTimeWindows());
     form_layout->addRow("Excluded Time Windows", tw_widget_);
 
     main_layout->addLayout(form_layout);

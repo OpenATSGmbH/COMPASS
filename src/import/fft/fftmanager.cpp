@@ -285,7 +285,7 @@ void FFTManager::saveDBFFTs()
 {
     loginf;
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_->dbInterface();
 
     traced_assert(db_interface.ready());
     db_interface.saveFFTs(db_ffts_);
@@ -371,6 +371,12 @@ void FFTManager::importFFTs(const std::string& filename)
     emit fftsChangedSignal();
 }
 
+std::string FFTManager::lastUsedPath() const
+{
+    traced_assert(compass_);
+    return compass_->lastUsedPath();
+}
+
 FFTsConfigurationDialog* FFTManager::configurationDialog()
 {
     if (!config_dialog_)
@@ -445,7 +451,7 @@ void FFTManager::loadDBFFTs()
 {
     traced_assert(!db_ffts_.size());
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_->dbInterface();
 
     // load from db
     if (db_interface.existsFFTsTable())

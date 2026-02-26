@@ -19,9 +19,6 @@
 #include "util/stringconv.h"
 #include "util/timeconv.h"
 #include "util/number.h"
-#include "compass.h"
-#include "dbcontentmanager.h"
-
 #include <boost/optional/optional_io.hpp>
 
 #include "traced_assert.h"
@@ -118,7 +115,7 @@ std::string BaseInfo::asStr() const
 {
     stringstream ss;
 
-    ss << "dbcont " << COMPASS::instance().dbContentManager().dbContentWithId(Number::recNumGetDBContId(record_num_))
+    ss << "dbcont_id " << Number::recNumGetDBContId(record_num_)
        << " ds_id " << ds_id_  << " line_id " << line_id_ << " rec_num " << record_num_
        << " ts " << Time::toString(timestamp_);
 

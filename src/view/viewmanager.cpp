@@ -59,7 +59,7 @@ ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
-    init_view_point_commands();
+    init_view_point_commands(compass_);
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
@@ -75,7 +75,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     main_tab_widget_ = main_tab_widget;
 
-    connect (&COMPASS::instance(), &COMPASS::appModeSwitchSignal, this, &ViewManager::appModeSwitchSlot);
+    connect (&compass_, &COMPASS::appModeSwitchSignal, this, &ViewManager::appModeSwitchSlot);
 
     // view point stuff
 
@@ -87,7 +87,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     traced_assert(view_points_widget_);
 
-    FilterManager& filter_man = COMPASS::instance().filterManager();
+    FilterManager& filter_man = compass_.filterManager();
 
     connect (this, &ViewManager::showViewPointSignal, &filter_man, &FilterManager::showViewPointSlot);
     connect (this, &ViewManager::unshowViewPointSignal, &filter_man, &FilterManager::unshowViewPointSlot);
@@ -235,7 +235,7 @@ void ViewManager::enableStoredReadSets()
 {
     loginf;
 
-    for (const auto& cont_it : COMPASS::instance().dbContentManager())
+    for (const auto& cont_it : compass_.dbContentManager())
     {
         logdbg << "stored readset for '" << cont_it.first << "'";
         tmp_stored_readset_[cont_it.first] = getReadSet(cont_it.first);
@@ -293,7 +293,7 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         if (!json_ok)
             return std::make_pair(false, err);
 
-        DBInterface& db_interface = COMPASS::instance().dbInterface();
+        DBInterface& db_interface = compass_.dbInterface();
 
         //delete existing viewpoints
         if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
@@ -337,7 +337,7 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
 
 void ViewManager::clearViewPoints()
 {
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_.dbInterface();
 
             //delete existing viewpoints
     if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
@@ -367,9 +367,9 @@ void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
     emit showViewPointSignal(current_viewable_);
 
     if (load_blocking)
-        COMPASS::instance().dbContentManager().loadBlocking();
+        compass_.dbContentManager().loadBlocking();
     else
-        COMPASS::instance().dbContentManager().load();
+        compass_.dbContentManager().load();
 }
 
 
@@ -437,7 +437,7 @@ void ViewManager::doViewPointAfterLoad ()
                << " max " << Time::toString(vp_ts_max);
     }
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     bool selection_changed = false;
     for (auto& dbcont_it : dbcont_man)
@@ -508,7 +508,7 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
 {
     loginf << "ts_min " << ts_min << " ts_max " << ts_max;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     bool selection_changed = false;
     for (auto& dbcont_it : dbcont_man)
@@ -872,7 +872,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
 
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
-    loginf << "app_mode " << COMPASS::instance().appModeStr();
+    loginf << "app_mode " << compass_.appModeStr();
 
     for (auto& view_it : views_)
     {

@@ -139,8 +139,8 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
 
     if (group_per_datasource_) // add by DS ID + Line ID
     {
-        DBContentManager&  dbcontent_man = COMPASS::instance().dbContentManager();
-        DataSourceManager& ds_man        = COMPASS::instance().dataSourceManager();
+        DBContentManager&  dbcontent_man = variableView()->compass().dbContentManager();
+        DataSourceManager& ds_man        = variableView()->compass().dataSourceManager();
 
         traced_assert(buffer.has<unsigned int>(
             dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name()));
@@ -505,7 +505,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
     loginf << "sel_cnt: 1 " << sel_cnt;
     sel_cnt = 0;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = variableView()->compass().dbContentManager();
 
     unsigned int index;
 

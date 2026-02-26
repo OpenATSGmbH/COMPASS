@@ -16,6 +16,7 @@
  */
 
 #include "asterixdecoderfile.h"
+#include "asteriximporttask.h"
 
 #include "asynctask.h"
 
@@ -33,10 +34,11 @@ const std::vector<std::string> ASTERIXDecoderFile::SupportedArchives = { ".zip",
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
 */
-ASTERIXDecoderFile::ASTERIXDecoderFile(ASTERIXImportSource::SourceType source_type,
+ASTERIXDecoderFile::ASTERIXDecoderFile(ASTERIXImportTask& task,
+                                       ASTERIXImportSource::SourceType source_type,
                                        ASTERIXImportSource& source,
                                        const ASTERIXImportTaskSettings* settings)
-:   ASTERIXDecoderBase(source, settings)
+:   ASTERIXDecoderBase(task, source, settings)
 ,   source_type_      (source_type)
 {
     traced_assert(source_.isFileType() && source_.sourceType() == fileSourceType());
@@ -121,7 +123,7 @@ void ASTERIXDecoderFile::processCurrentFile()
     }
     catch(const std::exception& e)
     {
-        COMPASS::instance().logError("ASTERIX Import") << "file '" << current_file.filename
+        task().compass().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' decode error '" << e.what() << "'";
 
         logerr << "decode error '" << e.what() << "'";
@@ -129,7 +131,7 @@ void ASTERIXDecoderFile::processCurrentFile()
     }
     catch(...)
     {
-        COMPASS::instance().logError("ASTERIX Import") << "file '" << current_file.filename
+        task().compass().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' unknown decode error";
 
         logerr << "unknown decode error";

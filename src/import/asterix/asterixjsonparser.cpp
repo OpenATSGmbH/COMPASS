@@ -42,9 +42,10 @@ using namespace Utils;
 
 
 ASTERIXJSONParser::ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
-                                     ASTERIXJSONParsingSchema* parent)
+                                     COMPASS& compass, ASTERIXJSONParsingSchema* parent)
     : Configurable(config, parent),
-      task_(task)
+      task_(task),
+      compass_(compass)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("category", &category_, 0u);
@@ -73,7 +74,7 @@ void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
 
     if (class_id == "JSONDataMapping")
     {
-        auto* mapping = new JSONDataMapping(child_json, this);
+        auto* mapping = new JSONDataMapping(child_json, this, compass_);
         mapping->mandatory(false);
         data_mappings_.emplace_back(mapping);
 
@@ -259,7 +260,7 @@ const std::vector<std::string>& ASTERIXJSONParser::notAddedJSONKeys() const
 DBContent& ASTERIXJSONParser::dbContent() const
 {
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
         throw runtime_error ("ASTERIXJSONParser: dbObject: dbcontbject '" + db_content_name_+ "' does not exist");
@@ -849,7 +850,7 @@ Qt::ItemFlags ASTERIXJSONParser::flags(const QModelIndex& index) const
 {
     if (!expert_mode_init_)
     {
-        expert_mode_ = COMPASS::instance().expertMode();
+        expert_mode_ = compass_.expertMode();
         expert_mode_init_ = true;
     }
 

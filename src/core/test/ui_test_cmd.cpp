@@ -93,7 +93,7 @@ void RTCommandUIInjection::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUISet::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString());
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -142,7 +142,7 @@ void RTCommandUISet::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIGet::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString());
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -236,7 +236,7 @@ void RTCommandUIGet::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIGetJSON::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString());
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -316,7 +316,7 @@ void RTCommandUIGetJSON::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIInject::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString());
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -367,7 +367,7 @@ void RTCommandUIInject::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIRefresh::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString());
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");

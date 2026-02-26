@@ -22,7 +22,7 @@
 ExcludedTimeWindowsFilterWidget::ExcludedTimeWindowsFilterWidget(ExcludedTimeWindowsFilter& filter)
     : DBFilterWidget(filter), filter_(filter)
 {
-    tw_widget_ = new TimeWindowCollectionWidget(filter_.timeWindows());
+    tw_widget_ = new TimeWindowCollectionWidget(filter_.dbContentManager(), filter_.timeWindows());
 
     int insert_row = child_layout_->rowCount();
 

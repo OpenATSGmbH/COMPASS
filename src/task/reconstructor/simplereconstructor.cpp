@@ -19,6 +19,7 @@
 #include "reconstructortask.h"
 #include "simplereconstructorwidget.h"
 #include "compass.h"
+#include "taskmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableset.h"
@@ -77,7 +78,7 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
 {
     dbContent::VariableSet read_set;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
             // ds id
     traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
@@ -156,7 +157,7 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
         read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
     }
 
-    read_set.add(dbContent::TargetReportAccessor::getReadSetFor(dbcontent_name));
+    read_set.add(dbContent::TargetReportAccessor::getReadSetFor(dbcontent_name, dbcont_man));
 
     return read_set;
 }

@@ -55,7 +55,7 @@ bool RTCommandGetConfigDataSources::run_impl()
 
 bool RTCommandGetConfigDataSources::checkResult_impl()
 {
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_->dataSourceManager();
 
     setJSONReply(ds_man.getSortedConfigDataSourcesAsJSON());
 
@@ -77,7 +77,7 @@ bool RTCommandGetDBDataSources::run_impl()
 
 bool RTCommandGetDBDataSources::checkResult_impl()
 {
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_->dataSourceManager();
 
     setJSONReply(ds_man.getSortedDBDataSourcesAsJSON());
 
@@ -97,7 +97,7 @@ bool RTCommandSetDataSources::run_impl()
 {
     loginf << "ds_json_str_ '" << ds_json_str_ << "'";
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_->dataSourceManager();
 
     try
     {

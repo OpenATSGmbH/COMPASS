@@ -55,7 +55,7 @@ void Projection::addAllCoordinateSystems()
         if (coordinate_systems_added_)
             return;
 
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& ds_man = proj_manager_.compass().dataSourceManager();
 
         for (const auto& ds_it : ds_man.dbDataSources())
         {

@@ -45,15 +45,12 @@ namespace
     }
 }
 
-LatexDocument::LatexDocument(const std::string& path, const std::string& filename)
-    : path_(path), filename_(filename)
+LatexDocument::LatexDocument(COMPASS& compass, const std::string& path, const std::string& filename)
+    : compass_(compass), path_(path), filename_(filename)
 {
     loginf << "path '" << path_ << "' filename '" << filename_ << "'";
 
-    //footer_left_  = COMPASS::instance().versionString(false, true);
-    //footer_right_ = COMPASS::instance().licenseeString(true);
-
-    footer_left_  = COMPASS::instance().licenseeString(true);
+    footer_left_  = compass_.licenseeString(true);
     footer_right_ = getLogoImage(0.5);
 }
 

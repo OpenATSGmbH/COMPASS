@@ -30,6 +30,7 @@ public:
     ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent);
 
     ViewPointsReportGeneratorDialog& dialog();
+    ViewManager& viewManager() { return view_manager_; }
 
     void run ();
     void cancel ();

@@ -16,7 +16,6 @@
  */
 
 #include "rtcommand_manager.h"
-#include "configjson.h"
 #include "rtcommand_string.h"
 #include "rtcommand_runner.h"
 #include "tcpserver.h"
@@ -42,16 +41,9 @@ RTCommandManager::CommandId RTCommandManager::command_count_ = 0;
 
 const std::string RTCommandManager::PingName = "ping";
 
-static ConfigJSON& rtCommandManagerConfigJSON()
-{
-    static std::unique_ptr<ConfigJSON> s_config;
-    if (!s_config)
-        s_config = std::make_unique<ConfigJSON>("rtcommand.json");
-    return *s_config;
-}
-
-RTCommandManager::RTCommandManager()
-    : Configurable(rtCommandManagerConfigJSON().json(), nullptr)
+RTCommandManager::RTCommandManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent),
+      compass_(*parent)
 {
     logdbg;
 
@@ -129,7 +121,7 @@ void RTCommandManager::run()
             {
                 loginf << "issuing command";
 
-                rtcommand::RTCommandRunner& cmd_runner = COMPASS::instance().rtCmdRunner();
+                rtcommand::RTCommandRunner& cmd_runner = compass_.rtCmdRunner();
 
                 std::future<std::vector<rtcommand::RTCommandResult>> current_result;
 
@@ -219,21 +211,6 @@ void RTCommandManager::shutdown()
     if (!started_)
         stopped_ = true;
 
-    //    if (active_db_job_)
-    //        active_db_job_->setObsolete();
-
-    //    for (auto job_it = queued_db_jobs_.unsafe_begin(); job_it != queued_db_jobs_.unsafe_end();
-    //         ++job_it)
-    //        (*job_it)->setObsolete();
-
-    //    while (hasAnyJobs())
-    //    {
-    //        loginf << "waiting on jobs to finish: db " << hasDBJobs()
-    //               << " blocking " << hasBlockingJobs() << " non-locking " << hasNonBlockingJobs();
-
-    //        msleep(1000);
-    //    }
-
     msleep(100);
 
     while (!stopped_)
@@ -293,7 +270,7 @@ rtcommand::IssueInfo RTCommandManager::addCommand(const std::string& cmd_str, So
     }
 
     //commands from the server are only added when app is properly running
-    if (source == Source::Server && COMPASS::instance().appState() != AppState::Running)
+    if (source == Source::Server && compass_.appState() != AppState::Running)
     {
         rtcommand::IssueInfo info;
         info.issued        = false;

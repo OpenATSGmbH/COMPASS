@@ -27,6 +27,7 @@ class QLineEdit;
 class QToolButton;
 class QListWidgetItem;
 class QListWidget;
+class RTCommandManager;
 
 namespace rtcommand
 {
@@ -38,7 +39,7 @@ class RTCommandBacklogWidget : public QWidget
 {
     Q_OBJECT
 public:
-    RTCommandBacklogWidget(QWidget* parent = nullptr);
+    RTCommandBacklogWidget(RTCommandManager& rt_man, QWidget* parent = nullptr);
     virtual ~RTCommandBacklogWidget() = default;
 
 signals:
@@ -48,6 +49,7 @@ private:
     void updateList();
     void acceptCommandItem(QListWidgetItem* item);
 
+    RTCommandManager& rt_man_;
     QListWidget* command_list_ = nullptr;
 };
 
@@ -57,7 +59,7 @@ private:
 class RTCommandBacklogDialog : public QDialog
 {
 public:
-    RTCommandBacklogDialog(QWidget* parent = nullptr);
+    RTCommandBacklogDialog(RTCommandManager& rt_man, QWidget* parent = nullptr);
     virtual ~RTCommandBacklogDialog() = default;
 
     const QString& selectedCommand() const { return selected_command_; }
@@ -72,7 +74,7 @@ private:
 class RTCommandShell : public QWidget 
 {
 public:
-    RTCommandShell(QWidget* parent = nullptr);
+    RTCommandShell(RTCommandManager& rt_man, QWidget* parent = nullptr);
     virtual ~RTCommandShell() = default;
 
 private:
@@ -97,6 +99,8 @@ private:
 
     void lastCmd();
     void nextCmd();
+
+    RTCommandManager& rt_man_;
 
     QTextEdit*   cmd_shell_;
     QLineEdit*   cmd_edit_;

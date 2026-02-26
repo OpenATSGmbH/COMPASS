@@ -28,6 +28,7 @@
 
 #include <QObject>
 
+class COMPASS;
 class TaskResult;
 class TaskManager;
 
@@ -52,6 +53,8 @@ public:
     ReportExport(nlohmann::json& config, TaskManager* parent);
     virtual ~ReportExport();
 
+    COMPASS& compass() const;
+
     ResultT<nlohmann::json> exportReport(TaskResult& result,
                                          ReportExportMode mode,
                                          const std::string& fn,
@@ -69,6 +72,8 @@ signals:
     void progressChanged();
 
 private:
+    TaskManager& task_manager_;
+
     std::unique_ptr<ReportExporter> createExporter(ReportExportMode mode,
                                                    const std::string& fn,
                                                    const std::string& resource_dir,

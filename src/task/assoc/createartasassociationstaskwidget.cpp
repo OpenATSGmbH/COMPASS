@@ -19,6 +19,8 @@
 #include "createartasassociationstask.h"
 #include "dbdatasourceselectioncombobox.h"
 #include "compass.h"
+#include "taskmanager.h"
+#include "datasourcemanager.h"
 #include "dbcontent/dbcontentmanager.h"
 //#include "dbcontent/dbcontent.h"
 //#include "dbcontent/variable/variable.h"
@@ -55,9 +57,10 @@ CreateARTASAssociationsTaskWidget::CreateARTASAssociationsTaskWidget(
         // tracker data source
         grid->addWidget(new QLabel("CAT062 Data Source"), row_cnt, 0);
 
-        traced_assert(COMPASS::instance().dbContentManager().existsDBContent("CAT062"));
+        COMPASS& compass = task_.manager().compass();
+        traced_assert(compass.dbContentManager().existsDBContent("CAT062"));
 
-        ds_combo_ = new DBDataSourceComboBox();
+        ds_combo_ = new DBDataSourceComboBox(compass.dataSourceManager());
         ds_combo_->showDBContentOnly("CAT062");
         connect(ds_combo_, &DBDataSourceComboBox::changedSource, this,
                 &CreateARTASAssociationsTaskWidget::currentDataSourceChangedSlot);

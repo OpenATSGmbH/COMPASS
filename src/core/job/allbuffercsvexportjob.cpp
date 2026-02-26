@@ -90,7 +90,7 @@ void AllBufferCSVExportJob::run_impl()
         output_file << ss.str() << "\n";
 
         // write the data
-        DBContentManager& manager = COMPASS::instance().dbContentManager();
+        DBContentManager& manager = read_set_->dbContentManager();
 
         for (auto& row_index_it : row_indexes_)
         {

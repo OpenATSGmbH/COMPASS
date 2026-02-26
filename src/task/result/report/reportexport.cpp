@@ -22,6 +22,7 @@
 #include "task/result/report/reportexporterdocx.h"
 
 #include "taskmanager.h"
+#include "compass.h"
 
 #include "system.h"
 #include "logger.h"
@@ -57,7 +58,7 @@ namespace ResultReport
 // }
 
 ReportExport::ReportExport(nlohmann::json& config, TaskManager* parent)
-:   Configurable(config, parent)
+:   Configurable(config, parent), task_manager_(*parent)
 {
     registerParameter("author"           , &settings_.author           , ReportExportSettings().author           );
     registerParameter("open_created_file", &settings_.open_created_file, ReportExportSettings().open_created_file);
@@ -80,6 +81,11 @@ ReportExport::ReportExport(nlohmann::json& config, TaskManager* parent)
  */
 ReportExport::~ReportExport()
 {
+}
+
+COMPASS& ReportExport::compass() const
+{
+    return task_manager_.compass();
 }
 
 /**

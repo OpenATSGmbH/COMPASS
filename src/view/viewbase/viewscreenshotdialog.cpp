@@ -17,6 +17,7 @@
 
 #include "viewscreenshotdialog.h"
 #include "view.h"
+#include "viewmanager.h"
 #include "viewwidget.h"
 #include "timeconv.h"
 #include "compass.h"
@@ -276,7 +277,7 @@ void ViewScreenshotDialog::save()
     auto timestamp = Utils::Time::toString(Utils::Time::currentUTCTime());
 
     std::string fn_init = view_->classId() + "_" + timestamp + ".png";
-    std::string path    = COMPASS::instance().lastUsedPath() + "/" + fn_init;
+    std::string path    = view_->viewManager().compass().lastUsedPath() + "/" + fn_init;
 
     QString fn = QFileDialog::getSaveFileName(this, "Select Screenshot File", QString::fromStdString(path), "*.png");
     if (fn.isEmpty())
@@ -289,7 +290,7 @@ void ViewScreenshotDialog::save()
     QApplication::restoreOverrideCursor();
 
     if (ok)
-        COMPASS::instance().lastUsedPath(Files::getDirectoryFromPath(fn.toStdString().c_str()));
+        view_->viewManager().compass().lastUsedPath(Files::getDirectoryFromPath(fn.toStdString().c_str()));
     else
         QMessageBox::critical(this, "Error", "Screenshot could not be written.");
 

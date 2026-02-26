@@ -19,6 +19,7 @@
 #include "ui_test_find.h"
 #include "rtcommand.h"
 #include "rtcommand_wait_condition.h"
+#include "compass.h"
 
 #include <QSignalSpy>
 
@@ -27,7 +28,10 @@ namespace rtcommand
 
 /**
 */
-RTCommandRunnerStash::RTCommandRunnerStash() = default;
+RTCommandRunnerStash::RTCommandRunnerStash(COMPASS& compass)
+:   compass_(compass)
+{
+}
 
 /**
 */
@@ -46,7 +50,7 @@ bool RTCommandRunnerStash::spySignalReceived() const
 */
 bool RTCommandRunnerStash::spyForSignal(const QString& obj_name, const QString& signal_name)
 {
-    spy_.reset(WaitConditionSignal::createSpy(obj_name, signal_name));
+    spy_.reset(WaitConditionSignal::createSpy(obj_name, signal_name, compass_));
     return (spy_ != nullptr);
 }
 
@@ -66,6 +70,7 @@ bool RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) cons
     if (!wrapper.command)
         return false;
 
+    wrapper.command->compass_ = &compass_;
     return wrapper.command->run();
 }
 
@@ -75,7 +80,10 @@ bool RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) cons
 void RTCommandRunnerStash::executeCommandAsync(RTCommandMetaTypeWrapper wrapper) const
 {
     if (wrapper.command)
+    {
+        wrapper.command->compass_ = &compass_;
         wrapper.command->run();
+    }
 }
 
 /**
@@ -86,6 +94,7 @@ bool RTCommandRunnerStash::postCheckCommand(RTCommandMetaTypeWrapper wrapper) co
     if (!wrapper.command)
         return false;
 
+    wrapper.command->compass_ = &compass_;
     return wrapper.command->checkResult();
 }
 

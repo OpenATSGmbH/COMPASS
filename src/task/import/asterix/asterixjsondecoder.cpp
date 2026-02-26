@@ -189,9 +189,10 @@ private:
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
 */
-ASTERIXJSONDecoder::ASTERIXJSONDecoder(ASTERIXImportSource& source,
+ASTERIXJSONDecoder::ASTERIXJSONDecoder(ASTERIXImportTask& task,
+                                       ASTERIXImportSource& source,
                                        const ASTERIXImportTaskSettings* settings)
-:   ASTERIXDecoderFile(ASTERIXImportSource::SourceType::FileJSON, source, settings)
+:   ASTERIXDecoderFile(task, ASTERIXImportSource::SourceType::FileJSON, source, settings)
 {
 }
 

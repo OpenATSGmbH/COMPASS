@@ -26,6 +26,7 @@
 
 #include "global.h"
 #include "compass.h"
+#include "viewmanager.h"
 #include "logger.h"
 
 const std::string ViewVariable::ParamDataVar     = "data_var";
@@ -84,9 +85,9 @@ bool ViewVariable::hasVariable () const
         return false;
 
     if (settings_.data_var_dbcont == META_OBJECT_NAME)
-        return COMPASS::instance().dbContentManager().existsMetaVariable(settings_.data_var_name);
+        return view_->viewManager().compass().dbContentManager().existsMetaVariable(settings_.data_var_name);
     else
-        return COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name);
+        return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name);
 }
 
 /**
@@ -157,9 +158,9 @@ dbContent::Variable& ViewVariable::variable()
 {
     traced_assert(hasVariable());
     traced_assert(!isMetaVariable());
-    traced_assert(COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
+    traced_assert(view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
-    return COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
+    return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
 }
 
 /**
@@ -168,9 +169,9 @@ const dbContent::Variable& ViewVariable::variable() const
 {
     traced_assert(hasVariable());
     traced_assert(!isMetaVariable());
-    traced_assert(COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
+    traced_assert(view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
-    return COMPASS::instance().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
+    return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
 }
 
 /**
@@ -223,7 +224,7 @@ dbContent::MetaVariable& ViewVariable::metaVariable()
     traced_assert(hasVariable());
     traced_assert(isMetaVariable());
 
-    return COMPASS::instance().dbContentManager().metaVariable(settings_.data_var_name);
+    return view_->viewManager().compass().dbContentManager().metaVariable(settings_.data_var_name);
 }
 
 /**
@@ -233,7 +234,7 @@ const dbContent::MetaVariable& ViewVariable::metaVariable() const
     traced_assert(hasVariable());
     traced_assert(isMetaVariable());
 
-    return COMPASS::instance().dbContentManager().metaVariable(settings_.data_var_name);
+    return view_->viewManager().compass().dbContentManager().metaVariable(settings_.data_var_name);
 }
 
 /**

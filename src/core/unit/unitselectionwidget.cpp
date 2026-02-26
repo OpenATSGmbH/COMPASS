@@ -22,8 +22,8 @@
 #include "unit.h"
 #include "unitmanager.h"
 
-UnitSelectionWidget::UnitSelectionWidget(std::string& dimension, std::string& unit)
-    : QPushButton(), dimension_(&dimension), unit_(&unit)
+UnitSelectionWidget::UnitSelectionWidget(UnitManager& unit_man, std::string& dimension, std::string& unit)
+    : QPushButton(), unit_man_(unit_man), dimension_(&dimension), unit_(&unit)
 {
     logdbg;
 
@@ -36,7 +36,8 @@ UnitSelectionWidget::UnitSelectionWidget(std::string& dimension, std::string& un
     connect(this, &UnitSelectionWidget::clicked, this, &UnitSelectionWidget::showMenuSlot);
 }
 
-UnitSelectionWidget::UnitSelectionWidget()
+UnitSelectionWidget::UnitSelectionWidget(UnitManager& unit_man)
+    : unit_man_(unit_man)
 {
     pointers_set_ = false;
     setDisabled(true);
@@ -52,7 +53,7 @@ void UnitSelectionWidget::createMenu()
 {
     menu_.addAction("");
 
-    for (auto& it : UnitManager::instance().dimensions())
+    for (auto& it : unit_man_.dimensions())
     {
         const std::map<std::string, Unit*>& units = it.second->units();
 

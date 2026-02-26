@@ -38,7 +38,7 @@ class DBScopedReader;
 class SQLiteConnection : public DBConnection
 {
 public:
-    SQLiteConnection(SQLiteInstance* instance, sqlite3* db_handle, bool verbose);
+    SQLiteConnection(DBContentManager& dbcont_man, SQLiteInstance* instance, sqlite3* db_handle, bool verbose);
     virtual ~SQLiteConnection();
 
     std::shared_ptr<DBScopedPrepare> prepareStatement(const std::string& statement, 

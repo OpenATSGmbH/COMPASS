@@ -28,6 +28,7 @@
 #include <boost/optional.hpp>
 
 class Buffer;
+class DBContentManager;
 class DBInstance;
 class DBCommand;
 class DBCommandList;
@@ -46,7 +47,7 @@ class DBConnection
 public:
     typedef std::map<std::string, DBTableInfo> TableInfo;
 
-    DBConnection(DBInstance* instance, bool verbose);
+    DBConnection(DBContentManager& dbcont_man, DBInstance* instance, bool verbose);
     virtual ~DBConnection();
 
     db::SQLConfig sqlConfiguration(bool verbose = false) const;
@@ -140,6 +141,7 @@ protected:
 private:
     ResultT<DBTableInfo> getColumnList(const std::string& table);
 
+    DBContentManager& dbcont_man_;
     DBInstance* instance_;
     bool        connected_ = false;
 

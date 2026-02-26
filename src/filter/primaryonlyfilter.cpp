@@ -39,7 +39,7 @@ PrimaryOnlyFilter::~PrimaryOnlyFilter()
 
 bool PrimaryOnlyFilter::filters(const std::string& dbcontent_name)
 {
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = dbContentManager();
 
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
         return true;
@@ -62,7 +62,7 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
 
     stringstream ss;
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = dbContentManager();
 
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
     {
@@ -178,7 +178,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
 {
     std::vector<unsigned int> to_be_removed;
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = dbContentManager();
 
     NullableVector<unsigned int>* m3a_vec {nullptr};
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))

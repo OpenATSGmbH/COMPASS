@@ -29,6 +29,8 @@
 
 class DataSourcesFilter;
 class COMPASS;
+class DBContentManager;
+class DataSourceManager;
 class FilterManagerWidget;
 class ViewableDataConfig;
 class Buffer;
@@ -61,7 +63,7 @@ public slots:
 
 public:
     // FilterManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
-    FilterManager(nlohmann::json& config, COMPASS* parent);
+    FilterManager(nlohmann::json& config, COMPASS& compass);
     virtual ~FilterManager();
 
     bool useFilters() const;
@@ -94,7 +96,14 @@ public:
 
     void resetToStartupConfiguration();
 
+    COMPASS& compass() { return compass_; }
+    DBContentManager& dbContentManager() { return dbcontent_man_; }
+    DataSourceManager& dataSourceManager();
+
 protected:
+    COMPASS& compass_;
+    DBContentManager& dbcontent_man_;
+
     // database id, resets if changed
     std::string db_id_;
     bool use_filters_{false};

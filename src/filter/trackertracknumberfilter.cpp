@@ -57,10 +57,10 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
     stringstream ss;
 
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(dbContentManager().metaVariable(
                 DBContent::meta_var_ds_id_.name()).existsIn(dbcontent_name));
 
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(dbContentManager().metaVariable(
                 DBContent::meta_var_track_num_.name()).existsIn(dbcontent_name));
 
     // ds_id -> line_id -> values
@@ -68,13 +68,13 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
     if (active_ && active_tns.size())
     {
-        dbContent::Variable& ds_id_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& ds_id_var = dbContentManager().metaVariable(
                     DBContent::meta_var_ds_id_.name()).getFor(dbcontent_name);
 
-        dbContent::Variable& line_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& line_var = dbContentManager().metaVariable(
                     DBContent::meta_var_line_id_.name()).getFor(dbcontent_name);
 
-        dbContent::Variable& tn_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& tn_var = dbContentManager().metaVariable(
                     DBContent::meta_var_track_num_.name()).getFor(dbcontent_name);
 
         if (!first)
@@ -180,7 +180,7 @@ std::map<unsigned int, std::map<unsigned int, std::string>> TrackerTrackNumberFi
 
     std::map<unsigned int, std::map<unsigned int, std::string>> active_values;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (auto& ds_it : dataSourceManager().dbDataSources())
     {
         if (ds_it->dsType() != "Tracker")
             continue;
@@ -217,7 +217,7 @@ std::map<std::string, std::map<std::string, std::string>> TrackerTrackNumberFilt
 
     std::map<std::string, std::map<std::string, std::string>> active_values;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (auto& ds_it : dataSourceManager().dbDataSources())
     {
         if (ds_it->dsType() != "Tracker")
             continue;

@@ -337,6 +337,8 @@ public:
     bool containsStatusContent() const;
     bool isReferenceContent() const;
 
+    COMPASS& compass() { return compass_; }
+
 protected:
     void checkStaticVariable(const Property& property);
 

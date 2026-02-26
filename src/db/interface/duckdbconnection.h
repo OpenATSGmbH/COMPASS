@@ -42,7 +42,7 @@ class PropertyList;
 class DuckDBConnection : public DBConnection
 {
 public:
-    DuckDBConnection(DuckDBInstance* instance, bool verbose);
+    DuckDBConnection(DBContentManager& dbcont_man, DuckDBInstance* instance, bool verbose);
     virtual ~DuckDBConnection();
 
     std::shared_ptr<DuckDBScopedAppender> createAppender(const std::string& table);

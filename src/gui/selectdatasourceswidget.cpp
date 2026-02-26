@@ -18,7 +18,6 @@
 #include "selectdatasourceswidget.h"
 #include "logger.h"
 #include "datasourcemanager.h"
-#include "compass.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -29,9 +28,10 @@
 using namespace std;
 
 SelectDataSourcesWidget::SelectDataSourcesWidget(
+        DataSourceManager& ds_man,
         const std::string& title, const std::string& ds_type,
         QWidget* parent, Qt::WindowFlags f)
-    : QFrame(parent, f), title_(title), ds_type_(ds_type)
+    : QFrame(parent, f), ds_man_(ds_man), title_(title), ds_type_(ds_type)
 {
     setFrameStyle(QFrame::Panel | QFrame::Raised);
     setLineWidth(2);
@@ -78,7 +78,7 @@ void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selecti
     unsigned int col, row;
     unsigned int cnt = 0;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = ds_man_;
 
     unsigned int ds_id;
     string ds_id_str;

@@ -19,6 +19,7 @@
 #include "managesectorstask.h"
 #include "logger.h"
 #include "compass.h"
+#include "taskmanager.h"
 #include "evaluationmanager.h"
 #include "sector.h"
 #include "airspace.h"
@@ -63,9 +64,9 @@ ManageSectorsTaskWidget::ManageSectorsTaskWidget(ManageSectorsTask& task, QWidge
 
     updateSectorTableSlot();
 
-    QObject::connect(&COMPASS::instance(), &COMPASS::databaseOpenedSignal,
+    QObject::connect(&task_.manager().compass(), &COMPASS::databaseOpenedSignal,
                      this, &ManageSectorsTaskWidget::updateSectorTableSlot);
-    QObject::connect(&COMPASS::instance(), &COMPASS::databaseClosedSignal,
+    QObject::connect(&task_.manager().compass(), &COMPASS::databaseClosedSignal,
                      this, &ManageSectorsTaskWidget::updateSectorTableSlot);
 
     setLayout(main_layout_);
@@ -179,7 +180,7 @@ void ManageSectorsTaskWidget::addManageTab()
                 &ManageSectorsTaskWidget::importAirSpaceSectorsSlot);
         button_layout->addWidget(import_airspace_button_);
 
-        import_airspace_button_->setVisible(!COMPASS::instance().isAppImage());
+        import_airspace_button_->setVisible(!task_.manager().compass().isAppImage());
 
         manage_tab_layout->addLayout(button_layout);
     }
@@ -198,7 +199,7 @@ void ManageSectorsTaskWidget::updateSectorTableSlot()
 
     sector_table_->blockSignals(true);
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
 
     sector_table_->setDisabled(true); // otherwise first element is edited after
     sector_table_->clearContents();
@@ -357,7 +358,7 @@ void ManageSectorsTaskWidget::addFileSlot()
 {
     QFileDialog dialog(this);
     dialog.setWindowTitle("Add Sector File(s)");
-    dialog.setDirectory(COMPASS::instance().lastUsedPath().c_str());
+    dialog.setDirectory(task_.manager().compass().lastUsedPath().c_str());
     dialog.setFileMode(QFileDialog::ExistingFiles);
     // dialog.setNameFilter(trUtf8("Splits (*.000 *.001)"));
     QStringList fileNames;
@@ -506,7 +507,7 @@ void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
     loginf << "sector_id " << sector_id
            << " col_name " << col_name << " text '" << text << "'";
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
 
     traced_assert(eval_man.hasSector(sector_id));
 
@@ -586,7 +587,7 @@ void ManageSectorsTaskWidget::changeSectorColorSlot()
 
     unsigned int sector_id = sector_id_var.toUInt();
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
 
     traced_assert(eval_man.hasSector(sector_id));
 
@@ -617,7 +618,7 @@ void ManageSectorsTaskWidget::deleteSectorSlot()
 
     unsigned int sector_id = sector_id_var.toUInt();
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
 
     traced_assert(eval_man.hasSector(sector_id));
 
@@ -632,7 +633,7 @@ void ManageSectorsTaskWidget::exportSectorsSlot ()
 {
     loginf;
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -659,7 +660,7 @@ void ManageSectorsTaskWidget::clearSectorsSlot ()
 {
     loginf;
 
-    COMPASS::instance().evaluationManager().deleteAllSectors();
+    task_.manager().compass().evaluationManager().deleteAllSectors();
 
     updateSectorTableSlot();
 }
@@ -670,7 +671,7 @@ void ManageSectorsTaskWidget::importSectorsSlot ()
 
     QString filename =
         QFileDialog::getOpenFileName(nullptr, "Import Sectors from JSON",
-                                     COMPASS::instance().lastUsedPath().c_str(), "*.json");
+                                     task_.manager().compass().lastUsedPath().c_str(), "*.json");
 
     if (filename.size() > 0)
     {
@@ -686,7 +687,7 @@ void ManageSectorsTaskWidget::importSectorsJSON (const std::string& filename)
 
     traced_assert(Files::fileExists(filename));
 
-    COMPASS::instance().evaluationManager().importSectors(filename);
+    task_.manager().compass().evaluationManager().importSectors(filename);
 
     updateSectorTableSlot();
 }
@@ -697,7 +698,7 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsSlot()
 
     QString filename =
         QFileDialog::getOpenFileName(nullptr, "Import Air Space Sectors from JSON",
-                                     COMPASS::instance().lastUsedPath().c_str(), "*.json");
+                                     task_.manager().compass().lastUsedPath().c_str(), "*.json");
 
     if (filename.isEmpty())
         return;
@@ -711,7 +712,7 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsJSON(const std::string& filen
 
     traced_assert(Files::fileExists(filename));
 
-    auto max_sector_id = COMPASS::instance().evaluationManager().getMaxSectorId();
+    auto max_sector_id = task_.manager().compass().evaluationManager().getMaxSectorId();
 
     AirSpace air_space;
 
@@ -791,7 +792,7 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsJSON(const std::string& filen
     if (sectors_to_import.empty())
         return;
 
-    if (!COMPASS::instance().evaluationManager().importAirSpace(air_space, sectors_to_import))
+    if (!task_.manager().compass().evaluationManager().importAirSpace(air_space, sectors_to_import))
         QMessageBox::critical(this, "Error", "Importing air space sectors failed.");
 
     updateSectorTableSlot();

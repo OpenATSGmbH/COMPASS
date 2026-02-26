@@ -16,7 +16,7 @@
  */
 
 #include "jobmanager.h"
-#include "configurationmanager.h"
+#include "compass.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -902,8 +902,8 @@ void JobManagerThreadPool::setJobsObsolete()
  * JobManager
  *************************************************************************************/
 
-JobManager::JobManager()
-:   Configurable(ConfigurationManager::getInstance().getRootConfigJSON("JobManager", "JobManager0").json(), nullptr)
+JobManager::JobManager(nlohmann::json& config, COMPASS* parent)
+:   Configurable(config, parent)
 {
     logdbg;
 }

@@ -16,13 +16,13 @@
  */
 
 #include "sqlgenerator.h"
-#include "compass.h"
 #include "buffer.h"
 #include "dbcommand.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "logger.h"
+#include "logmodel.h"
 #include "property.h"
 #include "propertylist.h"
 #include "source/dbdatasource.h"
@@ -44,8 +44,9 @@ using namespace dbContent;
 
 /**
  */
-SQLGenerator::SQLGenerator(const db::SQLConfig& config) 
-:   config_(config)
+SQLGenerator::SQLGenerator(const db::SQLConfig& config, DBContentManager& dbcont_man)
+:   config_(config),
+    dbcont_man_(dbcont_man)
 {
 }
 
@@ -80,18 +81,16 @@ string SQLGenerator::getCreateTableStatement(const DBContent& object)
     std::vector<db::Index> indices;
     if (config_.indexing)
     {
-        auto& dbcont_man = COMPASS::instance().dbContentManager();
-
         indices.emplace_back("TIMESTAMP_INDEX_" + object.name(), 
-                             dbcont_man.metaGetVariable(object.name(), DBContent::meta_var_timestamp_).dbColumnName());
+                             dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_timestamp_).dbColumnName());
         indices.emplace_back("DS_ID_INDEX_" + object.name(), 
-                             dbcont_man.metaGetVariable(object.name(), DBContent::meta_var_ds_id_).dbColumnName());
+                             dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_ds_id_).dbColumnName());
         indices.emplace_back("LINE_ID_INDEX_" + object.name(), 
-                             dbcont_man.metaGetVariable(object.name(), DBContent::meta_var_line_id_).dbColumnName());
-        if (dbcont_man.metaCanGetVariable(object.name(), DBContent::meta_var_utn_))
+                             dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_line_id_).dbColumnName());
+        if (dbcont_man_.metaCanGetVariable(object.name(), DBContent::meta_var_utn_))
         {
             indices.emplace_back("UTN_INDEX_" + object.name(), 
-                                 dbcont_man.metaGetVariable(object.name(), DBContent::meta_var_utn_).dbColumnName());
+                                 dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_utn_).dbColumnName());
         }
     }
 
@@ -307,10 +306,8 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const std::string& tab
 std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(
         const DBContent& dbcontent, boost::posix_time::ptime before_timestamp)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     stringstream ss;
-    ss << dbcont_man.metaGetVariable(dbcontent.name(), DBContent::meta_var_timestamp_).dbColumnName();
+    ss << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_timestamp_).dbColumnName();
     ss << " < " << Time::toLong(before_timestamp);
 
     return getDeleteCommand(dbcontent.dbTableName(), ss.str());
@@ -326,15 +323,13 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcon
 /**
  */
 std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcontent, 
-                                                          unsigned int sac, 
+                                                          unsigned int sac,
                                                           unsigned int sic)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     stringstream ss;
-    ss << dbcont_man.metaGetVariable(dbcontent.name(), DBContent::meta_var_sac_id_).dbColumnName() << " = " << sac
+    ss << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sac_id_).dbColumnName() << " = " << sac
        << " AND "
-       << dbcont_man.metaGetVariable(dbcontent.name(), DBContent::meta_var_sic_id_).dbColumnName() << " = " << sic;
+       << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sic_id_).dbColumnName() << " = " << sic;
 
     return getDeleteCommand(dbcontent.dbTableName(), ss.str());
 }
@@ -342,18 +337,16 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcon
 /**
  */
 std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcontent, 
-                                                          unsigned int sac, 
-                                                          unsigned int sic, 
+                                                          unsigned int sac,
+                                                          unsigned int sic,
                                                           unsigned int line_id)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     stringstream ss;
-    ss << dbcont_man.metaGetVariable(dbcontent.name(), DBContent::meta_var_sac_id_).dbColumnName() << " = " << sac
+    ss << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sac_id_).dbColumnName() << " = " << sac
        << " AND "
-       << dbcont_man.metaGetVariable(dbcontent.name(), DBContent::meta_var_sic_id_).dbColumnName() << " = " << sic
+       << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sic_id_).dbColumnName() << " = " << sic
        << " AND "
-       << dbcont_man.metaGetVariable(dbcontent.name(), DBContent::meta_var_line_id_).dbColumnName() << " = " << line_id;
+       << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_line_id_).dbColumnName() << " = " << line_id;
 
        return getDeleteCommand(dbcontent.dbTableName(), ss.str());
 }

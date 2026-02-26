@@ -46,7 +46,8 @@ using namespace nlohmann;
 ScatterPlotViewDataSource::ScatterPlotViewDataSource(nlohmann::json& config,
                                                      ScatterPlotView* parent)
     : QObject(),
-      Configurable(config, parent)
+      Configurable(config, parent),
+      view_(parent)
 {
     createSubConfigurables();
 }
@@ -72,7 +73,7 @@ void ScatterPlotViewDataSource::generateSubConfigurable(nlohmann::json& child_js
     if (class_id.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
-        set_ = new dbContent::VariableOrderedSet(child_json, this);
+        set_ = new dbContent::VariableOrderedSet(child_json, view_->compass().dbContentManager(), this);
     }
     else
         throw std::runtime_error(
@@ -86,7 +87,7 @@ void ScatterPlotViewDataSource::checkSubConfigurables()
         generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = set_->dbContentManager();
 
         if (dbcont_man.existsMetaVariable("rec_num"))
             set_->add(dbcont_man.metaVariable("rec_num"));
@@ -146,7 +147,7 @@ void ScatterPlotViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 
 bool ScatterPlotViewDataSource::addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = set_->dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -180,7 +181,7 @@ bool ScatterPlotViewDataSource::addTemporaryVariable (const std::string& dbconte
 
 void ScatterPlotViewDataSource::removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = set_->dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {

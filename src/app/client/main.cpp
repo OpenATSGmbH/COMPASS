@@ -16,7 +16,6 @@
  */
 
 #include "client.h"
-#include "compass.h"
 #include "cxa_throw_hook.h"
 #include "logger.h"
 #include "msghandler.h"
@@ -168,13 +167,10 @@ int main(int argc, char** argv)
             return 0;
             // Alternative: _exit(0) to skip static destructors entirely
 
-        // note: do not use COMPASS::instance functions here
-
         if (!client.run())
         {
-            COMPASS::instance().shutdown();
             return -1;
-            // Alternative: _exit(1) to skip static destructors entirely
+            // compass_ is destroyed in Client's destructor which calls shutdown()
         }
 
         return client.exec();

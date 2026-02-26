@@ -39,7 +39,9 @@
 
 using namespace Utils;
 
-FilterGeneratorDialog::FilterGeneratorDialog(QWidget* parent) : QDialog(parent)
+FilterGeneratorDialog::FilterGeneratorDialog(FilterManager& filter_man, QWidget* parent)
+:   QDialog(parent),
+    filter_man_(filter_man)
 {
     setWindowTitle(tr("Add New Filter"));
 
@@ -77,7 +79,7 @@ void FilterGeneratorDialog::createGUIElements()
     label_var->setFont(font_bold);
     condition_layout->addWidget(label_var, 0, 0);
 
-    condition_variable_widget_ = new dbContent::VariableSelectionWidget();
+    condition_variable_widget_ = new dbContent::VariableSelectionWidget(filter_man_.dbContentManager());
     condition_variable_widget_->setMinimumWidth(200);
     condition_variable_widget_->showMetaVariables(true);
     condition_variable_widget_->showEmptyVariable(true);
@@ -228,7 +230,7 @@ void FilterGeneratorDialog::updateAddButton()
     if (!add_button_)
         return;
 
-    auto& filter_man = COMPASS::instance().filterManager();
+    auto& filter_man = filter_man_;
 
     bool has_name = filter_name_ && !filter_name_->text().isEmpty()
                     && !filter_man.hasFilter(filter_name_->text().toStdString());
@@ -299,7 +301,7 @@ void FilterGeneratorDialog::accept()
 
     std::string filter_name = filter_name_->text().toStdString();
 
-    auto& filter_man = COMPASS::instance().filterManager();
+    auto& filter_man = filter_man_;
 
     traced_assert(!filter_man.hasFilter(filter_name));
     assert (!data_conditions_.empty());

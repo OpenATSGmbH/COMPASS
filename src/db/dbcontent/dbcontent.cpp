@@ -174,7 +174,7 @@ const Property DBContent::selected_var {"selected", PropertyDataType::BOOL};
 
 DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
     : Configurable(config, parent)
-    , compass_(*parent->parentConfigurable())
+    , compass_(parent->compass())
     , dbcont_manager_(*parent)
 {
     registerParameter("name", &name_, std::string("Undefined"));
@@ -416,7 +416,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     string filter_clause;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     dbContent::VariableSet read_set_copy = read_set;
 
@@ -507,7 +507,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     if (use_filters)
     {
-        string filter_sql = COMPASS::instance().filterManager().getSQLCondition(name_, read_set_copy);
+        string filter_sql = compass_.filterManager().getSQLCondition(name_, read_set_copy);
 
         if (filter_sql.size())
         {
@@ -554,7 +554,7 @@ void DBContent::loadFiltered(dbContent::VariableSet& read_set,
     read_set.add(dbcont_manager_.metaGetVariable(name_, DBContent::meta_var_line_id_));
 
     read_job_ = shared_ptr<DBContentReadDBJob>(
-                new DBContentReadDBJob(COMPASS::instance().dbInterface(), *this, read_set, custom_filter_clause));
+                new DBContentReadDBJob(compass_.dbInterface(), *this, read_set, custom_filter_clause));
 
     connect(read_job_.get(), &DBContentReadDBJob::intermediateSignal,
             this, &DBContent::readJobIntermediateSlot, Qt::QueuedConnection);
@@ -563,7 +563,7 @@ void DBContent::loadFiltered(dbContent::VariableSet& read_set,
     connect(read_job_.get(), &DBContentReadDBJob::doneSignal,
             this, &DBContent::readJobDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(read_job_);
+    compass_.jobManager().addDBJob(read_job_);
 }
 
 /**
@@ -641,7 +641,7 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 
     traced_assert(buffer->has<boost::posix_time::ptime>(timestamp_col_str));
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     NullableVector<unsigned int>& datasource_vec = buffer->get<unsigned int>(datasource_col_str);
     NullableVector<unsigned int>& line_vec = buffer->get<unsigned int>(line_col_str);
@@ -731,14 +731,14 @@ void DBContent::updateData(Variable& key_var, shared_ptr<Buffer> buffer)
     buffer->transformVariables(list, false);
 
     update_job_ =
-            make_shared<UpdateBufferDBJob>(COMPASS::instance().dbInterface(), *this, key_var, buffer);
+            make_shared<UpdateBufferDBJob>(compass_.dbInterface(), *this, key_var, buffer);
 
     connect(update_job_.get(), &UpdateBufferDBJob::doneSignal, this, &DBContent::updateDoneSlot,
             Qt::QueuedConnection);
     connect(update_job_.get(), &UpdateBufferDBJob::updateProgressSignal, this,
             &DBContent::updateProgressSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(update_job_);
+    compass_.jobManager().addDBJob(update_job_);
 }
 
 /**
@@ -752,14 +752,14 @@ void DBContent::deleteDBContentData(bool cleanup_db)
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->cleanupDB(cleanup_db);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -773,7 +773,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, bool cle
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->setSpecificSacSic(sac, sic);
     delete_job_->cleanupDB(cleanup_db);
@@ -781,7 +781,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, bool cle
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -796,7 +796,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, unsigned
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->setSpecificSacSic(sac, sic);
     delete_job_->setSpecificLineId(line_id);
@@ -805,7 +805,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, unsigned
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -834,17 +834,17 @@ void DBContent::deleteJobDoneSlot()
 
     delete_job_ = nullptr;
 
-    COMPASS::instance().dataSourceManager().saveDBDataSources();
-    emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
+    compass_.dataSourceManager().saveDBDataSources();
+    emit compass_.dataSourceManager().dataSourcesChangedSignal();
 
     // remove from inserted count
-    //COMPASS::instance().dataSourceManager().clearInsertedCounts(name_);
-    //COMPASS::instance().dataSourceManager().saveDBDataSources();
+    //compass_.dataSourceManager().clearInsertedCounts(name_);
+    //compass_.dataSourceManager().saveDBDataSources();
 
     // remove from targets count
     //dbcont_manager_.removeDBContentFromTargets(name_);
 
-    count_ = COMPASS::instance().dbInterface().count(db_table_name_);
+    count_ = compass_.dbInterface().count(db_table_name_);
 }
 
 /**
@@ -921,7 +921,7 @@ void DBContent::databaseOpenedSlot()
     is_loadable_ = existsInDB();
 
     if (is_loadable_)
-        count_ = COMPASS::instance().dbInterface().count(db_table_name_);
+        count_ = compass_.dbInterface().count(db_table_name_);
 
     logdbg << name_ << ": table " << db_table_name_
            << " count " << count_;
@@ -974,7 +974,7 @@ size_t DBContent::loadedCount()
  */
 bool DBContent::existsInDB() const
 {
-    return COMPASS::instance().dbInterface().existsTable(db_table_name_);
+    return compass_.dbInterface().existsTable(db_table_name_);
 }
 
 /**

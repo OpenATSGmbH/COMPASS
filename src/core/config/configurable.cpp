@@ -18,7 +18,6 @@
 #include "configurable.h"
 
 #include "configuration.h"
-#include "configurationmanager.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -75,24 +74,8 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
     changed_connection_ = configuration_->connectListener(
         [this](const std::vector<std::string>& params) { this->configurationChanged(params); });
 
-    
-    
     if (parent_)
-    {
         parent_->addChild(this);
-    }
-    else 
-    {
-        // Auto-register root configurables with ConfigurationManager for save-time writeback
-        auto& mgr = ConfigurationManager::getInstance();
-        if (mgr.hasRootConfigJSON(class_id_, instance_id_))
-        {
-            is_root_ = true;
-            mgr.registerJsonRootConfigurable(*this);
-            loginf << "class_id '" << class_id_ << "' instance_id '" << instance_id_
-                   << "' registered as root configurable";
-        }
-    }
 
     loginf << "class_id '" << class_id_ << "' instance_id '" << instance_id_ << "' construction complete";
 }
@@ -103,10 +86,6 @@ Configurable::~Configurable()
 
     //@TODO: most likely destroying a connection will disconnect both parties automatically...
     changed_connection_.disconnect();
-
-    // Unregister root configurables from ConfigurationManager
-    if (is_root_)
-        ConfigurationManager::getInstance().unregisterJsonRootConfigurable(*this);
 
     // Remove from parent's children vector
     if (parent_)

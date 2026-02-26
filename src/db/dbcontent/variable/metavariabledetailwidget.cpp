@@ -16,10 +16,10 @@
  */
 
 #include "dbcontent/variable/metavariabledetailwidget.h"
+#include "compass.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
-#include "compass.h"
 #include "logger.h"
 
 #include <QLabel>
@@ -54,7 +54,7 @@ MetaVariableDetailWidget::MetaVariableDetailWidget(DBContentManager& dbcont_man,
 
     for (auto dbcont_it = dbcont_man_.begin(); dbcont_it != dbcont_man_.end(); ++dbcont_it)
     {
-        VariableSelectionWidget* var_sel = new VariableSelectionWidget(true);
+        VariableSelectionWidget* var_sel = new VariableSelectionWidget(dbcont_man_, true);
         var_sel->showDBContentOnly(dbcont_it->first);
         var_sel->showExistingInDBOnly(false);
         
@@ -85,7 +85,7 @@ MetaVariableDetailWidget::MetaVariableDetailWidget(DBContentManager& dbcont_man,
 
 void MetaVariableDetailWidget::show (MetaVariable& meta_var)
 {
-    bool expert_mode = COMPASS::instance().expertMode();
+    bool expert_mode = dbcont_man_.compass().expertMode();
 
     loginf << "var '" << meta_var.name() << "' expert_mode " << expert_mode;
 

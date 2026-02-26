@@ -17,6 +17,8 @@
 
 #pragma once
 
+class COMPASS;
+
 #include "rtcommand_defs.h"
 #include "rtcommand_result.h"
 #include "rtcommand_macros.h"
@@ -50,14 +52,15 @@ namespace rtcommand
 
 class WaitCondition;
 class RTCommandString;
+class RTCommandRunnerStash;
 
 /**
  * Obtains the command receiver with the given path casted to T*.
  */
 template <typename T>
-inline std::pair<FindObjectErrCode, T*> getCommandReceiverAs(const std::string& object_path)
+inline std::pair<FindObjectErrCode, T*> getCommandReceiverAs(const std::string& object_path, COMPASS& compass)
 {
-    auto obj = getCommandReceiver(object_path);
+    auto obj = getCommandReceiver(object_path, compass);
     if (obj.first != FindObjectErrCode::NoError)
         return std::make_pair(obj.first, nullptr);
 
@@ -158,6 +161,8 @@ struct RTCommand
     static std::vector<std::string> DefaultOptions;
 
 protected:
+    COMPASS* compass_{nullptr}; // injected by RTCommandRunnerStash before run/checkResult
+
     void setResultMessage(const std::string& m) const;
     void setJSONReply(const nlohmann::json& json_reply, const std::string& reply_as_string = "") const;
 
@@ -174,6 +179,7 @@ protected:
 
 private:
     friend class RTCommandRunner;
+    friend class RTCommandRunnerStash;
 
     void setState(CmdState state) const;
     void setError(CmdErrorCode code, boost::optional<std::string> msg = {}) const;

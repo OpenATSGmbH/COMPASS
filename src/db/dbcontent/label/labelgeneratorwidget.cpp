@@ -18,7 +18,6 @@
 #include "dbcontent/label/labelgeneratorwidget.h"
 #include "dbcontent/label/labelgenerator.h"
 #include "dbcontent/label/labeldswidget.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "logger.h"
 #include "files.h"
@@ -271,7 +270,7 @@ void LabelGeneratorWidget::editSettingsSlot()
 
     menu.addSeparator();
 
-    for (auto& db_cont_it : COMPASS::instance().dbContentManager())
+    for (auto& db_cont_it : label_generator_.dbContentManager())
     {
         QAction* action = new QAction(("Edit "+db_cont_it.first).c_str(), this);
         connect (action, &QAction::triggered, this, &LabelGeneratorWidget::editDBContentSlot);

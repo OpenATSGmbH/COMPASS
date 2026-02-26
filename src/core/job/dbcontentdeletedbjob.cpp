@@ -95,7 +95,7 @@ void DBContentDeleteDBJob::run_impl()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = db_interface_.dbContentManager();
 
     if (use_before_timestamp_)
     {

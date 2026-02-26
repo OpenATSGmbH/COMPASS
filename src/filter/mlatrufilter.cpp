@@ -60,7 +60,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     traced_assert(dbcontent_name == "CAT020");
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbContentManager();
 
     traced_assert(
         dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
@@ -115,7 +115,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     loginf << "numbers " << numbers.size() << " null " << null_wanted;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dataSourceManager();
 
     std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> ru_lookup; // ds id -> ru name -> {ru indexes}
 
@@ -264,7 +264,7 @@ std::string MLATRUFilter::rus() const
 
 bool MLATRUFilter::checkRUs(const std::string& rus_str)
 {
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dataSourceManager();
     std::set<std::string> known_ru_names;
 
     for (auto& db_src_it : ds_man.dbDataSources())

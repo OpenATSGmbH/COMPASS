@@ -289,7 +289,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
     setFixedSize(button_size_px, button_size_px);
     setCheckable(true);
 
-    bool dark_mode = COMPASS::instance().darkMode();
+    bool dark_mode = widget_->dsManager().compass().darkMode();
 
     if (dark_mode)
     {
@@ -341,10 +341,10 @@ void DataSourceLineButton::updateContent()
 {
     traced_assert(is_init_);
 
-    AppMode app_mode = COMPASS::instance().appMode();
+    AppMode app_mode = widget_->dsManager().compass().appMode();
 
     bool live_mode = app_mode == AppMode::LivePaused || app_mode == AppMode::LiveRunning;
-    bool dark_mode = COMPASS::instance().darkMode();
+    bool dark_mode = widget_->dsManager().compass().darkMode();
 
     auto& ds_man = widget_->dsManager();
 

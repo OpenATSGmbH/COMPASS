@@ -20,6 +20,8 @@
 #include "configurable.h"
 #include "dbcontent/variable/variable.h"
 
+class DBContentManager;
+
 namespace dbContent
 {
 
@@ -39,7 +41,7 @@ class VariableOrderedSet : public QObject, public Configurable
     void variableMovedSignal();
 
   public:
-    VariableOrderedSet(nlohmann::json& config, Configurable* parent = nullptr);
+    VariableOrderedSet(nlohmann::json& config, DBContentManager& dbcont_man, Configurable* parent = nullptr);
     virtual ~VariableOrderedSet();
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
@@ -70,7 +72,11 @@ class VariableOrderedSet : public QObject, public Configurable
 
     VariableOrderedSetWidget* createWidget();
 
+    DBContentManager& dbContentManager() { return dbcont_man_; }
+
   protected:
+    DBContentManager& dbcont_man_;
+
     nlohmann::json variable_definitions_; // json list of std::string pairs
 
     virtual void checkSubConfigurables() override;

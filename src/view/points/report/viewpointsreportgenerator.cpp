@@ -66,7 +66,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
 
     registerParameter("abstract", &abstract_, std::string());
 
-    string current_filename = COMPASS::instance().lastDbFilename();
+    string current_filename = view_manager_.compass().lastDbFilename();
 
     report_path_ = Files::getDirectoryFromPath(current_filename)+"/report_"
                 + Files::getFilenameFromPath(current_filename) + "/";
@@ -86,7 +86,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
     registerParameter("run_pdflatex", &run_pdflatex_, true);
     registerParameter("open_created_pdf", &open_created_pdf_, false);
 
-    pdflatex_found_ = COMPASS::instance().pdflatexFound();
+    pdflatex_found_ = view_manager_.compass().pdflatexFound();
 
     if (!pdflatex_found_)
     {
@@ -115,7 +115,7 @@ void ViewPointsReportGenerator::run ()
 
     try
     {
-        LatexDocument doc (report_path_, report_filename_);
+        LatexDocument doc (view_manager_.compass(), report_path_, report_filename_);
         doc.title("View Points Report");
 
         if (author_.size())
@@ -154,7 +154,7 @@ void ViewPointsReportGenerator::run ()
             vp_ids = vp_widget->viewedViewPoints();
 
         string status_str, elapsed_time_str, remaining_time_str;
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = view_manager_.compass().dbContentManager();
 
         unsigned int vp_cnt = 0;
         unsigned int vp_size = vp_ids.size();

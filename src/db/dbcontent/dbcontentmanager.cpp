@@ -54,13 +54,9 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-COMPASS* DBContentManager::parentConfigurable() const
-{
-    return static_cast<COMPASS*>(Configurable::parentConfigurable());
-}
 
-DBContentManager::DBContentManager(nlohmann::json& config, COMPASS* parent)
-    : Configurable(config, parent), compass_(*parent)
+DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass), compass_(compass)
 {
     logdbg << "creating subconfigurables";
 
@@ -184,13 +180,13 @@ void DBContentManager::deleteDBContentData(boost::posix_time::ptime before_times
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setBeforeTimestamp(before_timestamp);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContentManager::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -317,8 +313,8 @@ DBContentManagerWidget* DBContentManager::widget()
  */
 VariableSet DBContentManager::getReadSet(const std::string& dbcontent_name)
 {
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
-    ViewManager& view_man       = COMPASS::instance().viewManager();
+    EvaluationManager& eval_man = compass_.evaluationManager();
+    ViewManager& view_man       = compass_.viewManager();
 
     VariableSet read_set = view_man.getReadSet(dbcontent_name);
 
@@ -355,7 +351,7 @@ void DBContentManager::load(const std::string& custom_filter_clause,
                 object.second->quitLoading();
         }
 
-        while (load_in_progress_) // JobManager::instance().hasDBJobs()
+        while (load_in_progress_) // compass_.jobManager().hasDBJobs()
         {
             loginf << "previous load to finish";
 
@@ -373,8 +369,8 @@ void DBContentManager::load(const std::string& custom_filter_clause,
 
     bool load_job_created = false;
 
-    DataSourceManager& ds_man =  COMPASS::instance().dataSourceManager();
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DataSourceManager& ds_man =  compass_.dataSourceManager();
+    DBInterface& db_interface = compass_.dbInterface();
 
     if (measure_db_performance)
         db_interface.startPerformanceMetrics();
@@ -384,7 +380,7 @@ void DBContentManager::load(const std::string& custom_filter_clause,
         logdbg << "object " << object.first
                << " loadable " << object.second->loadable()
                << " loading wanted " << ds_man.loadingWanted(object.first)
-               << " filters " << COMPASS::instance().filterManager().useFilters();
+               << " filters " << compass_.filterManager().useFilters();
 
         if (object.second->loadable() && ds_man.loadingWanted(object.first))
         {
@@ -404,7 +400,7 @@ void DBContentManager::load(const std::string& custom_filter_clause,
 
             // load(dbContent::VariableSet& read_set, bool use_datasrc_filters, bool use_filters,
             // const std::string& custom_filter_clause="")
-            object.second->load(read_set, true, COMPASS::instance().filterManager().useFilters(),
+            object.second->load(read_set, true, compass_.filterManager().useFilters(),
                                 custom_filter_clause);
 
             load_job_created = true;
@@ -514,7 +510,7 @@ void DBContentManager::databaseOpenedSlot()
     loadMaxRecordNumberWODBContentID();
     loadMaxRefTrajTrackNum();
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_.dbInterface();
 
     if (db_interface.hasProperty("associations_generated"))
     {
@@ -657,15 +653,15 @@ void DBContentManager::finishLoading()
 
     tmp_selected_rec_nums_.clear();
 
-    COMPASS::instance().viewManager().doViewPointAfterLoad();
+    compass_.viewManager().doViewPointAfterLoad();
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_.dbInterface();
     if (db_interface.hasActivePerformanceMetrics())
         loginf << db_interface.stopPerformanceMetrics().asString();
 
     emit loadingDoneSignal();
 
-    //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
+    //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
     QApplication::restoreOverrideCursor();
 
@@ -685,7 +681,7 @@ bool DBContentManager::hasAssociations() const
  */
 void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
 {
-    auto& dbinterface = COMPASS::instance().dbInterface();
+    auto& dbinterface = compass_.dbInterface();
 
     dbinterface.setProperty("associations_generated", "1");
     dbinterface.setProperty("associations_id", assoc_id);
@@ -694,7 +690,7 @@ void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
     has_associations_ = true;
     associations_id_ = assoc_id;
 
-    COMPASS::instance().dataSourceManager().updateWidgets();
+    compass_.dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -710,7 +706,7 @@ void DBContentManager::clearAssociationsIdentifier()
     has_associations_ = false;
     associations_id_ = "";
 
-    auto& dbinterface = COMPASS::instance().dbInterface();
+    auto& dbinterface = compass_.dbInterface();
 
     if (dbinterface.hasProperty("associations_generated"))
         dbinterface.removeProperty("associations_generated");
@@ -720,7 +716,7 @@ void DBContentManager::clearAssociationsIdentifier()
 
     dbinterface.saveProperties();
 
-    COMPASS::instance().dataSourceManager().updateWidgets();
+    compass_.dataSourceManager().updateWidgets();
 
     emit associationStatusChangedSignal();
 }
@@ -740,7 +736,7 @@ void DBContentManager::clearData()
 
     data_.clear();
 
-    COMPASS::instance().viewManager().clearDataInViews();
+    compass_.viewManager().clearDataInViews();
 }
 
 /**
@@ -777,12 +773,12 @@ void DBContentManager::insertData(std::map<std::string, std::shared_ptr<Buffer>>
         dbContent(buf_it.first).updateDataSourcesBeforeInsert(buf_it.second);
     }
 
-    insert_job_ = make_shared<DBContentInsertDBJob>(COMPASS::instance().dbInterface(), *this, data, false);
+    insert_job_ = make_shared<DBContentInsertDBJob>(compass_.dbInterface(), *this, data, false);
 
     connect(insert_job_.get(), &DBContentInsertDBJob::doneSignal,
             this, &DBContentManager::finishInserting, Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(insert_job_);
+    compass_.jobManager().addDBJob(insert_job_);
 }
 
 /**
@@ -887,9 +883,9 @@ void DBContentManager::finishInserting()
 
         if (hasMinMaxTimestamp())
         {
-            COMPASS::instance().dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME,
+            compass_.dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME,
                                                         to_string(Time::toLong(timestamp_min_.get())));
-            COMPASS::instance().dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME,
+            compass_.dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME,
                                                         to_string(Time::toLong(timestamp_max_.get())));
 
             logdbg << "tod min " << timestamp_min_.get()
@@ -938,11 +934,11 @@ void DBContentManager::finishInserting()
 
                 if (has_min_max)
                 {
-                    COMPASS::instance().dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(latitude_min_.get()));
-                    COMPASS::instance().dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(latitude_max_.get()));
+                    compass_.dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(latitude_min_.get()));
+                    compass_.dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(latitude_max_.get()));
 
-                    COMPASS::instance().dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(longitude_min_.get()));
-                    COMPASS::instance().dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(longitude_max_.get()));
+                    compass_.dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(longitude_min_.get()));
+                    compass_.dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(longitude_max_.get()));
 
                     logdbg << "lat min " << latitude_min_.get()
                            << " max " << latitude_max_.get()
@@ -959,10 +955,10 @@ void DBContentManager::finishInserting()
 
     tmp_time = microsec_clock::local_time();
 
-    if (COMPASS::instance().appMode() == AppMode::Offline || COMPASS::instance().appMode() == AppMode::LivePaused)
+    if (compass_.appMode() == AppMode::Offline || compass_.appMode() == AppMode::LivePaused)
         insert_data_.clear();
 
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (compass_.appMode() == AppMode::LiveRunning)
     {
         //live mode specific processing
         processLiveModeSlot();
@@ -970,8 +966,8 @@ void DBContentManager::finishInserting()
     else
     {
         //non-live updates
-        COMPASS::instance().dataSourceManager().updateWidgets();
-        //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
+        compass_.dataSourceManager().updateWidgets();
+        //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
         logdbg << "update widgets + lines took "
            << String::timeStringFromDouble(
@@ -986,7 +982,7 @@ void DBContentManager::finishInserting()
  */
 void DBContentManager::processLiveModeSlot()
 {
-    if (COMPASS::instance().appMode() != AppMode::LiveRunning)
+    if (compass_.appMode() != AppMode::LiveRunning)
         return;
 
     using namespace boost::posix_time;
@@ -1105,9 +1101,9 @@ void DBContentManager::processLiveModeSlot()
 
         tmp_time = microsec_clock::local_time();
 
-        if (COMPASS::instance().filterManager().useFilters())
+        if (compass_.filterManager().useFilters())
         {
-            COMPASS::instance().filterManager().filterBuffers(data_);
+            compass_.filterManager().filterBuffers(data_);
 
             logdbg << "filter buffs took "
                    << String::timeStringFromDouble(
@@ -1121,7 +1117,7 @@ void DBContentManager::processLiveModeSlot()
         if (data_.size())
             emit loadedDataSignal(data_, true);
         else if (had_data)
-            COMPASS::instance().viewManager().clearDataInViews();
+            compass_.viewManager().clearDataInViews();
 
         logdbg << "distribute took "
                << String::timeStringFromDouble(
@@ -1149,9 +1145,9 @@ void DBContentManager::processLiveModeSlot()
         }
     }
 
-    COMPASS::instance().dataSourceManager().updateWidgets();
+    compass_.dataSourceManager().updateWidgets();
 
-    //COMPASS::instance().dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
+    //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
     logdbg << "update widgets + lines took "
            << String::timeStringFromDouble(
@@ -1183,12 +1179,12 @@ void DBContentManager::addInsertedDataToChache()
         std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = insert_data_.begin();
         std::advance(buf_it, buffer_cnt);
 
-        VariableSet read_set = COMPASS::instance().viewManager().getReadSet(buf_it->first);
+        VariableSet read_set = compass_.viewManager().getReadSet(buf_it->first);
         addStandardVariables(buf_it->first, read_set);
         //label_generator_->addVariables(buf_it->first, read_set);
 
         //sensor status
-        COMPASS::instance().dataSourceManager().addSensorStatusVariables(buf_it->first, read_set);
+        compass_.dataSourceManager().addSensorStatusVariables(buf_it->first, read_set);
 
         // for (unsigned int i = 0; i < read_set.getSize(); ++i)
         //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";
@@ -1260,7 +1256,7 @@ void DBContentManager::filterDataSources()
     logdbg;
 
     std::map<unsigned int, std::set<unsigned int>> wanted_data_sources =
-        COMPASS::instance().dataSourceManager().getLoadDataSources();
+        compass_.dataSourceManager().getLoadDataSources();
 
     unsigned int num_buffers = data_.size();
 
@@ -1418,7 +1414,7 @@ void DBContentManager::updateNumLoadedCounts()
             loaded_counts[ds_id_vec.get(cnt)][buf_it.first][line_id_vec.get(cnt)] += 1;
     }
 
-    COMPASS::instance().dataSourceManager().setLoadedCounts(loaded_counts);
+    compass_.dataSourceManager().setLoadedCounts(loaded_counts);
 }
 
 /**
@@ -1483,8 +1479,8 @@ void DBContentManager::setMinMaxTimestamp(boost::posix_time::ptime min, boost::p
     timestamp_min_ = min;
     timestamp_max_ = max;
 
-    COMPASS::instance().dbInterface().setProperty("timestamp_min", to_string(Time::toLong(timestamp_min_.get())));
-    COMPASS::instance().dbInterface().setProperty("timestamp_max", to_string(Time::toLong(timestamp_max_.get())));
+    compass_.dbInterface().setProperty("timestamp_min", to_string(Time::toLong(timestamp_min_.get())));
+    compass_.dbInterface().setProperty("timestamp_max", to_string(Time::toLong(timestamp_max_.get())));
 }
 
 /**
@@ -1510,8 +1506,8 @@ void DBContentManager::setMinMaxLatitude(double min, double max)
     latitude_min_ = min;
     latitude_max_ = max;
 
-    COMPASS::instance().dbInterface().setProperty("latitude_min", to_string(latitude_min_.get()));
-    COMPASS::instance().dbInterface().setProperty("latitude_max", to_string(latitude_max_.get()));
+    compass_.dbInterface().setProperty("latitude_min", to_string(latitude_min_.get()));
+    compass_.dbInterface().setProperty("latitude_max", to_string(latitude_max_.get()));
 }
 
 /**
@@ -1529,8 +1525,8 @@ void DBContentManager::setMinMaxLongitude(double min, double max)
     longitude_min_ = min;
     longitude_max_ = max;
 
-    COMPASS::instance().dbInterface().setProperty("longitude_min", to_string(longitude_min_.get()));
-    COMPASS::instance().dbInterface().setProperty("longitude_max", to_string(longitude_max_.get()));
+    compass_.dbInterface().setProperty("longitude_min", to_string(longitude_min_.get()));
+    compass_.dbInterface().setProperty("longitude_max", to_string(longitude_max_.get()));
 }
 
 /**
@@ -1794,7 +1790,7 @@ bool DBContentManager::insertInProgress() const
  */
 void DBContentManager::loadMaxRecordNumberWODBContentID()
 {
-    traced_assert(COMPASS::instance().dbInterface().ready());
+    traced_assert(compass_.dbInterface().ready());
 
     max_rec_num_wo_dbcontid_ = 0;
     unsigned long max_rec_num_with_dbcontid = 0;
@@ -1803,7 +1799,7 @@ void DBContentManager::loadMaxRecordNumberWODBContentID()
     {
         if (obj_it.second->existsInDB())
         {
-            max_rec_num_with_dbcontid = COMPASS::instance().dbInterface().getMaxRecordNumber(*obj_it.second);
+            max_rec_num_with_dbcontid = compass_.dbInterface().getMaxRecordNumber(*obj_it.second);
             max_rec_num_wo_dbcontid_ = max(Number::recNumGetWithoutDBContId(max_rec_num_with_dbcontid),
                                            max_rec_num_wo_dbcontid_);
         }
@@ -1818,9 +1814,9 @@ void DBContentManager::loadMaxRecordNumberWODBContentID()
  */
 void DBContentManager::loadMaxRefTrajTrackNum()
 {
-    traced_assert(COMPASS::instance().dbInterface().ready());
+    traced_assert(compass_.dbInterface().ready());
 
-    max_reftraj_track_num_ = COMPASS::instance().dbInterface().getMaxRefTrackTrackNum();
+    max_reftraj_track_num_ = compass_.dbInterface().getMaxRefTrackTrackNum();
     has_max_reftraj_track_num_ = true;
 
     loginf << "start" << max_reftraj_track_num_;
@@ -1868,14 +1864,14 @@ void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& da
 {
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
-    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
 }
 
 void DBContentManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)
 {
     clearSelectedRecNums(); // no other selected
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = compass_.dbContentManager();
 
     for (auto rec_num : selected)
     {

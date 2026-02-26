@@ -142,7 +142,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
     vector<unsigned int> used_utns;
     std::set<unsigned int> utn_set(utns.begin(), utns.end());
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = calculator_.manager().dbContentManager();
 
     for (auto& target_data_it : data)
     {
@@ -471,7 +471,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     dlg.setMinimumWidth(500);
     dlg.show();
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = calculator_.manager().compass().taskManager();
     task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
 
     auto& result = task_manager.currentResult();
@@ -497,7 +497,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     gen_table.addRow({"Application", "Application Filename", APP_FILENAME});
     gen_table.addRow({"Application Version", "Application Version", VERSION});
-    gen_table.addRow({"DB", "Database Name", COMPASS::instance().lastDbFilename()});
+    gen_table.addRow({"DB", "Database Name", calculator_.manager().compass().lastDbFilename()});
 
     traced_assert(calculator_.hasCurrentStandard());
     gen_table.addRow({"Standard", "Standard name", calculator_.currentStandardName()});

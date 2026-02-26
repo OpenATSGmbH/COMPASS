@@ -19,7 +19,6 @@
 
 #include <QComboBox>
 
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "global.h"
@@ -32,14 +31,14 @@ class DBContentComboBox : public QComboBox
     void changedObject();
 
   public:
-    DBContentComboBox(bool allow_meta, bool target_report_only, QWidget* parent = nullptr)
+    DBContentComboBox(DBContentManager& dbcont_man, bool allow_meta, bool target_report_only, QWidget* parent = nullptr)
         : QComboBox(parent), allow_meta_(allow_meta)
     {
-        traced_assert(COMPASS::instance().dbContentManager().size());
+        traced_assert(dbcont_man.size());
         if (allow_meta_)
             addItem(META_OBJECT_NAME.c_str());
 
-        for (auto& dbcont_it : COMPASS::instance().dbContentManager())
+        for (auto& dbcont_it : dbcont_man)
         {
             if (target_report_only && !dbcont_it.second->containsTargetReports())
                 continue;

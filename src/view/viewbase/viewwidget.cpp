@@ -91,7 +91,7 @@ void ViewWidget::createStandardLayout()
     main_layout->addLayout(top_layout);
 
     //create preset selection
-    if (COMPASS::instance().viewManager().viewPresetsEnabled())
+    if (view_->viewManager().compass().viewManager().viewPresetsEnabled())
     {
         preset_widget_ = new ViewPresetWidget(view_, this);
         preset_widget_->setFixedWidth(PresetSelectionWidth);
@@ -393,14 +393,14 @@ bool ViewWidget::refreshView()
     {
         // reload required (most likely due to no data loaded yet) => reload view
         // viewRefreshed() emitted from triggered reload
-        COMPASS::instance().dbContentManager().load(); 
+        view_->viewManager().compass().dbContentManager().load(); 
     }
 #if 0
     else 
     {
         // fallback 1: be sceptical and reload in all other cases (will completely update the view)
         // viewRefreshed() emitted from triggered reload
-        COMPASS::instance().dbContentManager().load(); // fallback: just reload
+        view_->viewManager().compass().dbContentManager().load(); // fallback: just reload
     }
 #else
     else

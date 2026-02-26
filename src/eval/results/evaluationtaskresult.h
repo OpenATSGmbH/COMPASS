@@ -28,6 +28,7 @@
 class QMenu;
 class QCheckBox;
 
+class COMPASS;
 class EvaluationCalculator;
 
 /**
@@ -35,8 +36,9 @@ class EvaluationCalculator;
 class EvaluationTaskResult : public QObject, public TaskResult
 {
 public:
-    EvaluationTaskResult(unsigned int id, 
-                         TaskManager& task_man);
+    EvaluationTaskResult(unsigned int id,
+                         TaskManager& task_man,
+                         COMPASS& compass);
     virtual ~EvaluationTaskResult();
 
     typedef std::map<unsigned int, EvaluationTarget> TargetMap;
@@ -110,6 +112,7 @@ private:
 
     void informUpdateEvalResult(int update_type);
 
+    COMPASS& compass_;
     mutable std::unique_ptr<EvaluationCalculator> calculator_;
     TargetMap                                     targets_;
     mutable InterestSwitches                      interest_factor_enabled_; //req sum result id => enabled

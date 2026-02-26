@@ -476,7 +476,7 @@ void DataSourcesStatusWidget::initTrackerStates(const sensor_status::TrackerKey&
  */
 void DataSourcesStatusWidget::dataLoaded()
 {
-    if (COMPASS::instance().appMode() != AppMode::LiveRunning)
+    if (ds_man_.compass().appMode() != AppMode::LiveRunning)
         return;
 
 #ifdef DEBUG_SENSOR_STATUS_TIMING
@@ -788,7 +788,7 @@ bool DataSourcesStatusWidget::showDSType(const std::string& ds_type_name) const
 bool DataSourcesStatusWidget::showDS(unsigned int ds_id) const
 {
     //no live mode => show nothing
-    if (COMPASS::instance().appMode() != AppMode::LiveRunning)
+    if (ds_man_.compass().appMode() != AppMode::LiveRunning)
         return false;
 
     //no active tracker => show nothing

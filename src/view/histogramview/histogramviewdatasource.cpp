@@ -17,6 +17,7 @@
 
 #include "histogramviewdatasource.h"
 #include "histogramview.h"
+#include "viewmanager.h"
 #include "compass.h"
 //#include "configuration.h"
 //#include "configurationmanager.h"
@@ -47,7 +48,8 @@ using namespace dbContent;
 HistogramViewDataSource::HistogramViewDataSource(nlohmann::json& config,
                                                  HistogramView* parent)
     : QObject(),
-      Configurable(config, parent)
+      Configurable(config, parent),
+      view_(parent)
 {
     createSubConfigurables();
 }
@@ -73,7 +75,7 @@ void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json
     if (class_id.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
-        set_ = new VariableOrderedSet(child_json, this);
+        set_ = new VariableOrderedSet(child_json, view_->compass().dbContentManager(), this);
     }
     else
         throw std::runtime_error(
@@ -87,7 +89,7 @@ void HistogramViewDataSource::checkSubConfigurables()
         generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = view_->viewManager().compass().dbContentManager();
 
         if (dbcont_man.existsMetaVariable("rec_num"))
             set_->add(dbcont_man.metaVariable("rec_num"));
@@ -147,7 +149,7 @@ void HistogramViewDataSource::showViewPoint (const ViewableDataConfig* vp)
 
 bool HistogramViewDataSource::addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_->viewManager().compass().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -181,7 +183,7 @@ bool HistogramViewDataSource::addTemporaryVariable (const std::string& dbcontent
 
 void HistogramViewDataSource::removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_->viewManager().compass().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {

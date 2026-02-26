@@ -36,6 +36,8 @@
 #include <memory>
 
 
+class COMPASS;
+class DBContentManager;
 class TaskManager;
 
 class ASTERIXCategoryConfig;
@@ -97,6 +99,8 @@ public:
     ASTERIXImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ASTERIXImportTask();
 
+    COMPASS& compass() const { return compass_; }
+
     void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void asterixFileFraming(const std::string& asterix_framing);
@@ -157,6 +161,9 @@ protected:
     void refreshjASTERIX() const;
 
     void sourceChanged();
+
+    COMPASS&          compass_;
+    DBContentManager& dbcontent_man_;
 
     ASTERIXImportTaskSettings settings_;
     ASTERIXImportSource       source_;

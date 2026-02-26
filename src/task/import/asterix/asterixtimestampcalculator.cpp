@@ -50,7 +50,8 @@ void ASTERIXTimestampCalculator::calculate(
                std::string source_name,
                boost::posix_time::ptime date, bool reset_date_between_files,
                bool override_tod_active, float override_tod_offset,
-               bool ignore_time_jumps, bool do_timestamp_checks)
+               bool ignore_time_jumps, bool do_timestamp_checks,
+               COMPASS& compass)
 {
     logdbg;
 
@@ -71,13 +72,13 @@ void ASTERIXTimestampCalculator::calculate(
         }
 
         if (prev_source_name_.size()) // not for empty, first one
-            logLastTimestamp();
+            logLastTimestamp(compass);
 
         clearTimeStats();
 
         prev_source_name_ = source_name;
 
-        COMPASS::instance().logInfo("ASTERIX Import") << "decoding " << source_name;
+        compass.logInfo("ASTERIX Import") << "decoding " << source_name;
     }
 
     if (!current_date_set_) // init if first time
@@ -88,10 +89,10 @@ void ASTERIXTimestampCalculator::calculate(
         current_date_set_ = true;
     }
 
-    if (COMPASS::instance().sensorStatusTimeHack()) // required since resurf replay does not change CAT063 time
+    if (compass.sensorStatusTimeHack()) // required since resurf replay does not change CAT063 time
     {
         //@TODO: REMOVE HACK
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = compass.dbContentManager();
         unsigned int buffer_size;
         boost::optional<float> tod0_cat062;
         boost::optional<float> tod0_cat063;
@@ -131,15 +132,15 @@ void ASTERIXTimestampCalculator::calculate(
         }
     }
 
-    doADSBTimeProcessing();
+    doADSBTimeProcessing(compass);
 
     if (override_tod_active)
-        doTodOverride(override_tod_offset);
+        doTodOverride(override_tod_offset, compass);
 
     if (do_timestamp_checks) // out of sync issue during 24h replay
-        doFutureTimestampsCheck();
+        doFutureTimestampsCheck(compass);
 
-    doTimeStampCalculation(ignore_time_jumps);
+    doTimeStampCalculation(ignore_time_jumps, compass);
 
     boost::posix_time::time_duration time_diff = boost::posix_time::microsec_clock::local_time() - start_time;
     logdbg << "done after "
@@ -154,9 +155,9 @@ std::map<std::string, std::shared_ptr<Buffer>> ASTERIXTimestampCalculator::buffe
     return std::move(buffers_);
 }
 
-void ASTERIXTimestampCalculator::doADSBTimeProcessing()
+void ASTERIXTimestampCalculator::doADSBTimeProcessing(COMPASS& compass)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     string dbcontent_name = "CAT021";
 
@@ -239,12 +240,12 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing()
     }
 }
 
-void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
+void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset, COMPASS& compass)
 {
     loginf << "offset "
            << String::doubleToStringPrecision(override_tod_offset, 3);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     unsigned int buffer_size;
 
@@ -289,9 +290,9 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
 const double TMAX_FUTURE_OFFSET = 3*60.0;
 const double T24H_OFFSET = 5*60.0;
 
-void ASTERIXTimestampCalculator::doFutureTimestampsCheck()
+void ASTERIXTimestampCalculator::doFutureTimestampsCheck(COMPASS& compass)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     unsigned int buffer_size;
 
@@ -383,9 +384,9 @@ void ASTERIXTimestampCalculator::doFutureTimestampsCheck()
     logdbg << "buf size " << cnt;
 }
 
-void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
+void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps, COMPASS& compass)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     unsigned int buffer_size;
 
@@ -472,7 +473,7 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
                                << " detected time-jump from previous " << Time::toDateString(previous_date_)
                                << " to current " << Time::toDateString(current_date_);
 
-                        COMPASS::instance().logInfo("ASTERIX Import")
+                        compass.logInfo("ASTERIX Import")
                             << "ToD " << String::timeStringFromDouble(tod)
                             << " detected time-jump from previous " << Time::toDateString(previous_date_)
                             << " to current " << Time::toDateString(current_date_);
@@ -519,7 +520,7 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
 
                     first_time_ = false;
 
-                    COMPASS::instance().logInfo("ASTERIX Import")
+                    compass.logInfo("ASTERIX Import")
                         << "first ToD " << String::timeStringFromDouble(tod_first_)
                         << " timestamp " << Time::toString(timestamp_first_);
                 }
@@ -583,11 +584,11 @@ void ASTERIXTimestampCalculator::clearTimeStats()
     last_reported_tod_ = -3600;
 }
 
-void ASTERIXTimestampCalculator::logLastTimestamp()
+void ASTERIXTimestampCalculator::logLastTimestamp(COMPASS& compass)
 {
     if (!first_time_ && !timestamp_last_.is_not_a_date_time())
     {
-        COMPASS::instance().logInfo("ASTERIX Import")
+        compass.logInfo("ASTERIX Import")
         << "last ToD " << String::timeStringFromDouble(tod_last_)
         << " timestamp " << Time::toString(timestamp_last_);
     }

@@ -16,6 +16,7 @@
  */
 
 #include "datasourceeditwidget.h"
+#include "compass.h"
 #include "datasourcemanager.h"
 #include "configurationdatasource.h"
 #include "dbdatasource.h"
@@ -1219,7 +1220,7 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
 
     auto    ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
     QString title   = QString::fromStdString("Select CSV File for Sensor '" + ds_name + "'");
-    QString path    = QString::fromStdString(COMPASS::instance().lastUsedPath());
+    QString path    = QString::fromStdString(ds_man_.compass().lastUsedPath());
 
     QString fn = QFileDialog::getOpenFileName(this, title, path, "*.csv");
     if (fn.isEmpty())

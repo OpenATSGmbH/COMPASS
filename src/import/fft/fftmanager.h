@@ -85,6 +85,8 @@ public:
 
     FFTsConfigurationDialog* configurationDialog();
 
+    std::string lastUsedPath() const;
+
     std::pair<bool, float> isFromFFT(double prelim_latitute_deg, double prelim_longitude_deg,
                                      boost::optional<unsigned int> mode_s_address, bool ignore_mode_s,
                                      boost::optional<unsigned int> mode_a_code,

@@ -16,7 +16,6 @@
  */
 
 #include "sector.h"
-#include "compass.h"
 #include "evaluationmanager.h"
 #include "dbcontent/target/targetposition.h"
 
@@ -281,14 +280,16 @@ SectorInsideTest::CheckResult SectorInsideTest::isInside(double x, double y, dou
  * Sector
  ***********************************************************************************/
 
-Sector::Sector(unsigned int id, 
-               const std::string& name, 
+Sector::Sector(EvaluationManager* eval_man,
+               unsigned int id,
+               const std::string& name,
                const std::string& layer_name,
                bool serialize,
                bool exclusion_sector,
-               QColor color, 
+               QColor color,
                std::vector<std::pair<double,double>> points)
-:   id_              (id)
+:   eval_man_        (eval_man)
+,   id_              (id)
 ,   name_            (name)
 ,   layer_name_      (layer_name)
 ,   serialize_       (serialize)
@@ -299,11 +300,13 @@ Sector::Sector(unsigned int id,
     createPolygon();
 }
 
-Sector::Sector(unsigned int id, 
-               const std::string& name, 
+Sector::Sector(EvaluationManager* eval_man,
+               unsigned int id,
+               const std::string& name,
                const std::string& layer_name,
                bool serialize)
-:   id_        (id)
+:   eval_man_  (eval_man)
+,   id_        (id)
 ,   name_      (name)
 ,   layer_name_(layer_name)
 ,   serialize_ (serialize)
@@ -535,12 +538,11 @@ void Sector::layerName(const std::string& layer_name)
 {
     loginf << "'" << layer_name << "'";
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
-
     string old_layer_name = layer_name_;
     layer_name_ = layer_name;
 
-    eval_man.moveSector(id_, old_layer_name, layer_name); // moves and saves
+    if (eval_man_)
+        eval_man_->moveSector(id_, old_layer_name, layer_name); // moves and saves
 }
 
 bool Sector::serializeSector() const
@@ -557,8 +559,8 @@ void Sector::save()
 {
     if (serialize_)
     {
-        EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
-        eval_man.saveSector(id_);
+        if (eval_man_)
+            eval_man_->saveSector(id_);
     }
 }
 

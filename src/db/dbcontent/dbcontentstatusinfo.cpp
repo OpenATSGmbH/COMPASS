@@ -17,7 +17,6 @@
 
 #include "dbcontentstatusinfo.h"
 
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetreportaccessor.h"
@@ -26,31 +25,32 @@
 
 namespace dbContent
 {
-DBContentStatusInfo::DBContentStatusInfo() {}
+DBContentStatusInfo::DBContentStatusInfo(DBContentManager& dbcont_man)
+    : dbcont_man_(dbcont_man)
+{
+}
 
 dbContent::VariableSet DBContentStatusInfo::getReadSetFor(const std::string& dbcontent_name) const
 {
     dbContent::VariableSet read_set;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
-    auto& dbcont = dbcont_man.dbContent(dbcontent_name);
+    auto& dbcont = dbcont_man_.dbContent(dbcontent_name);
     traced_assert(dbcont.containsStatusContent());
 
     // ds id
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    read_set.add(dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
 
     // line id
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    read_set.add(dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
 
     // timestamp
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+    read_set.add(dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
 
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
+    traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
+    read_set.add(dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
 
     return read_set;
 }
@@ -58,20 +58,18 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
 {
     scan_info_.clear();
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     for (auto& buf_it : buffers)
     {
         const std::string dbcontent_name = buf_it.first;
 
-        if (!dbcont_man.dbContent(buf_it.first).containsStatusContent())
+        if (!dbcont_man_.dbContent(buf_it.first).containsStatusContent())
             continue;
 
         logdbg << "dbcontent " << dbcontent_name << " size " << buf_it.second->size()
         << " properties " << buf_it.second->properties().size();
         //buf_it.second->printProperties();
 
-        auto& dbcontent = dbcont_man.dbContent(dbcontent_name);
+        auto& dbcontent = dbcont_man_.dbContent(dbcontent_name);
 
         if (!dbcontent.containsStatusContent() || dbcontent_name == "CAT063")
             continue;
@@ -81,7 +79,7 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         // cat019: 001 Start of Update Cycle
         // cat023: ?
         // cat034: 001 North marker message;002 Sector crossing message;
-        // cat065: 002 End of Batch, I020 Batch Number 
+        // cat065: 002 End of Batch, I020 Batch Number
 
         unsigned char message_type_cycle{255};
 
@@ -103,15 +101,15 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
             continue;
         }
 
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
+        traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+        traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+        traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+        traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
 
-        Variable& ds_id_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_);
-        Variable& line_id_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_);
-        Variable& timestamp_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
-        Variable& message_type_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_);
+        Variable& ds_id_var = dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_);
+        Variable& line_id_var = dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_);
+        Variable& timestamp_var = dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
+        Variable& message_type_var = dbcont_man_.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_);
 
         traced_assert(buf_it.second->has<unsigned int>(ds_id_var.name()));
         NullableVector<unsigned int>& ds_id_vec = buf_it.second->get<unsigned int>(ds_id_var.name());
@@ -126,8 +124,8 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
 
         if (dbcontent_name == "CAT065")
         {
-            traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
-            Variable& batch_number_var = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_);
+            traced_assert(dbcont_man_.canGetVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
+            Variable& batch_number_var = dbcont_man_.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_);
             traced_assert(buf_it.second->has<unsigned char>(batch_number_var.name()));
             batch_number_vec = &buf_it.second->get<unsigned char>(batch_number_var.name());
         }

@@ -76,10 +76,10 @@ signals:
     void insertDoneSignal(); // emitted when all dbconts have finished loading
 
 public:
-    DBContentManager(nlohmann::json& config, COMPASS* parent);
+    DBContentManager(nlohmann::json& config, COMPASS& compass);
     virtual ~DBContentManager();
 
-    COMPASS* parentConfigurable() const;
+    COMPASS& compass() { return compass_; }
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 

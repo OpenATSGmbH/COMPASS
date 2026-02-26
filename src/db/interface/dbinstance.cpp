@@ -18,6 +18,7 @@
 #include "dbinstance.h"
 #include "dbinterface.h"
 #include "dbconnection.h"
+#include "dbcontent/dbcontentmanager.h"
 
 #include "property.h"
 
@@ -34,6 +35,11 @@ DBInstance::DBInstance(DBInterface* interface)
 :   interface_(*interface)
 {
     loginf;
+}
+
+DBContentManager& DBInstance::dbContentManager()
+{
+    return interface_.compass().dbContentManager();
 }
 
 /**

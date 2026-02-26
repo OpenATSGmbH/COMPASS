@@ -85,8 +85,8 @@ using namespace nlohmann;
 //    return static_cast<JSONDataMapping&>(Configurable::operator=(std::move(other)));
 //}
 
-JSONDataMapping::JSONDataMapping(nlohmann::json& config, Configurable* parent)
-    : Configurable(config, parent)
+JSONDataMapping::JSONDataMapping(nlohmann::json& config, Configurable* parent, COMPASS& compass)
+    : Configurable(config, parent), compass_(compass)
 {
     logdbg2 << "this " << this << " (json-backed)";
 
@@ -150,7 +150,7 @@ void JSONDataMapping::inArray(bool in_array) { in_array_ = in_array; }
 
 void JSONDataMapping::check()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
     {
@@ -275,7 +275,7 @@ void JSONDataMapping::initialize()
 
     traced_assert(!initialized_);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
         logwrn << "dbcontbject '" << db_content_name_
@@ -328,7 +328,7 @@ void JSONDataMapping::initialize()
             {
 
                 const Dimension& dimension =
-                        UnitManager::instance().dimension(variable().dimension());
+                        compass_.unitManager().dimension(variable().dimension());
 
                 if (!dimension.hasUnit(unit()))
                     logerr << "dimension '" << this->dimension()

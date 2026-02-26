@@ -18,19 +18,9 @@
 #include "unitmanager.h"
 #include "compass.h"
 #include "dimension.h"
-#include "configurationmanager.h"
 #include "logger.h"
 
 #include <math.h>
-
-// Legacy constructor removed
-// UnitManager::UnitManager() : Configurable("UnitManager", "UnitManager0", 0, "units.json") { ... }
-
-UnitManager::UnitManager()
-    : Configurable(ConfigurationManager::getInstance().getRootConfigJSON("UnitManager", "UnitManager0").json(), nullptr)
-{
-    createSubConfigurables();
-}
 
 UnitManager::UnitManager(nlohmann::json& config, COMPASS* parent)
     : Configurable(config, parent)

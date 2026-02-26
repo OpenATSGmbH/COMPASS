@@ -43,8 +43,9 @@
 
 /**
  */
-DBConnection::DBConnection(DBInstance* instance, bool verbose)
-:   instance_ (instance  )
+DBConnection::DBConnection(DBContentManager& dbcont_man, DBInstance* instance, bool verbose)
+:   dbcont_man_(dbcont_man)
+,   instance_ (instance  )
 ,   connected_(false     )
 ,   verbose_  (verbose   )
 {
@@ -342,7 +343,7 @@ Result DBConnection::createTableInternal(const std::string& table_name,
     traced_assert(connected());
 
     //get sql statement
-    std::string sql = SQLGenerator(sqlConfiguration(verbose)).getCreateTableStatement(table_name, column_infos, indices);
+    std::string sql = SQLGenerator(sqlConfiguration(verbose), dbcont_man_).getCreateTableStatement(table_name, column_infos, indices);
 
     auto result = execute(sql, false);
     traced_assert(result);
@@ -483,7 +484,7 @@ Result DBConnection::insertBuffer_impl(const std::string& table_name,
                                        const boost::optional<size_t>& idx_to,
                                        PropertyList* table_properties)
 {
-    auto sql = SQLGenerator(sqlConfiguration()).getInsertDBUpdateStringBind(buffer, table_name);
+    auto sql = SQLGenerator(sqlConfiguration(), dbcont_man_).getInsertDBUpdateStringBind(buffer, table_name);
 
     //loginf << "executing statement:\n" << sql;
 
@@ -512,7 +513,7 @@ Result DBConnection::updateBuffer_impl(const std::string& table_name,
                                        const boost::optional<size_t>& idx_from, 
                                        const boost::optional<size_t>& idx_to)
 {
-    auto sql = SQLGenerator(sqlConfiguration()).getCreateDBUpdateStringBind(buffer, key_column, table_name);
+    auto sql = SQLGenerator(sqlConfiguration(), dbcont_man_).getCreateDBUpdateStringBind(buffer, key_column, table_name);
 
     auto stmnt = prepareStatement(sql, true);
     traced_assert(stmnt);
@@ -706,7 +707,7 @@ void DBConnection::stopRead()
  */
 SQLGenerator DBConnection::sqlGenerator() const
 {
-    return SQLGenerator(sqlConfiguration());
+    return SQLGenerator(sqlConfiguration(), dbcont_man_);
 }
 
 /**

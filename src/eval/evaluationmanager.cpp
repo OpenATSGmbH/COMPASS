@@ -78,10 +78,11 @@ const std::string EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS {"excluded_windows"};
 EvaluationManager::EvaluationManager(nlohmann::json& config,
                                      COMPASS& compass)
     : Configurable(config, &compass)
+    , compass_(compass)
     , dbcontent_man_(compass.dbContentManager())
 {
     createSubConfigurables();
-    init_evaluation_commands();
+    init_evaluation_commands(compass_);
 }
 
 /**
@@ -144,7 +145,7 @@ void EvaluationManager::init()
 
     registerParameter("remove_disabled_utn_data", &remove_disabled_utn_data_, remove_disabled_utn_data_);
 
-    auto& dbc_manager = COMPASS::instance().dbContentManager();
+    auto& dbc_manager = dbcontent_man_;
 
     connect (&dbc_manager, &DBContentManager::associationStatusChangedSignal,
             this, &EvaluationManager::associationStatusChangedSlot);
@@ -157,7 +158,7 @@ void EvaluationManager::init()
     connect (dbc_manager.targetModel(), &dbContent::TargetModel::targetsDeletedSignal,
             this, &EvaluationManager::lockResultsSlot);
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = compass_.taskManager();
 
     connect (&task_manager, &TaskManager::taskRadarPlotPositionsDoneSignal, 
              this, &EvaluationManager::lockResultsSlot);
@@ -251,7 +252,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     traced_assert(calculator_local->evaluated());
 
     //store calculator to task result
-    auto& task_man = COMPASS::instance().taskManager();
+    auto& task_man = compass_.taskManager();
 
     traced_assert(task_man.hasResult(calculator_local->resultName()));
 
@@ -284,7 +285,7 @@ void EvaluationManager::databaseOpenedSlot()
     //load sectors before locking any results via this connections
     connect(this, &EvaluationManager::sectorsChangedSignal, this, &EvaluationManager::lockResultsSlot);
 
-    auto& dbinterface = COMPASS::instance().dbInterface();
+    auto& dbinterface = compass_.dbInterface();
 
     use_timestamp_filter_ = false;
     load_timestamp_begin_ = {};
@@ -318,7 +319,7 @@ void EvaluationManager::databaseOpenedSlot()
         }
     }
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbcontent_man_;
 
     if (dbcont_man.hasMinMaxTimestamp())
     {
@@ -415,7 +416,7 @@ void EvaluationManager::saveTimeConstraints()
 
     constraints_json[EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS] = load_filtered_time_windows_.asJSON();
 
-    COMPASS::instance().dbInterface().setProperty(EVAL_TIME_CONSTRAINTS_PROPRTY_NAME, constraints_json.dump());
+    compass_.dbInterface().setProperty(EVAL_TIME_CONSTRAINTS_PROPRTY_NAME, constraints_json.dump());
 }
 
 /**
@@ -431,7 +432,7 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
 {
     loginf << "dbcontent_name " << dbcontent_name;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     if (!dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_))
         return;
@@ -565,13 +566,13 @@ void EvaluationManager::loadSectors()
 
     traced_assert(!sectors_loaded_);
 
-    if (!COMPASS::instance().dbInterface().ready())
+    if (!compass_.dbInterface().ready())
     {
         sectors_loaded_ = false;
         return;
     }
 
-    sector_layers_ = COMPASS::instance().dbInterface().loadSectors();
+    sector_layers_ = compass_.dbInterface().loadSectors();
     sectors_loaded_ = true;
 
     updateMaxSectorID();
@@ -630,7 +631,7 @@ void EvaluationManager::createNewSector(const std::string& name,
 
     ++max_sector_id_; // new max
 
-    shared_ptr<Sector> sector(new Sector(max_sector_id_, name, layer_name, true, exclude, color, points));
+    shared_ptr<Sector> sector(new Sector(this, max_sector_id_, name, layer_name, true, exclude, color, points));
 
     // add to existing sectors
     if (!hasSectorLayer(layer_name))
@@ -761,7 +762,7 @@ void EvaluationManager::saveSector(std::shared_ptr<Sector> sector)
 {
     traced_assert(sectors_loaded_);
     traced_assert(hasSector(sector->name(), sector->layerName()));
-    COMPASS::instance().dbInterface().saveSector(sector);
+    compass_.dbInterface().saveSector(sector);
 }
 
 /**
@@ -790,7 +791,7 @@ void EvaluationManager::deleteSector(shared_ptr<Sector> sector)
         calculator_->checkMinHeightFilterValid();
     }
 
-    COMPASS::instance().dbInterface().deleteSector(sector);
+    compass_.dbInterface().deleteSector(sector);
 
     calculator_->clearData();
 
@@ -806,7 +807,7 @@ void EvaluationManager::deleteAllSectors()
 
     sector_layers_.clear();
 
-    COMPASS::instance().dbInterface().deleteAllSectors();
+    compass_.dbInterface().deleteAllSectors();
 
     calculator_->checkMinHeightFilterValid();
     calculator_->clearData();
@@ -824,7 +825,7 @@ void EvaluationManager::importSectors(const std::string& filename)
     traced_assert(calculator_);
 
     sector_layers_.clear();
-    COMPASS::instance().dbInterface().clearSectorsTable();
+    compass_.dbInterface().clearSectorsTable();
 
     std::ifstream input_file(filename, std::ifstream::in);
 
@@ -867,7 +868,7 @@ void EvaluationManager::importSectors(const std::string& filename)
             name = j_sec_it.at("name");
             layer_name = j_sec_it.at("layer_name");
 
-            auto eval_sector = new Sector(id, name, layer_name, true);
+            auto eval_sector = new Sector(this, id, name, layer_name, true);
             eval_sector->readJSON(j_sec_it.dump());
 
             if (!hasSectorLayer(layer_name))
@@ -992,7 +993,7 @@ void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& d
 {
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
-    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
 }
 
 /**
@@ -1000,7 +1001,7 @@ void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& d
 void EvaluationManager::resetViewableDataConfig(bool reset_view_point)
 {
     if (reset_view_point)
-        COMPASS::instance().viewManager().unsetCurrentViewPoint();
+        compass_.viewManager().unsetCurrentViewPoint();
 
     viewable_data_cfg_.reset();
 }
@@ -1019,7 +1020,7 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
 {
     traced_assert(!raw_data_available_);
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     auto ds_ids = calculator.usedDataSources();
 
@@ -1030,11 +1031,11 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
     //configure filters for load
     configureLoadFilters(calculator);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
     dbcontent_man.clearData(); //clear previously loaded data
 
     //!do not distribute this reload to views!
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    compass_.viewManager().disableDataDistribution(true);
 
     //add variables needed by evaluation
     needs_additional_variables_ = true;
@@ -1058,7 +1059,7 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
  */
 void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calculator)
 {
-    FilterManager& fil_man = COMPASS::instance().filterManager();
+    FilterManager& fil_man = compass_.filterManager();
 
     // set use filters
     fil_man.useFilters(true);
@@ -1136,7 +1137,7 @@ void EvaluationManager::loadingDone()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     if (active_load_connection_)
     {
@@ -1145,7 +1146,7 @@ void EvaluationManager::loadingDone()
     }
 
     //!reenable distribution to views!
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    compass_.viewManager().disableDataDistribution(false);
 
     traced_assert(!raw_data_available_);
 

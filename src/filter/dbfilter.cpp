@@ -20,6 +20,9 @@
 #include "dbfiltercondition.h"
 #include "dbfilterwidget.h"
 #include "filtermanager.h"
+#include "compass.h"
+#include "dbcontent/dbcontentmanager.h"
+#include "datasourcemanager.h"
 #include "logger.h"
 
 #include <QVBoxLayout>
@@ -36,7 +39,8 @@ using namespace nlohmann;
 
 DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
                    FilterManager* parent)
-    : Configurable(config, parent)
+    : Configurable(config, parent),
+      filter_manager_(*parent)
 {
     registerParameter("name", &name_, instanceId());
     registerParameter("is_custom", &is_custom_, false);
@@ -49,6 +53,10 @@ DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
     if (classId().compare("DBFilter") == 0)  // else do it in subclass
         createSubConfigurables();
 }
+
+COMPASS& DBFilter::compass() { return filter_manager_.compass(); }
+DBContentManager& DBFilter::dbContentManager() { return filter_manager_.dbContentManager(); }
+DataSourceManager& DBFilter::dataSourceManager() { return filter_manager_.dataSourceManager(); }
 
 DBFilter::~DBFilter()
 {

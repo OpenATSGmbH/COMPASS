@@ -175,7 +175,7 @@ VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
 
     if (dbcontent_name == "CAT063") // add sensor sec/sic special case
     {
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = compass().dbContentManager();
 
         traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
         traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));

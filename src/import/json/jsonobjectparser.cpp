@@ -34,8 +34,8 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent)
-    : Configurable(config, parent)
+JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, COMPASS& compass)
+    : Configurable(config, parent), compass_(compass)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("active", &active_, true);
@@ -68,7 +68,7 @@ void JSONObjectParser::generateSubConfigurable(nlohmann::json& child_json)
 
     if (class_id == "JSONDataMapping")
     {
-        auto* mapping = new JSONDataMapping(child_json, this);
+        auto* mapping = new JSONDataMapping(child_json, this, compass_);
         data_mappings_.emplace_back(mapping);
     }
     else
@@ -113,7 +113,7 @@ void JSONObjectParser::initialize()
 {
     traced_assert(!dbcontent_);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
         logwrn << "dbcontbject '" << db_content_name_

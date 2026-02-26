@@ -17,6 +17,7 @@
 
 #include "asterixoverridewidget.h"
 #include "asteriximporttask.h"
+#include "compass.h"
 #include "textfielddoublevalidator.h"
 #include "traced_assert.h"
 
@@ -290,7 +291,7 @@ void ASTERIXOverrideWidget::overrideActiveCheckedSlot()
 void ASTERIXOverrideWidget::todOffsetEditedSlot(const QString& value)
 {
     loginf << "value '" << value.toStdString() << "'";
-    TextFieldDoubleValidator::displayValidityAsColor(tod_offset_edit_);
+    TextFieldDoubleValidator::displayValidityAsColor(tod_offset_edit_, task_.compass().lineEditInvalidStyle());
 
     if (tod_offset_edit_->hasAcceptableInput())
         task_.settings().override_tod_offset_ = tod_offset_edit_->text().toDouble();

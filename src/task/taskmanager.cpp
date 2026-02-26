@@ -63,8 +63,8 @@ const bool TaskManager::CleanupDBIfNeeded = true;
 // TaskManager::TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
 //     : Configurable(class_id, instance_id, compass, "task.json") ...
 
-TaskManager::TaskManager(nlohmann::json& config, Configurable* parent)
-    : Configurable(config, parent)
+TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass), compass_(compass)
 {
     setObjectName("TaskManager");
 
@@ -129,7 +129,7 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     else if (class_id == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
-        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this));
+        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this, compass_));
         traced_assert(radar_plot_position_calculator_task_);
         addTask(class_id, radar_plot_position_calculator_task_.get());
 
@@ -387,7 +387,7 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     }
     else if (type == task::TaskResultType::Evaluation)
     {
-        result.reset(new EvaluationTaskResult(id, *this));
+        result.reset(new EvaluationTaskResult(id, *this, compass_));
     }
     
     return result;
@@ -459,9 +459,9 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
         auto result_ptr = current_result_.get();
         bool cleanup_db = CleanupDBIfNeeded;
 
-        auto cb = [ result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
+        auto cb = [ this, result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
         {
-            return COMPASS::instance().dbInterface().saveResult(*result_ptr, cleanup_db);
+            return compass_.dbInterface().saveResult(*result_ptr, cleanup_db);
         };
 
         AsyncFuncTask task(cb, "Save Result", "Saving result", false);
@@ -489,7 +489,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 void TaskManager::resultHeaderChanged(const TaskResult& result)
 {
     //update result header upon change
-    auto res = COMPASS::instance().dbInterface().updateResultHeader(result);
+    auto res = compass_.dbInterface().updateResultHeader(result);
     traced_assert(res.ok());
 
     emit taskResultHeaderChangedSignal(QString::fromStdString(result.name()));
@@ -500,7 +500,7 @@ void TaskManager::resultHeaderChanged(const TaskResult& result)
 void TaskManager::resultContentChanged(const TaskResult& result)
 {
     //update result content upon change
-    auto res = COMPASS::instance().dbInterface().updateResultContent(result);
+    auto res = compass_.dbInterface().updateResultContent(result);
     traced_assert(res.ok());
 }
 
@@ -613,7 +613,7 @@ bool TaskManager::removeResult(const std::string& name,
     const auto& result = results_.at(id.value());
     traced_assert(result);
 
-    auto res = COMPASS::instance().dbInterface().deleteResult(*result, CleanupDBIfNeeded);
+    auto res = compass_.dbInterface().deleteResult(*result, CleanupDBIfNeeded);
     if (!res.ok())
         return false;
 
@@ -671,14 +671,14 @@ void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
 {
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
-    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get(), load_blocking);
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get(), load_blocking);
 }
 
 /**
  */
 void TaskManager::unsetViewableDataConfig()
 {
-    COMPASS::instance().viewManager().unsetCurrentViewPoint();
+    compass_.viewManager().unsetCurrentViewPoint();
     viewable_data_cfg_.reset();
 }
 
@@ -697,7 +697,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 
         auto cb = [ this, result_ptr, section, content_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
         { 
-            *result_ptr = COMPASS::instance().dbInterface().loadContent(section, content_id);
+            *result_ptr = compass_.dbInterface().loadContent(section, content_id);
             return true;
         };
 
@@ -707,7 +707,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
     else
     {
         //directly run
-        result = COMPASS::instance().dbInterface().loadContent(section, content_id);
+        result = compass_.dbInterface().loadContent(section, content_id);
     }
 
     if (!result.ok())
@@ -727,7 +727,7 @@ void TaskManager::loadResults()
 
     results_.clear();
     
-    auto res = COMPASS::instance().dbInterface().loadResults();
+    auto res = compass_.dbInterface().loadResults();
     if (!res.ok())
     {
         logerr << "could not load stored results: " << res.error();

@@ -16,7 +16,6 @@
  */
 
 #include "dbcontent/variable/variableorderedset.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
@@ -37,8 +36,8 @@ namespace dbContent
 //                                        Configurable* parent)
 //     : Configurable(class_id, instance_id, parent) ...
 
-VariableOrderedSet::VariableOrderedSet(nlohmann::json& config, Configurable* parent)
-    : Configurable(config, parent)
+VariableOrderedSet::VariableOrderedSet(nlohmann::json& config, DBContentManager& dbcont_man, Configurable* parent)
+    : Configurable(config, parent), dbcont_man_(dbcont_man)
 {
     registerParameter("variable_definitions", &variable_definitions_, nlohmann::json::array());
 
@@ -47,8 +46,6 @@ VariableOrderedSet::VariableOrderedSet(nlohmann::json& config, Configurable* par
     // check set contents
 
     loginf << "checking";
-
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     std::vector<std::pair<std::string,std::string>> tmp_vec = definitions();
 
@@ -233,8 +230,6 @@ VariableSet VariableOrderedSet::getFor(const std::string& dbcontent_name)
 {
     logdbg << "dbcontent_name " << dbcontent_name;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     VariableSet per_dbcont_set;
 
     std::vector<std::pair<std::string,std::string>> tmp_vec = definitions();
@@ -243,15 +238,15 @@ VariableSet VariableOrderedSet::getFor(const std::string& dbcontent_name)
     {
         if (def_it.first == META_OBJECT_NAME)
         {
-            traced_assert(dbcont_man.existsMetaVariable(def_it.second));
-            if (dbcont_man.metaVariable(def_it.second).existsIn(dbcontent_name))
-                per_dbcont_set.add(dbcont_man.metaVariable(def_it.second).getFor(dbcontent_name));
+            traced_assert(dbcont_man_.existsMetaVariable(def_it.second));
+            if (dbcont_man_.metaVariable(def_it.second).existsIn(dbcontent_name))
+                per_dbcont_set.add(dbcont_man_.metaVariable(def_it.second).getFor(dbcontent_name));
         }
         else if (def_it.first == dbcontent_name)
         {
-            traced_assert(dbcont_man.existsDBContent(dbcontent_name));
-            traced_assert(dbcont_man.dbContent(dbcontent_name).hasVariable(def_it.second));
-            per_dbcont_set.add(dbcont_man.dbContent(dbcontent_name).variable(def_it.second));
+            traced_assert(dbcont_man_.existsDBContent(dbcontent_name));
+            traced_assert(dbcont_man_.dbContent(dbcontent_name).hasVariable(def_it.second));
+            per_dbcont_set.add(dbcont_man_.dbContent(dbcontent_name).variable(def_it.second));
         }
     }
 

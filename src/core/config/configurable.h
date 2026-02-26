@@ -204,7 +204,6 @@ private:
     Configurable* parent_{nullptr};
     std::string path_str_;                          ///< Dot-separated path from root
     Configuration* configuration_{nullptr};         ///< Owned. Created in constructor, deleted in destructor.
-    bool is_root_{false};                           ///< True if registered with ConfigurationManager as a root
     bool is_transient_{true};                       ///< True until json-backed constructor runs
 
     bool tmp_disable_remove_config_on_delete_ {false};

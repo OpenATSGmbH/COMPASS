@@ -73,7 +73,9 @@ public slots:
 
 public:
     // TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
-    TaskManager(nlohmann::json& config, Configurable* parent = nullptr);
+    TaskManager(nlohmann::json& config, COMPASS& compass);
+
+    COMPASS& compass() { return compass_; }
 
     virtual ~TaskManager();
 
@@ -149,6 +151,8 @@ protected:
     void loadResults();
     void clearResults();
     boost::optional<unsigned int> findResult(const std::string& name) const;
+
+    COMPASS& compass_;
 
     // tasks
     std::unique_ptr<ASTERIXImportTask> asterix_importer_task_;

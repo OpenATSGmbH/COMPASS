@@ -52,17 +52,17 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        dbContent::Variable& x_stddev_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& x_stddev_var = dbContentManager().metaVariable(
                     DBContent::meta_var_x_stddev_.name()).getFor(dbcontent_name);
 
-        dbContent::Variable& y_stddev_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& y_stddev_var = dbContentManager().metaVariable(
                     DBContent::meta_var_y_stddev_.name()).getFor(dbcontent_name);
 
         if (!first)

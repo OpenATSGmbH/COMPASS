@@ -44,7 +44,7 @@ using namespace Utils;
 ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& parser, QWidget* parent)
     : QWidget(parent), parser_(parser)
 {
-    expert_mode_ = COMPASS::instance().expertMode();
+    expert_mode_ = parser_.compass().expertMode();
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
@@ -114,7 +114,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
 
 
     //    UnitSelectionWidget* unit_sel_ {nullptr};
-    unit_sel_ = new UnitSelectionWidget();
+    unit_sel_ = new UnitSelectionWidget(parser_.compass().unitManager());
     form_layout->addRow("Unit", unit_sel_);
 
 
@@ -134,7 +134,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
     dbcontvar_label->setFont(font_bold);
     form_layout->addRow(dbcontvar_label);
 
-    dbcont_var_sel_ = new dbContent::VariableSelectionWidget();
+    dbcont_var_sel_ = new dbContent::VariableSelectionWidget(parser_.compass().dbContentManager());
     dbcont_var_sel_->showMetaVariables(false);
     dbcont_var_sel_->showDBContentOnly(parser_.dbContentName());
     dbcont_var_sel_->showEmptyVariable(true);

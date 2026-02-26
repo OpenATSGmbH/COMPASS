@@ -31,6 +31,7 @@
 
 #include "json.hpp"
 
+class COMPASS;
 class TaskResult;
 
 namespace ResultReport
@@ -91,6 +92,8 @@ signals:
     void progressChanged();
 
 protected:
+    COMPASS& compass() const;
+
     virtual ResultT<nlohmann::json> exportReport_impl(TaskResult& result,
                                                       Section* section,
                                                       const boost::optional<unsigned int>& content_id);

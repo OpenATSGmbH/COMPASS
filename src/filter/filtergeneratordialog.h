@@ -27,6 +27,7 @@ namespace dbContent
 class VariableSelectionWidget;
 }
 
+class FilterManager;
 class QLineEdit;
 class QCheckBox;
 class QComboBox;
@@ -57,10 +58,12 @@ class FilterGeneratorDialog : public QDialog
     void cancel();
 
   public:
-    FilterGeneratorDialog(QWidget* parent = nullptr);
+    FilterGeneratorDialog(FilterManager& filter_man, QWidget* parent = nullptr);
     virtual ~FilterGeneratorDialog();
 
   protected:
+    FilterManager& filter_man_;
+
     QLineEdit* filter_name_{nullptr};
     dbContent::VariableSelectionWidget* condition_variable_widget_{nullptr};
     QPushButton* add_condition_button_{nullptr};

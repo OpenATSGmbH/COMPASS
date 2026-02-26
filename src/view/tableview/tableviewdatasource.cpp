@@ -46,6 +46,7 @@ TableViewDataSource::TableViewDataSource(nlohmann::json& config,
                                          TableView* parent)
 :   QObject()
 ,   Configurable(config, parent)
+,   view_(*parent)
 {
     createSubConfigurables();
 }
@@ -66,7 +67,7 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
     {
         traced_assert(!set_);
 
-        set_.reset(new VariableOrderedSet(child_json, this));
+        set_.reset(new VariableOrderedSet(child_json, view_.compass().dbContentManager(), this));
 
         connect(set_.get(), &VariableOrderedSet::setChangedSignal, this,
                 &TableViewDataSource::setChangedSignal, Qt::UniqueConnection);
@@ -84,7 +85,7 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 
 void TableViewDataSource::checkSubConfigurables()
 {
-    //DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    //DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     if (!set_)
     {
@@ -246,7 +247,7 @@ bool TableViewDataSource::addTemporaryVariable (const std::string& dbcontent_nam
     loginf << "dbcontent_name '" << dbcontent_name
            << "' var_name '" << var_name << "'";
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
     
     traced_assert(set_);
     if (dbcontent_name == META_OBJECT_NAME)
@@ -286,7 +287,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 //    traced_assert(el != temporary_added_variables_.end());
 //    temporary_added_variables_.erase(el);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -309,7 +310,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 
 void TableViewDataSource::addDefaultVariables (VariableOrderedSet& set)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     // Timestamp
     if (dbcont_man.existsMetaVariable(DBContent::meta_var_timestamp_.name()))

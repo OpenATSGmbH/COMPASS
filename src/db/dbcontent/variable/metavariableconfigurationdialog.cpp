@@ -38,7 +38,7 @@ namespace dbContent
 MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManager& dbcont_man)
     : QDialog(), dbcont_man_(dbcont_man)
 {
-    if (COMPASS::instance().expertMode())
+    if (dbcont_man_.compass().expertMode())
         setWindowTitle("Configure Meta Variables");
     else
         setWindowTitle("Show Meta Variables");
@@ -77,7 +77,7 @@ MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManage
 
     // buttons
 
-    if (COMPASS::instance().expertMode())
+    if (dbcont_man_.compass().expertMode())
     {
         QHBoxLayout* button_layout = new QHBoxLayout();
 

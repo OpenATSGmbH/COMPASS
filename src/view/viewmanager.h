@@ -77,6 +77,8 @@ class ViewManager : public QObject, public Configurable
     ViewManager(nlohmann::json& config, COMPASS& compass);
     virtual ~ViewManager();
 
+    COMPASS& compass() { return compass_; }
+
     void init(QTabWidget* main_tab_widget);
     void close();
 

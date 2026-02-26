@@ -26,7 +26,8 @@
 
 #include <boost/optional.hpp>
 
-extern void init_evaluation_commands();
+class COMPASS;
+extern void init_evaluation_commands(COMPASS& compass);
 
 /**
  * evaluate

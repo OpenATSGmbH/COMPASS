@@ -148,19 +148,19 @@ bool RTCommandImportDataSourcesFile::run_impl()
         return false;
     }
 
-//    if (!COMPASS::instance().dbOpened())
+//    if (!compass_->dbOpened())
 //    {
 //        setResultMessage("Database not opened");
 //        return false;
 //    }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    COMPASS::instance().dataSourceManager().importDataSources(filename_);
+    compass_->dataSourceManager().importDataSources(filename_);
 
     return true;
 }
@@ -183,13 +183,13 @@ void RTCommandImportDataSourcesFile::assignVariables_impl(const VariablesMap& va
 
 bool RTCommandDeleteAllDataSources::run_impl()
 {
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    COMPASS::instance().dataSourceManager().deleteAllConfigDataSources();
+    compass_->dataSourceManager().deleteAllConfigDataSources();
 
     return true;
 }
@@ -217,21 +217,21 @@ bool RTCommandImportSectorsJSON::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
     try
     {
-        COMPASS::instance().evaluationManager().importSectors(filename_);
+        compass_->evaluationManager().importSectors(filename_);
     }
     catch(const std::exception& e)
     {
@@ -246,8 +246,8 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     size_t num_sectors = 0;
 
-    traced_assert(COMPASS::instance().evaluationManager().sectorsLoaded());
-    const auto& sector_layers = COMPASS::instance().evaluationManager().sectorsLayers();
+    traced_assert(compass_->evaluationManager().sectorsLoaded());
+    const auto& sector_layers = compass_->evaluationManager().sectorsLayers();
 
     for (const auto& sl : sector_layers)
         num_sectors += sl->size();
@@ -285,19 +285,19 @@ RTCommandCalculateRadarPlotPositions::RTCommandCalculateRadarPlotPositions()
 
 bool RTCommandCalculateRadarPlotPositions::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    RadarPlotPositionCalculatorTask& task = COMPASS::instance().taskManager().radarPlotPositionCalculatorTask();
+    RadarPlotPositionCalculatorTask& task = compass_->taskManager().radarPlotPositionCalculatorTask();
 
     if(!task.canRun())
     {
@@ -321,19 +321,19 @@ RTCommandCalculateARTASAssociations::RTCommandCalculateARTASAssociations()
 
 bool RTCommandCalculateARTASAssociations::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    CreateARTASAssociationsTask& task = COMPASS::instance().taskManager().createArtasAssociationsTask();
+    CreateARTASAssociationsTask& task = compass_->taskManager().createArtasAssociationsTask();
 
     if(!task.canRun())
     {
@@ -357,23 +357,23 @@ RTCommandReconstructReferences::RTCommandReconstructReferences()
 
 bool RTCommandReconstructReferences::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    ReconstructorTask& task = COMPASS::instance().taskManager().reconstructReferencesTask();
+    ReconstructorTask& task = compass_->taskManager().reconstructReferencesTask();
 
     if (!disabled_sensors_.empty())
     {
-        auto& ds_manager = COMPASS::instance().dataSourceManager();
+        auto& ds_manager = compass_->dataSourceManager();
 
         std::vector<std::string> sensors_to_disable = Utils::String::split(disabled_sensors_, ';');
         for (const auto& sensor_name : sensors_to_disable)
@@ -431,15 +431,15 @@ RTCommandLoadData::RTCommandLoadData()
 
 bool RTCommandLoadData::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
@@ -468,15 +468,15 @@ bool RTCommandExportViewPointsReport::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
@@ -485,7 +485,7 @@ bool RTCommandExportViewPointsReport::run_impl()
 
     //main_window->showViewPointsTab();
 
-    ViewPointsReportGenerator& gen = COMPASS::instance().viewManager().viewPointsGenerator();
+    ViewPointsReportGenerator& gen = compass_->viewManager().viewPointsGenerator();
 
     ViewPointsReportGeneratorDialog& dialog = gen.dialog();
     dialog.show();
@@ -531,19 +531,19 @@ bool RTCommandExportReport::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = compass_->taskManager();
 
     if (!task_manager.hasResult(result_name_))
     {
@@ -603,19 +603,19 @@ RTCommandGetExistingReports::RTCommandGetExistingReports()
 */
 bool RTCommandGetExistingReports::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = compass_->taskManager();
 
     std::vector<std::string> results;
 
@@ -650,19 +650,19 @@ rtcommand::IsValid RTCommandGetReport::valid() const
 */
 bool RTCommandGetReport::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = compass_->taskManager();
 
     if (!task_manager.hasResult(result_name))
     {
@@ -784,11 +784,11 @@ void RTCommandReconfigure::assignVariables_impl(const VariablesMap& variables)
 bool RTCommandReconfigure::run_impl()
 {
     //try to find configurable by path
-    auto find_result = COMPASS::instance().findSubConfigurablePath(path);
+    auto find_result = compass_->findSubConfigurablePath(path);
     if (find_result.first != rtcommand::FindObjectErrCode::NoError)
     {
         //not found by path => try to find configurable by name
-        find_result = COMPASS::instance().findSubConfigurableName(path);
+        find_result = compass_->findSubConfigurableName(path);
 
         //not found
         if (find_result.first != rtcommand::FindObjectErrCode::NoError)
@@ -881,9 +881,9 @@ bool RTCommandClientInfo::run_impl()
 {
     nlohmann::json info;
 
-    info[ "appimage" ] = COMPASS::instance().isAppImage();
-    info[ "version"  ] = COMPASS::instance().config().getString("version");
-    info[ "appmode"  ] = COMPASS::instance().appModeStr();
+    info[ "appimage" ] = compass_->isAppImage();
+    info[ "version"  ] = compass_->config().getString("version");
+    info[ "appmode"  ] = compass_->appModeStr();
 
     setJSONReply(info);
 

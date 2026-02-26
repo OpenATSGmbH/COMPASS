@@ -244,7 +244,7 @@ void FilterManagerWidget::addFilter()
 {
     loginf;
     
-    FilterGeneratorDialog filter_generator(this);
+    FilterGeneratorDialog filter_generator(filter_manager_, this);
     if (filter_generator.exec() == QDialog::Accepted)
     {
         filter_manager_.sortFilters();

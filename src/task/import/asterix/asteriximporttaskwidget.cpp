@@ -18,6 +18,7 @@
 #include "asteriximporttaskwidget.h"
 #include "asterixconfigwidget.h"
 #include "asteriximporttask.h"
+#include "compass.h"
 #include "asterixoverridewidget.h"
 #include "logger.h"
 #include "dbcontent/selectdialog.h"
@@ -183,12 +184,12 @@ void ASTERIXImportTaskWidget::addMappingsTab()
 
     add_object_parser_button_ = new QPushButton("Add");
     connect(add_object_parser_button_, SIGNAL(clicked()), this, SLOT(addParserSlot()));
-    add_object_parser_button_->setEnabled(COMPASS::instance().expertMode());
+    add_object_parser_button_->setEnabled(task_.compass().expertMode());
     parser_manage_layout->addWidget(add_object_parser_button_);
 
     delete_object_parser_button_ = new QPushButton("Remove");
     connect(delete_object_parser_button_, SIGNAL(clicked()), this, SLOT(removeObjectParserSlot()));
-    delete_object_parser_button_->setEnabled(COMPASS::instance().expertMode());
+    delete_object_parser_button_->setEnabled(task_.compass().expertMode());
     parser_manage_layout->addWidget(delete_object_parser_button_);
 
     parsers_layout->addLayout(parser_manage_layout);
@@ -222,7 +223,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
         return;
     }
 
-    dbContent::SelectDBContentDialog dialog;
+    dbContent::SelectDBContentDialog dialog(task_.compass().dbContentManager());
 
     int ret = dialog.exec();
 
@@ -416,7 +417,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         tree_widget->header()->setSectionResizeMode(4, QHeaderView::ResizeMode::ResizeToContents);
         tree_widget->header()->setSectionResizeMode(5, QHeaderView::ResizeMode::Stretch);
 
-        tree_widget->setColumnHidden(2, COMPASS::instance().isAppImage());
+        tree_widget->setColumnHidden(2, task_.compass().isAppImage());
         //tree_widget->setColumnHidden(3, true);
 
         unsigned int file_idx = 0;

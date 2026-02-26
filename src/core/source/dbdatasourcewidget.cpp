@@ -37,6 +37,7 @@ namespace dbContent
 
 DBDataSourceWidget::DBDataSourceWidget(
     DBDataSource& src,
+    DataSourceManager& ds_man,
     std::function<bool()> get_use_ds_func,
     std::function<void(bool)> set_use_ds_func,
     std::function<bool(unsigned int)> get_use_ds_line_func,
@@ -44,7 +45,7 @@ DBDataSourceWidget::DBDataSourceWidget(
     std::function<bool()> show_counts_func,
     QWidget *parent)
     : QWidget(parent), src_(src),
-      ds_man_(COMPASS::instance().dataSourceManager()),
+      ds_man_(ds_man),
       get_use_ds_func_(get_use_ds_func), set_use_ds_func_(set_use_ds_func),
       get_use_ds_line_func_(get_use_ds_line_func), set_use_ds_line_func_(set_use_ds_line_func),
       show_counts_func_(show_counts_func)
@@ -212,7 +213,7 @@ QWidget* DBDataSourceWidget::createLinesWidget()
     unsigned int button_size = 26;
     widget->setMinimumHeight(button_size);
 
-    bool dark_mode = COMPASS::instance().darkMode();
+    bool dark_mode = ds_man_.compass().darkMode();
 
     for (unsigned int cnt=0; cnt < 4; ++cnt)
     {
@@ -258,7 +259,7 @@ void DBDataSourceWidget::updateWidgets()
     load_check_->setText(src_.name().c_str());
     load_check_->setChecked(get_use_ds_func_());
 
-    AppMode app_mode = COMPASS::instance().appMode();
+    AppMode app_mode = ds_man_.compass().appMode();
 
     bool net_lines_shown = app_mode == AppMode::LivePaused
             || app_mode == AppMode::LiveRunning;
@@ -278,7 +279,7 @@ void DBDataSourceWidget::updateWidgets()
 
         boost::posix_time::ptime current_time = Time::currentUTCTime();
 
-        bool dark_mode = COMPASS::instance().darkMode();
+        bool dark_mode = ds_man_.compass().darkMode();
 
         for (unsigned int line_cnt=0; line_cnt < 4; ++line_cnt)
         {

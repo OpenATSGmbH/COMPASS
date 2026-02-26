@@ -56,6 +56,8 @@ class TableViewDataSource : public QObject, public Configurable
 protected:
     virtual void checkSubConfigurables();
 
+    TableView& view_;
+
     bool addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set, true of added
     void removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set
 

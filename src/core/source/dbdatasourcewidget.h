@@ -47,6 +47,7 @@ class DBDataSourceWidget : public QWidget
   public:
     explicit DBDataSourceWidget(
         DBDataSource& src,
+        DataSourceManager& ds_man,
         std::function<bool()> get_use_ds_func,
         std::function<void(bool)> set_use_ds_func,
         std::function<bool(unsigned int)> get_use_ds_line_func,

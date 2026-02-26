@@ -30,8 +30,9 @@ const std::string LicenseManager::LicenseFileName = "licenses.json";
 
 /**
 */
-LicenseManager::LicenseManager(nlohmann::json& config, COMPASS* parent)
-    : Configurable(config, parent)
+LicenseManager::LicenseManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass),
+      compass_(compass)
 {
     readLicenses();
 

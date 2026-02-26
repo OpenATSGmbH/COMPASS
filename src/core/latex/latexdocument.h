@@ -19,12 +19,13 @@
 
 #include "latexcontent.h"
 
+class COMPASS;
 class LatexSection;
 
 class LatexDocument : public LatexContent
 {
 public:
-    LatexDocument(const std::string& path, const std::string& filename); // path has to end with /
+    LatexDocument(COMPASS& compass, const std::string& path, const std::string& filename); // path has to end with /
 
     void write();
 
@@ -49,6 +50,8 @@ public:
     std::string filename() const;
 
 protected:
+    COMPASS& compass_;
+
     std::string path_;
     std::string filename_;
 

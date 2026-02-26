@@ -129,9 +129,9 @@ ViewPointsWidget::ViewPointsWidget(ViewManager& view_manager)
         connect (p_shortcut, &QShortcut::activated, this, &ViewPointsWidget::selectPreviousSlot);
     }
 
-    QObject::connect(&COMPASS::instance(), &COMPASS::databaseOpenedSignal,
+    QObject::connect(&view_manager_.compass(), &COMPASS::databaseOpenedSignal,
                      this, &ViewPointsWidget::databaseOpenedSlot);
-    QObject::connect(&COMPASS::instance(), &COMPASS::databaseClosedSignal,
+    QObject::connect(&view_manager_.compass(), &COMPASS::databaseClosedSignal,
                      this, &ViewPointsWidget::databaseClosedSlot);
 }
 
@@ -587,7 +587,7 @@ void ViewPointsWidget::exportSlot()
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(COMPASS::instance().lastUsedPath().c_str());
+    dialog.setDirectory(view_manager_.compass().lastUsedPath().c_str());
     dialog.setNameFilter("JSON Files (*.json)");
     dialog.setDefaultSuffix("json");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
@@ -635,7 +635,7 @@ void ViewPointsWidget::importSlot()
 {
     loginf;
 
-    COMPASS::instance().mainWindow().importViewPointsSlot();
+    view_manager_.compass().mainWindow().importViewPointsSlot();
 
     resizeColumnsToContents();
 }

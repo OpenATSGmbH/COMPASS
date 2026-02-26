@@ -82,7 +82,7 @@ ViewContainerWidget::ViewContainerWidget(nlohmann::json& config,
 
     createSubConfigurables();
 
-    if (COMPASS::instance().disableAddRemoveViews())
+    if (view_manager_.compass().disableAddRemoveViews())
         setWindowFlags(Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
     show();
@@ -153,7 +153,7 @@ void ViewContainerWidget::resizeEvent(QResizeEvent* event)
 
 void ViewContainerWidget::updateWindowTitle()
 {
-    std::string title = COMPASS::instance().versionString() + " " + name_;
+    std::string title = view_manager_.compass().versionString() + " " + name_;
     QWidget::setWindowTitle(title.c_str());
 }
 

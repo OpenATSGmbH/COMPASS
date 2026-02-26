@@ -45,14 +45,14 @@ ModeCFilter::~ModeCFilter() {}
 
 bool ModeCFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcont_name);
+    return dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcont_name);
 }
 
 std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = dbContentManager();
 
     if (!dbcont_man.metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
         return "";
@@ -201,10 +201,10 @@ std::vector<unsigned int> ModeCFilter::filterBuffer(const std::string& dbcontent
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
         return to_be_removed;
 
-    dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+    dbContent::Variable& var = dbContentManager().metaVariable(
                                                                          DBContent::meta_var_mc_.name()).getFor(dbcontent_name);
 
     traced_assert(buffer->has<float> (var.name()));

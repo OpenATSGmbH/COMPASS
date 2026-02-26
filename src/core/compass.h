@@ -18,7 +18,6 @@
 #pragma once
 
 #include "configurable.h"
-#include "singleton.h"
 #include "json_fwd.hpp"
 #include "appmode.h"
 #include "result.h"
@@ -43,13 +42,18 @@ class MainWindow;
 class FFTManager;
 class LicenseManager;
 class ConfigJSON;
+class ConfigurationManager;
+class JobManager;
+class UnitManager;
+class ProjectionManager;
+class RTCommandManager;
 
 namespace rtcommand
 {
     class RTCommandRunner;
 }
 
-class COMPASS : public QObject, public Configurable, public Singleton
+class COMPASS : public QObject, public Configurable
 {
     Q_OBJECT
 
@@ -59,6 +63,7 @@ signals:
     void appModeSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
 
 public:
+    explicit COMPASS(ConfigurationManager& config_manager);
     virtual ~COMPASS();
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
@@ -86,9 +91,16 @@ public:
     rtcommand::RTCommandRunner& rtCmdRunner();
     FFTManager& fftManager();
     LicenseManager& licenseManager();
+    JobManager& jobManager();
+    UnitManager& unitManager();
+    ProjectionManager& projectionManager();
+    RTCommandManager& rtCommandManager();
+    ConfigurationManager& configManager() { return config_manager_; }
 
     void init();
     void shutdown();
+
+    void setAppState(AppState state);
 
     MainWindow& mainWindow();
 
@@ -98,12 +110,6 @@ public:
     std::string versionString(bool open_ats = true, 
                               bool license_type = true) const;
     std::string licenseeString(bool licensed_to = true) const;
-
-    static COMPASS& instance()
-    {
-        static COMPASS instance;
-        return instance;
-    }
 
     std::string lastDbFilename() const;
     std::vector<std::string> dbFileList() const;
@@ -167,14 +173,11 @@ public:
     LogStore& logStore();
 
     const nlohmann::json& unspecificACIDs() const { return unspecific_acids_; }
-    //const nlohmann::json& unspecificModeAs() const { return unspecific_mode_3as_; }
 
     bool sensorStatusTimeHack() const;
     void sensorStatusTimeHack(bool value);
 
 protected:
-    COMPASS();
-
     Result openDBFileInternal(const std::string& filename);
     Result createNewDBFileInternal(const std::string& filename);
     Result createInMemDBFileInternal(const std::string& future_filename);
@@ -183,6 +186,8 @@ protected:
     Result closeDBInternal();
 
     virtual void checkSubConfigurables() override;
+
+    ConfigurationManager& config_manager_;
 
     bool db_opened_{false};
     bool db_inmem_{false};
@@ -225,6 +230,10 @@ protected:
     std::unique_ptr<EvaluationManager> eval_manager_;
     std::unique_ptr<FFTManager> fft_manager_;
     std::unique_ptr<LicenseManager> license_manager_;
+    std::unique_ptr<JobManager> job_manager_;
+    std::unique_ptr<UnitManager> unit_manager_;
+    std::unique_ptr<ProjectionManager> projection_manager_;
+    std::unique_ptr<RTCommandManager> rt_cmd_manager_;
 
     std::unique_ptr<rtcommand::RTCommandRunner> rt_cmd_runner_;
 
@@ -243,12 +252,6 @@ protected:
     MainWindow* main_window_;
 
     nlohmann::json unspecific_acids_;
-    //nlohmann::json unspecific_mode_3as_;
 
     bool sensor_status_time_hack_{false};
-
-private:
-    friend class Client;
-
-    void setAppState(AppState state);
 };

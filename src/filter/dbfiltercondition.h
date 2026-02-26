@@ -26,6 +26,8 @@ class QWidget;
 class QLineEdit;
 class QLabel;
 
+class COMPASS;
+class DBContentManager;
 class DBFilter;
 
 namespace dbContent
@@ -93,6 +95,9 @@ public:
     bool getDisplayInstanceId() const;
 
 private:
+    COMPASS& compass_;
+    DBContentManager& dbcont_man_;
+
     DBFilter* filter_parent_{nullptr};
     std::string operator_;
     //bool op_and_{true};

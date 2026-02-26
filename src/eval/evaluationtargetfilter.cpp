@@ -69,7 +69,7 @@ void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)
 
     time_duration short_duration = Time::partialSeconds(remove_short_targets_min_duration_);
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = eval_manager_.dbContentManager();
 
     for (auto target_it = target_data.begin(); target_it != target_data.end(); ++target_it)
     {

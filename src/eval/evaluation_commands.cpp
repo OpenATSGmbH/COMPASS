@@ -28,10 +28,13 @@
 
 REGISTER_RTCOMMAND(RTCommandEvaluate)
 
+static COMPASS* s_compass = nullptr;
+
 /**
 */
-void init_evaluation_commands()
+void init_evaluation_commands(COMPASS& compass)
 {
+    s_compass = &compass;
     RTCommandEvaluate::init();
 }
 
@@ -41,19 +44,19 @@ void init_evaluation_commands()
 
 bool RTCommandEvaluate::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!(*s_compass).dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if ((*s_compass).appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+(*s_compass).appModeStr());
         return false;
     }
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = (*s_compass).evaluationManager();
 
     //try to parse configuration
     if (!config_.empty())
@@ -67,7 +70,7 @@ bool RTCommandEvaluate::run_impl()
     }
 
     if (run_filter_)
-        COMPASS::instance().dbContentManager().autoFilterUTNS();
+        (*s_compass).dbContentManager().autoFilterUTNS();
 
     auto can_evaluate = eval_man.canEvaluate();
     if (!can_evaluate.ok())

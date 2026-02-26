@@ -122,8 +122,9 @@ double DataSourceManager::Config::sensorStatusMaxStatusAgeMaxValue() const
     return (double)value;
 }
 
-DataSourceManager::DataSourceManager(nlohmann::json& config, COMPASS* parent)
-    : Configurable(config, parent)
+DataSourceManager::DataSourceManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass),
+      compass_(compass)
 {
     registerParameter("load_widget_show_counts", &config_.load_widget_show_counts_, Config().load_widget_show_counts_);
     registerParameter("load_widget_show_lines", &config_.load_widget_show_lines_, Config().load_widget_show_lines_);
@@ -183,9 +184,9 @@ void DataSourceManager::generateSubConfigurable(nlohmann::json& child_json)
 
 void DataSourceManager::addSensorStatusVariables(const std::string& dbcontent_name, dbContent::VariableSet& var_set) const
 {
-    auto& dbcontent_man = COMPASS::instance().dbContentManager();
+    auto& dbcontent_man = compass_.dbContentManager();
 
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (compass_.appMode() == AppMode::LiveRunning)
     {
         if (dbcontent_name == "CAT063")
         {
@@ -354,7 +355,7 @@ void DataSourceManager::importDataSourcesJSON(const nlohmann::json& j)
             dbDataSource(ds_id).setFromJSON(j_ds_it);
     }
 
-    if (COMPASS::instance().dbOpened())
+    if (compass_.dbOpened())
         saveDBDataSources();
 }
 
@@ -847,7 +848,7 @@ void DataSourceManager::loadDBDataSources()
 {
     traced_assert(!db_data_sources_.size());
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_.dbInterface();
 
     if (db_interface.existsDataSourcesTable())
     {
@@ -925,7 +926,7 @@ void DataSourceManager::saveDBDataSources()
 {
     loginf;
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_.dbInterface();
 
     traced_assert(db_interface.ready());
     db_interface.saveDataSources(db_data_sources_);

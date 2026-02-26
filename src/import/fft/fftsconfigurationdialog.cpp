@@ -21,7 +21,6 @@
 #include "fftmanager.h"
 #include "util/number.h"
 #include "logger.h"
-#include "compass.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -232,7 +231,7 @@ void FFTsConfigurationDialog::importClickedSlot()
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import FFTs",
-                COMPASS::instance().lastUsedPath().c_str(), "*.json").toStdString();
+                fft_man_.lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {
@@ -274,7 +273,7 @@ void FFTsConfigurationDialog::exportClickedSlot()
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export FFTs as JSON",
-                COMPASS::instance().lastUsedPath().c_str(), "*.json").toStdString();
+                fft_man_.lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {

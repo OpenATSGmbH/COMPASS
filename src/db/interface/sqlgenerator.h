@@ -32,13 +32,14 @@ class Buffer;
 class DBCommand;
 class DBCommandList;
 class DBContent;
+class DBContentManager;
 
 /**
  */
 class SQLGenerator
 {
 public:
-    SQLGenerator(const db::SQLConfig& config);
+    SQLGenerator(const db::SQLConfig& config, DBContentManager& dbcont_man);
     virtual ~SQLGenerator();
 
     std::string getCreateTableStatement(const DBContent& object);
@@ -146,6 +147,7 @@ private:
                                         int primary_key = -1) const;
 
     db::SQLConfig config_;
+    DBContentManager& dbcont_man_;
 
     //    std::string subTablesWhereClause(const DBTable& table,
     //                                     const std::vector<std::string>& used_tables);

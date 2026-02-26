@@ -27,6 +27,7 @@
 class Job;
 class ViewableDataConfig;
 class HistogramView;
+class DBContentManager;
 
 class HistogramViewDataSource : public QObject, public Configurable
 {
@@ -56,6 +57,8 @@ class HistogramViewDataSource : public QObject, public Configurable
     void showViewPoint (const ViewableDataConfig* vp);
 
   protected:
+    HistogramView* view_ = nullptr;
+
     /// Variable read list
     dbContent::VariableOrderedSet* set_{nullptr};
 

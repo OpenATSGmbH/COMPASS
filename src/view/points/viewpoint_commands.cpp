@@ -28,8 +28,11 @@ REGISTER_RTCOMMAND(RTCommandSetViewPoint)
 
 using namespace std;
 
-void init_view_point_commands()
+static COMPASS* s_compass = nullptr;
+
+void init_view_point_commands(COMPASS& compass)
 {
+    s_compass = &compass;
     RTCommandSetViewPoint::init();
 }
 
@@ -48,19 +51,19 @@ bool RTCommandSetViewPoint::run_impl()
 {
     loginf << "vp_json_str_ '" << vp_json_str_ << "'";
 
-    if (!COMPASS::instance().dbOpened())
+    if (!s_compass->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (s_compass->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+s_compass->appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = s_compass->dbContentManager();
     dbcontent_man.clearData();
 
     try
@@ -69,7 +72,7 @@ bool RTCommandSetViewPoint::run_impl()
 
         viewable_data_cfg_.reset(new ViewableDataConfig(vp_json));
 
-        COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+        s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
     }
     catch (exception& e)
     {

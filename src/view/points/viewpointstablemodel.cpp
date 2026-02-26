@@ -60,9 +60,9 @@ void ViewPointsTableModel::loadViewPoints()
     beginResetModel();
 
     // load view points
-    if (COMPASS::instance().dbInterface().existsViewPointsTable())
+    if (view_manager_.compass().dbInterface().existsViewPointsTable())
     {
-        for (const auto& vp_it : COMPASS::instance().dbInterface().viewPoints())
+        for (const auto& vp_it : view_manager_.compass().dbInterface().viewPoints())
         {
             //assert (!view_points_.count(vp_it.first));
             traced_assert(!hasViewPoint(vp_it.first));
@@ -486,7 +486,7 @@ void ViewPointsTableModel::deleteAllViewPoints ()
     beginRemoveRows(QModelIndex(), 0, view_points_.size()-1); // TODO
 
     view_points_.clear();
-    COMPASS::instance().dbInterface().deleteAllViewPoints();
+    view_manager_.compass().dbInterface().deleteAllViewPoints();
 
     endRemoveRows();
 }

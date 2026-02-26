@@ -24,7 +24,6 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "datasourcemanager.h"
 #include "files.h"
-#include "jobmanager.h"
 #include "logger.h"
 #include "asteriximporttaskdialog.h"
 #include "traced_assert.h"
@@ -35,6 +34,7 @@
 #include "util/timeconv.h"
 #include "projection.h"
 #include "projectionmanager.h"
+#include "jobmanager.h"
 #include "asynctask.h"
 #include "dbcontent.h"
 
@@ -197,7 +197,9 @@ ASTERIXImportTaskSettings::ASTERIXImportTaskSettings()
 
 ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent)
     : Task(*parent),
-    Configurable(config, parent)
+    Configurable(config, parent),
+    compass_(parent->compass()),
+    dbcontent_man_(parent->compass().dbContentManager())
 {
     tooltip_ = "Allows importing of ASTERIX data recording files into the opened database.";
 
@@ -450,7 +452,7 @@ void ASTERIXImportTask::sourceChanged()
     loginf << "new type = " << source_.sourceTypeAsString();
 
     //update to suitable decoder
-    decoder_ = ASTERIXDecoderBase::createDecoder(source_);
+    decoder_ = ASTERIXDecoderBase::createDecoder(*this, source_);
     traced_assert(decoder_);
 
     loginf << "created new decoder "  << decoder_->name();
@@ -918,9 +920,9 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     if (source_.isNetworkType())
     {
-        COMPASS::instance().appMode(AppMode::LiveRunning); // set live mode
+        compass_.appMode(AppMode::LiveRunning); // set live mode
 
-        COMPASS::instance().logInfo("ASTERIX Import") << "started: network";
+        compass_.logInfo("ASTERIX Import") << "started: network";
 
         data_received_timer_.reset(new QTimer);
         connect(data_received_timer_.get(), &QTimer::timeout, this, &ASTERIXImportTask::checkDataReceivedSlot);
@@ -928,7 +930,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
         data_received_timer_->start();
     }
     else
-        COMPASS::instance().logInfo("ASTERIX Import") << "started: files";
+        compass_.logInfo("ASTERIX Import") << "started: files";
 
 
     //reset state before new run
@@ -965,7 +967,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     jASTERIX::add_artas_md5_hash = true;
 
     // set up projections
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
@@ -975,7 +977,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     loginf << "starting decode job";
 
     if (source_.isNetworkType())
-        COMPASS::instance().dataSourceManager().createNetworkDBDataSources();
+        compass_.dataSourceManager().createNetworkDBDataSources();
 
     decode_job_ = make_shared<ASTERIXDecodeJob>(*this, post_process_);
 
@@ -986,7 +988,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     connect(decode_job_.get(), &ASTERIXDecodeJob::decodedASTERIXSignal, this,
             &ASTERIXImportTask::addDecodedASTERIXSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addBlockingJob(decode_job_);
+    compass_.jobManager().addBlockingJob(decode_job_);
 
     loginf << "done";
 
@@ -1132,7 +1134,7 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     //loginf << "queueing in new mapping job, main thread is " << QThread::currentThreadId();
 
-    JobManager::instance().addNonBlockingJob(json_map_job);
+    compass_.jobManager().addNonBlockingJob(json_map_job);
 }
 
 /**
@@ -1183,7 +1185,8 @@ void ASTERIXImportTask::mapJSONDoneSlot()
     ts_calculator_.calculate(source_name,
                              settings_.date_, settings_.reset_date_between_files_,
                              settings_.override_tod_active_, settings_.override_tod_offset_,
-                             settings_.ignore_time_jumps_, check_future_ts);
+                             settings_.ignore_time_jumps_, check_future_ts,
+                             compass_);
 
     timestampCalculationDoneSlot();
 
@@ -1253,7 +1256,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_);
+        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_, compass_);
 
     postprocess_jobs_.push_back(postprocess_job);
 
@@ -1264,7 +1267,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &ASTERIXImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addNonBlockingJob(postprocess_job);
+    compass_.jobManager().addNonBlockingJob(postprocess_job);
 }
 
 /**
@@ -1320,11 +1323,11 @@ void ASTERIXImportTask::postprocessDoneSlot()
 
             if (!insert_active_ &&
                 !queued_insert_buffers_.empty() &&
-                !COMPASS::instance().dbExportInProgress() &&
-                !COMPASS::instance().dbContentManager().loadInProgress())
+                !compass_.dbExportInProgress() &&
+                !dbcontent_man_.loadInProgress())
             {
                 logdbg << "inserting";
-                traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
+                traced_assert(!dbcontent_man_.insertInProgress());
 
                 insertData();
             }
@@ -1420,13 +1423,13 @@ void ASTERIXImportTask::postprocessDoneSlot()
             }
         }
 
-        if (!insert_active_ && 
-            !queued_insert_buffers_.empty() && 
-            !COMPASS::instance().dbExportInProgress() && 
-            !COMPASS::instance().dbContentManager().loadInProgress())
+        if (!insert_active_ &&
+            !queued_insert_buffers_.empty() &&
+            !compass_.dbExportInProgress() &&
+            !dbcontent_man_.loadInProgress())
         {
             logdbg << "inserting";
-            traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
+            traced_assert(!dbcontent_man_.insertInProgress());
 
             insertData();
         }
@@ -1473,7 +1476,7 @@ void ASTERIXImportTask::insertData()
         return;
     }
 
-    DBContentManager& dbcont_manager = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_manager = dbcontent_man_;
 
     traced_assert(schema_);
 
@@ -1484,7 +1487,7 @@ void ASTERIXImportTask::insertData()
         current_num_records += job_it.second->size();
         num_records_ += job_it.second->size();
 
-        if (COMPASS::instance().appMode() != AppMode::LiveRunning) // is cleaned special there
+        if (compass_.appMode() != AppMode::LiveRunning) // is cleaned special there
             job_it.second->deleteEmptyProperties();
     }
 
@@ -1526,7 +1529,7 @@ void ASTERIXImportTask::insertDoneSlot()
     // has to be after file progress dialog update since calls processEvents and thus creates race condition
     traced_assert(insert_active_);
     insert_active_ = false;
-    traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
+    traced_assert(!dbcontent_man_.insertInProgress());
 
     --num_packets_in_processing_;
 
@@ -1566,16 +1569,16 @@ void ASTERIXImportTask::checkDataReceivedSlot()
 {
     loginf;
 
-    traced_assert(COMPASS::instance().appMode() == AppMode::LiveRunning);
+    traced_assert(compass_.appMode() == AppMode::LiveRunning);
 
     using namespace boost::posix_time;
 
-    if (!num_packets_in_processing_ 
-        && !COMPASS::instance().dbInterface().cleanupInProgress()
+    if (!num_packets_in_processing_
+        && !compass_.dbInterface().cleanupInProgress()
         && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
     {
         loginf << "forcing live update";
-        QMetaObject::invokeMethod(&COMPASS::instance().dbContentManager(), "processLiveModeSlot", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(&dbcontent_man_, "processLiveModeSlot", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
 }
@@ -1640,7 +1643,7 @@ void ASTERIXImportTask::checkAllDone()
     {
         loginf << "setting all done: total packets " << num_packets_total_;
 
-        ts_calculator_.logLastTimestamp();
+        ts_calculator_.logLastTimestamp(compass_);
 
         all_done_ = true;
         done_     = true; // why was this not set?
@@ -1652,7 +1655,7 @@ void ASTERIXImportTask::checkAllDone()
 
         int records_per_second = num_records_ / std::max(1.0, time_diff.total_milliseconds() / 1000.0);
 
-        COMPASS::instance().logInfo("ASTERIX Import")
+        compass_.logInfo("ASTERIX Import")
             << " finished after "
             << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, false)
             << ", inserted " << num_records_ << " rec"
@@ -1667,7 +1670,7 @@ void ASTERIXImportTask::checkAllDone()
             for (const auto& e : errors)
                 ss << e << "\n";
 
-            COMPASS::instance().logError("ASTERIX Import")
+            compass_.logError("ASTERIX Import")
                 << "Import finished with errors." << "\n\n"
                 << ss.str();
         }
@@ -1677,12 +1680,12 @@ void ASTERIXImportTask::checkAllDone()
             for (const auto& w : warnings)
                 ss << w << "\n";
 
-            COMPASS::instance().logWarn("ASTERIX Import")
+            compass_.logWarn("ASTERIX Import")
                 << "Import finished with warnings." << "\n\n"
                 << ss.str();
         }
 
-        COMPASS::instance().mainWindow().updateMenus(); // re-enable import menu
+        compass_.mainWindow().updateMenus(); // re-enable import menu
 
         logdbg << "refresh";
 
@@ -1699,16 +1702,16 @@ void ASTERIXImportTask::checkAllDone()
             logdbg << "deleting status widget";
         }
 
-        COMPASS::instance().dataSourceManager().saveDBDataSources();
-        emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
-        emit COMPASS::instance().dbContentManager().dbContentStatusChanged();
-        COMPASS::instance().dbInterface().saveProperties();
+        compass_.dataSourceManager().saveDBDataSources();
+        emit compass_.dataSourceManager().dataSourcesChangedSignal();
+        emit dbcontent_man_.dbContentStatusChanged();
+        compass_.dbInterface().saveProperties();
 
         malloc_trim(0); // release unused memory
 
         if (insert_slot_connected_) // moved here from insertDoneSlot
         {
-            disconnect(&COMPASS::instance().dbContentManager(), &DBContentManager::insertDoneSignal,
+            disconnect(&dbcontent_man_, &DBContentManager::insertDoneSignal,
                        this, &ASTERIXImportTask::insertDoneSlot);
             insert_slot_connected_ = false;
         }
@@ -1723,7 +1726,7 @@ void ASTERIXImportTask::checkAllDone()
 
         //cleanup db after import
         if (source_.isFileType())
-            COMPASS::instance().dbInterface().cleanupDB(true);
+            compass_.dbInterface().cleanupDB(true);
 
         emit doneSignal();
     }

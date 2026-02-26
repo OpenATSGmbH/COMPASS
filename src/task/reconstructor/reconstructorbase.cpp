@@ -510,7 +510,7 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
     ,   task_(task)
     ,   chain_predictors_(new reconstruction::KalmanChainPredictors)
 {
-    accessor_ = make_shared<dbContent::DBContentAccessor>();
+    accessor_ = make_shared<dbContent::DBContentAccessor>(task_.manager().compass().dbContentManager());
 
     // reference computation
     {
@@ -681,11 +681,11 @@ bool ReconstructorBase::isVehicleACAD(unsigned int value)
 std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ReconstructorBase::timeFrame() const
 {
     //get full data time range (should)
-    if (!COMPASS::instance().dbContentManager().hasMinMaxTimestamp())
+    if (!task_.manager().compass().dbContentManager().hasMinMaxTimestamp())
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = COMPASS::instance().dbContentManager().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().minMaxTimestamp();
 
     if (data_t0 >= data_t1)
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
@@ -999,7 +999,7 @@ void ReconstructorBase::createTargetReports()
 
     dbContent::targetReport::ReconstructorInfo info;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     accessors_.clear();
 
@@ -1010,7 +1010,7 @@ void ReconstructorBase::createTargetReports()
     std::set<unsigned int> unused_ds_ids = task_.unusedDSIDs();
     std::map<unsigned int, std::set<unsigned int>> unused_lines = task_.unusedDSIDLines();
 
-    auto& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = task_.manager().compass().dataSourceManager();
 
     std::set<unsigned int> ground_only_ds_ids = ds_man.groundOnlyDBDataSources();
     std::map<unsigned int, dbContent::DataSourceType> ds_types = ds_man.dsTypes();
@@ -1020,7 +1020,7 @@ void ReconstructorBase::createTargetReports()
 
     if (task_.useSectorsExtend())
     {
-        auto& eval_man = COMPASS::instance().evaluationManager();
+        auto& eval_man = task_.manager().compass().evaluationManager();
 
         for (auto& sect_it : task_.usedSectors())
         {
@@ -1214,7 +1214,7 @@ void ReconstructorBase::createTargetReportBatches()
 {
     loginf << "begin";
 
-    dbContent::DBContentStatusInfo status_info;
+    dbContent::DBContentStatusInfo status_info(task_.manager().compass().dbContentManager());
 
     status_info.process(accessor_->buffers());
 
@@ -1223,7 +1223,7 @@ void ReconstructorBase::createTargetReportBatches()
 
     std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "Tracker", "MLAT", "Radar", "Other"};
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = task_.manager().compass().dataSourceManager();
 
     size_t num_truncated_noinfo = 0;
     size_t num_truncated_oor    = 0;
@@ -1397,7 +1397,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
 {
     logdbg;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
 
     // write association info to buffers
 
@@ -1527,7 +1527,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
                 << " ts min " << Time::toString(ts_vec.get(0))
                 << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
 
-            DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
+            DataSourceManager& src_man = task_.manager().compass().dataSourceManager();
 
             unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
 
@@ -1573,7 +1573,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
     auto getTable = [ & ] ()
     {
-        auto& section = COMPASS::instance().taskManager().currentReport()->getSection("Reconstruction Statistics");
+        auto& section = task_.manager().compass().taskManager().currentReport()->getSection("Reconstruction Statistics");
         if (!section.hasTable("Reconstruction Statistics"))
             section.addTable("Reconstruction Statistics", 4, {"", "", "Value", "Value [%]"}, false);
 
@@ -1748,7 +1748,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
 void ReconstructorBase::doUnassociatedAnalysis()
 {
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = task_.manager().compass().dbContentManager();
 
     traced_assert(dbcont_man.hasMinMaxPosition());
 
@@ -1780,7 +1780,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
     Grid2D grid;
     grid.create(roi, grid2d::GridResolution().setCellCount(num_cells_x, num_cells_y));
 
-    auto& section = COMPASS::instance().taskManager().currentReport()->getSection(
+    auto& section = task_.manager().compass().taskManager().currentReport()->getSection(
         "Association:Unassociated");
 
     for (auto rec_num : associator().unassociatedRecNums())
@@ -1887,7 +1887,7 @@ void ReconstructorBase::saveTargets()
 
     processing_ = true;
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = task_.manager().compass().dbContentManager();
 
     cont_man.createNewTargets(targets_container_.targets_);
 

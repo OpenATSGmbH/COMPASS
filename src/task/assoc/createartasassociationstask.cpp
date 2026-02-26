@@ -79,8 +79,8 @@ void CreateARTASAssociationsTask::showDialog()
 
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
     logdbg << "tracker " << dbcontent_man.existsDBContent("CAT062");
 
@@ -193,12 +193,12 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->setAssociationStatus("Loading Data");
     status_dialog_->show();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
     dbcontent_man.clearData();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    manager().compass().viewManager().disableDataDistribution(true);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
@@ -254,8 +254,8 @@ void CreateARTASAssociationsTask::run()
 
 bool CreateARTASAssociationsTask::wasRun()
 {
-    return COMPASS::instance().dbInterface().hasProperty(DONE_PROPERTY_NAME)
-             && COMPASS::instance().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
+    return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
+             && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
 }
 
 void CreateARTASAssociationsTask::loadedDataDataSlot(
@@ -274,7 +274,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     traced_assert(!create_job_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
@@ -283,10 +283,10 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     dbcontent_man.clearData();
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    manager().compass().viewManager().disableDataDistribution(false);
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
-                *this, COMPASS::instance().dbInterface(), data_);
+                *this, manager().compass().dbInterface(), data_);
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
@@ -298,7 +298,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
             this, &CreateARTASAssociationsTask::saveAssociationsQuestionSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(create_job_);
+    manager().compass().jobManager().addDBJob(create_job_);
 
     status_dialog_->setAssociationStatus("In Progress");
 }
@@ -342,9 +342,9 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     if (save_associations_)
     {
-        COMPASS::instance().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
+        manager().compass().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
 
-        COMPASS::instance().dbInterface().saveProperties();
+        manager().compass().dbInterface().saveProperties();
 
         done_ = true;
     }
@@ -516,7 +516,7 @@ void CreateARTASAssociationsTask::markTrackCoastingAssociationsDubious(bool valu
 
 VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
     VariableSet read_set;
 

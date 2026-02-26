@@ -19,12 +19,9 @@
 
 #include "unit.h"
 #include "dimension.h"
-#include "datasourcemanager.h"
 #include "source/configurationdatasource.h"
-#include "fftmanager.h"
 #include "fft/configurationfft.h"
 #include "asterixcategoryconfig.h"
-#include "jsondatamapping.h"
 #include "json.hpp"
 
 using nlohmann::json;
@@ -251,64 +248,3 @@ TEST_CASE("ASTERIXCategoryConfig construction", "[leaf][asterix]")
     }
 }
 
-// ---------------------------------------------------------------------------
-// JSONDataMapping
-// ---------------------------------------------------------------------------
-
-TEST_CASE("JSONDataMapping construction", "[leaf][jsonmapping]")
-{
-    SECTION("reads parameters from json")
-    {
-        json cfg = makeConfig("JSONDataMapping", "M0", {
-            {"active", true}, {"json_key", "target.address"},
-            {"db_content_name", "CAT062"}, {"db_content_variable_name", "mode_s_address"},
-            {"comment", "Mode S address"}, {"mandatory", true},
-            {"format_data_type", ""}, {"json_value_format", ""},
-            {"dimension", ""}, {"unit", ""},
-            {"in_array", false}, {"append_value", false}
-        });
-        JSONDataMapping m(cfg, nullptr);
-
-        REQUIRE(m.active() == true);
-        REQUIRE(m.jsonKey() == "target.address");
-        REQUIRE(m.mandatory() == true);
-        REQUIRE(m.comment() == "Mode S address");
-    }
-
-    SECTION("uses defaults for empty json")
-    {
-        json cfg = makeConfig("JSONDataMapping", "M0");
-        JSONDataMapping m(cfg, nullptr);
-
-        REQUIRE(m.active() == false);
-        REQUIRE(m.jsonKey().empty());
-        REQUIRE(m.mandatory() == false);
-    }
-
-    SECTION("write-back updates json")
-    {
-        json cfg = makeConfig("JSONDataMapping", "M0", {
-            {"active", false}, {"json_key", "altitude"},
-            {"db_content_name", ""}, {"db_content_variable_name", ""},
-            {"comment", ""}, {"mandatory", false},
-            {"format_data_type", ""}, {"json_value_format", ""},
-            {"dimension", ""}, {"unit", ""},
-            {"in_array", false}, {"append_value", false}
-        });
-        JSONDataMapping m(cfg, nullptr);
-
-        m.writeBackConfig();
-        REQUIRE(cfg["parameters"]["json_key"].get<std::string>() == "altitude");
-    }
-
-    SECTION("getPath derives from parent_path")
-    {
-        json parent_cfg = makeConfig("Parser", "Parser0");
-        MinCfg parent(parent_cfg);
-
-        json cfg = makeConfig("JSONDataMapping", "M0");
-        JSONDataMapping m(cfg, &parent);
-
-        REQUIRE(m.getPath() == "Parser0.M0");
-    }
-}

@@ -29,6 +29,8 @@ class EvaluationTargetFilter : public Configurable
     EvaluationTargetFilter(nlohmann::json& config, EvaluationManager& eval_manager);
     virtual ~EvaluationTargetFilter() {}
 
+    EvaluationManager& evalManager() { return eval_manager_; }
+
     void generateSubConfigurable(nlohmann::json& child_json) override {};
 
     void setUse(dbContent::TargetCache& target_data);

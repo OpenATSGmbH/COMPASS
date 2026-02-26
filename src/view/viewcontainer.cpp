@@ -76,7 +76,7 @@ ViewContainer::ViewContainer(nlohmann::json& config,
 
     creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
 
-    disable_add_remove_views_ = COMPASS::instance().disableAddRemoveViews();
+    disable_add_remove_views_ = view_manager_.compass().disableAddRemoveViews();
 
     if (window_cnt != 0)
     {
@@ -180,7 +180,7 @@ void ViewContainer::addView(View* view)
 
     //in localbuild we show some info about how the view is reachable via rtcommands
 #if USE_EXPERIMENTAL_SOURCE == true
-    if (!COMPASS::instance().isAppImage())
+    if (!view_manager_.compass().isAppImage())
     {
         QString tt = rtcommand::getTooltip(view->getViewWidget(), view);
         tab_widget_->setTabToolTip(index, tt);

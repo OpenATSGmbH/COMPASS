@@ -19,6 +19,8 @@
 
 #include "traced_assert.h"
 
+class DataSourceManager;
+
 #include <map>
 #include <deque>
 
@@ -85,7 +87,8 @@ struct Event
     bool isTrackerSpecific() const { return tracker_key.has_value(); }
     bool isTrackerSpecific(const TrackerKey& key) const { return isTrackerSpecific() && tracker_key.value() == key; }
 
-    std::string toString(bool add_tracker_info,
+    std::string toString(DataSourceManager& ds_man,
+                         bool add_tracker_info,
                          bool add_sensor_info) const;
 
     bool operator<(const Event& other) const;

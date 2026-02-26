@@ -20,6 +20,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "evaluationtargetfilter.h"
+#include "evaluationmanager.h"
 #include "logger.h"
 
 #include <QHBoxLayout>
@@ -163,7 +164,7 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
 
     config_layout->addRow("Remove By Non-Detection in DBContent", remove_dbcont_check_);
 
-    for (auto& dbcont_it : COMPASS::instance().dbContentManager())
+    for (auto& dbcont_it : target_filter_.evalManager().dbContentManager())
     {
         if (dbcont_it.second->containsStatusContent())
             continue;

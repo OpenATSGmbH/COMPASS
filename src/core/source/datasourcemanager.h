@@ -82,7 +82,9 @@ class DataSourceManager : public QObject, public Configurable
     static dbContent::DataSourceType typeFromString(const std::string& type_str);
     static std::string stringFromType(dbContent::DataSourceType type);
 
-    DataSourceManager(nlohmann::json& config, COMPASS* parent);
+    DataSourceManager(nlohmann::json& config, COMPASS& compass);
+
+    COMPASS& compass() { return compass_; }
     virtual ~DataSourceManager();
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
@@ -183,7 +185,7 @@ class DataSourceManager : public QObject, public Configurable
     DataSourceManager::Config& config();
 
   protected:
-    COMPASS* compass_{nullptr};
+    COMPASS& compass_;
 
     Config config_;
 

@@ -55,6 +55,8 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
     void showViewPoint (const ViewableDataConfig* vp);
 
   protected:
+    ScatterPlotView* view_{nullptr};
+
     /// Variable read list
     dbContent::VariableOrderedSet* set_{nullptr};
 

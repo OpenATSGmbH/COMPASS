@@ -49,8 +49,9 @@ namespace
 
 /** 
  */
-RTCommandBacklogWidget::RTCommandBacklogWidget(QWidget* parent)
-:   QWidget(parent)
+RTCommandBacklogWidget::RTCommandBacklogWidget(RTCommandManager& rt_man, QWidget* parent)
+:   QWidget(parent),
+    rt_man_(rt_man)
 {
     QVBoxLayout* layout = new QVBoxLayout;
     setLayout(layout);
@@ -58,10 +59,6 @@ RTCommandBacklogWidget::RTCommandBacklogWidget(QWidget* parent)
     command_list_ = new QListWidget(this);
     command_list_->setSelectionMode(QListWidget::SelectionMode::ExtendedSelection);
     layout->addWidget(command_list_);
-
-    //QHBoxLayout* layout_h = new QHBoxLayout;
-    //layout->addLayout(layout_h);
-    //layout_h->addStretch(1);
     
     connect(command_list_, &QListWidget::itemDoubleClicked, this, &RTCommandBacklogWidget::acceptCommandItem, Qt::ConnectionType::QueuedConnection);
 
@@ -72,7 +69,7 @@ RTCommandBacklogWidget::RTCommandBacklogWidget(QWidget* parent)
  */
 void RTCommandBacklogWidget::updateList()
 {
-    auto cmds = RTCommandManager::instance().commandBacklog();
+    auto cmds = rt_man_.commandBacklog();
 
     command_list_->clear();
 
@@ -96,13 +93,13 @@ void RTCommandBacklogWidget::acceptCommandItem(QListWidgetItem* item)
 
 /** 
  */
-RTCommandBacklogDialog::RTCommandBacklogDialog(QWidget* parent)
+RTCommandBacklogDialog::RTCommandBacklogDialog(RTCommandManager& rt_man, QWidget* parent)
 :   QDialog(parent)
 {
     QVBoxLayout* layout = new QVBoxLayout;
     setLayout(layout);
 
-    RTCommandBacklogWidget* widget = new RTCommandBacklogWidget(this);
+    RTCommandBacklogWidget* widget = new RTCommandBacklogWidget(rt_man, this);
     layout->addWidget(widget);
 
     auto cb = [ = ] (const QString& cmd)
@@ -120,8 +117,9 @@ RTCommandBacklogDialog::RTCommandBacklogDialog(QWidget* parent)
 
 /** 
  */
-RTCommandShell::RTCommandShell(QWidget* parent)
-:   QWidget(parent)
+RTCommandShell::RTCommandShell(RTCommandManager& rt_man, QWidget* parent)
+:   QWidget(parent),
+    rt_man_(rt_man)
 {
     QVBoxLayout* layout = new QVBoxLayout;
     layout->setSpacing(0);
@@ -163,7 +161,7 @@ RTCommandShell::RTCommandShell(QWidget* parent)
     s_next->setKey(Qt::Key_Down);
     connect(s_next, &QShortcut::activated, this, &RTCommandShell::nextCmd);
 
-    connect(&RTCommandManager::instance(), &RTCommandManager::shellCommandProcessed, this, &RTCommandShell::receiveResult);
+    connect(&rt_man_, &RTCommandManager::shellCommandProcessed, this, &RTCommandShell::receiveResult);
 
     cmd_edit_->setFocus();
 }
@@ -202,7 +200,7 @@ void RTCommandShell::updateCommandFromLocalBacklog()
 */
 void RTCommandShell::showBacklog()
 {
-    RTCommandBacklogDialog dlg(this);
+    RTCommandBacklogDialog dlg(rt_man_, this);
     if (dlg.exec() == QDialog::Accepted)
     {
         const QString& cmd = dlg.selectedCommand();
@@ -236,7 +234,7 @@ void RTCommandShell::processCommand()
     if (line.isEmpty())
         return;
 
-    auto issue_info = RTCommandManager::instance().addCommand(line.toStdString(), RTCommandManager::Source::Shell);
+    auto issue_info = rt_man_.addCommand(line.toStdString(), RTCommandManager::Source::Shell);
 
     log(line, LogType::Plain);
 
@@ -276,12 +274,10 @@ void RTCommandShell::logResult(std::string msg, bool error)
         if (msg.empty())
         {
             log("success", LogType::Success, true);
-            //log("", LogType::Success);
         }
         else
         {
             log(QString::fromStdString(msg), LogType::Success, true);
-            //log("", LogType::Success);
         }
         
     }   
@@ -290,12 +286,10 @@ void RTCommandShell::logResult(std::string msg, bool error)
         if (msg.empty())
         {
             log("unknown error", LogType::Error, true);
-            //log("", LogType::Error);
         }
         else
         {
             log(QString::fromStdString(msg), LogType::Error, true);
-            //log("", LogType::Error);
         }
     }
 }
@@ -327,7 +321,7 @@ void RTCommandShell::lastCmd()
     if (local_backlog_.empty())
     {
         //init local backlog
-        local_backlog_ = RTCommandManager::instance().commandBacklog();
+        local_backlog_ = rt_man_.commandBacklog();
         if (local_backlog_.empty())
             return;
 

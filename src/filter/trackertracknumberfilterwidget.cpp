@@ -49,7 +49,7 @@ void TrackerTrackNumberFilterWidget::update()
 
     deleteChildrenFromLayout();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = filter_.dataSourceManager();
 
     // ds_id -> line_id -> values
     std::map<unsigned int, std::map<unsigned int, std::string>> active_values = filter_.getActiveTrackerTrackNums();

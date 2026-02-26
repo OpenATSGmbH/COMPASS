@@ -27,6 +27,9 @@
 #include <vector>
 #include <memory>
 
+class COMPASS;
+class DBContentManager;
+class DataSourceManager;
 class DBFilterCondition;
 class FilterManager;
 class Buffer;
@@ -46,6 +49,11 @@ class DBFilter : public Configurable
     DBFilter(nlohmann::json& config, bool is_generic,
              FilterManager* parent);
     virtual ~DBFilter();
+
+    FilterManager& filterManager() { return filter_manager_; }
+    COMPASS& compass();
+    DBContentManager& dbContentManager();
+    DataSourceManager& dataSourceManager();
 
     void setActive(bool active);
     bool getActive();
@@ -92,7 +100,7 @@ class DBFilter : public Configurable
     void widgetVisible(bool widget_expanded);
 
 protected:
-    // FilterManager &filter_manager_;
+    FilterManager& filter_manager_;
     std::string name_;
     bool is_custom_; // indicates if created by user and can be deleted
 

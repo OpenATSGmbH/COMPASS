@@ -28,6 +28,7 @@
 #include <boost/optional.hpp>
 
 class DBInterface;
+class EvaluationManager;
 
 namespace dbContent {
 class TargetPosition;
@@ -109,15 +110,17 @@ public:
         XYZ
     };
 
-    Sector(unsigned int id, 
-           const std::string& name, 
+    Sector(EvaluationManager* eval_man,
+           unsigned int id,
+           const std::string& name,
            const std::string& layer_name,
            bool serialize,
            bool exclusion_sector,
-           QColor color, 
+           QColor color,
            std::vector<std::pair<double,double>> points);
-    Sector(unsigned int id,
-           const std::string& name, 
+    Sector(EvaluationManager* eval_man,
+           unsigned int id,
+           const std::string& name,
            const std::string& layer_name,
            bool serialize);
     virtual ~Sector();
@@ -176,6 +179,8 @@ protected:
 
     virtual bool readJSON_impl(const nlohmann::json& json_obj) { return true; };
     virtual void writeJSON_impl(nlohmann::json& json_obj) const {};
+
+    EvaluationManager* eval_man_ = nullptr;
 
     unsigned int id_;
     std::string  name_;

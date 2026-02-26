@@ -240,7 +240,7 @@ void ReportExportDialog::configureUI(const boost::optional<std::string>& export_
         report_dir = *export_dir;
     else
     {
-        auto db_fn = COMPASS::instance().lastDbFilename();
+        auto db_fn = report_export_.compass().lastDbFilename();
         auto db_dir = Utils::Files::getDirectoryFromPath(db_fn);
         // auto db_dir     = export_dir.has_value() ? export_dir.value() :
         // Utils::Files::getDirectoryFromPath(db_fn);

@@ -123,18 +123,19 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone() const
     generateJSON(config, Configurable::JSONExportType::General);
 
     //clone from config
-    return EvaluationCalculator::clone(config);
+    return EvaluationCalculator::clone(eval_man_, eval_man_.dbContentManager(), config);
 }
 
 /**
  */
-ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json& config)
+ResultT<EvaluationCalculator*> EvaluationCalculator::clone(EvaluationManager& eval_man,
+                                                           DBContentManager& dbcontent_man,
+                                                           const nlohmann::json& config)
 {
     if (!config.is_object())
         return Result::failed("Config not available");
 
-    auto& eval_man = COMPASS::instance().evaluationManager();
-    auto& dbc_man  = COMPASS::instance().dbContentManager();
+    auto& dbc_man = dbcontent_man;
 
     EvaluationCalculator* c = nullptr;
 
@@ -321,7 +322,7 @@ void EvaluationCalculator::updateDerivedParameters()
 Result EvaluationCalculator::canEvaluate() const
 {
     //needs associations
-    if (!COMPASS::instance().dbContentManager().hasAssociations())
+    if (!eval_man_.dbContentManager().hasAssociations())
         return Result::failed("Please run target report association");
 
     //needs a set standard
@@ -572,7 +573,7 @@ Result EvaluationCalculator::evaluateData()
     traced_assert(data_loaded_);
     traced_assert(canEvaluate().ok());
 
-    Projection& projection = ProjectionManager::instance().currentProjection();
+    Projection& projection = eval_man_.compass().projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -600,7 +601,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 {
     std::map<unsigned int, std::set<unsigned int>> data_sources;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     std::set<unsigned int> line_ref_set = {settings_.line_id_ref_};
 
@@ -723,7 +724,7 @@ bool EvaluationCalculator::hasValidReferenceDBContent () const
     if (!settings_.dbcontent_name_ref_.size())
         return false;
 
-    return COMPASS::instance().dbContentManager().existsDBContent(settings_.dbcontent_name_ref_);
+    return eval_man_.dbContentManager().existsDBContent(settings_.dbcontent_name_ref_);
 }
 
 /**
@@ -746,7 +747,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
 {
     set<unsigned int> srcs;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
@@ -767,7 +768,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_ref_;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
@@ -822,7 +823,7 @@ bool EvaluationCalculator::hasValidTestDBContent () const
     if (!settings_.dbcontent_name_tst_.size())
         return false;
 
-    return COMPASS::instance().dbContentManager().existsDBContent(settings_.dbcontent_name_tst_);
+    return eval_man_.dbContentManager().existsDBContent(settings_.dbcontent_name_tst_);
 }
 
 /**
@@ -844,7 +845,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
 {
     set<unsigned int> srcs;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
@@ -865,7 +866,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_tst_;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
@@ -1165,7 +1166,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     if (!hasValidReferenceDBContent())
         return;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_ref_[settings_.dbcontent_name_ref_];
@@ -1207,7 +1208,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     if (!hasValidTestDBContent())
         return;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_tst_[settings_.dbcontent_name_tst_];
@@ -1728,7 +1729,7 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
     tst_srcs_coverage_->clear();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     for (auto ds_id : tst_sources)
     {
@@ -1780,7 +1781,7 @@ void EvaluationCalculator::updateConstraints()
     global_time_filter_enabled_    = eval_man_.useTimestampFilter();
     global_time_window_            = load_filter_valid ? Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd()) : Utils::TimeWindow();
     global_exclusion_time_windows_ = eval_man_.excludedTimeWindows();
-    target_constraints_            = COMPASS::instance().dbContentManager().targetModel()->evaluationConstraints(true);
+    target_constraints_            = eval_man_.dbContentManager().targetModel()->evaluationConstraints(true);
 
     //update serializable json
     storeGlobalTimeWindow();
@@ -1988,7 +1989,7 @@ std::string EvaluationCalculator::suggestReportName() const
     if (ds_sel.empty())
         return "";
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = eval_man_.compass().dataSourceManager();
 
     unsigned int ds_id = stoul(ds_sel);
     traced_assert(ds_man.hasDBDataSource(ds_id));

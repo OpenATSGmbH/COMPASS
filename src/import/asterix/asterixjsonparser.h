@@ -16,6 +16,9 @@
  */
 
 #pragma once
+
+class COMPASS;
+
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "jsondatamapping.h"
@@ -53,7 +56,9 @@ public:
 
     /// @brief Constructor backed by a json reference
     ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
-                      ASTERIXJSONParsingSchema* parent);
+                      COMPASS& compass, ASTERIXJSONParsingSchema* parent);
+
+    COMPASS& compass() { return compass_; }
 
     DBContent& dbContent() const;
 
@@ -128,6 +133,7 @@ public:
 
 private:
     ASTERIXImportTask& task_;
+    COMPASS& compass_;
     std::string name_;
     unsigned int category_;
 

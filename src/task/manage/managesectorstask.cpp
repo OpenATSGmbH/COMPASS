@@ -88,7 +88,7 @@ void ManageSectorsTask::dialogDoneSlot()
     traced_assert(dialog_);
     dialog_->hide();
 
-    emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
+    emit manager().compass().evaluationManager().sectorsChangedSignal();
 }
 
 bool ManageSectorsTask::hasFile(const std::string& filename) const
@@ -402,7 +402,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
     GDALClose(data_set);
 
     if (import)
-        emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
+        emit manager().compass().evaluationManager().sectorsChangedSignal();
 
     if (dialog_)
         dialog_->updateParseMessage();
@@ -418,13 +418,13 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
 
     if (import)
     {
-        addLinearRing(sector_name+to_string(COMPASS::instance().evaluationManager().getMaxSectorId()+1), *ring, import);
+        addLinearRing(sector_name+to_string(manager().compass().evaluationManager().getMaxSectorId()+1), *ring, import);
 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
              traced_assert(ring);
-             addLinearRing(sector_name+to_string(COMPASS::instance().evaluationManager().getMaxSectorId()+1), *ring, import);
+             addLinearRing(sector_name+to_string(manager().compass().evaluationManager().getMaxSectorId()+1), *ring, import);
          }
     }
     else // no eval man call during ctor
@@ -481,7 +481,7 @@ void ManageSectorsTask::addSector (const std::string& sector_name, std::vector<s
     loginf << "layer '" << layer_name_ << "' name '" << sector_name
            << "' num points " << points.size();
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = manager().compass().evaluationManager();
 
     traced_assert(!eval_man.hasSector(sector_name, layer_name_));
 

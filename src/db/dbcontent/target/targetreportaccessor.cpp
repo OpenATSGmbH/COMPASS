@@ -18,7 +18,6 @@
 #include "targetreportaccessor.h"
 #include "dbcontent.h"
 #include "dbcontentmanager.h"
-#include "compass.h"
 #include "global.h"
 #include "accuracy.h"
 
@@ -47,11 +46,9 @@ TargetReportAccessor::TargetReportAccessor(const std::shared_ptr<DBContentVariab
 
 /**
 */
-dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& dbcontent_name)
+dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& dbcontent_name, DBContentManager& dbcont_man)
 {
     dbContent::VariableSet read_set;
-
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
 
     auto add = [ & ] (const Property& p, bool is_meta_var)
     {

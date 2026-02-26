@@ -22,6 +22,8 @@
 #include "logger.h"
 #include "json.hpp"
 
+class LogStore;
+
 #include <boost/stacktrace.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -104,6 +106,8 @@ namespace msghandler
 class MessageHandler
 {
 public:
+    static void init(LogStore& log_store);
+
     static std::string severityToString(Severity severity);
 
     static LogStream getStream(log4cpp::CategoryStream& strm,
@@ -142,7 +146,8 @@ private:
 
     static boost::mutex critical_error_mutex_;
     static Message      critical_error_msg_;
-    static bool         critical_error_msg_set_;   
+    static bool         critical_error_msg_set_;
+    static LogStore*    log_store_;
 };
 
 } // namespace msghandler

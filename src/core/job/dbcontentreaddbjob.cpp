@@ -38,11 +38,11 @@ DBContentReadDBJob::DBContentReadDBJob(DBInterface& db_interface, DBContent& dbc
     traced_assert(dbcontent_.existsInDB());
 
     use_order_ = true; // always order
-    traced_assert(COMPASS::instance().dbContentManager().metaCanGetVariable(
+    traced_assert(dbcontent_.compass().dbContentManager().metaCanGetVariable(
                 dbcontent_.name(), DBContent::meta_var_timestamp_));
 
     // always order by timestamp
-    order_variable_ = &COMPASS::instance().dbContentManager().metaGetVariable(
+    order_variable_ = &dbcontent_.compass().dbContentManager().metaGetVariable(
                 dbcontent_.name(), DBContent::meta_var_timestamp_);
 }
 

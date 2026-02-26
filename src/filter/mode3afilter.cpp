@@ -44,21 +44,21 @@ Mode3AFilter::~Mode3AFilter() {}
 
 bool Mode3AFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcont_name);
+    return dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcont_name);
 }
 
 std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
         return "";
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& var = dbContentManager().metaVariable(
                     DBContent::meta_var_m3a_.name()).getFor(dbcontent_name);
 
         if (!first)
@@ -158,10 +158,10 @@ std::vector<unsigned int> Mode3AFilter::filterBuffer(const std::string& dbconten
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
         return to_be_removed;
 
-    dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+    dbContent::Variable& var = dbContentManager().metaVariable(
                 DBContent::meta_var_m3a_.name()).getFor(dbcontent_name);
 
     traced_assert(buffer->has<unsigned int> (var.name()));

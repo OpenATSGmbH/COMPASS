@@ -471,7 +471,7 @@ std::string Variable::getValueStringFromRepresentation(
     }
     else if (representation_ == Variable::Representation::DATA_SRC_NAME)
     {
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& ds_man = dbcontent_->compass().dataSourceManager();
 
         if (ds_man.hasDBDataSource(representation_str))
             return std::to_string(ds_man.getDBDataSourceDSID(representation_str));
@@ -793,14 +793,14 @@ bool Variable::hasDBContent() const
         }
     }
     else if (db_column_name_.size())
-        return COMPASS::instance().dbInterface().hasContentIn(dbTableName(), db_column_name_);
+        return dbcontent_->compass().dbInterface().hasContentIn(dbTableName(), db_column_name_);
 
     return false;
 }
 
 void Variable::setHasDBContent()
 {
-    COMPASS::instance().dbInterface().setContentIn(dbTableName(), db_column_name_);
+    dbcontent_->compass().dbInterface().setContentIn(dbTableName(), db_column_name_);
 }
 
 std::vector<std::string> Variable::dbExpressionVariables() const
@@ -832,7 +832,7 @@ std::string Variable::getDataSourcesAsString(const std::string& value) const
 {
     traced_assert(dbcontent_);
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dbcontent_->compass().dataSourceManager();
 
     unsigned int ds_id = stoi(value);
 

@@ -153,7 +153,7 @@ public:
     bool hasPreset(const Key& key) const;
     bool nameExists(const std::string& name, const View* view) const;
 
-    static void updatePresetStamp(Preset& preset);
+    static void updatePresetStamp(Preset& preset, const std::string& app_version);
     static bool updatePresetConfig(Preset& preset, const View* view, bool update_preview = true);
     static QImage renderPreview(const View* view);
 

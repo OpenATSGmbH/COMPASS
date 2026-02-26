@@ -47,8 +47,10 @@ using namespace nlohmann;
 //                              COMPASS* compass)
 //     : Configurable(class_id, instance_id, compass, "filter.json") ...
 
-FilterManager::FilterManager(nlohmann::json& config, COMPASS* parent)
-    : Configurable(config, parent)
+FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass),
+      compass_(compass),
+      dbcontent_man_(compass.dbContentManager())
 {
     logdbg;
 
@@ -58,6 +60,11 @@ FilterManager::FilterManager(nlohmann::json& config, COMPASS* parent)
     createSubConfigurables();
 
     sortFilters();
+}
+
+DataSourceManager& FilterManager::dataSourceManager()
+{
+    return compass_.dataSourceManager();
 }
 
 FilterManager::~FilterManager()
@@ -172,13 +179,13 @@ void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
 
 bool FilterManager::checkDBContent (const std::string& dbcontent_name)
 {
-    if (!COMPASS::instance().dbContentManager().existsDBContent(dbcontent_name))
+    if (!dbcontent_man_.existsDBContent(dbcontent_name))
     {
         loginf << "failed because of non-existing dbcontbject '" << dbcontent_name << "'";
         return false;
     }
 
-    DBContent& object = COMPASS::instance().dbContentManager().dbContent(dbcontent_name);
+    DBContent& object = dbcontent_man_.dbContent(dbcontent_name);
 
     if (!object.existsInDB())
     {
@@ -211,7 +218,7 @@ void FilterManager::checkSubConfigurables()
 
 std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
-    traced_assert(COMPASS::instance().dbContentManager().dbContent(dbcontent_name).loadable());
+    traced_assert(dbcontent_man_.dbContent(dbcontent_name).loadable());
 
     std::stringstream ss;
 
@@ -319,7 +326,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
     const json& data = vp->data();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     // add all data source types that need loading
     if (data.contains(ViewPoint::VP_DS_TYPES_KEY)) // the listed ones should be loaded
@@ -345,7 +352,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
         traced_assert(selected.is_array());
         std::vector<unsigned long> vec = selected.get<std::vector<unsigned long>>();
 
-        COMPASS::instance().dbContentManager().storeSelectedRecNums(vec);
+        dbcontent_man_.storeSelectedRecNums(vec);
     }
 
     // add all data sources that need loading
@@ -407,7 +414,7 @@ void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
     loginf;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     if (ds_man.dsTypeFiltered()) // ds types filters active
         data[ViewPoint::VP_DS_TYPES_KEY] = ds_man.wantedDSTypes(); // add all data sources that need loading

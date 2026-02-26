@@ -38,7 +38,7 @@ class LicenseManager : public QObject, public Configurable
 {
     Q_OBJECT
 public:
-    LicenseManager(nlohmann::json& config, COMPASS* parent);
+    LicenseManager(nlohmann::json& config, COMPASS& compass);
     virtual ~LicenseManager();
 
     bool readLicenses();
@@ -71,6 +71,8 @@ private:
     boost::optional<std::string> activeLicenseID() const;
 
     static std::string licenseFilePath();
+
+    COMPASS& compass_;
 
     std::map<std::string, license::License> licenses_;
 };

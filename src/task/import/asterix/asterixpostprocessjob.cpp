@@ -41,10 +41,12 @@ tbb::concurrent_unordered_map<std::string, std::string> ASTERIXPostprocessJob::o
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
-    ASTERIXImportTaskSettings settings)
+    ASTERIXImportTaskSettings settings,
+    COMPASS& compass)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
-    settings_(settings)
+    settings_(settings),
+    compass_(compass)
 {
     obfuscate_m3a_map_[512] = 512; // 1000
     obfuscate_m3a_map_[1024] = 1024; // 2000
@@ -54,9 +56,11 @@ ASTERIXPostprocessJob::ASTERIXPostprocessJob(
 
 }
 
-ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buffers)
+ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buffers,
+                                             COMPASS& compass)
     : Job("ASTERIXPostprocessJob"),
-    buffers_(std::move(buffers))
+    buffers_(std::move(buffers)),
+    compass_(compass)
 {
 }
 
@@ -120,7 +124,7 @@ void ASTERIXPostprocessJob::run_impl()
 void ASTERIXPostprocessJob::doRadarPlotPositionCalculations()
 {
     // radar calculations
-    ProjectionManager::instance().doRadarPlotPositionCalculations(buffers_);
+    compass_.projectionManager().doRadarPlotPositionCalculations(buffers_);
 }
 
 void ASTERIXPostprocessJob::doXYPositionCalculations()
@@ -128,12 +132,12 @@ void ASTERIXPostprocessJob::doXYPositionCalculations()
     logdbg;
 
     // tracked data sources with only x/y coordinates
-    ProjectionManager::instance().doXYPositionCalculations(buffers_);
+    compass_.projectionManager().doXYPositionCalculations(buffers_);
 }
 
 void ASTERIXPostprocessJob::doADSBPositionProcessing()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     string dbcontent_name = "CAT021";
 
@@ -201,8 +205,8 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
 
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     string vx_var_name;
     string vy_var_name;
@@ -488,7 +492,7 @@ void ASTERIXPostprocessJob::doFilters()
 {
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     // do time based filtering first
     if (settings_.filter_tod_active_)
@@ -656,7 +660,7 @@ void ASTERIXPostprocessJob::doObfuscate()
 
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     // filter / change mode 3/a codes
     {

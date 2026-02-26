@@ -89,7 +89,7 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 
     stringstream ss;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbContentManager();
 
     string mops_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_mops_version_).dbColumnName();
     string nacp_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_nacp_).dbColumnName();

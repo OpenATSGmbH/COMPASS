@@ -99,9 +99,11 @@ private:
 
 /**
 */
-LicenseImportDialog::LicenseImportDialog(QWidget* parent, 
+LicenseImportDialog::LicenseImportDialog(COMPASS& compass,
+                                         QWidget* parent,
                                          Qt::WindowFlags f)
-:   QDialog(parent, f)
+:   QDialog(parent, f),
+    compass_(compass)
 {
     setWindowTitle("Add New License");
 
@@ -128,7 +130,7 @@ LicenseImportDialog::LicenseImportDialog(QWidget* parent,
 
     group->setLayout(group_layout);
 
-    bool app_image = COMPASS::instance().isAppImage();
+    bool app_image = compass_.isAppImage();
 
     license_widget_ = new LicenseWidget(!app_image);
     group_layout->addWidget(license_widget_);

@@ -90,7 +90,7 @@ public:
     boost::optional<bool> trackBegin(unsigned int index) const;
     boost::optional<bool> trackEnd(unsigned int index) const;
 
-    static dbContent::VariableSet getReadSetFor(const std::string& dbcontent_name);
+    static dbContent::VariableSet getReadSetFor(const std::string& dbcontent_name, DBContentManager& dbcont_man);
 
 private:
     void cacheVectors();

@@ -23,27 +23,30 @@
 
 #include "configuration.h"
 #include "configjson.h"
-#include "singleton.h"
 
 class Configurable;
 
 /**
  * @brief Main class for configuration loading, generating and writing.
  *
- * Singleton that reads the main config file (client.json) and creates ConfigJSON
- * objects for each root configurable. Root configurables obtain their json& from
- * ConfigJSON and pass subtrees to their children.
+ * Normal class (no singleton) owned by Client and passed by reference to COMPASS.
+ * Reads the main config file (client.json) and creates ConfigJSON objects for each
+ * root configurable. Root configurables obtain their json& from ConfigJSON and pass
+ * subtrees to their children.
  */
-class ConfigurationManager : public Singleton
+class ConfigurationManager
 {
   public:
     using Key = std::pair<std::string, std::string>;
 
+    ConfigurationManager();
+    ~ConfigurationManager();
+    ConfigurationManager(const ConfigurationManager&) = delete;
+    ConfigurationManager& operator=(const ConfigurationManager&) = delete;
+
     /// Parses the main config file (e.g. client.json) and creates a ConfigJSON
     /// for each root configurable listed in its "sub_config_files" array.
     void init(const std::string& main_config_filename);
-
-    virtual ~ConfigurationManager();
 
     bool hasRootConfigJSON(const std::string& class_id, const std::string& instance_id) const;
     ConfigJSON& getRootConfigJSON(const std::string& class_id, const std::string& instance_id);
@@ -56,13 +59,7 @@ class ConfigurationManager : public Singleton
     /// Writes back all registered root configurables (bottom-up) and saves their ConfigJSON files.
     void saveConfiguration();
 
-    static ConfigurationManager& getInstance()
-    {
-        static ConfigurationManager instance;
-        return instance;
-    }
-
-  protected:
+  private:
     bool initialized_{false};
     std::string main_config_filename_;
 
@@ -71,6 +68,4 @@ class ConfigurationManager : public Singleton
 
     /// Root configurables that have been constructed and registered for save-time writeback.
     std::map<Key, Configurable*> json_root_configurables_;
-
-    ConfigurationManager();
 };

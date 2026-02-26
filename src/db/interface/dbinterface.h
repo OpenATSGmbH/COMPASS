@@ -49,6 +49,8 @@ class DBContent;
 
 class PropertyList;
 
+class DBContentManager;
+
 namespace dbContent
 {
     class DBDataSource;
@@ -87,7 +89,7 @@ class DBInterface : public QObject, public Configurable
     Q_OBJECT
 
 public:
-    DBInterface(nlohmann::json& config, COMPASS* parent);
+    DBInterface(nlohmann::json& config, COMPASS& compass);
     virtual ~DBInterface();
 
     bool logVerbose() const;
@@ -235,7 +237,13 @@ public:
     unsigned int numThreads() const { return num_threads_; }
     bool preserveInsertOrder() const { return preserve_insert_order_; }
 
+    COMPASS& compass() { return compass_; }
+    DBContentManager& dbContentManager() { return dbcontent_man_; }
+
 protected:
+    COMPASS& compass_;
+    DBContentManager& dbcontent_man_;
+
     bool log_verbose_ {false};
 
     unsigned int max_ram_file_gb_{2};

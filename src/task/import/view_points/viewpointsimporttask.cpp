@@ -149,7 +149,7 @@ void ViewPointsImportTask::run()
     done_ = false;
     stopped_ = false;
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = manager().compass().dbInterface();
 
     // check and clear existing ones
     if(db_interface.existsViewPointsTable() && db_interface.viewPoints().size() && allow_user_interactions_)
@@ -174,13 +174,13 @@ void ViewPointsImportTask::run()
         }
     }
 
-    COMPASS::instance().logInfo("ViewPoints Import") << "started, clearing previous viewpoints";
+    manager().compass().logInfo("ViewPoints Import") << "started, clearing previous viewpoints";
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    COMPASS::instance().viewManager().loadViewPoints(current_data_);
+    manager().compass().viewManager().loadViewPoints(current_data_);
 
-    COMPASS::instance().logInfo("ViewPoints Import") << "imported";
+    manager().compass().logInfo("ViewPoints Import") << "imported";
 
     QApplication::restoreOverrideCursor();
 
@@ -191,7 +191,7 @@ void ViewPointsImportTask::run()
 
         if (context.contains(ViewPoint::VP_CONTEXT_DATASETS_KEY))
         {
-            COMPASS::instance().logInfo("ViewPoints Import") << "importing datasets";
+            manager().compass().logInfo("ViewPoints Import") << "importing datasets";
 
             for (auto& ds_it : context.at(ViewPoint::VP_CONTEXT_DATASETS_KEY).get<json::array_t>())
             {
@@ -279,11 +279,11 @@ void ViewPointsImportTask::run()
 
             Async::waitAndProcessEventsFor(50);
 
-            COMPASS::instance().logInfo("ViewPoints Import") << "importing datasets done";
+            manager().compass().logInfo("ViewPoints Import") << "importing datasets done";
         }
     }
 
-    COMPASS::instance().logInfo("ViewPoints Import") << "done";
+    manager().compass().logInfo("ViewPoints Import") << "done";
 
     done_ = true;
 

@@ -60,19 +60,19 @@ bool RTCommandGetData::run_impl()
 {
     loginf;
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
     dbcontent_man.clearData();
 
     if (!dbcontent_man.existsDBContent(dbcontent_name_))
@@ -92,7 +92,7 @@ bool RTCommandGetData::run_impl()
         }
     }
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    compass_->viewManager().disableDataDistribution(true);
 
     // loading stuff
 
@@ -100,7 +100,7 @@ bool RTCommandGetData::run_impl()
 
     if (utn_.has_value())
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& var = compass_->dbContentManager().metaVariable(
             DBContent::meta_var_utn_.name()).getFor(dbcontent_name_);
 
         string custom_clause = var.dbColumnName() + " IN (" + std::to_string(utn_.value()) + ")";
@@ -118,9 +118,9 @@ bool RTCommandGetData::run_impl()
 
 bool RTCommandGetData::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    compass_->viewManager().disableDataDistribution(false);
 
     if (!dbcontent_man.hasData())
     {
@@ -165,7 +165,7 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
 {
     VariableSet read_set;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_->dbContentManager();
     DBContent& db_content = dbcont_man.dbContent(dbcontent_name_);
 
     // ds id
@@ -232,19 +232,19 @@ RTCommandGetUTNs::RTCommandGetUTNs()
 
 bool RTCommandGetUTNs::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -257,7 +257,7 @@ bool RTCommandGetUTNs::run_impl()
 
 bool RTCommandGetUTNs::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     if (no_desc_)
         setJSONReply(dbcontent_man.utnsAsJSON());
@@ -294,19 +294,19 @@ RTCommandGetTarget::RTCommandGetTarget()
 
 bool RTCommandGetTarget::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -319,7 +319,7 @@ bool RTCommandGetTarget::run_impl()
 
 bool RTCommandGetTarget::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     setJSONReply(dbcontent_man.targetInfoAsJSON(utn_));
 
@@ -355,19 +355,19 @@ RTCommandGetTargetStats::RTCommandGetTargetStats()
 
 bool RTCommandGetTargetStats::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -380,7 +380,7 @@ bool RTCommandGetTargetStats::run_impl()
 
 bool RTCommandGetTargetStats::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     setJSONReply(dbcontent_man.targetStatsAsJSON());
 

@@ -95,7 +95,9 @@ public:
     virtual ~EvaluationCalculator();
 
     ResultT<EvaluationCalculator*> clone() const;
-    static ResultT<EvaluationCalculator*> clone(const nlohmann::json& config);
+    static ResultT<EvaluationCalculator*> clone(EvaluationManager& eval_man,
+                                                DBContentManager& dbcontent_man,
+                                                const nlohmann::json& config);
 
     bool hasPartialResult() const;
     bool dataLoaded() const; 

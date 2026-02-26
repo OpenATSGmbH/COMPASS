@@ -16,7 +16,6 @@
  */
 
 #include "projectionmanager.h"
-#include "configurationmanager.h"
 #include "global.h"
 #include "logger.h"
 #include "projectionmanagerwidget.h"
@@ -43,9 +42,10 @@ const string ProjectionManager::RS2G_NAME = "RS2G";
 //const string ProjectionManager::OGR_NAME = "OGR";
 //const string ProjectionManager::GEO_NAME = "Geo";
 
-ProjectionManager::ProjectionManager()
-    : Configurable(ConfigurationManager::getInstance().getRootConfigJSON("ProjectionManager", "ProjectionManager0").json(), nullptr),
-    mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
+ProjectionManager::ProjectionManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent),
+      compass_(*parent),
+      mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
 {
     loginf;
 
@@ -171,9 +171,9 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
 
     // do radar position projection
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-    FFTManager& fft_man = COMPASS::instance().fftManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
+    FFTManager& fft_man = compass_.fftManager();
 
     unsigned int ds_id;
     double azimuth_deg;
@@ -426,7 +426,7 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
     // do radar position projection
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     unsigned int ds_id;
     double x_m;
@@ -560,7 +560,7 @@ unsigned int ProjectionManager::doRadarPlotPositionCalculations (
 {
     unsigned int transformation_errors {0};
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
     string dbcontent_name;
 
     string latitude_var_name;
@@ -601,7 +601,7 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 {
     unsigned int transformation_errors {0};
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
     string dbcontent_name;
 
     string latitude_var_name;
@@ -652,7 +652,7 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
     unsigned int transformation_errors {0};
     std::map<std::string, std::shared_ptr<Buffer>> update_buffers;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
     string dbcontent_name;
 
     string latitude_var_name;

@@ -23,12 +23,12 @@
 #include "files.h"
 #include "global.h"
 #include "logger.h"
+#include "rtcommand_manager.h"
+#include "projectionmanager.h"
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "asteriximporttask.h"
 #include "mainwindow.h"
-#include "rtcommand_manager.h"
-#include "projectionmanager.h"
 #include "util/system.h"
 
 #include "json.hpp"
@@ -400,10 +400,11 @@ bool Client::run ()
 
     loginf << "creating COMPASS instance...";
 
-    //!this should be the first call to COMPASS instance!
     try
     {
-        if (COMPASS::instance().darkMode()) // also needed as first call
+        compass_ = std::make_unique<COMPASS>(*config_manager_);
+
+        if (compass_->darkMode())
         {
             // Define a simple dark mode stylesheet
             QPalette dark_pal;
@@ -445,13 +446,13 @@ bool Client::run ()
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
-            system_font.setPointSizeF(system_font.pointSizeF() * COMPASS::instance().appFontScale());
+            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appFontScale());
             setFont(system_font);
         }
 
-        COMPASS::instance().init(); //here everything created in compass instance should be available
+        compass_->init(); //here everything created in compass instance should be available
 
-        ProjectionManager::instance().test();
+        compass_->projectionManager().test();
     }
     catch(const std::exception& e)
     {
@@ -471,12 +472,12 @@ bool Client::run ()
     loginf << "created COMPASS instance";
 
     if (expert_mode_)
-        COMPASS::instance().expertMode(true);
+        compass_->expertMode(true);
 
     if (do_sensor_status_hack_)
-        COMPASS::instance().sensorStatusTimeHack(do_sensor_status_hack_);
+        compass_->sensorStatusTimeHack(do_sensor_status_hack_);
 
-    MainWindow& main_window = COMPASS::instance().mainWindow();
+    MainWindow& main_window = compass_->mainWindow();
     splash.raise();
 
     start_time = boost::posix_time::microsec_clock::local_time();
@@ -500,7 +501,7 @@ bool Client::run ()
 
     splash.finish(&main_window);
 
-    RTCommandManager& rt_man = RTCommandManager::instance();
+    RTCommandManager& rt_man = compass_->rtCommandManager();
 
     if (no_config_save_)
         main_window.disableConfigurationSaving();
@@ -519,7 +520,7 @@ bool Client::run ()
         if (import_view_points_filename_.size())
             rt_man.addCommandFromConsole("import_view_points " + import_view_points_filename_);
 
-        TaskManager& task_man = COMPASS::instance().taskManager();
+        TaskManager& task_man = compass_->taskManager();
 
         if (asterix_decoder_cfg.size())
             task_man.asterixImporterTask().asterixDecoderConfig(asterix_decoder_cfg);
@@ -681,7 +682,7 @@ bool Client::run ()
 
         if (export_report_name_.size())
         {
-            if (export_report_mode_ == "PDF" && !COMPASS::instance().pdflatexFound())
+            if (export_report_mode_ == "PDF" && !compass_->pdflatexFound())
                 throw runtime_error("Cannot export as PDF: pdflatex not installed");
 
             string cmd = "export_report --report '"+export_report_name_+"'";
@@ -700,7 +701,7 @@ bool Client::run ()
         rt_man.startCommandProcessing();
 
         // finally => set compass as running
-        COMPASS::instance().setAppState(AppState::Running);
+        compass_->setAppState(AppState::Running);
 
         return true;
     }
@@ -742,6 +743,12 @@ bool Client::notify(QObject* receiver, QEvent* event)
 }
 
 bool Client::quitRequested() const { return quit_requested_; }
+
+COMPASS& Client::compass()
+{
+    traced_assert(compass_);
+    return *compass_;
+}
 
 void Client::checkAndSetupConfig()
 {
@@ -816,7 +823,8 @@ void Client::checkAndSetupConfig()
         string config_version = config.getString("version");
         loginf << "configuration version " << config_version;
 
-        ConfigurationManager::getInstance().init(config.getString("main_configuration_file"));
+        config_manager_ = std::make_unique<ConfigurationManager>();
+        config_manager_->init(config.getString("main_configuration_file"));
 
         if (import_asterix_parameters_.size())
         {
@@ -826,10 +834,9 @@ void Client::checkAndSetupConfig()
             try {
                 json json_config = json::parse(import_asterix_parameters_);
 
-                traced_assert(ConfigurationManager::getInstance().hasRootConfigJSON(
+                traced_assert(config_manager_->hasRootConfigJSON(
                     "COMPASS", "COMPASS0"));
-                auto& compass_json = ConfigurationManager::getInstance()
-                    .getRootConfigJSON("COMPASS", "COMPASS0").json();
+                auto& compass_json = config_manager_->getRootConfigJSON("COMPASS", "COMPASS0").json();
 
                 auto* task_man_ptr = Configuration::findSubConfigEntry(
                     compass_json, "TaskManager", "TaskManager0");

@@ -21,6 +21,7 @@
 #include "timeconv.h"
 #include "logger.h"
 #include "compass.h"
+#include "taskmanager.h"
 #include "datasourcemanager.h"
 
 #include <QGridLayout>
@@ -39,7 +40,7 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     ReconstructorTask& task, bool probimm_reconst, QWidget *parent)
     : QWidget{parent}, task_(task), probimm_reconst_(probimm_reconst)
 {
-    bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
+    bool add_debug_stuff = !COMPASS::isAppImage() || task_.manager().compass().expertMode();
 
     QFormLayout* combo_layout = new QFormLayout;
     //combo_layout->setMargin(0);
@@ -237,7 +238,7 @@ void ReconstructorTaskAnalysisWidget::updateValues()
 {
     loginf;
 
-    bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
+    bool add_debug_stuff = !COMPASS::isAppImage() || task_.manager().compass().expertMode();
 
     if (!add_debug_stuff) // disable everything not shown in the settings, to be on the safe side
     {

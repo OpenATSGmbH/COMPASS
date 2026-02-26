@@ -62,7 +62,7 @@ void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_jso
         logdbg << "generating schema " << instance_id
                << " for cat  " << category;
 
-        auto parser = std::make_unique<ASTERIXJSONParser>(child_json, task_, this);
+        auto parser = std::make_unique<ASTERIXJSONParser>(child_json, task_, task_.compass(), this);
         parsers_[category] = std::move(parser);
     }
     else

@@ -160,10 +160,10 @@ void GPSImportCSVTask::importFilename(const std::string& filename)
 
 bool GPSImportCSVTask::checkPrerequisites()
 {
-    if (!COMPASS::instance().dbInterface().ready())  // must be connected
+    if (!manager().compass().dbInterface().ready())  // must be connected
         return false;
 
-    if (!COMPASS::instance().dbContentManager().existsDBContent("RefTraj"))
+    if (!manager().compass().dbContentManager().existsDBContent("RefTraj"))
         return false;
 
     return true;
@@ -491,7 +491,7 @@ void GPSImportCSVTask::run()
     traced_assert(gps_positions_.size());
     traced_assert(!buffer_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     string dbcontent_name = "RefTraj";
     traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
@@ -595,7 +595,7 @@ void GPSImportCSVTask::run()
 
     // config data source
     {
-        DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& src_man = manager().compass().dataSourceManager();
 
         if (!src_man.hasDBDataSource(ds_id))
             src_man.addNewDataSource(ds_id);
@@ -683,13 +683,13 @@ void GPSImportCSVTask::insertDoneSlot()
 
     buffer_ = nullptr;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &GPSImportCSVTask::insertDoneSlot);
 
-    COMPASS::instance().dataSourceManager().saveDBDataSources();
-    emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
+    manager().compass().dataSourceManager().saveDBDataSources();
+    emit manager().compass().dataSourceManager().dataSourcesChangedSignal();
 
     done_ = true;
 

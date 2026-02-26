@@ -25,6 +25,7 @@
 class QString;
 class QSignalSpy;
 class QElapsedTimer;
+class COMPASS;
 
 namespace rtcommand
 {
@@ -54,12 +55,14 @@ namespace rtcommand
     public:
         WaitConditionSignal(const QString& obj_name,
                             const QString& signal,
+                            COMPASS& compass,
                             int timeout_ms = -1,
                             QObject* parent = nullptr);
         virtual ~WaitConditionSignal();
 
         static QSignalSpy* createSpy(const QString& obj_name,
                                      const QString& signal,
+                                     COMPASS& compass,
                                      QObject* parent = nullptr);
 
         virtual bool valid() const override;
