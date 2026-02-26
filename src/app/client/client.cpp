@@ -478,6 +478,7 @@ bool Client::run ()
         compass_->sensorStatusTimeHack(do_sensor_status_hack_);
 
     MainWindow& main_window = compass_->mainWindow();
+    main_window.init();
     splash.raise();
 
     start_time = boost::posix_time::microsec_clock::local_time();

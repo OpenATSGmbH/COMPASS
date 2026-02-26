@@ -110,6 +110,8 @@ public:
     explicit MainWindow(COMPASS& compass);
     virtual ~MainWindow();
 
+    void init();
+
     void disableConfigurationSaving();
 
     void openExistingDB(const std::string& filename);

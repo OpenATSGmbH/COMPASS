@@ -249,7 +249,7 @@ protected:
 
     bool db_export_in_progress_ {false};
 
-    MainWindow* main_window_;
+    MainWindow* main_window_ {nullptr};
 
     nlohmann::json unspecific_acids_;
 

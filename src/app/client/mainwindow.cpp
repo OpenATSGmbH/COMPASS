@@ -114,39 +114,6 @@ MainWindow::MainWindow(COMPASS& compass)
     QIcon ats_icon(Files::IconProvider::getIcon("ats.png"));
     setWindowIcon(ats_icon);  // for the glory of the empire
 
-    QSettings settings("COMPASS", "Client");
-    restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
-
-    // if (settings.value("MainWindow/isMaximized", false).toBool())
-    //     showMaximized();
-
-    if (settings.value("MainWindow/isFullScreen", false).toBool())
-    {
-        // Enter fullscreen with no decorations
-        //setWindowFlag(Qt::FramelessWindowHint, true);
-        setWindowFlags(Qt::FramelessWindowHint);
-        showMaximized();
-        showFullScreen(); // Re-show to apply
-    }
-    else
-    {
-        // No fullscreen: restore window flags and normal size
-        //setWindowFlag(Qt::FramelessWindowHint, false); // Remove frameless
-        setWindowFlags(Qt::Window);
-        //setWindowFlag(Qt::Window, true);               // Ensure normal window flags
-
-        // if (settings.value("MainWindow/isMaximized", false).toBool())
-        // {
-        //     loginf << "isMaximized";
-        //     showMaximized();
-        // }
-        // else
-        {
-            restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
-            showNormal();
-        }
-    }
-
     //create ui
     createUI();
 
@@ -160,6 +127,25 @@ MainWindow::MainWindow(COMPASS& compass)
 #endif
 
     main_window::init_commands();
+}
+
+void MainWindow::init()
+{
+    QSettings settings("COMPASS", "Client");
+    restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
+
+    if (settings.value("MainWindow/isFullScreen", false).toBool())
+    {
+        setWindowFlags(Qt::FramelessWindowHint);
+        showMaximized();
+        showFullScreen();
+    }
+    else
+    {
+        setWindowFlags(Qt::Window);
+        restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
+        showNormal();
+    }
 }
 
 MainWindow::~MainWindow()
