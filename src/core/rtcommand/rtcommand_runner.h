@@ -15,7 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once 
+#pragma once
+
+class COMPASS;
 
 #include "rtcommand_result.h"
 
@@ -40,7 +42,7 @@ class RTCommandRunner
 public:
     typedef std::vector<RTCommandResult> Results;
 
-    RTCommandRunner();
+    explicit RTCommandRunner(COMPASS& compass);
     virtual ~RTCommandRunner();
 
     std::future<Results> runCommand(std::unique_ptr<RTCommand>&& cmd);

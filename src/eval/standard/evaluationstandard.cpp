@@ -17,6 +17,7 @@
 
 #include "evaluationstandard.h"
 #include "evaluationmanager.h"
+#include "evaluationcalculator.h"
 #include "eval/requirement/group.h"
 #include "evaluationstandardwidget.h"
 #include "evaluationstandardtreemodel.h"
@@ -34,16 +35,18 @@
 
 using namespace std;
 
-EvaluationStandard::EvaluationStandard(const std::string& class_id, 
-                                       const std::string& instance_id,
-                                       EvaluationCalculator& calculator)
-    : Configurable(class_id, instance_id, &calculator), 
-      EvaluationStandardTreeItem(&root_item_), 
-      calculator_(calculator),
+EvaluationCalculator* EvaluationStandard::parentConfigurable() const
+{
+    return static_cast<EvaluationCalculator*>(Configurable::parentConfigurable());
+}
+
+EvaluationStandard::EvaluationStandard(nlohmann::json& config, EvaluationCalculator* parent)
+    : Configurable(config, parent),
+      EvaluationStandardTreeItem(&root_item_),
+      calculator_(*parent),
       root_item_(*this)
 {
     registerParameter("name", &name_, std::string());
-
     registerParameter("reference_max_time_diff", &reference_max_time_diff_, reference_max_time_diff_);
     registerParameter("reference_min_accuracy", &reference_min_accuracy_, reference_min_accuracy_);
 
@@ -56,12 +59,13 @@ EvaluationStandard::~EvaluationStandard()
 {
 }
 
-void EvaluationStandard::generateSubConfigurable(const std::string& class_id,
-                                                 const std::string& instance_id)
+void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "EvaluationRequirementGroup")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "EvaluationRequirementGroup")
     {
-        Group* group = new Group(class_id, instance_id, *this, calculator_);
+        Group* group = new Group(child_json, this);
 
         logdbg << "adding group " << group->name();
 
@@ -70,11 +74,10 @@ void EvaluationStandard::generateSubConfigurable(const std::string& class_id,
         groups_.emplace_back(group);
 
         connect (group, &Group::configsChangedSignal, this, &EvaluationStandard::groupsChangedSlot);
-        // connect (group, &Group::selectionChanged, this, &EvaluationStandard::selectionChanged);
     }
     else
-        throw std::runtime_error("EvaluationStandard: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("EvaluationStandard: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 std::string EvaluationStandard::name() const
@@ -99,10 +102,10 @@ void EvaluationStandard::addGroup (const std::string& name)
 
     std::string instance = "EvaluationRequirementGroup" + name + "0";
 
-    auto config = Configuration::create("EvaluationRequirementGroup", instance);
-    config->addParameter<std::string>("name", name);
+    auto& child_json = addNewSubConfiguration("EvaluationRequirementGroup", instance);
+    child_json[Configuration::ParameterSection]["name"] = name;
 
-    generateSubConfigurableFromConfig(std::move(config));
+    generateSubConfigurable(child_json);
 
     traced_assert(hasGroup(name));
 
@@ -140,10 +143,6 @@ void EvaluationStandard::removeGroup (const std::string& name)
 EvaluationStandardWidget* EvaluationStandard::widget()
 {
     return new EvaluationStandardWidget(*this);
-}
-
-void EvaluationStandard::checkSubConfigurables()
-{
 }
 
 EvaluationStandardTreeItem* EvaluationStandard::child(int row)
@@ -233,7 +232,7 @@ void EvaluationStandard::addToReport (std::shared_ptr<ResultReport::Report> repo
                 continue;
 
             req_table.addRow({req_it->shortName(), req_it->name(), std_it->name(),
-                              Group::requirement_type_mapping_.at(req_it->classId())});
+                              Group::requirement_type_mapping_.at(req_it->className())});
 
             req_it->addToReport(report);
         }

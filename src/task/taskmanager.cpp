@@ -60,12 +60,15 @@ const bool TaskManager::CleanupDBIfNeeded = true;
 
 /**
  */
-TaskManager::TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "task.json")
-{
-    createSubConfigurables();
+// TaskManager::TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
+//     : Configurable(class_name, instance_name, compass, "task.json") ...
 
+TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass), compass_(compass)
+{
     setObjectName("TaskManager");
+
+    createSubConfigurables();
 }
 
 /**
@@ -77,96 +80,97 @@ TaskManager::~TaskManager()
 
 /**
  */
-void TaskManager::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
+void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "ASTERIXImportTask")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "ASTERIXImportTask")
     {
         traced_assert(!asterix_importer_task_);
-        asterix_importer_task_.reset(new ASTERIXImportTask(class_id, instance_id, *this));
+        asterix_importer_task_.reset(new ASTERIXImportTask(child_json, this));
         traced_assert(asterix_importer_task_);
-        addTask(class_id, asterix_importer_task_.get());
+        addTask(class_name, asterix_importer_task_.get());
     }
-    else if (class_id == "ViewPointsImportTask")
+    else if (class_name == "ViewPointsImportTask")
     {
         traced_assert(!view_points_import_task_);
-        view_points_import_task_.reset(new ViewPointsImportTask(class_id, instance_id, *this));
+        view_points_import_task_.reset(new ViewPointsImportTask(child_json, this));
         traced_assert(view_points_import_task_);
-        addTask(class_id, view_points_import_task_.get());
+        addTask(class_name, view_points_import_task_.get());
     }
-    else if (class_id == "JSONImportTask")
+    else if (class_name == "JSONImportTask")
     {
         traced_assert(!json_import_task_);
-        json_import_task_.reset(new JSONImportTask(class_id, instance_id, *this));
+        json_import_task_.reset(new JSONImportTask(child_json, this));
         traced_assert(json_import_task_);
-        addTask(class_id, json_import_task_.get());
+        addTask(class_name, json_import_task_.get());
     }
-    else if (class_id == "GPSTrailImportTask")
+    else if (class_name == "GPSTrailImportTask")
     {
         traced_assert(!gps_trail_import_task_);
-        gps_trail_import_task_.reset(new GPSTrailImportTask(class_id, instance_id, *this));
+        gps_trail_import_task_.reset(new GPSTrailImportTask(child_json, this));
         traced_assert(gps_trail_import_task_);
-        addTask(class_id, gps_trail_import_task_.get());
+        addTask(class_name, gps_trail_import_task_.get());
     }
-    // else if (class_id == "GPSImportCSVTask")
+    // else if (class_name == "GPSImportCSVTask")
     // {
     //     traced_assert(!gps_import_csv_task_);
-    //     gps_import_csv_task_.reset(new GPSImportCSVTask(class_id, instance_id, *this));
+    //     gps_import_csv_task_.reset(new GPSImportCSVTask(child_json, *this, this));
     //     traced_assert(gps_import_csv_task_);
-    //     addTask(class_id, gps_import_csv_task_.get());
+    //     addTask(class_name, gps_import_csv_task_.get());
     // }
-    else if (class_id == "ManageSectorsTask")
+    else if (class_name == "ManageSectorsTask")
     {
         traced_assert(!manage_sectors_task_);
-        manage_sectors_task_.reset(new ManageSectorsTask(class_id, instance_id, *this));
+        manage_sectors_task_.reset(new ManageSectorsTask(child_json, this));
         traced_assert(manage_sectors_task_);
-        addTask(class_id, manage_sectors_task_.get());
+        addTask(class_name, manage_sectors_task_.get());
     }
-    else if (class_id == "RadarPlotPositionCalculatorTask")
+    else if (class_name == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
-        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(class_id, instance_id, *this));
+        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this, compass_));
         traced_assert(radar_plot_position_calculator_task_);
-        addTask(class_id, radar_plot_position_calculator_task_.get());
+        addTask(class_name, radar_plot_position_calculator_task_.get());
 
         connect(radar_plot_position_calculator_task_.get(), &RadarPlotPositionCalculatorTask::doneSignal,
                 this, &TaskManager::taskRadarPlotPositionsDoneSignal);
     }
-    else if (class_id == "CreateARTASAssociationsTask")
+    else if (class_name == "CreateARTASAssociationsTask")
     {
         traced_assert(!create_artas_associations_task_);
         create_artas_associations_task_.reset(
-                    new CreateARTASAssociationsTask(class_id, instance_id, *this));
+                    new CreateARTASAssociationsTask(child_json, this));
         traced_assert(create_artas_associations_task_);
-        addTask(class_id, create_artas_associations_task_.get());
+        addTask(class_name, create_artas_associations_task_.get());
     }
-    else if (class_id == "ReconstructorTask")
+    else if (class_name == "ReconstructorTask")
     {
         traced_assert(!reconstruct_references_task_);
-        reconstruct_references_task_.reset(new ReconstructorTask(class_id, instance_id, *this));
+        reconstruct_references_task_.reset(new ReconstructorTask(child_json, this));
         traced_assert(reconstruct_references_task_);
-        addTask(class_id, reconstruct_references_task_.get());
+        addTask(class_name, reconstruct_references_task_.get());
     }
-    else if (class_id == "ReportExport")
+    else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
-        report_export_.reset(new ResultReport::ReportExport(class_id, instance_id, this));
+        report_export_.reset(new ResultReport::ReportExport(child_json, this));
         traced_assert(report_export_);
     }
     else
     {
-        throw std::runtime_error("TaskManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("TaskManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
     }
 }
 
 /**
  */
-void TaskManager::addTask(const std::string& class_id, Task* task)
+void TaskManager::addTask(const std::string& class_name, Task* task)
 {
     traced_assert(task);
-    traced_assert(!tasks_.count(class_id));
-    tasks_[class_id] = task;
+    traced_assert(!tasks_.count(class_name));
+    tasks_[class_name] = task;
 }
 
 /**
@@ -175,25 +179,25 @@ void TaskManager::checkSubConfigurables()
 {
     if (!asterix_importer_task_)
     {
-        generateSubConfigurable("ASTERIXImportTask", "ASTERIXImportTask0");
+        generateSubConfigurableFromConfig("ASTERIXImportTask", "ASTERIXImportTask0");
         traced_assert(asterix_importer_task_);
     }
 
     if (!view_points_import_task_)
     {
-        generateSubConfigurable("ViewPointsImportTask", "ViewPointsImportTask0");
+        generateSubConfigurableFromConfig("ViewPointsImportTask", "ViewPointsImportTask0");
         traced_assert(view_points_import_task_);
     }
 
     if (!json_import_task_)
     {
-        generateSubConfigurable("JSONImportTask", "JSONImportTask0");
+        generateSubConfigurableFromConfig("JSONImportTask", "JSONImportTask0");
         traced_assert(json_import_task_);
     }
 
     if (!gps_trail_import_task_)
     {
-        generateSubConfigurable("GPSTrailImportTask", "GPSTrailImportTask0");
+        generateSubConfigurableFromConfig("GPSTrailImportTask", "GPSTrailImportTask0");
         traced_assert(gps_trail_import_task_);
     }
 
@@ -205,32 +209,32 @@ void TaskManager::checkSubConfigurables()
 
     if (!manage_sectors_task_)
     {
-        generateSubConfigurable("ManageSectorsTask", "ManageSectorsTask0");
+        generateSubConfigurableFromConfig("ManageSectorsTask", "ManageSectorsTask0");
         traced_assert(manage_sectors_task_);
     }
 
     if (!radar_plot_position_calculator_task_)
     {
-        generateSubConfigurable("RadarPlotPositionCalculatorTask",
-                                "RadarPlotPositionCalculatorTask0");
+        generateSubConfigurableFromConfig("RadarPlotPositionCalculatorTask",
+                                        "RadarPlotPositionCalculatorTask0");
         traced_assert(radar_plot_position_calculator_task_);
     }
 
     if (!create_artas_associations_task_)
     {
-        generateSubConfigurable("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
+        generateSubConfigurableFromConfig("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
         traced_assert(create_artas_associations_task_);
     }
 
     if (!reconstruct_references_task_)
     {
-        generateSubConfigurable("ReconstructorTask", "ReconstructorTask0");
+        generateSubConfigurableFromConfig("ReconstructorTask", "ReconstructorTask0");
         traced_assert(reconstruct_references_task_);
     }
 
     if (!report_export_)
     {
-        generateSubConfigurable("ReportExport", "ReportExport0");
+        generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
         traced_assert(report_export_);
     }
 }
@@ -383,7 +387,7 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     }
     else if (type == task::TaskResultType::Evaluation)
     {
-        result.reset(new EvaluationTaskResult(id, *this));
+        result.reset(new EvaluationTaskResult(id, *this, compass_));
     }
     
     return result;
@@ -455,9 +459,9 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
         auto result_ptr = current_result_.get();
         bool cleanup_db = CleanupDBIfNeeded;
 
-        auto cb = [ result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
+        auto cb = [ this, result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
         {
-            return COMPASS::instance().dbInterface().saveResult(*result_ptr, cleanup_db);
+            return compass_.dbInterface().saveResult(*result_ptr, cleanup_db);
         };
 
         AsyncFuncTask task(cb, "Save Result", "Saving result", false);
@@ -485,7 +489,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 void TaskManager::resultHeaderChanged(const TaskResult& result)
 {
     //update result header upon change
-    auto res = COMPASS::instance().dbInterface().updateResultHeader(result);
+    auto res = compass_.dbInterface().updateResultHeader(result);
     traced_assert(res.ok());
 
     emit taskResultHeaderChangedSignal(QString::fromStdString(result.name()));
@@ -496,7 +500,7 @@ void TaskManager::resultHeaderChanged(const TaskResult& result)
 void TaskManager::resultContentChanged(const TaskResult& result)
 {
     //update result content upon change
-    auto res = COMPASS::instance().dbInterface().updateResultContent(result);
+    auto res = compass_.dbInterface().updateResultContent(result);
     traced_assert(res.ok());
 }
 
@@ -609,7 +613,7 @@ bool TaskManager::removeResult(const std::string& name,
     const auto& result = results_.at(id.value());
     traced_assert(result);
 
-    auto res = COMPASS::instance().dbInterface().deleteResult(*result, CleanupDBIfNeeded);
+    auto res = compass_.dbInterface().deleteResult(*result, CleanupDBIfNeeded);
     if (!res.ok())
         return false;
 
@@ -667,14 +671,14 @@ void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
 {
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
-    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get(), load_blocking);
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get(), load_blocking);
 }
 
 /**
  */
 void TaskManager::unsetViewableDataConfig()
 {
-    COMPASS::instance().viewManager().unsetCurrentViewPoint();
+    compass_.viewManager().unsetCurrentViewPoint();
     viewable_data_cfg_.reset();
 }
 
@@ -693,7 +697,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 
         auto cb = [ this, result_ptr, section, content_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
         { 
-            *result_ptr = COMPASS::instance().dbInterface().loadContent(section, content_id);
+            *result_ptr = compass_.dbInterface().loadContent(section, content_id);
             return true;
         };
 
@@ -703,7 +707,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
     else
     {
         //directly run
-        result = COMPASS::instance().dbInterface().loadContent(section, content_id);
+        result = compass_.dbInterface().loadContent(section, content_id);
     }
 
     if (!result.ok())
@@ -723,7 +727,7 @@ void TaskManager::loadResults()
 
     results_.clear();
     
-    auto res = COMPASS::instance().dbInterface().loadResults();
+    auto res = compass_.dbInterface().loadResults();
     if (!res.ok())
     {
         logerr << "could not load stored results: " << res.error();

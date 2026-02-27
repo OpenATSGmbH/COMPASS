@@ -31,12 +31,8 @@ class MetaVariableWidget;
 class MetaVariable : public Configurable
 {
 public:
-    MetaVariable(const std::string& class_id, const std::string& instance_id,
-                 DBContentManager* object_manager);
+    MetaVariable(nlohmann::json& config, DBContentManager* parent);
     virtual ~MetaVariable();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
 
     bool hasVariables() const { return variables_.size() > 0; }
     PropertyDataType dataType() const;
@@ -73,6 +69,8 @@ public:
 
     bool hasDBContent() const;
 
+    DBContentManager& dbContentManager() { return object_manager_; }
+
 protected:
     std::string name_;
     std::string description_;
@@ -87,7 +85,6 @@ protected:
 
     std::map<std::string, Variable&> variables_; // dbcont name -> var
 
-    virtual void checkSubConfigurables();
     void updateDescription();
 
     void checkSubVariables();

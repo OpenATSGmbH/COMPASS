@@ -112,7 +112,7 @@ void DuckDBInstance::close_impl()
  */
 ResultT<DBConnection*> DuckDBInstance::createConnection_impl(bool verbose)
 {
-    auto c = new DuckDBConnection(this, verbose);
+    auto c = new DuckDBConnection(dbContentManager(), this, verbose);
     auto res = c->connect();
 
     if (!res.ok())

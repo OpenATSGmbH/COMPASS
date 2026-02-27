@@ -16,7 +16,7 @@
  */
 
 #include "buffercsvexportjob.h"
-#include "buffer_value_string.h"
+#include "buffer_utils.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 

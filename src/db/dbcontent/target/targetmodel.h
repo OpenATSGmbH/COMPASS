@@ -31,6 +31,7 @@
 #include <boost/multi_index_container.hpp>
 
 class DBContentManager;
+class EvaluationManager;
 
 namespace dbContent {
 
@@ -166,7 +167,7 @@ public:
 
     std::map<unsigned int, TargetEvalConstraints> evaluationConstraints(bool active_only) const;
 
-    static std::string iconForTarget(const Target& target, bool add_placeholder_txt = false);
+    static std::string iconForTarget(const Target& target, EvaluationManager& eval_man, bool add_placeholder_txt = false);
 
     std::set<unsigned int> getIgnoredUTNs() const;
 

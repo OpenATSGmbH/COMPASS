@@ -63,16 +63,14 @@ class Variable : public QObject, public Property, public Configurable
         return representation_2_string_;
     }
 
-    Variable(const std::string& class_id, const std::string& instance_id, DBContent* parent);
+    Variable(nlohmann::json& config, DBContent* parent,
+             const std::string& dbcontent_name);
     virtual ~Variable();
 
     bool operator==(const Variable& var);
 
     std::string str() const;
     void print() const;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
 
     const std::string& name() const { return name_; }
     void name(const std::string& name);
@@ -227,6 +225,7 @@ private:
     static std::map<std::string, Representation> string_2_representation_;
 
     DBContent* dbcontent_{nullptr};
+    std::string dbcontent_name_;
 
     std::string short_name_;
     /// Value representation type, based on enum STRING_REPRESENTATION
@@ -254,8 +253,6 @@ private:
 
     std::string getDataSourcesAsString(const std::string& value) const;
 
-  protected:
-    virtual void checkSubConfigurables();
     //void setMinMax();
 };
 

@@ -28,9 +28,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-TimestampFilter::TimestampFilter(const std::string& class_id, const std::string& instance_id,
-                                 Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+TimestampFilter::TimestampFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("min_value", &min_value_str_, std::string());
     registerParameter("max_value", &max_value_str_, std::string());
@@ -50,7 +49,7 @@ TimestampFilter::~TimestampFilter() {}
 
 bool TimestampFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(
+    return dbContentManager().metaVariable(
                 DBContent::meta_var_timestamp_.name()).existsIn(dbcont_name);
 }
 
@@ -58,7 +57,7 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = dbContentManager();
 
     if (!dbcont_man.metaVariable(
                 DBContent::meta_var_timestamp_.name()).existsIn(dbcontent_name))
@@ -90,29 +89,15 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
     return ss.str();
 }
 
-
-void TimestampFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("TimestampFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* TimestampFilter::createWidget()
 {
     return new TimestampFilterWidget(*this);
 }
 
 
-void TimestampFilter::checkSubConfigurables()
-{
-    logdbg;
-}
-
-
 void TimestampFilter::reset()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbContentManager();
 
     loginf << "has db min/max " << dbcont_man.hasMinMaxTimestamp();
 

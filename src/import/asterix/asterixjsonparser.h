@@ -16,6 +16,9 @@
  */
 
 #pragma once
+
+class COMPASS;
+
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "jsondatamapping.h"
@@ -33,6 +36,7 @@
 class DBContent;
 class Buffer;
 class ASTERIXImportTask;
+class ASTERIXJSONParsingSchema;
 
 class ASTERIXJSONParser : public QAbstractItemModel, public Configurable
 {
@@ -50,8 +54,11 @@ public:
         ExistingMapping=0, UnmappedJSONKey, UnmappedDBContentVariable
     };
 
-    ASTERIXJSONParser(const std::string& class_id, const std::string& instance_id,
-                      Configurable* parent, ASTERIXImportTask& task);
+    /// @brief Constructor backed by a json reference
+    ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
+                      COMPASS& compass, ASTERIXJSONParsingSchema* parent);
+
+    COMPASS& compass() { return compass_; }
 
     DBContent& dbContent() const;
 
@@ -72,8 +79,7 @@ public:
     std::shared_ptr<Buffer> getNewBuffer() const;
     void appendVariablesToBuffer(Buffer& buffer) const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     ASTERIXJSONParserWidget* createWidget();
 
@@ -127,6 +133,7 @@ public:
 
 private:
     ASTERIXImportTask& task_;
+    COMPASS& compass_;
     std::string name_;
     unsigned int category_;
 
@@ -163,7 +170,7 @@ private:
                                      bool is_in_array = false);
 
 protected:
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 
 };
 

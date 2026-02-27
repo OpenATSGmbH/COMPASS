@@ -16,9 +16,7 @@
  */
 
 #include "msghandler.h"
-#include "compass.h"
-#include "dbinterface.h"
-#include "stringconv.h"
+#include "logmodel.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -31,6 +29,12 @@ namespace msghandler
 boost::mutex MessageHandler::critical_error_mutex_;
 Message      MessageHandler::critical_error_msg_;
 bool         MessageHandler::critical_error_msg_set_{false};
+LogStore*    MessageHandler::log_store_{nullptr};
+
+void MessageHandler::init(LogStore& log_store)
+{
+    log_store_ = &log_store;
+}
 
 /**
  */
@@ -155,26 +159,26 @@ void MessageHandler::logMessageFancy(log4cpp::CategoryStream& strm,
  */
 void MessageHandler::addToTaskLog(const Message& msg)
 {
-    if (!COMPASS::instance().dbInterface().ready())
+    if (!log_store_)
         return;
 
     //execute in thread space of QApplication (main thread)
     if (msg.severity == Severity::Info)
     {
-        QMetaObject::invokeMethod(qApp, 
-                                  [ msg ] () { COMPASS::instance().logInfo(msg.component, {}, msg.info) << msg.content; }, 
+        QMetaObject::invokeMethod(qApp,
+                                  [ msg ] () { if (log_store_) log_store_->logInfo(msg.component, {}, msg.info) << msg.content; },
                                   Qt::AutoConnection);
     }
     else if (msg.severity == Severity::Warning)
     {
-        QMetaObject::invokeMethod(qApp, 
-                                  [ msg ] () { COMPASS::instance().logWarn(msg.component, {}, msg.info) << msg.content; }, 
+        QMetaObject::invokeMethod(qApp,
+                                  [ msg ] () { if (log_store_) log_store_->logWarn(msg.component, {}, msg.info) << msg.content; },
                                   Qt::AutoConnection);
     }
     else if (msg.severity == Severity::Error)
     {
-        QMetaObject::invokeMethod(qApp, 
-                                  [ msg ] () { COMPASS::instance().logError(msg.component, msg.err_code, msg.info) << msg.content; }, 
+        QMetaObject::invokeMethod(qApp,
+                                  [ msg ] () { if (log_store_) log_store_->logError(msg.component, msg.err_code, msg.info) << msg.content; },
                                   Qt::AutoConnection);
     }
 }

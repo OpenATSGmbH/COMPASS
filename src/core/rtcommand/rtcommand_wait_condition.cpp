@@ -18,6 +18,7 @@
 #include "rtcommand_wait_condition.h"
 #include "rtcommand.h"
 
+#include "compass.h"
 #include "ui_test_find.h"
 
 #include <iostream>
@@ -37,11 +38,12 @@ namespace rtcommand
  */
 WaitConditionSignal::WaitConditionSignal(const QString& obj_name,
                                          const QString& signal,
+                                         COMPASS& compass,
                                          int timeout_ms,
                                          QObject* parent)
 :   WaitCondition(timeout_ms)
 {
-    spy_.reset(createSpy(obj_name, signal, parent));
+    spy_.reset(createSpy(obj_name, signal, compass, parent));
 }
 
 /**
@@ -52,10 +54,11 @@ WaitConditionSignal::~WaitConditionSignal() = default;
  */
 QSignalSpy* WaitConditionSignal::createSpy(const QString& obj_name,
                                            const QString& signal,
+                                           COMPASS& compass,
                                            QObject* parent)
 {
     //find object by its object name
-    auto obj = rtcommand::getCommandReceiver(obj_name.toStdString());
+    auto obj = rtcommand::getCommandReceiver(obj_name.toStdString(), compass);
     if (obj.first != rtcommand::FindObjectErrCode::NoError)
         return nullptr;
 

@@ -16,6 +16,7 @@
  */
 
 #include "tableviewdatasource.h"
+#include "tableview.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -35,11 +36,17 @@ using namespace dbContent;
 
 const string DEFAULT_SET_NAME {"Default"};
 
-TableViewDataSource::TableViewDataSource(const std::string& class_id,
-                                             const std::string& instance_id, 
-                                             Configurable* parent)
+// TableViewDataSource::TableViewDataSource(const std::string& class_name,
+//                                              const std::string& instance_name,
+//                                              Configurable* parent)
+// :   QObject()
+// ,   Configurable(class_name, instance_name, parent)
+
+TableViewDataSource::TableViewDataSource(nlohmann::json& config,
+                                         TableView* parent)
 :   QObject()
-,   Configurable(class_id, instance_id, parent)
+,   Configurable(config, parent)
+,   view_(*parent)
 {
     createSubConfigurables();
 }
@@ -49,17 +56,18 @@ TableViewDataSource::~TableViewDataSource()
     unshowViewPoint(nullptr); // removes tmps TODO not done yet
 }
 
-void TableViewDataSource::generateSubConfigurable(const std::string& class_id,
-                                                    const std::string& instance_id)
+void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id
-           << " instance_id " << instance_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name
+           << " instance_name " << instance_name;
 
-    if (class_id.compare("VariableOrderedSet") == 0)
+    if (class_name.compare("VariableOrderedSet") == 0)
     {
         traced_assert(!set_);
 
-        set_.reset(new VariableOrderedSet(class_id, instance_id, this));
+        set_.reset(new VariableOrderedSet(child_json, view_.compass().dbContentManager(), this));
 
         connect(set_.get(), &VariableOrderedSet::setChangedSignal, this,
                 &TableViewDataSource::setChangedSignal, Qt::UniqueConnection);
@@ -71,17 +79,17 @@ void TableViewDataSource::generateSubConfigurable(const std::string& class_id,
     else
     {
         throw std::runtime_error(
-            "TableViewDataSource: generateSubConfigurable: unknown class_id " + class_id);
+            "TableViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 
 void TableViewDataSource::checkSubConfigurables()
 {
-    //DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    //DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     if (!set_)
     {
-        generateSubConfigurable("VariableOrderedSet", DEFAULT_SET_NAME);
+        generateSubConfigurableFromConfig("VariableOrderedSet", DEFAULT_SET_NAME);
         traced_assert(set_);
         addDefaultVariables(*set_.get());
     }
@@ -239,7 +247,7 @@ bool TableViewDataSource::addTemporaryVariable (const std::string& dbcontent_nam
     loginf << "dbcontent_name '" << dbcontent_name
            << "' var_name '" << var_name << "'";
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
     
     traced_assert(set_);
     if (dbcontent_name == META_OBJECT_NAME)
@@ -279,7 +287,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 //    traced_assert(el != temporary_added_variables_.end());
 //    temporary_added_variables_.erase(el);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -302,7 +310,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 
 void TableViewDataSource::addDefaultVariables (VariableOrderedSet& set)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     // Timestamp
     if (dbcont_man.existsMetaVariable(DBContent::meta_var_timestamp_.name()))

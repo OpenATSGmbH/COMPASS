@@ -35,7 +35,7 @@ class SelectDBContentDialog : public QDialog
     Q_OBJECT
 
   public:
-    SelectDBContentDialog()
+    SelectDBContentDialog(DBContentManager& dbcont_man)
     {
         setMinimumWidth(300);
 
@@ -44,7 +44,7 @@ class SelectDBContentDialog : public QDialog
         cat_edit_ = new QLineEdit("Category"); // TODO validate to uint´
         main_layout->addWidget(cat_edit_);
 
-        object_box_ = new DBContentComboBox(false, false);
+        object_box_ = new DBContentComboBox(dbcont_man, false, false);
         main_layout->addWidget(object_box_);
 
         QDialogButtonBox* button_box =

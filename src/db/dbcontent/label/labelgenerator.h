@@ -147,6 +147,8 @@ public:
     LabelGeneratorConfig& config() { return config_; }
     void updateFilterValuesFromStrings();
 
+    DBContentManager& dbContentManager() { return dbcont_manager_; }
+
 protected:
     //virtual void checkSubConfigurables();
 

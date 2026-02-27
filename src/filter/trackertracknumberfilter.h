@@ -31,15 +31,11 @@ public slots:
 
 
 public:
-    TrackerTrackNumberFilter(const std::string& class_id, const std::string& instance_id,
-                             Configurable* parent);
+    TrackerTrackNumberFilter(nlohmann::json& config, FilterManager* parent);
     virtual ~TrackerTrackNumberFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcontent_name) override;
 
@@ -54,6 +50,5 @@ public:
 protected:
     nlohmann::json tracker_track_nums_; // ds_id -> line -> track nums
 
-    virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
 };

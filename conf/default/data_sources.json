@@ -1,5 +1,26 @@
 {
-    "parameters": null,
-    "sub_configs": {
+    "class_name": "DataSourceManager",
+    "instance_name": "DataSourceManager0",
+    "parameters": {
+        "ds_font_size": 10,
+        "load_widget_show_counts": true,
+        "load_widget_show_lines": true,
+        "mode_s_azimuth_stddev": 0.02,
+        "mode_s_range_stddev": 50.0,
+        "primary_azimuth_stddev": 0.05,
+        "primary_range_stddev": 120.0,
+        "secondary_azimuth_stddev": 0.025,
+        "secondary_range_stddev": 70.0,
+        "sensor_status_max_event_buf_size": 1000,
+        "sensor_status_max_status_age_index": 1,
+        "sensor_status_max_status_age_options": [
+            10,
+            20,
+            30,
+            40,
+            50,
+            60
+        ],
+        "sensor_status_show_last_updates": false
     }
 }

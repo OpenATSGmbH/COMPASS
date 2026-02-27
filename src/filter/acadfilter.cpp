@@ -29,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-ACADFilter::ACADFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ACADFilter::ACADFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -45,21 +44,21 @@ ACADFilter::~ACADFilter() {}
 
 bool ACADFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcont_name);
+    return dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcont_name);
 }
 
 std::string ACADFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcontent_name))
         return "";
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& var = dbContentManager().metaVariable(
                     DBContent::meta_var_acad_.name()).getFor(dbcontent_name);
 
         if (!first)
@@ -91,17 +90,6 @@ std::string ACADFilter::getConditionString(const std::string& dbcontent_name, db
     return ss.str();
 }
 
-void ACADFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ACADFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void ACADFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* ACADFilter::createWidget()
 {
@@ -164,10 +152,10 @@ std::vector<unsigned int> ACADFilter::filterBuffer(const std::string& dbcontent_
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcontent_name))
         return to_be_removed;
 
-    dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+    dbContent::Variable& var = dbContentManager().metaVariable(
                 DBContent::meta_var_acad_.name()).getFor(dbcontent_name);
 
     traced_assert(buffer->has<unsigned int> (var.name()));

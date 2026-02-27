@@ -16,7 +16,6 @@
  */
 
 #include "dbcontent/variable/metavariablewidget.h"
-#include "compass.h"
 //#include "configuration.h"
 //#include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -159,11 +158,11 @@ void MetaVariableWidget::updateSlot()
     selection_widgets_.clear();
 
     unsigned int row = 0;
-    for (auto& obj_it : COMPASS::instance().dbContentManager())
+    for (auto& obj_it : variable_.dbContentManager())
     {
         grid_layout_->addWidget(new QLabel(obj_it.first.c_str()), row, 0);
 
-        VariableSelectionWidget* var_sel = new VariableSelectionWidget(true);
+        VariableSelectionWidget* var_sel = new VariableSelectionWidget(variable_.dbContentManager(), true);
         var_sel->showDBContentOnly(obj_it.first);
 
         if (variable_.existsIn(obj_it.first))

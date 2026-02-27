@@ -96,7 +96,7 @@ void DataSourcesStatusToolWidget::createUI()
     status_layout->setSpacing(1);
     ds_status_widget->setLayout(status_layout);
 
-    auto& dbc_man = COMPASS::instance().dbContentManager();
+    auto& dbc_man = ds_man_.compass().dbContentManager();
 
     ds_widget_ = new DataSourcesStatusWidget(ds_man_, dbc_man);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
@@ -432,9 +432,10 @@ namespace
     /**
      */
     void addEventToTextEdit(QTextEdit* edit,
-                            const sensor_status::Event& evt)
+                            const sensor_status::Event& evt,
+                            DataSourceManager& ds_man)
     {
-        auto txt  = evt.toString(false, true);
+        auto txt  = evt.toString(ds_man, false, true);
         auto col  = DataSourcesStatusWidget::colorFromEvent(evt);
         auto font = DataSourcesStatusWidget::fontFromEvent(evt);
 
@@ -460,7 +461,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
     event_box_->clear();
 
     for (const auto& evt : ds_widget_->currentEventQueue().queue())
-        addEventToTextEdit(event_box_, evt);
+        addEventToTextEdit(event_box_, evt, ds_man_);
 }
 
 /**
@@ -468,7 +469,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
 void DataSourcesStatusToolWidget::addNewestEvents()
 {
     for (const auto& evt : ds_widget_->currentEventQueue().consumeNewEvents())
-        addEventToTextEdit(event_box_, *evt);
+        addEventToTextEdit(event_box_, *evt, ds_man_);
 }
 
 /**

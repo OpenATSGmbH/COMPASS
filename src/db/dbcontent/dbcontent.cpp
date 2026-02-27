@@ -18,6 +18,7 @@
 #include "dbcontent/dbcontent.h"
 #include "compass.h"
 #include "buffer.h"
+#include "buffer_utils.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentwidget.h"
@@ -172,15 +173,10 @@ const Property DBContent::var_reftraj_update_age_modes_{"Mode S Update Age", Pro
 
 const Property DBContent::selected_var {"selected", PropertyDataType::BOOL};
 
-/**
- */
-DBContent::DBContent(COMPASS& compass, 
-                     const string& class_id, 
-                     const string& instance_id,
-                     DBContentManager* manager)
-:   Configurable   (class_id, instance_id, manager, "db_content_" + boost::algorithm::to_lower_copy(instance_id) + ".json")
-,   compass_       (compass)
-,   dbcont_manager_(*manager)
+DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
+    : Configurable(config, parent)
+    , compass_(parent->compass())
+    , dbcont_manager_(*parent)
 {
     registerParameter("name", &name_, std::string("Undefined"));
     registerParameter("id", &id_, 0u);
@@ -209,8 +205,7 @@ DBContent::DBContent(COMPASS& compass,
 
     createSubConfigurables();
 
-    logdbg << "created with instance_id " << instanceId() << " name "
-           << name_;
+    logdbg << "created with instance_name " << instanceName() << " name " << name_;
 
     checkStaticVariable(DBContent::meta_var_ds_id_);
 
@@ -220,11 +215,6 @@ DBContent::DBContent(COMPASS& compass,
         checkStaticVariable(DBContent::meta_var_longitude_);
         checkStaticVariable(DBContent::meta_var_utn_);
     }
-
-    // if (contains_status_content_) // not in CAT063
-    // {
-    //     checkStaticVariable(DBContent::meta_var_message_type_);
-    // }
 
     is_reftraj_content_ = name_ == "RefTraj";
 
@@ -245,21 +235,21 @@ DBContent::~DBContent()
 
 /**
  */
-void DBContent::generateSubConfigurable(const string& class_id, 
-                                        const string& instance_id)
+void DBContent::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "generating variable " << instance_id;
-    if (class_id == "Variable")
+    const auto& class_name = Configuration::getClassName(child_json);
+    logdbg << "generating variable " << class_name;
+    if (class_name == "Variable")
     {
-        Variable* var = new Variable(class_id, instance_id, this);
+        Variable* var = new Variable(child_json, this, name_);
 
         if (hasVariable(var->name()))
-            logerr << "duplicate variable " << instance_id
+            logerr << "duplicate variable " << var->instanceName()
                    << " with name '" << var->name() << "'";
 
         traced_assert(!hasVariable(var->name()));
 
-        logdbg << "generating variable " << instance_id
+        logdbg << "generating variable " << var->instanceName()
                << " with name " << var->name();
 
         variables_.emplace(std::piecewise_construct,
@@ -268,15 +258,8 @@ void DBContent::generateSubConfigurable(const string& class_id,
     }
     else
     {
-        throw runtime_error("DBContent: generateSubConfigurable: unknown class_id " + class_id);
+        throw runtime_error("DBContent: generateSubConfigurable: unknown class_name " + class_name);
     }
-}
-
-/**
- */
-void DBContent::checkSubConfigurables()
-{
-    // nothing to see here
 }
 
 /**
@@ -434,7 +417,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     string filter_clause;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     dbContent::VariableSet read_set_copy = read_set;
 
@@ -525,7 +508,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     if (use_filters)
     {
-        string filter_sql = COMPASS::instance().filterManager().getSQLCondition(name_, read_set_copy);
+        string filter_sql = compass_.filterManager().getSQLCondition(name_, read_set_copy);
 
         if (filter_sql.size())
         {
@@ -572,7 +555,7 @@ void DBContent::loadFiltered(dbContent::VariableSet& read_set,
     read_set.add(dbcont_manager_.metaGetVariable(name_, DBContent::meta_var_line_id_));
 
     read_job_ = shared_ptr<DBContentReadDBJob>(
-                new DBContentReadDBJob(COMPASS::instance().dbInterface(), *this, read_set, custom_filter_clause));
+                new DBContentReadDBJob(compass_.dbInterface(), *this, read_set, custom_filter_clause));
 
     connect(read_job_.get(), &DBContentReadDBJob::intermediateSignal,
             this, &DBContent::readJobIntermediateSlot, Qt::QueuedConnection);
@@ -581,7 +564,7 @@ void DBContent::loadFiltered(dbContent::VariableSet& read_set,
     connect(read_job_.get(), &DBContentReadDBJob::doneSignal,
             this, &DBContent::readJobDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(read_job_);
+    compass_.jobManager().addDBJob(read_job_);
 }
 
 /**
@@ -620,7 +603,7 @@ bool DBContent::prepareInsert(shared_ptr<Buffer>& buffer)
         variable(DBContent::meta_var_rec_num_.name()).setHasDBContent();
 
     // transform variable names from dbcontvars to dbcolumns
-    buffer->transformVariables(list, false);
+    buffer_utils::transformVariables(*buffer, list, false);
 
     logdbg << "end";
 
@@ -659,7 +642,7 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 
     traced_assert(buffer->has<boost::posix_time::ptime>(timestamp_col_str));
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     NullableVector<unsigned int>& datasource_vec = buffer->get<unsigned int>(datasource_col_str);
     NullableVector<unsigned int>& line_vec = buffer->get<unsigned int>(line_col_str);
@@ -746,17 +729,17 @@ void DBContent::updateData(Variable& key_var, shared_ptr<Buffer> buffer)
     }
 
     // transform variable names from dbcontvars to dbcolumns
-    buffer->transformVariables(list, false);
+    buffer_utils::transformVariables(*buffer, list, false);
 
     update_job_ =
-            make_shared<UpdateBufferDBJob>(COMPASS::instance().dbInterface(), *this, key_var, buffer);
+            make_shared<UpdateBufferDBJob>(compass_.dbInterface(), *this, key_var, buffer);
 
     connect(update_job_.get(), &UpdateBufferDBJob::doneSignal, this, &DBContent::updateDoneSlot,
             Qt::QueuedConnection);
     connect(update_job_.get(), &UpdateBufferDBJob::updateProgressSignal, this,
             &DBContent::updateProgressSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(update_job_);
+    compass_.jobManager().addDBJob(update_job_);
 }
 
 /**
@@ -770,14 +753,14 @@ void DBContent::deleteDBContentData(bool cleanup_db)
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->cleanupDB(cleanup_db);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -791,7 +774,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, bool cle
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->setSpecificSacSic(sac, sic);
     delete_job_->cleanupDB(cleanup_db);
@@ -799,7 +782,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, bool cle
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -814,7 +797,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, unsigned
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(COMPASS::instance().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->setSpecificSacSic(sac, sic);
     delete_job_->setSpecificLineId(line_id);
@@ -823,7 +806,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, unsigned
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(delete_job_);
+    compass_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -852,17 +835,17 @@ void DBContent::deleteJobDoneSlot()
 
     delete_job_ = nullptr;
 
-    COMPASS::instance().dataSourceManager().saveDBDataSources();
-    emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
+    compass_.dataSourceManager().saveDBDataSources();
+    emit compass_.dataSourceManager().dataSourcesChangedSignal();
 
     // remove from inserted count
-    //COMPASS::instance().dataSourceManager().clearInsertedCounts(name_);
-    //COMPASS::instance().dataSourceManager().saveDBDataSources();
+    //compass_.dataSourceManager().clearInsertedCounts(name_);
+    //compass_.dataSourceManager().saveDBDataSources();
 
     // remove from targets count
     //dbcont_manager_.removeDBContentFromTargets(name_);
 
-    count_ = COMPASS::instance().dbInterface().count(db_table_name_);
+    count_ = compass_.dbInterface().count(db_table_name_);
 }
 
 /**
@@ -891,7 +874,7 @@ void DBContent::readJobIntermediateSlot(shared_ptr<Buffer> buffer)
     logdbg << name_ << ": got buffer with size " << buffer->size();
 
     // finalize buffer
-    buffer->transformVariables(sender->readList(), true);
+    buffer_utils::transformVariables(*buffer, sender->readList(), true);
 
     // add boolean to indicate selection
     buffer->addProperty(DBContent::selected_var);
@@ -939,7 +922,7 @@ void DBContent::databaseOpenedSlot()
     is_loadable_ = existsInDB();
 
     if (is_loadable_)
-        count_ = COMPASS::instance().dbInterface().count(db_table_name_);
+        count_ = compass_.dbInterface().count(db_table_name_);
 
     logdbg << name_ << ": table " << db_table_name_
            << " count " << count_;
@@ -992,7 +975,7 @@ size_t DBContent::loadedCount()
  */
 bool DBContent::existsInDB() const
 {
-    return COMPASS::instance().dbInterface().existsTable(db_table_name_);
+    return compass_.dbInterface().existsTable(db_table_name_);
 }
 
 /**

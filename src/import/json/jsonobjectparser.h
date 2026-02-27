@@ -30,7 +30,9 @@
 #include <string>
 
 class Buffer;
+class COMPASS;
 class DBContent;
+class JSONParsingSchema;
 
 namespace dbContent {
 
@@ -44,9 +46,11 @@ class JSONObjectParser : public Configurable
     using MappingIterator = std::vector<std::unique_ptr<JSONDataMapping>>::iterator;
 
   public:
-    JSONObjectParser(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent);
-    JSONObjectParser() = default;
+    /// @brief Constructor backed by a json reference
+    JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, COMPASS& compass);
+    JSONObjectParser() = delete;
+
+    COMPASS& compass() { return compass_; }
 
     DBContent& dbContent() const;
 
@@ -82,8 +86,7 @@ class JSONObjectParser : public Configurable
     std::shared_ptr<Buffer> getNewBuffer() const;
     void appendVariablesToBuffer(Buffer& buffer) const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     JSONObjectParserWidget* widget();
 
@@ -100,6 +103,7 @@ class JSONObjectParser : public Configurable
     void active(bool value);
 
 private:
+    COMPASS& compass_;
     std::string name_;
     bool active_ {true};
 
@@ -135,5 +139,5 @@ private:
                                      bool is_in_array = false);
 
   protected:
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 };

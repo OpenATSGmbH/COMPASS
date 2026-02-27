@@ -33,9 +33,8 @@ namespace EvaluationRequirement
 class PositionLatencyConfig : public PositionBaseProbConfig
 {
 public:
-    PositionLatencyConfig(const std::string& class_id, const std::string& instance_id,
-                          Group& group, EvaluationStandard& standard,
-                          EvaluationCalculator& calculator);
+    PositionLatencyConfig(nlohmann::json& config,
+                          Group* parent);
     virtual ~PositionLatencyConfig();
 
     std::shared_ptr<Base> createRequirement() override;

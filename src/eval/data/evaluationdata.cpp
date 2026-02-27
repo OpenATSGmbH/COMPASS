@@ -69,7 +69,7 @@ EvaluationData::EvaluationData(EvaluationCalculator& calculator,
 ,   eval_man_  (eval_man)
 ,   dbcont_man_(dbcont_man)
 {
-    accessor_ = make_shared<dbContent::DBContentAccessor>();
+    accessor_ = make_shared<dbContent::DBContentAccessor>(dbcont_man_);
 }
 
 /**
@@ -830,7 +830,7 @@ std::pair<nlohmann::json, unsigned int> EvaluationData::rawCellData(const Evalua
     switch (column)
     {
         case ColUse:
-            return std::make_pair(dbContent::TargetModel::iconForTarget(target, true), 0);
+            return std::make_pair(dbContent::TargetModel::iconForTarget(target, eval_man_, true), 0);
         case ColUTN: 
             return std::make_pair(target.utn_, 0);
         case ColComment:

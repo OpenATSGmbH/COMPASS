@@ -11,7 +11,6 @@ include("${CMAKE_CURRENT_LIST_DIR}/rtcommand/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/net/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/job/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/latex/CMakeLists.txt")
-include("${CMAKE_CURRENT_LIST_DIR}/docx/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/license/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/sector/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/source/CMakeLists.txt")
@@ -29,6 +28,7 @@ target_include_directories(compass_core PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 
 target_link_libraries(compass_core
     PUBLIC
+        compass_config
         Qt5::Widgets
         Qt5::Core
         Qt5::OpenGL

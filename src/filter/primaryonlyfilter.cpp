@@ -25,9 +25,8 @@
 using namespace std;
 using namespace nlohmann;
 
-PrimaryOnlyFilter::PrimaryOnlyFilter(const std::string& class_id, const std::string& instance_id,
-                                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+PrimaryOnlyFilter::PrimaryOnlyFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
 
     createSubConfigurables();
@@ -40,7 +39,7 @@ PrimaryOnlyFilter::~PrimaryOnlyFilter()
 
 bool PrimaryOnlyFilter::filters(const std::string& dbcontent_name)
 {
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = dbContentManager();
 
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
         return true;
@@ -63,7 +62,7 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
 
     stringstream ss;
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = dbContentManager();
 
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
     {
@@ -130,17 +129,6 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
     return ss.str();
 }
 
-void PrimaryOnlyFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("PrimaryOnlyFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void PrimaryOnlyFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* PrimaryOnlyFilter::createWidget()
 {
@@ -190,7 +178,7 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
 {
     std::vector<unsigned int> to_be_removed;
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = dbContentManager();
 
     NullableVector<unsigned int>* m3a_vec {nullptr};
     if (cont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))

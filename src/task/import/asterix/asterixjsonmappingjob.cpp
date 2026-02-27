@@ -55,11 +55,19 @@ void ASTERIXJSONMappingJob::run_impl()
 
     started_ = true;
 
+    logdbg << "ASTERIXJSONMappingJob: run_impl: num parsers " << parsers_.size()
+           << " num data slices " << data_.size()
+           << " keys: ";
+    for (const auto& k : data_record_keys_)
+        logdbg << "ASTERIXJSONMappingJob: run_impl: key '" << k << "'";
+
     string dbcontent_name;
 
     for (auto& parser_it : parsers_)
     {
         dbcontent_name = parser_it.second->dbContentName();
+        logdbg << "ASTERIXJSONMappingJob: run_impl: parser cat " << parser_it.first
+               << " dbcontent '" << dbcontent_name << "'";
 
         if (!buffers_.count(dbcontent_name))
             buffers_[dbcontent_name] = parser_it.second->getNewBuffer();
@@ -67,9 +75,11 @@ void ASTERIXJSONMappingJob::run_impl()
             parser_it.second->appendVariablesToBuffer(*buffers_.at(dbcontent_name));
     }
 
-    auto process_lambda = [this](nlohmann::json& record) 
+    size_t lambda_call_count = 0;
+
+    auto process_lambda = [this, &lambda_call_count](nlohmann::json& record)
     {
-        //loginf << "UGA '" << record.dump(4) << "'";
+        ++lambda_call_count;
 
         if (this->obsolete_)
             return;
@@ -141,10 +151,28 @@ void ASTERIXJSONMappingJob::run_impl()
         if (data_slice)
         {
             logdbg << "applying JSON function";
+
+            if (lambda_call_count == 0) // log first slice structure
+            {
+                logdbg << "ASTERIXJSONMappingJob: first data slice type " << data_slice->type_name()
+                       << " size (if array) " << (data_slice->is_array() ? data_slice->size() : 0)
+                       << " is_object " << data_slice->is_object();
+
+                // log top-level keys
+                if (data_slice->is_object())
+                {
+                    for (auto it = data_slice->begin(); it != data_slice->end(); ++it)
+                        logdbg << "ASTERIXJSONMappingJob: top-level key '" << it.key() << "'";
+                }
+            }
+
             JSON::applyFunctionToValues(*data_slice.get(), data_record_keys_, data_record_keys_.begin(),
                                         process_lambda, false);
         }
     }
+
+    logdbg << "ASTERIXJSONMappingJob: run_impl: lambda called " << lambda_call_count << " times"
+           << " mapped " << num_mapped_ << " not_mapped " << num_not_mapped_ << " errors " << num_errors_;
 
     std::map<std::string, std::shared_ptr<Buffer>> not_empty_buffers;
 

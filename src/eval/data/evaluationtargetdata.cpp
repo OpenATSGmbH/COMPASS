@@ -145,7 +145,7 @@ void EvaluationTargetData::finalize () const
     logdbg << "update constraints";
     updateConstraints();
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = eval_man_.dbContentManager();
 
     logdbg << "update mops";
     if (dbcont_man.hasTargetsInfo()   &&

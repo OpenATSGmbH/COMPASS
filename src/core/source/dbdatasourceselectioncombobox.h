@@ -17,9 +17,7 @@
 
 #pragma once
 
-#include "compass.h"
 #include "datasourcemanager.h"
-#include "source/dbdatasource.h"
 #include "logger.h"
 
 #include <QComboBox>
@@ -35,8 +33,8 @@ class DBDataSourceComboBox : public QComboBox
     void changedSource();
 
   public:
-    DBDataSourceComboBox(QWidget* parent = nullptr)
-        : QComboBox(parent)
+    DBDataSourceComboBox(DataSourceManager& ds_man, QWidget* parent = nullptr)
+        : QComboBox(parent), ds_man_(ds_man)
     {
         updateBox();
 
@@ -88,6 +86,8 @@ class DBDataSourceComboBox : public QComboBox
     }
 
   protected:
+    DataSourceManager& ds_man_;
+
     bool show_dstype_only_{false};
     std::string only_dstype_name_;
 
@@ -104,7 +104,7 @@ class DBDataSourceComboBox : public QComboBox
         if (show_dbcontent_only_)
             loginf << "show_dbcontent_only " << show_dbcontent_only_ << " only_dbcontent_name '" << only_dbcontent_name_ << "'";
 
-        for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+        for (auto& ds_it : ds_man_.dbDataSources())
         {
             if (show_dstype_only_ && ds_it->dsType() != only_dstype_name_)
             {

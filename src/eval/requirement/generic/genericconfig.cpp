@@ -35,9 +35,10 @@ using namespace std;
 namespace EvaluationRequirement
 {
 
-GenericIntegerConfig::GenericIntegerConfig(const std::string& class_id, const std::string& instance_id, const std::string& variant,
-                                   Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator), variant_(variant)
+GenericIntegerConfig::GenericIntegerConfig(
+        nlohmann::json& config, const std::string& variant,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent), variant_(variant)
 {
     traced_assert(variant_.size());
 }
@@ -78,9 +79,10 @@ void GenericIntegerConfig::addToReport (std::shared_ptr<ResultReport::Report> re
 
 //---------------------------------------------
 
-GenericDoubleConfig::GenericDoubleConfig(const std::string& class_id, const std::string& instance_id, const std::string& variant,
-                                           Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator), variant_(variant)
+GenericDoubleConfig::GenericDoubleConfig(
+        nlohmann::json& config, const std::string& variant,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent), variant_(variant)
 {
     traced_assert(variant_.size());
 

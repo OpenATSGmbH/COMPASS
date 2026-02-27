@@ -19,6 +19,7 @@
 
 #include "variableview.h"
 
+class ViewContainer;
 class ScatterPlotViewWidget;
 class ScatterPlotViewDataSource;
 class ScatterPlotViewDataWidget;
@@ -46,16 +47,15 @@ public:
         DataVarY
     };
 
-    /// @brief Constructor
-    ScatterPlotView(const std::string& class_id, 
-                    const std::string& instance_id, 
-                    ViewContainer* w,
-                    ViewManager& view_manager);
+    // ScatterPlotView(const std::string& class_name,
+    //                 const std::string& instance_name,
+    //                 ViewContainer* w,
+    //                 ViewManager& view_manager);
+    ScatterPlotView(nlohmann::json& config, ViewContainer* parent);
     /// @brief Destructor
     virtual ~ScatterPlotView() override;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     /// @brief Returns the used data source
     ScatterPlotViewDataSource* getDataSource()

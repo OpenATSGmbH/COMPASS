@@ -19,9 +19,8 @@
 #include "asteriximporttask.h"
 #include "traced_assert.h"
 
-ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(const std::string& class_id, const std::string& instance_id,
-                                                   ASTERIXImportTask& task)
-    : Configurable(class_id, instance_id, &task), task_(task)
+ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(nlohmann::json& config, ASTERIXImportTask& task)
+    : Configurable(config, &task), task_(task)
 {
     registerParameter<std::string>("name", &name_, "");
 
@@ -46,29 +45,30 @@ ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(const std::string& class_id, 
 //    return static_cast<ASTERIXJSONParsingSchema&>(Configurable::operator=(std::move(other)));
 //}
 
-void ASTERIXJSONParsingSchema::generateSubConfigurable(const std::string& class_id,
-                                                       const std::string& instance_id)
+void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "ASTERIXJSONParser")
-    {
-        const Configuration& sub_config = Configurable::getSubConfiguration(class_id, instance_id);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
+    if (class_name == "ASTERIXJSONParser")
+    {
         unsigned int category{0};
 
-        if (sub_config.hasParameterConfigValue("category"))
-            category = sub_config.getParameterConfigValue<unsigned int>("category");
+        if (child_json.contains("parameters") && child_json["parameters"].contains("category"))
+            category = child_json["parameters"]["category"].get<unsigned int>();
 
         traced_assert(parsers_.find(category) == parsers_.end());
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " for cat  " << category;
 
-        parsers_[category].reset(new ASTERIXJSONParser(class_id, instance_id, this, task_));
+        auto parser = std::make_unique<ASTERIXJSONParser>(child_json, task_, task_.compass(), this);
+        parsers_[category] = std::move(parser);
     }
     else
     {
-        throw std::runtime_error("ASTERIXJSONParsingSchema: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ASTERIXJSONParsingSchema: generateSubConfigurable: unknown class_name " +
+                                 class_name);
     }
 }
 

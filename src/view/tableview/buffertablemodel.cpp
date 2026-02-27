@@ -190,7 +190,7 @@ void BufferTableModel::updateRows()
     if (!buffer_)
         return;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     if (view_.settings().ignore_non_target_reports_
         && !dbcont_man.metaCanGetVariable(buffer_->dbContentName(), DBContent::meta_var_latitude_))
@@ -292,5 +292,5 @@ void BufferTableModel::saveAsCSV(const std::string& file_name)
     connect(export_job, &BufferCSVExportJob::doneSignal, this,
             &BufferTableModel::exportJobDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addBlockingJob(export_job_);
+    view_.compass().jobManager().addBlockingJob(export_job_);
 }

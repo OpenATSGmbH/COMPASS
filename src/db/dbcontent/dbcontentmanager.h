@@ -76,10 +76,12 @@ signals:
     void insertDoneSignal(); // emitted when all dbconts have finished loading
 
 public:
-    DBContentManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    DBContentManager(nlohmann::json& config, COMPASS& compass);
     virtual ~DBContentManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id, const std::string& instance_id) override;
+    COMPASS& compass() { return compass_; }
+
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     bool existsDBContent(const std::string& dbcontent_name);
     DBContent& dbContent(const std::string& dbcontent_name);
@@ -205,7 +207,6 @@ public:
     boost::posix_time::time_duration maxLatency() const;
 
 protected:
-    virtual void checkSubConfigurables() override;
     void finishLoading();
     void finishInserting();
 

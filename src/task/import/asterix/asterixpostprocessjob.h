@@ -29,14 +29,17 @@
 #include <map>
 
 class Buffer;
+class COMPASS;
 
 class ASTERIXPostprocessJob : public Job
 {
 public:
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
-                          ASTERIXImportTaskSettings settings);
+                          ASTERIXImportTaskSettings settings,
+                          COMPASS& compass);
 
-    ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers);
+    ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
+                          COMPASS& compass);
     // ctor with no checks/overrides/filters for JSON
 
     virtual ~ASTERIXPostprocessJob();
@@ -50,6 +53,7 @@ private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;
 
     ASTERIXImportTaskSettings settings_;
+    COMPASS& compass_;
 
     static boost::mutex m3a_map_mutex_;
     static tbb::concurrent_unordered_map<unsigned int, unsigned int> obfuscate_m3a_map_;

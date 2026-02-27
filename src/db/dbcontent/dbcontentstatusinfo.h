@@ -18,13 +18,15 @@
 #include "dbcontent/variable/variableset.h"
 #include "buffer.h"
 
+class DBContentManager;
+
 namespace dbContent
 {
 
 class DBContentStatusInfo
 {
 public:
-    DBContentStatusInfo();
+    explicit DBContentStatusInfo(DBContentManager& dbcont_man);
     virtual ~DBContentStatusInfo() = default;
 
     dbContent::VariableSet getReadSetFor(const std::string& dbcontent_name) const;
@@ -36,6 +38,7 @@ public:
     const std::map<unsigned int, std::map<unsigned int, std::vector<boost::posix_time::ptime>>>& getInfo() const { return scan_info_; }
 
   protected:
+    DBContentManager& dbcont_man_;
     std::map<unsigned int, std::map<unsigned int, std::vector<boost::posix_time::ptime>>> scan_info_; // ds_id -> line_id-> times
 };
 

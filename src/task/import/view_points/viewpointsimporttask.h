@@ -36,12 +36,8 @@ class ViewPointsImportTask : public Task, public Configurable
 //     void dialogImportSlot();
 
 public:
-    ViewPointsImportTask(const std::string& class_id, const std::string& instance_id,
-                         TaskManager& task_manager);
+    ViewPointsImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ViewPointsImportTask();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     void showDialog();
 
@@ -63,8 +59,6 @@ protected:
     nlohmann::json current_data_;
 
     std::string current_error_;
-
-    virtual void checkSubConfigurables() override {}
 
     void parseCurrentFile ();
     void checkParsedData (); // throws exceptions for errors

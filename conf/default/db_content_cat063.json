@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT063",
     "parameters": {
         "contains_status_content": true,
         "contains_target_reports": false,
@@ -7,458 +9,516 @@
         "info": "",
         "name": "CAT063"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable1": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable10": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "msc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.MSC\n\nMonitoring System Connected Status\n0 Monitoring system connected\n1 Monitoring system disconnected",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MSC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable11": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "npw",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.NPW\n\nNo Plot Warning\n0 Default (no meaning)\n1 No plots being received",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "NPW",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable12": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "odp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.ODP\n\nData Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ODP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable13": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ops",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.OPS\n\nOperational Release Status of the System\n0 System is released for operational use\n1 Operational use of System is inhibited,",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OPS",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable14": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "oxt",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.OXT\n\nTransmission Subsystem Overload Status\n0 Default, no overload\n1 Overload in transmission subsystem",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OXT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable15": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "psr",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.PSR\n\n0 PSR GO\n1 PSR NOGO",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "PSR",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable16": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ssr",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.SSR\n\n0 SSR GO\n1 SSR NOGO",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SSR",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable17": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tsv",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.TSV\n\nTime Source Validity\n0 valid\n1 invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TSV",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable18": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_stamping_bias",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.TSB\n\nSystem Area Code",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time Stamping Bias",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "TSB",
-                    "unit": "Second"
-                }
-            },
-            "Variable19": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "ssr_mode_s_range_bias",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 080.SRB\n\nSSR / Mode S Range Bias",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "SSR/Mode S Range Bias",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "Variable2": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "service_identification",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 015.Service Identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Service Identification",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable20": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "ssr_mode_s_range_gain",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 080.SRG\n\nSSR / Mode S Range Gain",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SSR/Mode S Range Gain",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable21": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "ssr_mode_s_azimuth_bias",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 081.SAB",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "SSR/Mode S Azimuth Bias",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable22": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "psr_range_bias",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.PRB\n\nPSR Range Bias",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "PSR Range Bias",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "Variable23": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "psr_range_gain",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.PRG\n\nPSR Range Gain",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "PSR Range Gain",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable24": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "psr_azimuth_bias",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 091.PAB",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "PSR Azimuth Bias",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable25": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "psr_elevation_bias",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 092.PEB",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "PSR Elevation Bias",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable3": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_message",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 030.Time of Message",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Message",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable4": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sensor_sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 050.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Sensor SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable5": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sensor_sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 050.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Sensor SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable6": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ads",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.ADS\n\n0 ADS GO\n1 ADS NOGO",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ADS",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable7": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "con",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.CON\n\n0 operational\n1 degraded\n2 Initialization\n3 not currently connected",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "CON",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable8": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mds",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.MDS\n\n0 Mode S GO\n1 Mode S NOGO",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MDS",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable9": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mlt",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.MLT\n\n0 MLT GO\n1 MLT NOGO",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MLT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadards_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "COMMUNICATION LINE ID determines the origin of the record",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRadarrec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SAC\n\nSystem Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable1",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SIC\n\nSystem Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "msc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.MSC\n\nMonitoring System Connected Status\n0 Monitoring system connected\n1 Monitoring system disconnected",
+                "dimension": "",
+                "is_key": false,
+                "name": "MSC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "npw",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.NPW\n\nNo Plot Warning\n0 Default (no meaning)\n1 No plots being received",
+                "dimension": "",
+                "is_key": false,
+                "name": "NPW",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "odp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.ODP\n\nData Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
+                "dimension": "",
+                "is_key": false,
+                "name": "ODP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ops",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.OPS\n\nOperational Release Status of the System\n0 System is released for operational use\n1 Operational use of System is inhibited,",
+                "dimension": "",
+                "is_key": false,
+                "name": "OPS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "oxt",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.OXT\n\nTransmission Subsystem Overload Status\n0 Default, no overload\n1 Overload in transmission subsystem",
+                "dimension": "",
+                "is_key": false,
+                "name": "OXT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "psr",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.PSR\n\n0 PSR GO\n1 PSR NOGO",
+                "dimension": "",
+                "is_key": false,
+                "name": "PSR",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ssr",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.SSR\n\n0 SSR GO\n1 SSR NOGO",
+                "dimension": "",
+                "is_key": false,
+                "name": "SSR",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tsv",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.TSV\n\nTime Source Validity\n0 valid\n1 invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "TSV",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_stamping_bias",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 070.TSB\n\nSystem Area Code",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time Stamping Bias",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "TSB",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable19",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ssr_mode_s_range_bias",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 080.SRB\n\nSSR / Mode S Range Bias",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "SSR/Mode S Range Bias",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable2",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "service_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 015.Service Identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "Service Identification",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable20",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ssr_mode_s_range_gain",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 080.SRG\n\nSSR / Mode S Range Gain",
+                "dimension": "",
+                "is_key": false,
+                "name": "SSR/Mode S Range Gain",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable21",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ssr_mode_s_azimuth_bias",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 081.SAB",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "SSR/Mode S Azimuth Bias",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable22",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "psr_range_bias",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 090.PRB\n\nPSR Range Bias",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "PSR Range Bias",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable23",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "psr_range_gain",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 090.PRG\n\nPSR Range Gain",
+                "dimension": "",
+                "is_key": false,
+                "name": "PSR Range Gain",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable24",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "psr_azimuth_bias",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 091.PAB",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "PSR Azimuth Bias",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable25",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "psr_elevation_bias",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 092.PEB",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "PSR Elevation Bias",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_message",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 030.Time of Message",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Message",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sensor_sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 050.SAC\n\nSystem Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Sensor SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable5",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sensor_sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 050.SIC\n\nSystem Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Sensor SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable6",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ads",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.ADS\n\n0 ADS GO\n1 ADS NOGO",
+                "dimension": "",
+                "is_key": false,
+                "name": "ADS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "con",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.CON\n\n0 operational\n1 degraded\n2 Initialization\n3 not currently connected",
+                "dimension": "",
+                "is_key": false,
+                "name": "CON",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable8",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mds",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.MDS\n\n0 Mode S GO\n1 Mode S NOGO",
+                "dimension": "",
+                "is_key": false,
+                "name": "MDS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mlt",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 060.MLT\n\n0 MLT GO\n1 MLT NOGO",
+                "dimension": "",
+                "is_key": false,
+                "name": "MLT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp based on Time of Day",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadards_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From ds_id\n\nData Source ID",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "COMMUNICATION LINE ID determines the origin of the record",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRadarrec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
             }
         }
-    }
+    ]
 }

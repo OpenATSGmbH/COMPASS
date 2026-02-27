@@ -16,6 +16,7 @@
  */
 
 #include "asterixjsonparser.h"
+#include "asterixjsonparsingschema.h"
 
 #include "compass.h"
 #include "buffer.h"
@@ -40,11 +41,11 @@ using namespace nlohmann;
 using namespace Utils;
 
 
-ASTERIXJSONParser::ASTERIXJSONParser(const std::string& class_id, const std::string& instance_id,
-                                     Configurable* parent, ASTERIXImportTask& task)
-    : Configurable(class_id, instance_id, parent,
-                   "task_import_asterix_" + boost::algorithm::to_lower_copy(instance_id) + ".json"),
-      task_(task)
+ASTERIXJSONParser::ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
+                                     COMPASS& compass, ASTERIXJSONParsingSchema* parent)
+    : Configurable(config, parent),
+      task_(task),
+      compass_(compass)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("category", &category_, 0u);
@@ -67,18 +68,20 @@ ASTERIXJSONParser::ASTERIXJSONParser(const std::string& class_id, const std::str
     hint_icon_ = Files::IconProvider::getIcon("hint.png");
 }
 
-void ASTERIXJSONParser::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "JSONDataMapping")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "JSONDataMapping")
     {
-        data_mappings_.emplace_back(new JSONDataMapping(class_id, instance_id, *this));
-        (*data_mappings_.rbegin())->mandatory(false);
+        auto* mapping = new JSONDataMapping(child_json, this, compass_);
+        mapping->mandatory(false);
+        data_mappings_.emplace_back(mapping);
 
         mapping_checks_dirty_ = true;
     }
     else
-        throw std::runtime_error("ASTERIXJSONParser: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("ASTERIXJSONParser: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void ASTERIXJSONParser::doMappingChecks()
@@ -257,7 +260,7 @@ const std::vector<std::string>& ASTERIXJSONParser::notAddedJSONKeys() const
 DBContent& ASTERIXJSONParser::dbContent() const
 {
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
         throw runtime_error ("ASTERIXJSONParser: dbObject: dbcontbject '" + db_content_name_+ "' does not exist");
@@ -585,18 +588,18 @@ void ASTERIXJSONParser::checkIfKeysExistsInMappings(const std::string& location,
                  << db_content_name_ << "'" << location << "' type " << j.type_name() << " value "
                  << j.dump() << " in array " << is_in_array;
 
-        auto new_cfg = Configuration::create("JSONDataMapping");
-        new_cfg->addParameter<std::string>("json_key", location);
-        new_cfg->addParameter<std::string>("dbcontent_name", db_content_name_);
+        auto& child_json = addNewSubConfiguration("JSONDataMapping");
+        child_json[Configuration::ParameterSection]["json_key"] = location;
+        child_json[Configuration::ParameterSection]["dbcontent_name"] = db_content_name_;
 
         if (is_in_array)
-            new_cfg->addParameter<bool>("in_array", true);
+            child_json[Configuration::ParameterSection]["in_array"] = true;
 
         std::stringstream ss;
         ss << "Type " << j.type_name() << ", value " << j.dump();
-        new_cfg->addParameter<std::string>("comment", ss.str());
+        child_json[Configuration::ParameterSection]["comment"] = ss.str();
 
-        Configurable::generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(child_json);
     }
 }
 
@@ -611,7 +614,7 @@ void ASTERIXJSONParser::removeMapping(unsigned int index)
     std::unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index);
 
     loginf << "index " << index << " key " << mapping->jsonKey()
-           << " instance " << mapping->instanceId();
+           << " instance " << mapping->instanceName();
 
     logdbg2 << "size " << data_mappings_.size();
 
@@ -847,7 +850,7 @@ Qt::ItemFlags ASTERIXJSONParser::flags(const QModelIndex& index) const
 {
     if (!expert_mode_init_)
     {
-        expert_mode_ = COMPASS::instance().expertMode();
+        expert_mode_ = compass_.expertMode();
         expert_mode_init_ = true;
     }
 

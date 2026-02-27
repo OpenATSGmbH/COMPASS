@@ -46,7 +46,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     void selectionChanged();
 
   public:
-    VariableSelectionWidget(bool h_box = true, QWidget* parent = nullptr);
+    VariableSelectionWidget(DBContentManager& dbcont_man, bool h_box = true, QWidget* parent = nullptr);
     ~VariableSelectionWidget();
 
     bool hasVariable() const { return variable_selected_; }

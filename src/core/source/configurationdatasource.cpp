@@ -31,10 +31,9 @@ namespace dbContent
 {
 
 
-ConfigurationDataSource::ConfigurationDataSource(const std::string& class_id, 
-                                                 const std::string& instance_id,
-                                                 DataSourceManager& ds_manager)
-    : Configurable(class_id, instance_id, &ds_manager)
+ConfigurationDataSource::ConfigurationDataSource(nlohmann::json& config,
+                                                 DataSourceManager* parent)
+    : Configurable(config, parent)
 {
     registerParameter("ds_type", &ds_type_, std::string());
     registerParameter("sac", &sac_, 0u);

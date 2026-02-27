@@ -23,16 +23,19 @@
 #include "configurable.h"
 #include "jsonobjectparser.h"
 
-//class JSONImportTask;
+class COMPASS;
+class JSONImportTask;
 
 class JSONParsingSchema : public Configurable
 {
     using JSONObjectParserIterator = std::map<std::string, std::unique_ptr<JSONObjectParser>>::iterator;
 
   public:
-    JSONParsingSchema(const std::string& class_id, const std::string& instance_id,
-                      Configurable* parent);
-    JSONParsingSchema() = default;
+    /// @brief Constructor backed by a json reference
+    JSONParsingSchema(nlohmann::json& config, JSONImportTask* parent, COMPASS& compass);
+    JSONParsingSchema() = delete;
+
+    COMPASS& compass() { return compass_; }
 
     JSONObjectParserIterator begin() { return parsers_.begin(); }
     JSONObjectParserIterator end() { return parsers_.end(); }
@@ -42,8 +45,7 @@ class JSONParsingSchema : public Configurable
     JSONObjectParser& parser(const std::string& name);
     void removeParser(const std::string& name);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     std::string name() const;
     void name(const std::string& name);
@@ -51,9 +53,10 @@ class JSONParsingSchema : public Configurable
     void updateMappings();
 
   private:
+    COMPASS& compass_;
     std::string name_;
     std::map<std::string, std::unique_ptr<JSONObjectParser>> parsers_;
 
   protected:
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 };

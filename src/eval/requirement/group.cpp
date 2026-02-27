@@ -17,6 +17,7 @@
 
 #include "eval/requirement/group.h"
 #include "evaluationstandard.h"
+#include "evaluationcalculator.h"
 #include "eval/requirement/detection/detectionconfig.h"
 #include "eval/requirement/position/distanceconfig.h"
 #include "eval/requirement/position/distancermsconfig.h"
@@ -83,10 +84,12 @@ const std::map<std::string, std::string> Group::requirement_type_mapping_
     {"EvaluationRequirementCoastingCorrectConfig", "Track Coasting Correct"}
 };
 
-Group::Group(const std::string& class_id, const std::string& instance_id,
-                                                       EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : Configurable(class_id, instance_id, &standard), EvaluationStandardTreeItem(&standard), standard_(standard),
-      calculator_(calculator)
+Group::Group(nlohmann::json& config,
+             EvaluationStandard* parent)
+    : Configurable(config, parent),
+      EvaluationStandardTreeItem(parent),
+      standard_(*parent),
+      calculator_(*standard_.parentConfigurable())
 {
     registerParameter("name", &name_, std::string());
     registerParameter("use", &use_, true);
@@ -94,6 +97,11 @@ Group::Group(const std::string& class_id, const std::string& instance_id,
     traced_assert(name_.size());
 
     createSubConfigurables();
+}
+
+EvaluationStandard* Group::parentConfigurable() const
+{
+    return static_cast<EvaluationStandard*>(Configurable::parentConfigurable());
 }
 
 Group::~Group()
@@ -115,296 +123,297 @@ bool Group::checkable() const
     return true;
 }
 
-void Group::generateSubConfigurable(const std::string& class_id,
-                                                         const std::string& instance_id)
+void Group::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "EvaluationRequirementExtraDataConfig")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "EvaluationRequirementExtraDataConfig")
     {
         EvaluationRequirement::ExtraDataConfig* config =
                 new EvaluationRequirement::ExtraDataConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementExtraTrackConfig")
+    else if (class_name == "EvaluationRequirementExtraTrackConfig")
     {
         EvaluationRequirement::ExtraTrackConfig* config =
                 new EvaluationRequirement::ExtraTrackConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementDubiousTrackConfig")
+    else if (class_name == "EvaluationRequirementDubiousTrackConfig")
     {
         EvaluationRequirement::DubiousTrackConfig* config =
                 new EvaluationRequirement::DubiousTrackConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementDubiousTargetConfig")
+    else if (class_name == "EvaluationRequirementDubiousTargetConfig")
     {
         EvaluationRequirement::DubiousTargetConfig* config =
                 new EvaluationRequirement::DubiousTargetConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementDetectionConfig")
+    else if (class_name == "EvaluationRequirementDetectionConfig")
     {
         EvaluationRequirement::DetectionConfig* config =
                 new EvaluationRequirement::DetectionConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionDistanceConfig")
+    else if (class_name == "EvaluationRequirementPositionDistanceConfig")
     {
         EvaluationRequirement::PositionDistanceConfig* config =
                 new EvaluationRequirement::PositionDistanceConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionDistanceRMSConfig")
+    else if (class_name == "EvaluationRequirementPositionDistanceRMSConfig")
     {
         EvaluationRequirement::PositionDistanceRMSConfig* config =
                 new EvaluationRequirement::PositionDistanceRMSConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionRadarRangeConfig")
+    else if (class_name == "EvaluationRequirementPositionRadarRangeConfig")
     {
         EvaluationRequirement::PositionRadarRangeConfig* config =
                 new EvaluationRequirement::PositionRadarRangeConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionRadarAzimuthConfig")
+    else if (class_name == "EvaluationRequirementPositionRadarAzimuthConfig")
     {
         EvaluationRequirement::PositionRadarAzimuthConfig* config =
                 new EvaluationRequirement::PositionRadarAzimuthConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionAlongConfig")
+    else if (class_name == "EvaluationRequirementPositionAlongConfig")
     {
         EvaluationRequirement::PositionAlongConfig* config =
                 new EvaluationRequirement::PositionAlongConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionAcrossConfig")
+    else if (class_name == "EvaluationRequirementPositionAcrossConfig")
     {
         EvaluationRequirement::PositionAcrossConfig* config =
                 new EvaluationRequirement::PositionAcrossConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementPositionLatencyConfig")
+    else if (class_name == "EvaluationRequirementPositionLatencyConfig")
     {
         EvaluationRequirement::PositionLatencyConfig* config =
                 new EvaluationRequirement::PositionLatencyConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementSpeedConfig")
+    else if (class_name == "EvaluationRequirementSpeedConfig")
     {
         EvaluationRequirement::SpeedConfig* config =
                 new EvaluationRequirement::SpeedConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementTrackAngleConfig")
+    else if (class_name == "EvaluationRequirementTrackAngleConfig")
     {
         EvaluationRequirement::TrackAngleConfig* config =
                 new EvaluationRequirement::TrackAngleConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementIdentificationCorrectConfig")
+    else if (class_name == "EvaluationRequirementIdentificationCorrectConfig")
     {
         EvaluationRequirement::IdentificationCorrectConfig* config =
                 new EvaluationRequirement::IdentificationCorrectConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementIdentificationFalseConfig")
+    else if (class_name == "EvaluationRequirementIdentificationFalseConfig")
     {
         EvaluationRequirement::IdentificationFalseConfig* config =
                 new EvaluationRequirement::IdentificationFalseConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementIdentificationCorrectPeriodConfig")
+    else if (class_name == "EvaluationRequirementIdentificationCorrectPeriodConfig")
     {
         EvaluationRequirement::IdentificationCorrectPeriodConfig* config =
                 new EvaluationRequirement::IdentificationCorrectPeriodConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementModeAPresentConfig")
+    else if (class_name == "EvaluationRequirementModeAPresentConfig")
     {
         EvaluationRequirement::ModeAPresentConfig* config =
                 new EvaluationRequirement::ModeAPresentConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementModeAFalseConfig")
+    else if (class_name == "EvaluationRequirementModeAFalseConfig")
     {
         EvaluationRequirement::ModeAFalseConfig* config =
                 new EvaluationRequirement::ModeAFalseConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementModeCPresentConfig")
+    else if (class_name == "EvaluationRequirementModeCPresentConfig")
     {
         EvaluationRequirement::ModeCPresentConfig* config =
                 new EvaluationRequirement::ModeCPresentConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementModeCCorrectConfig")
+    else if (class_name == "EvaluationRequirementModeCCorrectConfig")
     {
         EvaluationRequirement::ModeCCorrectConfig* config =
                 new EvaluationRequirement::ModeCCorrectConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementModeCFalseConfig")
+    else if (class_name == "EvaluationRequirementModeCFalseConfig")
     {
         EvaluationRequirement::ModeCFalseConfig* config =
                 new EvaluationRequirement::ModeCFalseConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementModeCCorrectPeriodConfig")
+    else if (class_name == "EvaluationRequirementModeCCorrectPeriodConfig")
     {
         EvaluationRequirement::ModeCCorrectPeriodConfig* config =
                 new EvaluationRequirement::ModeCCorrectPeriodConfig(
-                    class_id, instance_id, *this, standard_, calculator_);
+                    child_json, this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementMoMLongAccConfig")
+    else if (class_name == "EvaluationRequirementMoMLongAccConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-                class_id, instance_id, "MomLongAccCorrect", *this, standard_, calculator_);
+                child_json, "MomLongAccCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementMoMTransAccConfig")
+    else if (class_name == "EvaluationRequirementMoMTransAccConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-            class_id, instance_id, "MomTransAccCorrect", *this, standard_, calculator_);
+                child_json, "MomTransAccCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementMoMVertRateConfig")
+    else if (class_name == "EvaluationRequirementMoMVertRateConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-            class_id, instance_id, "MomVertRateCorrect", *this, standard_, calculator_);
+                child_json, "MomVertRateCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementCoastingCorrectConfig")
+    else if (class_name == "EvaluationRequirementCoastingCorrectConfig")
     {
         EvaluationRequirement::GenericIntegerConfig* config = new EvaluationRequirement::GenericIntegerConfig(
-            class_id, instance_id, "CoastingCorrect", *this, standard_, calculator_);
+                child_json, "CoastingCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementROCDCorrectConfig")
+    else if (class_name == "EvaluationRequirementROCDCorrectConfig")
     {
         EvaluationRequirement::GenericDoubleConfig* config = new EvaluationRequirement::GenericDoubleConfig(
-            class_id, instance_id, "ROCDCorrect", *this, standard_, calculator_);
+                child_json, "ROCDCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
-    else if (class_id == "EvaluationRequirementAccelerationCorrectConfig")
+    else if (class_name == "EvaluationRequirementAccelerationCorrectConfig")
     {
         EvaluationRequirement::GenericDoubleConfig* config = new EvaluationRequirement::GenericDoubleConfig(
-            class_id, instance_id, "AccelerationCorrect", *this, standard_, calculator_);
+                child_json, "AccelerationCorrect", this);
         logdbg << "adding config " << config->name();
 
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else
-        throw std::runtime_error("EvaluationRequirementGroup: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("EvaluationRequirementGroup: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 std::string Group::name() const
@@ -421,20 +430,20 @@ bool Group::hasRequirementConfig (const std::string& name)
     return iter != configs_.end();
 }
 
-void Group::addRequirementConfig (const std::string& class_id, const std::string& name, const std::string& short_name)
+void Group::addRequirementConfig (const std::string& class_name, const std::string& name, const std::string& short_name)
 {
-    loginf << "class_id " << class_id << " name " << name
+    loginf << "class_name " << class_name << " name " << name
            << " short_name " << short_name;
 
     traced_assert(!hasRequirementConfig(name));
 
-    std::string instance = class_id + name + "0";
+    std::string instance = class_name + name + "0";
 
-    auto config = Configuration::create(class_id, instance);
-    config->addParameter<std::string>("name", name);
-    config->addParameter<std::string>("short_name", short_name);
+    auto& child_json = addNewSubConfiguration(class_name, instance);
+    child_json[Configuration::ParameterSection]["name"] = name;
+    child_json[Configuration::ParameterSection]["short_name"] = short_name;
 
-    generateSubConfigurableFromConfig(std::move(config));
+    generateSubConfigurable(child_json);
 
     sortConfigs();
 

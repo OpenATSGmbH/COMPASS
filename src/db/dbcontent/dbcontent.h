@@ -256,10 +256,7 @@ public:
     static const Property selected_var;
 
 public:
-    DBContent(COMPASS& compass, 
-              const std::string& class_id, 
-              const std::string& instance_id,
-              DBContentManager* manager);
+    DBContent(nlohmann::json& config, DBContentManager* parent);
     virtual ~DBContent();
 
     bool hasVariable(const std::string& name) const;
@@ -322,7 +319,7 @@ public:
     size_t count();
     size_t loadedCount();
 
-    virtual void generateSubConfigurable(const std::string& class_id, const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     bool hasKeyVariable();
     dbContent::Variable& getKeyVariable();
@@ -340,9 +337,9 @@ public:
     bool containsStatusContent() const;
     bool isReferenceContent() const;
 
-protected:
-    virtual void checkSubConfigurables();
+    COMPASS& compass() { return compass_; }
 
+protected:
     void checkStaticVariable(const Property& property);
 
     COMPASS&          compass_;

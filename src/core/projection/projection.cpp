@@ -22,9 +22,8 @@
 #include "projectionmanager.h"
 #include "compass.h"
 
-Projection::Projection(const std::string& class_id, const std::string& instance_id,
-                       ProjectionManager& proj_manager)
-    : Configurable(class_id, instance_id, &proj_manager), proj_manager_(proj_manager)
+Projection::Projection(nlohmann::json& config, ProjectionManager* parent)
+    : Configurable(config, parent), proj_manager_(*parent)
 {
     registerParameter("name", &name_, std::string());
 
@@ -34,11 +33,6 @@ Projection::Projection(const std::string& class_id, const std::string& instance_
 }
 
 Projection::~Projection() {}
-
-void Projection::generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id)
-{
-}
 
 void Projection::getGroundRange(
     unsigned int id, double slant_range_m, bool has_altitude, double altitude_m,
@@ -61,7 +55,7 @@ void Projection::addAllCoordinateSystems()
         if (coordinate_systems_added_)
             return;
 
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& ds_man = proj_manager_.compass().dataSourceManager();
 
         for (const auto& ds_it : ds_man.dbDataSources())
         {
@@ -111,4 +105,3 @@ void Projection::addMissingCoordinateSystem(unsigned int ds_id)
     missing_coordinate_systems_.insert(ds_id);
 }
 
-void Projection::checkSubConfigurables() {}

@@ -16,14 +16,13 @@
  */
 
 #include "dimension.h"
+#include "unitmanager.h"
 #include "unit.h"
 
 #include <cmath>
 
-
-Dimension::Dimension(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent)
-    : Configurable(class_id, instance_id, parent)
+Dimension::Dimension(nlohmann::json& config, UnitManager* parent)
+    : Configurable(config, parent)
 {
     createSubConfigurables();
 }
@@ -35,26 +34,28 @@ Dimension::~Dimension()
     units_.clear();
 }
 
-void Dimension::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
+void Dimension::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "Unit")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "Unit")
     {
-        Unit* unit = new Unit(class_id, instance_id, *this);
-        traced_assert(units_.find(unit->instanceId()) == units_.end());
-        units_.insert(std::pair<std::string, Unit*>(unit->instanceId(), unit));
+        Unit* unit = new Unit(child_json, this);
+        traced_assert(units_.find(unit->instanceName()) == units_.end());
+        units_.insert(std::pair<std::string, Unit*>(unit->instanceName(), unit));
     }
     else
-        throw std::runtime_error("UnitManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("Dimension: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 void Dimension::addUnit(const std::string& name, double factor, const std::string& definition)
 {
-    auto config = Configuration::create("Unit", name);
-    config->addParameter<double>("factor", factor);
-    config->addParameter<std::string>("definition", definition);
+    auto& child_json = addNewSubConfiguration("Unit", name);
+    child_json[Configuration::ParameterSection]["factor"] = factor;
+    child_json[Configuration::ParameterSection]["definition"] = definition;
 
-    generateSubConfigurableFromConfig(std::move(config));
+    generateSubConfigurable(child_json);
 }
 
 bool Dimension::hasUnit(const std::string& unit) const { return units_.find(unit) != units_.end(); }

@@ -29,9 +29,8 @@ using namespace std;
 using namespace Utils;
 using namespace nlohmann;
 
-ADSBQualityFilter::ADSBQualityFilter(const std::string& class_id, const std::string& instance_id,
-                                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ADSBQualityFilter::ADSBQualityFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("use_v0", &use_v0_, true);
     registerParameter("use_v1", &use_v1_, true);
@@ -90,7 +89,7 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 
     stringstream ss;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbContentManager();
 
     string mops_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_mops_version_).dbColumnName();
     string nacp_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_nacp_).dbColumnName();
@@ -174,21 +173,6 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
     loginf << "here '" << ss.str() << "'";
 
     return ss.str();
-}
-
-
-void ADSBQualityFilter::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ADSBQualityFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-
-void ADSBQualityFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 DBFilterWidget* ADSBQualityFilter::createWidget()

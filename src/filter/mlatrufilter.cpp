@@ -32,9 +32,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-MLATRUFilter::MLATRUFilter(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+MLATRUFilter::MLATRUFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("rus_str", &rus_str_, std::string());
     registerParameter("match_all", &match_all_, false);
@@ -61,7 +60,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     traced_assert(dbcontent_name == "CAT020");
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbContentManager();
 
     traced_assert(
         dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
@@ -116,7 +115,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     loginf << "numbers " << numbers.size() << " null " << null_wanted;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dataSourceManager();
 
     std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> ru_lookup; // ds id -> ru name -> {ru indexes}
 
@@ -215,20 +214,6 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     return ss.str();
 }
 
-void MLATRUFilter::generateSubConfigurable(const std::string& class_id,
-                                           const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("MLATRUFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void MLATRUFilter::checkSubConfigurables()
-{
-    logdbg;
-
-}
-
 DBFilterWidget* MLATRUFilter::createWidget()
 {
     return new MLATRUFilterWidget(*this);
@@ -279,7 +264,7 @@ std::string MLATRUFilter::rus() const
 
 bool MLATRUFilter::checkRUs(const std::string& rus_str)
 {
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dataSourceManager();
     std::set<std::string> known_ru_names;
 
     for (auto& db_src_it : ds_man.dbDataSources())

@@ -35,14 +35,25 @@ public:
         std::string  spf      = ""; 
     };
 
-    ASTERIXCategoryConfig(unsigned int category, 
-                          const std::string& class_id,
-                          const std::string& instance_id, 
-                          Configurable* parent)
-    :   Configurable(class_id, instance_id, parent)
-    {
-        config_.category = category;
+    // ASTERIXCategoryConfig(unsigned int category,
+    //                       const std::string& class_name,
+    //                       const std::string& instance_name,
+    //                       Configurable* parent)
+    // :   Configurable(class_name, instance_name, parent)
+    // {
+    //     config_.category = category;
 
+    //     registerParameter("category", &config_.category, Config().category);
+    //     registerParameter("decode"  , &config_.decode  , Config().decode  );
+    //     registerParameter("edition" , &config_.edition , Config().edition );
+    //     registerParameter("ref"     , &config_.ref     , Config().ref     );
+    //     registerParameter("spf"     , &config_.spf     , Config().spf     );
+    // }
+
+    /// @brief Constructor backed by a json reference
+    ASTERIXCategoryConfig(nlohmann::json& config, Configurable* parent)
+    :   Configurable(config, parent)
+    {
         registerParameter("category", &config_.category, Config().category);
         registerParameter("decode"  , &config_.decode  , Config().decode  );
         registerParameter("edition" , &config_.edition , Config().edition );
@@ -50,8 +61,7 @@ public:
         registerParameter("spf"     , &config_.spf     , Config().spf     );
     }
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id)
+    void generateSubConfigurable(nlohmann::json& child_json) override
     {
     }
 

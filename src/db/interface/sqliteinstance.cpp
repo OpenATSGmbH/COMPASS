@@ -82,7 +82,7 @@ void SQLiteInstance::close_impl()
  */
 ResultT<DBConnection*> SQLiteInstance::createConnection_impl(bool verbose)
 {
-    auto c = new SQLiteConnection(this, db_handle_, verbose);
+    auto c = new SQLiteConnection(dbContentManager(), this, db_handle_, verbose);
     auto res = c->connect();
 
     if (!res.ok())

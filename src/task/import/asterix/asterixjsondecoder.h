@@ -47,7 +47,8 @@ private:
 class ASTERIXJSONDecoder : public ASTERIXDecoderFile
 {
 public:
-    ASTERIXJSONDecoder(ASTERIXImportSource& source,
+    ASTERIXJSONDecoder(ASTERIXImportTask& task,
+                       ASTERIXImportSource& source,
                        const ASTERIXImportTaskSettings* settings = nullptr);
     virtual ~ASTERIXJSONDecoder();
 

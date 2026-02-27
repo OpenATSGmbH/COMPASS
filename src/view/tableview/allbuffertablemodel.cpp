@@ -201,7 +201,7 @@ bool AllBufferTableModel::resolveVariable(unsigned int data_col,
     std::string variable_dbcontent_name, variable_name;
     std::tie(variable_dbcontent_name, variable_name) = data_source_.getSet()->variableDefinition(data_col);
 
-    DBContentManager& manager = COMPASS::instance().dbContentManager();
+    DBContentManager& manager = view_.compass().dbContentManager();
 
     if (variable_dbcontent_name == META_OBJECT_NAME)
     {
@@ -285,7 +285,7 @@ void AllBufferTableModel::buildRowIndexes()
     std::vector<TimedEntry> timed_entries;
     timed_entries.reserve(total_size);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     for (auto& buf_it : buffers_)
     {
@@ -455,7 +455,7 @@ void AllBufferTableModel::saveAsCSV(const std::string& file_name)
     connect(export_job, &AllBufferCSVExportJob::doneSignal, this,
             &AllBufferTableModel::exportJobDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addBlockingJob(export_job_);
+    view_.compass().jobManager().addBlockingJob(export_job_);
 }
 
 std::pair<int,int> AllBufferTableModel::getSelectedRows()

@@ -16,6 +16,7 @@
  */
 
 #include "jsonobjectparser.h"
+#include "jsonparsingschema.h"
 
 #include "compass.h"
 #include "buffer.h"
@@ -33,9 +34,8 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-JSONObjectParser::JSONObjectParser(const std::string& class_id, const std::string& instance_id,
-                                   Configurable* parent)
-    : Configurable(class_id, instance_id, parent)
+JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, COMPASS& compass)
+    : Configurable(config, parent), compass_(compass)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("active", &active_, true);
@@ -62,15 +62,17 @@ JSONObjectParser::JSONObjectParser(const std::string& class_id, const std::strin
     traced_assert(!override_data_source_); // TODO reimplement
 }
 
-void JSONObjectParser::generateSubConfigurable(const std::string& class_id,
-                                               const std::string& instance_id)
+void JSONObjectParser::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "JSONDataMapping")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "JSONDataMapping")
     {
-        data_mappings_.emplace_back(new JSONDataMapping(class_id, instance_id, *this));
+        auto* mapping = new JSONDataMapping(child_json, this, compass_);
+        data_mappings_.emplace_back(mapping);
     }
     else
-        throw std::runtime_error("JSONObjectParser: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("JSONObjectParser: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 DBContent& JSONObjectParser::dbContent() const
@@ -111,7 +113,7 @@ void JSONObjectParser::initialize()
 {
     traced_assert(!dbcontent_);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
         logwrn << "dbcontbject '" << db_content_name_
@@ -559,18 +561,18 @@ void JSONObjectParser::checkIfKeysExistsInMappings(const std::string& location,
                << db_content_name_ << "'" << location << "' type " << j.type_name() << " value "
                << j.dump() << " in array " << is_in_array;
 
-        auto new_cfg = Configuration::create("JSONDataMapping");
-        new_cfg->addParameter<std::string>("json_key", location);
-        new_cfg->addParameter<std::string>("dbcontent_name", db_content_name_);
+        auto& child_json = addNewSubConfiguration("JSONDataMapping");
+        child_json[Configuration::ParameterSection]["json_key"] = location;
+        child_json[Configuration::ParameterSection]["dbcontent_name"] = db_content_name_;
 
         if (is_in_array)
-            new_cfg->addParameter<bool>("in_array", true);
+            child_json[Configuration::ParameterSection]["in_array"] = true;
 
         std::stringstream ss;
         ss << "Type " << j.type_name() << ", value " << j.dump();
-        new_cfg->addParameter<std::string>("comment", ss.str());
+        child_json[Configuration::ParameterSection]["comment"] = ss.str();
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(child_json);
     }
 }
 
@@ -585,7 +587,7 @@ void JSONObjectParser::removeMapping(unsigned int index)
     unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index);
 
     loginf << "index " << index << " key " <<  mapping->jsonKey()
-           << " instance " <<  mapping->instanceId();
+           << " instance " <<  mapping->instanceName();
 
     logdbg << "size " << data_mappings_.size();
 

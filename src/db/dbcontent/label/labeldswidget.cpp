@@ -16,9 +16,9 @@
  */
 
 #include "dbcontent/label/labeldswidget.h"
-#include "compass.h"
 #include "datasourcemanager.h"
 #include "dbcontentmanager.h"
+#include "compass.h"
 #include "dbcontent/label/labelgenerator.h"
 #include "logger.h"
 #include "files.h"
@@ -58,7 +58,7 @@ LabelDSWidget::LabelDSWidget(LabelGenerator& label_generator, QWidget* parent, Q
 
     setLayout(main_layout);
 
-    connect(&COMPASS::instance().dataSourceManager(), &DataSourceManager::dataSourcesChangedSignal,
+    connect(&label_generator_.dbContentManager().compass().dataSourceManager(), &DataSourceManager::dataSourcesChangedSignal,
             this, &LabelDSWidget::updateListSlot); // update if data sources changed
 
     connect(&label_generator, &LabelGenerator::labelLinesChangedSignal,
@@ -78,7 +78,7 @@ void LabelDSWidget::updateListSlot()
 {
     logdbg;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = label_generator_.dbContentManager().compass().dataSourceManager();
 
     std::map<std::string, std::string> current_sources;
     for (const auto& ds_it : ds_man.dbDataSources())
@@ -179,7 +179,7 @@ void LabelDSWidget::changeLineSlot()
 
     loginf << "ds_id " << ds_id;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = label_generator_.dbContentManager().compass().dataSourceManager();
     traced_assert(ds_man.hasDBDataSource(ds_id));
 
     dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);

@@ -30,8 +30,9 @@
 #include <QPushButton>
 
 EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDialog(
+    DBContentManager& dbcont_man,
     const std::string utn_str, Utils::TimeWindowCollection& collection, QWidget* parent)
-    : QDialog(parent), collection_(collection)
+    : QDialog(parent), dbcont_man_(dbcont_man), collection_(collection)
 {
     setWindowTitle("Edit Evaluation Excluded Time Windows");
 
@@ -55,7 +56,7 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
 
     form_layout->addRow("UTNs", utn_label);
 
-    tw_widget_ = new TimeWindowCollectionWidget(collection_);
+    tw_widget_ = new TimeWindowCollectionWidget(dbcont_man_, collection_);
     form_layout->addRow("Excluded Time Windows", tw_widget_);
 
     main_layout->addLayout(form_layout);

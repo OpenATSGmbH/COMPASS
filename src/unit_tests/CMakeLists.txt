@@ -3,6 +3,7 @@ add_executable(compass_tests
 )
 
 # Include tests from library subfolders
+include("${CMAKE_SOURCE_DIR}/src/config/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/unit_tests/CMakeLists.txt")
 
 target_include_directories(compass_tests PRIVATE
@@ -18,8 +19,9 @@ target_compile_definitions(compass_tests PRIVATE BUFFER_PEDANTIC_CHECKING_ENABLE
 # symbols are resolved, regardless of link order.
 target_link_libraries(compass_tests PRIVATE
     -Wl,--start-group
-    compass_app compass compass_core compass_db compass_reconstruction
+    compass_app compass compass_config compass_core compass_db compass_reconstruction
     compass_import compass_gui compass_filter compass_task compass_eval compass_view
+    compass_report
     -Wl,--end-group
     ${jASTERIX_LIBRARIES}
     ${Boost_LIBRARIES}

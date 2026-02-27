@@ -27,6 +27,9 @@
 #include <vector>
 #include <memory>
 
+class COMPASS;
+class DBContentManager;
+class DataSourceManager;
 class DBFilterCondition;
 class FilterManager;
 class Buffer;
@@ -41,9 +44,16 @@ class VariableSet;
 class DBFilter : public Configurable
 {
   public:
-    DBFilter(const std::string& class_id, const std::string& instance_id, Configurable* parent,
-             bool is_generic = true);
+    // DBFilter(const std::string& class_name, const std::string& instance_name, Configurable* parent,
+    //          bool is_generic = true);
+    DBFilter(nlohmann::json& config, bool is_generic,
+             FilterManager* parent);
     virtual ~DBFilter();
+
+    FilterManager& filterManager() { return filter_manager_; }
+    COMPASS& compass();
+    DBContentManager& dbContentManager();
+    DataSourceManager& dataSourceManager();
 
     void setActive(bool active);
     bool getActive();
@@ -68,8 +78,7 @@ class DBFilter : public Configurable
     // resets the filter (sub-filters and conditions) to their inital values.
     virtual void reset();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     const std::vector<std::unique_ptr<DBFilterCondition>>& getConditions() const { return conditions_; }
     unsigned int getNumConditions() { return conditions_.size(); }
@@ -91,7 +100,7 @@ class DBFilter : public Configurable
     void widgetVisible(bool widget_expanded);
 
 protected:
-    // FilterManager &filter_manager_;
+    FilterManager& filter_manager_;
     std::string name_;
     bool is_custom_; // indicates if created by user and can be deleted
 
@@ -108,6 +117,5 @@ protected:
     // widget with configuration elements.
     std::unique_ptr<DBFilterWidget> widget_{nullptr};
 
-    virtual void checkSubConfigurables();
     virtual DBFilterWidget* createWidget();
 };

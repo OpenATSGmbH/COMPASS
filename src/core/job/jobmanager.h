@@ -18,8 +18,9 @@
 #pragma once
 
 #include "configurable.h"
-#include "singleton.h"
 #include "job.h"
+
+class COMPASS;
 
 #ifndef Q_MOC_RUN
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -222,26 +223,13 @@ private:
 /**
  */
 #ifdef USE_ASYNC_JOBS
-class JobManager : public JobManagerAsync, public Singleton, public Configurable
-#else 
-class JobManager : public JobManagerThreadPool, public Singleton, public Configurable
+class JobManager : public JobManagerAsync, public Configurable
+#else
+class JobManager : public JobManagerThreadPool, public Configurable
 {
-//    Q_OBJECT
-//  signals:
-//    void databaseBusy();
-//    void databaseIdle();
-
 public:
+    JobManager(nlohmann::json& config, COMPASS* parent);
     virtual ~JobManager();
-
-    static JobManager& instance()
-    {
-        static JobManager instance;
-        return instance;
-    }
-
-protected:
-    JobManager();
 };
 
 #endif

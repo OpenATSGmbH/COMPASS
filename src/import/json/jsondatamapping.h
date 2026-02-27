@@ -31,13 +31,15 @@ class Variable;
 
 }
 
+class COMPASS;
 class JSONObjectParser;
 
 class JSONDataMapping : public Configurable
 {
   public:
-    JSONDataMapping(const std::string& class_id, const std::string& instance_id,
-                    Configurable& parent);
+    // uses Configurable* because JSONDataMapping has multiple parent types
+    // (JSONObjectParser and ASTERIXJSONParser) with no common base other than Configurable
+    JSONDataMapping(nlohmann::json& config, Configurable* parent, COMPASS& compass);
     //JSONDataMapping() = default;
     //JSONDataMapping(JSONDataMapping&& other) { *this = std::move(other); }
 
@@ -84,8 +86,7 @@ class JSONDataMapping : public Configurable
     void dbcontVariableName(const std::string& name);
     std::string dbcontVariableName() const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id)
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override
     {
     }
 
@@ -107,6 +108,7 @@ class JSONDataMapping : public Configurable
     void check();
 
   private:
+    COMPASS& compass_;
     bool initialized_{false};
 
     bool active_{false};

@@ -19,6 +19,7 @@
 
 #include <QDialog>
 
+class COMPASS;
 class LicenseWidget;
 class QTreeWidget;
 class QPushButton;
@@ -28,7 +29,8 @@ class QPushButton;
 class LicenseManagerDialog : public QDialog
 {
 public:
-    LicenseManagerDialog(QWidget* parent = nullptr, 
+    LicenseManagerDialog(COMPASS& compass,
+                         QWidget* parent = nullptr,
                          Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~LicenseManagerDialog();
 
@@ -39,6 +41,8 @@ private:
     void updateLicenseWidget();
     void addLicense();
     void removeCurrentLicense();
+
+    COMPASS& compass_;
 
     QTreeWidget*   license_list_          = nullptr;
     LicenseWidget* license_widget_        = nullptr;

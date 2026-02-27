@@ -179,7 +179,7 @@ void ViewInfoWidget::updateInfos()
 
     //loginf << "adding " << infos.numInfos() 
     //      << " info(s) in " << infos.numSections() << " section(s)"
-    //      << " to " << view_->instanceId();
+    //      << " to " << view_->instanceName();
 
     addInfos(infos);
 }

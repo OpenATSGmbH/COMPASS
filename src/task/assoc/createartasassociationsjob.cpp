@@ -19,6 +19,7 @@
 #include "compass.h"
 #include "buffer.h"
 #include "createartasassociationstask.h"
+#include "taskmanager.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -71,7 +72,7 @@ void CreateARTASAssociationsJob::run_impl()
 
     start_time = boost::posix_time::microsec_clock::local_time();
 
-    COMPASS::instance().logInfo("Create ARTAS Associations") << "started";
+    task_.manager().compass().logInfo("Create ARTAS Associations") << "started";
 
     // clear previous associations
 
@@ -91,7 +92,7 @@ void CreateARTASAssociationsJob::run_impl()
     // create associations for sensors
     createSensorAssociations();
 
-    COMPASS::instance().logInfo("Create ARTAS Associations")
+    task_.manager().compass().logInfo("Create ARTAS Associations")
         << missing_hashes_cnt_ << " missing hashes and "
         << dubious_associations_cnt_ << " dubious associations ("
         << found_hashes_cnt_ << " found total";
@@ -112,7 +113,7 @@ void CreateARTASAssociationsJob::run_impl()
         {
             stop_time = boost::posix_time::microsec_clock::local_time();
 
-            COMPASS::instance().logInfo("Create ARTAS Associations") << "save declined";
+            task_.manager().compass().logInfo("Create ARTAS Associations") << "save declined";
 
             double load_time;
             boost::posix_time::time_duration diff = stop_time - start_time;
@@ -143,7 +144,7 @@ void CreateARTASAssociationsJob::run_impl()
     loginf << "done ("
            << String::doubleToStringPrecision(load_time, 2) << " s).";
 
-    COMPASS::instance().logInfo("Create ARTAS Associations")
+    task_.manager().compass().logInfo("Create ARTAS Associations")
         << "finished after "
         << String::timeStringFromDouble(diff.total_milliseconds() / 1000.0, false);
 
@@ -179,7 +180,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
     shared_ptr<Buffer> buffer = buffers_.at(tracker_dbcontent_name_);
     size_t buffer_size = buffer->size();
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     traced_assert(buffer->has<unsigned int>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_num_).name()));
@@ -397,7 +398,7 @@ void CreateARTASAssociationsJob::saveAssociations()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
 
     // write association info to buffers
 
@@ -521,7 +522,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
     loginf;
     // for each rec_num + tri, find sensor hash + rec_num
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     for (auto& dbcont_it : dbcont_man)
     {
@@ -703,7 +704,7 @@ void CreateARTASAssociationsJob::removePreviousAssociations()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
 
     if (buffers_.count(tracker_dbcontent_name_))
     {
@@ -767,7 +768,7 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
 
     using namespace dbContent;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     Variable& rec_num_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_);
     Variable& hash_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_);

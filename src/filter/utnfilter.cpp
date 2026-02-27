@@ -29,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-UTNFilter::UTNFilter(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+UTNFilter::UTNFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("utns_str", &utns_str_, std::string());
     updateUTNSFromStr(utns_str_);
@@ -45,7 +44,7 @@ UTNFilter::~UTNFilter() {}
 
 bool UTNFilter::filters(const std::string& dbcont_name)
 {
-    // if (!COMPASS::instance().dbContentManager().hasAssociations())
+    // if (!dbContentManager().hasAssociations())
     //     return false;
 
     return true; // condition string for non-associated dbcontent as well
@@ -56,13 +55,13 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
     logdbg << "dbcontent " << dbcontent_name << " active " << active_
            << " null_wanted " << null_wanted_;
 
-    if (!active_) //  !COMPASS::instance().dbContentManager().hasAssociations()
+    if (!active_) //  !dbContentManager().hasAssociations()
         return "";
 
     stringstream ss;
 
     // check if filter non-associated content
-    if (!COMPASS::instance().dbContentManager().metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_))
+    if (!dbContentManager().metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_))
     {
         if (!null_wanted_)
         {
@@ -83,7 +82,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
 
     if (values_.size() || null_wanted_)
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& var = dbContentManager().metaVariable(
                     DBContent::meta_var_utn_.name()).getFor(dbcontent_name);
 
         if (!first)
@@ -113,20 +112,6 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
     logdbg << "condition '" << ss.str() << "'";
 
     return ss.str();
-}
-
-void UTNFilter::generateSubConfigurable(const std::string& class_id,
-                                        const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("UTNFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void UTNFilter::checkSubConfigurables()
-{
-    logdbg;
-
 }
 
 DBFilterWidget* UTNFilter::createWidget()

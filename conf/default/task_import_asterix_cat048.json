@@ -1,1019 +1,1145 @@
 {
+    "class_name": "ASTERIXJSONParser",
+    "instance_name": "CAT048",
     "parameters": {
         "category": 48,
         "db_content_name": "CAT048",
         "name": "CAT048"
     },
-    "sub_configs": {
-        "JSONDataMapping": {
-            "JSONDataMapping1": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 12810",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "DS ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "ds_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping10": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 33499.7890625",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Time of Day",
-                    "dimension": "Time",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "140.Time-of-Day",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Second"
-                }
-            },
-            "JSONDataMapping100": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Sigma (Y)",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "210.Sigma (Y)",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMapping105": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Extended Range",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.ERR",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping106": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "3D Height",
-                    "dimension": "Height",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "110.3D-Height",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Feet"
-                }
-            },
-            "JSONDataMapping107": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "SI/II Transponder Capability",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.SI",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping108": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Line Identifer",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Line ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "line_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping109": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "W/E Value",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "030.Warning/Error Conditions.W/E Value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping11": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1490",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Number",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "161.TRACK NUMBER",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping110": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode S MB Data",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "250.Mode S MB Data",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping14": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "FFT",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.RAB",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping15": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Simulated",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.SIM",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping16": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "SPI",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.SPI",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping19": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode 3/A Garbled",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "070.G",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping2": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 50",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "SAC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SAC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping20": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode 3/A Smoothed",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "070.L",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping21": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode 3/A Valid",
-                    "dimension": "",
-                    "format_data_type": "BOOL",
-                    "in_array": false,
-                    "json_key": "070.V",
-                    "json_value_format": "invert",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping22": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode C Garbled",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "090.G",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping24": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode C Valid",
-                    "dimension": "",
-                    "format_data_type": "BOOL",
-                    "in_array": false,
-                    "json_key": "090.V",
-                    "json_value_format": "invert",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping3": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 10",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "SIC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SIC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping31": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1, custom to 1,2",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "RDP Chain",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.RDP",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping32": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value -61",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "(M)SSR Amplitude",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.SAM.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping33": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Climbing/Descending",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.CDM",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping34": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Confirmed",
-                    "dimension": "",
-                    "format_data_type": "BOOL",
-                    "in_array": false,
-                    "json_key": "170.CNF",
-                    "json_value_format": "invert",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping35": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Doubtful",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.DOU",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping37": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Horizontal Manoeuvre",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.MAH",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping38": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 2",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Sensor Types",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.RAD",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping39": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 506.4696751375547",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Groundspeed",
-                    "dimension": "Speed",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "200.CALCULATED GROUNDSPEED",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Knots"
-                }
-            },
-            "JSONDataMapping4": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 7140",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode 3/A Code",
-                    "dimension": "",
-                    "format_data_type": "INT",
-                    "in_array": false,
-                    "json_key": "070.Mode-3/A reply",
-                    "json_value_format": "octal",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping40": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 288.94042955599997",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Angle",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "200.CALCULATED HEADING",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping41": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "ACID Capability",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.AIC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping42": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1, weird mapping",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Altitude Reporting Capability",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.ARC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping43": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "B1A",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.B1A",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping44": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 5",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "B1B",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.B1B",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping45": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Transponder Com. Capability",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.COM",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping46": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode S Specific Service Capability",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.MSSC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping47": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Flight Status",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "230.STAT",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping49": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0.02197265625",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Azimuth Difference PSR/SSR",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.APD.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping5": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 9003392",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Aircraft Address",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "220.AIRCRAFT ADDRESS",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping50": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value -77",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "PSR Amplitude",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.PAM.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping51": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value -0.01953125",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Range Difference PSR/SSR",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.RPD.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping52": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "(M)SSR Number of Replies",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.SRR.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping6": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type string, value \"UAE17   \"",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Aircraft Identification",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "240.Aircraft Identification",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping61": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Military Emergency",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.ME",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping62": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Military Identification",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.MI",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping63": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Test",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.TST",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping64": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Ghost Target",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.GHO",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping65": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Supported",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.SUP",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping66": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Slant Range Corrected",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.TCC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping67": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 1",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track End",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "170.TRE",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping69": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 22.046875",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "X",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "042.X-Component",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMapping7": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 400.0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Mode C Code",
-                    "dimension": "Height",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "090.Flight Level",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Flight Level"
-                }
-            },
-            "JSONDataMapping70": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value -0.8125",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Y",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "042.Y-Component",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMapping71": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "FOE/FRI",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.FOE/FRI",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping72": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0.439453125",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "SSR Plot Runlength",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.SRL.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping76": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type string, value \"90fbeaae\"",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "ARTAS Hash",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "artas_md5",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping8": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 192.4804686624",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Azimuth",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "040.THETA",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping87": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 2.900390625",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "PSR Plot Runlength",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "130.PRL.value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping9": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 69.9453125",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Range",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "040.RHO",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMapping95": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Type number, value 0",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Type",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.TYP",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping97": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Sigma (H)",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "210.Sigma (H)",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping98": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Sigma (V)",
-                    "dimension": "Speed",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "210.Sigma (V)",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Knots"
-                }
-            },
-            "JSONDataMapping99": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT048",
-                    "db_content_variable_name": "Track Sigma (X)",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "210.Sigma (X)",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
+    "sub_configs": [
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 12810",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "DS ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "ds_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 33499.7890625",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Time of Day",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "140.Time-of-Day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping100",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Sigma (Y)",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "210.Sigma (Y)",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping105",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Extended Range",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.ERR",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping106",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "3D Height",
+                "dimension": "Height",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.3D-Height",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping107",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "SI/II Transponder Capability",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.SI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping108",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Line Identifer",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Line ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "line_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping109",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "W/E Value",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "030.Warning/Error Conditions.W/E Value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1490",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Number",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "161.TRACK NUMBER",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping110",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode S MB Data",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "250.Mode S MB Data",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "FFT",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.RAB",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping15",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Simulated",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.SIM",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping16",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "SPI",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.SPI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping19",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode 3/A Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "070.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 50",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "SAC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SAC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping20",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode 3/A Smoothed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "070.L",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping21",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode 3/A Valid",
+                "dimension": "",
+                "format_data_type": "BOOL",
+                "in_array": false,
+                "json_key": "070.V",
+                "json_value_format": "invert",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping22",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode C Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "090.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping24",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode C Valid",
+                "dimension": "",
+                "format_data_type": "BOOL",
+                "in_array": false,
+                "json_key": "090.V",
+                "json_value_format": "invert",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 10",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "SIC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping31",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1, custom to 1,2",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "RDP Chain",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.RDP",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping32",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value -61",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "(M)SSR Amplitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.SAM.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping33",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Climbing/Descending",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.CDM",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping34",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Confirmed",
+                "dimension": "",
+                "format_data_type": "BOOL",
+                "in_array": false,
+                "json_key": "170.CNF",
+                "json_value_format": "invert",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping35",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Doubtful",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.DOU",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping37",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Horizontal Manoeuvre",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.MAH",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping38",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 2",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Sensor Types",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.RAD",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping39",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 506.4696751375547",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Groundspeed",
+                "dimension": "Speed",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "200.CALCULATED GROUNDSPEED",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Knots"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 7140",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode 3/A Code",
+                "dimension": "",
+                "format_data_type": "INT",
+                "in_array": false,
+                "json_key": "070.Mode-3/A reply",
+                "json_value_format": "octal",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping40",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 288.94042955599997",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Angle",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "200.CALCULATED HEADING",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping41",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "ACID Capability",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.AIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping42",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1, weird mapping",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Altitude Reporting Capability",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.ARC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping43",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "B1A",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.B1A",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping44",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 5",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "B1B",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.B1B",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping45",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Transponder Com. Capability",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.COM",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping46",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode S Specific Service Capability",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.MSSC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping47",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Flight Status",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "230.STAT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping49",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0.02197265625",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Azimuth Difference PSR/SSR",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.APD.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 9003392",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Aircraft Address",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "220.AIRCRAFT ADDRESS",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping50",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value -77",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "PSR Amplitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.PAM.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping51",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value -0.01953125",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Range Difference PSR/SSR",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.RPD.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping52",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "(M)SSR Number of Replies",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.SRR.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type string, value \"UAE17   \"",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Aircraft Identification",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "240.Aircraft Identification",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping61",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Military Emergency",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.ME",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping62",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Military Identification",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.MI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping63",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Test",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.TST",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping64",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Ghost Target",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.GHO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping65",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Supported",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.SUP",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping66",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Slant Range Corrected",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.TCC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping67",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 1",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track End",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "170.TRE",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping69",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 22.046875",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "X",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "042.X-Component",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 400.0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Mode C Code",
+                "dimension": "Height",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "090.Flight Level",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Flight Level"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping70",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value -0.8125",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Y",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "042.Y-Component",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping71",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "FOE/FRI",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.FOE/FRI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping72",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0.439453125",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "SSR Plot Runlength",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.SRL.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping76",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type string, value \"90fbeaae\"",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "ARTAS Hash",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "artas_md5",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 192.4804686624",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Azimuth",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "040.THETA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping87",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 2.900390625",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "PSR Plot Runlength",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "130.PRL.value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 69.9453125",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Range",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "040.RHO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping95",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, value 0",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.TYP",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping97",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Sigma (H)",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "210.Sigma (H)",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping98",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Sigma (V)",
+                "dimension": "Speed",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "210.Sigma (V)",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Knots"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping99",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Track Sigma (X)",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "210.Sigma (X)",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
             }
         }
-    }
+    ]
 }

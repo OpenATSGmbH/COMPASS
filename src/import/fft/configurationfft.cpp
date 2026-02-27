@@ -24,9 +24,8 @@ using namespace std;
 using namespace nlohmann;
 
 
-ConfigurationFFT::ConfigurationFFT(const std::string& class_id, const std::string& instance_id,
-                                                 FFTManager& ds_manager)
-    : Configurable(class_id, instance_id, &ds_manager)
+ConfigurationFFT::ConfigurationFFT(nlohmann::json& config, FFTManager* parent)
+    : Configurable(config, parent)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("info", &info_, {});

@@ -76,20 +76,21 @@ std::string Variable::representationToString(Representation representation)
 
 //#include <boost/algorithm/string.hpp>
 
-Variable::Variable(const std::string& class_id, const std::string& instance_id,
-                         DBContent* parent)
-    : Property(), Configurable(class_id, instance_id, parent), dbcontent_(parent)
+Variable::Variable(nlohmann::json& config, DBContent* parent,
+                   const std::string& dbcontent_name)
+    : Property(), Configurable(config, parent),
+      dbcontent_(parent), dbcontent_name_(dbcontent_name)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("short_name", &short_name_, std::string());
     registerParameter("description", &description_, std::string());
-    
+
     registerParameter("db_column_name", &db_column_name_, std::string());
     registerParameter("is_key", &is_key_, false);
 
     registerParameter("db_expression", &db_expression_, std::string());
     registerParameter("db_expression_variables", &db_expression_variables_, nlohmann::json::object());
-    
+
     registerParameter("data_type_str", &data_type_str_, std::string());
     registerParameter("representation_str", &representation_str_, std::string());
     registerParameter("dimension", &dimension_, std::string());
@@ -98,7 +99,7 @@ Variable::Variable(const std::string& class_id, const std::string& instance_id,
     traced_assert_msg(name_.size(), "Name required");
 
     traced_assert_msg(db_column_name_.size() || db_expression_.size(),
-                      "DB name or expression required");  // one or the other
+                      "DB name or expression required");
 
     traced_assert_msg(data_type_str_.size(), "Data type required");
     data_type_ = Property::asDataType(data_type_str_);
@@ -178,13 +179,6 @@ Variable::~Variable()
     }
 }
 
-void Variable::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
-{
-        throw std::runtime_error("Variable: generateSubConfigurable: unknown class_id " +
-                                     class_id);
-}
-
 bool Variable::operator==(const Variable& var)
 {
     if (dbContentName() != var.dbContentName())
@@ -199,16 +193,12 @@ bool Variable::operator==(const Variable& var)
 
 std::string Variable::str() const
 {
-    return Configurable::getParent().instanceId() + ": " + name_ + " (" + data_type_str_ + ")";
+    return dbcontent_name_ + ": " + name_ + " (" + data_type_str_ + ")";
 }
 
 void Variable::print() const
 {
     loginf << str();
-}
-
-void Variable::checkSubConfigurables()
-{
 }
 
 DBContent& Variable::object() const
@@ -481,7 +471,7 @@ std::string Variable::getValueStringFromRepresentation(
     }
     else if (representation_ == Variable::Representation::DATA_SRC_NAME)
     {
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& ds_man = dbcontent_->compass().dataSourceManager();
 
         if (ds_man.hasDBDataSource(representation_str))
             return std::to_string(ds_man.getDBDataSourceDSID(representation_str));
@@ -803,14 +793,14 @@ bool Variable::hasDBContent() const
         }
     }
     else if (db_column_name_.size())
-        return COMPASS::instance().dbInterface().hasContentIn(dbTableName(), db_column_name_);
+        return dbcontent_->compass().dbInterface().hasContentIn(dbTableName(), db_column_name_);
 
     return false;
 }
 
 void Variable::setHasDBContent()
 {
-    COMPASS::instance().dbInterface().setContentIn(dbTableName(), db_column_name_);
+    dbcontent_->compass().dbInterface().setContentIn(dbTableName(), db_column_name_);
 }
 
 std::vector<std::string> Variable::dbExpressionVariables() const
@@ -842,7 +832,7 @@ std::string Variable::getDataSourcesAsString(const std::string& value) const
 {
     traced_assert(dbcontent_);
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dbcontent_->compass().dataSourceManager();
 
     unsigned int ds_id = stoi(value);
 

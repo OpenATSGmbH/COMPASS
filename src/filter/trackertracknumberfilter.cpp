@@ -31,9 +31,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-TrackerTrackNumberFilter::TrackerTrackNumberFilter(const std::string& class_id, const std::string& instance_id,
-                                                   Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+TrackerTrackNumberFilter::TrackerTrackNumberFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("tracker_track_nums", &tracker_track_nums_, json::object());
 
@@ -58,10 +57,10 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
     stringstream ss;
 
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(dbContentManager().metaVariable(
                 DBContent::meta_var_ds_id_.name()).existsIn(dbcontent_name));
 
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(dbContentManager().metaVariable(
                 DBContent::meta_var_track_num_.name()).existsIn(dbcontent_name));
 
     // ds_id -> line_id -> values
@@ -69,13 +68,13 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
     if (active_ && active_tns.size())
     {
-        dbContent::Variable& ds_id_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& ds_id_var = dbContentManager().metaVariable(
                     DBContent::meta_var_ds_id_.name()).getFor(dbcontent_name);
 
-        dbContent::Variable& line_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& line_var = dbContentManager().metaVariable(
                     DBContent::meta_var_line_id_.name()).getFor(dbcontent_name);
 
-        dbContent::Variable& tn_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& tn_var = dbContentManager().metaVariable(
                     DBContent::meta_var_track_num_.name()).getFor(dbcontent_name);
 
         if (!first)
@@ -114,23 +113,9 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
     return ss.str();
 }
 
-
-void TrackerTrackNumberFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("TrackerTrackNumberFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* TrackerTrackNumberFilter::createWidget()
 {
     return new TrackerTrackNumberFilterWidget(*this);
-}
-
-
-void TrackerTrackNumberFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 
@@ -195,7 +180,7 @@ std::map<unsigned int, std::map<unsigned int, std::string>> TrackerTrackNumberFi
 
     std::map<unsigned int, std::map<unsigned int, std::string>> active_values;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (auto& ds_it : dataSourceManager().dbDataSources())
     {
         if (ds_it->dsType() != "Tracker")
             continue;
@@ -232,7 +217,7 @@ std::map<std::string, std::map<std::string, std::string>> TrackerTrackNumberFilt
 
     std::map<std::string, std::map<std::string, std::string>> active_values;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (auto& ds_it : dataSourceManager().dbDataSources())
     {
         if (ds_it->dsType() != "Tracker")
             continue;

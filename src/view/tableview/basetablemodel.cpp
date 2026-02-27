@@ -18,7 +18,7 @@
 #include "basetablemodel.h"
 #include "basetablewidget.h"
 #include "buffer.h"
-#include "buffer_value_string.h"
+#include "buffer_utils.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -169,7 +169,7 @@ QVariant BaseBufferTableModel::data(const QModelIndex& index, int role) const
         // try special representation first
         std::string value_str;
         if (view_.settings().use_presentation_ &&
-            getSpecialRepresentation(value_str, *variable, *rd.buffer, rd.buffer_index))
+            getSpecialRepresentation(value_str, *variable, *rd.buffer, rd.buffer_index, view_.compass()))
             return QString(value_str.c_str());
 
         // get value string via shared utility
@@ -256,7 +256,8 @@ void BaseBufferTableModel::exportJobDoneSlot()
 bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
                                                      dbContent::Variable& var,
                                                      Buffer& buffer,
-                                                     unsigned int buffer_idx)
+                                                     unsigned int buffer_idx,
+                                                     COMPASS& compass)
 {
     auto data_type = var.dataType();
     std::string property_name = var.name();
@@ -275,7 +276,7 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
         if (!contrib_receivers.is_array() || contrib_receivers.empty())
             return false;
 
-        auto& dbcontent_man = COMPASS::instance().dbContentManager();
+        auto& dbcontent_man = compass.dbContentManager();
 
         traced_assert(dbcontent_man.metaCanGetVariable(var.dbContentName(), DBContent::meta_var_ds_id_));
         auto& ds_var = dbcontent_man.metaGetVariable(var.dbContentName(), DBContent::meta_var_ds_id_);
@@ -287,7 +288,7 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
 
         auto ds_id = ds_vec.get(buffer_idx);
 
-        auto& ds_man = COMPASS::instance().dataSourceManager();
+        auto& ds_man = compass.dataSourceManager();
         traced_assert(ds_man.hasDBDataSource(ds_id));
 
         auto& ds = ds_man.dbDataSource(ds_id);

@@ -47,11 +47,12 @@ class EvaluationStandard : public QObject, public Configurable, public Evaluatio
      void groupsChangedSlot();
 
 public:
-    EvaluationStandard(const std::string& class_id, const std::string& instance_id, EvaluationCalculator& calculator);
+    EvaluationStandard(nlohmann::json& config, EvaluationCalculator* parent);
     virtual ~EvaluationStandard();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    EvaluationCalculator* parentConfigurable() const;
+
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     std::string name() const;
     void name(const std::string &name);
@@ -102,6 +103,5 @@ protected:
 
     std::vector<std::unique_ptr<Group>> groups_;
 
-    virtual void checkSubConfigurables() override;
 };
 

@@ -38,7 +38,7 @@ namespace dbContent
 MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManager& dbcont_man)
     : QDialog(), dbcont_man_(dbcont_man)
 {
-    if (COMPASS::instance().expertMode())
+    if (dbcont_man_.compass().expertMode())
         setWindowTitle("Configure Meta Variables");
     else
         setWindowTitle("Show Meta Variables");
@@ -77,7 +77,7 @@ MetaVariableConfigurationDialog::MetaVariableConfigurationDialog(DBContentManage
 
     // buttons
 
-    if (COMPASS::instance().expertMode())
+    if (dbcont_man_.compass().expertMode())
     {
         QHBoxLayout* button_layout = new QHBoxLayout();
 
@@ -202,10 +202,9 @@ void MetaVariableConfigurationDialog::addAllMetaVariablesSlot()
 
                     std::string instance = "MetaVariable" + var_it.first + "0";
 
-                    auto config = Configuration::create("MetaVariable", instance);
-                    config->addParameter<std::string>("name", var_it.first);
-
-                    dbcont_man_.generateSubConfigurableFromConfig(std::move(config));
+                    auto& child_json = dbcont_man_.addNewSubConfiguration("MetaVariable", instance);
+                    child_json[Configuration::ParameterSection]["name"] = var_it.first;
+                    dbcont_man_.generateSubConfigurable(child_json);
                 }
 
                 traced_assert(dbcont_man_.existsMetaVariable(var_it.first));

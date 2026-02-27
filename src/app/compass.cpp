@@ -22,6 +22,9 @@
 #include "datasourcemanager.h"
 #include "filtermanager.h"
 #include "jobmanager.h"
+#include "unitmanager.h"
+#include "projectionmanager.h"
+#include "rtcommand_manager.h"
 #include "logger.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
@@ -37,10 +40,12 @@
 #include "fftmanager.h"
 #include "util/async.h"
 #include "licensemanager.h"
+#include "configurationmanager.h"
 #include "result.h"
 #include "dbinstance.h"
 #include "logwidget.h"
 #include "util/system.h"
+#include "util/msghandler.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -55,9 +60,13 @@ using namespace Utils;
 
 const bool COMPASS::is_app_image_ = {Utils::System::appDir() != nullptr};
 
-COMPASS::COMPASS()
-    : Configurable("COMPASS", "COMPASS0", 0, "compass.json"), log_store_(!is_app_image_)
+COMPASS::COMPASS(ConfigurationManager& config_manager)
+    : Configurable(config_manager.getRootConfigJSON("COMPASS", "COMPASS0").json(), nullptr),
+      config_manager_(config_manager),
+      log_store_(!is_app_image_)
 {
+    config_manager_.registerJsonRootConfigurable(*this);
+    msghandler::MessageHandler::init(log_store_);
     logdbg;
 
     std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
@@ -121,20 +130,12 @@ COMPASS::COMPASS()
     traced_assert(auto_live_running_resume_ask_wait_time_ > 0);
     traced_assert(auto_live_running_resume_ask_time_ > auto_live_running_resume_ask_wait_time_);
 
-    JobManager::instance().start();
-    RTCommandManager::instance().start();
+    createSubConfigurables();
 
-    try
-    {
-        createSubConfigurables();
-    }
-    catch(const std::exception& e)
-    {
-        JobManager::instance().shutdown();
-        RTCommandManager::instance().shutdown();
-        
-        throw std::runtime_error(e.what());
-    }
+    traced_assert(job_manager_);
+    job_manager_->start();
+    traced_assert(rt_cmd_manager_);
+    rt_cmd_manager_->start();
 
     traced_assert(db_interface_);
     traced_assert(dbcontent_manager_);
@@ -146,7 +147,7 @@ COMPASS::COMPASS()
     traced_assert(fft_manager_);
     traced_assert(license_manager_);
 
-    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner);
+    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*this));
 
     // database opening & closing
 
@@ -236,6 +237,8 @@ COMPASS::~COMPASS()
         shutdown();
     }
 
+    config_manager_.unregisterJsonRootConfigurable(*this);
+
     traced_assert(!dbcontent_manager_);
     traced_assert(!db_interface_);
     traced_assert(!filter_manager_);
@@ -260,66 +263,87 @@ std::string COMPASS::getPath() const
     return "";
 }
 
-void COMPASS::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
+void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    if (class_id == "DBInterface")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    logdbg << "class_name " << class_name;
+    if (class_name == "DBInterface")
     {
         traced_assert(!db_interface_);
-        db_interface_.reset(new DBInterface(class_id, instance_id, this));
+        db_interface_.reset(new DBInterface(child_json, *this));
         traced_assert(db_interface_);
     }
-    else if (class_id == "DBContentManager")
+    else if (class_name == "DBContentManager")
     {
         traced_assert(!dbcontent_manager_);
-        dbcontent_manager_.reset(new DBContentManager(class_id, instance_id, this));
+        dbcontent_manager_.reset(new DBContentManager(child_json, *this));
         traced_assert(dbcontent_manager_);
     }
-    else if (class_id == "DataSourceManager")
+    else if (class_name == "DataSourceManager")
     {
         traced_assert(!ds_manager_);
-        ds_manager_.reset(new DataSourceManager(class_id, instance_id, this));
+        ds_manager_.reset(new DataSourceManager(child_json, *this));
         traced_assert(ds_manager_);
     }
-    else if (class_id == "FilterManager")
+    else if (class_name == "FilterManager")
     {
         traced_assert(!filter_manager_);
-        filter_manager_.reset(new FilterManager(class_id, instance_id, this));
+        filter_manager_.reset(new FilterManager(child_json, *this));
         traced_assert(filter_manager_);
     }
-    else if (class_id == "TaskManager")
+    else if (class_name == "TaskManager")
     {
         traced_assert(!task_manager_);
-        task_manager_.reset(new TaskManager(class_id, instance_id, this));
+        task_manager_.reset(new TaskManager(child_json, *this));
         traced_assert(task_manager_);
     }
-    else if (class_id == "ViewManager")
+    else if (class_name == "ViewManager")
     {
         traced_assert(!view_manager_);
-        view_manager_.reset(new ViewManager(class_id, instance_id, this));
+        view_manager_.reset(new ViewManager(child_json, *this));
         traced_assert(view_manager_);
     }
-    else if (class_id == "EvaluationManager")
+    else if (class_name == "EvaluationManager")
     {
         traced_assert(!eval_manager_);
-        eval_manager_.reset(new EvaluationManager(class_id, instance_id, this));
+        eval_manager_.reset(new EvaluationManager(child_json, *this));
         traced_assert(eval_manager_);
     }
-    else if (class_id == "FFTManager")
+    else if (class_name == "FFTManager")
     {
         traced_assert(!fft_manager_);
-        fft_manager_.reset(new FFTManager(class_id, instance_id, this));
+        fft_manager_.reset(new FFTManager(child_json, this));
         traced_assert(fft_manager_);
     }
-    else if (class_id == "LicenseManager")
+    else if (class_name == "LicenseManager")
     {
         traced_assert(!license_manager_);
-        license_manager_.reset(new LicenseManager(class_id, instance_id, this));
+        license_manager_.reset(new LicenseManager(child_json, *this));
         traced_assert(license_manager_);
     }
+    else if (class_name == "JobManager")
+    {
+        traced_assert(!job_manager_);
+        job_manager_.reset(new JobManager(child_json, this));
+    }
+    else if (class_name == "UnitManager")
+    {
+        traced_assert(!unit_manager_);
+        unit_manager_.reset(new UnitManager(child_json, this));
+    }
+    else if (class_name == "ProjectionManager")
+    {
+        traced_assert(!projection_manager_);
+        projection_manager_.reset(new ProjectionManager(child_json, this));
+    }
+    else if (class_name == "RTCommandManager")
+    {
+        traced_assert(!rt_cmd_manager_);
+        rt_cmd_manager_.reset(new RTCommandManager(child_json, this));
+    }
     else
-        throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void COMPASS::checkSubConfigurables()
@@ -369,6 +393,14 @@ void COMPASS::checkSubConfigurables()
         generateSubConfigurableFromConfig("FFTManager", "FFTManager0");
         traced_assert(fft_manager_);
     }
+    if (!job_manager_)
+        generateSubConfigurableFromConfig("JobManager", "JobManager0");
+    if (!unit_manager_)
+        generateSubConfigurableFromConfig("UnitManager", "UnitManager0");
+    if (!projection_manager_)
+        generateSubConfigurableFromConfig("ProjectionManager", "ProjectionManager0");
+    if (!rt_cmd_manager_)
+        generateSubConfigurableFromConfig("RTCommandManager", "RTCommandManager0");
 }
 
 LogStore& COMPASS::logStore()
@@ -448,6 +480,9 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
 
         db_opened_ = true;
 
+        log_store_.setLogCallbacks(
+            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
+            [this]() { return db_interface_->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }  
     catch (std::exception& e)
@@ -488,8 +523,8 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
 
     if (dbOpened())
     {
-        COMPASS::instance().logError("COMPASS") << "Database '" << filename
-                                                << "' creation failed: Database already open";
+        logError("COMPASS") << "Database '" << filename
+                            << "' creation failed: Database already open";
 
         return Result::failed("Database already open");
     }
@@ -506,6 +541,9 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
 
         db_opened_ = true;
 
+        log_store_.setLogCallbacks(
+            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
+            [this]() { return db_interface_->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }
     catch(const std::exception& e)
@@ -552,6 +590,9 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
 
         db_opened_ = true;
 
+        log_store_.setLogCallbacks(
+            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
+            [this]() { return db_interface_->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }
     catch(const std::exception& e)
@@ -711,6 +752,7 @@ Result COMPASS::closeDBInternal()
         db_inmem_ = false;
 
         emit databaseClosedSignal();
+        log_store_.setLogCallbacks({}, {});
     }
     catch(const std::exception& ex)
     {
@@ -786,6 +828,30 @@ rtcommand::RTCommandRunner& COMPASS::rtCmdRunner()
     return *rt_cmd_runner_;
 }
 
+JobManager& COMPASS::jobManager()
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+UnitManager& COMPASS::unitManager()
+{
+    traced_assert(unit_manager_);
+    return *unit_manager_;
+}
+
+ProjectionManager& COMPASS::projectionManager()
+{
+    traced_assert(projection_manager_);
+    return *projection_manager_;
+}
+
+RTCommandManager& COMPASS::rtCommandManager()
+{
+    traced_assert(rt_cmd_manager_);
+    return *rt_cmd_manager_;
+}
+
 bool COMPASS::dbOpened()
 {
     return db_opened_;
@@ -840,7 +906,8 @@ void COMPASS::shutdown()
         dbcontent_manager_->saveTargets();
     dbcontent_manager_ = nullptr;
 
-    JobManager::instance().shutdown();
+    if (job_manager_)
+        job_manager_->shutdown();
 
     traced_assert(eval_manager_);
     eval_manager_->close();
@@ -864,7 +931,8 @@ void COMPASS::shutdown()
     license_manager_ = nullptr;
 
     //shut down command manager at the end
-    RTCommandManager::instance().shutdown();
+    if (rt_cmd_manager_)
+        rt_cmd_manager_->shutdown();
 
     loginf << "done. goodbye.";
 }
@@ -873,7 +941,7 @@ MainWindow& COMPASS::mainWindow()
 {
     if (!main_window_)
     {
-        main_window_ = new MainWindow();
+        main_window_ = new MainWindow(*this);
         
         QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadingStartedSignal,
                         main_window_, &MainWindow::loadingStarted);
@@ -1152,8 +1220,8 @@ void COMPASS::addDBFileToList(const std::string filename)
 std::string COMPASS::versionString(bool open_ats, 
                                    bool license_type) const
 {
-    traced_assert(COMPASS::instance().config().existsId("version"));
-    std::string version = COMPASS::instance().config().getString("version");
+    traced_assert(simple_config_->existsId("version"));
+    std::string version = simple_config_->getString("version");
 
     std::string version_str;
     if (open_ats) 
@@ -1163,7 +1231,7 @@ std::string COMPASS::versionString(bool open_ats,
 
     if (license_type)
     {
-        const auto& license_manager = COMPASS::instance().licenseManager();
+        const auto& license_manager = *license_manager_;
         auto vl = license_manager.activeLicense();
 
         if (vl)
@@ -1177,7 +1245,7 @@ std::string COMPASS::versionString(bool open_ats,
 
 std::string COMPASS::licenseeString(bool licensed_to) const
 {
-    const auto& license_manager = COMPASS::instance().licenseManager();
+    const auto& license_manager = *license_manager_;
     auto vl = license_manager.activeLicense();
 
     if (!vl)

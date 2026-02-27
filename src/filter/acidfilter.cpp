@@ -29,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-ACIDFilter::ACIDFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ACIDFilter::ACIDFilter(nlohmann::json& config, FilterManager* parent)
+    : DBFilter(config, false, parent)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -48,7 +47,7 @@ bool ACIDFilter::filters(const std::string& dbcont_name)
     if (dbcont_name == "CAT062")
         return true; // acid and callsign fpl
     else
-        return COMPASS::instance().dbContentManager().metaVariable(
+        return dbContentManager().metaVariable(
                     DBContent::meta_var_acid_.name()).existsIn(dbcont_name);
 }
 
@@ -56,24 +55,24 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
         return "";
 
     stringstream ss;
 
     if (active_  && (values_.size() || null_wanted_))
     {
-        dbContent::Variable& acid_var = COMPASS::instance().dbContentManager().metaVariable(
+        dbContent::Variable& acid_var = dbContentManager().metaVariable(
                     DBContent::meta_var_acid_.name()).getFor(dbcontent_name);
 
         dbContent::Variable* cs_fpl_var {nullptr}; // only set in cat062
 
         if (dbcontent_name == "CAT062")
         {
-            traced_assert(COMPASS::instance().dbContentManager().canGetVariable(
+            traced_assert(dbContentManager().canGetVariable(
                         dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
-            cs_fpl_var = &COMPASS::instance().dbContentManager().getVariable(
+            cs_fpl_var = &dbContentManager().getVariable(
                         dbcontent_name, DBContent::var_cat062_callsign_fpl_);
         }
 
@@ -122,17 +121,6 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
     return ss.str();
 }
 
-void ACIDFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ACIDFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void ACIDFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* ACIDFilter::createWidget()
 {
@@ -192,10 +180,10 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
+    if (!dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
         return to_be_removed;
 
-    dbContent::Variable& acid_var = COMPASS::instance().dbContentManager().metaVariable(
+    dbContent::Variable& acid_var = dbContentManager().metaVariable(
                 DBContent::meta_var_acid_.name()).getFor(dbcontent_name);
 
     traced_assert(buffer->has<string> (acid_var.name()));
@@ -207,10 +195,10 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
 
     if (dbcontent_name == "CAT062")
     {
-        traced_assert(COMPASS::instance().dbContentManager().canGetVariable(
+        traced_assert(dbContentManager().canGetVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
-        cs_fpl_var = &COMPASS::instance().dbContentManager().getVariable(
+        cs_fpl_var = &dbContentManager().getVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
         traced_assert(buffer->has<string> (cs_fpl_var->name()));

@@ -18,8 +18,8 @@
 #include "viewpresets.h"
 
 #include "view.h"
-#include "files.h"
 #include "compass.h"
+#include "files.h"
 #include "config.h"
 #include "timeconv.h"
 
@@ -47,7 +47,7 @@ namespace
 {
     std::string viewID(const View* view)
     {
-        return view->classId();
+        return view->className();
     }
 }
 
@@ -692,13 +692,13 @@ bool ViewPresets::writePreset(const Key& key) const
  * Updates the presets "stamp", meaning timestamp and app version.
  * This stamp is usually updated when setting a new view config.
 */
-void ViewPresets::updatePresetStamp(Preset& preset)
+void ViewPresets::updatePresetStamp(Preset& preset, const std::string& app_version)
 {
     //add timestamp
     preset.timestamp = Utils::Time::toString(Utils::Time::currentUTCTime());
 
     //add app version
-    preset.app_version = COMPASS::instance().config().getString("version");
+    preset.app_version = app_version;
 }
 
 /**
@@ -734,7 +734,7 @@ bool ViewPresets::updatePresetConfig(Preset& preset, const View* view, bool upda
         preset.preview = renderPreview(view);
 
     //update signature on config modify
-    updatePresetStamp(preset);
+    updatePresetStamp(preset, view->compass().config().getString("version"));
 
     return cfg_changed;
 }

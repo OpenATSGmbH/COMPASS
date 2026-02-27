@@ -28,12 +28,8 @@ class ProjectionCoordinateSystemBase;
 class Projection : public Configurable
 {
 public:
-    Projection(const std::string& class_id, const std::string& instance_id,
-               ProjectionManager& proj_manager);
+    Projection(nlohmann::json& config, ProjectionManager* parent);
     virtual ~Projection();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
 
     virtual bool hasCoordinateSystem(unsigned int id) = 0;
     virtual void addCoordinateSystem(unsigned int id, double latitude_deg, double longitude_deg,
@@ -88,7 +84,6 @@ protected:
 
     std::set<unsigned int> missing_coordinate_systems_;
 
-    virtual void checkSubConfigurables();
 };
 
 

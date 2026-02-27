@@ -17,7 +17,6 @@
 
 #include "datasourcesstatus.h"
 
-#include "compass.h"
 #include "datasourcemanager.h"
 
 #include "timeconv.h"
@@ -51,7 +50,8 @@ std::string Event::typeToString(Type type)
 
 /**
  */
-std::string Event::toString(bool add_tracker_info,
+std::string Event::toString(DataSourceManager& ds_man,
+                            bool add_tracker_info,
                             bool add_sensor_info) const
 {
     std::string txt;
@@ -60,8 +60,6 @@ std::string Event::toString(bool add_tracker_info,
     {
         txt += Utils::Time::toTimeString(ts, false) + " ";
     }
-
-    auto& ds_man = COMPASS::instance().dataSourceManager();
 
     if (add_tracker_info && tracker_key.has_value())
     {

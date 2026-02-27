@@ -32,8 +32,8 @@ class ASTERIXJSONParsingSchema : public Configurable
     using ASTERIXJSONParserIterator = std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>>::iterator;
 
 public:
-    ASTERIXJSONParsingSchema(const std::string& class_id, const std::string& instance_id,
-                             ASTERIXImportTask& task);
+    /// @brief Constructor backed by a json reference
+    ASTERIXJSONParsingSchema(nlohmann::json& config, ASTERIXImportTask& task);
     /// @brief Move constructor
 //    ASTERIXJSONParsingSchema& operator=(ASTERIXJSONParsingSchema&& other);
 
@@ -45,8 +45,7 @@ public:
     ASTERIXJSONParser& parser(unsigned int);
     void removeParser(unsigned int);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     std::string name() const;
     void name(const std::string& name);
@@ -60,6 +59,6 @@ private:
     std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>> parsers_;
 
   protected:
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 
 };

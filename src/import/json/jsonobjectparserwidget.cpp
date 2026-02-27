@@ -17,6 +17,7 @@
 
 #include "jsonobjectparserwidget.h"
 
+#include "compass.h"
 #include "configuration.h"
 #include "datatypeformatselectionwidget.h"
 #include "dbcontent/variable/variable.h"
@@ -252,7 +253,7 @@ void JSONObjectParserWidget::updateMappingsGrid()
         comment_edit->setProperty("mapping", data);
         mappings_grid_->addWidget(comment_edit, row, 2);
 
-        dbContent::VariableSelectionWidget* var_sel = new dbContent::VariableSelectionWidget();
+        dbContent::VariableSelectionWidget* var_sel = new dbContent::VariableSelectionWidget(parser_->compass().dbContentManager());
         var_sel->showMetaVariables(false);
         var_sel->showDBContentOnly(map_it.second.second->dbObjectName());
         var_sel->showEmptyVariable(true);
@@ -272,7 +273,7 @@ void JSONObjectParserWidget::updateMappingsGrid()
         mappings_grid_->addWidget(mandatory_check, row, 4);
 
         UnitSelectionWidget* unit_sel = new UnitSelectionWidget(
-            map_it.second.second->dimensionRef(), map_it.second.second->unitRef());
+            parser_->compass().unitManager(), map_it.second.second->dimensionRef(), map_it.second.second->unitRef());
         mappings_grid_->addWidget(unit_sel, row, 5);
 
         DataTypeFormatSelectionWidget* data_format_widget = new DataTypeFormatSelectionWidget(
@@ -361,11 +362,11 @@ void JSONObjectParserWidget::addNewMappingSlot()
 {
     traced_assert(parser_);
 
-    auto config = Configuration::create("JSONDataMapping");
-    config->addParameter<std::string>("json_key", config->getInstanceId());
-    config->addParameter<std::string>("dbcontent_name", parser_->dbContentName());
+    auto& child_json = parser_->addNewSubConfiguration("JSONDataMapping");
+    child_json[Configuration::ParameterSection]["json_key"] = Configuration::getInstanceName(child_json);
+    child_json[Configuration::ParameterSection]["dbcontent_name"] = parser_->dbContentName();
 
-    parser_->generateSubConfigurableFromConfig(std::move(config));
+    parser_->generateSubConfigurable(child_json);
 
     updateMappingsGrid();
 }

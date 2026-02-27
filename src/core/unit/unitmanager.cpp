@@ -16,13 +16,14 @@
  */
 
 #include "unitmanager.h"
+#include "compass.h"
 #include "dimension.h"
 #include "logger.h"
 
 #include <math.h>
 
-
-UnitManager::UnitManager() : Configurable("UnitManager", "UnitManager0", 0, "units.json")
+UnitManager::UnitManager(nlohmann::json& config, COMPASS* parent)
+    : Configurable(config, parent)
 {
     createSubConfigurables();
 }
@@ -34,18 +35,19 @@ UnitManager::~UnitManager()
     dimensions_.clear();
 }
 
-void UnitManager::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
+void UnitManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "Dimension")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "Dimension")
     {
-        Dimension* dimension = new Dimension(class_id, instance_id, this);
-        traced_assert(dimensions_.find(dimension->instanceId()) == dimensions_.end());
-        dimensions_.insert(std::pair<std::string, Dimension*>(dimension->instanceId(), dimension));
+        Dimension* dimension = new Dimension(child_json, this);
+        traced_assert(dimensions_.find(dimension->instanceName()) == dimensions_.end());
+        dimensions_.insert(std::pair<std::string, Dimension*>(dimension->instanceName(), dimension));
     }
     else
-        throw std::runtime_error("UnitManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("UnitManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 void UnitManager::checkSubConfigurables()

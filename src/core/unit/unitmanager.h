@@ -18,48 +18,32 @@
 #pragma once
 
 #include "configurable.h"
-#include "singleton.h"
 
+class COMPASS;
 class Dimension;
 
 /**
  * @brief Holds and manages all units
- *
- * All units have to call registerUnit.
  */
-class UnitManager : public Configurable, public Singleton
+class UnitManager : public Configurable
 {
   public:
-    /// @brief Destructor
+    UnitManager(nlohmann::json& config, COMPASS* parent);
     virtual ~UnitManager();
 
     bool hasDimension(const std::string& name) { return dimensions_.count(name) > 0; }
 
-    /// @brief Returns unit with a given name
     const Dimension& dimension(const std::string& name)
     {
         traced_assert(hasDimension(name));
         return *dimensions_.at(name);
     }
-    /// @brief Return container with all units
     const std::map<std::string, Dimension*>& dimensions() { return dimensions_; }
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
   protected:
-    /// Container with all units (unit name (length, time) -> unit)
     std::map<std::string, Dimension*> dimensions_;
 
-    virtual void checkSubConfigurables();
-
-    /// @brief Constructor
-    UnitManager();
-
-  public:
-    static UnitManager& instance()
-    {
-        static UnitManager instance;
-        return instance;
-    }
+    void checkSubConfigurables() override;
 };

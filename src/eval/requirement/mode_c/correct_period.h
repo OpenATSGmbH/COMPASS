@@ -75,11 +75,8 @@ protected:
 class ModeCCorrectPeriodConfig : public IntervalBaseConfig
 {
 public:
-    ModeCCorrectPeriodConfig(const std::string& class_id, 
-                             const std::string& instance_id,
-                             Group& group, 
-                             EvaluationStandard& standard,
-                             EvaluationCalculator& calculator);
+    ModeCCorrectPeriodConfig(nlohmann::json& config,
+                             Group* parent);
     virtual ~ModeCCorrectPeriodConfig() = default;
 
     std::shared_ptr<Base> createRequirement() override;

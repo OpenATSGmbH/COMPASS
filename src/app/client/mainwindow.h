@@ -40,6 +40,8 @@ class DBContentManagerWidget;
 class MainLoadWidget;
 class ToolBox;
 
+class COMPASS;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -105,8 +107,10 @@ public slots:
     void toggleFullscreenSlot();
 
 public:
-    MainWindow();
+    explicit MainWindow(COMPASS& compass);
     virtual ~MainWindow();
+
+    void init();
 
     void disableConfigurationSaving();
 
@@ -195,6 +199,8 @@ protected:
 
 private:
     void showCommandShell();
+
+    COMPASS& compass_;
 
     unsigned int tool_ds_;
     unsigned int tool_sstatus_;

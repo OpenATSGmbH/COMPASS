@@ -24,7 +24,6 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "datasourcemanager.h"
 #include "files.h"
-#include "jobmanager.h"
 #include "logger.h"
 #include "asteriximporttaskdialog.h"
 #include "traced_assert.h"
@@ -35,6 +34,7 @@
 #include "util/timeconv.h"
 #include "projection.h"
 #include "projectionmanager.h"
+#include "jobmanager.h"
 #include "asynctask.h"
 #include "dbcontent.h"
 
@@ -99,11 +99,107 @@ ASTERIXImportTaskSettings::ASTERIXImportTaskSettings()
 
 /**
 */
-ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id, 
-                                     const std::string& instance_id,
-                                     TaskManager& task_manager)
-    : Task(task_manager),
-    Configurable(class_id, instance_id, &task_manager, "task_import_asterix.json")
+// (old constructor removed)
+// {
+//     tooltip_ = "Allows importing of ASTERIX data recording files into the opened database.";
+
+//     registerParameter("reset_date_between_files", &settings_.reset_date_between_files_,
+//                       ASTERIXImportTaskSettings().reset_date_between_files_);
+//     registerParameter("debug_jasterix", &settings_.debug_jasterix_, ASTERIXImportTaskSettings().debug_jasterix_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "debug_jasterix");
+
+//     registerParameter("current_file_framing", &settings_.current_file_framing_, ASTERIXImportTaskSettings().current_file_framing_);
+
+//     registerParameter("num_packets_overload", &settings_.num_packets_overload_, ASTERIXImportTaskSettings().num_packets_overload_);
+
+//     registerParameter("override_tod_active", &settings_.override_tod_active_,
+//                       ASTERIXImportTaskSettings().override_tod_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "override_tod_active");
+//     registerParameter("override_tod_offset", &settings_.override_tod_offset_,
+//                       ASTERIXImportTaskSettings().override_tod_offset_);
+
+//     registerParameter("filter_tod_active", &settings_.filter_tod_active_,
+//                       ASTERIXImportTaskSettings().filter_tod_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_tod_active");
+//     registerParameter("filter_tod_min", &settings_.filter_tod_min_, ASTERIXImportTaskSettings().filter_tod_min_);
+//     registerParameter("filter_tod_max", &settings_.filter_tod_max_, ASTERIXImportTaskSettings().filter_tod_max_);
+
+//     registerParameter("filter_position_rec_active", &settings_.filter_position_rec_active_,
+//                       ASTERIXImportTaskSettings().filter_position_rec_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_rec_active");
+//     registerParameter("filter_rec_latitude_min", &settings_.filter_rec_latitude_min_,
+//                       ASTERIXImportTaskSettings().filter_rec_latitude_min_);
+//     registerParameter("filter_rec_latitude_max", &settings_.filter_rec_latitude_max_,
+//                       ASTERIXImportTaskSettings().filter_rec_latitude_max_);
+//     registerParameter("filter_rec_longitude_min", &settings_.filter_rec_longitude_min_,
+//                       ASTERIXImportTaskSettings().filter_rec_longitude_min_);
+//     registerParameter("filter_rec_longitude_max", &settings_.filter_rec_longitude_max_,
+//                       ASTERIXImportTaskSettings().filter_rec_longitude_max_);
+
+//     registerParameter("filter_position_circ_active", &settings_.filter_position_circ_active_,
+//                       ASTERIXImportTaskSettings().filter_position_circ_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_circ_active");
+//     registerParameter("filter_circ_latitude", &settings_.filter_circ_latitude_,
+//                       ASTERIXImportTaskSettings().filter_circ_latitude_);
+//     registerParameter("filter_circ_longitude", &settings_.filter_circ_longitude_,
+//                       ASTERIXImportTaskSettings().filter_circ_longitude_);
+//     registerParameter("filter_circ_range", &settings_.filter_circ_range_,
+//                       ASTERIXImportTaskSettings().filter_circ_range_);
+
+//     registerParameter("filter_modec_active", &settings_.filter_modec_active_,
+//                       ASTERIXImportTaskSettings().filter_modec_active_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_modec_active");
+//     registerParameter("filter_modec_min", &settings_.filter_modec_min_, ASTERIXImportTaskSettings().filter_modec_min_);
+//     registerParameter("filter_modec_max", &settings_.filter_modec_max_, ASTERIXImportTaskSettings().filter_modec_max_);
+
+//     registerParameter("file_line_id", &settings_.file_line_id_, ASTERIXImportTaskSettings().file_line_id_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "file_line_id");
+//     registerParameter("date_str", &settings_.date_str_, ASTERIXImportTaskSettings().date_str_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "date_str");
+
+//     if (settings_.date_str_.size())
+//         settings_.date_ = Time::fromDateString(settings_.date_str_);
+//     if (settings_.date_.is_not_a_date_time())
+//         settings_.date_ = boost::posix_time::ptime(boost::gregorian::day_clock::universal_day());
+
+//     registerParameter("network_ignore_future_ts", &settings_.network_ignore_future_ts_,
+//                       ASTERIXImportTaskSettings().network_ignore_future_ts_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "network_ignore_future_ts");
+//     registerParameter("obfuscate_secondary_info", &settings_.obfuscate_secondary_info_,
+//                       ASTERIXImportTaskSettings().obfuscate_secondary_info_);
+//     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "obfuscate_secondary_info");
+
+//     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
+//     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
+
+//     std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+
+//     loginf << "jasterix definition path '"
+//            << jasterix_definition_path << "'";
+//     traced_assert(Files::directoryExists(jasterix_definition_path));
+
+//     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
+//     jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
+
+//     refreshjASTERIX(); // needed for available framings check etc.
+
+//     createSubConfigurables();
+
+//     connect(&source_, &ASTERIXImportSource::changed, this, &ASTERIXImportTask::sourceChanged);
+//     connect(&source_, &ASTERIXImportSource::fileUsageChanged, this, &ASTERIXImportTask::sourceUsageChanged);
+
+//     registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
+//                       settings_.max_packets_in_processing_);
+
+//     logdbg << "thread " << QThread::currentThreadId()
+//            << " main " << QApplication::instance()->thread()->currentThreadId();
+// }
+
+ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+    Configurable(config, parent),
+    compass_(parent->compass()),
+    dbcontent_man_(parent->compass().dbContentManager())
 {
     tooltip_ = "Allows importing of ASTERIX data recording files into the opened database.";
 
@@ -111,23 +207,18 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
                       ASTERIXImportTaskSettings().reset_date_between_files_);
     registerParameter("debug_jasterix", &settings_.debug_jasterix_, ASTERIXImportTaskSettings().debug_jasterix_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "debug_jasterix");
-
     registerParameter("current_file_framing", &settings_.current_file_framing_, ASTERIXImportTaskSettings().current_file_framing_);
-
     registerParameter("num_packets_overload", &settings_.num_packets_overload_, ASTERIXImportTaskSettings().num_packets_overload_);
-
     registerParameter("override_tod_active", &settings_.override_tod_active_,
                       ASTERIXImportTaskSettings().override_tod_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "override_tod_active");
     registerParameter("override_tod_offset", &settings_.override_tod_offset_,
                       ASTERIXImportTaskSettings().override_tod_offset_);
-
     registerParameter("filter_tod_active", &settings_.filter_tod_active_,
                       ASTERIXImportTaskSettings().filter_tod_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_tod_active");
     registerParameter("filter_tod_min", &settings_.filter_tod_min_, ASTERIXImportTaskSettings().filter_tod_min_);
     registerParameter("filter_tod_max", &settings_.filter_tod_max_, ASTERIXImportTaskSettings().filter_tod_max_);
-
     registerParameter("filter_position_rec_active", &settings_.filter_position_rec_active_,
                       ASTERIXImportTaskSettings().filter_position_rec_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_rec_active");
@@ -139,7 +230,6 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
                       ASTERIXImportTaskSettings().filter_rec_longitude_min_);
     registerParameter("filter_rec_longitude_max", &settings_.filter_rec_longitude_max_,
                       ASTERIXImportTaskSettings().filter_rec_longitude_max_);
-
     registerParameter("filter_position_circ_active", &settings_.filter_position_circ_active_,
                       ASTERIXImportTaskSettings().filter_position_circ_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_position_circ_active");
@@ -149,13 +239,11 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
                       ASTERIXImportTaskSettings().filter_circ_longitude_);
     registerParameter("filter_circ_range", &settings_.filter_circ_range_,
                       ASTERIXImportTaskSettings().filter_circ_range_);
-
     registerParameter("filter_modec_active", &settings_.filter_modec_active_,
                       ASTERIXImportTaskSettings().filter_modec_active_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "filter_modec_active");
     registerParameter("filter_modec_min", &settings_.filter_modec_min_, ASTERIXImportTaskSettings().filter_modec_min_);
     registerParameter("filter_modec_max", &settings_.filter_modec_max_, ASTERIXImportTaskSettings().filter_modec_max_);
-
     registerParameter("file_line_id", &settings_.file_line_id_, ASTERIXImportTaskSettings().file_line_id_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "file_line_id");
     registerParameter("date_str", &settings_.date_str_, ASTERIXImportTaskSettings().date_str_);
@@ -172,7 +260,6 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
     registerParameter("obfuscate_secondary_info", &settings_.obfuscate_secondary_info_,
                       ASTERIXImportTaskSettings().obfuscate_secondary_info_);
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "obfuscate_secondary_info");
-
     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
 
@@ -194,9 +281,6 @@ ASTERIXImportTask::ASTERIXImportTask(const std::string& class_id,
 
     registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
                       settings_.max_packets_in_processing_);
-
-    logdbg << "thread " << QThread::currentThreadId()
-           << " main " << QApplication::instance()->thread()->currentThreadId();
 }
 
 /**
@@ -208,43 +292,44 @@ ASTERIXImportTask::~ASTERIXImportTask()
 
 /**
 */
-void ASTERIXImportTask::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "ASTERIXCategoryConfig")
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    if (class_name == "ASTERIXCategoryConfig")
     {
-        unsigned int category = getSubConfiguration(class_id, instance_id).getParameterConfigValue<unsigned int>("category");
+        unsigned int category = child_json.at(Configuration::ParameterSection).at("category").get<unsigned int>();
 
         traced_assert(category_configs_.find(category) == category_configs_.end());
 
         logdbg << "generating asterix config "
-               << instance_id << " with cat " << category;
+               << instance_name << " with cat " << category;
 
         category_configs_.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(category),                                // args for key
-            std::forward_as_tuple(category, class_id, instance_id, this));  // args for mapped value
+            std::forward_as_tuple(category),              // args for key
+            std::forward_as_tuple(child_json, this));     // args for mapped value
 
         logdbg << "cat " << category << " decode "
                << category_configs_.at(category).decode() << " edition '"
                << category_configs_.at(category).edition() << "' ref '"
                << category_configs_.at(category).ref() << "'";
     }
-    else if (class_id == "ASTERIXJSONParsingSchema")
+    else if (class_name == "ASTERIXJSONParsingSchema")
     {
-        std::string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<std::string>("name");
+        std::string name = child_json.at(Configuration::ParameterSection).at("name").get<std::string>();
 
         traced_assert(schema_ == nullptr);
         traced_assert(name == "jASTERIX");
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " with name " << name;
 
-        schema_.reset(new ASTERIXJSONParsingSchema(class_id, instance_id, *this));
+        schema_.reset(new ASTERIXJSONParsingSchema(child_json, *this));
     }
     else
     {
-        throw std::runtime_error("ASTERIXImportTask: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("ASTERIXImportTask: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 
@@ -354,9 +439,9 @@ void ASTERIXImportTask::checkSubConfigurables()
 {
     if (schema_ == nullptr)
     {
-        auto config = Configuration::create("JSONParsingSchema", "JSONParsingSchemajASTERIX0");
-        config->addParameter<std::string>("name", "jASTERIX");
-        generateSubConfigurableFromConfig(std::move(config));
+        auto& child_json = addNewSubConfiguration("ASTERIXJSONParsingSchema", "JSONParsingSchemajASTERIX0");
+        child_json[Configuration::ParameterSection]["name"] = "jASTERIX";
+        generateSubConfigurable(child_json);
     }
 }
 
@@ -367,7 +452,7 @@ void ASTERIXImportTask::sourceChanged()
     loginf << "new type = " << source_.sourceTypeAsString();
 
     //update to suitable decoder
-    decoder_ = ASTERIXDecoderBase::createDecoder(source_);
+    decoder_ = ASTERIXDecoderBase::createDecoder(*this, source_);
     traced_assert(decoder_);
 
     loginf << "created new decoder "  << decoder_->name();
@@ -498,13 +583,13 @@ void ASTERIXImportTask::decodeCategory(unsigned int category, bool decode)
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", decode);
-        new_cfg->addParameter<std::string>("edition", jasterix_->category(category)->defaultEdition());
-        new_cfg->addParameter<std::string>("ref", jasterix_->category(category)->defaultREFEdition());
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = decode;
+        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
+        cj[Configuration::ParameterSection]["ref"] = jasterix_->category(category)->defaultREFEdition();
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -541,13 +626,13 @@ void ASTERIXImportTask::editionForCategory(unsigned int category, const std::str
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", false);
-        new_cfg->addParameter<std::string>("edition", edition);
-        new_cfg->addParameter<std::string>("ref", jasterix_->category(category)->defaultREFEdition());
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = false;
+        cj[Configuration::ParameterSection]["edition"] = edition;
+        cj[Configuration::ParameterSection]["ref"] = jasterix_->category(category)->defaultREFEdition();
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -585,13 +670,13 @@ void ASTERIXImportTask::refEditionForCategory(unsigned int category, const std::
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", false);
-        new_cfg->addParameter<std::string>("edition", jasterix_->category(category)->defaultEdition());
-        new_cfg->addParameter<std::string>("ref", ref);
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = false;
+        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
+        cj[Configuration::ParameterSection]["ref"] = ref;
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -630,13 +715,13 @@ void ASTERIXImportTask::spfEditionForCategory(unsigned int category, const std::
 
     if (!hasConfiguratonFor(category))
     {
-        auto new_cfg = Configuration::create("ASTERIXCategoryConfig");
-        new_cfg->addParameter<unsigned int>("category", category);
-        new_cfg->addParameter<bool>("decode", false);
-        new_cfg->addParameter<std::string>("edition", jasterix_->category(category)->defaultEdition());
-        new_cfg->addParameter<std::string>("spf", spf);
+        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
+        cj[Configuration::ParameterSection]["category"] = category;
+        cj[Configuration::ParameterSection]["decode"] = false;
+        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
+        cj[Configuration::ParameterSection]["spf"] = spf;
 
-        generateSubConfigurableFromConfig(std::move(new_cfg));
+        generateSubConfigurable(cj);
         traced_assert(hasConfiguratonFor(category));
     }
     else
@@ -835,9 +920,9 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     if (source_.isNetworkType())
     {
-        COMPASS::instance().appMode(AppMode::LiveRunning); // set live mode
+        compass_.appMode(AppMode::LiveRunning); // set live mode
 
-        COMPASS::instance().logInfo("ASTERIX Import") << "started: network";
+        compass_.logInfo("ASTERIX Import") << "started: network";
 
         data_received_timer_.reset(new QTimer);
         connect(data_received_timer_.get(), &QTimer::timeout, this, &ASTERIXImportTask::checkDataReceivedSlot);
@@ -845,7 +930,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
         data_received_timer_->start();
     }
     else
-        COMPASS::instance().logInfo("ASTERIX Import") << "started: files";
+        compass_.logInfo("ASTERIX Import") << "started: files";
 
 
     //reset state before new run
@@ -882,7 +967,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     jASTERIX::add_artas_md5_hash = true;
 
     // set up projections
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
@@ -892,7 +977,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     loginf << "starting decode job";
 
     if (source_.isNetworkType())
-        COMPASS::instance().dataSourceManager().createNetworkDBDataSources();
+        compass_.dataSourceManager().createNetworkDBDataSources();
 
     decode_job_ = make_shared<ASTERIXDecodeJob>(*this, post_process_);
 
@@ -903,7 +988,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     connect(decode_job_.get(), &ASTERIXDecodeJob::decodedASTERIXSignal, this,
             &ASTERIXImportTask::addDecodedASTERIXSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addBlockingJob(decode_job_);
+    compass_.jobManager().addBlockingJob(decode_job_);
 
     loginf << "done";
 
@@ -914,7 +999,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 */
 void ASTERIXImportTask::decodeASTERIXDoneSlot()
 {
-    logdbg;
+    loginf << "called";
 
     if (!decode_job_) // called twice?
         return;
@@ -1035,6 +1120,11 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
     else
         keys = {"frames", "content", "data_blocks", "content", "records"};
 
+    logdbg << "ASTERIXImportTask: addDecodedASTERIXSlot: framing '" << settings_.activeFileFraming()
+           << "' isNetworkType " << source_.isNetworkType()
+           << " num parsers " << schema_->parsers().size()
+           << " num extracted_data " << extracted_data.size();
+
     std::shared_ptr<ASTERIXJSONMappingJob> json_map_job =
         make_shared<ASTERIXJSONMappingJob>(std::move(extracted_data), source_name, keys, schema_->parsers());
 
@@ -1049,14 +1139,14 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     //loginf << "queueing in new mapping job, main thread is " << QThread::currentThreadId();
 
-    JobManager::instance().addNonBlockingJob(json_map_job);
+    compass_.jobManager().addNonBlockingJob(json_map_job);
 }
 
 /**
 */
 void ASTERIXImportTask::mapJSONDoneSlot()
 {
-    logdbg;
+    logdbg << "called, stopped " << stopped_;
 
     if (stopped_)
     {
@@ -1080,14 +1170,17 @@ void ASTERIXImportTask::mapJSONDoneSlot()
     map_job = nullptr;
     json_map_jobs_.erase(json_map_jobs_.begin()); // remove
 
-    logdbg << "processing, num buffers " << job_buffers.size();
+    logdbg << "num buffers " << job_buffers.size();
 
     if (!job_buffers.size())
     {
+        logdbg << "empty buffers, returning early";
         traced_assert(num_packets_in_processing_);
         num_packets_in_processing_--;
         return;
     }
+
+    logdbg << "starting ts calc";
 
     traced_assert(!ts_calculator_.processing());
     ts_calculator_.setBuffers(std::move(job_buffers));
@@ -1100,7 +1193,10 @@ void ASTERIXImportTask::mapJSONDoneSlot()
     ts_calculator_.calculate(source_name,
                              settings_.date_, settings_.reset_date_between_files_,
                              settings_.override_tod_active_, settings_.override_tod_offset_,
-                             settings_.ignore_time_jumps_, check_future_ts);
+                             settings_.ignore_time_jumps_, check_future_ts,
+                             compass_);
+
+    logdbg << "ts calc done, calling timestampCalculationDoneSlot";
 
     timestampCalculationDoneSlot();
 
@@ -1170,7 +1266,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_);
+        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_, compass_);
 
     postprocess_jobs_.push_back(postprocess_job);
 
@@ -1181,14 +1277,14 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &ASTERIXImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addNonBlockingJob(postprocess_job);
+    compass_.jobManager().addNonBlockingJob(postprocess_job);
 }
 
 /**
 */
 void ASTERIXImportTask::postprocessDoneSlot()
 {
-    logdbg;
+    logdbg << "called";
 
     if (stopped_)
     {
@@ -1237,11 +1333,11 @@ void ASTERIXImportTask::postprocessDoneSlot()
 
             if (!insert_active_ &&
                 !queued_insert_buffers_.empty() &&
-                !COMPASS::instance().dbExportInProgress() &&
-                !COMPASS::instance().dbContentManager().loadInProgress())
+                !compass_.dbExportInProgress() &&
+                !dbcontent_man_.loadInProgress())
             {
                 logdbg << "inserting";
-                traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
+                traced_assert(!dbcontent_man_.insertInProgress());
 
                 insertData();
             }
@@ -1337,13 +1433,13 @@ void ASTERIXImportTask::postprocessDoneSlot()
             }
         }
 
-        if (!insert_active_ && 
-            !queued_insert_buffers_.empty() && 
-            !COMPASS::instance().dbExportInProgress() && 
-            !COMPASS::instance().dbContentManager().loadInProgress())
+        if (!insert_active_ &&
+            !queued_insert_buffers_.empty() &&
+            !compass_.dbExportInProgress() &&
+            !dbcontent_man_.loadInProgress())
         {
             logdbg << "inserting";
-            traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
+            traced_assert(!dbcontent_man_.insertInProgress());
 
             insertData();
         }
@@ -1367,7 +1463,7 @@ void ASTERIXImportTask::postprocessObsoleteSlot()
 */
 void ASTERIXImportTask::insertData()
 {
-    logdbg << "thread " << QThread::currentThreadId();
+    logdbg << "called";
 
     traced_assert(!insert_active_);
     insert_active_ = true;
@@ -1390,7 +1486,7 @@ void ASTERIXImportTask::insertData()
         return;
     }
 
-    DBContentManager& dbcont_manager = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_manager = dbcontent_man_;
 
     traced_assert(schema_);
 
@@ -1401,7 +1497,7 @@ void ASTERIXImportTask::insertData()
         current_num_records += job_it.second->size();
         num_records_ += job_it.second->size();
 
-        if (COMPASS::instance().appMode() != AppMode::LiveRunning) // is cleaned special there
+        if (compass_.appMode() != AppMode::LiveRunning) // is cleaned special there
             job_it.second->deleteEmptyProperties();
     }
 
@@ -1429,7 +1525,7 @@ void ASTERIXImportTask::insertData()
 */
 void ASTERIXImportTask::insertDoneSlot()
 {
-    logdbg;
+    logdbg << "called";
 
     traced_assert(insert_slot_connected_);
 
@@ -1443,7 +1539,7 @@ void ASTERIXImportTask::insertDoneSlot()
     // has to be after file progress dialog update since calls processEvents and thus creates race condition
     traced_assert(insert_active_);
     insert_active_ = false;
-    traced_assert(!COMPASS::instance().dbContentManager().insertInProgress());
+    traced_assert(!dbcontent_man_.insertInProgress());
 
     --num_packets_in_processing_;
 
@@ -1483,16 +1579,16 @@ void ASTERIXImportTask::checkDataReceivedSlot()
 {
     loginf;
 
-    traced_assert(COMPASS::instance().appMode() == AppMode::LiveRunning);
+    traced_assert(compass_.appMode() == AppMode::LiveRunning);
 
     using namespace boost::posix_time;
 
-    if (!num_packets_in_processing_ 
-        && !COMPASS::instance().dbInterface().cleanupInProgress()
+    if (!num_packets_in_processing_
+        && !compass_.dbInterface().cleanupInProgress()
         && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
     {
         loginf << "forcing live update";
-        QMetaObject::invokeMethod(&COMPASS::instance().dbContentManager(), "processLiveModeSlot", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(&dbcontent_man_, "processLiveModeSlot", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
 }
@@ -1557,7 +1653,7 @@ void ASTERIXImportTask::checkAllDone()
     {
         loginf << "setting all done: total packets " << num_packets_total_;
 
-        ts_calculator_.logLastTimestamp();
+        ts_calculator_.logLastTimestamp(compass_);
 
         all_done_ = true;
         done_     = true; // why was this not set?
@@ -1569,7 +1665,7 @@ void ASTERIXImportTask::checkAllDone()
 
         int records_per_second = num_records_ / std::max(1.0, time_diff.total_milliseconds() / 1000.0);
 
-        COMPASS::instance().logInfo("ASTERIX Import")
+        compass_.logInfo("ASTERIX Import")
             << " finished after "
             << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, false)
             << ", inserted " << num_records_ << " rec"
@@ -1584,7 +1680,7 @@ void ASTERIXImportTask::checkAllDone()
             for (const auto& e : errors)
                 ss << e << "\n";
 
-            COMPASS::instance().logError("ASTERIX Import")
+            compass_.logError("ASTERIX Import")
                 << "Import finished with errors." << "\n\n"
                 << ss.str();
         }
@@ -1594,12 +1690,12 @@ void ASTERIXImportTask::checkAllDone()
             for (const auto& w : warnings)
                 ss << w << "\n";
 
-            COMPASS::instance().logWarn("ASTERIX Import")
+            compass_.logWarn("ASTERIX Import")
                 << "Import finished with warnings." << "\n\n"
                 << ss.str();
         }
 
-        COMPASS::instance().mainWindow().updateMenus(); // re-enable import menu
+        compass_.mainWindow().updateMenus(); // re-enable import menu
 
         logdbg << "refresh";
 
@@ -1616,16 +1712,16 @@ void ASTERIXImportTask::checkAllDone()
             logdbg << "deleting status widget";
         }
 
-        COMPASS::instance().dataSourceManager().saveDBDataSources();
-        emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
-        emit COMPASS::instance().dbContentManager().dbContentStatusChanged();
-        COMPASS::instance().dbInterface().saveProperties();
+        compass_.dataSourceManager().saveDBDataSources();
+        emit compass_.dataSourceManager().dataSourcesChangedSignal();
+        emit dbcontent_man_.dbContentStatusChanged();
+        compass_.dbInterface().saveProperties();
 
         malloc_trim(0); // release unused memory
 
         if (insert_slot_connected_) // moved here from insertDoneSlot
         {
-            disconnect(&COMPASS::instance().dbContentManager(), &DBContentManager::insertDoneSignal,
+            disconnect(&dbcontent_man_, &DBContentManager::insertDoneSignal,
                        this, &ASTERIXImportTask::insertDoneSlot);
             insert_slot_connected_ = false;
         }
@@ -1640,7 +1736,7 @@ void ASTERIXImportTask::checkAllDone()
 
         //cleanup db after import
         if (source_.isFileType())
-            COMPASS::instance().dbInterface().cleanupDB(true);
+            compass_.dbInterface().cleanupDB(true);
 
         emit doneSignal();
     }

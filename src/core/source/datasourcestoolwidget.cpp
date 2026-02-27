@@ -162,7 +162,7 @@ void DataSourcesToolWidget::updateContent(bool recreate_required)
  */
 void DataSourcesToolWidget::updateAdditionalInfo()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = ds_man_.compass().dbContentManager();
 
     traced_assert(ts_min_label_);
     traced_assert(ts_max_label_);

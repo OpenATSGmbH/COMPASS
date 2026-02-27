@@ -21,6 +21,7 @@
 
 class QCheckBox;
 class QGridLayout;
+class DataSourceManager;
 
 class SelectDataSourcesWidget : public QFrame
 {
@@ -33,7 +34,8 @@ protected slots:
     void toggleDataSourceSlot();
 
 public:
-    SelectDataSourcesWidget(const std::string& title, const std::string& ds_type,
+    SelectDataSourcesWidget(DataSourceManager& ds_man,
+                            const std::string& title, const std::string& ds_type,
                             QWidget* parent=nullptr, Qt::WindowFlags f=Qt::WindowFlags());
 
     virtual ~SelectDataSourcesWidget();
@@ -41,6 +43,7 @@ public:
     void updateSelected(std::map<std::string, bool> selection);
 
 protected:
+    DataSourceManager& ds_man_;
     std::string title_;
     std::string ds_type_;
 

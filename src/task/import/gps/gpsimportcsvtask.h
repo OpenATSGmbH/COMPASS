@@ -55,14 +55,18 @@ public slots:
     void dialogCancelSlot();
 
 public:
-    GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
+    GPSImportCSVTask(const std::string& class_name, const std::string& instance_name,
                        TaskManager& task_manager);
+    GPSImportCSVTask(const std::string& class_name, const std::string& instance_name,
+                     nlohmann::json& config, TaskManager& task_manager,
+                     const std::string& parent_path = "");
     virtual ~GPSImportCSVTask();
 
     GPSImportCSVTaskDialog* dialog();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(const std::string& class_name,
+                                 const std::string& instance_name,
+                                 nlohmann::json& child_json) override;
 
     bool canImportFile();
 

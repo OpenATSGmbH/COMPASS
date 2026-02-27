@@ -72,11 +72,14 @@ public slots:
     void databaseClosedSlot();
 
 public:
-    TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
+    TaskManager(nlohmann::json& config, COMPASS& compass);
+
+    COMPASS& compass() { return compass_; }
 
     virtual ~TaskManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id, const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void init();
     void shutdown();
@@ -140,7 +143,7 @@ public:
 protected:
     virtual void checkSubConfigurables() override;
 
-    void addTask(const std::string& class_id, Task* task);
+    void addTask(const std::string& class_name, Task* task);
     MainWindow* getMainWindow();
 
     std::shared_ptr<TaskResult> getOrCreateResult(const std::string& name, 
@@ -148,6 +151,8 @@ protected:
     void loadResults();
     void clearResults();
     boost::optional<unsigned int> findResult(const std::string& name) const;
+
+    COMPASS& compass_;
 
     // tasks
     std::unique_ptr<ASTERIXImportTask> asterix_importer_task_;

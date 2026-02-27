@@ -18,7 +18,6 @@
 #pragma once
 
 #include "configurable.h"
-#include "singleton.h"
 //#include "logger.h"
 #include "rtcommand_defs.h"
 #include "json_fwd.hpp"
@@ -45,12 +44,13 @@ namespace rtcommand
 }
 
 class TCPServer;
+class COMPASS;
 
 /**
  * Class for listening for and processing string commands at runtime,
  * either coming externally from a TCP port or internally from the application itself.
  */
-class RTCommandManager : public QThread, public Singleton, public Configurable
+class RTCommandManager : public QThread, public Configurable
 {
     Q_OBJECT
 public:
@@ -74,16 +74,11 @@ public:
 
     static bool open_port_;
 
+    RTCommandManager(nlohmann::json& config, COMPASS* parent);
     virtual ~RTCommandManager();
 
     void startCommandProcessing(); // only process command after start has been called
     void shutdown();
-
-    static RTCommandManager& instance()
-    {
-        static RTCommandManager instance;
-        return instance;
-    }
 
     rtcommand::IssueInfo addCommand(const std::string& cmd_str, CommandId* id = nullptr);
     void addCommandFromConsole(const std::string& cmd_str); // throws on failure
@@ -96,6 +91,8 @@ signals:
     void shellCommandProcessed(const QString& msg, const QString& data, bool is_error);
 
 protected:
+    COMPASS& compass_;
+
     volatile bool started_ {false};
     volatile bool stop_requested_ {false};
     volatile bool stopped_ {false};
@@ -105,11 +102,6 @@ protected:
 
     std::queue<QueuedCommand> command_queue_;
     boost::mutex command_queue_mutex_;
-
-//    bool command_active_ {false};
-//    std::future<rtcommand::RTCommandResult> current_result_;
-
-    RTCommandManager();
 
 private:
     friend class rtcommand::RTCommandShell;

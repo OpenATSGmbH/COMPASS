@@ -29,6 +29,8 @@
 
 class DataSourcesFilter;
 class COMPASS;
+class DBContentManager;
+class DataSourceManager;
 class FilterManagerWidget;
 class ViewableDataConfig;
 class Buffer;
@@ -60,7 +62,8 @@ public slots:
     void showViewPointSlot (const ViewableDataConfig* vp);
 
 public:
-    FilterManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // FilterManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
+    FilterManager(nlohmann::json& config, COMPASS& compass);
     virtual ~FilterManager();
 
     bool useFilters() const;
@@ -77,8 +80,7 @@ public:
 
     void deleteFilter(const std::string& name);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     // resets all filters
     void reset();
@@ -94,7 +96,14 @@ public:
 
     void resetToStartupConfiguration();
 
+    COMPASS& compass() { return compass_; }
+    DBContentManager& dbContentManager() { return dbcontent_man_; }
+    DataSourceManager& dataSourceManager();
+
 protected:
+    COMPASS& compass_;
+    DBContentManager& dbcontent_man_;
+
     // database id, resets if changed
     std::string db_id_;
     bool use_filters_{false};

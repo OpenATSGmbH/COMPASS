@@ -38,7 +38,8 @@
 class ASTERIXNetworkDecoder : public ASTERIXDecoderBase
 {
 public:
-    ASTERIXNetworkDecoder(ASTERIXImportSource& source, 
+    ASTERIXNetworkDecoder(ASTERIXImportTask& task,
+                          ASTERIXImportSource& source,
                           const ASTERIXImportTaskSettings* settings = nullptr);
     virtual ~ASTERIXNetworkDecoder();
 

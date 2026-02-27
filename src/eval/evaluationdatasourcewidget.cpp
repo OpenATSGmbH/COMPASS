@@ -20,6 +20,8 @@
 #include "dbcontent/dbcontentcombobox.h"
 #include "datasourcemanager.h"
 #include "evaluationcalculator.h"
+#include "evaluationmanager.h"
+#include "compass.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -61,7 +63,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     dbcont_lay->addWidget(new QLabel("DBContent"), 0, 0);
 
-    dbcont_combo_ = new DBContentComboBox(false, true);
+    dbcont_combo_ = new DBContentComboBox(calculator_.manager().compass().dbContentManager(), false, true);
     dbcont_combo_->setObjectName(dbcontent_name_);
     connect (dbcont_combo_, &DBContentComboBox::changedObject, 
         this, &EvaluationDataSourceWidget::dbContentNameChangedSlot);
@@ -96,7 +98,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     setLayout(main_layout);
 
-    connect(&COMPASS::instance().dataSourceManager(), &DataSourceManager::dataSourcesChangedSignal,
+    connect(&calculator_.manager().compass().dataSourceManager(), &DataSourceManager::dataSourcesChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot); // update if data sources changed
 }
 
@@ -124,7 +126,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
     unsigned int col, row;
     unsigned int cnt = 0;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = calculator_.manager().compass().dataSourceManager();
 
     map<string, bool> data_sources;
 

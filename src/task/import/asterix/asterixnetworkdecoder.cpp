@@ -39,14 +39,15 @@ const unsigned int ASTERIXNetworkDecoder::MaxAllReceiveSize = MAX_ALL_RECEIVE_SI
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
 */
-ASTERIXNetworkDecoder::ASTERIXNetworkDecoder(ASTERIXImportSource& source, 
+ASTERIXNetworkDecoder::ASTERIXNetworkDecoder(ASTERIXImportTask& task,
+                                             ASTERIXImportSource& source,
                                              const ASTERIXImportTaskSettings* settings)
-:   ASTERIXDecoderBase(source, settings)
+:   ASTERIXDecoderBase(task, source, settings)
 ,   receive_semaphore_((unsigned int)0)
 {
     traced_assert(source.isNetworkType());
 
-    ds_lines_ = COMPASS::instance().dataSourceManager().getNetworkLines();
+    ds_lines_ = task.compass().dataSourceManager().getNetworkLines();
 
     for (auto& ds_it : ds_lines_)
     {
@@ -73,7 +74,7 @@ bool ASTERIXNetworkDecoder::canDecode_impl() const
 */
 bool ASTERIXNetworkDecoder::canRun_impl() const
 {
-    return COMPASS::instance().dataSourceManager().getNetworkLines().size(); // there are network lines defined
+    return task().compass().dataSourceManager().getNetworkLines().size(); // there are network lines defined
 }
 
 /**

@@ -812,8 +812,8 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     std::vector<std::pair<QImage, std::string>> renderings;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-    ViewManager&      view_man   = COMPASS::instance().viewManager();
+    DBContentManager& dbcont_man = task_manager_.compass().dbContentManager();
+    ViewManager&      view_man   = task_manager_.compass().viewManager();
 
     QCoreApplication::processEvents();
 
@@ -823,7 +823,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
     for (auto& view_it : view_man.getViews())
     {
         //skip table views
-        if (view_it.second->classId() == "TableView")
+        if (view_it.second->className() == "TableView")
             continue;
         
         //enable export
@@ -844,7 +844,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
     for (auto& view_it : view_man.getViews())
     {
         //skip table views
-        if (view_it.second->classId() == "TableView")
+        if (view_it.second->className() == "TableView")
             continue;
         
         //skip views which show no content
@@ -852,7 +852,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         {
             //render view and collect
             auto img = view_it.second->renderData();
-            renderings.emplace_back(img, view_it.second->instanceId());
+            renderings.emplace_back(img, view_it.second->instanceName());
 
             //disable export
             view_it.second->setExporting(false);

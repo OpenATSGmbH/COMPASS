@@ -36,6 +36,8 @@
 #include <memory>
 
 
+class COMPASS;
+class DBContentManager;
 class TaskManager;
 
 class ASTERIXCategoryConfig;
@@ -94,13 +96,12 @@ public slots:
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
 public:
-    ASTERIXImportTask(const std::string& class_id, 
-                      const std::string& instance_id,
-                      TaskManager& task_manager);
+    ASTERIXImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ASTERIXImportTask();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    COMPASS& compass() const { return compass_; }
+
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void asterixFileFraming(const std::string& asterix_framing);
     void asterixDecoderConfig(const std::string& asterix_decoder_cfg);
@@ -160,6 +161,9 @@ protected:
     void refreshjASTERIX() const;
 
     void sourceChanged();
+
+    COMPASS&          compass_;
+    DBContentManager& dbcontent_man_;
 
     ASTERIXImportTaskSettings settings_;
     ASTERIXImportSource       source_;

@@ -16,7 +16,6 @@
  */
 
 #include "dbcontent/variable/variableorderedsetwidget.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/metavariable.h"
@@ -132,7 +131,7 @@ void VariableOrderedSetWidget::showMenuSlot()
     font_italic.setItalic(true);
     font_italic.setWeight(QFont::Light);
 
-    for (auto& meta_it : COMPASS::instance().dbContentManager().metaVariables())
+    for (auto& meta_it : set_.dbContentManager().metaVariables())
     {
         QAction* action = meta_menu->addAction(meta_it.first.c_str());
         action->setToolTip(meta_it.second->info().c_str());
@@ -145,7 +144,7 @@ void VariableOrderedSetWidget::showMenuSlot()
         }
     }
 
-    for (auto& object_it : COMPASS::instance().dbContentManager())
+    for (auto& object_it : set_.dbContentManager())
     {
         QMenu* m2 = menu.addMenu(object_it.first.c_str());
         m2->setToolTipsVisible(true);
@@ -180,7 +179,7 @@ void VariableOrderedSetWidget::triggerSlot(QAction* action)
     std::string var_name = vmap.begin().key().toStdString();
     std::string obj_name = vmap.begin().value().toString().toStdString();
 
-    DBContentManager& manager = COMPASS::instance().dbContentManager();
+    DBContentManager& manager = set_.dbContentManager();
 
     if (obj_name == META_OBJECT_NAME)
     {
@@ -249,7 +248,7 @@ void VariableOrderedSetWidget::updateVariableListSlot()
 
     logdbg << "clear done";
 
-    DBContentManager& manager = COMPASS::instance().dbContentManager();
+    DBContentManager& manager = set_.dbContentManager();
 
     string tooltip;
 

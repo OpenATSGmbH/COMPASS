@@ -17,6 +17,7 @@
 
 #include "dbcontent/dbcontentwidget.h"
 
+#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
@@ -377,7 +378,7 @@ void DBContentWidget::updateDBContVarsGridSlot()
 
         col++;
         UnitSelectionWidget* unit_sel =
-            new UnitSelectionWidget(var_it.second->dimension(), var_it.second->unit());
+            new UnitSelectionWidget(object_->compass().unitManager(), var_it.second->dimension(), var_it.second->unit());
         dbcontvars_grid_->addWidget(unit_sel, row, col);
 
         col++;

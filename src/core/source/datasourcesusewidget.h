@@ -49,7 +49,8 @@ class DataSourcesUseWidget : public DataSourcesWidget
     void dataSourceSelectedSlot(unsigned int ds_id);
 
   public:
-    DataSourcesUseWidget(std::function<bool(const std::string&)> get_use_dstype_func,
+    DataSourcesUseWidget(DataSourceManager& ds_man,
+                         std::function<bool(const std::string&)> get_use_dstype_func,
                          std::function<void(const std::string&,bool)> set_use_dstype_func,
                          std::function<bool(unsigned int)> get_use_ds_func,
                          std::function<void(unsigned int,bool)> set_use_ds_func,

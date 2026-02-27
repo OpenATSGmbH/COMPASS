@@ -29,9 +29,7 @@ class QTabWidget;
 class HistogramViewWidget : public VariableViewWidget
 {
   public:
-    /// @brief Constructor
-    HistogramViewWidget(const std::string& class_id, const std::string& instance_id,
-                      Configurable* config_parent, HistogramView* view, QWidget* parent = NULL);
+    HistogramViewWidget(HistogramView* view, QWidget* parent = nullptr);
     /// @brief Destructor
     virtual ~HistogramViewWidget();
     

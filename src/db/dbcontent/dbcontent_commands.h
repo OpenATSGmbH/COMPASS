@@ -18,6 +18,7 @@
 #pragma once
 
 #include "buffer/buffer.h"
+#include "dbcontent/variable/variableset.h"
 #include "rtcommand/rtcommand.h"
 
 #include <vector>

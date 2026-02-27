@@ -1,156 +1,194 @@
 {
-    "parameters": null,
-    "sub_configs": {
-        "Dimension": {
-            "Angle": {
-                "parameters": null,
-                "sub_configs": {
-                    "Unit": {
-                        "Degree": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 1.0
-                            }
-                        },
-                        "Radian": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.01745329251
-                            }
-                        }
+    "class_name": "UnitManager",
+    "instance_name": "UnitManager0",
+    "parameters": {},
+    "sub_configs": [
+        {
+            "class_name": "Dimension",
+            "instance_name": "Angle",
+            "parameters": {},
+            "sub_configs": [
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Degree",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 1.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Radian",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.01745329251
                     }
                 }
-            },
-            "Height": {
-                "parameters": null,
-                "sub_configs": {
-                    "Unit": {
-                        "Feet": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 1.0
-                            }
-                        },
-                        "Flight Level": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.01
-                            }
-                        },
-                        "Meter": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.3048
-                            }
-                        }
+            ]
+        },
+        {
+            "class_name": "Dimension",
+            "instance_name": "Height",
+            "parameters": {},
+            "sub_configs": [
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Feet",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 1.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Flight Level",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.01
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Meter",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.3048
                     }
                 }
-            },
-            "Length": {
-                "parameters": null,
-                "sub_configs": {
-                    "Unit": {
-                        "Kilometer": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.001
-                            }
-                        },
-                        "Meter": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 1.0
-                            }
-                        },
-                        "Mile": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.000621371192
-                            }
-                        },
-                        "Nautical Mile": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.000539956803
-                            }
-                        }
+            ]
+        },
+        {
+            "class_name": "Dimension",
+            "instance_name": "Length",
+            "parameters": {},
+            "sub_configs": [
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Kilometer",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.001
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Meter",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 1.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Mile",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.000621371192
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Nautical Mile",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.000539956803
                     }
                 }
-            },
-            "Speed": {
-                "parameters": null,
-                "sub_configs": {
-                    "Unit": {
-                        "Knots": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 1.0
-                            }
-                        },
-                        "Mach": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.00149984
-                            }
-                        },
-                        "Meter/Second": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.514444
-                            }
-                        },
-                        "NM/Second": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.00027777777
-                            }
-                        }
+            ]
+        },
+        {
+            "class_name": "Dimension",
+            "instance_name": "Speed",
+            "parameters": {},
+            "sub_configs": [
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Knots",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 1.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Mach",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.00149984
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Meter/Second",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.514444
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "NM/Second",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.00027777777
                     }
                 }
-            },
-            "Time": {
-                "parameters": null,
-                "sub_configs": {
-                    "Unit": {
-                        "Hour": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.000277777778
-                            }
-                        },
-                        "MilliSeconds": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 1000.0
-                            }
-                        },
-                        "Minute": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 0.016666666667
-                            }
-                        },
-                        "Second": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 1.0
-                            }
-                        },
-                        "V6Time": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 4096.0
-                            }
-                        },
-                        "V7Time": {
-                            "parameters": {
-                                "definition": "",
-                                "factor": 128.0
-                            }
-                        }
+            ]
+        },
+        {
+            "class_name": "Dimension",
+            "instance_name": "Time",
+            "parameters": {},
+            "sub_configs": [
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Hour",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.000277777778
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "MilliSeconds",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 1000.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Minute",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 0.016666666667
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "Second",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 1.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "V6Time",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 4096.0
+                    }
+                },
+                {
+                    "class_name": "Unit",
+                    "instance_name": "V7Time",
+                    "parameters": {
+                        "definition": "",
+                        "factor": 128.0
                     }
                 }
-            }
+            ]
         }
-    }
+    ]
 }

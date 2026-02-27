@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include "compass.h"
-
 #include <QDoubleValidator>
 #include <QLineEdit>
 
@@ -85,14 +83,15 @@ class TextFieldDoubleValidator : public QDoubleValidator
         }
     }
 
-    static void displayValidityAsColor(QLineEdit* line_edit)
+    static void displayValidityAsColor(QLineEdit* line_edit,
+                                       const char* invalid_style = "QLineEdit { background: rgb(255, 100, 100); selection-background-color: rgb(255, 200, 200); }")
     {
         traced_assert(line_edit);
 
         if (line_edit->hasAcceptableInput())
             line_edit->setStyleSheet("");
         else
-            line_edit->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+            line_edit->setStyleSheet(invalid_style);
     }
 };
 

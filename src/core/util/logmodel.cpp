@@ -19,8 +19,7 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "files.h"
-#include "compass.h"
-#include "dbinterface.h"
+#include "traced_assert.h"
 
 #include <QBrush>
 #include <QFont>
@@ -149,7 +148,8 @@ void LogStore::addLogMessage(const std::string& message, LogStreamType type, con
 
     const LogEntry& entry = *log_entries_.rbegin();
 
-    COMPASS::instance().dbInterface().saveTaskLogInfo(entry.msg_id_, entry.asJSON());
+    if (save_log_cb_)
+        save_log_cb_(entry.msg_id_, entry.asJSON());
 
     endResetModel();
 
@@ -479,12 +479,21 @@ void LogStore::loadMessagesFromDB()
 
     log_entries_.clear();
 
-    for (auto& info : COMPASS::instance().dbInterface().loadTaskLogInfo())
+    if (!load_logs_cb_)
+        return;
+
+    for (auto& info : load_logs_cb_())
         log_entries_.emplace_back(info);
 
     endResetModel();
 
     emit messagesChangedSignal();
+}
+
+void LogStore::setLogCallbacks(SaveLogFunc save_cb, LoadLogsFunc load_cb)
+{
+    save_log_cb_ = std::move(save_cb);
+    load_logs_cb_ = std::move(load_cb);
 }
 
 void LogStore::databaseOpenedSlot()

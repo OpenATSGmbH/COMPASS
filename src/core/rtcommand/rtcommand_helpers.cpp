@@ -110,7 +110,7 @@ QDialog *activeDialog()
  * Finds the QObject described by the given object path.
  * Unifies Configurables and UI elements (e.g. QWidget's).
  */
-std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std::string &object_path)
+std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std::string &object_path, COMPASS& compass)
 {
     auto parts = validObjectPath(object_path);
 
@@ -138,7 +138,7 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
         {
             QString view_container_name = "ViewWindow" + num;
 
-            auto container = COMPASS::instance().viewManager().containerWidget(view_container_name.toStdString());
+            auto container = compass.viewManager().containerWidget(view_container_name.toStdString());
             if (!container)
                 return std::make_pair(FindObjectErrCode::NotFound, nullptr);
 
@@ -147,7 +147,7 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
     }
     else if (first_part == "last_window")
     {
-        auto last_window = COMPASS::instance().viewManager().latestViewContainer();
+        auto last_window = compass.viewManager().latestViewContainer();
         if (!last_window)
             return std::make_pair(FindObjectErrCode::NotFound, nullptr);
 
@@ -155,7 +155,7 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
     }
     else if (first_part == "last_view")
     {
-        auto last_view = COMPASS::instance().viewManager().latestView();
+        auto last_view = compass.viewManager().latestView();
         if (!last_view)
             return std::make_pair(FindObjectErrCode::NotFound, nullptr);
 
@@ -176,7 +176,7 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
     }
     else if (first_part == "compass")
     {
-        std::pair<rtcommand::FindObjectErrCode, Configurable*> ret = COMPASS::instance().findSubConfigurablePath(remainder);
+        std::pair<rtcommand::FindObjectErrCode, Configurable*> ret = compass.findSubConfigurablePath(remainder);
 
         QObject *obj_casted = dynamic_cast<QObject *>(ret.second);
 

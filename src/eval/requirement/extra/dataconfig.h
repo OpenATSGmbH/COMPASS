@@ -35,9 +35,8 @@ namespace EvaluationRequirement
     class ExtraDataConfig : public ProbabilityBaseConfig
     {
     public:
-        ExtraDataConfig(const std::string& class_id, const std::string& instance_id,
-                        Group& group, EvaluationStandard& standard,
-                        EvaluationCalculator& calculator);
+        ExtraDataConfig(nlohmann::json& config,
+                        Group* parent);
         virtual ~ExtraDataConfig();
 
         std::shared_ptr<Base> createRequirement() override;

@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+class COMPASS;
 class TableView;
 class Buffer;
 class TableViewDataSource;
@@ -67,7 +68,8 @@ class BaseBufferTableModel : public QAbstractTableModel
     static bool getSpecialRepresentation(std::string& repr,
                                          dbContent::Variable& var,
                                          Buffer& buffer,
-                                         unsigned int buffer_idx);
+                                         unsigned int buffer_idx,
+                                         COMPASS& compass);
 
   protected:
     struct RowData

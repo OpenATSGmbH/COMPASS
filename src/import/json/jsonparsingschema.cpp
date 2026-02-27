@@ -16,12 +16,13 @@
  */
 
 #include "jsonparsingschema.h"
+#include "compass.h"
+#include "jsonimporttask.h"
 
 using namespace std;
 
-JSONParsingSchema::JSONParsingSchema(const std::string& class_id, const std::string& instance_id,
-                                     Configurable* parent)
-    : Configurable(class_id, instance_id, parent)
+JSONParsingSchema::JSONParsingSchema(nlohmann::json& config, JSONImportTask* parent, COMPASS& compass)
+    : Configurable(config, parent), compass_(compass)
 {
     registerParameter("name", &name_, std::string());
 
@@ -30,38 +31,40 @@ JSONParsingSchema::JSONParsingSchema(const std::string& class_id, const std::str
     createSubConfigurables();
 }
 
-void JSONParsingSchema::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void JSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "JSONObjectParser")
-    {
-        const Configuration& sub_config = getSubConfiguration(class_id, instance_id);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
+    if (class_name == "JSONObjectParser")
+    {
         std::string name;
 
-        if (sub_config.hasParameterConfigValue("name"))
-            name = sub_config.getParameterConfigValue<std::string>("name");
+        if (child_json.contains("parameters"))
+        {
+            auto& params = child_json["parameters"];
+            if (params.contains("name"))
+                name = params["name"].get<std::string>();
 
-        if (!name.size() &&
-            sub_config.hasParameterConfigValue("dbcontent_name"))  // name not set hack
-            name = sub_config.getParameterConfigValue<std::string>("dbcontent_name");
+            if (!name.size() && params.contains("dbcontent_name"))  // name not set hack
+                name = params["dbcontent_name"].get<std::string>();
+
+            if (!name.size() && params.contains("db_content_name"))  // current param name
+                name = params["db_content_name"].get<std::string>();
+        }
 
         traced_assert(name.size());
         traced_assert(parsers_.find(name) == parsers_.end());
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " with name " << name;
 
-//        parsers_.emplace(
-//            std::piecewise_construct,
-//            std::forward_as_tuple(name),                          // args for key
-//            std::forward_as_tuple(class_id, instance_id, this));  // args for mapped value
-
-        parsers_[name].reset(new JSONObjectParser (class_id, instance_id, this));
+        auto parser = std::make_unique<JSONObjectParser>(child_json, this, compass_);
+        parsers_[name] = std::move(parser);
     }
     else
-        throw std::runtime_error("JSONImporterTask: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("JSONParsingSchema: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 std::string JSONParsingSchema::name() const { return name_; }

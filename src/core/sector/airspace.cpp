@@ -159,12 +159,12 @@ namespace
         if (parent)
         {
             //we are a nested sector => add to parent layer
-            auto sec = std::make_shared<Sector>(sec_id++, 
+            auto sec = std::make_shared<Sector>(sec_id++,
                                                 sector_data->name,
                                                 parent->name(),
                                                 false, //do not serialize yet, as we are not part of the evaluation
-                                                false, 
-                                                AirSpace::DefaultSectorColor, 
+                                                false,
+                                                AirSpace::DefaultSectorColor,
                                                 sector_data->points);
             sec->setMinimumAltitude(sector_data->own_height_min);
 
@@ -194,12 +194,12 @@ namespace
             else 
             {
                 //no nested sectors => we are our own layer
-                auto sec = std::make_shared<Sector>(sec_id++, 
+                auto sec = std::make_shared<Sector>(sec_id++,
                                             sector_data->name,
                                             sector_data->name,
                                             false, //do not serialize yet, as we are not part of the evaluation
-                                            false, 
-                                            AirSpace::DefaultSectorColor, 
+                                            false,
+                                            AirSpace::DefaultSectorColor,
                                             sector_data->points);
                 sec->setMinimumAltitude(sector_data->own_height_min);
                 sec->setMaximumAltitude(sector_data->own_height_max);

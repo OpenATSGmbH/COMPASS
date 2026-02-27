@@ -18,7 +18,6 @@
 #include "labelcontentdialog.h"
 #include "dbcontent/label/labelgenerator.h"
 #include "dbcontent/variable/variableselectionwidget.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 
@@ -110,7 +109,7 @@ void LabelContentDialog::createVariableGrid()
 
     string key;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = label_generator_.dbContentManager();
     DBContent& db_content = dbcont_man.dbContent(dbcontent_name_);
 
     for (unsigned int row=0; row < 3; row++)
@@ -130,7 +129,7 @@ void LabelContentDialog::createVariableGrid()
             }
             else
             {
-                VariableSelectionWidget* var_widget = new VariableSelectionWidget();
+                VariableSelectionWidget* var_widget = new VariableSelectionWidget(label_generator_.dbContentManager());
                 var_widget->setProperty("key", row*3 + col);
                 var_widget->showDBContentOnly(dbcontent_name_);
 

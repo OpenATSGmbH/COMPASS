@@ -51,10 +51,10 @@ using namespace Utils;
 using namespace std;
 using namespace nmea;
 
-GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
+GPSImportCSVTask::GPSImportCSVTask(const std::string& class_name, const std::string& instance_name,
                                    TaskManager& task_manager)
     : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_import_gps_csv.json")
+      Configurable(class_name, instance_name, &task_manager, "task_import_gps_csv.json")
 {
     tooltip_ = "Allows importing of GPS trails as CSV into the opened database.";
 
@@ -86,15 +86,50 @@ GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::strin
         parseCurrentFile();
 }
 
+GPSImportCSVTask::GPSImportCSVTask(const std::string& class_name, const std::string& instance_name,
+                                   nlohmann::json& config, TaskManager& task_manager,
+                                   const std::string& parent_path)
+    : Task(task_manager),
+      Configurable(class_name, instance_name, config, parent_path)
+{
+    tooltip_ = "Allows importing of GPS trails as CSV into the opened database.";
+
+    registerParameter("current_filename", &current_filename_, std::string());
+    registerParameter("timestamp_format", &timestamp_format_, std::string("%m/%d/%y %H:%M:%S%F"));
+
+    registerParameter("ds_name", &ds_name_, std::string("GPS Trail"));
+    registerParameter("ds_sac", &ds_sac_, 0u);
+    registerParameter("ds_sic", &ds_sic_, 0u);
+
+    registerParameter("tod_offset", &tod_offset_, 0.0f);
+
+    registerParameter("set_mode_3a_code", &set_mode_3a_code_, false);
+    registerParameter("mode_3a_code", &mode_3a_code_, 0u);
+
+    registerParameter("set_target_address", &set_target_address_, false);
+    registerParameter("target_address", &target_address_, 0u);
+
+    registerParameter("set_callsign", &set_callsign_, false);
+    registerParameter("callsign", &callsign_, std::string());
+
+    //registerParameter("line_id", &line_id_, 0); always defaults to 0
+
+    createSubConfigurables();
+
+    if (current_filename_.size())
+        parseCurrentFile();
+}
+
 GPSImportCSVTask::~GPSImportCSVTask()
 {
 }
 
-void GPSImportCSVTask::generateSubConfigurable(const std::string& class_id,
-                                               const std::string& instance_id)
+void GPSImportCSVTask::generateSubConfigurable(const std::string& class_name,
+                                               const std::string& instance_name,
+                                               nlohmann::json& child_json)
 {
-    throw std::runtime_error("GPSImportCSVTask: generateSubConfigurable: unknown class_id " +
-                             class_id);
+    throw std::runtime_error("GPSImportCSVTask: generateSubConfigurable: unknown class_name " +
+                             class_name);
 }
 
 GPSImportCSVTaskDialog* GPSImportCSVTask::dialog()
@@ -125,10 +160,10 @@ void GPSImportCSVTask::importFilename(const std::string& filename)
 
 bool GPSImportCSVTask::checkPrerequisites()
 {
-    if (!COMPASS::instance().dbInterface().ready())  // must be connected
+    if (!manager().compass().dbInterface().ready())  // must be connected
         return false;
 
-    if (!COMPASS::instance().dbContentManager().existsDBContent("RefTraj"))
+    if (!manager().compass().dbContentManager().existsDBContent("RefTraj"))
         return false;
 
     return true;
@@ -456,7 +491,7 @@ void GPSImportCSVTask::run()
     traced_assert(gps_positions_.size());
     traced_assert(!buffer_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     string dbcontent_name = "RefTraj";
     traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
@@ -560,7 +595,7 @@ void GPSImportCSVTask::run()
 
     // config data source
     {
-        DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& src_man = manager().compass().dataSourceManager();
 
         if (!src_man.hasDBDataSource(ds_id))
             src_man.addNewDataSource(ds_id);
@@ -648,13 +683,13 @@ void GPSImportCSVTask::insertDoneSlot()
 
     buffer_ = nullptr;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &GPSImportCSVTask::insertDoneSlot);
 
-    COMPASS::instance().dataSourceManager().saveDBDataSources();
-    emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
+    manager().compass().dataSourceManager().saveDBDataSources();
+    emit manager().compass().dataSourceManager().dataSourcesChangedSignal();
 
     done_ = true;
 

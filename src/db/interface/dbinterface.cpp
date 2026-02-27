@@ -90,21 +90,23 @@ const size_t DBInterface::TableBulkUpdateMinRows = 50;
 
 /**
  */
-DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
-:   Configurable(class_id, instance_id, compass)
-,   insert_mt_(true)
+// DBInterface::DBInterface(string class_name, string instance_name, COMPASS* compass)
+//     : Configurable(class_name, instance_name, compass), ...
+
+DBInterface::DBInterface(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass)
+    , compass_(compass)
+    , dbcontent_man_(compass.dbContentManager())
+    , insert_mt_(true)
 {
     registerParameter("log_verbose", &log_verbose_, log_verbose_);
-
     registerParameter("read_chunk_size", &read_chunk_size_, 50000u);
-    
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
     registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
     registerParameter("live_cleanup_time_min", &live_cleanup_time_min_, live_cleanup_time_min_);
-
     registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
-    
+
     if (use_live_inmem_db_)
     {
         logwrn << "version not reliable with live in-mem db, deactivating";
@@ -133,7 +135,7 @@ DBInterface::~DBInterface()
 SQLGenerator DBInterface::sqlGenerator() const
 {
     traced_assert(db_instance_);
-    return SQLGenerator(db_instance_->sqlConfiguration());
+    return SQLGenerator(db_instance_->sqlConfiguration(), dbcontent_man_);
 }
 
 /**
@@ -204,7 +206,7 @@ void DBInterface::openDBFile(const std::string& filename, bool overwrite)
     loginf << "new_file " << new_file;
 
     if (new_file)
-        COMPASS::instance().logInfo("DBInterface") << "database '" << filename << "' created";
+        compass_.logInfo("DBInterface") << "database '" << filename << "' created";
 }
 
 /**
@@ -256,7 +258,7 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
             createPropertiesTable();
             properties_loaded_ = true;
 
-            setProperty("APP_VERSION", COMPASS::instance().config().getString("version"));
+            setProperty("APP_VERSION", compass_.config().getString("version"));
             saveProperties();
 
             traced_assert(!existsDataSourcesTable());
@@ -272,11 +274,11 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
 
             //check db version against app version
             if (!hasProperty("APP_VERSION")
-                    || getProperty("APP_VERSION") != COMPASS::instance().config().getString("version"))
+                    || getProperty("APP_VERSION") != compass_.config().getString("version"))
             {
                 string reason = hasProperty("APP_VERSION") ?
                             "DB from Version " + getProperty("APP_VERSION") + ", current "
-                            + COMPASS::instance().config().getString("version") : "DB from Version older than 0.7.0";
+                            + compass_.config().getString("version") : "DB from Version older than 0.7.0";
 
                 properties_loaded_ = false;
                 properties_.clear();
@@ -573,7 +575,7 @@ Result DBInterface::cleanupDBInternal()
 
     auto db_size_before = get_db_file_size();
 
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (compass_.appMode() == AppMode::LiveRunning)
     {
         if (db_instance_->dbInMem())
         {
@@ -664,16 +666,6 @@ bool DBInterface::logVerbose() const
 {
     return log_verbose_;
 }
-
-/**
- */
-void DBInterface::generateSubConfigurable(const string& class_id,
-                                          const string& instance_id)
-{
-    throw std::runtime_error("DBInterface: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-
 
 /**
  * !Protect by mutex when calling!
@@ -813,11 +805,11 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
     traced_assert(ready());
     traced_assert(object.existsInDB());
 
-    traced_assert(COMPASS::instance().dbContentManager().existsMetaVariable(DBContent::meta_var_rec_num_.name()));
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(dbcontent_man_.existsMetaVariable(DBContent::meta_var_rec_num_.name()));
+    traced_assert(dbcontent_man_.metaVariable(
                 DBContent::meta_var_rec_num_.name()).existsIn(object.name()));
 
-    Variable& rec_num_var = COMPASS::instance().dbContentManager().metaVariable(
+    Variable& rec_num_var = dbcontent_man_.metaVariable(
                 DBContent::meta_var_rec_num_.name()).getFor(object.name());
 
     traced_assert(object.hasVariable(rec_num_var.name()));
@@ -856,16 +848,16 @@ unsigned int DBInterface::getMaxRefTrackTrackNum()
 {
     traced_assert(ready());
 
-    DBContent& reftraj_content = COMPASS::instance().dbContentManager().dbContent("RefTraj");
+    DBContent& reftraj_content = dbcontent_man_.dbContent("RefTraj");
 
     if(!reftraj_content.existsInDB())
         return 0;
 
-    traced_assert(COMPASS::instance().dbContentManager().existsMetaVariable(DBContent::meta_var_track_num_.name()));
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
+    traced_assert(dbcontent_man_.existsMetaVariable(DBContent::meta_var_track_num_.name()));
+    traced_assert(dbcontent_man_.metaVariable(
                 DBContent::meta_var_track_num_.name()).existsIn("RefTraj"));
 
-    Variable& track_num_var = COMPASS::instance().dbContentManager().metaVariable(
+    Variable& track_num_var = dbcontent_man_.metaVariable(
                 DBContent::meta_var_track_num_.name()).getFor("RefTraj");
 
     traced_assert(reftraj_content.hasVariable(track_num_var.name()));
@@ -2477,7 +2469,7 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
 
         results.resize(nr);
 
-        auto& task_man = COMPASS::instance().taskManager();
+        auto& task_man = compass_.taskManager();
 
         for (size_t i = 0; i < nr; ++i)
         {
@@ -2629,8 +2621,8 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
 
     buffer->addProperty(rec_num_col_str, PropertyDataType::ULONGINT);
 
-    traced_assert(COMPASS::instance().dbContentManager().hasMaxRecordNumberWODBContentID());
-    unsigned long max_rec_num = COMPASS::instance().dbContentManager().maxRecordNumberWODBContentID();
+    traced_assert(dbcontent_man_.hasMaxRecordNumberWODBContentID());
+    unsigned long max_rec_num = dbcontent_man_.maxRecordNumberWODBContentID();
 
     NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(rec_num_col_str);
 
@@ -2643,7 +2635,7 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
         rec_num_vec.set(cnt, Number::recNumAddDBContId(max_rec_num, dbcont_id));
     }
 
-    COMPASS::instance().dbContentManager().maxRecordNumberWODBContentID(max_rec_num);
+    dbcontent_man_.maxRecordNumberWODBContentID(max_rec_num);
 }
 
 /**
@@ -2723,7 +2715,7 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
            << (exec_mt ? "multi-threaded" : "single-threaded") 
            << " min_size " << (buffers.size() ? min_size : 0) << " max_size " << (buffers.size() ? max_size : 0);
 
-    auto& dbc_manager = COMPASS::instance().dbContentManager();
+    auto& dbc_manager = dbcontent_man_;
 
     struct Job
     {

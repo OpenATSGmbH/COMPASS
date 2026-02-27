@@ -15,11 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once 
+#pragma once
 
 #include <memory>
 
 #include <QObject>
+
+class COMPASS;
 
 class QSignalSpy;
 
@@ -46,7 +48,7 @@ class RTCommandRunnerStash : public QObject
 {
     Q_OBJECT
 public:
-    RTCommandRunnerStash();
+    RTCommandRunnerStash(COMPASS& compass);
     virtual ~RTCommandRunnerStash();
 
 private slots:
@@ -61,6 +63,7 @@ private:
 
     bool spySignalReceived() const;
 
+    COMPASS& compass_;
     std::unique_ptr<QSignalSpy> spy_;
 };
 

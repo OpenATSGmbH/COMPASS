@@ -35,9 +35,8 @@ namespace EvaluationRequirement
 class ModeCCorrectConfig : public ProbabilityBaseConfig
 {
 public:
-    ModeCCorrectConfig(const std::string& class_id, const std::string& instance_id,
-                                Group& group, EvaluationStandard& standard,
-                                EvaluationCalculator& calculator);
+    ModeCCorrectConfig(nlohmann::json& config,
+                       Group* parent);
 
     std::shared_ptr<Base> createRequirement() override;
 

@@ -22,15 +22,11 @@
 class PrimaryOnlyFilter : public DBFilter
 {
 public:
-    PrimaryOnlyFilter(const std::string& class_id, const std::string& instance_id,
-                      Configurable* parent);
+    PrimaryOnlyFilter(nlohmann::json& config, FilterManager* parent);
     virtual ~PrimaryOnlyFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
@@ -42,6 +38,5 @@ public:
     virtual std::vector<unsigned int> filterBuffer(const std::string& dbcontent_name, std::shared_ptr<Buffer> buffer) override;
 
 protected:
-    virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
 };

@@ -26,6 +26,8 @@ class QWidget;
 class QLineEdit;
 class QLabel;
 
+class COMPASS;
+class DBContentManager;
 class DBFilter;
 
 namespace dbContent
@@ -47,8 +49,7 @@ private slots:
 //     void possibleFilterChange();
 
 public:
-    DBFilterCondition(const std::string& class_id, const std::string& instance_id,
-                      DBFilter* filter_parent);
+    DBFilterCondition(nlohmann::json& config, DBFilter* parent);
     virtual ~DBFilterCondition();
 
     void invert();
@@ -94,6 +95,9 @@ public:
     bool getDisplayInstanceId() const;
 
 private:
+    COMPASS& compass_;
+    DBContentManager& dbcont_man_;
+
     DBFilter* filter_parent_{nullptr};
     std::string operator_;
     //bool op_and_{true};
@@ -102,7 +106,7 @@ private:
     std::string reset_value_;
     std::string variable_dbcontent_name_;
     std::string variable_name_;
-    bool display_instance_id_ {false};
+    bool display_instance_name_ {false};
 
     bool usable_{true};
     bool value_invalid_{false};

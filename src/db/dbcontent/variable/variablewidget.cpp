@@ -16,10 +16,10 @@
  */
 
 #include "dbcontent/variable/variablewidget.h"
-//#include "compass.h"
+#include "compass.h"
 //#include "configuration.h"
 //#include "configurationmanager.h"
-//#include "dbcontent/dbcontent.h"
+#include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
 #include "logger.h"
@@ -96,7 +96,7 @@ VariableWidget::VariableWidget(Variable& variable, QWidget* parent, Qt::WindowFl
     QLabel* unit_label = new QLabel("Unit");
     properties_layout_->addWidget(unit_label, row, 0);
 
-    unit_sel_ = new UnitSelectionWidget(variable_->dimension(), variable_->unit());
+    unit_sel_ = new UnitSelectionWidget(variable_->dbContent().compass().unitManager(), variable_->dimension(), variable_->unit());
     properties_layout_->addWidget(unit_sel_, row, 1);
     row++;
 

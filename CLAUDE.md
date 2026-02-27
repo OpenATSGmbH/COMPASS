@@ -283,8 +283,6 @@ TCP socket interface for controlling a running COMPASS instance from external to
 
 ## Configuration system
 
-- Stored in `~/.compass/<version>/` (e.g. `~/.compass/0.9.2/`)
-- Read at startup, written at shutdown (not on crash)
-- JSON-based: `compass.json`, `db_content.json`, `views.json`, `task_import_asterix.json`, etc.
-- Default configs in `conf/default/` subfolder
-- `Configurable` base class handles persistence: components register parameters, auto-serialized to/from JSON
+- Most components inherit from `Configurable` (in `src/core/config/`), which registers typed parameters and auto-serializes them to/from JSON. `Configuration` groups parameters belonging to one component instance; `ConfigurationManager` is the singleton that owns all `Configuration` objects and handles file I/O.
+- **Default configuration** lives in `conf/default/` in the source tree — do not modify these files unless explicitly asked. At runtime, the deployed configuration is stored in `~/.compass/1.0.0/` (1.0.0 = current version), read at startup and written at shutdown (not on crash).
+- JSON files include `compass.json`, `db_content.json`, `views.json`, `task_import_asterix.json`, etc.

@@ -18,8 +18,9 @@
 #pragma once
 
 #include "configurable.h"
-#include "singleton.h"
 #include "buffer.h"
+
+class COMPASS;
 
 #include "gdal_priv.h"
 
@@ -36,26 +37,17 @@ class ProjectionManagerWidget;
 class Projection;
 class GeoProjection;
 
-class ProjectionManager : public Singleton, public Configurable
+class ProjectionManager : public Configurable
 {
-protected:
-    ProjectionManager();
-
 public:
-
+    ProjectionManager(nlohmann::json& config, COMPASS* parent);
     virtual ~ProjectionManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     ProjectionManagerWidget* widget();
     void deleteWidget();
 
-    static ProjectionManager& instance()
-    {
-        static ProjectionManager instance;
-        return instance;
-    }
     std::string currentProjectionName() const;
     void currentProjectionName(const std::string& name);
 
@@ -82,7 +74,10 @@ public:
 
     void test();
 
+    COMPASS& compass() { return compass_; }
+
 protected:
+    COMPASS& compass_;
 
     std::string current_projection_name_;
 

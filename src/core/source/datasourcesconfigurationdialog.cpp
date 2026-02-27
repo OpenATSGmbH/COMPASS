@@ -225,7 +225,7 @@ void DataSourcesConfigurationDialog::importClickedSlot()
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import Data Sources",
-                COMPASS::instance().lastUsedPath().c_str(), "*.json").toStdString();
+                ds_man_.compass().lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {
@@ -267,7 +267,7 @@ void DataSourcesConfigurationDialog::exportClickedSlot()
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export Data Sources as JSON",
-                COMPASS::instance().lastUsedPath().c_str(), "*.json").toStdString();
+                ds_man_.compass().lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {

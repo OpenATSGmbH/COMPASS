@@ -74,8 +74,10 @@ class ViewManager : public QObject, public Configurable
         bool automatic_redraw = true;
     };
 
-    ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    ViewManager(nlohmann::json& config, COMPASS& compass);
     virtual ~ViewManager();
+
+    COMPASS& compass() { return compass_; }
 
     void init(QTabWidget* main_tab_widget);
     void close();
@@ -88,13 +90,12 @@ class ViewManager : public QObject, public Configurable
 
     ViewContainerWidget* addNewContainerWidget();
 
-    // void deleteContainer (std::string instance_id);
-    void removeContainer(std::string instance_id);
-    void deleteContainerWidget(std::string instance_id);
-    void removeContainerWidget(std::string instance_id);
+    // void deleteContainer (std::string instance_name);
+    void removeContainer(std::string instance_name);
+    void deleteContainerWidget(std::string instance_name);
+    void removeContainerWidget(std::string instance_name);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void viewShutdown(View* view, const std::string& err = "");
 
@@ -136,9 +137,9 @@ class ViewManager : public QObject, public Configurable
 
     std::map<std::string, std::string> viewClassList() const;
 
-    unsigned int newViewNumber(const std::string& class_id);
-    std::string newViewInstanceId(const std::string& class_id);
-    std::string newViewName(const std::string& class_id);
+    unsigned int newViewNumber(const std::string& class_name);
+    std::string newViewInstanceId(const std::string& class_name);
+    std::string newViewName(const std::string& class_name);
 
     void disableDataDistribution(bool value);
     // disables propagation of data to the views. used when loading is performed for processing purposes

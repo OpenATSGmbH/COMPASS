@@ -28,6 +28,8 @@ namespace Utils {
 class TimeWindowCollection;
 }
 
+class DBContentManager;
+
 class TimeWindowCollectionWidget : public QWidget
 {
     Q_OBJECT
@@ -37,7 +39,9 @@ private slots:
     void editTimeWindow(QTreeWidgetItem* item);
 
 public:
-    explicit TimeWindowCollectionWidget(Utils::TimeWindowCollection& collection, QWidget* parent = nullptr);
+    explicit TimeWindowCollectionWidget(DBContentManager& dbcont_man,
+                                        Utils::TimeWindowCollection& collection,
+                                        QWidget* parent = nullptr);
 
     void refreshList();
 
@@ -48,6 +52,7 @@ private:
     QString timeWindowBeginToString(const Utils::TimeWindow& tw) const;
     QString timeWindowEndToString(const Utils::TimeWindow& tw) const;
 
+    DBContentManager& dbcont_man_;
     Utils::TimeWindowCollection& collection_;
     QTreeWidget* tree_widget_;
     QPushButton* add_button_;

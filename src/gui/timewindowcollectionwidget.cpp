@@ -19,7 +19,6 @@
 #include "timewindowdialog.h"
 #include "util/files.h"
 #include "util/timeconv.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 
 #include <QHBoxLayout>
@@ -28,8 +27,10 @@
 
 using namespace Utils;
 
-TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& collection, QWidget* parent)
-    : QWidget(parent), collection_(collection)
+TimeWindowCollectionWidget::TimeWindowCollectionWidget(DBContentManager& dbcont_man,
+                                                       TimeWindowCollection& collection,
+                                                       QWidget* parent)
+    : QWidget(parent), dbcont_man_(dbcont_man), collection_(collection)
 {
     //list_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -143,7 +144,7 @@ void TimeWindowCollectionWidget::addTimeWindow()
 {
     std::unique_ptr<TimeWindowDialog> dialog;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = dbcont_man_;
 
     if (dbcont_man.hasMinMaxTimestamp())
     {

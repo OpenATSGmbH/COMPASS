@@ -35,12 +35,9 @@ namespace EvaluationRequirement
 class GenericIntegerConfig : public ProbabilityBaseConfig
 {
 public:
-    GenericIntegerConfig(const std::string& class_id, 
-                         const std::string& instance_id, 
+    GenericIntegerConfig(nlohmann::json& config,
                          const std::string& variant,
-                         Group& group, 
-                         EvaluationStandard& standard, 
-                         EvaluationCalculator& calculator);
+                         Group* parent);
 
     std::shared_ptr<Base> createRequirement() override;
 
@@ -56,12 +53,9 @@ protected:
 class GenericDoubleConfig : public ProbabilityBaseConfig
 {
   public:
-    GenericDoubleConfig(const std::string& class_id, 
-                        const std::string& instance_id, 
+    GenericDoubleConfig(nlohmann::json& config,
                         const std::string& variant,
-                        Group& group, 
-                        EvaluationStandard& standard, 
-                        EvaluationCalculator& calculator);
+                        Group* parent);
 
     std::shared_ptr<Base> createRequirement() override;
 

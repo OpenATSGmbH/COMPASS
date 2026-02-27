@@ -33,6 +33,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/optional/optional.hpp>
 
+class COMPASS;
 class ViewContainer;
 class ViewWidget;
 class QQWidget;
@@ -76,10 +77,7 @@ public:
         UnknownError
     };
 
-    View(const std::string& class_id, 
-         const std::string& instance_id,
-         ViewContainer* container,
-         ViewManager& view_manager);
+    View(nlohmann::json& config, ViewContainer* parent);
     virtual ~View();
 
     bool init();
@@ -95,6 +93,7 @@ public:
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
     const std::string& getName() const;
+    ViewManager& viewManager() { return view_manager_; }
 
     /// @brief Returns the view's central widget
     QWidget* getCentralWidget() { return central_widget_; }
@@ -153,6 +152,9 @@ public slots:
     void selectionChangedSlot();
     virtual void unshowViewPointSlot (const ViewableDataConfig* vp)=0;
     virtual void showViewPointSlot (const ViewableDataConfig* vp)=0;
+
+    COMPASS& compass();
+    COMPASS& compass() const;
 
 protected:
     virtual void updateSelection() = 0;

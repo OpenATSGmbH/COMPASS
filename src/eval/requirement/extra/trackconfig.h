@@ -35,9 +35,8 @@ namespace EvaluationRequirement
     class ExtraTrackConfig : public ProbabilityBaseConfig
     {
     public:
-        ExtraTrackConfig(const std::string& class_id, const std::string& instance_id,
-                        Group& group, EvaluationStandard& standard,
-                        EvaluationCalculator& calculator);
+        ExtraTrackConfig(nlohmann::json& config,
+                         Group* parent);
         virtual ~ExtraTrackConfig();
 
         std::shared_ptr<Base> createRequirement() override;

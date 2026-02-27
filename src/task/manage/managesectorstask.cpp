@@ -34,10 +34,9 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace std;
 
-ManageSectorsTask::ManageSectorsTask(const std::string& class_id, const std::string& instance_id,
-                                     TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_manage_sectors.json")
+ManageSectorsTask::ManageSectorsTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     registerParameter("db_file_list", &file_list_, json::array());
     registerParameter("current_filename", &current_filename_, std::string());
@@ -89,13 +88,7 @@ void ManageSectorsTask::dialogDoneSlot()
     traced_assert(dialog_);
     dialog_->hide();
 
-    emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
-}
-
-void ManageSectorsTask::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
-{
-    throw std::runtime_error("ManageSectorsTask: generateSubConfigurable: unknown class_id " + class_id);
+    emit manager().compass().evaluationManager().sectorsChangedSignal();
 }
 
 bool ManageSectorsTask::hasFile(const std::string& filename) const
@@ -409,7 +402,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
     GDALClose(data_set);
 
     if (import)
-        emit COMPASS::instance().evaluationManager().sectorsChangedSignal();
+        emit manager().compass().evaluationManager().sectorsChangedSignal();
 
     if (dialog_)
         dialog_->updateParseMessage();
@@ -425,13 +418,13 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
 
     if (import)
     {
-        addLinearRing(sector_name+to_string(COMPASS::instance().evaluationManager().getMaxSectorId()+1), *ring, import);
+        addLinearRing(sector_name+to_string(manager().compass().evaluationManager().getMaxSectorId()+1), *ring, import);
 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
              traced_assert(ring);
-             addLinearRing(sector_name+to_string(COMPASS::instance().evaluationManager().getMaxSectorId()+1), *ring, import);
+             addLinearRing(sector_name+to_string(manager().compass().evaluationManager().getMaxSectorId()+1), *ring, import);
          }
     }
     else // no eval man call during ctor
@@ -488,7 +481,7 @@ void ManageSectorsTask::addSector (const std::string& sector_name, std::vector<s
     loginf << "layer '" << layer_name_ << "' name '" << sector_name
            << "' num points " << points.size();
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = manager().compass().evaluationManager();
 
     traced_assert(!eval_man.hasSector(sector_name, layer_name_));
 

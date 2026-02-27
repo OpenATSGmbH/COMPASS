@@ -40,21 +40,26 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(const std::string& class_id,
-                                                                 const std::string& instance_id,
-                                                                 TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_calc_radar_pos.json")
+RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(nlohmann::json& config,
+                                                                 TaskManager* parent,
+                                                                 COMPASS& compass)
+    : Task(*parent),
+      Configurable(config, parent),
+      compass_(compass),
+      dbcontent_man_(compass.dbContentManager())
 {
     tooltip_ =
             "Allows calculation of Radar plot position information based on the defined data sources.";
 
     qRegisterMetaType<std::shared_ptr<Buffer>>("std::shared_ptr<Buffer>");
-    // qRegisterMetaType<DBContent>("DBContent");
-
 }
 
 RadarPlotPositionCalculatorTask::~RadarPlotPositionCalculatorTask() {}
+
+ProjectionManager& RadarPlotPositionCalculatorTask::projectionManager()
+{
+    return compass_.projectionManager();
+}
 
 void RadarPlotPositionCalculatorTask::showDialog()
 {
@@ -69,7 +74,7 @@ void RadarPlotPositionCalculatorTask::showDialog()
 
 bool RadarPlotPositionCalculatorTask::canRun()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbcontent_man_;
 
     if (!dbcont_man.existsDBContent("CAT001")
             && !dbcont_man.existsDBContent("CAT010")
@@ -82,7 +87,7 @@ bool RadarPlotPositionCalculatorTask::canRun()
         return false;
 
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& db_srcs =
-            COMPASS::instance().dataSourceManager().dbDataSources();
+            compass_.dataSourceManager().dbDataSources();
 
     bool found_radar_with_data = false;
     for (const auto& src : db_srcs)
@@ -106,23 +111,23 @@ void RadarPlotPositionCalculatorTask::run()
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    COMPASS::instance().logInfo("Radar Plot Position Calculation")
+    compass_.logInfo("Radar Plot Position Calculation")
         << "started";
 
     // set up projections
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
     projection.clearCoordinateSystems(); // to rebuild from data sources
     projection.addAllCoordinateSystems();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     dbcontent_man.clearData();
     dbcontent_done_.clear();
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    compass_.viewManager().disableDataDistribution(true);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
@@ -167,7 +172,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 {
     loginf << "starting calculation";
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
                this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
@@ -176,9 +181,9 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 
     dbcontent_man.clearData();
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    compass_.viewManager().disableDataDistribution(false);
 
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     std::pair<unsigned int, std::map<std::string, std::shared_ptr<Buffer>>> result_buffers =
             proj_man.doUpdateRadarPlotPositionCalculations (data_);
@@ -194,7 +199,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     traced_assert(msg_box_);
     delete msg_box_;
 
-    COMPASS::instance().logInfo("Radar Plot Position Calculation")
+    compass_.logInfo("Radar Plot Position Calculation")
         << transformation_errors << " transformation errors";
 
     if (transformation_errors)
@@ -217,7 +222,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
             loginf << "aborted by user because of "
                       "transformation errors";
 
-            COMPASS::instance().logInfo("Radar Plot Position Calculation") << "save declined";
+            compass_.logInfo("Radar Plot Position Calculation") << "save declined";
 
             return;
         }
@@ -294,7 +299,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         delete msg_box_;
         msg_box_ = nullptr;
 
-        COMPASS::instance().logInfo("Radar Plot Position Calculation")
+        compass_.logInfo("Radar Plot Position Calculation")
             << "finished after "
             << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, false);
 
@@ -309,7 +314,7 @@ bool RadarPlotPositionCalculatorTask::isCalculating() { return calculating_; }
 
 dbContent::VariableSet RadarPlotPositionCalculatorTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     VariableSet read_set;
 

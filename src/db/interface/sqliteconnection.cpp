@@ -39,10 +39,11 @@ using namespace Utils;
 
 /**
  */
-SQLiteConnection::SQLiteConnection(SQLiteInstance* instance,
-                                   sqlite3* db_handle, 
+SQLiteConnection::SQLiteConnection(DBContentManager& dbcont_man,
+                                   SQLiteInstance* instance,
+                                   sqlite3* db_handle,
                                    bool verbose)
-:   DBConnection(instance, verbose)
+:   DBConnection(dbcont_man, instance, verbose)
 ,   db_handle_  (db_handle)
 {
     traced_assert(db_handle);

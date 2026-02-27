@@ -40,31 +40,23 @@ using namespace dbContent;
 
 const std::string CreateARTASAssociationsTask::DONE_PROPERTY_NAME = "artas_associations_created"; // really needed
 
-CreateARTASAssociationsTask::CreateARTASAssociationsTask(const std::string& class_id,
-                                                         const std::string& instance_id,
-                                                         TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_calc_artas_assoc.json")
+CreateARTASAssociationsTask::CreateARTASAssociationsTask(nlohmann::json& config,
+                                                         TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     tooltip_ = "Allows creation of target report association based on ARTAS tracks and the TRI "
                "information.";
 
     registerParameter("current_data_source_name", &settings_.current_data_source_name_, Settings().current_data_source_name_);
     registerParameter("current_data_source_line_id", &settings_.current_data_source_line_id_, Settings().current_data_source_line_id_);
-
-    // time stuff
     registerParameter("end_track_time", &settings_.end_track_time_, Settings().end_track_time_);
-
     registerParameter("association_time_past", &settings_.association_time_past_, Settings().association_time_past_);
     registerParameter("association_time_future", &settings_.association_time_future_, Settings().association_time_future_);
-
     registerParameter("misses_acceptable_time", &settings_.misses_acceptable_time_, Settings().misses_acceptable_time_);
-
     registerParameter("associations_dubious_distant_time", &settings_.associations_dubious_distant_time_, Settings().associations_dubious_distant_time_);
     registerParameter("association_dubious_close_time_past", &settings_.association_dubious_close_time_past_, Settings().association_dubious_close_time_past_);
     registerParameter("association_dubious_close_time_future", &settings_.association_dubious_close_time_future_, Settings().association_dubious_close_time_future_);
-
-    // track flag stuff
     registerParameter("ignore_track_end_associations", &settings_.ignore_track_end_associations_, Settings().ignore_track_end_associations_);
     registerParameter("mark_track_end_associations_dubious", &settings_.mark_track_end_associations_dubious_, Settings().mark_track_end_associations_dubious_);
     registerParameter("ignore_track_coasting_associations", &settings_.ignore_track_coasting_associations_, Settings().ignore_track_coasting_associations_);
@@ -87,8 +79,8 @@ void CreateARTASAssociationsTask::showDialog()
 
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
     logdbg << "tracker " << dbcontent_man.existsDBContent("CAT062");
 
@@ -201,12 +193,12 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->setAssociationStatus("Loading Data");
     status_dialog_->show();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
     dbcontent_man.clearData();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    manager().compass().viewManager().disableDataDistribution(true);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
@@ -262,8 +254,8 @@ void CreateARTASAssociationsTask::run()
 
 bool CreateARTASAssociationsTask::wasRun()
 {
-    return COMPASS::instance().dbInterface().hasProperty(DONE_PROPERTY_NAME)
-             && COMPASS::instance().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
+    return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
+             && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
 }
 
 void CreateARTASAssociationsTask::loadedDataDataSlot(
@@ -282,7 +274,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     traced_assert(!create_job_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
@@ -291,10 +283,10 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     dbcontent_man.clearData();
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    manager().compass().viewManager().disableDataDistribution(false);
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
-                *this, COMPASS::instance().dbInterface(), data_);
+                *this, manager().compass().dbInterface(), data_);
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
@@ -306,7 +298,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
             this, &CreateARTASAssociationsTask::saveAssociationsQuestionSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(create_job_);
+    manager().compass().jobManager().addDBJob(create_job_);
 
     status_dialog_->setAssociationStatus("In Progress");
 }
@@ -350,9 +342,9 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     if (save_associations_)
     {
-        COMPASS::instance().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
+        manager().compass().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
 
-        COMPASS::instance().dbInterface().saveProperties();
+        manager().compass().dbInterface().saveProperties();
 
         done_ = true;
     }
@@ -524,7 +516,7 @@ void CreateARTASAssociationsTask::markTrackCoastingAssociationsDubious(bool valu
 
 VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
     VariableSet read_set;
 

@@ -317,7 +317,7 @@ ViewDataWidget::DrawState ViewDataWidget::redrawData(bool recompute, bool notify
         if (nanCount().has_value() && nanCount().value() > 0)
         {
             logerr << "start" << nanCount().value() << " inf value(s) detected "
-                   << "in view " << getWidget()->getView()->instanceId();
+                   << "in view " << getWidget()->getView()->instanceName();
         }
     }
 

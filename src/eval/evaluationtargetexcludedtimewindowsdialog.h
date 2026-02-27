@@ -21,17 +21,21 @@
 
 #include "timewindowcollectionwidget.h"
 
+class DBContentManager;
+
 class EvaluationTargetExcludedTimeWindowsDialog : public QDialog
 {
     Q_OBJECT
 
 public:
     EvaluationTargetExcludedTimeWindowsDialog(
+        DBContentManager& dbcont_man,
         const std::string utn_str,
         Utils::TimeWindowCollection& collection, QWidget* parent=nullptr);
     virtual ~EvaluationTargetExcludedTimeWindowsDialog() = default;
 
 protected:
+    DBContentManager& dbcont_man_;
     Utils::TimeWindowCollection& collection_;
 
     TimeWindowCollectionWidget* tw_widget_{nullptr};

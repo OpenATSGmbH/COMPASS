@@ -30,6 +30,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/optional.hpp>
 
+class DBContentManager;
 class DBInterface;
 class DBConnection;
 class DBConnectionWrapper;
@@ -83,8 +84,10 @@ public:
 
     std::string dbInfo();
 
+    DBContentManager& dbContentManager();
+
     static const std::string InMemFilename;
-    
+
 protected:
     DBInterface& interface() { return interface_; }
     const DBInterface& interface() const { return interface_; }

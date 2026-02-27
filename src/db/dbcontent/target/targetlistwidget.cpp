@@ -294,7 +294,7 @@ void TargetListWidget::evalFilterSlot()
 {
     loginf;
 
-    EvaluationTargetFilterDialog dialog (COMPASS::instance().evaluationManager().targetFilter(), model_);
+    EvaluationTargetFilterDialog dialog (dbcont_manager_.compass().evaluationManager().targetFilter(), model_);
     dialog.exec();
 }
 
@@ -327,12 +327,12 @@ void TargetListWidget::evalEditGlobalExcludeTimeWindowsSlot()
 {
     loginf;
 
-    EvaluationTimestampConditionsDialog dialog (COMPASS::instance().evaluationManager());
+    EvaluationTimestampConditionsDialog dialog (dbcont_manager_.compass().evaluationManager());
     dialog.exec();
 
     if (dialog.somethingChangedFlag())
     {
-        COMPASS::instance().evaluationManager().saveTimeConstraints();
+        dbcont_manager_.compass().evaluationManager().saveTimeConstraints();
 
         emit model_.targetEvalFullChangeSignal();
 
@@ -364,7 +364,7 @@ void TargetListWidget::customContextMenuSlot(const QPoint& p)
 
 void TargetListWidget::showSurroundingDataSlot ()
 {
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
 
     while (dbcont_man.loadInProgress())
     {
@@ -429,7 +429,7 @@ void TargetListWidget::createTargetEvalMenu(QMenu& menu,
 {
     bool  target_ok        = model_.existsTarget(target.utn_);
     auto  target_ptr       = &target;
-    auto& eval_man         = COMPASS::instance().evaluationManager();
+    auto& eval_man         = dbcont_manager_.compass().evaluationManager();
     auto  all_requirements = eval_man.hasCurrentStandard() ? eval_man.currentStandard().getAllRequirementNames() : std::set<std::string>();
     bool  has_requirement  = all_requirements.count(req_name) > 0;
     bool  has_timewin      = !target.timeBegin().is_not_a_date_time() &&
@@ -497,7 +497,7 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
 {
     loginf;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
 
     Utils::TimeWindowCollection filtered_time_windows;
 
@@ -525,7 +525,8 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
         }
     }
 
-    EvaluationTargetExcludedTimeWindowsDialog dialog(String::compress(utns, ','),
+    EvaluationTargetExcludedTimeWindowsDialog dialog(dbcont_manager_,
+                                                     String::compress(utns, ','),
                                                      filtered_time_windows);
     int result = dialog.exec();
 
@@ -543,8 +544,8 @@ void TargetListWidget::evalExcludeRequirementsTarget(const std::set<unsigned int
 {
     loginf;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
-    auto& eval_man = COMPASS::instance().evaluationManager();
+    auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
+    auto& eval_man = dbcont_manager_.compass().evaluationManager();
 
     if (!eval_man.hasCurrentStandard())
     {
@@ -625,7 +626,7 @@ void TargetListWidget::evalExcludeRequirementTarget(const Target& target,
 
 void TargetListWidget::evalExcludeAllRequirementsTarget(const Target& target)
 {
-    auto& eval_man         = COMPASS::instance().evaluationManager();
+    auto& eval_man         = dbcont_manager_.compass().evaluationManager();
     auto  all_requirements = eval_man.currentStandard().getAllRequirementNames();
 
     evalExcludeRequirementsTarget({ target.utn_ }, &all_requirements);

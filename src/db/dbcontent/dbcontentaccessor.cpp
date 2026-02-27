@@ -16,7 +16,6 @@
  */
 
 #include "dbcontentaccessor.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
@@ -34,7 +33,8 @@ namespace dbContent
 
 /**
 */
-DBContentAccessor::DBContentAccessor()
+DBContentAccessor::DBContentAccessor(DBContentManager& dbcont_man)
+    : dbcont_man_(dbcont_man)
 {
 }
 
@@ -87,8 +87,6 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
 
     unsigned int buffer_size;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
 #if DO_RECONSTRUCTOR_PEDANTIC_CHECKING
     loginf << "remove_before_time "
            << Time::toString(remove_before_time);
@@ -107,9 +105,9 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
             continue;
         }
 
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        traced_assert(dbcont_man_.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
 
-        dbContent::Variable& ts_var = dbcont_man.metaVariable(
+        dbContent::Variable& ts_var = dbcont_man_.metaVariable(
                                                     DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
 
         Property ts_prop {ts_var.name(), ts_var.dataType()};
@@ -282,7 +280,7 @@ void DBContentAccessor::updateDBContentLookup()
         //generate lookup for buffer's dbcontent
         auto& lookup = dbcontent_lookup_[buf_it.first];
         lookup = std::shared_ptr<DBContentVariableLookup>(new DBContentVariableLookup(buf_it.first, buf_it.second));
-        lookup->update(COMPASS::instance().dbContentManager());
+        lookup->update(dbcont_man_);
     }
 }
 

@@ -50,9 +50,12 @@
 using namespace std;
 using namespace Utils;
 
-ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
-                                                     ViewManager& view_manager)
-    : Configurable(class_id, instance_id, &view_manager), view_manager_(view_manager)
+// ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_name, const std::string& instance_name,
+//                                                      ViewManager& view_manager)
+//     : Configurable(class_name, instance_name, &view_manager), view_manager_(view_manager)
+
+ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent)
+    : Configurable(config, parent), view_manager_(*parent)
 {
     registerParameter("author", &author_, std::string());
 
@@ -63,11 +66,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
 
     registerParameter("abstract", &abstract_, std::string());
 
-    //@TODO: remove?
-    //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&COMPASS::instance().dbInterface().connection());
-    //assert (db_con);
-
-    string current_filename = COMPASS::instance().lastDbFilename();
+    string current_filename = view_manager_.compass().lastDbFilename();
 
     report_path_ = Files::getDirectoryFromPath(current_filename)+"/report_"
                 + Files::getFilenameFromPath(current_filename) + "/";
@@ -87,7 +86,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
     registerParameter("run_pdflatex", &run_pdflatex_, true);
     registerParameter("open_created_pdf", &open_created_pdf_, false);
 
-    pdflatex_found_ = COMPASS::instance().pdflatexFound();
+    pdflatex_found_ = view_manager_.compass().pdflatexFound();
 
     if (!pdflatex_found_)
     {
@@ -97,17 +96,6 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
 }
 
 
-void ViewPointsReportGenerator::generateSubConfigurable(const std::string& class_id,
-                                                        const std::string& instance_id)
-{
-    throw std::runtime_error("ViewPointsReportGenerator: generateSubConfigurable: unknown class_id " +
-                             class_id);
-}
-
-void ViewPointsReportGenerator::checkSubConfigurables()
-{
-    // move along sir
-}
 
 
 ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()
@@ -127,7 +115,7 @@ void ViewPointsReportGenerator::run ()
 
     try
     {
-        LatexDocument doc (report_path_, report_filename_);
+        LatexDocument doc (view_manager_.compass(), report_path_, report_filename_);
         doc.title("View Points Report");
 
         if (author_.size())
@@ -166,7 +154,7 @@ void ViewPointsReportGenerator::run ()
             vp_ids = vp_widget->viewedViewPoints();
 
         string status_str, elapsed_time_str, remaining_time_str;
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = view_manager_.compass().dbContentManager();
 
         unsigned int vp_cnt = 0;
         unsigned int vp_size = vp_ids.size();

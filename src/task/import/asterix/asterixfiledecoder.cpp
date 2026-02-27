@@ -31,9 +31,10 @@ using namespace nlohmann;
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
 */
-ASTERIXFileDecoder::ASTERIXFileDecoder(ASTERIXImportSource& source,
+ASTERIXFileDecoder::ASTERIXFileDecoder(ASTERIXImportTask& task,
+                                       ASTERIXImportSource& source,
                                        const ASTERIXImportTaskSettings* settings)
-:   ASTERIXDecoderFile(ASTERIXImportSource::SourceType::FileASTERIX, source, settings)
+:   ASTERIXDecoderFile(task, ASTERIXImportSource::SourceType::FileASTERIX, source, settings)
 {
 }
 

@@ -54,7 +54,7 @@ TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
     tab_widget_ = new QTabWidget();
     layout->addWidget(tab_widget_);
 
-    for (auto& obj_it : COMPASS::instance().dbContentManager())
+    for (auto& obj_it : view_->compass().dbContentManager())
     {
         if (!all_buffer_table_widget_)
         {

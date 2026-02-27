@@ -68,18 +68,18 @@ bool RTCommandImportViewPointsFile::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
-    ViewPointsImportTask& vp_import_task = COMPASS::instance().taskManager().viewPointsImportTask();
+    ViewPointsImportTask& vp_import_task = compass_->taskManager().viewPointsImportTask();
 
     vp_import_task.importFilename(filename_);
 
@@ -212,19 +212,19 @@ bool RTCommandImportASTERIXFile::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     try
@@ -289,7 +289,7 @@ bool RTCommandImportASTERIXFile::run_impl()
 
 bool RTCommandImportASTERIXFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -410,19 +410,19 @@ bool RTCommandImportASTERIXFiles::run_impl()
         }
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -501,7 +501,7 @@ bool RTCommandImportASTERIXFiles::run_impl()
 
 bool RTCommandImportASTERIXFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -608,19 +608,19 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     try
@@ -677,7 +677,7 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
 
 bool RTCommandImportASTERIXPCAPFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -776,19 +776,19 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
         }
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -852,7 +852,7 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
 
 bool RTCommandImportASTERIXPCAPFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -927,31 +927,31 @@ rtcommand::IsValid  RTCommandImportASTERIXNetworkStart::valid() const
 
 bool RTCommandImportASTERIXNetworkStart::run_impl()
 {
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    bool db_opened = COMPASS::instance().dbOpened();
+    bool db_opened = compass_->dbOpened();
     assert (db_opened);
-    bool db_inmem  = COMPASS::instance().dbInMem();
+    bool db_inmem  = compass_->dbInMem();
 
-    std::string current_db_filename = (db_opened && !db_inmem) ? COMPASS::instance().lastDbFilename() : "";
+    std::string current_db_filename = (db_opened && !db_inmem) ? compass_->lastDbFilename() : "";
 
-    bool use_db_in_mem = COMPASS::instance().dbInterface().useLiveInMemDB();
+    bool use_db_in_mem = compass_->dbInterface().useLiveInMemDB();
 
     if (use_db_in_mem)
     {
         //close current db
         if (db_opened)
-            COMPASS::instance().mainWindow().closeDBSlot();
+            compass_->mainWindow().closeDBSlot();
 
         //create in-memory db for live mode
-        COMPASS::instance().mainWindow().createInMemoryDB(current_db_filename);
+        compass_->mainWindow().createInMemoryDB(current_db_filename);
     }
 
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     try
     {
@@ -1028,19 +1028,19 @@ RTCommandImportASTERIXNetworkStop::RTCommandImportASTERIXNetworkStop()
 
 bool RTCommandImportASTERIXNetworkStop::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() == AppMode::Offline) // to be sure
+    if (compass_->appMode() == AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = COMPASS::instance().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1094,19 +1094,19 @@ bool RTCommandImportJSONFile::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    JSONImportTask& import_task = COMPASS::instance().taskManager().jsonImporterTask();
+    JSONImportTask& import_task = compass_->taskManager().jsonImporterTask();
 
     import_task.importFilename(filename_);
 
@@ -1165,19 +1165,19 @@ bool RTCommandImportGPSTrail::run_impl()
         return false;
     }
 
-    if (!COMPASS::instance().dbOpened())
+    if (!compass_->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (compass_->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 
-    GPSTrailImportTask& import_task = COMPASS::instance().taskManager().gpsTrailImportTask();
+    GPSTrailImportTask& import_task = compass_->taskManager().gpsTrailImportTask();
 
     //deactivate extra information
     import_task.useTodOffset(false);

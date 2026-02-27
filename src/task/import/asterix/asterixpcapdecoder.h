@@ -27,7 +27,8 @@
 class ASTERIXPCAPDecoder : public ASTERIXDecoderFile
 {
 public:
-    ASTERIXPCAPDecoder(ASTERIXImportSource& source,
+    ASTERIXPCAPDecoder(ASTERIXImportTask& task,
+                       ASTERIXImportSource& source,
                        const ASTERIXImportTaskSettings* settings = nullptr);
     virtual ~ASTERIXPCAPDecoder();
 

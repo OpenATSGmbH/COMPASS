@@ -51,15 +51,23 @@
 using namespace Utils;
 using namespace std;
 
-ViewContainer::ViewContainer(const std::string& class_id, 
-                             const std::string& instance_id,
-                             Configurable* parent, 
-                             ViewManager* view_manager,
-                             QTabWidget* tab_widget, 
+// ViewContainer::ViewContainer(const std::string& class_name,
+//                              const std::string& instance_name,
+//                              Configurable* parent,
+//                              ViewManager* view_manager,
+//                              QTabWidget* tab_widget,
+//                              int window_cnt)
+//     : QObject(),
+//       Configurable(class_name, instance_name, parent),
+//       view_manager_(*view_manager),
+
+ViewContainer::ViewContainer(nlohmann::json& config,
+                             ViewManager& view_manager,
+                             QTabWidget* tab_widget,
                              int window_cnt)
     : QObject(),
-      Configurable(class_id, instance_id, parent),
-      view_manager_(*view_manager),
+      Configurable(config, &view_manager),
+      view_manager_(view_manager),
       tab_widget_(tab_widget),
       window_cnt_(window_cnt)
 {
@@ -68,7 +76,7 @@ ViewContainer::ViewContainer(const std::string& class_id,
 
     creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
 
-    disable_add_remove_views_ = COMPASS::instance().disableAddRemoveViews();
+    disable_add_remove_views_ = view_manager_.compass().disableAddRemoveViews();
 
     if (window_cnt != 0)
     {
@@ -93,25 +101,26 @@ ViewContainer::~ViewContainer()
 {
     logdbg;
 
-    view_manager_.removeContainer(instanceId());
+    view_manager_.removeContainer(instanceName());
 
     logdbg << "views list";
     for (auto& view : views_)
-        logdbg << "view " << view->instanceId();
+        logdbg << "view " << view->instanceName();
 
     views_.clear();
 
     logdbg << "done";
 }
 
-void ViewContainer::addView(const std::string& class_id)
+void ViewContainer::addView(const std::string& class_name)
 {
     traced_assert(!disable_add_remove_views_);
 
-    auto config = Configuration::create(class_id, view_manager_.newViewInstanceId(class_id),
-                          view_manager_.newViewName(class_id));
-
-    generateSubConfigurableFromConfig(std::move(config));
+    std::string instance_name = view_manager_.newViewInstanceId(class_name);
+    std::string view_name = view_manager_.newViewName(class_name);
+    auto& child_json = addNewSubConfiguration(class_name, instance_name);
+    child_json[Configuration::ParameterSection]["name"] = view_name;
+    generateSubConfigurable(child_json);
 }
 
 void ViewContainer::enableViewTab(QWidget* widget, bool value)
@@ -164,14 +173,14 @@ void ViewContainer::addView(View* view)
     manage_button->setFixedSize(UI_ICON_SIZE);
     manage_button->setFlat(UI_ICON_BUTTON_FLAT);
     manage_button->setToolTip(tr("Manage view"));
-    manage_button->setProperty("view_instance_id", view->instanceId().c_str());
+    manage_button->setProperty("view_instance_name", view->instanceName().c_str());
     manage_button->setDisabled(disable_add_remove_views_);
     connect(manage_button, SIGNAL(clicked()), this, SLOT(showViewMenuSlot()));
     tab_widget_->tabBar()->setTabButton(index, QTabBar::RightSide, manage_button);
 
     //in localbuild we show some info about how the view is reachable via rtcommands
 #if USE_EXPERIMENTAL_SOURCE == true
-    if (!COMPASS::instance().isAppImage())
+    if (!view_manager_.compass().isAppImage())
     {
         QString tt = rtcommand::getTooltip(view->getViewWidget(), view);
         tab_widget_->setTabToolTip(index, tt);
@@ -186,13 +195,13 @@ void ViewContainer::deleteViewSlot()
     QAction* action = dynamic_cast<QAction*>(sender());
     traced_assert(action);
 
-    QVariant instance_id_var = action->property("view_instance_id");
-    traced_assert(instance_id_var.isValid());
+    QVariant instance_name_var = action->property("view_instance_name");
+    traced_assert(instance_name_var.isValid());
 
-    string instance_id = instance_id_var.toString().toStdString();
+    string instance_name = instance_name_var.toString().toStdString();
 
     auto iter = std::find_if(views_.begin(), views_.end(),
-                             [&instance_id](const unique_ptr<View>& x) { return x->instanceId() == instance_id;});
+                             [&instance_name](const unique_ptr<View>& x) { return x->instanceName() == instance_name;});
 
     traced_assert(iter != views_.end());
 
@@ -211,19 +220,19 @@ void ViewContainer::addNewViewSlot()
 
     string location = location_var.toString().toStdString();
 
-    QVariant class_id_var = action->property("class_id");
-    traced_assert(class_id_var.isValid());
+    QVariant class_name_var = action->property("class_name");
+    traced_assert(class_name_var.isValid());
 
-    string class_id = class_id_var.toString().toStdString();
+    string class_name = class_name_var.toString().toStdString();
 
-    loginf << "location " << location << " class_id " << class_id;
+    loginf << "location " << location << " class_name " << class_name;
 
     if (location == "here")
-        addView(class_id);
+        addView(class_name);
     else if (location == "new")
     {
         ViewContainerWidget* container_widget = view_manager_.addNewContainerWidget();
-        container_widget->viewContainer().addView(class_id);
+        container_widget->viewContainer().addView(class_name);
     }
     else
         logerr << "unknown location '" << location << "'";
@@ -231,42 +240,43 @@ void ViewContainer::addNewViewSlot()
 
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }
 
-void ViewContainer::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void ViewContainer::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "TableView")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "TableView")
     {
-        views_.emplace_back(new TableView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new TableView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
-    else if (class_id == "HistogramView")
+    else if (class_name == "HistogramView")
     {
-        views_.emplace_back(new HistogramView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new HistogramView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
-    else if (class_id == "ScatterPlotView")
+    else if (class_name == "ScatterPlotView")
     {
-        views_.emplace_back(new ScatterPlotView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new ScatterPlotView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
-    else if (class_id == "GridView")
+    else if (class_name == "GridView")
     {
-        views_.emplace_back(new GridView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new GridView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
     }
-    else if (class_id == "GeographicView")
+    else if (class_name == "GeographicView")
     {
 #if USE_EXPERIMENTAL_SOURCE == true
 
-        views_.emplace_back(new GeographicView(class_id, instance_id, this, view_manager_));
+        views_.emplace_back(new GeographicView(child_json, this));
 
         (*views_.rbegin())->init();
         addView(views_.rbegin()->get());
@@ -275,10 +285,10 @@ void ViewContainer::generateSubConfigurable(const std::string& class_id,
 #endif
 
     }
-    //  else if (class_id.compare ("MosaicView") == 0)
+    //  else if (class_name.compare ("MosaicView") == 0)
     //  {
-    //    MosaicView* view = new MosaicView ( class_id, instance_id, this );
-    //    unsigned int number = getAppendedInt (instance_id);
+    //    MosaicView* view = new MosaicView ( class_name, instance_name, this );
+    //    unsigned int number = getAppendedInt (instance_name);
     //    if (number >= view_count_)
     //      view_count_ = number+1;
 
@@ -286,8 +296,8 @@ void ViewContainer::generateSubConfigurable(const std::string& class_id,
     //    view->init();
     //  }
     else
-        throw std::runtime_error("ViewContainer: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ViewContainer: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 void ViewContainer::checkSubConfigurables()
@@ -315,7 +325,7 @@ void ViewContainer::showAddViewMenuSlot()
     {
         QAction* action = here_menu->addAction(class_it.second.c_str());
         action->setProperty("location", "here");
-        action->setProperty("class_id", class_it.first.c_str());
+        action->setProperty("class_name", class_it.first.c_str());
         connect (action, &QAction::triggered, this, &ViewContainer::addNewViewSlot);
     }
 
@@ -324,7 +334,7 @@ void ViewContainer::showAddViewMenuSlot()
     {
         QAction* action = new_menu->addAction(class_it.second.c_str());
         action->setProperty("location", "new");
-        action->setProperty("class_id", class_it.first.c_str());
+        action->setProperty("class_name", class_it.first.c_str());
         connect (action, &QAction::triggered, this, &ViewContainer::addNewViewSlot);
     }
 
@@ -341,15 +351,15 @@ void ViewContainer::showViewMenuSlot()
     QPushButton* button = dynamic_cast<QPushButton*>(sender());
     traced_assert(button);
 
-    QVariant instance_id_var = button->property("view_instance_id");
-    traced_assert(instance_id_var.isValid());
+    QVariant instance_name_var = button->property("view_instance_name");
+    traced_assert(instance_name_var.isValid());
 
-    string instance_id = instance_id_var.toString().toStdString();
+    string instance_name = instance_name_var.toString().toStdString();
 
     QMenu menu;
 
     QAction* delete_action = menu.addAction(tr("Close"));
-    delete_action->setProperty("view_instance_id", instance_id.c_str());
+    delete_action->setProperty("view_instance_name", instance_name.c_str());
     connect(delete_action, SIGNAL(triggered()), this, SLOT(deleteViewSlot()));
 
     menu.exec(QCursor::pos());

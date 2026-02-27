@@ -16,13 +16,13 @@
  */
 
 #include "dbcontent/variable/variableeditdialog.h"
+#include "compass.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
 #include "stringrepresentationcombobox.h"
 #include "unitselectionwidget.h"
 //#include "stringconv.h"
 #include "dbcontent/dbcontent.h"
-#include "compass.h"
 #include "logger.h"
 
 #include <QLineEdit>
@@ -45,7 +45,7 @@ namespace dbContent
 VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::WindowFlags f)
     : QDialog(parent, f), variable_(variable)
 {
-    expert_mode_ = COMPASS::instance().expertMode();
+    expert_mode_ = variable_.dbContent().compass().expertMode();
 
     setWindowFlags(Qt::Window | Qt::WindowTitleHint); //  | Qt::CustomizeWindowHint
 
@@ -91,7 +91,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
     form_layout->addRow("Data Type", type_combo_);
 
     //    UnitSelectionWidget* unit_sel_ {nullptr};
-    unit_sel_ = new UnitSelectionWidget(variable_.dimension(), variable_.unit());
+    unit_sel_ = new UnitSelectionWidget(variable_.dbContent().compass().unitManager(), variable_.dimension(), variable_.unit());
     unit_sel_->setEnabled(expert_mode_);
     form_layout->addRow("Unit", unit_sel_);
 
@@ -138,7 +138,7 @@ void VariableEditDialog::nameChangedSlot(const QString& name)
 
     if (!new_name.size())
     {
-        name_edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+        name_edit_->setStyleSheet(variable_.dbContent().compass().lineEditInvalidStyle());
         return;
     }
 
@@ -146,7 +146,7 @@ void VariableEditDialog::nameChangedSlot(const QString& name)
     {
         logwrn << "name '" << new_name << "' already in use";
 
-        name_edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+        name_edit_->setStyleSheet(variable_.dbContent().compass().lineEditInvalidStyle());
         name_edit_->setToolTip(("Variable name '"+new_name+"' already in use").c_str());
         return;
     }
@@ -204,7 +204,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
 
     if (!new_name.size())
     {
-        db_column_edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+        db_column_edit_->setStyleSheet(variable_.dbContent().compass().lineEditInvalidStyle());
         return;
     }
 
@@ -212,7 +212,7 @@ void VariableEditDialog::dbColumnChangedSlot(const QString& name)
     {
         logwrn << "name '" << new_name << "' already in use";
 
-        db_column_edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+        db_column_edit_->setStyleSheet(variable_.dbContent().compass().lineEditInvalidStyle());
         db_column_edit_->setToolTip(("Variable DB Column name '"+new_name+"' already in use").c_str());
         return;
     }

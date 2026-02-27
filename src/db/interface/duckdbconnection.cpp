@@ -48,8 +48,8 @@
 
 /**
  */
-DuckDBConnection::DuckDBConnection(DuckDBInstance* instance, bool verbose)
-:   DBConnection(instance, verbose)
+DuckDBConnection::DuckDBConnection(DBContentManager& dbcont_man, DuckDBInstance* instance, bool verbose)
+:   DBConnection(dbcont_man, instance, verbose)
 {
     //loginf;
 }

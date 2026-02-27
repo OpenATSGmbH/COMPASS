@@ -30,54 +30,8 @@
 using namespace Utils;
 using namespace nlohmann;
 
-JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string& instance_id,
-                                 Configurable& parent)
-    : Configurable(class_id, instance_id, &parent)
-{
-    logdbg2 << "this " << this;
-
-    registerParameter("active", &active_, false);
-    registerParameter("json_key", &json_key_, std::string());
-
-    registerParameter("db_content_name", &db_content_name_, std::string());
-    registerParameter("db_content_variable_name", &dbcontent_variable_name_, std::string());
-
-    registerParameter("comment", &comment_, std::string());
-
-    registerParameter("mandatory", &mandatory_, false);
-
-    registerParameter("format_data_type", &format_data_type_, std::string());
-    registerParameter("json_value_format", (std::string*)&json_value_format_, std::string());
-
-//    if (format_data_type_.size())
-//    {
-//        logdbg2 << "setting format from dt " << format_data_type_
-//               << " format " << json_value_format_;
-//        json_value_format_ = Format(Property::asDataType(format_data_type_), json_value_format_);
-//    }
-
-    registerParameter("dimension", &dimension_, std::string());
-    registerParameter("unit", &unit_, std::string());
-
-    registerParameter("in_array", &in_array_, false);
-    registerParameter("append_value", &append_value_, false);
-
-    logdbg2 << "dbcont " << db_content_name_ << " var " << dbcontent_variable_name_
-           << " dim " << dimension_ << " unit " << unit_;
-
-    sub_keys_ = Utils::String::split(json_key_, '.');
-    has_sub_keys_ = sub_keys_.size() > 1;
-    num_sub_keys_ = sub_keys_.size();
-
-    if (sub_keys_.size())
-        last_key_ = sub_keys_.end() - 1;
-    if (sub_keys_.size() > 1)
-        second_to_last_key_ = sub_keys_.end() - 2;
-
-    logdbg2 << "key " << json_key_ << " num subkeys " << sub_keys_.size();
-
-    createSubConfigurables();
-}
+// Legacy constructor removed — use json-backed constructor below
+// JSONDataMapping::JSONDataMapping(... Configurable& parent) { ... }
 
 //JSONDataMapping& JSONDataMapping::operator=(JSONDataMapping&& other)
 //{
@@ -131,6 +85,42 @@ JSONDataMapping::JSONDataMapping(const std::string& class_id, const std::string&
 //    return static_cast<JSONDataMapping&>(Configurable::operator=(std::move(other)));
 //}
 
+JSONDataMapping::JSONDataMapping(nlohmann::json& config, Configurable* parent, COMPASS& compass)
+    : Configurable(config, parent), compass_(compass)
+{
+    logdbg2 << "this " << this << " (json-backed)";
+
+    registerParameter("active", &active_, false);
+    registerParameter("json_key", &json_key_, std::string());
+
+    registerParameter("db_content_name", &db_content_name_, std::string());
+    registerParameter("db_content_variable_name", &dbcontent_variable_name_, std::string());
+
+    registerParameter("comment", &comment_, std::string());
+
+    registerParameter("mandatory", &mandatory_, false);
+
+    registerParameter("format_data_type", &format_data_type_, std::string());
+    registerParameter("json_value_format", (std::string*)&json_value_format_, std::string());
+
+    registerParameter("dimension", &dimension_, std::string());
+    registerParameter("unit", &unit_, std::string());
+
+    registerParameter("in_array", &in_array_, false);
+    registerParameter("append_value", &append_value_, false);
+
+    sub_keys_ = Utils::String::split(json_key_, '.');
+    has_sub_keys_ = sub_keys_.size() > 1;
+    num_sub_keys_ = sub_keys_.size();
+
+    if (sub_keys_.size())
+        last_key_ = sub_keys_.end() - 1;
+    if (sub_keys_.size() > 1)
+        second_to_last_key_ = sub_keys_.end() - 2;
+
+    createSubConfigurables();
+}
+
 JSONDataMapping::~JSONDataMapping(){}
 
 void JSONDataMapping::initializeIfRequired()
@@ -160,7 +150,7 @@ void JSONDataMapping::inArray(bool in_array) { in_array_ = in_array; }
 
 void JSONDataMapping::check()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
     {
@@ -285,7 +275,7 @@ void JSONDataMapping::initialize()
 
     traced_assert(!initialized_);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     if (db_content_name_.size() && !dbcont_man.existsDBContent(db_content_name_))
         logwrn << "dbcontbject '" << db_content_name_
@@ -338,7 +328,7 @@ void JSONDataMapping::initialize()
             {
 
                 const Dimension& dimension =
-                        UnitManager::instance().dimension(variable().dimension());
+                        compass_.unitManager().dimension(variable().dimension());
 
                 if (!dimension.hasUnit(unit()))
                     logerr << "dimension '" << this->dimension()

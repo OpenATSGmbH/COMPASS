@@ -16,7 +16,6 @@
  */
 
 #include "dbcontent/variable/variableselectionwidget.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
@@ -38,8 +37,8 @@ using namespace std;
 namespace dbContent
 {
 
-VariableSelectionWidget::VariableSelectionWidget(bool h_box, QWidget* parent)
-    : QFrame(parent), dbcont_man_(COMPASS::instance().dbContentManager())
+VariableSelectionWidget::VariableSelectionWidget(DBContentManager& dbcont_man, bool h_box, QWidget* parent)
+    : QFrame(parent), dbcont_man_(dbcont_man)
 {
     setFrameStyle(QFrame::Panel | QFrame::Sunken);
     setLineWidth(1);

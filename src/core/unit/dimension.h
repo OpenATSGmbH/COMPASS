@@ -20,16 +20,19 @@
 #include "configurable.h"
 
 class Unit;
+class UnitManager;
 
 class Dimension : public Configurable
 {
   public:
-    Dimension(const std::string& class_id, const std::string& instance_id, Configurable* parent);
+    // Legacy constructor removed — use json-backed constructor below
+    // Dimension(const std::string& class_name, const std::string& instance_name, Configurable* parent);
+    /// @brief Constructor backed by a json reference
+    Dimension(nlohmann::json& config, UnitManager* parent);
     /// @brief Destructor
     virtual ~Dimension();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void addUnit(const std::string& name, double factor, const std::string& definition);
     /// @brief Returns factor from one unit to another
@@ -41,5 +44,5 @@ class Dimension : public Configurable
   protected:
     std::map<std::string, Unit*> units_;
 
-    virtual void checkSubConfigurables() {}
+    void checkSubConfigurables() override {}
 };

@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class SpeedConfig : public ProbabilityBaseConfig
 {
 public:
-    SpeedConfig(const std::string& class_id, const std::string& instance_id,
-                Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    SpeedConfig(nlohmann::json& config,
+                Group* parent);
     virtual ~SpeedConfig();
 
     std::shared_ptr<Base> createRequirement() override;

@@ -29,9 +29,10 @@ using namespace Utils;
  * @param source Import source to retrieve data from.
  * @param settings If set, external settings will be applied, otherwise settings will be retrieved from the import task.
 */
-ASTERIXPCAPDecoder::ASTERIXPCAPDecoder(ASTERIXImportSource& source,
+ASTERIXPCAPDecoder::ASTERIXPCAPDecoder(ASTERIXImportTask& task,
+                                       ASTERIXImportSource& source,
                                        const ASTERIXImportTaskSettings* settings)
-:   ASTERIXDecoderFile(ASTERIXImportSource::SourceType::FilePCAP, source, settings)
+:   ASTERIXDecoderFile(task, ASTERIXImportSource::SourceType::FilePCAP, source, settings)
 {
 }
 

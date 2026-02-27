@@ -699,7 +699,7 @@ void LabelGenerator::removeLabelDSID(unsigned int ds_id)
 
 void LabelGenerator::labelAllDSIDs()
 {
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dbcont_manager_.compass().dataSourceManager();
 
     for (const auto& ds_it : ds_man.dbDataSources())
         config_.label_ds_ids_[to_string(ds_it->id())] = true;
@@ -1229,7 +1229,7 @@ unsigned int LabelGenerator::labelLine (unsigned int ds_id) // returns 0...3
     }
     else
     {
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+        DataSourceManager& ds_man = dbcont_manager_.compass().dataSourceManager();
         traced_assert(ds_man.hasDBDataSource(ds_id));
 
         dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
@@ -1263,7 +1263,7 @@ void LabelGenerator::updateAvailableLabelLines()
     unsigned int ds_id;
     unsigned int line_id;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DataSourceManager& ds_man = dbcont_manager_.compass().dataSourceManager();
 
     bool something_changed {false};
 

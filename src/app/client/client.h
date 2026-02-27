@@ -18,6 +18,10 @@
 #pragma once
 
 #include <QApplication>
+#include <memory>
+
+class ConfigurationManager;
+class COMPASS;
 
 class Client : public QApplication
 {
@@ -31,7 +35,11 @@ public:
 
     bool run ();
 
+    COMPASS& compass();
+
 private:
+    std::unique_ptr<ConfigurationManager> config_manager_;
+    std::unique_ptr<COMPASS> compass_;
 
     std::string system_install_path_;
     bool quit_requested_{false};
@@ -111,4 +119,3 @@ private:
     void deleteCompleteHomeSubDir();
     void copyConfigurationAndData();
 };
-

@@ -23,15 +23,11 @@
 class MLATRUFilter : public DBFilter
 {
 public:
-    MLATRUFilter(const std::string& class_id, const std::string& instance_id,
-                 Configurable* parent);
+    MLATRUFilter(nlohmann::json& config, FilterManager* parent);
     virtual ~MLATRUFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
@@ -53,6 +49,5 @@ protected:
     std::string rus_str_;
     bool match_all_;
 
-    virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
 };

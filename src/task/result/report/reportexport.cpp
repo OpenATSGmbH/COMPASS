@@ -22,6 +22,7 @@
 #include "task/result/report/reportexporterdocx.h"
 
 #include "taskmanager.h"
+#include "compass.h"
 
 #include "system.h"
 #include "logger.h"
@@ -33,10 +34,31 @@ namespace ResultReport
 
 /**
  */
-ReportExport::ReportExport(const std::string& class_id, 
-                           const std::string& instance_id, 
-                           TaskManager* task_manager)
-:   Configurable(class_id, instance_id, task_manager)
+// ReportExport::ReportExport(const std::string& class_name,
+//                            const std::string& instance_name,
+//                            TaskManager* task_manager)
+// :   Configurable(class_name, instance_name, task_manager)
+// {
+//     registerParameter("author"           , &settings_.author           , ReportExportSettings().author           );
+//     registerParameter("open_created_file", &settings_.open_created_file, ReportExportSettings().open_created_file);
+
+//     registerParameter("latex_table_max_rows"     , &settings_.latex_table_max_rows     , ReportExportSettings().latex_table_max_rows     );
+//     registerParameter("latex_table_max_col_width", &settings_.latex_table_max_col_width, ReportExportSettings().latex_table_max_col_width);
+//     registerParameter("latex_table_min_cols_wide", &settings_.latex_table_min_cols_wide, ReportExportSettings().latex_table_min_cols_wide);
+//     registerParameter("latex_pdf_max_reruns"     , &settings_.latex_pdf_max_reruns     , ReportExportSettings().latex_pdf_max_reruns     );
+
+//     registerParameter("json_table_max_rows_inline", &settings_.json_table_max_rows_inline, ReportExportSettings().json_table_max_rows_inline);
+//     registerParameter("json_table_max_cols_inline", &settings_.json_table_max_cols_inline, ReportExportSettings().json_table_max_cols_inline);
+
+//     //fill in some default values if missing
+//     if (!settings_.author.size())
+//         settings_.author = Utils::System::getUserName();
+//     if (!settings_.author.size())
+//         settings_.author = "User";
+// }
+
+ReportExport::ReportExport(nlohmann::json& config, TaskManager* parent)
+:   Configurable(config, parent), task_manager_(*parent)
 {
     registerParameter("author"           , &settings_.author           , ReportExportSettings().author           );
     registerParameter("open_created_file", &settings_.open_created_file, ReportExportSettings().open_created_file);
@@ -49,7 +71,6 @@ ReportExport::ReportExport(const std::string& class_id,
     registerParameter("json_table_max_rows_inline", &settings_.json_table_max_rows_inline, ReportExportSettings().json_table_max_rows_inline);
     registerParameter("json_table_max_cols_inline", &settings_.json_table_max_cols_inline, ReportExportSettings().json_table_max_cols_inline);
 
-    //fill in some default values if missing
     if (!settings_.author.size())
         settings_.author = Utils::System::getUserName();
     if (!settings_.author.size())
@@ -60,6 +81,11 @@ ReportExport::ReportExport(const std::string& class_id,
  */
 ReportExport::~ReportExport()
 {
+}
+
+COMPASS& ReportExport::compass() const
+{
+    return task_manager_.compass();
 }
 
 /**

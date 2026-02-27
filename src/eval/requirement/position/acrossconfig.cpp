@@ -31,9 +31,9 @@ namespace EvaluationRequirement
 {
 
 PositionAcrossConfig::PositionAcrossConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : PositionBaseProbConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : PositionBaseProbConfig(config, parent)
 {
     registerParameter("max_abs_value", &max_abs_value_, 50.0f);
 }

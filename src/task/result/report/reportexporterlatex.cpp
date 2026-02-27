@@ -16,6 +16,8 @@
  */
 
 #include "task/result/report/reportexporterlatex.h"
+#include "task/result/report/reportexport.h"
+#include "compass.h"
 
 #include "task/result/report/section.h"
 #include "task/result/report/sectioncontent.h"
@@ -68,12 +70,12 @@ ReportExporterLatex::~ReportExporterLatex()
  */
 Result ReportExporterLatex::initExport_impl(TaskResult& result)
 {
-    if (write_pdf_ && !COMPASS::instance().pdflatexFound())
+    if (write_pdf_ && !compass().pdflatexFound())
         return Result::failed("Cannot generate PDF: pdflatex not installed");
 
     std::string report_fn = boost::filesystem::path(exportFilename()).stem().string() + ".tex";
 
-    latex_doc_.reset(new LatexDocument(exportResourceDir(), report_fn));
+    latex_doc_.reset(new LatexDocument(compass(), exportResourceDir(), report_fn));
 
     latex_doc_->title(result.name() + " Report");
 

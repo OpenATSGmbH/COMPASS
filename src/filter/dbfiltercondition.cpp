@@ -40,34 +40,29 @@
 using namespace Utils;
 using namespace std;
 
-DBFilterCondition::DBFilterCondition(const std::string& class_id, const std::string& instance_id,
-                                     DBFilter* filter_parent)
-    : Configurable(class_id, instance_id, filter_parent), filter_parent_(filter_parent)
+DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
+    : Configurable(config, parent),
+      compass_(parent->compass()),
+      dbcont_man_(parent->dbContentManager()),
+      filter_parent_(parent)
 {
     registerParameter("operator", &operator_, std::string(">"));
-    //registerParameter("op_and", &op_and_, true);
     registerParameter("absolute_value", &absolute_value_, false);
 
     registerParameter("variable_dbcontent_name", &variable_dbcontent_name_, std::string());
     registerParameter("variable_name", &variable_name_, std::string());
 
-    registerParameter("display_instance_id", &display_instance_id_, false);
-
-    // DBContVAR LOWERCASE HACK
-    // boost::algorithm::to_lower(variable_name_);
+    registerParameter("display_instance_name", &display_instance_name_, false);
 
     registerParameter("reset_value", &reset_value_, std::string(""));
     registerParameter("value", &value_, std::string());
 
-//    if (usable_)
-//        value_invalid_ = checkValueInvalid(value_);
-
-    logdbg << "start" << instance_id << " value " << value_
+    logdbg << "start" << instanceName() << " value " << value_
            << " usable " << usable_ << " invalid " << value_invalid_;
 
     label_ = new QLabel();
-    if (display_instance_id_)
-        label_->setText(tr((instanceId() + " " + operator_).c_str()));
+    if (display_instance_name_)
+        label_->setText(tr((instanceName() + " " + operator_).c_str()));
     else
         label_->setText(tr((variable_name_ + " " + operator_).c_str()));
 
@@ -163,7 +158,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     }
 
     if (ss.str().size())
-        loginf << instanceId() << ": '" << ss.str()
+        loginf << instanceName() << ": '" << ss.str()
                << "'";
 
     if (var.dbExpression().size() && !read_set.hasVariable(var))
@@ -197,7 +192,7 @@ void DBFilterCondition::valueChanged()
 
     if (value_invalid_)
     {
-        edit_->setStyleSheet(COMPASS::instance().lineEditInvalidStyle());
+        edit_->setStyleSheet(compass_.lineEditInvalidStyle());
     }
     else
     {
@@ -229,24 +224,22 @@ void DBFilterCondition::setVariableName(const std::string& variable_name)
 
 bool DBFilterCondition::hasVariable (const std::string& dbcontent_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     if (variable_dbcontent_name_ == META_OBJECT_NAME)
     {
-        if (!dbcont_man.existsMetaVariable(variable_name_))
+        if (!dbcont_man_.existsMetaVariable(variable_name_))
             return false;
 
-        return dbcont_man.metaVariable(variable_name_).existsIn(dbcontent_name);
+        return dbcont_man_.metaVariable(variable_name_).existsIn(dbcontent_name);
     }
     else
     {
         if (dbcontent_name != variable_dbcontent_name_)
             return false;
 
-        if (!dbcont_man.existsDBContent(variable_dbcontent_name_))
+        if (!dbcont_man_.existsDBContent(variable_dbcontent_name_))
             return false;
 
-        return dbcont_man.dbContent(variable_dbcontent_name_).hasVariable(variable_name_);
+        return dbcont_man_.dbContent(variable_dbcontent_name_).hasVariable(variable_name_);
     }
 }
 
@@ -255,19 +248,17 @@ dbContent::Variable& DBFilterCondition::variable (const std::string& dbcontent_n
 {
     traced_assert(hasVariable(dbcontent_name));
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-
     if (variable_dbcontent_name_ == META_OBJECT_NAME)
-        return dbcont_man.metaVariable(variable_name_).getFor(dbcontent_name);
+        return dbcont_man_.metaVariable(variable_name_).getFor(dbcontent_name);
     else
-         return dbcont_man.dbContent(variable_dbcontent_name_).variable(variable_name_);
+         return dbcont_man_.dbContent(variable_dbcontent_name_).variable(variable_name_);
 }
 
 
 void DBFilterCondition::update()
 {
-    if (display_instance_id_)
-        label_->setText(tr((instanceId() + " " + operator_).c_str()));
+    if (display_instance_name_)
+        label_->setText(tr((instanceName() + " " + operator_).c_str()));
     else
         label_->setText(tr((variable_name_ + " " + operator_).c_str()));
 
@@ -333,7 +324,7 @@ void DBFilterCondition::reset()
 
 bool DBFilterCondition::getDisplayInstanceId() const
 {
-    return display_instance_id_;
+    return display_instance_name_;
 }
 
 bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
@@ -350,11 +341,9 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
 
     if (variable_dbcontent_name_ == META_OBJECT_NAME)
     {
-         DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        traced_assert(dbcont_man_.existsMetaVariable(variable_name_));
 
-        traced_assert(dbcont_man.existsMetaVariable(variable_name_));
-
-        for (auto var_it : dbcont_man.metaVariable(variable_name_).variables())
+        for (auto var_it : dbcont_man_.metaVariable(variable_name_).variables())
             variables.push_back(&var_it.second);
     }
     else

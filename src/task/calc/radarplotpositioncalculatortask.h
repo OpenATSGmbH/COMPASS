@@ -31,6 +31,9 @@
 
 class Buffer;
 class DBContent;
+class COMPASS;
+class DBContentManager;
+class ProjectionManager;
 
 class TaskManager;
 class UpdateBufferDBJob;
@@ -52,9 +55,10 @@ public slots:
     void updateDoneSlot(DBContent& db_content);
 
 public:
-    RadarPlotPositionCalculatorTask(const std::string& class_id, const std::string& instance_id,
-                                    TaskManager& task_manager);
+    RadarPlotPositionCalculatorTask(nlohmann::json& config, TaskManager* parent, COMPASS& compass);
     virtual ~RadarPlotPositionCalculatorTask();
+
+    ProjectionManager& projectionManager();
 
     bool isCalculating();
 
@@ -64,6 +68,9 @@ public:
     virtual void run() override;
 
 protected:
+    COMPASS& compass_;
+    DBContentManager& dbcontent_man_;
+
     boost::posix_time::ptime start_time_;
     boost::posix_time::ptime stop_time_;
 

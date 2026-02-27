@@ -101,7 +101,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
 
     QMenu* export_menu = new QMenu(export_result_button_);
 
-    bool pdflatex_found = COMPASS::instance().pdflatexFound();
+    bool pdflatex_found = task_man_.compass().pdflatexFound();
 
     auto action_export_docx  = export_menu->addAction("Export as DocX");
     auto action_export_json  = export_menu->addAction("Export as JSON");

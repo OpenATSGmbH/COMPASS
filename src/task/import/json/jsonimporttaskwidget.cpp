@@ -17,7 +17,7 @@
 
 #include "jsonimporttaskwidget.h"
 
-//#include "compass.h"
+#include "compass.h"
 //#include "dbcontent/dbcontent.h"
 //#include "dbcontent/dbcontentcombobox.h"
 //#include "dbcontent/dbcontentmanager.h"
@@ -253,10 +253,10 @@ void JSONImportTaskWidget::addSchemaSlot()
 
         std::string instance = "JSONParsingSchema" + name + "0";
 
-        auto config = Configuration::create("JSONParsingSchema", instance);
-        config->addParameter<std::string>("name", name);
+        auto& child_json = task_.addNewSubConfiguration("JSONParsingSchema", instance);
+        child_json[Configuration::ParameterSection]["name"] = name;
 
-        task_.generateSubConfigurableFromConfig(std::move(config));
+        task_.generateSubConfigurable(child_json);
         updateSchemasBox();
     }
 }
@@ -346,7 +346,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
         return;
     }
 
-    dbContent::SelectDBContentDialog dialog;
+    dbContent::SelectDBContentDialog dialog(task_.compass().dbContentManager());
 
     int ret = dialog.exec();
 
@@ -369,10 +369,10 @@ void JSONImportTaskWidget::addObjectParserSlot()
 
         std::string instance = "JSONObjectParser" + dbcontent_name + "0";
 
-        auto config = Configuration::create("JSONObjectParser", instance);
-        config->addParameter<std::string>("dbcontent_name", dbcontent_name);
+        auto& child_json = current->addNewSubConfiguration("JSONObjectParser", instance);
+        child_json[Configuration::ParameterSection]["dbcontent_name"] = dbcontent_name;
 
-        current->generateSubConfigurableFromConfig(std::move(config));
+        current->generateSubConfigurable(child_json);
         updateParserBox();
     }
 }

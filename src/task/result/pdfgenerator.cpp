@@ -58,19 +58,19 @@ PDFGenerator::PDFGenerator(EvaluationManager& eval_manager, EvaluationManagerSet
 {
     report_filename_ = "report.tex";
 
-    pdflatex_found_ = COMPASS::instance().pdflatexFound();
+    pdflatex_found_ = eval_man_.compass().pdflatexFound();
 }
 
 PDFGeneratorDialog& PDFGenerator::dialog()
 {
     if (!report_path_.size())
     {
-        //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&COMPASS::instance().dbInterface().connection());
+        //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&eval_man_.compass().dbInterface().connection());
         //assert (db_con);
         //@TODO: PWa: did not understand why we need to check the connection at this point?
-        traced_assert(COMPASS::instance().dbInterface().ready());
+        traced_assert(eval_man_.compass().dbInterface().ready());
 
-        string current_filename = COMPASS::instance().lastDbFilename();
+        string current_filename = eval_man_.compass().lastDbFilename();
 
         string sub_path = Files::getFilenameFromPath(current_filename);
         std::replace(sub_path.begin(), sub_path.end(), ' ', '_'); // replace all 'x' to 'y'

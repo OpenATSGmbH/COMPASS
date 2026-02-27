@@ -30,6 +30,8 @@
 #include <set>
 
 
+class COMPASS;
+class DBContentManager;
 class TaskManager;
 class JSONImportTaskDialog;
 class JSONParseJob;
@@ -72,14 +74,14 @@ class JSONImportTask : public Task, public Configurable
     void insertDoneSlot();
 
   public:
-    JSONImportTask(const std::string& class_id, const std::string& instance_id,
-                   TaskManager& task_manager);
+    JSONImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~JSONImportTask();
+
+    COMPASS& compass() { return compass_; }
 
     JSONImportTaskDialog* dialog();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     bool canImportFile();
 
@@ -111,6 +113,9 @@ class JSONImportTask : public Task, public Configurable
     void date(const boost::posix_time::ptime& date);
 
   protected:
+    COMPASS&          compass_;
+    DBContentManager& dbcontent_man_;
+
     std::string import_filename_;
 
     std::unique_ptr<JSONImportTaskDialog> dialog_;
@@ -170,7 +175,5 @@ class JSONImportTask : public Task, public Configurable
     void updateMsgBox();
 
     bool maxLoadReached();
-
-    virtual void checkSubConfigurables() override {}
 };
 

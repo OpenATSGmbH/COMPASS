@@ -21,10 +21,9 @@
 
 #include <QWidget>
 
-#include "configurable.h"
 #include "appmode.h"
 #include "ui_test_testable.h"
-#include "json_fwd.hpp"
+#include "traced_assert.h"
 
 #include <boost/optional.hpp>
 
@@ -98,7 +97,7 @@ The widget's container is only visible if the widget is set.
 The ViewWidget acts both to generate the basic layout and to handle interaction between all these components.
 It also serves as the View's main interface to all ui and display functionality.
 */
-class ViewWidget : public QWidget, public Configurable, public ui_test::UITestable
+class ViewWidget : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 
@@ -106,8 +105,7 @@ signals:
     void viewRefreshed();
 
 public:
-    ViewWidget(const std::string& class_id, const std::string& instance_id,
-               Configurable* config_parent, View* view, QWidget* parent = nullptr);
+    ViewWidget(View* view, QWidget* parent = nullptr);
     virtual ~ViewWidget();
 
     void toggleConfigWidget();

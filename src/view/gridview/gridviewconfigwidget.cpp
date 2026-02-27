@@ -293,7 +293,7 @@ void GridViewConfigWidget::updateExport()
 
         traced_assert(var_sel_x && var_sel_y);
 
-        auto& dbc_man = COMPASS::instance().dbContentManager();
+        auto& dbc_man = view_->compass().dbContentManager();
 
         const auto& metavar_lon = dbc_man.metaVariable(DBContent::meta_var_longitude_.name());
         const auto& metavar_lat = dbc_man.metaVariable(DBContent::meta_var_latitude_.name());
@@ -491,9 +491,10 @@ namespace
     /**
     */
     boost::optional<ExportGeoViewConfig> getExportGeoViewConfig(QWidget* parent,
-                                                                const std::string& default_name)
+                                                                const std::string& default_name,
+                                                                COMPASS& compass)
     {
-        auto geo_views = COMPASS::instance().viewManager().viewsOfType<GeographicView>();
+        auto geo_views = compass.viewManager().viewsOfType<GeographicView>();
 
         QDialog dlg(parent);
         dlg.setWindowTitle("Export to GeographicView");
@@ -586,7 +587,7 @@ void GridViewConfigWidget::exportToGeographicView()
 
     std::string name = exportName();
 
-    auto export_config = getExportGeoViewConfig(this, name);
+    auto export_config = getExportGeoViewConfig(this, name, view_->compass());
     if (!export_config.has_value())
         return;
 
@@ -623,7 +624,7 @@ void GridViewConfigWidget::exportToGeoTiff()
         return;
     }
 
-    std::string fn_default = COMPASS::instance().lastUsedPath() + "/" + exportName() + ".tif";
+    std::string fn_default = view_->compass().lastUsedPath() + "/" + exportName() + ".tif";
 
     auto fn = QFileDialog::getSaveFileName(this, "Export to GeoTIFF", QString::fromStdString(fn_default), "*.tif");
     if (fn.isEmpty())

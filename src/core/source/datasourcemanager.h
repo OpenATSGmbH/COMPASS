@@ -82,11 +82,12 @@ class DataSourceManager : public QObject, public Configurable
     static dbContent::DataSourceType typeFromString(const std::string& type_str);
     static std::string stringFromType(dbContent::DataSourceType type);
 
-    DataSourceManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    DataSourceManager(nlohmann::json& config, COMPASS& compass);
+
+    COMPASS& compass() { return compass_; }
     virtual ~DataSourceManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     const std::vector<unsigned int>& getAllDsIDs(); // both config and db
 
@@ -199,7 +200,7 @@ class DataSourceManager : public QObject, public Configurable
 
     std::map<std::string, bool> ds_type_loading_wanted_; // if not in there, wanted
 
-    virtual void checkSubConfigurables();
+    void checkSubConfigurables() override;
 
     void loadDBDataSources();
     void sortDBDataSources();

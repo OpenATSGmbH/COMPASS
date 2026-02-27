@@ -44,7 +44,7 @@ using namespace Utils;
 ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& parser, QWidget* parent)
     : QWidget(parent), parser_(parser)
 {
-    expert_mode_ = COMPASS::instance().expertMode();
+    expert_mode_ = parser_.compass().expertMode();
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
@@ -114,7 +114,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
 
 
     //    UnitSelectionWidget* unit_sel_ {nullptr};
-    unit_sel_ = new UnitSelectionWidget();
+    unit_sel_ = new UnitSelectionWidget(parser_.compass().unitManager());
     form_layout->addRow("Unit", unit_sel_);
 
 
@@ -134,7 +134,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
     dbcontvar_label->setFont(font_bold);
     form_layout->addRow(dbcontvar_label);
 
-    dbcont_var_sel_ = new dbContent::VariableSelectionWidget();
+    dbcont_var_sel_ = new dbContent::VariableSelectionWidget(parser_.compass().dbContentManager());
     dbcont_var_sel_->showMetaVariables(false);
     dbcont_var_sel_->showDBContentOnly(parser_.dbContentName());
     dbcont_var_sel_->showEmptyVariable(true);
@@ -533,13 +533,12 @@ void ASTERIXJSONParserDetailWidget::mappingDBContentVariableChangedSlot()
 
         string json_key = parser_.unmappedJSONKey(entry_index_);
 
-        auto new_cfg = Configuration::create("JSONDataMapping");
+        auto& child_json = parser_.addNewSubConfiguration("JSONDataMapping");
+        child_json[Configuration::ParameterSection]["json_key"] = json_key;
+        child_json[Configuration::ParameterSection]["db_content_name"] = parser_.dbContentName();
+        child_json[Configuration::ParameterSection]["db_content_variable_name"] = dbcont_var_sel_->selectedVariable().name();
 
-        new_cfg->addParameter<std::string>("json_key", json_key);
-        new_cfg->addParameter<std::string>("db_content_name", parser_.dbContentName());
-        new_cfg->addParameter<std::string>("db_content_variable_name", dbcont_var_sel_->selectedVariable().name());
-
-        parser_.generateSubConfigurableFromConfig(std::move(new_cfg));
+        parser_.generateSubConfigurable(child_json);
 
         parser_.doMappingChecks();
 
@@ -625,17 +624,17 @@ void ASTERIXJSONParserDetailWidget::createNewDBVariableSlot()
         {
             traced_assert(!parser_.dbContent().hasVariable(dialog.name()));
 
-            auto new_cfg = Configuration::create("Variable");
-            new_cfg->addParameter<std::string>("name", dialog.name());
-            new_cfg->addParameter<std::string>("short_name", dialog.shortName());
-            new_cfg->addParameter<std::string>("description", dialog.description());
-            new_cfg->addParameter<std::string>("db_column_name", dialog.dbColumnName());
-            new_cfg->addParameter<std::string>("data_type_str", dialog.dataTypeStr());
-            new_cfg->addParameter<std::string>("representation_str", dialog.representationStr());
-            new_cfg->addParameter<std::string>("dimension", dialog.dimension());
-            new_cfg->addParameter<std::string>("unit", dialog.unit());
+            auto& var_json = parser_.dbContent().addNewSubConfiguration("Variable");
+            var_json[Configuration::ParameterSection]["name"] = dialog.name();
+            var_json[Configuration::ParameterSection]["short_name"] = dialog.shortName();
+            var_json[Configuration::ParameterSection]["description"] = dialog.description();
+            var_json[Configuration::ParameterSection]["db_column_name"] = dialog.dbColumnName();
+            var_json[Configuration::ParameterSection]["data_type_str"] = dialog.dataTypeStr();
+            var_json[Configuration::ParameterSection]["representation_str"] = dialog.representationStr();
+            var_json[Configuration::ParameterSection]["dimension"] = dialog.dimension();
+            var_json[Configuration::ParameterSection]["unit"] = dialog.unit();
 
-            parser_.dbContent().generateSubConfigurableFromConfig(std::move(new_cfg));
+            parser_.dbContent().generateSubConfigurable(var_json);
 
             traced_assert(parser_.dbContent().hasVariable(dialog.name()));
         }
@@ -653,12 +652,12 @@ void ASTERIXJSONParserDetailWidget::createNewDBVariableSlot()
         {
             traced_assert(!parser_.hasJSONKeyInMapping(json_key));
 
-            auto new_cfg = Configuration::create("JSONDataMapping");
-            new_cfg->addParameter<std::string>("json_key", json_key);
-            new_cfg->addParameter<std::string>("db_content_name", parser_.dbContentName());
-            new_cfg->addParameter<std::string>("db_content_variable_name", dialog.name());
+            auto& map_json = parser_.addNewSubConfiguration("JSONDataMapping");
+            map_json[Configuration::ParameterSection]["json_key"] = json_key;
+            map_json[Configuration::ParameterSection]["db_content_name"] = parser_.dbContentName();
+            map_json[Configuration::ParameterSection]["db_content_variable_name"] = dialog.name();
 
-            parser_.generateSubConfigurableFromConfig(std::move(new_cfg));
+            parser_.generateSubConfigurable(map_json);
 
             parser_.doMappingChecks();
 

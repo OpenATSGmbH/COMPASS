@@ -19,18 +19,13 @@
 
 #include "projection.h"
 
-class ProjectionManager;
 class OGRCoordinateSystem;
 
 class OGRProjection : public Projection
 {
   public:
-    OGRProjection(const std::string& class_id, const std::string& instance_id,
-                  ProjectionManager& proj_manager);
+    OGRProjection(nlohmann::json& config, ProjectionManager* parent);
     virtual ~OGRProjection();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual std::vector<unsigned int> ids() override;
 
@@ -50,6 +45,5 @@ class OGRProjection : public Projection
   protected:
     std::map<unsigned int, std::unique_ptr<OGRCoordinateSystem>> coordinate_systems_;
 
-    virtual void checkSubConfigurables() override;
 };
 

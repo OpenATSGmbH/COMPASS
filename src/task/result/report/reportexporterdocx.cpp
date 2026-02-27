@@ -16,6 +16,8 @@
  */
 
 #include "task/result/report/reportexporterdocx.h"
+#include "task/result/report/reportexport.h"
+#include "compass.h"
 
 #include "task/result/report/section.h"
 #include "task/result/report/sectioncontent.h"
@@ -117,7 +119,7 @@ Result ReportExporterDocx::initExport_impl(TaskResult& result)
         docx_doc_->abstract(s.abstract);
 
     // footer: licensee (left), page number (center), logo (right)
-    auto licensee = COMPASS::instance().licenseeString(true);
+    auto licensee = compass().licenseeString(true);
     if (!licensee.empty())
         docx_doc_->footerLeft(licensee);
 

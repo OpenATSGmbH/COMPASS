@@ -30,9 +30,9 @@ using namespace std;
 namespace EvaluationRequirement
 {
 PositionRadarRangeConfig::PositionRadarRangeConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : PositionBaseProbConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : PositionBaseProbConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0);
 }
