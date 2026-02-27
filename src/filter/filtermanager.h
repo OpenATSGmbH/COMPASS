@@ -62,7 +62,7 @@ public slots:
     void showViewPointSlot (const ViewableDataConfig* vp);
 
 public:
-    // FilterManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // FilterManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
     FilterManager(nlohmann::json& config, COMPASS& compass);
     virtual ~FilterManager();
 

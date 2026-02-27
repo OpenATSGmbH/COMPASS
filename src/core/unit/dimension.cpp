@@ -36,17 +36,17 @@ Dimension::~Dimension()
 
 void Dimension::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "Unit")
+    if (class_name == "Unit")
     {
         Unit* unit = new Unit(child_json, this);
-        traced_assert(units_.find(unit->instanceId()) == units_.end());
-        units_.insert(std::pair<std::string, Unit*>(unit->instanceId(), unit));
+        traced_assert(units_.find(unit->instanceName()) == units_.end());
+        units_.insert(std::pair<std::string, Unit*>(unit->instanceName(), unit));
     }
     else
-        throw std::runtime_error("Dimension: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("Dimension: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 void Dimension::addUnit(const std::string& name, double factor, const std::string& definition)

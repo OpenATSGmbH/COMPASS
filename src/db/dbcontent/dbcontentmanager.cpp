@@ -106,10 +106,10 @@ DBContentManager::~DBContentManager()
  */
 void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    logdbg << "class_id " << class_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    logdbg << "class_name " << class_name;
 
-    if (class_id == "DBContent")
+    if (class_name == "DBContent")
     {
         DBContent* object = new DBContent(child_json, this);
         loginf << "adding content " << object->name()
@@ -120,7 +120,7 @@ void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
         dbcontent_[object->name()] = object;
         dbcontent_ids_[object->id()] = object;
     }
-    else if (class_id == "MetaVariable")
+    else if (class_name == "MetaVariable")
     {
         MetaVariable* meta_var = new MetaVariable(child_json, this);
         logdbg << "adding meta var type "
@@ -136,8 +136,8 @@ void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
             std::forward_as_tuple(meta_var));  // args for mapped value
     }
     else
-        throw std::runtime_error("DBContentManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("DBContentManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 /**

@@ -276,7 +276,7 @@ void ViewScreenshotDialog::save()
 {
     auto timestamp = Utils::Time::toString(Utils::Time::currentUTCTime());
 
-    std::string fn_init = view_->classId() + "_" + timestamp + ".png";
+    std::string fn_init = view_->className() + "_" + timestamp + ".png";
     std::string path    = view_->viewManager().compass().lastUsedPath() + "/" + fn_init;
 
     QString fn = QFileDialog::getSaveFileName(this, "Select Screenshot File", QString::fromStdString(path), "*.png");

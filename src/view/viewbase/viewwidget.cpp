@@ -44,7 +44,7 @@ ViewWidget::ViewWidget(View* view, QWidget* parent)
       view_  (view)
 {
     //generate and set a nice object name which can be used to identify the view widget in the object hierarchy
-    UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceId()))
+    UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceName()))
 
     setContentsMargins(0, 0, 0, 0);
 
@@ -62,7 +62,7 @@ ViewWidget::~ViewWidget()
     {
         traced_assert(view_);
 
-        QSettings settings("COMPASS", view_->instanceId().c_str());
+        QSettings settings("COMPASS", view_->instanceName().c_str());
         settings.setValue("mainSplitterSizes", main_splitter_->saveState());
     }
 }
@@ -173,7 +173,7 @@ void ViewWidget::createStandardLayout()
     }
 
     //add main splitter to central layout and restore state from config
-    QSettings settings("COMPASS", view_->instanceId().c_str());
+    QSettings settings("COMPASS", view_->instanceName().c_str());
 
 #if 0
     main_splitter_->restoreState(settings.value("mainSplitterSizes").toByteArray());

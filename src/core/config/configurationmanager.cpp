@@ -65,17 +65,17 @@ void ConfigurationManager::init(const std::string& main_config_filename)
                     traced_assert(file_cfg_it.contains(Configuration::InstanceID));
                     traced_assert(file_cfg_it.contains(ConfigJSON::SubConfigFilePath));
 
-                    auto class_id    = file_cfg_it.at(Configuration::ClassID).get<std::string>();
-                    auto instance_id = file_cfg_it.at(Configuration::InstanceID).get<std::string>();
+                    auto class_name    = file_cfg_it.at(Configuration::ClassID).get<std::string>();
+                    auto instance_name = file_cfg_it.at(Configuration::InstanceID).get<std::string>();
                     auto path        = file_cfg_it.at(ConfigJSON::SubConfigFilePath).get<std::string>();
 
-                    traced_assert(!class_id.empty() && !instance_id.empty() && !path.empty());
+                    traced_assert(!class_name.empty() && !instance_name.empty() && !path.empty());
 
-                    Key key{class_id, instance_id};
+                    Key key{class_name, instance_name};
                     traced_assert(root_config_jsons_.find(key) == root_config_jsons_.end());
 
-                    loginf << "creating ConfigJSON for class '" << class_id
-                           << "' instance '" << instance_id
+                    loginf << "creating ConfigJSON for class '" << class_name
+                           << "' instance '" << instance_name
                            << "' from '" << path << "'";
 
                     root_config_jsons_[key] = std::make_unique<ConfigJSON>(path);
@@ -101,31 +101,31 @@ ConfigurationManager::~ConfigurationManager()
     initialized_ = false;
 }
 
-bool ConfigurationManager::hasRootConfigJSON(const std::string& class_id,
-                                              const std::string& instance_id) const
+bool ConfigurationManager::hasRootConfigJSON(const std::string& class_name,
+                                              const std::string& instance_name) const
 {
-    return root_config_jsons_.count({class_id, instance_id}) > 0;
+    return root_config_jsons_.count({class_name, instance_name}) > 0;
 }
 
-ConfigJSON& ConfigurationManager::getRootConfigJSON(const std::string& class_id,
-                                                     const std::string& instance_id)
+ConfigJSON& ConfigurationManager::getRootConfigJSON(const std::string& class_name,
+                                                     const std::string& instance_name)
 {
-    traced_assert(hasRootConfigJSON(class_id, instance_id));
-    return *root_config_jsons_.at({class_id, instance_id});
+    traced_assert(hasRootConfigJSON(class_name, instance_name));
+    return *root_config_jsons_.at({class_name, instance_name});
 }
 
-const ConfigJSON& ConfigurationManager::getRootConfigJSON(const std::string& class_id,
-                                                           const std::string& instance_id) const
+const ConfigJSON& ConfigurationManager::getRootConfigJSON(const std::string& class_name,
+                                                           const std::string& instance_name) const
 {
-    traced_assert(hasRootConfigJSON(class_id, instance_id));
-    return *root_config_jsons_.at({class_id, instance_id});
+    traced_assert(hasRootConfigJSON(class_name, instance_name));
+    return *root_config_jsons_.at({class_name, instance_name});
 }
 
 void ConfigurationManager::registerJsonRootConfigurable(Configurable& configurable)
 {
     traced_assert(initialized_);
 
-    Key key{configurable.classId(), configurable.instanceId()};
+    Key key{configurable.className(), configurable.instanceName()};
     traced_assert(json_root_configurables_.find(key) == json_root_configurables_.end());
 
     json_root_configurables_[key] = &configurable;
@@ -137,7 +137,7 @@ void ConfigurationManager::unregisterJsonRootConfigurable(Configurable& configur
     if (!initialized_)
         return;
 
-    Key key{configurable.classId(), configurable.instanceId()};
+    Key key{configurable.className(), configurable.instanceName()};
     json_root_configurables_.erase(key);
 }
 

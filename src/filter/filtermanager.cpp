@@ -43,9 +43,9 @@
 using namespace std;
 using namespace nlohmann;
 
-// FilterManager::FilterManager(const std::string& class_id, const std::string& instance_id,
+// FilterManager::FilterManager(const std::string& class_name, const std::string& instance_name,
 //                              COMPASS* compass)
-//     : Configurable(class_id, instance_id, compass, "filter.json") ...
+//     : Configurable(class_name, instance_name, compass, "filter.json") ...
 
 FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass),
@@ -94,87 +94,87 @@ void FilterManager::useFilters(bool use_filters)
 
 void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
-    if (hasSubConfigurable(class_id, instance_id))
+    if (hasSubConfigurable(class_name, instance_name))
     {
-        logerr << "filter " << instance_id
+        logerr << "filter " << instance_name
                << " already present";
         return;
     }
 
-    logdbg << "filter class_id " << class_id << " instance_id " << instance_id;
+    logdbg << "filter class_name " << class_name << " instance_name " << instance_name;
 
-    if (class_id == "DBFilter")
+    if (class_name == "DBFilter")
     {
         DBFilter* filter = new DBFilter(child_json, true, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ADSBQualityFilter")
+    else if (class_name == "ADSBQualityFilter")
     {
         ADSBQualityFilter* filter = new ADSBQualityFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ACADFilter")
+    else if (class_name == "ACADFilter")
     {
         ACADFilter* filter = new ACADFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ACIDFilter")
+    else if (class_name == "ACIDFilter")
     {
         ACIDFilter* filter = new ACIDFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "Mode3AFilter")
+    else if (class_name == "Mode3AFilter")
     {
         Mode3AFilter* filter = new Mode3AFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ModeCFilter")
+    else if (class_name == "ModeCFilter")
     {
         ModeCFilter* filter = new ModeCFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "TimestampFilter")
+    else if (class_name == "TimestampFilter")
     {
         TimestampFilter* filter = new TimestampFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "TrackerTrackNumberFilter")
+    else if (class_name == "TrackerTrackNumberFilter")
     {
         TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "UTNFilter")
+    else if (class_name == "UTNFilter")
     {
         UTNFilter* filter = new UTNFilter(child_json, this);
 
         filters_.emplace_back(filter);
     }
-    else if (class_id == "PrimaryOnlyFilter")
+    else if (class_name == "PrimaryOnlyFilter")
     {
         PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "RefTrajAccuracyFilter")
+    else if (class_name == "RefTrajAccuracyFilter")
     {
         RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "MLATRUFilter")
+    else if (class_name == "MLATRUFilter")
     {
         MLATRUFilter* filter = new MLATRUFilter(child_json, this);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ExcludedTimeWindowsFilter")
+    else if (class_name == "ExcludedTimeWindowsFilter")
     {
         ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(child_json, this);
         filters_.emplace_back(filter);
     }
     else
-        throw std::runtime_error("FilterManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("FilterManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 bool FilterManager::checkDBContent (const std::string& dbcontent_name)
@@ -201,7 +201,7 @@ void FilterManager::checkSubConfigurables()
     auto ensureFilter = [this](const std::string& classid)
     {
         if (std::find_if(filters_.begin(), filters_.end(),
-                         [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
+                         [&classid](const unique_ptr<DBFilter>& x) { return x->className() == classid;}) == filters_.end())
         {
             auto& child_json = addNewSubConfiguration(classid, classid+"0");
             generateSubConfigurable(child_json);
@@ -227,7 +227,7 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, db
 
     for (auto& filter : filters_)
     {
-        logdbg << "filter " << filter->instanceId() << " active "
+        logdbg << "filter " << filter->instanceName() << " active "
                << filter->getActive() << " filters " << dbcontent_name << " "
                << filter->filters(dbcontent_name);
 
@@ -235,7 +235,7 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, db
         {
             condition_str = filter->getConditionString(dbcontent_name, read_set, first);
 
-            logdbg << "filter " << filter->instanceId()
+            logdbg << "filter " << filter->instanceName()
                    << " condition '" << condition_str << "'";
 
             ss << condition_str;

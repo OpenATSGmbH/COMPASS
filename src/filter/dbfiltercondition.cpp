@@ -52,17 +52,17 @@ DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
     registerParameter("variable_dbcontent_name", &variable_dbcontent_name_, std::string());
     registerParameter("variable_name", &variable_name_, std::string());
 
-    registerParameter("display_instance_id", &display_instance_id_, false);
+    registerParameter("display_instance_name", &display_instance_name_, false);
 
     registerParameter("reset_value", &reset_value_, std::string(""));
     registerParameter("value", &value_, std::string());
 
-    logdbg << "start" << instanceId() << " value " << value_
+    logdbg << "start" << instanceName() << " value " << value_
            << " usable " << usable_ << " invalid " << value_invalid_;
 
     label_ = new QLabel();
-    if (display_instance_id_)
-        label_->setText(tr((instanceId() + " " + operator_).c_str()));
+    if (display_instance_name_)
+        label_->setText(tr((instanceName() + " " + operator_).c_str()));
     else
         label_->setText(tr((variable_name_ + " " + operator_).c_str()));
 
@@ -158,7 +158,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     }
 
     if (ss.str().size())
-        loginf << instanceId() << ": '" << ss.str()
+        loginf << instanceName() << ": '" << ss.str()
                << "'";
 
     if (var.dbExpression().size() && !read_set.hasVariable(var))
@@ -257,8 +257,8 @@ dbContent::Variable& DBFilterCondition::variable (const std::string& dbcontent_n
 
 void DBFilterCondition::update()
 {
-    if (display_instance_id_)
-        label_->setText(tr((instanceId() + " " + operator_).c_str()));
+    if (display_instance_name_)
+        label_->setText(tr((instanceName() + " " + operator_).c_str()));
     else
         label_->setText(tr((variable_name_ + " " + operator_).c_str()));
 
@@ -324,7 +324,7 @@ void DBFilterCondition::reset()
 
 bool DBFilterCondition::getDisplayInstanceId() const
 {
-    return display_instance_id_;
+    return display_instance_name_;
 }
 
 bool DBFilterCondition::checkValueInvalid(const std::string& new_value)

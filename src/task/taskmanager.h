@@ -72,7 +72,7 @@ public slots:
     void databaseClosedSlot();
 
 public:
-    // TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
     TaskManager(nlohmann::json& config, COMPASS& compass);
 
     COMPASS& compass() { return compass_; }
@@ -143,7 +143,7 @@ public:
 protected:
     virtual void checkSubConfigurables() override;
 
-    void addTask(const std::string& class_id, Task* task);
+    void addTask(const std::string& class_name, Task* task);
     MainWindow* getMainWindow();
 
     std::shared_ptr<TaskResult> getOrCreateResult(const std::string& name, 

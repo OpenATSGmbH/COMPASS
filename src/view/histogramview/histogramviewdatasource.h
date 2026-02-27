@@ -39,7 +39,7 @@ class HistogramViewDataSource : public QObject, public Configurable
     void updateDataSignal(DBContent& object, std::shared_ptr<Buffer> buffer);
 
   public:
-    // HistogramViewDataSource(const std::string& class_id, const std::string& instance_id,
+    // HistogramViewDataSource(const std::string& class_name, const std::string& instance_name,
     //                       Configurable* parent);
     HistogramViewDataSource(nlohmann::json& config, HistogramView* parent);
     /// @brief Destructor

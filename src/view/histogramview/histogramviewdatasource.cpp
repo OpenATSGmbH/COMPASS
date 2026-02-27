@@ -40,10 +40,10 @@ using namespace std;
 using namespace nlohmann;
 using namespace dbContent;
 
-// HistogramViewDataSource::HistogramViewDataSource(const std::string& class_id,
-//                                              const std::string& instance_id, Configurable* parent)
+// HistogramViewDataSource::HistogramViewDataSource(const std::string& class_name,
+//                                              const std::string& instance_name, Configurable* parent)
 //     : QObject(),
-//       Configurable(class_id, instance_id, parent)
+//       Configurable(class_name, instance_name, parent)
 
 HistogramViewDataSource::HistogramViewDataSource(nlohmann::json& config,
                                                  HistogramView* parent)
@@ -67,19 +67,19 @@ HistogramViewDataSource::~HistogramViewDataSource()
 
 void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
-    logdbg << "class_id " << class_id
-           << " instance_id " << instance_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name
+           << " instance_name " << instance_name;
 
-    if (class_id.compare("VariableOrderedSet") == 0)
+    if (class_name.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
         set_ = new VariableOrderedSet(child_json, view_->compass().dbContentManager(), this);
     }
     else
         throw std::runtime_error(
-            "HistogramViewDataSource: generateSubConfigurable: unknown class_id " + class_id);
+            "HistogramViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void HistogramViewDataSource::checkSubConfigurables()

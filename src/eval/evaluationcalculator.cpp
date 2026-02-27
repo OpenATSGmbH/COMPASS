@@ -268,9 +268,9 @@ void EvaluationCalculator::readSettings()
  */
 void EvaluationCalculator::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "EvaluationStandard")
+    if (class_name == "EvaluationStandard")
     {
         EvaluationStandard* standard = new EvaluationStandard(child_json, this);
         logdbg << "adding standard " << standard->name();
@@ -287,7 +287,7 @@ void EvaluationCalculator::generateSubConfigurable(nlohmann::json& child_json)
         });
     }
     else
-        throw std::runtime_error("EvaluationCalculator: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("EvaluationCalculator: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 /**

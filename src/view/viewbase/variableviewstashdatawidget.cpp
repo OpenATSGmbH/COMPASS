@@ -108,7 +108,7 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
 {
     auto view = variableView();
 
-    loginf << "updating data for view " << view->classId();
+    loginf << "updating data for view " << view->className();
 
     for (size_t i = 0; i < view->numVariables(); ++i)
     {

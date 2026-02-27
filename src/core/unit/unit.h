@@ -35,8 +35,8 @@ class Unit : public Configurable
 {
   public:
     // Legacy constructor removed — use json-backed constructor below
-    // Unit(const std::string& class_id, const std::string& instance_id, Dimension& parent)
-    //     : Configurable(class_id, instance_id, &parent) { ... }
+    // Unit(const std::string& class_name, const std::string& instance_name, Dimension& parent)
+    //     : Configurable(class_name, instance_name, &parent) { ... }
 
     /// @brief Constructor backed by a json reference
     Unit(nlohmann::json& config, Dimension* parent)

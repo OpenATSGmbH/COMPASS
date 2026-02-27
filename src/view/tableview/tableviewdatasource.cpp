@@ -36,11 +36,11 @@ using namespace dbContent;
 
 const string DEFAULT_SET_NAME {"Default"};
 
-// TableViewDataSource::TableViewDataSource(const std::string& class_id,
-//                                              const std::string& instance_id,
+// TableViewDataSource::TableViewDataSource(const std::string& class_name,
+//                                              const std::string& instance_name,
 //                                              Configurable* parent)
 // :   QObject()
-// ,   Configurable(class_id, instance_id, parent)
+// ,   Configurable(class_name, instance_name, parent)
 
 TableViewDataSource::TableViewDataSource(nlohmann::json& config,
                                          TableView* parent)
@@ -58,12 +58,12 @@ TableViewDataSource::~TableViewDataSource()
 
 void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
-    logdbg << "class_id " << class_id
-           << " instance_id " << instance_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name
+           << " instance_name " << instance_name;
 
-    if (class_id.compare("VariableOrderedSet") == 0)
+    if (class_name.compare("VariableOrderedSet") == 0)
     {
         traced_assert(!set_);
 
@@ -79,7 +79,7 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
     else
     {
         throw std::runtime_error(
-            "TableViewDataSource: generateSubConfigurable: unknown class_id " + class_id);
+            "TableViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 

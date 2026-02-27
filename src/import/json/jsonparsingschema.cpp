@@ -33,10 +33,10 @@ JSONParsingSchema::JSONParsingSchema(nlohmann::json& config, JSONImportTask* par
 
 void JSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
-    if (class_id == "JSONObjectParser")
+    if (class_name == "JSONObjectParser")
     {
         std::string name;
 
@@ -56,15 +56,15 @@ void JSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(name.size());
         traced_assert(parsers_.find(name) == parsers_.end());
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " with name " << name;
 
         auto parser = std::make_unique<JSONObjectParser>(child_json, this, compass_);
         parsers_[name] = std::move(parser);
     }
     else
-        throw std::runtime_error("JSONParsingSchema: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("JSONParsingSchema: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 std::string JSONParsingSchema::name() const { return name_; }

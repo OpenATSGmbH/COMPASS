@@ -74,32 +74,32 @@ public:
 
     virtual std::string getPath() const;
 
-    nlohmann::json& addNewSubConfiguration(const std::string& class_id,
-                                           const std::string& instance_id);
-    nlohmann::json& addNewSubConfiguration(const std::string& class_id);
-    void removeSubConfigurations(const std::string& class_id);
+    nlohmann::json& addNewSubConfiguration(const std::string& class_name,
+                                           const std::string& instance_name);
+    nlohmann::json& addNewSubConfiguration(const std::string& class_name);
+    void removeSubConfigurations(const std::string& class_name);
 
     /// Returns a reference to the sub-config entry, creating it if it doesn't exist yet.
-    nlohmann::json& ensureSubConfig(const std::string& class_id,
-                                    const std::string& instance_id);
+    nlohmann::json& ensureSubConfig(const std::string& class_name,
+                                    const std::string& instance_name);
     /// Creates an empty sub-config entry and calls generateSubConfigurable() on it.
-    void generateSubConfigurableFromConfig(const std::string& class_id,
-                                           const std::string& instance_id);
+    void generateSubConfigurableFromConfig(const std::string& class_name,
+                                           const std::string& instance_name);
     /// Clones the given configurable's JSON representation, merges additional_data,
     /// adds it as a sub-config entry, and generates the child configurable from it.
     void generateSubConfigurableFromJSON(const Configurable& configurable,
                                          const nlohmann::json& additional_data = nlohmann::json());
-    bool hasSubConfigurable(const std::string& class_id, const std::string& instance_id) const;
+    bool hasSubConfigurable(const std::string& class_name, const std::string& instance_name) const;
     /// Walks a dot-separated path of instance/class names to find a descendant.
     std::pair<rtcommand::FindObjectErrCode, Configurable*> findSubConfigurablePath(const std::string& path);
     /// Searches for a child by name, then recurses into children if not found directly.
     std::pair<rtcommand::FindObjectErrCode, Configurable*> findSubConfigurableName(const std::string& name);
-    /// Case-insensitive lookup: tries exact instance_id match first, then first class_id match.
+    /// Case-insensitive lookup: tries exact instance_name match first, then first class_name match.
     Configurable* getApproximateChildNamed(const std::string& approx_name);
-    const Configurable& getChild(const std::string& class_id,
-                                 const std::string& instance_id) const;
-    Configurable& getChild(const std::string& class_id,
-                           const std::string& instance_id);
+    const Configurable& getChild(const std::string& class_name,
+                                 const std::string& instance_name) const;
+    Configurable& getChild(const std::string& class_name,
+                           const std::string& instance_name);
 
     /// Override to control how reconfigure() handles sub-configs missing from the target
     /// hierarchy. Default: MustExist (fail on missing). Alternatives: CreateIfMissing, SkipIfMissing.
@@ -107,8 +107,8 @@ public:
     /// Same as reconfigureSubConfigMode() but for parameters.
     virtual MissingKeyMode reconfigureParameterMode() const;
 
-    const std::string& instanceId() const { return instance_id_; }
-    const std::string& classId() const { return class_id_; }
+    const std::string& instanceName() const { return instance_name_; }
+    const std::string& className() const { return class_name_; }
     const std::string& keyId() const { return key_id_; }
 
     /// Prevents config removal from the parent's sub_config_storage_ when this instance is
@@ -133,8 +133,8 @@ public:
     virtual Result applyJSONParameters(const nlohmann::json& params_json);
     virtual Result applyJSONStringParameters(const std::string& params_json_str);
 
-    static std::string keyID(const std::string& class_id,
-                             const std::string& instance_id);
+    static std::string keyID(const std::string& class_name,
+                             const std::string& instance_name);
 
     static const char ConfigurablePathSeparator;
 
@@ -197,9 +197,9 @@ private:
         return *configuration_;
     }
 
-    std::string class_id_;
-    std::string instance_id_;
-    std::string key_id_;                            ///< class_id + instance_id
+    std::string class_name_;
+    std::string instance_name_;
+    std::string key_id_;                            ///< class_name + instance_name
     Configurable* parent_{nullptr};
     std::string path_str_;                          ///< Dot-separated path from root
     Configuration* configuration_{nullptr};         ///< Owned. Created in constructor, deleted in destructor.

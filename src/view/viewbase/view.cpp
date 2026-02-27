@@ -39,8 +39,8 @@ unsigned int View::cnt_ = 0;
 
 /**
 @brief Constructor.
-@param class_id Configurable class id.
-@param instance_id Configurable instance id.
+@param class_name Configurable class id.
+@param instance_name Configurable instance id.
 @param w ViewContainerWidget the view is embedded in, configurable parent.
  */
 View::View(nlohmann::json& config, ViewContainer* parent)

@@ -56,7 +56,7 @@ class ViewContainer : public QObject, public Configurable
     virtual std::string getWindowName();
     //static unsigned int getViewCount() { return view_count_; }
 
-    void addView(const std::string& class_id);
+    void addView(const std::string& class_name);
     void enableViewTab(QWidget* widget, bool value);
     void showView(QWidget* widget);
 

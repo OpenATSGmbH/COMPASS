@@ -47,8 +47,8 @@ public:
         DataVarY
     };
 
-    // ScatterPlotView(const std::string& class_id,
-    //                 const std::string& instance_id,
+    // ScatterPlotView(const std::string& class_name,
+    //                 const std::string& instance_name,
     //                 ViewContainer* w,
     //                 ViewManager& view_manager);
     ScatterPlotView(nlohmann::json& config, ViewContainer* parent);

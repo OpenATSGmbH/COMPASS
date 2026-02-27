@@ -70,9 +70,9 @@ ASTERIXJSONParser::ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& 
 
 void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "JSONDataMapping")
+    if (class_name == "JSONDataMapping")
     {
         auto* mapping = new JSONDataMapping(child_json, this, compass_);
         mapping->mandatory(false);
@@ -81,7 +81,7 @@ void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
         mapping_checks_dirty_ = true;
     }
     else
-        throw std::runtime_error("ASTERIXJSONParser: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("ASTERIXJSONParser: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void ASTERIXJSONParser::doMappingChecks()
@@ -614,7 +614,7 @@ void ASTERIXJSONParser::removeMapping(unsigned int index)
     std::unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index);
 
     loginf << "index " << index << " key " << mapping->jsonKey()
-           << " instance " << mapping->instanceId();
+           << " instance " << mapping->instanceName();
 
     logdbg2 << "size " << data_mappings_.size();
 

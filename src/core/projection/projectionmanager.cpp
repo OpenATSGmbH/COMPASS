@@ -105,9 +105,9 @@ ProjectionManager::~ProjectionManager()
 
 void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "RS2GProjection")
+    if (class_name == "RS2GProjection")
     {
         string name = child_json[Configuration::ParameterSection].value("name", string());
 
@@ -115,14 +115,14 @@ void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
 
         projections_[name].reset(new RS2GProjection(child_json, this));
     }
-    else if (class_id == "OGRProjection")
+    else if (class_name == "OGRProjection")
     {
     }
-    else if (class_id == "GeoProjection")
+    else if (class_name == "GeoProjection")
     {
     }
     else
-        throw runtime_error("DBContent: generateSubConfigurable: unknown class_id " + class_id);
+        throw runtime_error("DBContent: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void ProjectionManager::checkSubConfigurables()

@@ -165,9 +165,9 @@ DataSourceManager::~DataSourceManager()
 
 void DataSourceManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "ConfigurationDataSource")
+    if (class_name == "ConfigurationDataSource")
     {
         auto ds = std::make_unique<dbContent::ConfigurationDataSource>(child_json, this);
 
@@ -178,8 +178,8 @@ void DataSourceManager::generateSubConfigurable(nlohmann::json& child_json)
         config_data_sources_.emplace_back(std::move(ds));
     }
     else
-        throw std::runtime_error("DataSourceManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("DataSourceManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 void DataSourceManager::addSensorStatusVariables(const std::string& dbcontent_name, dbContent::VariableSet& var_set) const

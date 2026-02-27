@@ -149,8 +149,8 @@ ReconstructorTask::~ReconstructorTask()
 
 void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    if (class_id == "SimpleReconstructor")
+    const auto& class_name = Configuration::getClassName(child_json);
+    if (class_name == "SimpleReconstructor")
     {
         traced_assert(!simple_reconstructor_);
 
@@ -162,7 +162,7 @@ void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
 
         connect(simple_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
     }
-    else if (class_id == "ProbIMMReconstructor")
+    else if (class_name == "ProbIMMReconstructor")
     {
 #if USE_EXPERIMENTAL_SOURCE == true
 
@@ -178,7 +178,7 @@ void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
 #endif
     }
     else
-        throw std::runtime_error("ReconstructorTask: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("ReconstructorTask: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void ReconstructorTask::initTask()

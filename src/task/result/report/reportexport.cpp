@@ -34,10 +34,10 @@ namespace ResultReport
 
 /**
  */
-// ReportExport::ReportExport(const std::string& class_id,
-//                            const std::string& instance_id,
+// ReportExport::ReportExport(const std::string& class_name,
+//                            const std::string& instance_name,
 //                            TaskManager* task_manager)
-// :   Configurable(class_id, instance_id, task_manager)
+// :   Configurable(class_name, instance_name, task_manager)
 // {
 //     registerParameter("author"           , &settings_.author           , ReportExportSettings().author           );
 //     registerParameter("open_created_file", &settings_.open_created_file, ReportExportSettings().open_created_file);

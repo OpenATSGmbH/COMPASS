@@ -60,8 +60,8 @@ const bool TaskManager::CleanupDBIfNeeded = true;
 
 /**
  */
-// TaskManager::TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
-//     : Configurable(class_id, instance_id, compass, "task.json") ...
+// TaskManager::TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
+//     : Configurable(class_name, instance_name, compass, "task.json") ...
 
 TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
@@ -82,76 +82,76 @@ TaskManager::~TaskManager()
  */
 void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "ASTERIXImportTask")
+    if (class_name == "ASTERIXImportTask")
     {
         traced_assert(!asterix_importer_task_);
         asterix_importer_task_.reset(new ASTERIXImportTask(child_json, this));
         traced_assert(asterix_importer_task_);
-        addTask(class_id, asterix_importer_task_.get());
+        addTask(class_name, asterix_importer_task_.get());
     }
-    else if (class_id == "ViewPointsImportTask")
+    else if (class_name == "ViewPointsImportTask")
     {
         traced_assert(!view_points_import_task_);
         view_points_import_task_.reset(new ViewPointsImportTask(child_json, this));
         traced_assert(view_points_import_task_);
-        addTask(class_id, view_points_import_task_.get());
+        addTask(class_name, view_points_import_task_.get());
     }
-    else if (class_id == "JSONImportTask")
+    else if (class_name == "JSONImportTask")
     {
         traced_assert(!json_import_task_);
         json_import_task_.reset(new JSONImportTask(child_json, this));
         traced_assert(json_import_task_);
-        addTask(class_id, json_import_task_.get());
+        addTask(class_name, json_import_task_.get());
     }
-    else if (class_id == "GPSTrailImportTask")
+    else if (class_name == "GPSTrailImportTask")
     {
         traced_assert(!gps_trail_import_task_);
         gps_trail_import_task_.reset(new GPSTrailImportTask(child_json, this));
         traced_assert(gps_trail_import_task_);
-        addTask(class_id, gps_trail_import_task_.get());
+        addTask(class_name, gps_trail_import_task_.get());
     }
-    // else if (class_id == "GPSImportCSVTask")
+    // else if (class_name == "GPSImportCSVTask")
     // {
     //     traced_assert(!gps_import_csv_task_);
     //     gps_import_csv_task_.reset(new GPSImportCSVTask(child_json, *this, this));
     //     traced_assert(gps_import_csv_task_);
-    //     addTask(class_id, gps_import_csv_task_.get());
+    //     addTask(class_name, gps_import_csv_task_.get());
     // }
-    else if (class_id == "ManageSectorsTask")
+    else if (class_name == "ManageSectorsTask")
     {
         traced_assert(!manage_sectors_task_);
         manage_sectors_task_.reset(new ManageSectorsTask(child_json, this));
         traced_assert(manage_sectors_task_);
-        addTask(class_id, manage_sectors_task_.get());
+        addTask(class_name, manage_sectors_task_.get());
     }
-    else if (class_id == "RadarPlotPositionCalculatorTask")
+    else if (class_name == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
         radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this, compass_));
         traced_assert(radar_plot_position_calculator_task_);
-        addTask(class_id, radar_plot_position_calculator_task_.get());
+        addTask(class_name, radar_plot_position_calculator_task_.get());
 
         connect(radar_plot_position_calculator_task_.get(), &RadarPlotPositionCalculatorTask::doneSignal,
                 this, &TaskManager::taskRadarPlotPositionsDoneSignal);
     }
-    else if (class_id == "CreateARTASAssociationsTask")
+    else if (class_name == "CreateARTASAssociationsTask")
     {
         traced_assert(!create_artas_associations_task_);
         create_artas_associations_task_.reset(
                     new CreateARTASAssociationsTask(child_json, this));
         traced_assert(create_artas_associations_task_);
-        addTask(class_id, create_artas_associations_task_.get());
+        addTask(class_name, create_artas_associations_task_.get());
     }
-    else if (class_id == "ReconstructorTask")
+    else if (class_name == "ReconstructorTask")
     {
         traced_assert(!reconstruct_references_task_);
         reconstruct_references_task_.reset(new ReconstructorTask(child_json, this));
         traced_assert(reconstruct_references_task_);
-        addTask(class_id, reconstruct_references_task_.get());
+        addTask(class_name, reconstruct_references_task_.get());
     }
-    else if (class_id == "ReportExport")
+    else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
         report_export_.reset(new ResultReport::ReportExport(child_json, this));
@@ -159,18 +159,18 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("TaskManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("TaskManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
     }
 }
 
 /**
  */
-void TaskManager::addTask(const std::string& class_id, Task* task)
+void TaskManager::addTask(const std::string& class_name, Task* task)
 {
     traced_assert(task);
-    traced_assert(!tasks_.count(class_id));
-    tasks_[class_id] = task;
+    traced_assert(!tasks_.count(class_name));
+    tasks_[class_name] = task;
 }
 
 /**

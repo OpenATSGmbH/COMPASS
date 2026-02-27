@@ -31,10 +31,10 @@ using namespace std;
 namespace dbContent
 {
 
-// VariableOrderedSet::VariableOrderedSet(const std::string& class_id,
-//                                        const std::string& instance_id,
+// VariableOrderedSet::VariableOrderedSet(const std::string& class_name,
+//                                        const std::string& instance_name,
 //                                        Configurable* parent)
-//     : Configurable(class_id, instance_id, parent) ...
+//     : Configurable(class_name, instance_name, parent) ...
 
 VariableOrderedSet::VariableOrderedSet(nlohmann::json& config, DBContentManager& dbcont_man, Configurable* parent)
     : Configurable(config, parent), dbcont_man_(dbcont_man)
@@ -75,10 +75,10 @@ VariableOrderedSet::~VariableOrderedSet() = default;
 
 void VariableOrderedSet::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    logdbg << "class_id " << class_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    logdbg << "class_name " << class_name;
 
-    throw std::runtime_error("VariableOrderedSet: generateSubConfigurable: unknown class_id " + class_id);
+    throw std::runtime_error("VariableOrderedSet: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void VariableOrderedSet::checkSubConfigurables() {}

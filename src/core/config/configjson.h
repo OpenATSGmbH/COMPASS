@@ -42,8 +42,8 @@ public:
     /// Metadata about a sub-config that was loaded from a separate file
     struct SubConfigFile
     {
-        std::string class_id;
-        std::string instance_id;
+        std::string class_name;
+        std::string instance_name;
         std::string filename;
         std::vector<SubConfigFile> children;  ///< nested sub_config_files within this child
     };

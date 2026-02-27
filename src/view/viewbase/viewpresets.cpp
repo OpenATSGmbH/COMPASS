@@ -47,7 +47,7 @@ namespace
 {
     std::string viewID(const View* view)
     {
-        return view->classId();
+        return view->className();
     }
 }
 

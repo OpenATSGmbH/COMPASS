@@ -29,13 +29,13 @@ namespace
 /**
  * Build a minimal config JSON with class_name and instance_name embedded.
  */
-static json makeConfig(const std::string& class_id,
-                       const std::string& instance_id,
+static json makeConfig(const std::string& class_name,
+                       const std::string& instance_name,
                        json params = json::object())
 {
     json cfg;
-    cfg[Configuration::CLASS_NAME_KEY]    = class_id;
-    cfg[Configuration::INSTANCE_NAME_KEY] = instance_id;
+    cfg[Configuration::CLASS_NAME_KEY]    = class_name;
+    cfg[Configuration::INSTANCE_NAME_KEY] = instance_name;
     if (!params.empty())
         cfg["parameters"] = params;
     return cfg;
@@ -85,8 +85,8 @@ public:
 
     void generateSubConfigurable(nlohmann::json& child_json) override
     {
-        const auto& class_id = Configuration::getClassName(child_json);
-        if (class_id == "TestConfigurable")
+        const auto& class_name = Configuration::getClassName(child_json);
+        if (class_name == "TestConfigurable")
         {
             auto* child = new TestConfigurable(child_json, this);
             owned_children_.push_back(child);
@@ -200,8 +200,8 @@ TEST_CASE("parent-child", "[configurable]")
         TestConfigurable* child_b = nullptr;
         for (auto* c : parent.owned_children_)
         {
-            if (c->instanceId() == "Child0") child_a = c;
-            if (c->instanceId() == "Child1") child_b = c;
+            if (c->instanceName() == "Child0") child_a = c;
+            if (c->instanceName() == "Child1") child_b = c;
         }
 
         REQUIRE(child_a != nullptr);
@@ -231,7 +231,7 @@ TEST_CASE("parent-child", "[configurable]")
 
 TEST_CASE("getPath", "[configurable]")
 {
-    SECTION("root configurable path is just instance_id")
+    SECTION("root configurable path is just instance_name")
     {
         json cfg = makeConfig("TestConfigurable", "TC0");
         TestConfigurable tc(cfg);
@@ -239,7 +239,7 @@ TEST_CASE("getPath", "[configurable]")
         REQUIRE(tc.getPath() == "TC0");
     }
 
-    SECTION("child path is parent_path.instance_id")
+    SECTION("child path is parent_path.instance_name")
     {
         json cfg_parent = makeConfig("TestParent", "Parent0");
         json cfg_child  = makeConfig("TestConfigurable", "TC0");

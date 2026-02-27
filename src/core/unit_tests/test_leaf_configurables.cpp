@@ -32,13 +32,13 @@ namespace
 /**
  * Builds a minimal config JSON with class_name and instance_name.
  */
-static json makeConfig(const std::string& class_id,
-                       const std::string& instance_id,
+static json makeConfig(const std::string& class_name,
+                       const std::string& instance_name,
                        json params = json())
 {
     json cfg;
-    cfg[Configuration::CLASS_NAME_KEY]    = class_id;
-    cfg[Configuration::INSTANCE_NAME_KEY] = instance_id;
+    cfg[Configuration::CLASS_NAME_KEY]    = class_name;
+    cfg[Configuration::INSTANCE_NAME_KEY] = instance_name;
     if (!params.is_null() && !params.empty())
         cfg["parameters"] = params;
     return cfg;

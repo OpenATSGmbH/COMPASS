@@ -170,41 +170,41 @@ ViewManager::~ViewManager()
 
 void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
+    logdbg << "class_name " << class_name << " instance_name "
+           << instance_name;
 
     traced_assert(initialized_);
 
-    if (class_id == "ViewContainer")
+    if (class_name == "ViewContainer")
     {
         ViewContainer* container =
                 new ViewContainer(child_json, *this, main_tab_widget_, 0);
-        traced_assert(containers_.count(instance_id) == 0);
-        containers_.insert(std::pair<std::string, ViewContainer*>(instance_id, container));
+        traced_assert(containers_.count(instance_name) == 0);
+        containers_.insert(std::pair<std::string, ViewContainer*>(instance_name, container));
 
-        unsigned int number = String::getAppendedInt(instance_id);
+        unsigned int number = String::getAppendedInt(instance_name);
         if (number >= container_count_)
             container_count_ = number;
     }
-    else if (class_id == "ViewContainerWidget")
+    else if (class_name == "ViewContainerWidget")
     {
         ViewContainerWidget* container_widget =
                 new ViewContainerWidget(child_json, *this);
-        traced_assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
+        traced_assert(containers_.count(container_widget->viewContainer().instanceName()) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(
-                               container_widget->viewContainer().instanceId(), &container_widget->viewContainer()));
-        traced_assert(container_widgets_.count(instance_id) == 0);
+                               container_widget->viewContainer().instanceName(), &container_widget->viewContainer()));
+        traced_assert(container_widgets_.count(instance_name) == 0);
         container_widgets_.insert(
-                    std::pair<std::string, ViewContainerWidget*>(instance_id, container_widget));
+                    std::pair<std::string, ViewContainerWidget*>(instance_name, container_widget));
 
-        unsigned int number = String::getAppendedInt(instance_id);
+        unsigned int number = String::getAppendedInt(instance_name);
         if (number >= container_count_)
             container_count_ = number;
     }
-    else if (class_id == "ViewPointsReportGenerator")
+    else if (class_name == "ViewPointsReportGenerator")
     {
         traced_assert(!view_points_report_gen_);
 
@@ -212,8 +212,8 @@ void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(view_points_report_gen_);
     }
     else
-        throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 //    if (widget_)
 //        widget_->update();
 }
@@ -579,17 +579,17 @@ std::map<std::string, std::string> ViewManager::viewClassList() const
     return view_class_list_;
 }
 
-unsigned int ViewManager::newViewNumber(const std::string& class_id)
+unsigned int ViewManager::newViewNumber(const std::string& class_name)
 {
     int max_number = -1;
     int tmp;
 
     for (auto& view_it : views_)
     {
-        if (view_it.second->classId() != class_id)
+        if (view_it.second->className() != class_name)
             continue;
 
-        tmp = String::getAppendedInt(view_it.second->instanceId());
+        tmp = String::getAppendedInt(view_it.second->instanceName());
 
         if (tmp > max_number)
             max_number = tmp;
@@ -598,15 +598,15 @@ unsigned int ViewManager::newViewNumber(const std::string& class_id)
     return max_number + 1;
 }
 
-std::string ViewManager::newViewInstanceId(const std::string& class_id)
+std::string ViewManager::newViewInstanceId(const std::string& class_name)
 {
-    return class_id + to_string(newViewNumber(class_id));
+    return class_name + to_string(newViewNumber(class_name));
 }
 
-std::string ViewManager::newViewName(const std::string& class_id)
+std::string ViewManager::newViewName(const std::string& class_name)
 {
-    traced_assert(view_class_list_.count(class_id));
-    return view_class_list_.at(class_id) + " " + to_string(newViewNumber(class_id));
+    traced_assert(view_class_list_.count(class_name));
+    return view_class_list_.at(class_name) + " " + to_string(newViewNumber(class_name));
 }
 
 void ViewManager::disableDataDistribution(bool value)
@@ -702,7 +702,7 @@ void ViewManager::registerView(View* view)
     logdbg;
     traced_assert(view);
     traced_assert(!isRegistered(view));
-    views_[view->instanceId()] = view;
+    views_[view->instanceName()] = view;
 }
 
 void ViewManager::unregisterView(View* view)
@@ -713,7 +713,7 @@ void ViewManager::unregisterView(View* view)
 
     std::map<std::string, View*>::iterator it;
 
-    it = views_.find(view->instanceId());
+    it = views_.find(view->instanceName());
     views_.erase(it);
 }
 
@@ -724,18 +724,18 @@ bool ViewManager::isRegistered(View* view)
 
     std::map<std::string, View*>::iterator it;
 
-    it = views_.find(view->instanceId());
+    it = views_.find(view->instanceName());
 
     return !(it == views_.end());
 }
 
-void ViewManager::removeContainer(std::string instance_id)
+void ViewManager::removeContainer(std::string instance_name)
 {
     std::map<std::string, ViewContainer*>::iterator it;
 
-    logdbg << "instance " << instance_id;
+    logdbg << "instance " << instance_name;
 
-    it = containers_.find(instance_id);
+    it = containers_.find(instance_name);
 
     if (it != containers_.end())
     {
@@ -747,13 +747,13 @@ void ViewManager::removeContainer(std::string instance_id)
     throw std::runtime_error("ViewManager: removeContainer:  key not found");
 }
 
-void ViewManager::removeContainerWidget(std::string instance_id)
+void ViewManager::removeContainerWidget(std::string instance_name)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
 
-    logdbg << "instance " << instance_id;
+    logdbg << "instance " << instance_name;
 
-    it = container_widgets_.find(instance_id);
+    it = container_widgets_.find(instance_name);
 
     if (it != container_widgets_.end())
     {
@@ -765,13 +765,13 @@ void ViewManager::removeContainerWidget(std::string instance_id)
     throw std::runtime_error("ViewManager: removeContainer: key not found");
 }
 
-void ViewManager::deleteContainerWidget(std::string instance_id)
+void ViewManager::deleteContainerWidget(std::string instance_name)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
 
-    logdbg << "instance " << instance_id;
+    logdbg << "instance " << instance_name;
 
-    it = container_widgets_.find(instance_id);
+    it = container_widgets_.find(instance_name);
 
     if (it != container_widgets_.end())
     {
@@ -879,7 +879,7 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
         view_it.second->appModeSwitch(app_mode_previous, app_mode_current);
 
         if (app_mode_current == AppMode::LiveRunning)
-            view_it.second->enableInTabWidget(view_it.second->classId() == "GeographicView");
+            view_it.second->enableInTabWidget(view_it.second->className() == "GeographicView");
         else
             view_it.second->enableInTabWidget(true);
     }

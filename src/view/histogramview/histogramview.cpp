@@ -122,18 +122,18 @@ bool HistogramView::init_impl()
  */
 void HistogramView::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    if (class_id == "HistogramViewDataSource")
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name << " instance_name "
+           << instance_name;
+    if (class_name == "HistogramViewDataSource")
     {
         traced_assert(!data_source_);
         data_source_ = new HistogramViewDataSource(child_json, this);
     }
     else
-        throw std::runtime_error("HistogramView: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("HistogramView: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 /**

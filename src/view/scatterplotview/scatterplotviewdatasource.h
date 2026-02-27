@@ -36,7 +36,7 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
   signals:
 
   public:
-    // ScatterPlotViewDataSource(const std::string& class_id, const std::string& instance_id,
+    // ScatterPlotViewDataSource(const std::string& class_name, const std::string& instance_name,
     //                       Configurable* parent);
     ScatterPlotViewDataSource(nlohmann::json& config, ScatterPlotView* parent);
     /// @brief Destructor

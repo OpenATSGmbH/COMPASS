@@ -52,21 +52,21 @@ MetaVariable::MetaVariable(nlohmann::json& config, DBContentManager* parent)
 
         if (!object_manager_.existsDBContent(dbcontent_name))
         {
-            logerr << "name " << name_ << " dbcontvariable definition " << instanceId()
+            logerr << "name " << name_ << " dbcontvariable definition " << instanceName()
                    << " has unknown dbcont, ignoring";
             return;
         }
 
         if (!object_manager_.dbContent(dbcontent_name).hasVariable(dbcontvar_name))
         {
-            logerr << "name " << name_ << " dbcontvariable definition " << instanceId()
+            logerr << "name " << name_ << " dbcontvariable definition " << instanceName()
                    << " has unknown dbcont variable, ignoring";
             return;
         }
 
         if (variables_.find(dbcontent_name) != variables_.end())
         {
-            logerr << "name " << name_ << " dbcontvariable definition " << instanceId()
+            logerr << "name " << name_ << " dbcontvariable definition " << instanceName()
                    << " has already defined dbcont, ignoring";
             return;
         }

@@ -265,85 +265,85 @@ std::string COMPASS::getPath() const
 
 void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    logdbg << "class_id " << class_id;
-    if (class_id == "DBInterface")
+    logdbg << "class_name " << class_name;
+    if (class_name == "DBInterface")
     {
         traced_assert(!db_interface_);
         db_interface_.reset(new DBInterface(child_json, *this));
         traced_assert(db_interface_);
     }
-    else if (class_id == "DBContentManager")
+    else if (class_name == "DBContentManager")
     {
         traced_assert(!dbcontent_manager_);
         dbcontent_manager_.reset(new DBContentManager(child_json, *this));
         traced_assert(dbcontent_manager_);
     }
-    else if (class_id == "DataSourceManager")
+    else if (class_name == "DataSourceManager")
     {
         traced_assert(!ds_manager_);
         ds_manager_.reset(new DataSourceManager(child_json, *this));
         traced_assert(ds_manager_);
     }
-    else if (class_id == "FilterManager")
+    else if (class_name == "FilterManager")
     {
         traced_assert(!filter_manager_);
         filter_manager_.reset(new FilterManager(child_json, *this));
         traced_assert(filter_manager_);
     }
-    else if (class_id == "TaskManager")
+    else if (class_name == "TaskManager")
     {
         traced_assert(!task_manager_);
         task_manager_.reset(new TaskManager(child_json, *this));
         traced_assert(task_manager_);
     }
-    else if (class_id == "ViewManager")
+    else if (class_name == "ViewManager")
     {
         traced_assert(!view_manager_);
         view_manager_.reset(new ViewManager(child_json, *this));
         traced_assert(view_manager_);
     }
-    else if (class_id == "EvaluationManager")
+    else if (class_name == "EvaluationManager")
     {
         traced_assert(!eval_manager_);
         eval_manager_.reset(new EvaluationManager(child_json, *this));
         traced_assert(eval_manager_);
     }
-    else if (class_id == "FFTManager")
+    else if (class_name == "FFTManager")
     {
         traced_assert(!fft_manager_);
         fft_manager_.reset(new FFTManager(child_json, this));
         traced_assert(fft_manager_);
     }
-    else if (class_id == "LicenseManager")
+    else if (class_name == "LicenseManager")
     {
         traced_assert(!license_manager_);
         license_manager_.reset(new LicenseManager(child_json, *this));
         traced_assert(license_manager_);
     }
-    else if (class_id == "JobManager")
+    else if (class_name == "JobManager")
     {
         traced_assert(!job_manager_);
         job_manager_.reset(new JobManager(child_json, this));
     }
-    else if (class_id == "UnitManager")
+    else if (class_name == "UnitManager")
     {
         traced_assert(!unit_manager_);
         unit_manager_.reset(new UnitManager(child_json, this));
     }
-    else if (class_id == "ProjectionManager")
+    else if (class_name == "ProjectionManager")
     {
         traced_assert(!projection_manager_);
         projection_manager_.reset(new ProjectionManager(child_json, this));
     }
-    else if (class_id == "RTCommandManager")
+    else if (class_name == "RTCommandManager")
     {
         traced_assert(!rt_cmd_manager_);
         rt_cmd_manager_.reset(new RTCommandManager(child_json, this));
     }
     else
-        throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void COMPASS::checkSubConfigurables()

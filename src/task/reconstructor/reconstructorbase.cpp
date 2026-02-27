@@ -494,11 +494,11 @@ void ReconstructorBase::TargetsContainer::clear()
     //removed_utns_.clear();
 }
 
-// ReconstructorBase::ReconstructorBase(const std::string& class_id,
-//                                      const std::string& instance_id,
+// ReconstructorBase::ReconstructorBase(const std::string& class_name,
+//                                      const std::string& instance_name,
 //                                      ReconstructorTask& task,
 //                                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
-//     :   Configurable (class_id, instance_id, &task)
+//     :   Configurable (class_name, instance_name, &task)
 
 ReconstructorBase::ReconstructorBase(nlohmann::json& config,
                                      ReconstructorTask& task,

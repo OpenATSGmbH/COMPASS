@@ -96,14 +96,14 @@ EvaluationManager::~EvaluationManager()
 */
 void EvaluationManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "EvaluationTargetFilter")
+    if (class_name == "EvaluationTargetFilter")
     {
         traced_assert(!target_filter_);
         target_filter_.reset(new EvaluationTargetFilter(child_json, *this));
     }
-    else if (class_id == "EvaluationCalculator")
+    else if (class_name == "EvaluationCalculator")
     {
         traced_assert(!calculator_);
 
@@ -112,7 +112,7 @@ void EvaluationManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("EvaluationManager: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("EvaluationManager: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 

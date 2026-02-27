@@ -47,10 +47,10 @@ ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(nlohmann::json& config, ASTER
 
 void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
-    if (class_id == "ASTERIXJSONParser")
+    if (class_name == "ASTERIXJSONParser")
     {
         unsigned int category{0};
 
@@ -59,7 +59,7 @@ void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_jso
 
         traced_assert(parsers_.find(category) == parsers_.end());
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " for cat  " << category;
 
         auto parser = std::make_unique<ASTERIXJSONParser>(child_json, task_, task_.compass(), this);
@@ -67,8 +67,8 @@ void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_jso
     }
     else
     {
-        throw std::runtime_error("ASTERIXJSONParsingSchema: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ASTERIXJSONParsingSchema: generateSubConfigurable: unknown class_name " +
+                                 class_name);
     }
 }
 

@@ -204,7 +204,7 @@ DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
 
     createSubConfigurables();
 
-    logdbg << "created with instance_id " << instanceId() << " name " << name_;
+    logdbg << "created with instance_name " << instanceName() << " name " << name_;
 
     checkStaticVariable(DBContent::meta_var_ds_id_);
 
@@ -236,19 +236,19 @@ DBContent::~DBContent()
  */
 void DBContent::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    logdbg << "generating variable " << class_id;
-    if (class_id == "Variable")
+    const auto& class_name = Configuration::getClassName(child_json);
+    logdbg << "generating variable " << class_name;
+    if (class_name == "Variable")
     {
         Variable* var = new Variable(child_json, this, name_);
 
         if (hasVariable(var->name()))
-            logerr << "duplicate variable " << var->instanceId()
+            logerr << "duplicate variable " << var->instanceName()
                    << " with name '" << var->name() << "'";
 
         traced_assert(!hasVariable(var->name()));
 
-        logdbg << "generating variable " << var->instanceId()
+        logdbg << "generating variable " << var->instanceName()
                << " with name " << var->name();
 
         variables_.emplace(std::piecewise_construct,
@@ -257,7 +257,7 @@ void DBContent::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw runtime_error("DBContent: generateSubConfigurable: unknown class_id " + class_id);
+        throw runtime_error("DBContent: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 

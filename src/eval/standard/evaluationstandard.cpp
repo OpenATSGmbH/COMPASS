@@ -61,9 +61,9 @@ EvaluationStandard::~EvaluationStandard()
 
 void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "EvaluationRequirementGroup")
+    if (class_name == "EvaluationRequirementGroup")
     {
         Group* group = new Group(child_json, this);
 
@@ -76,8 +76,8 @@ void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
         connect (group, &Group::configsChangedSignal, this, &EvaluationStandard::groupsChangedSlot);
     }
     else
-        throw std::runtime_error("EvaluationStandard: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("EvaluationStandard: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 std::string EvaluationStandard::name() const
@@ -232,7 +232,7 @@ void EvaluationStandard::addToReport (std::shared_ptr<ResultReport::Report> repo
                 continue;
 
             req_table.addRow({req_it->shortName(), req_it->name(), std_it->name(),
-                              Group::requirement_type_mapping_.at(req_it->classId())});
+                              Group::requirement_type_mapping_.at(req_it->className())});
 
             req_it->addToReport(report);
         }

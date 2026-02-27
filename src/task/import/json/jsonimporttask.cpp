@@ -69,10 +69,10 @@ JSONImportTask::~JSONImportTask()
 
 void JSONImportTask::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
-    if (class_id == "JSONParsingSchema")
+    if (class_name == "JSONParsingSchema")
     {
         std::string name;
         if (child_json.contains("parameters") && child_json["parameters"].contains("name"))
@@ -81,15 +81,15 @@ void JSONImportTask::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(name.size());
         traced_assert(schemas_.find(name) == schemas_.end());
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " with name " << name;
 
         auto schema = make_shared<JSONParsingSchema>(child_json, this, manager().compass());
         schemas_[name] = std::move(schema);
     }
     else
-        throw std::runtime_error("JSONImportTask: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("JSONImportTask: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 JSONImportTaskDialog* JSONImportTask::dialog()

@@ -39,9 +39,9 @@ BaseConfigWidget::BaseConfigWidget(BaseConfig& cfg)
 
     form_layout_ = new QFormLayout();
 
-    traced_assert(Group::requirement_type_mapping_.count(config_.classId()));
+    traced_assert(Group::requirement_type_mapping_.count(config_.className()));
     form_layout_->addRow("Requirement Type",
-                         new QLabel(Group::requirement_type_mapping_.at(config_.classId()).c_str()));
+                         new QLabel(Group::requirement_type_mapping_.at(config_.className()).c_str()));
 
     QLineEdit* name_edit = new QLineEdit (config_.name().c_str());
     connect(name_edit, &QLineEdit::editingFinished, this, &BaseConfigWidget::changedNameSlot);

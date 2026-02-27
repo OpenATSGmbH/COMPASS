@@ -90,8 +90,8 @@ const size_t DBInterface::TableBulkUpdateMinRows = 50;
 
 /**
  */
-// DBInterface::DBInterface(string class_id, string instance_id, COMPASS* compass)
-//     : Configurable(class_id, instance_id, compass), ...
+// DBInterface::DBInterface(string class_name, string instance_name, COMPASS* compass)
+//     : Configurable(class_name, instance_name, compass), ...
 
 DBInterface::DBInterface(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass)

@@ -44,7 +44,7 @@ class VariableSet;
 class DBFilter : public Configurable
 {
   public:
-    // DBFilter(const std::string& class_id, const std::string& instance_id, Configurable* parent,
+    // DBFilter(const std::string& class_name, const std::string& instance_name, Configurable* parent,
     //          bool is_generic = true);
     DBFilter(nlohmann::json& config, bool is_generic,
              FilterManager* parent);

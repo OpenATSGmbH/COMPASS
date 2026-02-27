@@ -48,9 +48,9 @@ class ConfigurationManager
     /// for each root configurable listed in its "sub_config_files" array.
     void init(const std::string& main_config_filename);
 
-    bool hasRootConfigJSON(const std::string& class_id, const std::string& instance_id) const;
-    ConfigJSON& getRootConfigJSON(const std::string& class_id, const std::string& instance_id);
-    const ConfigJSON& getRootConfigJSON(const std::string& class_id, const std::string& instance_id) const;
+    bool hasRootConfigJSON(const std::string& class_name, const std::string& instance_name) const;
+    ConfigJSON& getRootConfigJSON(const std::string& class_name, const std::string& instance_name);
+    const ConfigJSON& getRootConfigJSON(const std::string& class_name, const std::string& instance_name) const;
 
     /// Registers a root configurable so its parameters are written back before save.
     void registerJsonRootConfigurable(Configurable& configurable);

@@ -106,7 +106,7 @@ private:
     std::string reset_value_;
     std::string variable_dbcontent_name_;
     std::string variable_name_;
-    bool display_instance_id_ {false};
+    bool display_instance_name_ {false};
 
     bool usable_{true};
     bool value_invalid_{false};

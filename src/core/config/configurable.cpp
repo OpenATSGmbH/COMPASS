@@ -33,22 +33,22 @@ using namespace Utils;
 const char Configurable::ConfigurablePathSeparator = '.';
 
 // Legacy constructor removed — all Configurables must now use the json-backed constructor.
-// Configurable::Configurable(const std::string& class_id,
-//                            const std::string& instance_id,
+// Configurable::Configurable(const std::string& class_name,
+//                            const std::string& instance_name,
 //                            Configurable* parent,
 //                            const std::string& root_configuration_filename,
 //                            const nlohmann::json* config)
 // { ... }
 
 Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
-    : class_id_(Configuration::getClassName(config_json)),
-      instance_id_(Configuration::getInstanceName(config_json)),
-      key_id_(keyID(class_id_, instance_id_)),
+    : class_name_(Configuration::getClassName(config_json)),
+      instance_name_(Configuration::getInstanceName(config_json)),
+      key_id_(keyID(class_name_, instance_name_)),
       parent_(parent),
-      path_str_(parent ? (parent->getPath() + ConfigurablePathSeparator + instance_id_) : instance_id_),
+      path_str_(parent ? (parent->getPath() + ConfigurablePathSeparator + instance_name_) : instance_name_),
       is_transient_(false)
 {
-    loginf << "class_id '" << class_id_ << "' instance_id '" << instance_id_
+    loginf << "class_name '" << class_name_ << "' instance_name '" << instance_name_
            << "' path_str_ '" << path_str_ << "'"
            << " json type=" << config_json.type_name();
 
@@ -64,7 +64,7 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
     }
     catch (const std::exception& e)
     {
-        logerr << "class_id '" << class_id_ << "' instance_id '" << instance_id_
+        logerr << "class_name '" << class_name_ << "' instance_name '" << instance_name_
                << "' Configuration construction failed: " << e.what();
         throw;
     }
@@ -77,12 +77,12 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
     if (parent_)
         parent_->addChild(this);
 
-    loginf << "class_id '" << class_id_ << "' instance_id '" << instance_id_ << "' construction complete";
+    loginf << "class_name '" << class_name_ << "' instance_name '" << instance_name_ << "' construction complete";
 }
 
 Configurable::~Configurable()
 {
-    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
+    logdbg << "class_name " << class_name_ << " instance_name " << instance_name_;
 
     //@TODO: most likely destroying a connection will disconnect both parties automatically...
     changed_connection_.disconnect();
@@ -96,10 +96,10 @@ Configurable::~Configurable()
     configuration_ = nullptr;
 }
 
-std::string Configurable::keyID(const std::string& class_id,
-                                const std::string& instance_id)
+std::string Configurable::keyID(const std::string& class_name,
+                                const std::string& instance_name)
 {
-    return class_id + instance_id;
+    return class_name + instance_name;
 }
 
 void Configurable::addChild(Configurable* child)
@@ -125,7 +125,7 @@ void Configurable::writeBackConfig()
 
 void Configurable::writeBackConfigRecursive()
 {
-    loginf << "class '" << class_id_ << "' instance '" << instance_id_
+    loginf << "class '" << class_name_ << "' instance '" << instance_name_
            << "' children=" << children_vec_.size();
 
     // Children first so nested sub_configs are complete
@@ -139,8 +139,8 @@ void Configurable::writeBackConfigRecursive()
             }
             catch (const std::exception& e)
             {
-                logerr << "class '" << class_id_ << "' instance '" << instance_id_
-                       << "' child '" << child->classId() << "/" << child->instanceId()
+                logerr << "class '" << class_name_ << "' instance '" << instance_name_
+                       << "' child '" << child->className() << "/" << child->instanceName()
                        << "' writeBackConfigRecursive failed: " << e.what();
                 throw;
             }
@@ -159,20 +159,20 @@ void Configurable::writeBackConfigRecursive()
         }
         catch (const std::exception& e)
         {
-            logerr << "class '" << class_id_ << "' instance '" << instance_id_
+            logerr << "class '" << class_name_ << "' instance '" << instance_name_
                    << "' rebuildSubConfigsToJson failed: " << e.what();
             throw;
         }
     }
 
-    loginf << "class '" << class_id_ << "' instance '" << instance_id_
+    loginf << "class '" << class_name_ << "' instance '" << instance_name_
            << "' writeBackConfigRecursive complete";
 }
 
 template <typename T>
 void Configurable::registerParameter(const std::string& parameter_id, T* pointer, const T& default_value)
 {
-    logdbg << instance_id_ << ": parameter_id " << parameter_id;
+    logdbg << instance_name_ << ": parameter_id " << parameter_id;
 
     traced_assert(configuration_);
     traced_assert(pointer);
@@ -200,7 +200,7 @@ void Configurable::setParameter(T& param, const T& value)
 
 void Configurable::resetToDefault()
 {
-    logdbg << instance_id_;
+    logdbg << instance_name_;
 
     traced_assert(configuration_);
 
@@ -208,40 +208,40 @@ void Configurable::resetToDefault()
 
     for (auto it : children_vec_)
     {
-        // loginf  << instance_id_ << ": child " << it->first;
+        // loginf  << instance_name_ << ": child " << it->first;
         it->resetToDefault();
     }
 }
 
-nlohmann::json& Configurable::addNewSubConfiguration(const std::string& class_id,
-                                                     const std::string& instance_id)
+nlohmann::json& Configurable::addNewSubConfiguration(const std::string& class_name,
+                                                     const std::string& instance_name)
 {
     traced_assert(configuration_);
-    return configuration_->addNewSubConfiguration(class_id, instance_id);
+    return configuration_->addNewSubConfiguration(class_name, instance_name);
 }
 
-nlohmann::json& Configurable::addNewSubConfiguration(const std::string& class_id)
+nlohmann::json& Configurable::addNewSubConfiguration(const std::string& class_name)
 {
     traced_assert(configuration_);
-    return configuration_->addNewSubConfiguration(class_id);
+    return configuration_->addNewSubConfiguration(class_name);
 }
 
-void Configurable::removeSubConfigurations(const std::string& class_id)
+void Configurable::removeSubConfigurations(const std::string& class_name)
 {
     traced_assert(configuration_);
-    configuration_->removeSubConfigurations(class_id);
+    configuration_->removeSubConfigurations(class_name);
 }
 
-nlohmann::json& Configurable::ensureSubConfig(const std::string& class_id,
-                                              const std::string& instance_id)
+nlohmann::json& Configurable::ensureSubConfig(const std::string& class_name,
+                                              const std::string& instance_name)
 {
     traced_assert(configuration_);
 
-    auto* existing = configuration_->findSubConfig(class_id, instance_id);
+    auto* existing = configuration_->findSubConfig(class_name, instance_name);
     if (existing)
         return *existing;
 
-    return configuration_->addNewSubConfiguration(class_id, instance_id);
+    return configuration_->addNewSubConfiguration(class_name, instance_name);
 }
 
 void Configurable::writeJSON(nlohmann::json& parent_json, JSONExportType export_type) const
@@ -260,12 +260,12 @@ void Configurable::createSubConfigurables()
 {
     traced_assert(configuration_);
 
-    loginf << "class '" << class_id_ << "' instance '" << instance_id_
+    loginf << "class '" << class_name_ << "' instance '" << instance_name_
            << "' storage buckets=" << configuration_->subConfigStorage().size();
 
     for (auto& [class_name, entries] : configuration_->subConfigStorage())
     {
-        loginf << "class '" << class_id_ << "' instance '" << instance_id_
+        loginf << "class '" << class_name_ << "' instance '" << instance_name_
                << "' creating sub_configs for class '" << class_name
                << "' (" << entries.size() << " entries)";
 
@@ -273,9 +273,9 @@ void Configurable::createSubConfigurables()
         {
             const std::string inst_id = Configuration::getInstanceName(*ptr);
 
-            loginf << "class '" << class_id_ << "' instance '" << instance_id_
-                   << "' creating: class_id '" << class_name
-                   << "' instance_id '" << inst_id << "'";
+            loginf << "class '" << class_name_ << "' instance '" << instance_name_
+                   << "' creating: class_name '" << class_name
+                   << "' instance_name '" << inst_id << "'";
 
             traced_assert(!hasSubConfigurable(class_name, inst_id));
 
@@ -285,9 +285,9 @@ void Configurable::createSubConfigurables()
             }
             catch (const std::exception& e)
             {
-                logerr << "class '" << class_id_ << "' instance '" << instance_id_
-                       << "' generateSubConfigurable failed for class_id '" << class_name
-                       << "' instance_id '" << inst_id << "': " << e.what();
+                logerr << "class '" << class_name_ << "' instance '" << instance_name_
+                       << "' generateSubConfigurable failed for class_name '" << class_name
+                       << "' instance_name '" << inst_id << "': " << e.what();
                 throw;
             }
         }
@@ -295,7 +295,7 @@ void Configurable::createSubConfigurables()
 
     checkSubConfigurables();
 
-    loginf << "class '" << class_id_ << "' instance '" << instance_id_
+    loginf << "class '" << class_name_ << "' instance '" << instance_name_
            << "' createSubConfigurables complete, children=" << children_vec_.size();
 }
 
@@ -304,22 +304,22 @@ void Configurable::checkSubConfigurables()
 }
 
 // Old 2-param version removed — use the json-backed 3-param version
-// void Configurable::generateSubConfigurable(const std::string& class_id,
-//                                            const std::string& instance_id)
+// void Configurable::generateSubConfigurable(const std::string& class_name,
+//                                            const std::string& instance_name)
 // {
-//     loginf << "class " << class_id_ << " does not override ";
+//     loginf << "class " << class_name_ << " does not override ";
 // }
 
 void Configurable::generateSubConfigurable(nlohmann::json& child_json)
 {
-    throw std::runtime_error("class "+class_id_+": generateSubConfigurable: not implemented");
+    throw std::runtime_error("class "+class_name_+": generateSubConfigurable: not implemented");
 }
 
 
-void Configurable::generateSubConfigurableFromConfig(const std::string& class_id,
-                                                     const std::string& instance_id)
+void Configurable::generateSubConfigurableFromConfig(const std::string& class_name,
+                                                     const std::string& instance_name)
 {
-    auto& child_json = ensureSubConfig(class_id, instance_id);
+    auto& child_json = ensureSubConfig(class_name, instance_name);
     generateSubConfigurable(child_json);
 }
 
@@ -345,14 +345,14 @@ void Configurable::generateSubConfigurableFromJSON(const Configurable& configura
     generateSubConfigurable(child_json);
 }
 
-bool Configurable::hasSubConfigurable(const std::string& class_id,
-                                      const std::string& instance_id) const
+bool Configurable::hasSubConfigurable(const std::string& class_name,
+                                      const std::string& instance_name) const
 {
     traced_assert(configuration_);
 
     return std::any_of(children_vec_.begin(), children_vec_.end(),
                        [&](const Configurable* c) {
-                           return c && c->classId() == class_id && c->instanceId() == instance_id;
+                           return c && c->className() == class_name && c->instanceName() == instance_name;
                        });
 }
 
@@ -402,17 +402,17 @@ Configurable* Configurable::getApproximateChildNamed(const std::string& approx_n
 
     for (auto* c : children_vec_)
     {
-        if (c && boost::algorithm::to_lower_copy(c->instanceId()) == approx_name_lower)
+        if (c && boost::algorithm::to_lower_copy(c->instanceName()) == approx_name_lower)
             return c;
     }
 
-    // check if class_id, take first match
+    // check if class_name, take first match
     for (auto* c : children_vec_)
     {
-        if (c && boost::algorithm::to_lower_copy(c->classId()) == approx_name_lower)
+        if (c && boost::algorithm::to_lower_copy(c->className()) == approx_name_lower)
         {
             loginf << "key_id " << key_id_ << " found approximate name '"
-                   << approx_name << "' with child instance_id " << c->instanceId();
+                   << approx_name << "' with child instance_name " << c->instanceName();
             return c;
         }
     }
@@ -420,26 +420,26 @@ Configurable* Configurable::getApproximateChildNamed(const std::string& approx_n
     return nullptr;
 }
 
-const Configurable& Configurable::getChild(const std::string& class_id,
-                                           const std::string& instance_id) const
+const Configurable& Configurable::getChild(const std::string& class_name,
+                                           const std::string& instance_name) const
 {
     for (const auto* c : children_vec_)
     {
-        if (c && c->classId() == class_id && c->instanceId() == instance_id)
+        if (c && c->className() == class_name && c->instanceName() == instance_name)
             return *c;
     }
-    throw std::runtime_error("Configurable::getChild: child '" + class_id + "/" + instance_id + "' not found");
+    throw std::runtime_error("Configurable::getChild: child '" + class_name + "/" + instance_name + "' not found");
 }
 
-Configurable& Configurable::getChild(const std::string& class_id,
-                                     const std::string& instance_id)
+Configurable& Configurable::getChild(const std::string& class_name,
+                                     const std::string& instance_name)
 {
     for (auto* c : children_vec_)
     {
-        if (c && c->classId() == class_id && c->instanceId() == instance_id)
+        if (c && c->className() == class_name && c->instanceName() == instance_name)
             return *c;
     }
-    throw std::runtime_error("Configurable::getChild: child '" + class_id + "/" + instance_id + "' not found");
+    throw std::runtime_error("Configurable::getChild: child '" + class_name + "/" + instance_name + "' not found");
 }
 
 void Configurable::setTmpDisableRemoveConfigOnDelete(bool value)

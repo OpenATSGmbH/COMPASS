@@ -225,9 +225,9 @@ void EvaluationStandardWidget::deleteGroupSlot(Group& group)
     expandAll();
 }
 
-void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_id)
+void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_name)
 {
-    loginf << standard_.name() << ": class_id " << class_id;
+    loginf << standard_.name() << ": class_name " << class_name;
 
     bool ok;
     QString text =
@@ -272,14 +272,14 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
     if (!text.isEmpty())
         req_short_name = text.toStdString();
 
-    loginf << group.name() << ": class_id " << class_id
+    loginf << group.name() << ": class_name " << class_name
            << " req_name '" << req_name << "' req_short_name '" << req_short_name << "'";
 
     if (req_name.size() && req_short_name.size())
     {
         model().beginReset();
 
-        group.addRequirementConfig(class_id, req_name, req_short_name);
+        group.addRequirementConfig(class_name, req_name, req_short_name);
 
         model().endReset();
         expandAll();
@@ -365,9 +365,9 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
 
         for (auto& req_it : Group::requirement_type_mapping_)
         {
-            std::string class_id = req_it.first;
-            QAction* action = req_menu->addAction(class_id.c_str());
-            connect(action, &QAction::triggered, [this,&group,class_id]() {this->addRequirementSlot(group, class_id);});
+            std::string class_name = req_it.first;
+            QAction* action = req_menu->addAction(class_name.c_str());
+            connect(action, &QAction::triggered, [this,&group,class_name]() {this->addRequirementSlot(group, class_name);});
         }
 
         {

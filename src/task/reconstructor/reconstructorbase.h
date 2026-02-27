@@ -242,8 +242,8 @@ public:
     typedef std::map<std::string, std::shared_ptr<Buffer>>                Buffers;
     typedef std::map<unsigned int, std::map<unsigned long, unsigned int>> AssocMap;
 
-    // ReconstructorBase(const std::string& class_id,
-    //                   const std::string& instance_id,
+    // ReconstructorBase(const std::string& class_name,
+    //                   const std::string& instance_name,
     //                   ReconstructorTask& task,
     //                   std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator);
     ReconstructorBase(nlohmann::json& config,

@@ -97,10 +97,10 @@ bool TableView::init_impl()
 */
 void TableView::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    logdbg << "class_id " << class_id;
-    if (class_id == SubConfigDataSource)
+    logdbg << "class_name " << class_name;
+    if (class_name == SubConfigDataSource)
     {
         traced_assert(!data_source_);
         data_source_ = new TableViewDataSource(child_json, this);
@@ -110,8 +110,8 @@ void TableView::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("TableView: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("TableView: generateSubConfigurable: unknown class_name " +
+                                 class_name);
     }
 }
 

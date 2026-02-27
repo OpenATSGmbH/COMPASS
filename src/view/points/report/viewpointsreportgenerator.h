@@ -25,7 +25,7 @@ class ViewPointsReportGeneratorDialog;
 class ViewPointsReportGenerator : public Configurable
 {
 public:
-    // ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
+    // ViewPointsReportGenerator(const std::string& class_name, const std::string& instance_name,
     //                           ViewManager& view_manager);
     ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent);
 

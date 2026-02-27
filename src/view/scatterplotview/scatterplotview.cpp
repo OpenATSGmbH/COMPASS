@@ -39,11 +39,11 @@ const std::string ScatterPlotView::ParamUseConnectionLines = "use_connection_lin
 
 /**
 */
-// ScatterPlotView::ScatterPlotView(const std::string& class_id,
-//                                  const std::string& instance_id,
+// ScatterPlotView::ScatterPlotView(const std::string& class_name,
+//                                  const std::string& instance_name,
 //                                  ViewContainer* w,
 //                                  ViewManager& view_manager)
-// :   VariableView(class_id, instance_id, w, view_manager)
+// :   VariableView(class_name, instance_name, w, view_manager)
 
 ScatterPlotView::ScatterPlotView(nlohmann::json& config, ViewContainer* parent)
 :   VariableView(config, parent)
@@ -127,18 +127,18 @@ bool ScatterPlotView::init_impl()
 */
 void ScatterPlotView::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    if (class_id == "ScatterPlotViewDataSource")
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name << " instance_name "
+           << instance_name;
+    if (class_name == "ScatterPlotViewDataSource")
     {
         traced_assert(!data_source_);
         data_source_ = new ScatterPlotViewDataSource(child_json, this);
     }
     else
-        throw std::runtime_error("ScatterPlotView: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ScatterPlotView: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 /**

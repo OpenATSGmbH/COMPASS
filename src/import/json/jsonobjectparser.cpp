@@ -64,15 +64,15 @@ JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* pa
 
 void JSONObjectParser::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "JSONDataMapping")
+    if (class_name == "JSONDataMapping")
     {
         auto* mapping = new JSONDataMapping(child_json, this, compass_);
         data_mappings_.emplace_back(mapping);
     }
     else
-        throw std::runtime_error("JSONObjectParser: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("JSONObjectParser: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 DBContent& JSONObjectParser::dbContent() const
@@ -587,7 +587,7 @@ void JSONObjectParser::removeMapping(unsigned int index)
     unique_ptr<JSONDataMapping>& mapping = data_mappings_.at(index);
 
     loginf << "index " << index << " key " <<  mapping->jsonKey()
-           << " instance " <<  mapping->instanceId();
+           << " instance " <<  mapping->instanceName();
 
     logdbg << "size " << data_mappings_.size();
 

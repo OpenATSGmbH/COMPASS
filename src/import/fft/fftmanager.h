@@ -54,7 +54,7 @@ public slots:
 
 public:
     // Old legacy constructor — removed, use json-backed constructor below
-    // FFTManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // FFTManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
     /// @brief Constructor backed by a json reference
     FFTManager(nlohmann::json& config, COMPASS* parent);
     virtual ~FFTManager();

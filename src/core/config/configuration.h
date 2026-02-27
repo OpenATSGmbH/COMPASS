@@ -128,25 +128,25 @@ public:
     /// True once at least one parameter has been registered (i.e. a Configurable has claimed this config).
     bool getUsed() const { return used_; }
 
-    bool hasSubConfiguration(const std::string& class_id,
-                             const std::string& instance_id) const;
+    bool hasSubConfiguration(const std::string& class_name,
+                             const std::string& instance_name) const;
     bool hasSubConfiguration(const SubConfigKey& key) const;
 
     /// Creates a new sub-config entry in sub_config_storage_. The returned json& is stable
     /// (unique_ptr indirection) and can be passed to a child Configurable's constructor.
-    nlohmann::json& addNewSubConfiguration(const std::string& class_id,
-                                           const std::string& instance_id);
-    nlohmann::json& addNewSubConfiguration(const std::string& class_id,
-                                           const std::string& instance_id,
+    nlohmann::json& addNewSubConfiguration(const std::string& class_name,
+                                           const std::string& instance_name);
+    nlohmann::json& addNewSubConfiguration(const std::string& class_name,
+                                           const std::string& instance_name,
                                            const std::string& name);
-    /// Auto-generates a unique instance_id by appending an incrementing number to class_id.
-    nlohmann::json& addNewSubConfiguration(const std::string& class_id);
+    /// Auto-generates a unique instance_name by appending an incrementing number to class_name.
+    nlohmann::json& addNewSubConfiguration(const std::string& class_name);
 
-    void removeSubConfiguration(const std::string& class_id, const std::string& instance_id);
-    void removeSubConfigurations(const std::string& class_id);
+    void removeSubConfiguration(const std::string& class_name, const std::string& instance_name);
+    void removeSubConfigurations(const std::string& class_name);
 
-    nlohmann::json* findSubConfig(const std::string& class_id, const std::string& instance_id);
-    const nlohmann::json* findSubConfig(const std::string& class_id, const std::string& instance_id) const;
+    nlohmann::json* findSubConfig(const std::string& class_name, const std::string& instance_name);
+    const nlohmann::json* findSubConfig(const std::string& class_name, const std::string& instance_name) const;
 
     /// class_name -> vector of owned json objects, one per child config.
     typedef std::map<std::string, std::vector<std::unique_ptr<nlohmann::json>>> SubConfigStorage;
@@ -158,19 +158,19 @@ public:
     /// Must be called bottom-up (children first) so nested sub_configs are complete.
     void rebuildSubConfigsToJson();
 
-    const std::string& getInstanceId() const { return instance_id_; }
-    const std::string& getClassId() const { return class_id_; }
+    const std::string& getInstanceId() const { return instance_name_; }
+    const std::string& getClassId() const { return class_name_; }
 
     // only use in special case of configuration copy
-    void setInstanceId(const std::string& instance_id) { instance_id_ = instance_id; }
+    void setInstanceId(const std::string& instance_name) { instance_name_ = instance_name; }
 
     /// Overwrites specific parameter keys in the stored JSON config (org_config_parameters_).
     /// Used to patch config values before parameters are registered.
     void overrideJSONParameters(nlohmann::json& parameters_config);
 
-    /// Generates a unique instance_id for a new child of the given class by finding the
+    /// Generates a unique instance_name for a new child of the given class by finding the
     /// highest existing numeric suffix among siblings and incrementing it.
-    std::string newInstanceID(const std::string& class_id) const;
+    std::string newInstanceID(const std::string& class_name) const;
 
     boost::signals2::connection connectListener(const std::function<void(const ParameterList&)>& changed_cb);
 
@@ -207,16 +207,16 @@ public:
     /// Raw JSON helpers that operate on any json node's sub_configs array
     /// (as opposed to the instance methods that use sub_config_storage_).
     static nlohmann::json& addSubConfigEntry(nlohmann::json& parent,
-                                             const std::string& class_id,
-                                             const std::string& instance_id);
+                                             const std::string& class_name,
+                                             const std::string& instance_name);
     static nlohmann::json* findSubConfigEntry(nlohmann::json& parent,
-                                              const std::string& class_id,
-                                              const std::string& instance_id);
+                                              const std::string& class_name,
+                                              const std::string& instance_name);
     static const nlohmann::json* findSubConfigEntry(const nlohmann::json& parent,
-                                                    const std::string& class_id,
-                                                    const std::string& instance_id);
+                                                    const std::string& class_name,
+                                                    const std::string& instance_name);
 
-    /// Converts old nested sub_configs format { class_id: { instance_id: config } }
+    /// Converts old nested sub_configs format { class_name: { instance_name: config } }
     /// to flat array format, recursively. No-op if already converted.
     static void convertSubConfigsFormat(nlohmann::json& node);
 
@@ -235,8 +235,8 @@ protected:
     template <typename T>
     T parameterValueFromConfig(const std::string& parameter_id) const;
 
-    std::string class_id_;
-    std::string instance_id_;
+    std::string class_name_;
+    std::string instance_name_;
     bool used_{false};
 
     /// Snapshot of the parameter values as parsed from the original JSON config file.
@@ -282,6 +282,6 @@ private:
     boost::signals2::signal<void(const ParameterList&)> changed_signal_;
 
     /// IDs excluded from JSON export, keyed by export type.
-    std::map<JSONExportType, std::set<std::string>> json_export_filters_class_id_;
+    std::map<JSONExportType, std::set<std::string>> json_export_filters_class_name_;
     std::map<JSONExportType, std::set<std::string>> json_export_filters_param_id_;
 };

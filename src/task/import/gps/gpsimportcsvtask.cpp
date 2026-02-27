@@ -51,10 +51,10 @@ using namespace Utils;
 using namespace std;
 using namespace nmea;
 
-GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
+GPSImportCSVTask::GPSImportCSVTask(const std::string& class_name, const std::string& instance_name,
                                    TaskManager& task_manager)
     : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_import_gps_csv.json")
+      Configurable(class_name, instance_name, &task_manager, "task_import_gps_csv.json")
 {
     tooltip_ = "Allows importing of GPS trails as CSV into the opened database.";
 
@@ -86,11 +86,11 @@ GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::strin
         parseCurrentFile();
 }
 
-GPSImportCSVTask::GPSImportCSVTask(const std::string& class_id, const std::string& instance_id,
+GPSImportCSVTask::GPSImportCSVTask(const std::string& class_name, const std::string& instance_name,
                                    nlohmann::json& config, TaskManager& task_manager,
                                    const std::string& parent_path)
     : Task(task_manager),
-      Configurable(class_id, instance_id, config, parent_path)
+      Configurable(class_name, instance_name, config, parent_path)
 {
     tooltip_ = "Allows importing of GPS trails as CSV into the opened database.";
 
@@ -124,12 +124,12 @@ GPSImportCSVTask::~GPSImportCSVTask()
 {
 }
 
-void GPSImportCSVTask::generateSubConfigurable(const std::string& class_id,
-                                               const std::string& instance_id,
+void GPSImportCSVTask::generateSubConfigurable(const std::string& class_name,
+                                               const std::string& instance_name,
                                                nlohmann::json& child_json)
 {
-    throw std::runtime_error("GPSImportCSVTask: generateSubConfigurable: unknown class_id " +
-                             class_id);
+    throw std::runtime_error("GPSImportCSVTask: generateSubConfigurable: unknown class_name " +
+                             class_name);
 }
 
 GPSImportCSVTaskDialog* GPSImportCSVTask::dialog()

@@ -38,10 +38,10 @@
 using namespace std;
 using namespace nlohmann;
 
-// ScatterPlotViewDataSource::ScatterPlotViewDataSource(const std::string& class_id,
-//                                              const std::string& instance_id, Configurable* parent)
+// ScatterPlotViewDataSource::ScatterPlotViewDataSource(const std::string& class_name,
+//                                              const std::string& instance_name, Configurable* parent)
 //     : QObject(),
-//       Configurable(class_id, instance_id, parent)
+//       Configurable(class_name, instance_name, parent)
 
 ScatterPlotViewDataSource::ScatterPlotViewDataSource(nlohmann::json& config,
                                                      ScatterPlotView* parent)
@@ -65,19 +65,19 @@ ScatterPlotViewDataSource::~ScatterPlotViewDataSource()
 
 void ScatterPlotViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
-    logdbg << "class_id " << class_id
-           << " instance_id " << instance_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name
+           << " instance_name " << instance_name;
 
-    if (class_id.compare("VariableOrderedSet") == 0)
+    if (class_name.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
         set_ = new dbContent::VariableOrderedSet(child_json, view_->compass().dbContentManager(), this);
     }
     else
         throw std::runtime_error(
-            "ScatterPlotViewDataSource: generateSubConfigurable: unknown class_id " + class_id);
+            "ScatterPlotViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void ScatterPlotViewDataSource::checkSubConfigurables()

@@ -294,16 +294,16 @@ ASTERIXImportTask::~ASTERIXImportTask()
 */
 void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
-    const auto& instance_id = Configuration::getInstanceName(child_json);
-    if (class_id == "ASTERIXCategoryConfig")
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    if (class_name == "ASTERIXCategoryConfig")
     {
         unsigned int category = child_json.at(Configuration::ParameterSection).at("category").get<unsigned int>();
 
         traced_assert(category_configs_.find(category) == category_configs_.end());
 
         logdbg << "generating asterix config "
-               << instance_id << " with cat " << category;
+               << instance_name << " with cat " << category;
 
         category_configs_.emplace(
             std::piecewise_construct,
@@ -315,21 +315,21 @@ void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
                << category_configs_.at(category).edition() << "' ref '"
                << category_configs_.at(category).ref() << "'";
     }
-    else if (class_id == "ASTERIXJSONParsingSchema")
+    else if (class_name == "ASTERIXJSONParsingSchema")
     {
         std::string name = child_json.at(Configuration::ParameterSection).at("name").get<std::string>();
 
         traced_assert(schema_ == nullptr);
         traced_assert(name == "jASTERIX");
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " with name " << name;
 
         schema_.reset(new ASTERIXJSONParsingSchema(child_json, *this));
     }
     else
     {
-        throw std::runtime_error("ASTERIXImportTask: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("ASTERIXImportTask: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 

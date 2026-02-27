@@ -120,8 +120,8 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
                 {
                     // Track as inline parent with file-backed children (empty filename = inline)
                     SubConfigFile scf;
-                    scf.class_id    = Configuration::getClassName(entry);
-                    scf.instance_id = Configuration::getInstanceName(entry);
+                    scf.class_name    = Configuration::getClassName(entry);
+                    scf.instance_name = Configuration::getInstanceName(entry);
                     scf.filename    = "";
                     scf.children    = std::move(nested_info);
                     file_info.push_back(std::move(scf));
@@ -145,14 +145,14 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
         traced_assert(entry.contains(Configuration::InstanceID));
         traced_assert(entry.contains(ConfigJSON::SubConfigFilePath));
 
-        auto class_id    = entry.at(Configuration::ClassID).get<std::string>();
-        auto instance_id = entry.at(Configuration::InstanceID).get<std::string>();
+        auto class_name    = entry.at(Configuration::ClassID).get<std::string>();
+        auto instance_name = entry.at(Configuration::InstanceID).get<std::string>();
         auto path        = entry.at(ConfigJSON::SubConfigFilePath).get<std::string>();
 
-        traced_assert(!class_id.empty() && !instance_id.empty() && !path.empty());
+        traced_assert(!class_name.empty() && !instance_name.empty() && !path.empty());
 
-        loginf << "resolving sub_config_file: class '" << class_id
-               << "' instance '" << instance_id << "' path '" << path << "'";
+        loginf << "resolving sub_config_file: class '" << class_name
+               << "' instance '" << instance_name << "' path '" << path << "'";
 
         // Load the referenced file
         std::string file_path = CURRENT_CONF_DIRECTORY + path;
@@ -177,16 +177,16 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
         // Build file info entry
         SubConfigFile scf;
-        scf.class_id    = class_id;
-        scf.instance_id = instance_id;
+        scf.class_name    = class_name;
+        scf.instance_name = instance_name;
         scf.filename    = path;
 
         // Recursively resolve sub_config_files within the loaded child
         resolveSubConfigFiles(child_json, scf.children);
 
         // Merge child content into parent's sub_configs array
-        Configuration::setClassName(child_json, class_id);
-        Configuration::setInstanceName(child_json, instance_id);
+        Configuration::setClassName(child_json, class_name);
+        Configuration::setInstanceName(child_json, instance_name);
 
         if (!json.contains(Configuration::SubConfigSection))
             json[Configuration::SubConfigSection] = nlohmann::json::array();
@@ -195,8 +195,8 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
         file_info.push_back(std::move(scf));
 
-        loginf << "resolved sub_config_file: class '" << class_id
-               << "' instance '" << instance_id << "' from '" << path << "'";
+        loginf << "resolved sub_config_file: class '" << class_name
+               << "' instance '" << instance_name << "' from '" << path << "'";
     }
 
     // Remove the sub_config_files array (now resolved into sub_configs)
@@ -257,7 +257,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
     // Build a lookup set for file-backed children at this level
     std::map<std::pair<std::string, std::string>, const SubConfigFile*> file_backed;
     for (const auto& scf : file_info)
-        file_backed[{scf.class_id, scf.instance_id}] = &scf;
+        file_backed[{scf.class_name, scf.instance_name}] = &scf;
 
     // Process sub_configs (array format)
     if (json.contains(Configuration::SubConfigSection) && json[Configuration::SubConfigSection].is_array())
@@ -300,7 +300,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                         // Build file-backed lookup for the inline parent's children
                         std::map<std::pair<std::string, std::string>, const SubConfigFile*> child_file_backed;
                         for (const auto& cscf : it->second->children)
-                            child_file_backed[{cscf.class_id, cscf.instance_id}] = &cscf;
+                            child_file_backed[{cscf.class_name, cscf.instance_name}] = &cscf;
 
                         // Process inline parent's sub_configs
                         if (child_json.contains(Configuration::SubConfigSection) &&

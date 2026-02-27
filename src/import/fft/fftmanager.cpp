@@ -41,8 +41,8 @@ using namespace Utils;
 using namespace nlohmann;
 
 // Old legacy constructor — removed, everything is now json-backed
-// FFTManager::FFTManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
-//     : Configurable(class_id, instance_id, compass, "ffts.json"), compass_(compass) { ... }
+// FFTManager::FFTManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
+//     : Configurable(class_name, instance_name, compass, "ffts.json"), compass_(compass) { ... }
 
 FFTManager::FFTManager(nlohmann::json& config, COMPASS* parent)
     : Configurable(config, parent), compass_(parent)
@@ -59,9 +59,9 @@ FFTManager::~FFTManager()
 
 void FFTManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const auto& class_id = Configuration::getClassName(child_json);
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "ConfigurationFFT")
+    if (class_name == "ConfigurationFFT")
     {
         auto fft = std::make_unique<ConfigurationFFT>(child_json, this);
         loginf << "adding config fft " << fft->name();
@@ -70,8 +70,8 @@ void FFTManager::generateSubConfigurable(nlohmann::json& child_json)
         config_ffts_.emplace_back(std::move(fft));
     }
     else
-        throw std::runtime_error("FFTManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("FFTManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 bool FFTManager::hasConfigFFT (const std::string& name)

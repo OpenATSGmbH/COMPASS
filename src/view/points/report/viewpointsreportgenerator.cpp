@@ -50,9 +50,9 @@
 using namespace std;
 using namespace Utils;
 
-// ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
+// ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_name, const std::string& instance_name,
 //                                                      ViewManager& view_manager)
-//     : Configurable(class_id, instance_id, &view_manager), view_manager_(view_manager)
+//     : Configurable(class_name, instance_name, &view_manager), view_manager_(view_manager)
 
 ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent)
     : Configurable(config, parent), view_manager_(*parent)
