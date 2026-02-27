@@ -4,73 +4,73 @@
     "parameters": {},
     "sub_config_files": [
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT001",
+            "class_name": "DBContent",
+            "instance_name": "CAT001",
             "path": "db_content_cat001.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT002",
+            "class_name": "DBContent",
+            "instance_name": "CAT002",
             "path": "db_content_cat002.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT004",
+            "class_name": "DBContent",
+            "instance_name": "CAT004",
             "path": "db_content_cat004.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT010",
+            "class_name": "DBContent",
+            "instance_name": "CAT010",
             "path": "db_content_cat010.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT019",
+            "class_name": "DBContent",
+            "instance_name": "CAT019",
             "path": "db_content_cat019.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT020",
+            "class_name": "DBContent",
+            "instance_name": "CAT020",
             "path": "db_content_cat020.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT021",
+            "class_name": "DBContent",
+            "instance_name": "CAT021",
             "path": "db_content_cat021.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT023",
+            "class_name": "DBContent",
+            "instance_name": "CAT023",
             "path": "db_content_cat023.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT034",
+            "class_name": "DBContent",
+            "instance_name": "CAT034",
             "path": "db_content_cat034.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT048",
+            "class_name": "DBContent",
+            "instance_name": "CAT048",
             "path": "db_content_cat048.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT062",
+            "class_name": "DBContent",
+            "instance_name": "CAT062",
             "path": "db_content_cat062.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT063",
+            "class_name": "DBContent",
+            "instance_name": "CAT063",
             "path": "db_content_cat063.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "CAT065",
+            "class_name": "DBContent",
+            "instance_name": "CAT065",
             "path": "db_content_cat065.json"
         },
         {
-            "class_id": "DBContent",
-            "instance_id": "RefTraj",
+            "class_name": "DBContent",
+            "instance_name": "RefTraj",
             "path": "db_content_reftraj.json"
         }
     ],

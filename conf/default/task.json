@@ -6,43 +6,43 @@
     },
     "sub_config_files": [
         {
-            "class_id": "ASTERIXImportTask",
-            "instance_id": "ASTERIXImportTask0",
+            "class_name": "ASTERIXImportTask",
+            "instance_name": "ASTERIXImportTask0",
             "path": "task_import_asterix.json"
         },
         {
-            "class_id": "CreateARTASAssociationsTask",
-            "instance_id": "CreateARTASAssociationsTask0",
+            "class_name": "CreateARTASAssociationsTask",
+            "instance_name": "CreateARTASAssociationsTask0",
             "path": "task_calc_artas_assoc.json"
         },
         {
-            "class_id": "GPSTrailImportTask",
-            "instance_id": "GPSTrailImportTask0",
+            "class_name": "GPSTrailImportTask",
+            "instance_name": "GPSTrailImportTask0",
             "path": "task_import_gps.json"
         },
         {
-            "class_id": "JSONImportTask",
-            "instance_id": "JSONImportTask0",
+            "class_name": "JSONImportTask",
+            "instance_name": "JSONImportTask0",
             "path": "task_import_json.json"
         },
         {
-            "class_id": "ManageSectorsTask",
-            "instance_id": "ManageSectorsTask0",
+            "class_name": "ManageSectorsTask",
+            "instance_name": "ManageSectorsTask0",
             "path": "task_manage_sectors.json"
         },
         {
-            "class_id": "RadarPlotPositionCalculatorTask",
-            "instance_id": "RadarPlotPositionCalculatorTask0",
+            "class_name": "RadarPlotPositionCalculatorTask",
+            "instance_name": "RadarPlotPositionCalculatorTask0",
             "path": "task_calc_radar_pos.json"
         },
         {
-            "class_id": "ReconstructorTask",
-            "instance_id": "ReconstructorTask0",
+            "class_name": "ReconstructorTask",
+            "instance_name": "ReconstructorTask0",
             "path": "task_reconstructor.json"
         },
         {
-            "class_id": "ViewPointsImportTask",
-            "instance_id": "ViewPointsImportTask0",
+            "class_name": "ViewPointsImportTask",
+            "instance_name": "ViewPointsImportTask0",
             "path": "task_import_view_points.json"
         }
     ],

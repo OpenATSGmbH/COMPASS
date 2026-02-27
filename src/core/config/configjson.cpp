@@ -27,7 +27,9 @@ using namespace nlohmann;
 using namespace Utils;
 
 const std::string ConfigJSON::SubConfigFileSection = "sub_config_files";
-const std::string ConfigJSON::SubConfigFilePath    = "path";
+
+// Key used in the legacy object-format sub_config_files entries (read-only, never written)
+static const std::string SCF_LEGACY_PATH_KEY = "path";
 
 ConfigJSON::ConfigJSON(const std::string& conf_filename)
     : filename_(conf_filename)
@@ -141,18 +143,23 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
     for (auto& entry : scf_array)
     {
-        traced_assert(entry.contains(Configuration::ClassID));
-        traced_assert(entry.contains(Configuration::InstanceID));
-        traced_assert(entry.contains(ConfigJSON::SubConfigFilePath));
+        // New format: plain path string.  Legacy format: object with a "path" key.
+        std::string path;
+        if (entry.is_string())
+        {
+            path = entry.get<std::string>();
+        }
+        else if (entry.is_object())
+        {
+            traced_assert(entry.contains(SCF_LEGACY_PATH_KEY));
+            path = entry.at(SCF_LEGACY_PATH_KEY).get<std::string>();
+        }
+        else
+        {
+            throw std::runtime_error("sub_config_files entry must be a string path or a legacy object");
+        }
 
-        auto class_name    = entry.at(Configuration::ClassID).get<std::string>();
-        auto instance_name = entry.at(Configuration::InstanceID).get<std::string>();
-        auto path        = entry.at(ConfigJSON::SubConfigFilePath).get<std::string>();
-
-        traced_assert(!class_name.empty() && !instance_name.empty() && !path.empty());
-
-        loginf << "resolving sub_config_file: class '" << class_name
-               << "' instance '" << instance_name << "' path '" << path << "'";
+        traced_assert(!path.empty());
 
         // Load the referenced file
         std::string file_path = CURRENT_CONF_DIRECTORY + path;
@@ -175,6 +182,15 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
         // Convert old nested sub_configs format in the loaded child
         Configuration::convertSubConfigsFormat(child_json);
 
+        // class_name and instance_name come from the file itself — no override needed
+        auto class_name    = Configuration::getClassName(child_json);
+        auto instance_name = Configuration::getInstanceName(child_json);
+
+        traced_assert(!class_name.empty() && !instance_name.empty());
+
+        loginf << "resolving sub_config_file: class '" << class_name
+               << "' instance '" << instance_name << "' path '" << path << "'";
+
         // Build file info entry
         SubConfigFile scf;
         scf.class_name    = class_name;
@@ -183,10 +199,6 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
         // Recursively resolve sub_config_files within the loaded child
         resolveSubConfigFiles(child_json, scf.children);
-
-        // Merge child content into parent's sub_configs array
-        Configuration::setClassName(child_json, class_name);
-        Configuration::setInstanceName(child_json, instance_name);
 
         if (!json.contains(Configuration::SubConfigSection))
             json[Configuration::SubConfigSection] = nlohmann::json::array();
@@ -323,11 +335,8 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                                     if (!inline_entry.contains(ConfigJSON::SubConfigFileSection))
                                         inline_entry[ConfigJSON::SubConfigFileSection] = nlohmann::json::array();
 
-                                    inline_entry[ConfigJSON::SubConfigFileSection].push_back({
-                                        {Configuration::ClassID,        gcid},
-                                        {Configuration::InstanceID,     giid},
-                                        {ConfigJSON::SubConfigFilePath, git->second->filename}
-                                    });
+                                    inline_entry[ConfigJSON::SubConfigFileSection].push_back(
+                                        git->second->filename);
                                 }
                                 else
                                 {
@@ -366,15 +375,11 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                                    CURRENT_CONF_DIRECTORY + it->second->filename,
                                    it->second->children);
 
-                        // Add sub_config_files entry in output
+                        // Add sub_config_files entry in output (new format: plain path string)
                         if (!output.contains(ConfigJSON::SubConfigFileSection))
                             output[ConfigJSON::SubConfigFileSection] = nlohmann::json::array();
 
-                        output[ConfigJSON::SubConfigFileSection].push_back({
-                            {Configuration::ClassID,          cid},
-                            {Configuration::InstanceID,       iid},
-                            {ConfigJSON::SubConfigFilePath, it->second->filename}
-                        });
+                        output[ConfigJSON::SubConfigFileSection].push_back(it->second->filename);
                     }
                 }
                 else

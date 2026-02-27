@@ -61,15 +61,32 @@ void ConfigurationManager::init(const std::string& main_config_filename)
 
                 for (auto& file_cfg_it : it.value().get<json::array_t>())
                 {
-                    traced_assert(file_cfg_it.contains(Configuration::ClassID));
-                    traced_assert(file_cfg_it.contains(Configuration::InstanceID));
-                    traced_assert(file_cfg_it.contains(ConfigJSON::SubConfigFilePath));
+                    // New format: plain path string. Legacy format: object with a "path" key.
+                    std::string path;
+                    if (file_cfg_it.is_string())
+                    {
+                        path = file_cfg_it.get<std::string>();
+                    }
+                    else if (file_cfg_it.is_object())
+                    {
+                        static const std::string path_key = "path";
+                        traced_assert(file_cfg_it.contains(path_key));
+                        path = file_cfg_it.at(path_key).get<std::string>();
+                    }
+                    else
+                    {
+                        throw std::runtime_error(
+                            "ConfigurationManager: init: sub_config_files entry must be a string or object");
+                    }
 
-                    auto class_name    = file_cfg_it.at(Configuration::ClassID).get<std::string>();
-                    auto instance_name = file_cfg_it.at(Configuration::InstanceID).get<std::string>();
-                    auto path        = file_cfg_it.at(ConfigJSON::SubConfigFilePath).get<std::string>();
+                    traced_assert(!path.empty());
 
-                    traced_assert(!class_name.empty() && !instance_name.empty() && !path.empty());
+                    auto config_json = std::make_unique<ConfigJSON>(path);
+
+                    auto class_name    = Configuration::getClassName(config_json->json());
+                    auto instance_name = Configuration::getInstanceName(config_json->json());
+
+                    traced_assert(!class_name.empty() && !instance_name.empty());
 
                     Key key{class_name, instance_name};
                     traced_assert(root_config_jsons_.find(key) == root_config_jsons_.end());
@@ -78,7 +95,7 @@ void ConfigurationManager::init(const std::string& main_config_filename)
                            << "' instance '" << instance_name
                            << "' from '" << path << "'";
 
-                    root_config_jsons_[key] = std::make_unique<ConfigJSON>(path);
+                    root_config_jsons_[key] = std::move(config_json);
                 }
             }
             else

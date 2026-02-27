@@ -48,9 +48,8 @@ public:
         std::vector<SubConfigFile> children;  ///< nested sub_config_files within this child
     };
 
-    /// JSON keys for file-based sub-config references
+    /// JSON key for the sub_config_files array
     static const std::string SubConfigFileSection;
-    static const std::string SubConfigFilePath;
 
     /// Load json from CURRENT_CONF_DIRECTORY + conf_filename, resolving sub_config_files recursively
     explicit ConfigJSON(const std::string& conf_filename);

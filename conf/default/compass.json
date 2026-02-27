@@ -28,43 +28,43 @@
     },
     "sub_config_files": [
         {
-            "class_id": "DBContentManager",
-            "instance_id": "DBContentManager0",
+            "class_name": "DBContentManager",
+            "instance_name": "DBContentManager0",
             "path": "db_content.json"
         },
         {
-            "class_id": "DataSourceManager",
-            "instance_id": "DataSourceManager0",
+            "class_name": "DataSourceManager",
+            "instance_name": "DataSourceManager0",
             "path": "data_sources.json"
         },
         {
-            "class_id": "EvaluationManager",
-            "instance_id": "EvaluationManager0",
+            "class_name": "EvaluationManager",
+            "instance_name": "EvaluationManager0",
             "path": "eval.json"
         },
         {
-            "class_id": "FFTManager",
-            "instance_id": "FFTManager0",
+            "class_name": "FFTManager",
+            "instance_name": "FFTManager0",
             "path": "ffts.json"
         },
         {
-            "class_id": "FilterManager",
-            "instance_id": "FilterManager0",
+            "class_name": "FilterManager",
+            "instance_name": "FilterManager0",
             "path": "filter.json"
         },
         {
-            "class_id": "LicenseManager",
-            "instance_id": "LicenseManager0",
+            "class_name": "LicenseManager",
+            "instance_name": "LicenseManager0",
             "path": "licenses.json"
         },
         {
-            "class_id": "TaskManager",
-            "instance_id": "TaskManager0",
+            "class_name": "TaskManager",
+            "instance_name": "TaskManager0",
             "path": "task.json"
         },
         {
-            "class_id": "ViewManager",
-            "instance_id": "ViewManager0",
+            "class_name": "ViewManager",
+            "instance_name": "ViewManager0",
             "path": "views.json"
         }
     ],
