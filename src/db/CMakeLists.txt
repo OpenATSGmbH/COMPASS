@@ -1,5 +1,6 @@
 add_library(compass_db "")
 
+include("${CMAKE_CURRENT_LIST_DIR}/command/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/interface/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/dbcontent/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/job/CMakeLists.txt")
