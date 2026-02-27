@@ -1,4 +1,6 @@
 {
+                    "class_name": "ASTERIXJSONParser",
+                    "instance_name": "CAT002",
     "parameters": {
         "category": 2,
         "db_content_name": "CAT002",
