@@ -42,7 +42,6 @@ public:
     typedef Configuration::MissingKey           MissingKey;
     typedef Configuration::ReconfigureError     ReconfigureError;
     typedef Configuration::ReconfigureResult    ReconfigureResult;
-    typedef Configuration::InstanceDescr        InstanceDescr;
 
     /// Creates a Configuration from config_json, registers with parent (if non-null)
     /// or with ConfigurationManager as a root configurable.

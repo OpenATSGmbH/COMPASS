@@ -83,16 +83,6 @@ public:
     typedef std::pair<ReconfigureError, std::string>  ReconfigureResult;
     typedef std::pair<Key, MissingKeyType>            MissingKey;
 
-    struct InstanceDescr
-    {
-        InstanceDescr() = default;
-        InstanceDescr(const std::string& instance_name,
-                      const std::string& instance_id) : name(instance_name), id(instance_id) {}
-
-        std::string name;
-        std::string id;
-    };
-
     /// Parses parameters and sub-configs from backing_json. Sub-configs are moved into
     /// sub_config_storage_ (owned unique_ptrs); old nested format is converted on the fly.
     Configuration(nlohmann::json& backing_json);
