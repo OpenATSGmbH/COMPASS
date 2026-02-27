@@ -31,12 +31,6 @@
 #include <vector>
 
 
-namespace dbContent {
-
-class VariableSet;
-
-}
-
 template <class T>
 class NullableVector;
 
@@ -117,9 +111,6 @@ public:
 
     bool isNull(const Property& property, unsigned int index);
     void deleteEmptyProperties();
-
-    void transformVariables(dbContent::VariableSet& list,
-                            bool dbcol2dbcontvar);  // tc2dbcontvar true for db col -> dbcont var, false dbcont var -> db column
 
     nlohmann::json asJSON(unsigned int max_size=0);
     nlohmann::json asJSON(std::set<std::string> variable_names, unsigned int max_size=0);

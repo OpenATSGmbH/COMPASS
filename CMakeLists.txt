@@ -193,10 +193,12 @@ include_directories(
     "${CMAKE_CURRENT_LIST_DIR}/src/task"
     "${CMAKE_CURRENT_LIST_DIR}/src/eval"
     "${CMAKE_CURRENT_LIST_DIR}/src/view"
+    "${CMAKE_CURRENT_LIST_DIR}/src/report"
     "${CMAKE_CURRENT_LIST_DIR}/src/app"
 )
 
 # Component libraries (order matters: dependencies first)
+add_subdirectory(src/config)
 add_subdirectory(src/core)
 add_subdirectory(src/db)
 add_subdirectory(src/reconstruction)
@@ -206,12 +208,14 @@ add_subdirectory(src/filter)
 add_subdirectory(src/task)
 add_subdirectory(src/eval)
 add_subdirectory(src/view)
+add_subdirectory(src/report)
 
 # Aggregation library for experimental_src backward compatibility
 # experimental_src still adds target_sources(compass ...) so we keep this target
 add_library(compass "")
 target_link_libraries(compass
     PUBLIC
+        compass_config
         compass_core
         compass_db
         compass_reconstruction
@@ -221,6 +225,7 @@ target_link_libraries(compass
         compass_task
         compass_eval
         compass_view
+        compass_report
         Qt5::Widgets
         Qt5::Core
         Qt5::OpenGL

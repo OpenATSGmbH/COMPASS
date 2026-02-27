@@ -16,13 +16,15 @@
  */
 
 #include "configurationmanager.h"
+#include "config_paths.h"
 #include "configurable.h"
 #include "configjson.h"
-#include "files.h"
 #include "json.hpp"
 #include "logger.h"
+#include "stringconv.h"
 #include "traced_assert.h"
 
+#include <filesystem>
 #include <fstream>
 
 using namespace nlohmann;
@@ -41,7 +43,8 @@ void ConfigurationManager::init(const std::string& main_config_filename)
     initialized_ = true;
 
     std::string path_filename = CURRENT_CONF_DIRECTORY + main_config_filename;
-    Files::verifyFileExists(path_filename);
+    if (!std::filesystem::exists(path_filename))
+        throw std::runtime_error("ConfigurationManager: file '" + path_filename + "' does not exist");
 
     loginf << "opening main configuration file '" << path_filename << "'";
 

@@ -16,6 +16,7 @@
  */
 
 #include "dbcontent/dbcontentmanager.h"
+#include "buffer_utils.h"
 #include "compass.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
@@ -1217,7 +1218,7 @@ void DBContentManager::addInsertedDataToChache()
         }
 
         // change db column names to dbcont var names
-        buf_it->second->transformVariables(read_set, true);
+        buffer_utils::transformVariables(*buf_it->second, read_set, true);
 
         // add selection flags
         buf_it->second->addProperty(DBContent::selected_var);

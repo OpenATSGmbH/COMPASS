@@ -23,7 +23,6 @@
 #include "dbcontent/variable/variable.h"
 #include "logger.h"
 #include "compass.h"
-#include "viewmanager.h"
 
 using namespace dbContent;
 

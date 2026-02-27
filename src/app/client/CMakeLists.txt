@@ -38,8 +38,9 @@ set_target_properties(compass_client PROPERTIES ENABLE_EXPORTS TRUE)
 # symbols are resolved, regardless of link order.
 target_link_libraries ( compass_client
     -Wl,--start-group
-    compass_app compass compass_core compass_db compass_reconstruction
+    compass_app compass compass_config compass_core compass_db compass_reconstruction
     compass_import compass_gui compass_filter compass_task compass_eval compass_view
+    compass_report
     -Wl,--end-group
     ${jASTERIX_LIBRARIES}
     ${Boost_LIBRARIES}

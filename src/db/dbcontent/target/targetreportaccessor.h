@@ -18,6 +18,7 @@
 #pragma once
 
 #include "bufferaccessor.h"
+#include "dbcontent/variable/variableset.h"
 
 #include <boost/optional.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>

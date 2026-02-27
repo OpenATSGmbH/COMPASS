@@ -631,7 +631,9 @@ void EvaluationManager::createNewSector(const std::string& name,
 
     ++max_sector_id_; // new max
 
-    shared_ptr<Sector> sector(new Sector(this, max_sector_id_, name, layer_name, true, exclude, color, points));
+    shared_ptr<Sector> sector(new Sector(max_sector_id_, name, layer_name, true, exclude, color, points));
+    sector->setSaveCallback([this](unsigned int id) { saveSector(id); });
+    sector->setMoveCallback([this](unsigned int id, const std::string& ol, const std::string& nl) { moveSector(id, ol, nl); });
 
     // add to existing sectors
     if (!hasSectorLayer(layer_name))
@@ -868,7 +870,9 @@ void EvaluationManager::importSectors(const std::string& filename)
             name = j_sec_it.at("name");
             layer_name = j_sec_it.at("layer_name");
 
-            auto eval_sector = new Sector(this, id, name, layer_name, true);
+            auto eval_sector = new Sector(id, name, layer_name, true);
+            eval_sector->setSaveCallback([this](unsigned int sid) { saveSector(sid); });
+            eval_sector->setMoveCallback([this](unsigned int sid, const std::string& ol, const std::string& nl) { moveSector(sid, ol, nl); });
             eval_sector->readJSON(j_sec_it.dump());
 
             if (!hasSectorLayer(layer_name))

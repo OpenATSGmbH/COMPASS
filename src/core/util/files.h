@@ -47,7 +47,7 @@ static const std::string HOME_PRESET_DIRECTORY = HOME_VERSION_SUBDIRECTORY + PRE
 
 static const std::string LICENSE_SUBDIRECTORY = HOME_SUBDIRECTORY + "license/";
 
-extern std::string CURRENT_CONF_DIRECTORY;
+#include "config_paths.h"
 
 namespace Utils
 {

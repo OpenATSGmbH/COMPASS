@@ -1520,7 +1520,7 @@ std::vector<std::shared_ptr<SectorLayer>> DBInterface::loadSectors()
                             [&layer_name](const shared_ptr<SectorLayer>& x) { return x->name() == layer_name;});
             }
 
-            auto eval_sector = new Sector(nullptr, id, name, layer_name, true);
+            auto eval_sector = new Sector(id, name, layer_name, true);
             bool ok = eval_sector->readJSON(json_str);
             traced_assert(ok);
 

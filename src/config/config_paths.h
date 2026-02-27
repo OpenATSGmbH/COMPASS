@@ -18,25 +18,5 @@
 #pragma once
 
 #include <string>
-#include <memory>
-#include <vector>
 
-class DocxSection;
-class DocxTable;
-class DocxImage;
-
-class DocxContent
-{
-public:
-    DocxContent();
-    virtual ~DocxContent() = default;
-
-    virtual std::string toXml();
-
-protected:
-    std::vector<std::unique_ptr<DocxContent>> sub_content_;
-
-    DocxSection* findSubSection(const std::string& heading);
-    DocxTable* findTable(const std::string& name);
-    DocxImage* findImage(const std::string& filename);
-};
+extern std::string CURRENT_CONF_DIRECTORY;

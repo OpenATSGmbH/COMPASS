@@ -15,12 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "buffer_value_string.h"
+#include "buffer_utils.h"
 #include "buffer.h"
 #include "dbcontent/variable/variable.h"
+#include "dbcontent/variable/variableset.h"
+#include "logger.h"
+#include "traced_assert.h"
 
 #include "json.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
+
+using namespace std;
 
 namespace
 {
@@ -57,6 +62,108 @@ std::string getTypedValue(Buffer& buffer, const std::string& property_name,
 
 namespace buffer_utils
 {
+
+void transformVariables(Buffer& buffer, dbContent::VariableSet& list, bool dbcol2dbcontvar)
+{
+    logdbg << "dbcont '" << buffer.dbContentName() << "' dbcol2dbcontvar " << dbcol2dbcontvar;
+
+    const vector<dbContent::Variable*>& variables = list.getSet();
+    string variable_name;
+    string name_in_db;
+
+    string current_var_name;
+    string transformed_var_name;
+
+    for (auto var_it : variables)
+    {
+        logdbg << "variable " << var_it->name() << " db column " << name_in_db;
+
+        variable_name = var_it->name();
+        name_in_db = var_it->dbColumnOrExpression();
+
+        PropertyDataType data_type = var_it->dataType();
+
+        if (dbcol2dbcontvar)
+        {
+            if (!buffer.properties().hasProperty(name_in_db))
+            {
+                continue;
+            }
+
+            traced_assert(buffer.properties().hasProperty(name_in_db));
+            traced_assert(buffer.properties().get(name_in_db).dataType() == var_it->dataType());
+
+            current_var_name = name_in_db;
+            transformed_var_name = variable_name;
+        }
+        else
+        {
+            if (!buffer.properties().hasProperty(var_it->name()))
+            {
+                logerr << "variable '" << variable_name << "' not found";
+                continue;
+            }
+
+            traced_assert(buffer.properties().hasProperty(variable_name));
+            traced_assert(buffer.properties().get(variable_name).dataType() == var_it->dataType());
+
+            current_var_name = variable_name;
+            transformed_var_name = name_in_db;
+        }
+
+        // rename to reflect dbcont variable
+        if (current_var_name != transformed_var_name)
+        {
+            logdbg << "renaming variable " << current_var_name
+                   << " to variable name " << transformed_var_name;
+
+            switch (data_type)
+            {
+                case PropertyDataType::BOOL:
+                    buffer.rename<bool>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::CHAR:
+                    buffer.rename<char>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::UCHAR:
+                    buffer.rename<unsigned char>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::INT:
+                    buffer.rename<int>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::UINT:
+                    buffer.rename<unsigned int>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::LONGINT:
+                    buffer.rename<long int>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::ULONGINT:
+                    buffer.rename<unsigned long int>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::FLOAT:
+                    buffer.rename<float>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::DOUBLE:
+                    buffer.rename<double>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::STRING:
+                    buffer.rename<string>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::JSON:
+                    buffer.rename<nlohmann::json>(current_var_name, transformed_var_name);
+                    break;
+                case PropertyDataType::TIMESTAMP:
+                    buffer.rename<boost::posix_time::ptime>(current_var_name, transformed_var_name);
+                    break;
+                default:
+                    logerr << "unknown property type "
+                           << Property::asString(data_type);
+                    throw runtime_error("buffer_utils::transformVariables: unknown property type " +
+                                             Property::asString(data_type));
+            }
+        }
+    }
+}
 
 std::string getValueString(dbContent::Variable& variable,
                            Buffer& buffer,

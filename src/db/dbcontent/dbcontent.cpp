@@ -18,6 +18,7 @@
 #include "dbcontent/dbcontent.h"
 #include "compass.h"
 #include "buffer.h"
+#include "buffer_utils.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentwidget.h"
@@ -602,7 +603,7 @@ bool DBContent::prepareInsert(shared_ptr<Buffer>& buffer)
         variable(DBContent::meta_var_rec_num_.name()).setHasDBContent();
 
     // transform variable names from dbcontvars to dbcolumns
-    buffer->transformVariables(list, false);
+    buffer_utils::transformVariables(*buffer, list, false);
 
     logdbg << "end";
 
@@ -728,7 +729,7 @@ void DBContent::updateData(Variable& key_var, shared_ptr<Buffer> buffer)
     }
 
     // transform variable names from dbcontvars to dbcolumns
-    buffer->transformVariables(list, false);
+    buffer_utils::transformVariables(*buffer, list, false);
 
     update_job_ =
             make_shared<UpdateBufferDBJob>(compass_.dbInterface(), *this, key_var, buffer);
@@ -873,7 +874,7 @@ void DBContent::readJobIntermediateSlot(shared_ptr<Buffer> buffer)
     logdbg << name_ << ": got buffer with size " << buffer->size();
 
     // finalize buffer
-    buffer->transformVariables(sender->readList(), true);
+    buffer_utils::transformVariables(*buffer, sender->readList(), true);
 
     // add boolean to indicate selection
     buffer->addProperty(DBContent::selected_var);

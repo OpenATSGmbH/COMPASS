@@ -159,8 +159,7 @@ namespace
         if (parent)
         {
             //we are a nested sector => add to parent layer
-            auto sec = std::make_shared<Sector>(nullptr,
-                                                sec_id++,
+            auto sec = std::make_shared<Sector>(sec_id++,
                                                 sector_data->name,
                                                 parent->name(),
                                                 false, //do not serialize yet, as we are not part of the evaluation
@@ -195,8 +194,7 @@ namespace
             else 
             {
                 //no nested sectors => we are our own layer
-                auto sec = std::make_shared<Sector>(nullptr,
-                                            sec_id++,
+                auto sec = std::make_shared<Sector>(sec_id++,
                                             sector_data->name,
                                             sector_data->name,
                                             false, //do not serialize yet, as we are not part of the evaluation

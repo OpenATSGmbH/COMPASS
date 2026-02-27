@@ -4,7 +4,7 @@ include_directories (
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass_core
+target_sources(compass_report
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/latexcontent.h"
         "${CMAKE_CURRENT_LIST_DIR}/latexdocument.h"
@@ -20,5 +20,3 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/lateximage.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/latextext.cpp"
 )
-
-

@@ -17,25 +17,18 @@
 
 #pragma once
 
-#include "docxcontent.h"
-
-#include <string>
-
-class DocxImage : public DocxContent
+namespace rtcommand
 {
-public:
-    DocxImage(const std::string& filename, const std::string& caption,
-              const std::string& rel_id, int width_emu, int height_emu);
 
-    std::string toXml() override;
-
-    std::string filename() const;
-    std::string relId() const;
-
-protected:
-    std::string filename_;
-    std::string caption_;
-    std::string rel_id_;
-    int width_emu_;
-    int height_emu_;
+/**
+ * Error code for object retrieval.
+ */
+enum class FindObjectErrCode
+{
+    NoError = 0,
+    Invalid,
+    NotFound,
+    WrongType
 };
+
+} // namespace rtcommand

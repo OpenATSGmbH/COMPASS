@@ -33,8 +33,6 @@
 #include <QIcon>
 #include <QAbstractItemModel>
 
-class DBInterface;
-
 enum class LogStreamType { Info, Warning, Error };
 
 class LogStore : public QAbstractItemModel
@@ -113,13 +111,17 @@ public:
 
     Qt::ItemFlags flags(const QModelIndex &index) const override;
 
-    void setDBInterface(DBInterface* dbi);
+    using SaveLogFunc = std::function<void(unsigned int, const nlohmann::json&)>;
+    using LoadLogsFunc = std::function<std::vector<nlohmann::json>()>;
+
+    void setLogCallbacks(SaveLogFunc save_cb, LoadLogsFunc load_cb);
 
     void clearMessages();
     void loadMessagesFromDB();
 
 protected:
-    DBInterface* db_interface_{nullptr};
+    SaveLogFunc  save_log_cb_;
+    LoadLogsFunc load_logs_cb_;
 
     QStringList table_columns_;
 

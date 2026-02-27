@@ -16,11 +16,13 @@
  */
 
 #include "configjson.h"
+#include "config_paths.h"
 #include "configuration.h"
-#include "files.h"
 #include "logger.h"
+#include "stringconv.h"
 #include "traced_assert.h"
 
+#include <filesystem>
 #include <fstream>
 
 using namespace nlohmann;
@@ -72,7 +74,8 @@ ConfigJSON::ConfigJSON(ConfigJSON&& other) noexcept
 
 void ConfigJSON::loadFromPath(const std::string& path)
 {
-    Files::verifyFileExists(path);
+    if (!std::filesystem::exists(path))
+        throw std::runtime_error("ConfigJSON: loadFromPath: file '" + path + "' does not exist");
 
     std::ifstream file(path, std::ifstream::in);
 
@@ -163,7 +166,8 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
         // Load the referenced file
         std::string file_path = CURRENT_CONF_DIRECTORY + path;
-        Files::verifyFileExists(file_path);
+        if (!std::filesystem::exists(file_path))
+            throw std::runtime_error("ConfigJSON: file '" + file_path + "' does not exist");
 
         std::ifstream file(file_path, std::ifstream::in);
         nlohmann::json child_json;

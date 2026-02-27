@@ -23,10 +23,15 @@ class Buffer;
 
 namespace dbContent {
 class Variable;
+class VariableSet;
 }
 
 namespace buffer_utils
 {
+
+/// Renames Buffer properties from DB column names to dbContent variable names (or vice versa).
+/// @param dbcol2dbcontvar  true: DB column → variable name; false: variable name → DB column
+void transformVariables(Buffer& buffer, dbContent::VariableSet& list, bool dbcol2dbcontvar);
 
 /// Returns the string representation of a variable's value from a buffer row.
 /// Sets is_null to true and returns "" if the property is not present in the buffer

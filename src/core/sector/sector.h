@@ -23,12 +23,12 @@
 #include <QRectF>
 #include <QImage>
 
+#include <functional>
 #include <memory>
 
 #include <boost/optional.hpp>
 
 class DBInterface;
-class EvaluationManager;
 
 namespace dbContent {
 class TargetPosition;
@@ -110,16 +110,17 @@ public:
         XYZ
     };
 
-    Sector(EvaluationManager* eval_man,
-           unsigned int id,
+    using SaveCallback = std::function<void(unsigned int id)>;
+    using MoveCallback = std::function<void(unsigned int id, const std::string& old_layer, const std::string& new_layer)>;
+
+    Sector(unsigned int id,
            const std::string& name,
            const std::string& layer_name,
            bool serialize,
            bool exclusion_sector,
            QColor color,
            std::vector<std::pair<double,double>> points);
-    Sector(EvaluationManager* eval_man,
-           unsigned int id,
+    Sector(unsigned int id,
            const std::string& name,
            const std::string& layer_name,
            bool serialize);
@@ -162,7 +163,10 @@ public:
     bool serializeSector() const;
     void serializeSector(bool ok);
     void save();
-    
+
+    void setSaveCallback(SaveCallback cb);
+    void setMoveCallback(MoveCallback cb);
+
     virtual bool isInside(const dbContent::TargetPosition& pos, 
                           bool has_ground_bit, 
                           bool ground_bit_set,
@@ -180,7 +184,8 @@ protected:
     virtual bool readJSON_impl(const nlohmann::json& json_obj) { return true; };
     virtual void writeJSON_impl(nlohmann::json& json_obj) const {};
 
-    EvaluationManager* eval_man_ = nullptr;
+    SaveCallback save_cb_;
+    MoveCallback move_cb_;
 
     unsigned int id_;
     std::string  name_;

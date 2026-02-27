@@ -16,8 +16,9 @@
  */
 
 #include "sector.h"
-#include "evaluationmanager.h"
 #include "dbcontent/target/targetposition.h"
+#include "logger.h"
+#include "json.hpp"
 
 #include "traced_assert.h"
 #include <cmath>
@@ -280,16 +281,14 @@ SectorInsideTest::CheckResult SectorInsideTest::isInside(double x, double y, dou
  * Sector
  ***********************************************************************************/
 
-Sector::Sector(EvaluationManager* eval_man,
-               unsigned int id,
+Sector::Sector(unsigned int id,
                const std::string& name,
                const std::string& layer_name,
                bool serialize,
                bool exclusion_sector,
                QColor color,
                std::vector<std::pair<double,double>> points)
-:   eval_man_        (eval_man)
-,   id_              (id)
+:   id_              (id)
 ,   name_            (name)
 ,   layer_name_      (layer_name)
 ,   serialize_       (serialize)
@@ -300,13 +299,11 @@ Sector::Sector(EvaluationManager* eval_man,
     createPolygon();
 }
 
-Sector::Sector(EvaluationManager* eval_man,
-               unsigned int id,
+Sector::Sector(unsigned int id,
                const std::string& name,
                const std::string& layer_name,
                bool serialize)
-:   eval_man_  (eval_man)
-,   id_        (id)
+:   id_        (id)
 ,   name_      (name)
 ,   layer_name_(layer_name)
 ,   serialize_ (serialize)
@@ -541,8 +538,8 @@ void Sector::layerName(const std::string& layer_name)
     string old_layer_name = layer_name_;
     layer_name_ = layer_name;
 
-    if (eval_man_)
-        eval_man_->moveSector(id_, old_layer_name, layer_name); // moves and saves
+    if (move_cb_)
+        move_cb_(id_, old_layer_name, layer_name); // moves and saves
 }
 
 bool Sector::serializeSector() const
@@ -557,11 +554,18 @@ void Sector::serializeSector(bool ok)
 
 void Sector::save()
 {
-    if (serialize_)
-    {
-        if (eval_man_)
-            eval_man_->saveSector(id_);
-    }
+    if (serialize_ && save_cb_)
+        save_cb_(id_);
+}
+
+void Sector::setSaveCallback(SaveCallback cb)
+{
+    save_cb_ = std::move(cb);
+}
+
+void Sector::setMoveCallback(MoveCallback cb)
+{
+    move_cb_ = std::move(cb);
 }
 
 bool Sector::isInside(const dbContent::TargetPosition& pos,

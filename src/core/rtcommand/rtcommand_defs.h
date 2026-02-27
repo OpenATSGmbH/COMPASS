@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "find_error_code.h"
+
 #include <QString>
 
 namespace rtcommand
@@ -56,17 +58,6 @@ enum class CmdErrorCode
     WaitCond_BadInit             = 500,
     WaitCond_Timeout             = 501,
     WaitCond_InvokeFailed        = 502
-};
-
-/**
- * Error code for object retrieval.
- */
-enum class FindObjectErrCode
-{
-    NoError = 0,
-    Invalid,
-    NotFound,
-    WrongType
 };
 
 /**

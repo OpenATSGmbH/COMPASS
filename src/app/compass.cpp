@@ -480,7 +480,9 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
 
         db_opened_ = true;
 
-        log_store_.setDBInterface(db_interface_.get());
+        log_store_.setLogCallbacks(
+            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
+            [this]() { return db_interface_->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }  
     catch (std::exception& e)
@@ -539,7 +541,9 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
 
         db_opened_ = true;
 
-        log_store_.setDBInterface(db_interface_.get());
+        log_store_.setLogCallbacks(
+            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
+            [this]() { return db_interface_->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }
     catch(const std::exception& e)
@@ -586,7 +590,9 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
 
         db_opened_ = true;
 
-        log_store_.setDBInterface(db_interface_.get());
+        log_store_.setLogCallbacks(
+            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
+            [this]() { return db_interface_->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }
     catch(const std::exception& e)
@@ -746,7 +752,7 @@ Result COMPASS::closeDBInternal()
         db_inmem_ = false;
 
         emit databaseClosedSignal();
-        log_store_.setDBInterface(nullptr);
+        log_store_.setLogCallbacks({}, {});
     }
     catch(const std::exception& ex)
     {

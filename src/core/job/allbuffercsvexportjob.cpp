@@ -16,7 +16,7 @@
  */
 
 #include "allbuffercsvexportjob.h"
-#include "buffer_value_string.h"
+#include "buffer_utils.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
