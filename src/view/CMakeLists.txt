@@ -31,6 +31,5 @@ target_link_libraries(compass_view
         compass_core
         compass_db
         compass_gui
-        compass_task
         compass_eval
 )
