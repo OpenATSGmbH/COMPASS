@@ -288,7 +288,7 @@ TEST_CASE("getPath", "[configurable]")
 
 TEST_CASE("notifyModifications propagation", "[configurable]")
 {
-    SECTION("notifyModifications propagates through optional parent")
+    SECTION("notifyModifications propagates through parent")
     {
         // Create a parent that tracks onModified calls
         struct TrackingParent : public Configurable
@@ -304,18 +304,28 @@ TEST_CASE("notifyModifications propagation", "[configurable]")
         json cfg_child  = makeConfig("TestConfigurable", "TC0", {{"threshold", 5.0}});
 
         TrackingParent parent(cfg_parent);
-        TestConfigurable child(cfg_child);
 
-        // Without parent — no propagation, no crash
-        child.setParam(child.threshold_, 10.0);
-        REQUIRE(parent.modify_count_ == 0);
+        // Construct child with parent — parent_ is set in the constructor
+        TestConfigurable child(cfg_child, &parent);
 
-        // Add child to parent so modifications propagate
-        parent.addChild(&child);
         child.setParam(child.threshold_, 20.0);
         REQUIRE(parent.modify_count_ == 1);
 
         child.setParam(child.threshold_, 30.0);
         REQUIRE(parent.modify_count_ == 2);
+
+        // Same value — no notification
+        child.setParam(child.threshold_, 30.0);
+        REQUIRE(parent.modify_count_ == 2);
+    }
+
+    SECTION("no propagation without parent")
+    {
+        json cfg = makeConfig("TestConfigurable", "TC0", {{"threshold", 5.0}});
+        TestConfigurable child(cfg);
+
+        // Should not crash with nullptr parent
+        child.setParam(child.threshold_, 10.0);
+        REQUIRE(child.threshold_ == 10.0);
     }
 }
