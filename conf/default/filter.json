@@ -81,6 +81,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "IN",
                         "reset_value": "0",
@@ -108,6 +109,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "=",
                         "reset_value": "1",
@@ -135,6 +137,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "IN",
                         "reset_value": "1",
@@ -162,6 +165,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "<=",
                         "reset_value": "MAX",
@@ -176,6 +180,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": ">=",
                         "reset_value": "MIN",
@@ -190,6 +195,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "<=",
                         "reset_value": "MAX",
@@ -204,6 +210,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": ">=",
                         "reset_value": "MIN",
@@ -231,6 +238,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "<=",
                         "reset_value": "MAX",
@@ -245,6 +253,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": ">=",
                         "reset_value": "MIN",
@@ -272,6 +281,7 @@
                     "parameters": {
                         "absolute_value": false,
                         "display_instance_id": false,
+                        "display_instance_name": false,
                         "op_and": true,
                         "operator": "IN",
                         "reset_value": "4227",

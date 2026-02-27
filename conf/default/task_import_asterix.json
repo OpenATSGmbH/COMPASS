@@ -183,71 +183,19 @@
                 "name": "jASTERIX"
             },
             "sub_config_files": [
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT001",
-                    "path": "task_import_asterix_cat001.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT002",
-                    "path": "task_import_asterix_cat002.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT004",
-                    "path": "task_import_asterix_cat004.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT010",
-                    "path": "task_import_asterix_cat010.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT019",
-                    "path": "task_import_asterix_cat019.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT020",
-                    "path": "task_import_asterix_cat020.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT021",
-                    "path": "task_import_asterix_cat021.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT023",
-                    "path": "task_import_asterix_cat023.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT034",
-                    "path": "task_import_asterix_cat034.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT048",
-                    "path": "task_import_asterix_cat048.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT062",
-                    "path": "task_import_asterix_cat062.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT063",
-                    "path": "task_import_asterix_cat063.json"
-                },
-                {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT065",
-                    "path": "task_import_asterix_cat065.json"
-                }
+                "task_import_asterix_cat001.json",
+                "task_import_asterix_cat002.json",
+                "task_import_asterix_cat004.json",
+                "task_import_asterix_cat010.json",
+                "task_import_asterix_cat019.json",
+                "task_import_asterix_cat020.json",
+                "task_import_asterix_cat021.json",
+                "task_import_asterix_cat023.json",
+                "task_import_asterix_cat034.json",
+                "task_import_asterix_cat048.json",
+                "task_import_asterix_cat062.json",
+                "task_import_asterix_cat063.json",
+                "task_import_asterix_cat065.json"
             ]
         }
     ]

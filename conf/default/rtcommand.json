@@ -2,8 +2,7 @@
     "class_name": "RTCommandManager",
     "instance_name": "RTCommandManager0",
     "parameters": {
-        "db_file_list": [
-        ],
+        "db_file_list": [],
         "port_num": 27960
     }
 }

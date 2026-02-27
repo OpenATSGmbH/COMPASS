@@ -1,12 +1,12 @@
 {
     "class_name": "UnitManager",
     "instance_name": "UnitManager0",
-    "parameters": null,
+    "parameters": {},
     "sub_configs": [
         {
             "class_name": "Dimension",
             "instance_name": "Angle",
-            "parameters": null,
+            "parameters": {},
             "sub_configs": [
                 {
                     "class_name": "Unit",
@@ -29,7 +29,7 @@
         {
             "class_name": "Dimension",
             "instance_name": "Height",
-            "parameters": null,
+            "parameters": {},
             "sub_configs": [
                 {
                     "class_name": "Unit",
@@ -60,7 +60,7 @@
         {
             "class_name": "Dimension",
             "instance_name": "Length",
-            "parameters": null,
+            "parameters": {},
             "sub_configs": [
                 {
                     "class_name": "Unit",
@@ -99,7 +99,7 @@
         {
             "class_name": "Dimension",
             "instance_name": "Speed",
-            "parameters": null,
+            "parameters": {},
             "sub_configs": [
                 {
                     "class_name": "Unit",
@@ -138,7 +138,7 @@
         {
             "class_name": "Dimension",
             "instance_name": "Time",
-            "parameters": null,
+            "parameters": {},
             "sub_configs": [
                 {
                     "class_name": "Unit",

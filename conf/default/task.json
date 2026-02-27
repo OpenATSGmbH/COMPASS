@@ -5,46 +5,14 @@
         "expert_mode": false
     },
     "sub_config_files": [
-        {
-            "class_name": "ASTERIXImportTask",
-            "instance_name": "ASTERIXImportTask0",
-            "path": "task_import_asterix.json"
-        },
-        {
-            "class_name": "CreateARTASAssociationsTask",
-            "instance_name": "CreateARTASAssociationsTask0",
-            "path": "task_calc_artas_assoc.json"
-        },
-        {
-            "class_name": "GPSTrailImportTask",
-            "instance_name": "GPSTrailImportTask0",
-            "path": "task_import_gps.json"
-        },
-        {
-            "class_name": "JSONImportTask",
-            "instance_name": "JSONImportTask0",
-            "path": "task_import_json.json"
-        },
-        {
-            "class_name": "ManageSectorsTask",
-            "instance_name": "ManageSectorsTask0",
-            "path": "task_manage_sectors.json"
-        },
-        {
-            "class_name": "RadarPlotPositionCalculatorTask",
-            "instance_name": "RadarPlotPositionCalculatorTask0",
-            "path": "task_calc_radar_pos.json"
-        },
-        {
-            "class_name": "ReconstructorTask",
-            "instance_name": "ReconstructorTask0",
-            "path": "task_reconstructor.json"
-        },
-        {
-            "class_name": "ViewPointsImportTask",
-            "instance_name": "ViewPointsImportTask0",
-            "path": "task_import_view_points.json"
-        }
+        "task_import_asterix.json",
+        "task_calc_artas_assoc.json",
+        "task_import_gps.json",
+        "task_import_json.json",
+        "task_manage_sectors.json",
+        "task_calc_radar_pos.json",
+        "task_reconstructor.json",
+        "task_import_view_points.json"
     ],
     "sub_configs": [
         {

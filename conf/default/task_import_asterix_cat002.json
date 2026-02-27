@@ -1,333 +1,371 @@
 {
-                    "class_name": "ASTERIXJSONParser",
-                    "instance_name": "CAT002",
+    "class_name": "ASTERIXJSONParser",
+    "instance_name": "CAT002",
     "parameters": {
         "category": 2,
         "db_content_name": "CAT002",
         "name": "CAT002"
     },
-    "sub_configs": {
-        "JSONDataMapping": {
-            "JSONDataMapping1": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Message Type",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "000.Message Type",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping10": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Rho-Start",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "100.RHO-START",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMapping11": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Theta-End",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "100.THETA-END",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping12": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Theta-Start",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "100.THETA-START",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping13": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Station Configuration Status",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "050.Station Configuration Status.Value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping14": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Station Processing Mode",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "060.Station Processing Mode.Value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping15": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "W/E Value",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "080.warning_error_conditions.W/E Value",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping16": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Plot Count A",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "070.plot_count_values.A",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping17": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Plot Count Counter",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "070.plot_count_values.COUNTER",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping18": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Plot Count Ident",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "070.plot_count_values.IDENT",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping2": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "SAC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SAC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping3": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "SIC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SIC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping4": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Sector Number",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.Sector Number",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping5": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Time of Day",
-                    "dimension": "Time",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "030.Time of Day",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Second"
-                }
-            },
-            "JSONDataMapping6": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Antenna Rotation Speed",
-                    "dimension": "Time",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "041.Antenna Rotation Speed",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Second"
-                }
-            },
-            "JSONDataMapping7": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Azimuth Error",
-                    "dimension": "Angle",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "090.AZIMUTH ERROR",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Degree"
-                }
-            },
-            "JSONDataMapping8": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Range Error",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "090.RANGE ERROR",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMapping9": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Rho-End",
-                    "dimension": "Length",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "100.RHO-END",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Nautical Mile"
-                }
-            },
-            "JSONDataMappingDSID": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "DS ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "ds_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMappingLineID": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Line Identifer",
-                    "db_content_name": "CAT002",
-                    "db_content_variable_name": "Line ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "line_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Message Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "000.Message Type",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Rho-Start",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.RHO-START",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Theta-End",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.THETA-END",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping12",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Theta-Start",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.THETA-START",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping13",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Station Configuration Status",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.Station Configuration Status.Value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Station Processing Mode",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "060.Station Processing Mode.Value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping15",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "W/E Value",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "080.warning_error_conditions.W/E Value",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping16",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Plot Count A",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "070.plot_count_values.A",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping17",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Plot Count Counter",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "070.plot_count_values.COUNTER",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping18",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Plot Count Ident",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "070.plot_count_values.IDENT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "SAC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SAC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "SIC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Sector Number",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.Sector Number",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Time of Day",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "030.Time of Day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Antenna Rotation Speed",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "041.Antenna Rotation Speed",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Azimuth Error",
+                "dimension": "Angle",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "090.AZIMUTH ERROR",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Range Error",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "090.RANGE ERROR",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Rho-End",
+                "dimension": "Length",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.RHO-END",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingDSID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "DS ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "ds_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingLineID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Line Identifer",
+                "db_content_name": "CAT002",
+                "db_content_variable_name": "Line ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "line_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
             }
         }
-    }
+    ]
 }
