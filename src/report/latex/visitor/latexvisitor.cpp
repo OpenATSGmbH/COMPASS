@@ -336,7 +336,7 @@ void LatexVisitor::visit(GeographicView* e)
 
     // normal screenshot
 
-    QImage screenshot = data_widget->osgViewerWidget()->grabFrameBuffer();
+    QImage screenshot = data_widget->osgViewerWidget()->grabFramebuffer();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceName()+".jpg";
     traced_assert(!screenshot.isNull());
@@ -358,7 +358,7 @@ void LatexVisitor::visit(GeographicView* e)
         data_widget->zoomToDataSlot(); // TODO wrong
         data_widget->addDataMarker();
 
-        QImage overview_screenshot = data_widget->osgViewerWidget()->grabFrameBuffer();
+        QImage overview_screenshot = data_widget->osgViewerWidget()->grabFramebuffer();
 
         data_widget->removeDataMarker();
 
