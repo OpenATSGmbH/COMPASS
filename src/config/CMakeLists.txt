@@ -24,4 +24,5 @@ target_link_libraries(compass_config
     PUBLIC
         ${Boost_LIBRARIES}
         ${LOG4CPP_LIBRARIES}
+        stdc++fs # GCC 8 (Debian 10) needs this for std::filesystem; harmless no-op on GCC 9+
 )
