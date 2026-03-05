@@ -26,7 +26,9 @@ class ASTERIXPostProcess
   public:
     ASTERIXPostProcess();
 
-    void postProcess(unsigned int category, nlohmann::json& record);
+    // flat format: post-process flat category data in-place, adding category/ds_id/line_id arrays
+    void postProcessFlat(unsigned int category, unsigned int line_id,
+                         nlohmann::json& flat_cat_data, size_t num_records);
 
   protected:
     friend class ASTERIXImportTask;  // uses the members for config
@@ -34,11 +36,8 @@ class ASTERIXPostProcess
     std::map<std::pair<unsigned int, unsigned int>, double> cat002_last_tod_period_;
     std::map<std::pair<unsigned int, unsigned int>, double> cat002_last_tod_;
 
-    void postProcessCAT001(int sac, int sic, nlohmann::json& record);
-    void postProcessCAT002(int sac, int sic, nlohmann::json& record);
-    void postProcessCAT010(int sac, int sic, nlohmann::json& record);
-    void postProcessCAT020(int sac, int sic, nlohmann::json& record);
-    void postProcessCAT021(int sac, int sic, nlohmann::json& record);
-    void postProcessCAT048(int sac, int sic, nlohmann::json& record);
-    void postProcessCAT062(int sac, int sic, nlohmann::json& record);
+    void postProcessFlatCAT001(nlohmann::json& d, size_t num_records);
+    void postProcessFlatCAT002(nlohmann::json& d, size_t num_records);
+    void postProcessFlatCAT020(nlohmann::json& d, size_t num_records);
+    void postProcessFlatCAT062(nlohmann::json& d, size_t num_records);
 };

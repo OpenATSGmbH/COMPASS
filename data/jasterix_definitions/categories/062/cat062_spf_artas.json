@@ -1,23 +1,17 @@
 {
-    "name":"cat062_spf_artas",
-    "type":"SimpleSpecialPurposeField",
-    "items":[
+    "name": "cat062_spf_artas",
+    "type": "SimpleSpecialPurposeField",
+    "items": [
         {
-            "name":"Target Report Identifiers",
-            "type":"repetitive",
-            "repetition_item":{
-                "name":"REP",
-                "type":"fixed_bytes",
-                "length":1,
-                "data_type":"uint"
-            },
-            "items":[
+            "name": "Target Report Identifiers",
+            "type": "repetitive",
+            "items": [
                 {
-                    "name":"TRI",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":4,
-                    "data_type":"bin"
+                    "name": "TRI",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 4,
+                    "data_type": "bin"
                 }
             ]
         }

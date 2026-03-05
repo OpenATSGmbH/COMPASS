@@ -1,13 +1,13 @@
 {
-    "name":"cat063_1.0_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat063_1.0_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "015",
         "030",
@@ -25,312 +25,314 @@
         "SP",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the SDPS sending the data",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the SDPS sending the data",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"015",
-            "name":"Service Identification",
-            "comment":"Identification of the service provided to one or more users.",
-            "type":"item",
-            "data_fields":[
+            "number": "015",
+            "name": "Service Identification",
+            "comment": "Identification of the service provided to one or more users.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Service Identification",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Service Identification",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"030",
-            "name":"Time of Message",
-            "comment":"Absolute time stamping of the message, in the form of elapsed time since last midnight, expressed as UTC.",
-            "type":"item",
-            "data_fields":[
+            "number": "030",
+            "name": "Time of Message",
+            "comment": "Absolute time stamping of the message, in the form of elapsed time since last midnight, expressed as UTC.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time of Message",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Time of Message",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"050",
-            "name":"Sensor Identifier",
-            "comment":"Identification of the Sensor to which the provided information are related.",
-            "type":"item",
-            "data_fields":[
+            "number": "050",
+            "name": "Sensor Identifier",
+            "comment": "Identification of the Sensor to which the provided information are related.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"060",
-            "name":"Sensor Configuration and Status",
-            "comment":"Configuration and status of the sensor",
-            "type":"item",
-            "data_fields":[
+            "number": "060",
+            "name": "Sensor Configuration and Status",
+            "comment": "Configuration and status of the sensor",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Sensor Configuration and Status First Part",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Sensor Configuration and Status First Part",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"CON",
-                            "comment":"0 operational\n1 degraded\n2 Initialization\n3 not currently connected",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":2
+                            "name": "CON",
+                            "comment": "0 operational\n1 degraded\n2 Initialization\n3 not currently connected",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 2
                         },
                         {
-                            "name":"PSR",
-                            "comment":"0 PSR GO\n1 PSR NOGO",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "PSR",
+                            "comment": "0 PSR GO\n1 PSR NOGO",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SSR",
-                            "comment":"0 SSR GO\n1 SSR NOGO",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "SSR",
+                            "comment": "0 SSR GO\n1 SSR NOGO",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MDS",
-                            "comment":"0 Mode S GO\n1 Mode S NOGO",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "MDS",
+                            "comment": "0 Mode S GO\n1 Mode S NOGO",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"ADS",
-                            "comment":"0 ADS GO\n1 ADS NOGO",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "ADS",
+                            "comment": "0 ADS GO\n1 ADS NOGO",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MLT",
-                            "comment":"0 MLT GO\n1 MLT NOGO",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "MLT",
+                            "comment": "0 MLT GO\n1 MLT NOGO",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Sensor Configuration and Status First Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Sensor Configuration and Status First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"OPS",
-                            "comment":"Operational Release Status of the System\n0 System is released for operational use\n1 Operational use of System is inhibited,",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "OPS",
+                            "comment": "Operational Release Status of the System\n0 System is released for operational use\n1 Operational use of System is inhibited,",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"ODP",
-                            "comment":"Data Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "ODP",
+                            "comment": "Data Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"OXT",
-                            "comment":"Transmission Subsystem Overload Status\n0 Default, no overload\n1 Overload in transmission subsystem",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "OXT",
+                            "comment": "Transmission Subsystem Overload Status\n0 Default, no overload\n1 Overload in transmission subsystem",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MSC",
-                            "comment":"Monitoring System Connected Status\n0 Monitoring system connected\n1 Monitoring system disconnected",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "MSC",
+                            "comment": "Monitoring System Connected Status\n0 Monitoring system connected\n1 Monitoring system disconnected",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TSV",
-                            "comment":"Time Source Validity\n0 valid\n1 invalid",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "TSV",
+                            "comment": "Time Source Validity\n0 valid\n1 invalid",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"NPW",
-                            "comment":"No Plot Warning\n0 Default (no meaning)\n1 No plots being received",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "NPW",
+                            "comment": "No Plot Warning\n0 Default (no meaning)\n1 No plots being received",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"070",
-            "name":"Time Stamping Bias",
-            "comment":"Plot Time stamping bias.",
-            "type":"item",
-            "data_fields":[
+            "number": "070",
+            "name": "Time Stamping Bias",
+            "comment": "Plot Time stamping bias.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TSB",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":1.0
+                    "name": "TSB",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 1.0
                 }
             ]
         },
         {
-            "number":"080",
-            "name":"SSR / Mode S Range Gain and Bias",
-            "comment":"SSR / Mode S Range Gain and Range Bias, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "080",
+            "name": "SSR / Mode S Range Gain and Bias",
+            "comment": "SSR / Mode S Range Gain and Range Bias, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SRG",
-                    "comment":"SSR / Mode S Range Gain",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00001
+                    "name": "SRG",
+                    "comment": "SSR / Mode S Range Gain",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 1e-05
                 },
                 {
-                    "name":"SRB",
-                    "comment":"SSR / Mode S Range Bias",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.0078125
+                    "name": "SRB",
+                    "comment": "SSR / Mode S Range Bias",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"081",
-            "name":"SSR / Mode S Azimuth Bias",
-            "comment":"SSR / Mode S Azimuth Bias, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "081",
+            "name": "SSR / Mode S Azimuth Bias",
+            "comment": "SSR / Mode S Azimuth Bias, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAB",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00549316406
+                    "name": "SAB",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.00549316406
                 }
             ]
         },
         {
-            "number":"090",
-            "name":"PSR Range Gain and Bias",
-            "comment":"PSR Range Gain and PSR Range Bias, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "090",
+            "name": "PSR Range Gain and Bias",
+            "comment": "PSR Range Gain and PSR Range Bias, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"PRG",
-                    "comment":"PSR Range Gain",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00001
+                    "name": "PRG",
+                    "comment": "PSR Range Gain",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 1e-05
                 },
                 {
-                    "name":"PRB",
-                    "comment":"PSR Range Bias",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.0078125
+                    "name": "PRB",
+                    "comment": "PSR Range Bias",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"091",
-            "name":"PSR Azimuth Bias",
-            "comment":"PSR Azimuth Bias, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "091",
+            "name": "PSR Azimuth Bias",
+            "comment": "PSR Azimuth Bias, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"PAB",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00549316406
+                    "name": "PAB",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.00549316406
                 }
             ]
         },
         {
-            "number":"092",
-            "name":"PSR Elevation Bias",
-            "comment":"PSR Elevation Bias, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "092",
+            "name": "PSR Elevation Bias",
+            "comment": "PSR Elevation Bias, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"PEB",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00549316406
+                    "name": "PEB",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.00549316406
                 }
             ]
         }

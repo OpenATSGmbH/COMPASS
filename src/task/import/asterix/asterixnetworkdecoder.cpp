@@ -183,7 +183,7 @@ void ASTERIXNetworkDecoder::start_impl()
                     };
 
                     task().jASTERIX()->decodeData((char*) receive_buffers_copy_.at(line_id)->data(),
-                                                   size_it.second, callback);
+                                                   size_it.second, callback, false, true);
                 }
 
                 logdbg << "done";

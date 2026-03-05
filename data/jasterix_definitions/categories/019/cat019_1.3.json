@@ -1,13 +1,13 @@
 {
-    "name":"cat019_1.3_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat019_1.3_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "000",
         "140",
@@ -25,236 +25,230 @@
         "SP",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"000",
-            "name":"Message Type",
-            "comment":"This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of information.",
-            "type":"item",
-            "data_fields":[
+            "number": "000",
+            "name": "Message Type",
+            "comment": "This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of information.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Message Type",
-                    "comment":"001 Start of Update Cycle\n002 Periodic Status Message\n003 Event-triggered Status Message",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Message Type",
+                    "comment": "001 Start of Update Cycle\n002 Periodic Status Message\n003 Event-triggered Status Message",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the system from which the data is received.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the system from which the data is received.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"140",
-            "name":"Time of Day",
-            "comment":"Absolute time stamping expressed as UTC.",
-            "type":"item",
-            "data_fields":[
+            "number": "140",
+            "name": "Time of Day",
+            "comment": "Absolute time stamping expressed as UTC.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time of Day",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Time of Day",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"550",
-            "name":"System Status",
-            "comment":"Information concerning the configuration and status of a System.",
-            "type":"item",
-            "data_fields":[
+            "number": "550",
+            "name": "System Status",
+            "comment": "Information concerning the configuration and status of a System.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"com",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "com",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"NOGO",
-                            "comment":"Operational Release Status of the System\n0 Operational\n1 Degraded\n2 NOGO\n3 undefined",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":2
+                            "name": "NOGO",
+                            "comment": "Operational Release Status of the System\n0 Operational\n1 Degraded\n2 NOGO\n3 undefined",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 2
                         },
                         {
-                            "name":"OVL",
-                            "comment":"Overload indicator\n0 No overload\n1 Overload",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "OVL",
+                            "comment": "Overload indicator\n0 No overload\n1 Overload",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TSV",
-                            "comment":"Time Source Validity\n0 valid\n1 invalid",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "TSV",
+                            "comment": "Time Source Validity\n0 valid\n1 invalid",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TTF",
-                            "comment":"0 Test Target Operative\n1 Test Target Failure",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "TTF",
+                            "comment": "0 Test Target Operative\n1 Test Target Failure",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"551",
-            "name":"Tracking Processor Detailed Status",
-            "comment":"Information concerning the configuration and status of the Tracking processors.",
-            "type":"item",
-            "data_fields":[
+            "number": "551",
+            "name": "Tracking Processor Detailed Status",
+            "comment": "Information concerning the configuration and status of the Tracking processors.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"tracking_processor_status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "tracking_processor_status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"TP 1a",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "TP 1a",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 1b",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "TP 1b",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 2a",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "TP 2a",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 2b",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "TP 2b",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 3a",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "TP 3a",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 3b",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "TP 3b",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 4a",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "TP 4a",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TP 4b",
-                            "comment":"1 Exec\n0 Standby",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "TP 4b",
+                            "comment": "1 Exec\n0 Standby",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"552",
-            "name":"Remote Sensor Detailed Status",
-            "comment":"Information concerning the configuration and status of the Remote Sensors (RS)",
-            "type":"item",
-            "data_fields":[
+            "number": "552",
+            "name": "Remote Sensor Detailed Status",
+            "comment": "Information concerning the configuration and status of the Remote Sensors (RS)",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Remote Sensor Detailed Status",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "Remote Sensor Detailed Status",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"remote_sensor_detailed_status_bf",
-                            "type":"fixed_bitfield",
-                            "length":2,
-                            "items":[
+                            "name": "remote_sensor_detailed_status_bf",
+                            "type": "fixed_bitfield",
+                            "length": 2,
+                            "items": [
                                 {
-                                    "name":"RS Identification",
-                                    "comment":"8-bit Identification number of RS",
-                                    "type":"fixed_bits",
-                                    "start_bit":8,
-                                    "bit_length":8
+                                    "name": "RS Identification",
+                                    "comment": "8-bit Identification number of RS",
+                                    "type": "fixed_bits",
+                                    "start_bit": 8,
+                                    "bit_length": 8
                                 },
                                 {
-                                    "name":"Receiver 1090 MHz",
-                                    "comment":"1 present",
-                                    "type":"fixed_bits",
-                                    "start_bit":6,
-                                    "bit_length":1
+                                    "name": "Receiver 1090 MHz",
+                                    "comment": "1 present",
+                                    "type": "fixed_bits",
+                                    "start_bit": 6,
+                                    "bit_length": 1
                                 },
                                 {
-                                    "name":"Transmitter 1030 MHz",
-                                    "comment":"1 present",
-                                    "type":"fixed_bits",
-                                    "start_bit":5,
-                                    "bit_length":1
+                                    "name": "Transmitter 1030 MHz",
+                                    "comment": "1 present",
+                                    "type": "fixed_bits",
+                                    "start_bit": 5,
+                                    "bit_length": 1
                                 },
                                 {
-                                    "name":"Transmitter 1090 MHz",
-                                    "comment":"1 present",
-                                    "type":"fixed_bits",
-                                    "start_bit":4,
-                                    "bit_length":1
+                                    "name": "Transmitter 1090 MHz",
+                                    "comment": "1 present",
+                                    "type": "fixed_bits",
+                                    "start_bit": 4,
+                                    "bit_length": 1
                                 },
                                 {
-                                    "name":"RS Status",
-                                    "comment":"1 Good\n0 Faulted",
-                                    "type":"fixed_bits",
-                                    "start_bit":3,
-                                    "bit_length":1
+                                    "name": "RS Status",
+                                    "comment": "1 Good\n0 Faulted",
+                                    "type": "fixed_bits",
+                                    "start_bit": 3,
+                                    "bit_length": 1
                                 },
                                 {
-                                    "name":"RS Operational",
-                                    "comment":"1 Online\n0 Offline",
-                                    "type":"fixed_bits",
-                                    "start_bit":2,
-                                    "bit_length":1
+                                    "name": "RS Operational",
+                                    "comment": "1 Online\n0 Offline",
+                                    "type": "fixed_bits",
+                                    "start_bit": 2,
+                                    "bit_length": 1
                                 }
                             ]
                         }
@@ -263,40 +257,41 @@
             ]
         },
         {
-            "number":"553",
-            "name":"Reference Transponder Detailed Status",
-            "comment":"Information concerning the configuration and status of the Reference Transponder.",
-            "type":"item",
-            "data_fields":[
+            "number": "553",
+            "name": "Reference Transponder Detailed Status",
+            "comment": "Information concerning the configuration and status of the Reference Transponder.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Reference Transponder Detailed Status",
-                    "type":"extendable",
-                    "items":[
-                            {
-                                "name":"Reference Transponder Detailed Status",
-                                "type":"fixed_bitfield",
-                                "length":1,
-                                "items":[
-                            {
-                                "name":"Ref Trans 1 Status",
-                                "comment":"3 Good\n2 Faulted\n1 Warning\n0",
-                                "type":"fixed_bits",
-                                "start_bit":6,
-                                "bit_length":2
-                            },
-                            {
-                                "name":"Ref Trans 2 Status",
-                                "comment":"3 Good\n2 Faulted\n1 Warning\n0",
-                                "type":"fixed_bits",
-                                "start_bit":2,
-                                "bit_length":2
-                            },
-                            {
-                                "name":"extend",
-                                "type":"fixed_bits",
-                                "start_bit":0,
-                                "bit_length":1
-                            }
+                    "name": "Reference Transponder Detailed Status",
+                    "type": "extendable",
+                    "items": [
+                        {
+                            "name": "Reference Transponder Detailed Status",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "Ref Trans 1 Status",
+                                    "comment": "3 Good\n2 Faulted\n1 Warning\n0",
+                                    "type": "fixed_bits",
+                                    "start_bit": 6,
+                                    "bit_length": 2
+                                },
+                                {
+                                    "name": "Ref Trans 2 Status",
+                                    "comment": "3 Good\n2 Faulted\n1 Warning\n0",
+                                    "type": "fixed_bits",
+                                    "start_bit": 2,
+                                    "bit_length": 2
+                                },
+                                {
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
+                                }
                             ]
                         }
                     ]
@@ -304,58 +299,58 @@
             ]
         },
         {
-            "number":"600",
-            "name":"Position of the MLT System Reference Point",
-            "comment":"Position of the MLT reference point in WGS-84 Coordinates.",
-            "type":"item",
-            "data_fields":[
+            "number": "600",
+            "name": "Position of the MLT System Reference Point",
+            "comment": "Position of the MLT reference point in WGS-84 Coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Latitude",
-                    "comment":"In WGS-84 in two’s complement.\nRange -90 <= latitude <= 90 deg.",
-                    "type":"fixed_bytes",
-                    "length":4,
-                    "data_type":"int",
-                    "lsb":1.676380634307861328125e-7
+                    "name": "Latitude",
+                    "comment": "In WGS-84 in two\u2019s complement.\nRange -90 <= latitude <= 90 deg.",
+                    "type": "fixed_bytes",
+                    "length": 4,
+                    "data_type": "int",
+                    "lsb": 1.6763806343078613e-07
                 },
                 {
-                    "name":"Longitude",
-                    "comment":"In WGS-84 in two’s complement.\nRange -180 <= longitude < 180 deg.",
-                    "type":"fixed_bytes",
-                    "length":4,
-                    "data_type":"int",
-                    "lsb":1.676380634307861328125e-7
+                    "name": "Longitude",
+                    "comment": "In WGS-84 in two\u2019s complement.\nRange -180 <= longitude < 180 deg.",
+                    "type": "fixed_bytes",
+                    "length": 4,
+                    "data_type": "int",
+                    "lsb": 1.6763806343078613e-07
                 }
             ]
         },
         {
-            "number":"610",
-            "name":"Height of the MLT System Reference Point",
-            "comment":"Height of the MLT system reference point in two’s complement form. The height shall use mean sea level as the zero reference level.",
-            "type":"item",
-            "data_fields":[
+            "number": "610",
+            "name": "Height of the MLT System Reference Point",
+            "comment": "Height of the MLT system reference point in two\u2019s complement form. The height shall use mean sea level as the zero reference level.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Height",
-                    "comment":"Height (WGS-84) above MSL\nRange= +/- 8192 m",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.25
+                    "name": "Height",
+                    "comment": "Height (WGS-84) above MSL\nRange= +/- 8192 m",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
                 }
             ]
         },
         {
-            "number":"620",
-            "name":"WGS-84 Undulation",
-            "comment":"WGS-84 undulation value of the MLT system reference point, in meters. Geoid undulation value is the difference between the ellipsoidal height and the height above mean sea level",
-            "type":"item",
-            "data_fields":[
+            "number": "620",
+            "name": "WGS-84 Undulation",
+            "comment": "WGS-84 undulation value of the MLT system reference point, in meters. Geoid undulation value is the difference between the ellipsoidal height and the height above mean sea level",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Undulation",
-                    "comment":"WGS-84 Undulation value (MSL)\nRange= +/- 127 m",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":1.0
+                    "name": "Undulation",
+                    "comment": "WGS-84 Undulation value (MSL)\nRange= +/- 127 m",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 1.0
                 }
             ]
         }

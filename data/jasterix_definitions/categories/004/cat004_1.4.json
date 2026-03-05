@@ -1,13 +1,13 @@
 {
-    "name":"cat004_1.4_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat004_1.4_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "000",
         "015",
@@ -33,390 +33,380 @@
         "SP",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"000",
-            "name":"Message Type",
-            "comment":"This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of transaction.",
-            "type":"item",
-            "data_fields":[
+            "number": "000",
+            "name": "Message Type",
+            "comment": "This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of transaction.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Message Type",
-                    "comment":"1 Alive Message\n2 Route Adherence Monitor Longitudinal Deviation\n3 Route Adherence Monitor Heading Deviation\n4 Minimum Safe Altitude Warning\n5 Area Proximity Warning\n6 Clearance Level Adherence Monitor\n7 Short Term Conflict Alert\n8 Approach Funnel Deviation Alert\n9 RIMCAS Arrival / Landing Monitor (ALM)\n10 RIMCAS Arrival / Departure Wrong Runway Alert (WRA)\n11 RIMCAS Arrival / Departure Opposite Traffic Alert (OTA)\n12 RIMCAS Departure Monitor (RDM)\n13 RIMCAS Runway / Taxiway Crossing Monitor (RCM)\n14 RIMCAS Taxiway Separation Monitor (TSM)\n15 RIMCAS Unauthorized Taxiway Movement Monitor(UTMM)\n16 RIMCAS Stop Bar Overrun Alert (SBOA)\n17 End Of Conflict (EOC)",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Message Type",
+                    "comment": "1 Alive Message\n2 Route Adherence Monitor Longitudinal Deviation\n3 Route Adherence Monitor Heading Deviation\n4 Minimum Safe Altitude Warning\n5 Area Proximity Warning\n6 Clearance Level Adherence Monitor\n7 Short Term Conflict Alert\n8 Approach Funnel Deviation Alert\n9 RIMCAS Arrival / Landing Monitor (ALM)\n10 RIMCAS Arrival / Departure Wrong Runway Alert (WRA)\n11 RIMCAS Arrival / Departure Opposite Traffic Alert (OTA)\n12 RIMCAS Departure Monitor (RDM)\n13 RIMCAS Runway / Taxiway Crossing Monitor (RCM)\n14 RIMCAS Taxiway Separation Monitor (TSM)\n15 RIMCAS Unauthorized Taxiway Movement Monitor(UTMM)\n16 RIMCAS Stop Bar Overrun Alert (SBOA)\n17 End Of Conflict (EOC)",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the system sending the data",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the system sending the data",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"015",
-            "name":"SDPS Identifier",
-            "comment":"Identification of the SDPS providing data to the safety nets server.",
-            "type":"item",
-            "data_fields":[
+            "number": "015",
+            "name": "SDPS Identifier",
+            "comment": "Identification of the SDPS providing data to the safety nets server.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SDPS Identifier",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "SDPS Identifier",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"SAC",
-                            "comment":"System Area Code",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "SAC",
+                            "comment": "System Area Code",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"SIC",
-                            "comment":"System Identification Code",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "SIC",
+                            "comment": "System Identification Code",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"020",
-            "name":"Time of Message",
-            "comment":"Absolute time stamping of the message in the form of elapsed time since last midnight",
-            "type":"item",
-            "data_fields":[
+            "number": "020",
+            "name": "Time of Message",
+            "comment": "Absolute time stamping of the message in the form of elapsed time since last midnight",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TIME OF MESSAGE",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "TIME OF MESSAGE",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"030",
-            "name":"Track Number 1",
-            "comment":"Identification of a track number related to conflict",
-            "type":"item",
-            "data_fields":[
+            "number": "030",
+            "name": "Track Number 1",
+            "comment": "Identification of a track number related to conflict",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Track Number 1",
-                    "comment":"range: 0 to 65535",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "Track Number 1",
+                    "comment": "range: 0 to 65535",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"035",
-            "name":"Track Number 2",
-            "comment":"Together with I004/030, this item defines the track pair in conflict.",
-            "type":"item",
-            "data_fields":[
+            "number": "035",
+            "name": "Track Number 2",
+            "comment": "Together with I004/030, this item defines the track pair in conflict.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Track Number 2",
-                    "comment":"range: 0 to 65535",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "Track Number 2",
+                    "comment": "range: 0 to 65535",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"040",
-            "name":"Alert Identifier",
-            "comment":"Identification of an alert (Alert number)",
-            "type":"item",
-            "data_fields":[
+            "number": "040",
+            "name": "Alert Identifier",
+            "comment": "Identification of an alert (Alert number)",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Alert Identifier",
-                    "comment":"range: 0 to 65535",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "Alert Identifier",
+                    "comment": "range: 0 to 65535",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"045",
-            "name":"Alert Status",
-            "comment":"Information concerning status of the alert",
-            "type":"item",
-            "data_fields":[
+            "number": "045",
+            "name": "Alert Status",
+            "comment": "Information concerning status of the alert",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Alert Status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Alert Status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"Alert status",
-                            "comment":"Status of the alert",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":3
+                            "name": "Alert status",
+                            "comment": "Status of the alert",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 3
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"060",
-            "name":"Safety Net Function & System Status",
-            "comment":"Status of the Safety Nets functions handled by the system",
-            "type":"item",
-            "data_fields":[
+            "number": "060",
+            "name": "Safety Net Function & System Status",
+            "comment": "Status of the Safety Nets functions handled by the system",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Safety Net Function & System Status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Safety Net Function & System Status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"MRVA",
-                            "comment":"0 Default\n1 MRVA function",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "MRVA",
+                            "comment": "0 Default\n1 MRVA function",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RAMLD",
-                            "comment":"0 Default\n1 RAMLD function",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "RAMLD",
+                            "comment": "0 Default\n1 RAMLD function",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RAMHD",
-                            "comment":"0 Default\n1 RAMHD function",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "RAMHD",
+                            "comment": "0 Default\n1 RAMHD function",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MSAW",
-                            "comment":"0 Default\n1 MSAW function",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "MSAW",
+                            "comment": "0 Default\n1 MSAW function",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"APW",
-                            "comment":"0 Default\n1 APW function",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "APW",
+                            "comment": "0 Default\n1 APW function",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"CLAM",
-                            "comment":"0 Default\n1 CLAM function",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "CLAM",
+                            "comment": "0 Default\n1 CLAM function",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"STCA",
-                            "comment":"0 Default\n1 STCA function",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "STCA",
+                            "comment": "0 Default\n1 STCA function",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Safety Net Function & System Status First Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Safety Net Function & System Status First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"AFDA",
-                            "comment":"0 Default\n1 AFDA function",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "AFDA",
+                            "comment": "0 Default\n1 AFDA function",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RIMCA",
-                            "comment":"0 Default\n1 RIMCA function",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "RIMCA",
+                            "comment": "0 Default\n1 RIMCA function",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"OF",
-                            "comment":"0 Default\n1 Overflow error",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "OF",
+                            "comment": "0 Default\n1 Overflow error",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"OL",
-                            "comment":"0 Default\n1 Overload error",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "OL",
+                            "comment": "0 Default\n1 Overload error",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
-                     ]
+                    ]
                 }
             ]
         },
         {
-            "number":"070",
-            "name":"Conflict Timing and Separation",
-            "comment":"Information on Timing and Aircraft Separation",
-            "type":"item",
-            "data_fields":[
+            "number": "070",
+            "name": "Conflict Timing and Separation",
+            "comment": "Information on Timing and Aircraft Separation",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"070",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "070",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"TC",
-                            "comment":"Time to Conflict",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "TC",
+                            "comment": "Time to Conflict",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"TIME TO CONFLICT",
-                                    "comment":"",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"uint",
-                                    "lsb":0.0078125
+                                    "name": "TIME TO CONFLICT",
+                                    "comment": "",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "uint",
+                                    "lsb": 0.0078125
                                 }
                             ]
                         },
                         {
-                            "name":"TCA",
-                            "comment":"Time to Closest Approach",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "TCA",
+                            "comment": "Time to Closest Approach",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"TIME TO CLOSEST APPROACH",
-                                    "comment":"",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"uint",
-                                    "lsb":0.0078125
+                                    "name": "TIME TO CLOSEST APPROACH",
+                                    "comment": "",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "uint",
+                                    "lsb": 0.0078125
                                 }
                             ]
                         },
                         {
-                            "name":"CHS",
-                            "comment":"Current Horizontal Separation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "CHS",
+                            "comment": "Current Horizontal Separation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"Current Horizontal Separation",
-                                    "comment":"unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"uint",
-                                    "lsb":0.5
+                                    "name": "Current Horizontal Separation",
+                                    "comment": "unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "uint",
+                                    "lsb": 0.5
                                 }
                             ]
                         },
                         {
-                            "name":"MHS",
-                            "comment":"Estimated Minimum Horizontal Separation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "MHS",
+                            "comment": "Estimated Minimum Horizontal Separation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"Estimated minimum horizontal separation",
-                                    "comment":"unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.5
+                                    "name": "Estimated minimum horizontal separation",
+                                    "comment": "unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.5
                                 }
                             ]
                         },
                         {
-                            "name":"CVS",
-                            "comment":"Current Vertical Separation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "CVS",
+                            "comment": "Current Vertical Separation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                    "name":"Current Vertical Separation",
-                                    "comment":"unit: feet",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":25
+                                    "name": "Current Vertical Separation",
+                                    "comment": "unit: feet",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 25
                                 }
                             ]
                         },
                         {
-                            "name":"MVS",
-                            "comment":"Estimated Minimum Vertical Separation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "MVS",
+                            "comment": "Estimated Minimum Vertical Separation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                    "name":"Estimated minimum vertical separation",
-                                    "comment":"unit: feet",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":25
+                                    "name": "Estimated minimum vertical separation",
+                                    "comment": "unit: feet",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 25
                                 }
                             ]
                         }
@@ -425,219 +415,213 @@
             ]
         },
         {
-            "number":"074",
-            "name":"Longitudinal Deviation",
-            "comment":"Longitudinal deviation for Route Adherence Monitoring, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "074",
+            "name": "Longitudinal Deviation",
+            "comment": "Longitudinal deviation for Route Adherence Monitoring, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Longitudinal deviation",
-                    "comment":"unit: metres",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":32
+                    "name": "Longitudinal deviation",
+                    "comment": "unit: metres",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 32
                 }
             ]
         },
         {
-            "number":"075",
-            "name":"Transversal Distance Deviation",
-            "comment":"Transversal distance deviation for Route Adherence Monitoring, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "075",
+            "name": "Transversal Distance Deviation",
+            "comment": "Transversal distance deviation for Route Adherence Monitoring, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Transversal Distance Deviation",
-                    "comment":"unit: metres",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"int",
-                    "lsb":0.5
+                    "name": "Transversal Distance Deviation",
+                    "comment": "unit: metres",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "int",
+                    "lsb": 0.5
                 }
             ]
         },
         {
-            "number":"076",
-            "name":"Vertical Deviation",
-            "comment":"Vertical Deviation from planned altitude, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "076",
+            "name": "Vertical Deviation",
+            "comment": "Vertical Deviation from planned altitude, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Vertical deviation",
-                    "comment":"unit: feet",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":25
+                    "name": "Vertical deviation",
+                    "comment": "unit: feet",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 25
                 }
             ]
         },
         {
-            "number":"100",
-            "name":"Area Definition",
-            "comment":"Definition of Areas involved in a Safety Net Alert",
-            "type":"item",
-            "data_fields":[
+            "number": "100",
+            "name": "Area Definition",
+            "comment": "Definition of Areas involved in a Safety Net Alert",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"100",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "100",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"AN",
-                            "comment":"Name of the area involved in an APW alarm",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "AN",
+                            "comment": "Name of the area involved in an APW alarm",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"Area Name",
-                                    "type":"fixed_bitfield",
-                                    "length":6,
-                                    "items":[
+                                    "name": "Area Name",
+                                    "type": "fixed_bitfield",
+                                    "length": 6,
+                                    "items": [
                                         {
-                                            "name":"Area Name",
-                                            "type":"fixed_bits",
-                                            "data_type":"icao_characters",
-                                            "start_bit":0,
-                                            "bit_length":48,
-                                            "num_characters":8,
-                                            "character_bit_length":6
-                                        }
-                                    ]
-                                }
-                             ]
-                        },
-                        {
-                            "name":"CAN",
-                            "comment":"Crossing Area Name",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
-                                {
-                                    "name":"Crossing Area Name",
-                                    "comment":"Name of Crossing Area Involved in a RIMCA",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
-                                        {
-                                            "name":"Crossing Area Name",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Area Name",
+                                            "type": "fixed_bits",
+                                            "data_type": "icao_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 48,
+                                            "num_characters": 8,
+                                            "character_bit_length": 6
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"RT1",
-                            "comment":"Runway/Taxiway Designator 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "CAN",
+                            "comment": "Crossing Area Name",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"Runway/Taxiway Designator 1",
-                                    "comment":"Designator of Runway/Taxiway 1 Involved in a RIMCA",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
+                                    "name": "Crossing Area Name",
+                                    "comment": "Name of Crossing Area Involved in a RIMCA",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
                                         {
-                                            "name":"Runway/Taxiway Designator 1",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Crossing Area Name",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"RT2",
-                            "comment":"Runway/Taxiway Designator 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "RT1",
+                            "comment": "Runway/Taxiway Designator 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"Runway/Taxiway Designator 2",
-                                    "comment":"Designator of Runway/Taxiway 2 Involved in a RIMCA",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
+                                    "name": "Runway/Taxiway Designator 1",
+                                    "comment": "Designator of Runway/Taxiway 1 Involved in a RIMCA",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
                                         {
-                                            "name":"Runway/Taxiway Designator 2",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Runway/Taxiway Designator 1",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"SB",
-                            "comment":"Stop Bar Designator",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "RT2",
+                            "comment": "Runway/Taxiway Designator 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"Stop Bar Designator",
-                                    "comment":"Designator of Stop-Bar Involved in a RIMCA",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
+                                    "name": "Runway/Taxiway Designator 2",
+                                    "comment": "Designator of Runway/Taxiway 2 Involved in a RIMCA",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
                                         {
-                                            "name":"Stop Bar Designator",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Runway/Taxiway Designator 2",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"G",
-                            "comment":"Gate Designator",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "SB",
+                            "comment": "Stop Bar Designator",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                    "name":"Gate Designator",
-                                    "comment":"Gate Designator (in 7 characters) of the approaching aircraft in a RIMCA",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
+                                    "name": "Stop Bar Designator",
+                                    "comment": "Designator of Stop-Bar Involved in a RIMCA",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
                                         {
-                                            "name":"Gate Designator",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Stop Bar Designator",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "G",
+                            "comment": "Gate Designator",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
+                                {
+                                    "name": "Gate Designator",
+                                    "comment": "Gate Designator (in 7 characters) of the approaching aircraft in a RIMCA",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
+                                        {
+                                            "name": "Gate Designator",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
                                         }
                                     ]
                                 }
@@ -648,231 +632,223 @@
             ]
         },
         {
-            "number":"110",
-            "name":"FDPS Sector Control Identification",
-            "comment":"Identification of a list of FDPS Sector Control Positions in charge of the involved targets, as provided by the FDPS",
-            "type":"item",
-            "data_fields":[
+            "number": "110",
+            "name": "FDPS Sector Control Identification",
+            "comment": "Identification of a list of FDPS Sector Control Positions in charge of the involved targets, as provided by the FDPS",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"FDPS Sector Control Identification",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "FDPS Sector Control Identification",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"Centre",
-                            "comment":"Centre identification code",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "Centre",
+                            "comment": "Centre identification code",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"Position",
-                            "comment":"Control position identification code",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "Position",
+                            "comment": "Control position identification code",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"120",
-            "name":"Conflict Characteristics",
-            "comment":"Description of the Conflict Properties",
-            "type":"item",
-            "data_fields":[
+            "number": "120",
+            "name": "Conflict Characteristics",
+            "comment": "Description of the Conflict Properties",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"120",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "120",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"CN",
-                            "comment":"Conflict Nature",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "CN",
+                            "comment": "Conflict Nature",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"Conflict Nature",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "items":[
+                                    "name": "Conflict Nature",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
                                         {
-                                            "name":"MAS",
-                                            "comment":"Conflict location in military airspace\n0 conflict not predicted to occur in military airspace\n1 conflict predicted to occur in military airspace",
-                                            "type":"fixed_bits",
-                                            "start_bit":7,
-                                            "bit_length":1
+                                            "name": "MAS",
+                                            "comment": "Conflict location in military airspace\n0 conflict not predicted to occur in military airspace\n1 conflict predicted to occur in military airspace",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"CAS",
-                                            "comment":"Conflict location in civil airspace\n0 conflict not predicted to occur in civil airspace\n1 conflict predicted to occur in civil airspace",
-                                            "type":"fixed_bits",
-                                            "start_bit":6,
-                                            "bit_length":1
+                                            "name": "CAS",
+                                            "comment": "Conflict location in civil airspace\n0 conflict not predicted to occur in civil airspace\n1 conflict predicted to occur in civil airspace",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FLD",
-                                            "comment":"Fast lateral divergence\n0 Aircraft are not fast diverging laterally at current time\n1 Aircraft are fast diverging laterally at current time",
-                                            "type":"fixed_bits",
-                                            "start_bit":5,
-                                            "bit_length":1
+                                            "name": "FLD",
+                                            "comment": "Fast lateral divergence\n0 Aircraft are not fast diverging laterally at current time\n1 Aircraft are fast diverging laterally at current time",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FVD",
-                                            "comment":"Fast vertical divergence\n0 Aircraft are not fast diverging vertically at current time\n1 Aircraft are fast diverging vertically at current time",
-                                            "type":"fixed_bits",
-                                            "start_bit":4,
-                                            "bit_length":1
+                                            "name": "FVD",
+                                            "comment": "Fast vertical divergence\n0 Aircraft are not fast diverging vertically at current time\n1 Aircraft are fast diverging vertically at current time",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"Type",
-                                            "comment":"Type of separation infringement\n0 Minor separation infringement\n1 Major separation infringement",
-                                            "type":"fixed_bits",
-                                            "start_bit":3,
-                                            "bit_length":1
+                                            "name": "Type",
+                                            "comment": "Type of separation infringement\n0 Minor separation infringement\n1 Major separation infringement",
+                                            "type": "fixed_bits",
+                                            "start_bit": 3,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"Cross",
-                                            "comment":"Crossing test\n0 Aircraft have not crossed at starting time of conflict\n1 Aircraft have crossed at starting time of conflict",
-                                            "type":"fixed_bits",
-                                            "start_bit":2,
-                                            "bit_length":1
+                                            "name": "Cross",
+                                            "comment": "Crossing test\n0 Aircraft have not crossed at starting time of conflict\n1 Aircraft have crossed at starting time of conflict",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"Div",
-                                            "comment":"Divergence test\n0 Aircraft are not diverging at starting time of conflict\n1 Aircraft are diverging at starting time of conflict",
-                                            "type":"fixed_bits",
-                                            "start_bit":1,
-                                            "bit_length":1
+                                            "name": "Div",
+                                            "comment": "Divergence test\n0 Aircraft are not diverging at starting time of conflict\n1 Aircraft are diverging at starting time of conflict",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FX",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "FX",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1,
+                                            "no_output": true
                                         }
                                     ]
                                 },
                                 {
-                                    "name":"Conflict Nature First Extent",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "optional":true,
-                                    "optional_variable_name":"FX",
-                                    "optional_variable_value":1,
-                                    "items":[
+                                    "name": "Conflict Nature First Extent",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "optional": true,
+                                    "optional_variable_name": "FX",
+                                    "optional_variable_value": 1,
+                                    "items": [
                                         {
-                                            "name":"RRC",
-                                            "comment":"Runway/Runway crossing in RIMCAS\n0 Default\n1 Runway/Runway Crossing",
-                                            "type":"fixed_bits",
-                                            "start_bit":7,
-                                            "bit_length":1
+                                            "name": "RRC",
+                                            "comment": "Runway/Runway crossing in RIMCAS\n0 Default\n1 Runway/Runway Crossing",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"RTC",
-                                            "comment":"Runway/Taxiway Crossing in RIMCAS\n0 Default\n1 Runway/Taxiway Crossing",
-                                            "type":"fixed_bits",
-                                            "start_bit":6,
-                                            "bit_length":1
+                                            "name": "RTC",
+                                            "comment": "Runway/Taxiway Crossing in RIMCAS\n0 Default\n1 Runway/Taxiway Crossing",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"MRVA",
-                                            "comment":"0 Default\n1 Msg Type 4 (MSAW) indicates MRVA",
-                                            "type":"fixed_bits",
-                                            "start_bit":5,
-                                            "bit_length":1
+                                            "name": "MRVA",
+                                            "comment": "0 Default\n1 Msg Type 4 (MSAW) indicates MRVA",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FX2",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "FX2",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1,
+                                            "no_output": true
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"CC",
-                            "comment":"Conflict Classification",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "CC",
+                            "comment": "Conflict Classification",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"CC",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "items":[
+                                    "name": "CC",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
                                         {
-                                            "name":"Table Id",
-                                            "comment":"Identification of conflict categories definition table",
-                                            "type":"fixed_bits",
-                                            "start_bit":4,
-                                            "bit_length":4
+                                            "name": "Table Id",
+                                            "comment": "Identification of conflict categories definition table",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 4
                                         },
                                         {
-                                            "name":"Severity Class",
-                                            "comment":"Conflict Severity Class",
-                                            "type":"fixed_bits",
-                                            "start_bit":1,
-                                            "bit_length":3
+                                            "name": "Severity Class",
+                                            "comment": "Conflict Severity Class",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 3
                                         },
                                         {
-                                            "name":"CS",
-                                            "comment":"Conflict Severity\n0 LOW\n1 HIGH",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "CS",
+                                            "comment": "Conflict Severity\n0 LOW\n1 HIGH",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"CP",
-                            "comment":"Conflict Probability",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "CP",
+                            "comment": "Conflict Probability",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"Probability",
-                                    "comment":"Conflict probability (%)",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.5
+                                    "name": "Probability",
+                                    "comment": "Conflict probability (%)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.5
                                 }
                             ]
                         },
                         {
-                            "name":"CD",
-                            "comment":"Conflict Duration",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "CD",
+                            "comment": "Conflict Duration",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"Duration",
-                                    "comment":"The duration of the conflict is the elapsed time since the declaration of the conflict",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"uint",
-                                    "lsb":0.0078125
+                                    "name": "Duration",
+                                    "comment": "The duration of the conflict is the elapsed time since the declaration of the conflict",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "uint",
+                                    "lsb": 0.0078125
                                 }
                             ]
                         }
@@ -881,325 +857,317 @@
             ]
         },
         {
-            "number":"170",
-            "name":"Aircraft Identification & Characteristics 1",
-            "comment":"Identification & Characteristics of Aircraft 1 Involved in the Conflict.",
-            "type":"item",
-            "data_fields":[
+            "number": "170",
+            "name": "Aircraft Identification & Characteristics 1",
+            "comment": "Identification & Characteristics of Aircraft 1 Involved in the Conflict.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"170",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "170",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"AI1",
-                            "comment":"Aircraft Identifier 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "AI1",
+                            "comment": "Aircraft Identifier 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"Aircraft Identifier #1",
-                                    "comment":"Aircraft Identifier (in 7 characters) of Aircraft 1 Involved in the Conflict",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
+                                    "name": "Aircraft Identifier #1",
+                                    "comment": "Aircraft Identifier (in 7 characters) of Aircraft 1 Involved in the Conflict",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
                                         {
-                                            "name":"Aircraft Identifier #1",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Aircraft Identifier #1",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"M31",
-                            "comment":"Mode 3/A Code Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "M31",
+                            "comment": "Mode 3/A Code Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"Mode 3/A Code Aircraft 1",
-                                    "type":"fixed_bitfield",
-                                    "length":2,
-                                    "items":[
+                                    "name": "Mode 3/A Code Aircraft 1",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
                                         {
-                                            "name":"Mode-3/A reply #1",
-                                            "comment":"",
-                                            "type":"fixed_bits",
-                                            "data_type":"digits",
-                                            "start_bit":0,
-                                            "bit_length":12,
-                                            "num_digits":4,
-                                            "digit_bit_length":3
+                                            "name": "Mode-3/A reply #1",
+                                            "comment": "",
+                                            "type": "fixed_bits",
+                                            "data_type": "digits",
+                                            "start_bit": 0,
+                                            "bit_length": 12,
+                                            "num_digits": 4,
+                                            "digit_bit_length": 3
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"CPW",
-                            "comment":"Predicted Conflict Position 1 (WGS84)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "CPW",
+                            "comment": "Predicted Conflict Position 1 (WGS84)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"Latitude #1",
-                                    "comment":"In WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
-                                    "type":"fixed_bytes",
-                                    "length":4,
-                                    "data_type":"int",
-                                    "lsb":5.36441802978515625e-6
+                                    "name": "Latitude #1",
+                                    "comment": "In WGS.84 in two\u2019s complement. Range -90 <= latitude <= 90 deg.",
+                                    "type": "fixed_bytes",
+                                    "length": 4,
+                                    "data_type": "int",
+                                    "lsb": 5.364418029785156e-06
                                 },
                                 {
-                                    "name":"Longitude #1",
-                                    "comment":"In WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
-                                    "type":"fixed_bytes",
-                                    "length":4,
-                                    "data_type":"int",
-                                    "lsb":5.36441802978515625e-6
+                                    "name": "Longitude #1",
+                                    "comment": "In WGS.84 in two\u2019s complement. Range -180 <= longitude < 180 deg.",
+                                    "type": "fixed_bytes",
+                                    "length": 4,
+                                    "data_type": "int",
+                                    "lsb": 5.364418029785156e-06
                                 },
                                 {
-                                    "name":"Altitude #1",
-                                    "comment":"Altitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":25
+                                    "name": "Altitude #1",
+                                    "comment": "Altitude of predicted conflict in two\u2019s complement. Range -15FL <= Altitude <= 1500FL",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 25
                                 }
                             ]
                         },
                         {
-                            "name":"CPC",
-                            "comment":"Predicted Conflict Position 1 (Cartesian Coordinates)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "CPC",
+                            "comment": "Predicted Conflict Position 1 (Cartesian Coordinates)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"X-position #1",
-                                    "comment":"Starting X-Position of Conflict. unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"int",
-                                    "lsb":0.5
+                                    "name": "X-position #1",
+                                    "comment": "Starting X-Position of Conflict. unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 0.5
                                 },
                                 {
-                                    "name":"Y-Position #1",
-                                    "comment":"Starting Y-Position of Conflict. unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"int",
-                                    "lsb":0.5
+                                    "name": "Y-Position #1",
+                                    "comment": "Starting Y-Position of Conflict. unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 0.5
                                 },
                                 {
-                                    "name":"Z-Position #1",
-                                    "comment":"Starting Z-Position of Conflict. unit: feet",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":25
+                                    "name": "Z-Position #1",
+                                    "comment": "Starting Z-Position of Conflict. unit: feet",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 25
                                 }
                             ]
                         },
                         {
-                            "name":"TT1",
-                            "comment":"Time to Threshold Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "TT1",
+                            "comment": "Time to Threshold Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                    "name":"TIME TO THRESHOLD #1",
-                                    "comment":"Time to runway threshold for first approaching aircraft in a RIMCA",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"int",
-                                    "lsb":0.0078125
+                                    "name": "TIME TO THRESHOLD #1",
+                                    "comment": "Time to runway threshold for first approaching aircraft in a RIMCA",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 0.0078125
                                 }
                             ]
                         },
                         {
-                            "name":"DT1",
-                            "comment":"Distance to Threshold Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "DT1",
+                            "comment": "Distance to Threshold Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                    "name":"Distance to Threshold #1",
-                                    "comment":"Distance from threshold for Aircraft 1 involved in a RIMCA. unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.5
+                                    "name": "Distance to Threshold #1",
+                                    "comment": "Distance from threshold for Aircraft 1 involved in a RIMCA. unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 0.5
                                 }
                             ]
                         },
                         {
-                            "name":"AC1",
-                            "comment":"Aircraft Characteristics Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":6,
-                            "data_fields":[
+                            "name": "AC1",
+                            "comment": "Aircraft Characteristics Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
                                 {
-                                    "name":"Aircraft Characteristics Aircraft #1",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "items":[
+                                    "name": "Aircraft Characteristics Aircraft #1",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
                                         {
-                                            "name":"GAT/OAT #1",
-                                            "comment":"00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
-                                            "type":"fixed_bits",
-                                            "start_bit":6,
-                                            "bit_length":2
+                                            "name": "GAT/OAT #1",
+                                            "comment": "00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"FR1/FR2 #1",
-                                            "comment":"00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
-                                            "type":"fixed_bits",
-                                            "start_bit":4,
-                                            "bit_length":2
+                                            "name": "FR1/FR2 #1",
+                                            "comment": "00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"RVSM #1",
-                                            "comment":"00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
-                                            "type":"fixed_bits",
-                                            "start_bit":2,
-                                            "bit_length":2
+                                            "name": "RVSM #1",
+                                            "comment": "00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"HPR #1",
-                                            "comment":"0 Normal Priority Flight\n1 High Priority Flight",
-                                            "type":"fixed_bits",
-                                            "start_bit":1,
-                                            "bit_length":1
+                                            "name": "HPR #1",
+                                            "comment": "0 Normal Priority Flight\n1 High Priority Flight",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FX",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "FX",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1,
+                                            "no_output": true
                                         }
                                     ]
                                 },
                                 {
-                                    "name":"Aircraft Characteristics Aircraft First Extent",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "optional":true,
-                                    "optional_variable_name":"FX",
-                                    "optional_variable_value":1,
-                                    "items":[
+                                    "name": "Aircraft Characteristics Aircraft First Extent",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "optional": true,
+                                    "optional_variable_name": "FX",
+                                    "optional_variable_value": 1,
+                                    "items": [
                                         {
-                                            "name":"CDM #1",
-                                            "comment":"Climbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
-                                            "type":"fixed_bits",
-                                            "start_bit":6,
-                                            "bit_length":2
+                                            "name": "CDM #1",
+                                            "comment": "Climbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"PRI #1",
-                                            "comment":"0 Non primary target\n1 Primary target",
-                                            "type":"fixed_bits",
-                                            "start_bit":5,
-                                            "bit_length":1
+                                            "name": "PRI #1",
+                                            "comment": "0 Non primary target\n1 Primary target",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"GV #1",
-                                            "comment":"0 Default\n1 Ground Vehicle",
-                                            "type":"fixed_bits",
-                                            "start_bit":4,
-                                            "bit_length":1
+                                            "name": "GV #1",
+                                            "comment": "0 Default\n1 Ground Vehicle",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FX2",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "FX2",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1,
+                                            "no_output": true
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"MS1",
-                            "comment":"Mode S Identifier Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":8,
-                            "data_fields":[
+                            "name": "MS1",
+                            "comment": "Mode S Identifier Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 8,
+                            "data_fields": [
                                 {
-                                    "name":"Mode S Identifier Aircraft #1",
-                                    "comment":"Aircraft Identification downloaded from Aircraft 1 involved in the Conflict if equipped with a Mode-S transponder.",
-                                    "type":"fixed_bitfield",
-                                    "length":6,
-                                    "items":[
+                                    "name": "Mode S Identifier Aircraft #1",
+                                    "comment": "Aircraft Identification downloaded from Aircraft 1 involved in the Conflict if equipped with a Mode-S transponder.",
+                                    "type": "fixed_bitfield",
+                                    "length": 6,
+                                    "items": [
                                         {
-                                            "name":"Mode S Identifier Aircraft #1",
-                                            "type":"fixed_bits",
-                                            "data_type":"icao_characters",
-                                            "start_bit":0,
-                                            "bit_length":48,
-                                            "num_characters":8,
-                                            "character_bit_length":6
+                                            "name": "Mode S Identifier Aircraft #1",
+                                            "type": "fixed_bits",
+                                            "data_type": "icao_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 48,
+                                            "num_characters": 8,
+                                            "character_bit_length": 6
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"FP1",
-                            "comment":"Flight Plan Number Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":9,
-                            "data_fields":[
+                            "name": "FP1",
+                            "comment": "Flight Plan Number Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 9,
+                            "data_fields": [
                                 {
-                                    "name":"Flight Plan Number Aircraft #1",
-                                    "comment":"Number of the Flight Plan Correlated to Aircraft 1 Involved in the Conflict",
-                                    "type":"fixed_bitfield",
-                                    "length":4,
-                                    "items":[
+                                    "name": "Flight Plan Number Aircraft #1",
+                                    "comment": "Number of the Flight Plan Correlated to Aircraft 1 Involved in the Conflict",
+                                    "type": "fixed_bitfield",
+                                    "length": 4,
+                                    "items": [
                                         {
-                                            "name":"NBR #1",
-                                            "comment":"Number from 0 to 99 999 999",
-                                            "type":"fixed_bits",
-                                            "data_type":"uint",
-                                            "start_bit":0,
-                                            "bit_length":27
+                                            "name": "NBR #1",
+                                            "comment": "Number from 0 to 99 999 999",
+                                            "type": "fixed_bits",
+                                            "data_type": "uint",
+                                            "start_bit": 0,
+                                            "bit_length": 27
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"CF1",
-                            "comment":"Cleared Flight Level Aircraft 1",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":10,
-                            "data_fields":[
+                            "name": "CF1",
+                            "comment": "Cleared Flight Level Aircraft 1",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 10,
+                            "data_fields": [
                                 {
-                                    "name":"CFL #1",
-                                    "comment":"Cleared Flight Level for Aircraft 1 Involved in the Conflict. unit: FL",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.25
+                                    "name": "CFL #1",
+                                    "comment": "Cleared Flight Level for Aircraft 1 Involved in the Conflict. unit: FL",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 0.25
                                 }
                             ]
                         }
@@ -1208,325 +1176,317 @@
             ]
         },
         {
-            "number":"171",
-            "name":"Aircraft Identification & Characteristics 2",
-            "comment":"Identification & Characteristics of Aircraft 2 Involved in the Conflict.",
-            "type":"item",
-            "data_fields":[
+            "number": "171",
+            "name": "Aircraft Identification & Characteristics 2",
+            "comment": "Identification & Characteristics of Aircraft 2 Involved in the Conflict.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"171",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "171",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"AI2",
-                            "comment":"Aircraft Identifier 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "AI2",
+                            "comment": "Aircraft Identifier 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"Aircraft Identifier #2",
-                                    "comment":"Aircraft Identifier (in 7 characters) of Aircraft 2 Involved in the Conflict",
-                                    "type":"fixed_bitfield",
-                                    "length":7,
-                                    "items":[
+                                    "name": "Aircraft Identifier #2",
+                                    "comment": "Aircraft Identifier (in 7 characters) of Aircraft 2 Involved in the Conflict",
+                                    "type": "fixed_bitfield",
+                                    "length": 7,
+                                    "items": [
                                         {
-                                            "name":"Aircraft Identifier #2",
-                                            "type":"fixed_bits",
-                                            "data_type":"ascii_characters",
-                                            "start_bit":0,
-                                            "bit_length":56,
-                                            "num_characters":7,
-                                            "character_bit_length":8
+                                            "name": "Aircraft Identifier #2",
+                                            "type": "fixed_bits",
+                                            "data_type": "ascii_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 56,
+                                            "num_characters": 7,
+                                            "character_bit_length": 8
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"M32",
-                            "comment":"Mode 3/A Code Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "M32",
+                            "comment": "Mode 3/A Code Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"Mode 3/A Code Aircraft 2",
-                                    "type":"fixed_bitfield",
-                                    "length":2,
-                                    "items":[
+                                    "name": "Mode 3/A Code Aircraft 2",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
                                         {
-                                            "name":"Mode-3/A reply #2",
-                                            "comment":"",
-                                            "type":"fixed_bits",
-                                            "data_type":"digits",
-                                            "start_bit":0,
-                                            "bit_length":12,
-                                            "num_digits":4,
-                                            "digit_bit_length":3
+                                            "name": "Mode-3/A reply #2",
+                                            "comment": "",
+                                            "type": "fixed_bits",
+                                            "data_type": "digits",
+                                            "start_bit": 0,
+                                            "bit_length": 12,
+                                            "num_digits": 4,
+                                            "digit_bit_length": 3
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"CPW",
-                            "comment":"Predicted Conflict Position 2 (WGS84)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "CPW",
+                            "comment": "Predicted Conflict Position 2 (WGS84)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"Latitude #2",
-                                    "comment":"In WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
-                                    "type":"fixed_bytes",
-                                    "length":4,
-                                    "data_type":"int",
-                                    "lsb":5.36441802978515625E-6
+                                    "name": "Latitude #2",
+                                    "comment": "In WGS.84 in two\u2019s complement. Range -90 <= latitude <= 90 deg.",
+                                    "type": "fixed_bytes",
+                                    "length": 4,
+                                    "data_type": "int",
+                                    "lsb": 5.364418029785156e-06
                                 },
                                 {
-                                    "name":"Longitude #2",
-                                    "comment":"In WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
-                                    "type":"fixed_bytes",
-                                    "length":4,
-                                    "data_type":"int",
-                                    "lsb":5.36441802978515625E-6
+                                    "name": "Longitude #2",
+                                    "comment": "In WGS.84 in two\u2019s complement. Range -180 <= longitude < 180 deg.",
+                                    "type": "fixed_bytes",
+                                    "length": 4,
+                                    "data_type": "int",
+                                    "lsb": 5.364418029785156e-06
                                 },
                                 {
-                                    "name":"Altitude #2",
-                                    "comment":"Altitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":25
+                                    "name": "Altitude #2",
+                                    "comment": "Altitude of predicted conflict in two\u2019s complement. Range -15FL <= Altitude <= 1500FL",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 25
                                 }
                             ]
                         },
                         {
-                            "name":"CPC",
-                            "comment":"Predicted Conflict Position 2 (Cartesian Coordinates)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "CPC",
+                            "comment": "Predicted Conflict Position 2 (Cartesian Coordinates)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"X-position #2",
-                                    "comment":"Starting X-Position of Conflict. unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"int",
-                                    "lsb":0.5
+                                    "name": "X-position #2",
+                                    "comment": "Starting X-Position of Conflict. unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 0.5
                                 },
                                 {
-                                    "name":"Y-Position #2",
-                                    "comment":"Starting Y-Position of Conflict. unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"int",
-                                    "lsb":0.5
+                                    "name": "Y-Position #2",
+                                    "comment": "Starting Y-Position of Conflict. unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 0.5
                                 },
                                 {
-                                    "name":"Z-Position #2",
-                                    "comment":"Starting Z-Position of Conflict. unit: feet",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":25
+                                    "name": "Z-Position #2",
+                                    "comment": "Starting Z-Position of Conflict. unit: feet",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 25
                                 }
                             ]
                         },
                         {
-                            "name":"TT2",
-                            "comment":"Time to Threshold Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "TT2",
+                            "comment": "Time to Threshold Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                    "name":"TIME TO THRESHOLD #2",
-                                    "comment":"Time to runway threshold for first approaching aircraft in a RIMCA",
-                                    "type":"fixed_bytes",
-                                    "length":3,
-                                    "data_type":"int",
-                                    "lsb":0.0078125
+                                    "name": "TIME TO THRESHOLD #2",
+                                    "comment": "Time to runway threshold for first approaching aircraft in a RIMCA",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 0.0078125
                                 }
                             ]
                         },
                         {
-                            "name":"DT2",
-                            "comment":"Distance to Threshold Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "DT2",
+                            "comment": "Distance to Threshold Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                    "name":"Distance to Threshold #2",
-                                    "comment":"Distance from threshold for Aircraft 2 involved in a RIMCA. unit: metres",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.5
+                                    "name": "Distance to Threshold #2",
+                                    "comment": "Distance from threshold for Aircraft 2 involved in a RIMCA. unit: metres",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 0.5
                                 }
                             ]
                         },
                         {
-                            "name":"AC2",
-                            "comment":"Aircraft Characteristics Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":6,
-                            "data_fields":[
+                            "name": "AC2",
+                            "comment": "Aircraft Characteristics Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
                                 {
-                                    "name":"Aircraft Characteristics Aircraft #2",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "items":[
+                                    "name": "Aircraft Characteristics Aircraft #2",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
                                         {
-                                            "name":"GAT/OAT #2",
-                                            "comment":"00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
-                                            "type":"fixed_bits",
-                                            "start_bit":6,
-                                            "bit_length":2
+                                            "name": "GAT/OAT #2",
+                                            "comment": "00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"FR1/FR2 #2",
-                                            "comment":"00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
-                                            "type":"fixed_bits",
-                                            "start_bit":4,
-                                            "bit_length":2
+                                            "name": "FR1/FR2 #2",
+                                            "comment": "00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"RVSM #2",
-                                            "comment":"00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
-                                            "type":"fixed_bits",
-                                            "start_bit":2,
-                                            "bit_length":2
+                                            "name": "RVSM #2",
+                                            "comment": "00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"HPR #2",
-                                            "comment":"0 Normal Priority Flight\n1 High Priority Flight",
-                                            "type":"fixed_bits",
-                                            "start_bit":1,
-                                            "bit_length":1
+                                            "name": "HPR #2",
+                                            "comment": "0 Normal Priority Flight\n1 High Priority Flight",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FX",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "FX",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1,
+                                            "no_output": true
                                         }
                                     ]
                                 },
                                 {
-                                    "name":"Aircraft Characteristics Aircraft First Extent",
-                                    "type":"fixed_bitfield",
-                                    "length":1,
-                                    "optional":true,
-                                    "optional_variable_name":"FX",
-                                    "optional_variable_value":1,
-                                    "items":[
+                                    "name": "Aircraft Characteristics Aircraft First Extent",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "optional": true,
+                                    "optional_variable_name": "FX",
+                                    "optional_variable_value": 1,
+                                    "items": [
                                         {
-                                            "name":"CDM #2",
-                                            "comment":"Climbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
-                                            "type":"fixed_bits",
-                                            "start_bit":6,
-                                            "bit_length":2
+                                            "name": "CDM #2",
+                                            "comment": "Climbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 2
                                         },
                                         {
-                                            "name":"PRI #2",
-                                            "comment":"0 Non primary target\n1 Primary target",
-                                            "type":"fixed_bits",
-                                            "start_bit":5,
-                                            "bit_length":1
+                                            "name": "PRI #2",
+                                            "comment": "0 Non primary target\n1 Primary target",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"GV #2",
-                                            "comment":"0 Default\n1 Ground Vehicle",
-                                            "type":"fixed_bits",
-                                            "start_bit":4,
-                                            "bit_length":1
+                                            "name": "GV #2",
+                                            "comment": "0 Default\n1 Ground Vehicle",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"FX2",
-                                            "type":"fixed_bits",
-                                            "start_bit":0,
-                                            "bit_length":1
+                                            "name": "FX2",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1,
+                                            "no_output": true
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"MS2",
-                            "comment":"Mode S Identifier Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":8,
-                            "data_fields":[
+                            "name": "MS2",
+                            "comment": "Mode S Identifier Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 8,
+                            "data_fields": [
                                 {
-                                    "name":"Mode S Identifier Aircraft #2",
-                                    "comment":"Aircraft Identification downloaded from Aircraft 2 involved in the Conflict if equipped with a Mode-S transponder.",
-                                    "type":"fixed_bitfield",
-                                    "length":6,
-                                    "items":[
+                                    "name": "Mode S Identifier Aircraft #2",
+                                    "comment": "Aircraft Identification downloaded from Aircraft 2 involved in the Conflict if equipped with a Mode-S transponder.",
+                                    "type": "fixed_bitfield",
+                                    "length": 6,
+                                    "items": [
                                         {
-                                            "name":"Mode S Identifier Aircraft #2",
-                                            "type":"fixed_bits",
-                                            "data_type":"icao_characters",
-                                            "start_bit":0,
-                                            "bit_length":48,
-                                            "num_characters":8,
-                                            "character_bit_length":6
+                                            "name": "Mode S Identifier Aircraft #2",
+                                            "type": "fixed_bits",
+                                            "data_type": "icao_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 48,
+                                            "num_characters": 8,
+                                            "character_bit_length": 6
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"FP2",
-                            "comment":"Flight Plan Number Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":9,
-                            "data_fields":[
+                            "name": "FP2",
+                            "comment": "Flight Plan Number Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 9,
+                            "data_fields": [
                                 {
-                                    "name":"Flight Plan Number Aircraft #2",
-                                    "comment":"Number of the Flight Plan Correlated to Aircraft 2 Involved in the Conflict",
-                                    "type":"fixed_bitfield",
-                                    "length":4,
-                                    "items":[
+                                    "name": "Flight Plan Number Aircraft #2",
+                                    "comment": "Number of the Flight Plan Correlated to Aircraft 2 Involved in the Conflict",
+                                    "type": "fixed_bitfield",
+                                    "length": 4,
+                                    "items": [
                                         {
-                                            "name":"NBR #2",
-                                            "comment":"Number from 0 to 99 999 999",
-                                            "type":"fixed_bits",
-                                            "data_type":"uint",
-                                            "start_bit":0,
-                                            "bit_length":27
+                                            "name": "NBR #2",
+                                            "comment": "Number from 0 to 99 999 999",
+                                            "type": "fixed_bits",
+                                            "data_type": "uint",
+                                            "start_bit": 0,
+                                            "bit_length": 27
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"CF2",
-                            "comment":"Cleared Flight Level Aircraft 2",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":10,
-                            "data_fields":[
+                            "name": "CF2",
+                            "comment": "Cleared Flight Level Aircraft 2",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 10,
+                            "data_fields": [
                                 {
-                                    "name":"CFL #2",
-                                    "comment":"Cleared Flight Level for Aircraft 2 Involved in the Conflict. unit: FL",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.25
+                                    "name": "CFL #2",
+                                    "comment": "Cleared Flight Level for Aircraft 2 Involved in the Conflict. unit: FL",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 0.25
                                 }
                             ]
                         }

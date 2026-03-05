@@ -1,13 +1,13 @@
 {
-    "name":"cat010_0.24_sensis_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat010_0.24_sensis_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "000",
         "020",
@@ -41,677 +41,673 @@
         "RE",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the system from which the data are received.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the system from which the data are received.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"000",
-            "name":"Message Type",
-            "comment":"This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of transaction.",
-            "type":"item",
-            "data_fields":[
+            "number": "000",
+            "name": "Message Type",
+            "comment": "This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of transaction.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Message Type",
-                    "comment":"001, Target Report;\n 002, Start of Update Cycle;\n003, Periodic Status Message;\n004, Event-triggered Status Message.",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Message Type",
+                    "comment": "001, Target Report;\n 002, Start of Update Cycle;\n003, Periodic Status Message;\n004, Event-triggered Status Message.",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"020",
-            "name":"Target Report Descriptor",
-            "comment":"Type and characteristics of the data as transmitted by a system.",
-            "type":"item",
-            "data_fields":[
+            "number": "020",
+            "name": "Target Report Descriptor",
+            "comment": "Type and characteristics of the data as transmitted by a system.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"target_report_descriptor",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "target_report_descriptor",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"TYP",
-                            "comment":"000 SSR multilateration\n001 Mode S multilateration\n010 ADS-B\n011 PSR\n100 Magnetic Loop System\n101 HF multilateration\n110 Not defined\n111 Other types",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":3
+                            "name": "TYP",
+                            "comment": "000 SSR multilateration\n001 Mode S multilateration\n010 ADS-B\n011 PSR\n100 Magnetic Loop System\n101 HF multilateration\n110 Not defined\n111 Other types",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 3
                         },
                         {
-                            "name":"DCR",
-                            "comment":"1 Differential correction (ADS-B)\n0 No differential correction (ADS-B)",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "DCR",
+                            "comment": "1 Differential correction (ADS-B)\n0 No differential correction (ADS-B)",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"CHN",
-                            "comment":"1 Chain 2\n0 Chain 1",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "CHN",
+                            "comment": "1 Chain 2\n0 Chain 1",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"GBS",
-                            "comment":"1 Transponder Ground bit set\n0 Transponder Ground bit not set",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "GBS",
+                            "comment": "1 Transponder Ground bit set\n0 Transponder Ground bit not set",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"CRT",
-                            "comment":"1 Corrupted replies in multilateration\n0 No Corrupted reply in multilateration",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "CRT",
+                            "comment": "1 Corrupted replies in multilateration\n0 No Corrupted reply in multilateration",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Target Report Descriptor First Extent",
-                    "comment":"",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Target Report Descriptor First Extent",
+                    "comment": "",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"SIM",
-                            "comment":"0 Actual target report\n1 Simulated target report",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "SIM",
+                            "comment": "0 Actual target report\n1 Simulated target report",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TST",
-                            "comment":"0 Default\n1 Test Target",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "TST",
+                            "comment": "0 Default\n1 Test Target",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RAB",
-                            "comment":"0 Report from target transponder\n1 Report from field monitor (fixed transponder)",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "RAB",
+                            "comment": "0 Report from target transponder\n1 Report from field monitor (fixed transponder)",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"LOP",
-                            "comment":"00 Undetermined\n01 Loop start\n10 Loop finish\n11 Not defined",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":2
+                            "name": "LOP",
+                            "comment": "00 Undetermined\n01 Loop start\n10 Loop finish\n11 Not defined",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 2
                         },
                         {
-                            "name":"TOT",
-                            "comment":"00 Undetermined\n01 Aircraft\n10 Ground vehicle\n11 Helicopter",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":2
+                            "name": "TOT",
+                            "comment": "00 Undetermined\n01 Aircraft\n10 Ground vehicle\n11 Helicopter",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 2
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Target Report Descriptor Second Extent",
-                    "comment":"",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX2",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Target Report Descriptor Second Extent",
+                    "comment": "",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX2",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"SPI",
-                            "comment":"0 Absence of SPI\n1 Special Position Identification",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
-                        }
-                    ]
-                }
-
-            ]
-        },
-        {
-            "number":"040",
-            "name":"Measured Position in Polar Coordinates",
-            "comment":"Measured position of an aircraft in local polar coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"RHO",
-                    "comment":"Max. range = 65536 m",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":1
-                },
-                {
-                    "name":"THETA",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0054931640625
-                }
-            ]
-        },
-        {
-            "number":"041",
-            "name":"Position in WGS-84 Coordinates",
-            "comment":"Position of a target in WGS-84 Coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"Latitude",
-                    "comment":"In WGS-84 in two’s complement.\nRange -90 <= latitude <= 90 deg.",
-                    "type":"fixed_bytes",
-                    "length":4,
-                    "data_type":"int",
-                    "lsb":8.381903171539306640625e-8
-                },
-                {
-                    "name":"Longitude",
-                    "comment":"In WGS-84 in two’s complement.\nRange -180 <= longitude < 180 deg.",
-                    "type":"fixed_bytes",
-                    "length":4,
-                    "data_type":"int",
-                    "lsb":8.381903171539306640625e-8
-                }
-            ]
-        },
-        {
-            "number":"042",
-            "name":"Position in Cartesian Coordinates",
-            "comment":"Calculated position in Cartesian Coordinates, in two’s complement representation.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"X",
-                    "comment":"max range=+/-32768m (~17.7 NM)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":1
-                },
-                {
-                    "name":"Y",
-                    "comment":"max range=+/-32768m (~17.7 NM)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":1
-                }
-            ]
-        },
-        {
-            "number":"060",
-            "name":"Mode-3/A Code in Octal Representation",
-            "comment":"Mode-3/A code converted into octal representation.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"mode_3a",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"L",
-                            "comment":"0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"Mode-3/A reply",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"digits",
-                            "start_bit":0,
-                            "bit_length":12,
-                            "num_digits":4,
-                            "digit_bit_length":3
+                            "name": "SPI",
+                            "comment": "0 Absence of SPI\n1 Special Position Identification",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"090",
-            "name":"Flight Level in Binary Representation",
-            "comment":"Flight Level converted into binary representation.",
-            "type":"item",
-            "data_fields":[
+            "number": "040",
+            "name": "Measured Position in Polar Coordinates",
+            "comment": "Measured position of an aircraft in local polar coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"flight_level",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "RHO",
+                    "comment": "Max. range = 65536 m",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 1
+                },
+                {
+                    "name": "THETA",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0054931640625
+                }
+            ]
+        },
+        {
+            "number": "041",
+            "name": "Position in WGS-84 Coordinates",
+            "comment": "Position of a target in WGS-84 Coordinates.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "Latitude",
+                    "comment": "In WGS-84 in two\u2019s complement.\nRange -90 <= latitude <= 90 deg.",
+                    "type": "fixed_bytes",
+                    "length": 4,
+                    "data_type": "int",
+                    "lsb": 8.381903171539307e-08
+                },
+                {
+                    "name": "Longitude",
+                    "comment": "In WGS-84 in two\u2019s complement.\nRange -180 <= longitude < 180 deg.",
+                    "type": "fixed_bytes",
+                    "length": 4,
+                    "data_type": "int",
+                    "lsb": 8.381903171539307e-08
+                }
+            ]
+        },
+        {
+            "number": "042",
+            "name": "Position in Cartesian Coordinates",
+            "comment": "Calculated position in Cartesian Coordinates, in two\u2019s complement representation.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "X",
+                    "comment": "max range=+/-32768m (~17.7 NM)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 1
+                },
+                {
+                    "name": "Y",
+                    "comment": "max range=+/-32768m (~17.7 NM)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 1
+                }
+            ]
+        },
+        {
+            "number": "060",
+            "name": "Mode-3/A Code in Octal Representation",
+            "comment": "Mode-3/A code converted into octal representation.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "mode_3a",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"Flight Level",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":14,
-                            "data_type":"int",
-                            "lsb":0.25
+                            "name": "L",
+                            "comment": "0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "Mode-3/A reply",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "digits",
+                            "start_bit": 0,
+                            "bit_length": 12,
+                            "num_digits": 4,
+                            "digit_bit_length": 3
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"091",
-            "name":"Measured Height",
-            "comment":"Height above local 2D co-ordinate reference system (two's complement) based on direct measurements not related to barometric pressure.",
-            "type":"item",
-            "data_fields":[
+            "number": "090",
+            "name": "Flight Level in Binary Representation",
+            "comment": "Flight Level converted into binary representation.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Measured Height",
-                    "comment":"Range= +/- 204 800 ft",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":6.25
+                    "name": "flight_level",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
+                        {
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "Flight Level",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 14,
+                            "data_type": "int",
+                            "lsb": 0.25
+                        }
+                    ]
                 }
             ]
         },
         {
-            "number":"131",
-            "name":"Amplitude of Primary Plot",
-            "comment":"Amplitude of Primary Plot.",
-            "type":"item",
-            "data_fields":[
+            "number": "091",
+            "name": "Measured Height",
+            "comment": "Height above local 2D co-ordinate reference system (two's complement) based on direct measurements not related to barometric pressure.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"PAM",
-                    "comment":"Range=0..255",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":1
+                    "name": "Measured Height",
+                    "comment": "Range= +/- 204 800 ft",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 6.25
                 }
             ]
         },
         {
-            "number":"140",
-            "name":"Time of Day",
-            "comment":"Absolute time stamping expressed as Co-ordinated Universal Time (UTC).",
-            "type":"item",
-            "data_fields":[
+            "number": "131",
+            "name": "Amplitude of Primary Plot",
+            "comment": "Amplitude of Primary Plot.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time-of-Day",
-                    "comment":"Acceptable Range of values: 0<= Time-of-Day<=24 hrs",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "PAM",
+                    "comment": "Range=0..255",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 1
                 }
             ]
         },
         {
-            "number":"161",
-            "name":"Track Number",
-            "comment":"An integer value representing a unique reference to a track record within a particular track file.",
-            "type":"item",
-            "data_fields":[
+            "number": "140",
+            "name": "Time of Day",
+            "comment": "Absolute time stamping expressed as Co-ordinated Universal Time (UTC).",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TRACK NUMBER",
-                    "comment":"Acceptable Range of values: 0<=Track-number<=4095",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "start_bit":0,
-                    "bit_length":11,
-                    "data_type":"uint"
+                    "name": "Time-of-Day",
+                    "comment": "Acceptable Range of values: 0<= Time-of-Day<=24 hrs",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
-
         {
-            "number":"170",
-            "name":"Track Status",
-            "comment":"Status of track.",
-            "type":"item",
-            "data_fields":[
+            "number": "161",
+            "name": "Track Number",
+            "comment": "An integer value representing a unique reference to a track record within a particular track file.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"track_status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "TRACK NUMBER",
+                    "comment": "Acceptable Range of values: 0<=Track-number<=4095",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "start_bit": 0,
+                    "bit_length": 11,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "170",
+            "name": "Track Status",
+            "comment": "Status of track.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "track_status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"CNF",
-                            "comment":"0 Confirmed track\n1 Track in initiation phase",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "CNF",
+                            "comment": "0 Confirmed track\n1 Track in initiation phase",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TRE",
-                            "comment":"0 Default\n1 Last report for a track",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "TRE",
+                            "comment": "0 Default\n1 Last report for a track",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"CST",
-                            "comment":"00 No extrapolation\n01 Predictable extrapolation due to sensor refresh period\n10 Predictable extrapolation in masked area\n11 Extrapolation due to unpredictable absence of detection",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":2
+                            "name": "CST",
+                            "comment": "00 No extrapolation\n01 Predictable extrapolation due to sensor refresh period\n10 Predictable extrapolation in masked area\n11 Extrapolation due to unpredictable absence of detection",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 2
                         },
                         {
-                            "name":"MAH",
-                            "comment":"0 Default\n1 Horizontal manoeuvre",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "MAH",
+                            "comment": "0 Default\n1 Horizontal manoeuvre",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TCC",
-                            "comment":"0 Tracking performed in Sensor Plane, i.e. neither slant range correction nor projection was applied\n1 Slant range correction and a suitable projection technique are used to track in a 2D.reference plane, tangential to the earth model at the Sensor Site co-ordinates",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "TCC",
+                            "comment": "0 Tracking performed in Sensor Plane, i.e. neither slant range correction nor projection was applied\n1 Slant range correction and a suitable projection technique are used to track in a 2D.reference plane, tangential to the earth model at the Sensor Site co-ordinates",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"STH",
-                            "comment":"0 Measured position\n1 Smoothed position",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "STH",
+                            "comment": "0 Measured position\n1 Smoothed position",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Track Status First Extent",
-                    "comment":"",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Track Status First Extent",
+                    "comment": "",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"TOM",
-                            "comment":"00 Unknown type of movement\n01 Taking-off\n10 Landing\n11 Other types of movement",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":2
+                            "name": "TOM",
+                            "comment": "00 Unknown type of movement\n01 Taking-off\n10 Landing\n11 Other types of movement",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 2
                         },
                         {
-                            "name":"DOU",
-                            "comment":"000 No doubt\n001 Doubtful correlation (undetermined reason)\n010 Doubtful correlation in clutter\n011 Loss of accuracy\n100 Loss of accuracy in clutter\n101 Unstable track\n110 Previously coasted\n111 Not defined",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":3
+                            "name": "DOU",
+                            "comment": "000 No doubt\n001 Doubtful correlation (undetermined reason)\n010 Doubtful correlation in clutter\n011 Loss of accuracy\n100 Loss of accuracy in clutter\n101 Unstable track\n110 Previously coasted\n111 Not defined",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 3
                         },
                         {
-                            "name":"MRS",
-                            "comment":"00 Merge or split indication undetermined\n01 Track merged by association to plot\n10 Track merged by non-association to plot\n11 Split track",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":2
+                            "name": "MRS",
+                            "comment": "00 Merge or split indication undetermined\n01 Track merged by association to plot\n10 Track merged by non-association to plot\n11 Split track",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 2
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Track Status Second Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX2",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Track Status Second Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX2",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"GHO",
-                            "comment":"0 Default\n1 Ghost track",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "GHO",
+                            "comment": "0 Default\n1 Ghost track",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"200",
-            "name":"Calculated Track Velocity in Polar Co-ordinates",
-            "comment":"Calculated track velocity expressed in polar co-ordinates.",
-            "type":"item",
-            "data_fields":[
+            "number": "200",
+            "name": "Calculated Track Velocity in Polar Co-ordinates",
+            "comment": "Calculated track velocity expressed in polar co-ordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Ground Speed",
-                    "comment":"Max. val. = 2 NM/s = 7200kt",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":6.103515625E-5
+                    "name": "Ground Speed",
+                    "comment": "Max. val. = 2 NM/s = 7200kt",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 6.103515625e-05
                 },
                 {
-                    "name":"Track Angle",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0054931640625
+                    "name": "Track Angle",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0054931640625
                 }
             ]
         },
         {
-            "number":"202",
-            "name":"Calculated Track Velocity in Cartesian Coordinates",
-            "comment":"Calculated track velocity expressed in Cartesian Coordinates, in two’s complement representation.",
-            "type":"item",
-            "data_fields":[
+            "number": "202",
+            "name": "Calculated Track Velocity in Cartesian Coordinates",
+            "comment": "Calculated track velocity expressed in Cartesian Coordinates, in two\u2019s complement representation.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"track_velocity",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "items":[
+                    "name": "track_velocity",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "items": [
                         {
-                            "name":"Vx",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "start_bit":12,
-                            "bit_length":12,
-                            "data_type":"int"
+                            "name": "Vx",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "start_bit": 12,
+                            "bit_length": 12,
+                            "data_type": "int"
                         },
                         {
-                            "name":"Vy",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":12,
-                            "data_type":"int"
+                            "name": "Vy",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 12,
+                            "data_type": "int"
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"210",
-            "name":"Calculated Acceleration",
-            "comment":"Calculated Acceleration of the target, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "210",
+            "name": "Calculated Acceleration",
+            "comment": "Calculated Acceleration of the target, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Ax",
-                    "comment":"Max. range +/- 31 m/s^2\nMaximum value means “maximum value or above”",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":0.25
+                    "name": "Ax",
+                    "comment": "Max. range +/- 31 m/s^2\nMaximum value means \u201cmaximum value or above\u201d",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 0.25
                 },
                 {
-                    "name":"Ay",
-                    "comment":"Max. range +/- 31 m/s^2\nMaximum value means “maximum value or above”",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":0.25
+                    "name": "Ay",
+                    "comment": "Max. range +/- 31 m/s^2\nMaximum value means \u201cmaximum value or above\u201d",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 0.25
                 }
             ]
         },
         {
-            "number":"220",
-            "name":"Target Address",
-            "comment":"Target address (ICAO 24-bit address) assigned uniquely to each Target.",
-            "type":"item",
-            "data_fields":[
+            "number": "220",
+            "name": "Target Address",
+            "comment": "Target address (ICAO 24-bit address) assigned uniquely to each Target.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Target Address",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint"
+                    "name": "Target Address",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"245",
-            "name":"Target Identification",
-            "comment":"Target (aircraft or vehicle) identification in 8 characters.",
-            "type":"item",
-            "data_fields":[
+            "number": "245",
+            "name": "Target Identification",
+            "comment": "Target (aircraft or vehicle) identification in 8 characters.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"aircraft_identification1",
-                    "type":"fixed_bitfield",
-                    "length":7,
-                    "items":[
+                    "name": "aircraft_identification1",
+                    "type": "fixed_bitfield",
+                    "length": 7,
+                    "items": [
                         {
-                            "name":"STI",
-                            "comment":"00 Callsign or registration downlinked from transponder\n01 Callsign downlinked from transponder\n10 Registration not downlinked from transponder\n11 Not defined",
-                            "type":"fixed_bits",
-                            "start_bit":54,
-                            "bit_length":2
+                            "name": "STI",
+                            "comment": "00 Callsign or registration downlinked from transponder\n01 Callsign downlinked from transponder\n10 Registration not downlinked from transponder\n11 Not defined",
+                            "type": "fixed_bits",
+                            "start_bit": 54,
+                            "bit_length": 2
                         },
                         {
-                            "name":"Target Identification",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"icao_characters",
-                            "start_bit":0,
-                            "bit_length":48,
-                            "num_characters":8,
-                            "character_bit_length":6
+                            "name": "Target Identification",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "icao_characters",
+                            "start_bit": 0,
+                            "bit_length": 48,
+                            "num_characters": 8,
+                            "character_bit_length": 6
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"250",
-            "name":"Mode S MB Data",
-            "comment":"Mode S Comm B data as extracted from the aircraft transponder.",
-            "type":"item",
-            "data_fields":[
+            "number": "250",
+            "name": "Mode S MB Data",
+            "comment": "Mode S Comm B data as extracted from the aircraft transponder.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Mode S MB Data",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "Mode S MB Data",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"MB Data",
-                            "comment":"56-bit message conveying Mode S Comm B message data",
-                            "type":"fixed_bytes",
-                            "length":7,
-                            "data_type":"bin"
+                            "name": "MB Data",
+                            "comment": "56-bit message conveying Mode S Comm B message data",
+                            "type": "fixed_bytes",
+                            "length": 7,
+                            "data_type": "bin"
                         },
                         {
-                            "name":"address",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "address",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"BDS1",
-                                    "comment":"Comm B Data Buffer Store 1 Address",
-                                    "type":"fixed_bits",
-                                    "start_bit":4,
-                                    "bit_length":4
+                                    "name": "BDS1",
+                                    "comment": "Comm B Data Buffer Store 1 Address",
+                                    "type": "fixed_bits",
+                                    "start_bit": 4,
+                                    "bit_length": 4
                                 },
                                 {
-                                    "name":"BDS2",
-                                    "comment":"Comm B Data Buffer Store 2 Address",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":4
+                                    "name": "BDS2",
+                                    "comment": "Comm B Data Buffer Store 2 Address",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 4
                                 }
                             ]
                         }
@@ -720,233 +716,229 @@
             ]
         },
         {
-            "number":"270",
-            "name":"Target Size & Orientation",
-            "comment":"Target size defined as length and width of the detected target, and orientation.",
-            "type":"item",
-            "data_fields":[
+            "number": "270",
+            "name": "Target Size & Orientation",
+            "comment": "Target size defined as length and width of the detected target, and orientation.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Target Size & Orientation",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Target Size & Orientation",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"LENGTH",
-                            "comment":"When the length only is sent, the largest dimension is provided.",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":7,
-                            "lsb":1.0
+                            "name": "LENGTH",
+                            "comment": "When the length only is sent, the largest dimension is provided.",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 7,
+                            "lsb": 1.0
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Target Size & Orientation First Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Target Size & Orientation First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"ORIENTATION",
-                            "comment":"The orientation gives the direction which the target nose is pointing to, relative to the Geographical North.",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":7,
-                            "lsb":2.8125
+                            "name": "ORIENTATION",
+                            "comment": "The orientation gives the direction which the target nose is pointing to, relative to the Geographical North.",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 7,
+                            "lsb": 2.8125
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Target Size & Orientation Second Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX2",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Target Size & Orientation Second Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX2",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"WIDTH",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":7,
-                            "lsb":1.0
+                            "name": "WIDTH",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 7,
+                            "lsb": 1.0
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"280",
-            "name":"Presence",
-            "comment":"Positions of all elementary presences constituting a plot.",
-            "type":"item",
-            "data_fields":[
+            "number": "280",
+            "name": "Presence",
+            "comment": "Positions of all elementary presences constituting a plot.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Presence",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
-                       {
-                           "name":"DRHO",
-                           "comment":"Difference between the radial distance of the plot centre and that of the presence\nMax. Range = +/- 127 m",
-                           "type":"fixed_bytes",
-                           "length":1,
-                           "data_type":"int",
-                           "lsb":1.0
-                       },
-                       {
-                           "name":"DTHETA",
-                           "comment":"Difference between the azimuth of the plot centre and that of the presence\nMax. Range = +/- 19.05 deg",
-                           "type":"fixed_bytes",
-                           "length":1,
-                           "data_type":"int",
-                           "lsb":0.15
-                       }
+                    "name": "Presence",
+                    "type": "repetitive",
+                    "items": [
+                        {
+                            "name": "DRHO",
+                            "comment": "Difference between the radial distance of the plot centre and that of the presence\nMax. Range = +/- 127 m",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "int",
+                            "lsb": 1.0
+                        },
+                        {
+                            "name": "DTHETA",
+                            "comment": "Difference between the azimuth of the plot centre and that of the presence\nMax. Range = +/- 19.05 deg",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "int",
+                            "lsb": 0.15
+                        }
                     ]
                 }
             ]
         },
         {
-            "number":"300",
-            "name":"Vehicle Fleet Identification",
-            "comment":"Vehicle fleet identification number.",
-            "type":"item",
-            "data_fields":[
+            "number": "300",
+            "name": "Vehicle Fleet Identification",
+            "comment": "Vehicle fleet identification number.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"VFI",
-                    "comment":"0 Unknown\n1 ATC equipment maintenance\n2 Airport maintenance\n3 Fire\n4 Bird scarer\n5 Snow plough\n6 Runway sweeper\n7 Emergency\n8 Police\n9 Bus\n10 Tug (push/tow)\n11 Grass cutter\n12 Fuel\n13 Baggage\n14 Catering\n15 Aircraft maintenance\n16 Flyco (follow me)",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "VFI",
+                    "comment": "0 Unknown\n1 ATC equipment maintenance\n2 Airport maintenance\n3 Fire\n4 Bird scarer\n5 Snow plough\n6 Runway sweeper\n7 Emergency\n8 Police\n9 Bus\n10 Tug (push/tow)\n11 Grass cutter\n12 Fuel\n13 Baggage\n14 Catering\n15 Aircraft maintenance\n16 Flyco (follow me)",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"310",
-            "name":"Pre-programmed Message",
-            "comment":"Number related to a pre-programmed message that can be transmitted by a vehicle.",
-            "type":"item",
-            "data_fields":[
+            "number": "310",
+            "name": "Pre-programmed Message",
+            "comment": "Number related to a pre-programmed message that can be transmitted by a vehicle.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"pre_programmed_message",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
-                       {
-                           "name":"TRB",
-                           "comment":"0 Default\n1 In Trouble",
-                           "type":"fixed_bits",
-                           "start_bit":7,
-                           "bit_length":1
-                       },
-                       {
-                           "name":"MSG",
-                           "comment":"0 Not defined\n1 Towing aircraft\n2 Follow me operation\n3 Runway check\n4 Emergency operation (fire, medical... )\n5 Work in progress (maintenance, birds scarer, sweepers... )",
-                           "type":"fixed_bits",
-                           "start_bit":0,
-                           "bit_length":7
-                       }
+                    "name": "pre_programmed_message",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
+                        {
+                            "name": "TRB",
+                            "comment": "0 Default\n1 In Trouble",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "MSG",
+                            "comment": "0 Not defined\n1 Towing aircraft\n2 Follow me operation\n3 Runway check\n4 Emergency operation (fire, medical... )\n5 Work in progress (maintenance, birds scarer, sweepers... )",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 7
+                        }
                     ]
                 }
             ]
         },
         {
-            "number":"500",
-            "name":"Position Accuracy",
-            "comment":"Standard Deviation of Position",
-            "type":"item",
-            "data_fields":[
-                 {
-                     "name":"SDP-x",
-                     "comment":"Standard Deviation of X component",
-                     "type":"fixed_bytes",
-                     "length":1,
-                     "data_type":"uint",
-                     "lsb":0.25
-                 },
-                 {
-                     "name":"SDP-y",
-                     "comment":"Standard Deviation of Y component",
-                     "type":"fixed_bytes",
-                     "length":1,
-                     "data_type":"uint",
-                     "lsb":0.25
-                 },
-                 {
-                     "name":"SDP-xy",
-                     "comment":"Covariance in two’s complement form",
-                     "type":"fixed_bytes",
-                     "length":2,
-                     "data_type":"int",
-                     "lsb":0.25
-                 }
+            "number": "500",
+            "name": "Position Accuracy",
+            "comment": "Standard Deviation of Position",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "SDP-x",
+                    "comment": "Standard Deviation of X component",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                },
+                {
+                    "name": "SDP-y",
+                    "comment": "Standard Deviation of Y component",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                },
+                {
+                    "name": "SDP-xy",
+                    "comment": "Covariance in two\u2019s complement form",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
+                }
             ]
         },
         {
-            "number":"550",
-            "name":"System Status",
-            "comment":"Information concerning the configuration and status of a System.",
-            "type":"item",
-            "data_fields":[
+            "number": "550",
+            "name": "System Status",
+            "comment": "Information concerning the configuration and status of a System.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"com",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "com",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"NOGO",
-                            "comment":"Operational Release Status of the System\n0 Operational\n1 Degraded\n2 NOGO\n3 undefined",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":2
+                            "name": "NOGO",
+                            "comment": "Operational Release Status of the System\n0 Operational\n1 Degraded\n2 NOGO\n3 undefined",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 2
                         },
                         {
-                            "name":"OVL",
-                            "comment":"Overload indicator\n0 No overload\n1 Overload",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "OVL",
+                            "comment": "Overload indicator\n0 No overload\n1 Overload",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TSV",
-                            "comment":"Time Source Validity\n0 valid\n1 invalid",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "TSV",
+                            "comment": "Time Source Validity\n0 valid\n1 invalid",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"DIV",
-                            "comment":"0 Normal Operation\n1 Diversity degraded",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "DIV",
+                            "comment": "0 Normal Operation\n1 Diversity degraded",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TTF",
-                            "comment":"0 Test Target Operative\n1 Test Target Failure",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "TTF",
+                            "comment": "0 Test Target Operative\n1 Test Target Failure",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         }
                     ]
                 }

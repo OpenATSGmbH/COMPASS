@@ -56,6 +56,15 @@ class JSONDataMapping : public Configurable
     bool findAndSetValues(const nlohmann::json& j, NullableVector<nlohmann::json>& array_list,
                          size_t row_cnt, bool debug=false) const;
 
+    // flat format: map entire JSON array to NullableVector starting at start_row
+    // returns true if mandatory and key was missing
+    template <typename T>
+    bool setFlatArrayValues(const nlohmann::json& flat_cat_data, NullableVector<T>& array_list,
+                            size_t start_row, size_t num_records) const;
+    // flat format for JSON type
+    bool setFlatArrayJsonValues(const nlohmann::json& flat_cat_data, NullableVector<nlohmann::json>& array_list,
+                                size_t start_row, size_t num_records) const;
+
     bool hasDimension() const { return dimension_.size() > 0; }
     /// @brief Returns dimension contained in the column
     std::string& dimensionRef() { return dimension_; }

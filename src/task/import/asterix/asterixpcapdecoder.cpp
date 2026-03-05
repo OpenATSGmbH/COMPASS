@@ -312,50 +312,15 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     //this should have been checked and caught beforehand
     traced_assert(file_open);
 
-    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data,
                                                size_t num_frames,
-                                               size_t num_records, 
-                                               size_t num_errors) 
+                                               size_t num_records,
+                                               size_t num_errors)
     {
         if (!this->isRunning())
             return;
 
-        // get last index
-        if (settings().activeFileFraming() == "")
-        {
-            traced_assert(data->contains("data_blocks"));
-            traced_assert(data->at("data_blocks").is_array());
-
-            if (data->at("data_blocks").size())
-            {
-                nlohmann::json& data_block = data->at("data_blocks").back();
-
-                traced_assert(data_block.contains("content"));
-                traced_assert(data_block.at("content").is_object());
-                traced_assert(data_block.at("content").contains("index"));
-
-                setChunkBytesRead(data_block.at("content").at("index"));
-            }
-        }
-        else
-        {
-            traced_assert(data->contains("frames"));
-            traced_assert(data->at("frames").is_array());
-
-            if (data->at("frames").size())
-            {
-                nlohmann::json& frame = data->at("frames").back();
-
-                if (frame.contains("content"))
-                {
-                    traced_assert(frame.at("content").is_object());
-                    traced_assert(frame.at("content").contains("index"));
-
-                    setChunkBytesRead(frame.at("content").at("index"));
-                }
-            }
-        }
-
+        // flat format: no data_blocks/frames structure for progress tracking
         addRecordsRead(num_records);
 
         if (num_errors)
@@ -411,7 +376,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
             std::vector<char> vec(num_bytes);
             memcpy(vec.data(), chunk.data(), num_bytes * sizeof(char));
 
-            task().jASTERIX(true)->decodeData(vec.data(), vec.size(), callback, true);
+            task().jASTERIX(true)->decodeData(vec.data(), vec.size(), callback, true, true);
 
             chunkFinished();
         }

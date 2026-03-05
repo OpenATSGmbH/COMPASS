@@ -82,11 +82,6 @@ private:
                              size_t num_records, 
                              size_t numErrors);
 
-    void countRecord(unsigned int category, nlohmann::json& record);
-
-    // checks that SAC/SIC are set in all records in same data block
-    void checkCAT001SacSics(nlohmann::json& data_block);
-
     friend class ASTERIXFileDecoder;
     friend class ASTERIXNetworkDecoder;
     friend class ASTERIXPCAPDecoder; 

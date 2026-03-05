@@ -226,100 +226,30 @@ std::unique_ptr<nlohmann::json> ASTERIXJSONDecoder::parseObjects(const std::vect
     if (objects.empty())
         return data;
 
-    *data = json::parse(objects.at(0));
-
-    bool has_data_blocks = data->contains("data_blocks");
-    bool has_frames      = data->contains("frames");
-    bool is_jasterix     = (has_data_blocks || has_frames);
-
-    if (is_jasterix)
+    // flat format: top-level keys are category number strings, values are objects with array columns
+    try
     {
-        traced_assert(objects.size() == 1);
+        *data = json::parse(objects.at(0));
 
-        //@TODO: in case of jASTERIX json we actually read the whole file,
-        //maybe we could split this in chunks?
-
-        try
+        // count records from flat format structure
+        for (auto it = data->begin(); it != data->end(); ++it)
         {
-            if (has_data_blocks) // no framing
+            if (!it.value().is_object())
+                continue;
+
+            size_t cat_records = 0;
+            for (auto arr_it = it.value().begin(); arr_it != it.value().end(); ++arr_it)
             {
-                logdbg << "data blocks found";
-
-                traced_assert(data->at("data_blocks").is_array());
-
-                std::vector<std::string> keys{"content", "records"};
-
-                for (json& data_block : data->at("data_blocks"))
-                {
-                    if (!data_block.contains("category"))
-                    {
-                        logwrn << "data block without asterix category";
-                        continue;
-                    }
-                    ++num_records;
-                }
+                if (arr_it.value().is_array() && arr_it.value().size() > cat_records)
+                    cat_records = arr_it.value().size();
             }
-            else // framed
-            {
-                logdbg << "no data blocks found, framed";
-
-                traced_assert(has_frames);
-                traced_assert(data->at("frames").is_array());
-
-                std::vector<std::string> keys{"content", "records"};
-
-                for (json& frame : data->at("frames"))
-                {
-                    if (!frame.contains("content"))  // frame with errors
-                        continue;
-
-                    traced_assert(frame.at("content").is_object());
-
-                    if (!frame.at("content").contains("data_blocks"))  // frame with errors
-                        continue;
-
-                    traced_assert(frame.at("content").at("data_blocks").is_array());
-
-                    for (json& data_block : frame.at("content").at("data_blocks"))
-                    {
-                        if (!data_block.contains("category"))  // data block with errors
-                        {
-                            logwrn << "data block without asterix category";
-                            continue;
-                        }
-                        ++num_records;
-                    }
-
-                    ++num_frames;
-                }
-            }
-        }
-        catch (nlohmann::detail::parse_error& e)
-        {
-            logwrn << "jASTERIX: parse error " << e.what() << " in '" << data->at(0) << "'";
-            ++num_errors;
+            num_records += cat_records;
         }
     }
-    else
+    catch (nlohmann::detail::parse_error& e)
     {
-        *data = nlohmann::json();
-        (*data)["data"] = json::array();
-
-        json& records = data->at("data");
-
-        for (auto& str_it : objects)
-        {
-            try
-            {
-                records.push_back(json::parse(str_it));
-                ++num_records;
-            }
-            catch (nlohmann::detail::parse_error& e)
-            {
-                logwrn << "parse error " << e.what() << " in '" << str_it << "'";
-                ++num_errors;
-            }
-        }
+        logwrn << "parse error " << e.what();
+        ++num_errors;
     }
 
     return data;
