@@ -48,7 +48,7 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
       path_str_(parent ? (parent->getPath() + ConfigurablePathSeparator + instance_name_) : instance_name_),
       is_transient_(false)
 {
-    loginf << "class_name '" << class_name_ << "' instance_name '" << instance_name_
+    logdbg << "class_name '" << class_name_ << "' instance_name '" << instance_name_
            << "' path_str_ '" << path_str_ << "'"
            << " json type=" << config_json.type_name();
 
@@ -77,7 +77,7 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
     if (parent_)
         parent_->addChild(this);
 
-    loginf << "class_name '" << class_name_ << "' instance_name '" << instance_name_ << "' construction complete";
+    logdbg << "class_name '" << class_name_ << "' instance_name '" << instance_name_ << "' construction complete";
 }
 
 Configurable::~Configurable()
@@ -260,12 +260,12 @@ void Configurable::createSubConfigurables()
 {
     traced_assert(configuration_);
 
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
            << "' storage buckets=" << configuration_->subConfigStorage().size();
 
     for (auto& [class_name, entries] : configuration_->subConfigStorage())
     {
-        loginf << "class '" << class_name_ << "' instance '" << instance_name_
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' creating sub_configs for class '" << class_name
                << "' (" << entries.size() << " entries)";
 
@@ -273,7 +273,7 @@ void Configurable::createSubConfigurables()
         {
             const std::string inst_id = Configuration::getInstanceName(*ptr);
 
-            loginf << "class '" << class_name_ << "' instance '" << instance_name_
+            logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                    << "' creating: class_name '" << class_name
                    << "' instance_name '" << inst_id << "'";
 
@@ -295,7 +295,7 @@ void Configurable::createSubConfigurables()
 
     checkSubConfigurables();
 
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
            << "' createSubConfigurables complete, children=" << children_vec_.size();
 }
 
