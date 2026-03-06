@@ -50,7 +50,7 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
 {
     logdbg << "class_name '" << class_name_ << "' instance_name '" << instance_name_
            << "' path_str_ '" << path_str_ << "'"
-           << " json type=" << config_json.type_name();
+           << " json type " << config_json.type_name();
 
     // NOTE: Do NOT call setClassName/setInstanceName here. The keys are already present
     // in config_json (getClassName/getInstanceName above just read them). Calling set*
@@ -125,8 +125,8 @@ void Configurable::writeBackConfig()
 
 void Configurable::writeBackConfigRecursive()
 {
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
-           << "' children=" << children_vec_.size();
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' children " << children_vec_.size();
 
     // Children first so nested sub_configs are complete
     for (auto* child : children_vec_)
@@ -165,7 +165,7 @@ void Configurable::writeBackConfigRecursive()
         }
     }
 
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
            << "' writeBackConfigRecursive complete";
 }
 
@@ -261,7 +261,7 @@ void Configurable::createSubConfigurables()
     traced_assert(configuration_);
 
     logdbg << "class '" << class_name_ << "' instance '" << instance_name_
-           << "' storage buckets=" << configuration_->subConfigStorage().size();
+           << "' storage buckets " << configuration_->subConfigStorage().size();
 
     for (auto& [class_name, entries] : configuration_->subConfigStorage())
     {
@@ -411,7 +411,7 @@ Configurable* Configurable::getApproximateChildNamed(const std::string& approx_n
     {
         if (c && boost::algorithm::to_lower_copy(c->className()) == approx_name_lower)
         {
-            loginf << "key_id " << key_id_ << " found approximate name '"
+            logdbg << "key_id " << key_id_ << " found approximate name '"
                    << approx_name << "' with child instance_name " << c->instanceName();
             return c;
         }
@@ -546,7 +546,7 @@ namespace
 
 Result Configurable::applyJSONSettings(const nlohmann::json& settings_json)
 {
-    loginf << "CONFIG:\n" << settings_json.dump(4);
+    logdbg << "CONFIG:\n" << settings_json.dump(4);
 
     std::string error;
     std::vector<Configuration::MissingKey> missing_subconfig_keys;
@@ -593,7 +593,7 @@ Result Configurable::applyJSONStringSettings(const std::string& settings_json_st
 
     traced_assert(r.hasResult());
 
-    loginf << "configuration successfully parsed";
+    logdbg << "configuration successfully parsed";
 
     return applyJSONSettings(r.result());
 }
@@ -614,7 +614,7 @@ Result Configurable::applyJSONStringParameters(const std::string& params_json_st
 
     traced_assert(r.hasResult());
 
-    loginf << "configuration successfully parsed";
+    logdbg << "configuration successfully parsed";
 
     return applyJSONParameters(r.result());
 }

@@ -176,7 +176,7 @@ void ConfigurationManager::saveConfiguration()
         auto cit = json_root_configurables_.find(key);
         if (cit != json_root_configurables_.end())
         {
-            loginf << "writing back config for class '" << key.first
+            logdbg << "writing back config for class '" << key.first
                    << "' instance '" << key.second << "'";
             try
             {

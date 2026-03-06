@@ -20,6 +20,9 @@ layout crop_features="true"
     </OGRFeatures>
   
   <FeatureModel name="world_boundaries" features="world-data">
+      <layout>
+          <level max_range="1e10"/>
+      </layout>
       <styles>
           <style type="text/css">
               world {

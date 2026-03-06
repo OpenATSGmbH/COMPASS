@@ -97,6 +97,24 @@ RUN cd protobuf-3.19.1 && make -j$(nproc)
 RUN cd protobuf-3.19.1 && make install
 RUN cd protobuf-3.19.1 && ldconfig # refresh shared library cache.
 
+# Create CMake config for GEOS so osgEarth's find_package(geos) succeeds
+# Debian 10's libgeos-dev does not ship CMake config files
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/cmake/geos && \
+    echo 'add_library(GEOS::geos_c SHARED IMPORTED)' > /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo 'set_target_properties(GEOS::geos_c PROPERTIES' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo '  IMPORTED_LOCATION "/usr/lib/x86_64-linux-gnu/libgeos_c.so"' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo ')' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake
+
+# Create CMake config for libzip so osgEarth's find_package(libzip) succeeds
+# Debian 10's libzip-dev does not ship CMake config files
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/cmake/libzip && \
+    echo 'add_library(libzip::zip SHARED IMPORTED)' > /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo 'set_target_properties(libzip::zip PROPERTIES' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo '  IMPORTED_LOCATION "/usr/lib/x86_64-linux-gnu/libzip.so"' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo ')' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake
+
 RUN git clone --branch osgearth-3.7.2 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.7.2
 RUN mkdir osgearth-3.7.2/build
 RUN cd osgearth-3.7.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
