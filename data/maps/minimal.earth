@@ -4,12 +4,11 @@ osgEarth Sample
 layout crop_features="true"
 -->
 
-<map name="Wordwide Line Vectors" type="geocentric" version="2">
+<map name="Wordwide Line Vectors" type="geocentric">
   
     <options>
         <lighting>false</lighting>
         <terrain>
-            <driver>rex</driver>
             <tile_size>2</tile_size>
             <color>#000000FF</color>
         </terrain>
@@ -41,11 +40,11 @@ layout crop_features="true"
   </FeatureModel>
 
  
-    <feature_model name="Airports Europe">
-        <features name="Airports Europe" driver="ogr">
+    <FeatureModel name="Airports Europe">
+        <OGRFeatures name="Airports Europe">
             <url>shapefiles/AIRP_PT_2013.shp</url>
             <build_spatial_index>true</build_spatial_index>
-        </features>       
+        </OGRFeatures>
         
         <layout>
             <level name="far"    style="large"  max_range="1e10"/>
@@ -101,6 +100,6 @@ layout crop_features="true"
                 }
             </style>
         </styles>
-    </feature_model>
+    </FeatureModel>
 
 </map>
