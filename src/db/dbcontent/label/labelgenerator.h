@@ -119,6 +119,8 @@ public:
     float labelDirectionAngle (unsigned int ds_id);
     void labelDirection (unsigned int ds_id, LabelDirection direction);
 
+    static float labelDirectionAngle(LabelDirection direction);
+
     unsigned int labelLine (unsigned int ds_id); // returns 0...3
     void labelLine (unsigned int ds_id, unsigned int line);
     void updateAvailableLabelLines(); // updates lines to be label according to available lines with loaded data
@@ -148,6 +150,8 @@ public:
     void updateFilterValuesFromStrings();
 
     DBContentManager& dbContentManager() { return dbcont_manager_; }
+
+    static const int LabelAnchorLengthPxDefault;
 
 protected:
     //virtual void checkSubConfigurables();

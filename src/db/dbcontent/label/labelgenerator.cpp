@@ -49,6 +49,8 @@ using namespace Utils;
 namespace dbContent
 {
 
+const int LabelGenerator::LabelAnchorLengthPxDefault = 20;
+
 LabelGenerator::LabelGenerator(DBContentManager& manager)
     : dbcont_manager_(manager)
 {
@@ -1186,6 +1188,11 @@ float LabelGenerator::labelDirectionAngle (unsigned int ds_id)
 {
     LabelDirection direction = labelDirection(ds_id);
 
+    return LabelGenerator::labelDirectionAngle(direction);
+}
+
+float LabelGenerator::labelDirectionAngle(LabelDirection direction)
+{
     if (direction == LEFT_UP)
         return DEG2RAD * 135.0;
     else if (direction == RIGHT_UP)
@@ -1194,8 +1201,9 @@ float LabelGenerator::labelDirectionAngle (unsigned int ds_id)
         return DEG2RAD * 225.0;
     else // RIGHT_DOWN
         return DEG2RAD * 315.0;
-}
 
+    return 0.0f;
+}
 
 void LabelGenerator::labelDirection (unsigned int ds_id, LabelDirection direction)
 {

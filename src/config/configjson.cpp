@@ -38,7 +38,7 @@ ConfigJSON::ConfigJSON(const std::string& conf_filename)
     , save_path_(CURRENT_CONF_DIRECTORY + conf_filename)
     , file_backed_(true)
 {
-    loginf << "loading '" << save_path_ << "'";
+    logdbg << "loading '" << save_path_ << "'";
 
     loadFromPath(save_path_);
 }
@@ -52,7 +52,7 @@ ConfigJSON::ConfigJSON(const std::string& abs_path, FromFileTag)
     : save_path_(abs_path)
     , file_backed_(true)
 {
-    loginf << "loading '" << abs_path << "'";
+    logdbg << "loading '" << abs_path << "'";
 
     loadFromPath(abs_path);
 }
@@ -93,17 +93,17 @@ void ConfigJSON::loadFromPath(const std::string& path)
     json_ptr_ = &owned_json_;
 
     // Log top-level keys for debugging
-    loginf << "loaded '" << path << "' top-level keys: [";
+    logdbg << "loaded '" << path << "' top-level keys: [";
     for (auto& [key, _] : owned_json_.items())
-        loginf << " " << key;
-    loginf << " ]";
+        logdbg << " " << key;
+    logdbg << " ]";
 
     // Convert old nested sub_configs format to array before resolving file refs
     Configuration::convertSubConfigsFormat(owned_json_);
 
     resolveSubConfigFiles(owned_json_, sub_config_files_);
 
-    loginf << "'" << path << "' load complete"
+    logdbg << "'" << path << "' load complete"
            << " has_sub_configs=" << owned_json_.contains(Configuration::SubConfigSection)
            << " has_sub_config_files=" << owned_json_.contains(ConfigJSON::SubConfigFileSection);
 }
@@ -142,7 +142,7 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
     auto& scf_array = json[ConfigJSON::SubConfigFileSection];
     traced_assert(scf_array.is_array());
 
-    loginf << "resolving " << scf_array.size() << " sub_config_file entries";
+    logdbg << "resolving " << scf_array.size() << " sub_config_file entries";
 
     for (auto& entry : scf_array)
     {
@@ -192,7 +192,7 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
         traced_assert(!class_name.empty() && !instance_name.empty());
 
-        loginf << "resolving sub_config_file: class '" << class_name
+        logdbg << "resolving sub_config_file: class '" << class_name
                << "' instance '" << instance_name << "' path '" << path << "'";
 
         // Build file info entry
@@ -211,7 +211,7 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
         file_info.push_back(std::move(scf));
 
-        loginf << "resolved sub_config_file: class '" << class_name
+        logdbg << "resolved sub_config_file: class '" << class_name
                << "' instance '" << instance_name << "' from '" << path << "'";
     }
 
@@ -220,7 +220,7 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
 
     // Log final sub_configs count
     if (json.contains(Configuration::SubConfigSection))
-        loginf << "after resolving: sub_configs array has "
+        logdbg << "after resolving: sub_configs array has "
                << json[Configuration::SubConfigSection].size() << " entries";
 }
 

@@ -126,7 +126,7 @@ Configuration::Configuration(nlohmann::json& backing_json)
       instance_name_(getInstanceName(backing_json)),
       backing_json_(backing_json)
 {
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
            << "' backing_json type=" << backing_json.type_name()
            << " is_null=" << backing_json.is_null()
            << " is_object=" << backing_json.is_object();
@@ -147,7 +147,7 @@ Configuration::Configuration(nlohmann::json& backing_json)
     {
         auto& sc = backing_json[SubConfigSection];
 
-        loginf << "class '" << class_name_ << "' instance '" << instance_name_
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' sub_configs type=" << sc.type_name()
                << " size=" << (sc.is_array() ? std::to_string(sc.size())
                               : sc.is_object() ? std::to_string(sc.size()) : "N/A");
@@ -155,7 +155,7 @@ Configuration::Configuration(nlohmann::json& backing_json)
         // Convert old nested format to array if needed
         if (sc.is_object() && !sc.empty() && isNestedSubConfigFormat(sc))
         {
-            loginf << "class '" << class_name_ << "' instance '" << instance_name_
+            logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                    << "' converting nested sub_configs to array format";
 
             json arr = json::array();
@@ -182,7 +182,7 @@ Configuration::Configuration(nlohmann::json& backing_json)
                 try
                 {
                     const auto& cls = getClassName(entry);
-                    loginf << "class '" << class_name_ << "' instance '" << instance_name_
+                    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                            << "' populating sub_config: class_name='" << cls
                            << "' instance_name='" << getInstanceName(entry) << "'";
                     sub_config_storage_[cls].push_back(std::make_unique<json>(std::move(entry)));
@@ -197,14 +197,14 @@ Configuration::Configuration(nlohmann::json& backing_json)
             }
         }
 
-        loginf << "class '" << class_name_ << "' instance '" << instance_name_
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' populated " << sub_config_storage_.size() << " class buckets in sub_config_storage_";
 
         // Remove sub_configs from backing json — now owned by sub_config_storage_
         backing_json.erase(SubConfigSection);
     }
 
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_ << "' construction complete";
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_ << "' construction complete";
 }
 
 Configuration::~Configuration()
