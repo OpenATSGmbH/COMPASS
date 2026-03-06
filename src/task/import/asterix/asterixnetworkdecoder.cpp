@@ -175,8 +175,8 @@ void ASTERIXNetworkDecoder::start_impl()
 
                     traced_assert(receive_buffers_copy_.count(line_id));
 
-                    auto callback = [this, line_id](std::unique_ptr<nlohmann::json> data, size_t num_frames,
-                            size_t num_records, size_t num_errors) {
+                    auto callback = [this, line_id](std::unique_ptr<nlohmann::json> data, size_t total_num_bytes,
+                            size_t num_frames, size_t num_records, size_t num_errors) {
 
                         if (job() && !job()->obsolete())
                             job()->netJasterixCallback(std::move(data), line_id, num_frames, num_records, num_errors);

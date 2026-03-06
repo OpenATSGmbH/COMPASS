@@ -216,11 +216,18 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
     //jasterix callback
     auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data,
+                                               size_t total_num_bytes,
                                                size_t num_frames,
                                                size_t num_records,
                                                size_t num_errors)
     {
-        // flat format: no data_blocks/frames structure, no byte index for progress tracking
+        loginf << "jasterix callback: total_num_bytes " << total_num_bytes
+               << " num_frames " << num_frames
+               << " num_records " << num_records
+               << " num_errors " << num_errors;
+
+        setFileBytesRead(total_num_bytes);
+
         addRecordsRead(num_records);
 
         if (num_errors)

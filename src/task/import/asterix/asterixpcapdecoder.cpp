@@ -313,6 +313,7 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
     traced_assert(file_open);
 
     auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data,
+                                               size_t total_num_bytes,
                                                size_t num_frames,
                                                size_t num_records,
                                                size_t num_errors)
@@ -320,7 +321,8 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
         if (!this->isRunning())
             return;
 
-        // flat format: no data_blocks/frames structure for progress tracking
+        setChunkBytesRead(total_num_bytes);
+
         addRecordsRead(num_records);
 
         if (num_errors)
@@ -370,9 +372,9 @@ void ASTERIXPCAPDecoder::processFile(ASTERIXImportFileInfo& file_info)
             const auto& chunk = data_res.result().chunk_data.data;
             size_t num_bytes = chunk.size();
 
-            loginf << "processing " << num_bytes << " byte(s)"; 
+            loginf << "processing " << num_bytes << " byte(s)";
             traced_assert(num_bytes > 0);
-            
+
             std::vector<char> vec(num_bytes);
             memcpy(vec.data(), chunk.data(), num_bytes * sizeof(char));
 
