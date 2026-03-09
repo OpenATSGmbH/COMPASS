@@ -27,4 +27,4 @@ steps:
   - name: appimage
     image: compass/build_deb10
     commands:
-      - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; sudo make -C $WORKSPACE_BASE/jasterix/build_deb10 install && sudo make -C $WORKSPACE_BASE/compass/build_deb10 install && cd $CI_WORKSPACE/docker && ./deploy_compass.sh"
+      - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; sudo make -C $CI_WORKSPACE/../jasterix/build_deb10 install && sudo make -C $CI_WORKSPACE/build_deb10 install && cd $CI_WORKSPACE/docker && ./deploy_compass.sh"
