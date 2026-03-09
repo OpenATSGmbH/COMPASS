@@ -1,10 +1,11 @@
 steps:
   - name: setup-workspace
     image: alpine/git
-    secrets: [github_token]
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
     commands:
-      # Clone experimental_src: try same branch, fall back to devel
-      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
+      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
 
   - name: build
     image: compass/build_deb10
