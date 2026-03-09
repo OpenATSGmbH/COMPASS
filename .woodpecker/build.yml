@@ -13,12 +13,7 @@ steps:
   - name: build
     image: compass/build_deb10
     commands:
-      - sudo mkdir -p /app/workspace
-      - sudo mv "$CI_WORKSPACE/../jasterix" /app/workspace/jasterix
-      - sudo mv "$CI_WORKSPACE" /app/workspace/compass
-      - sudo chown -R $(id -u):$(id -g) /app/workspace
-      - bash -c "cd /app/workspace/compass/docker && ./build_jasterix.sh && ./build_compass.sh"
-      - sudo mv /app/workspace/compass "$CI_WORKSPACE"
+      - bash -c 'set -e; sudo mkdir -p /app/workspace; sudo ln -sfn "$CI_WORKSPACE" /app/workspace/compass; sudo ln -sfn "$CI_WORKSPACE/../jasterix" /app/workspace/jasterix; ls -la /app/workspace/; ls /app/workspace/compass/CMakeLists.txt; ls /app/workspace/jasterix/CMakeLists.txt; cd /app/workspace/compass/docker && ./build_jasterix.sh && ./build_compass.sh'
 
   - name: test
     image: compass/build_deb10
@@ -28,8 +23,4 @@ steps:
   - name: appimage
     image: compass/build_deb10
     commands:
-      - sudo mkdir -p /app/workspace
-      - sudo mv "$CI_WORKSPACE" /app/workspace/compass
-      - sudo chown -R $(id -u):$(id -g) /app/workspace
-      - bash -c "cd /app/workspace/compass/docker && ./deploy_compass.sh"
-      - sudo mv /app/workspace/compass "$CI_WORKSPACE"
+      - bash -c 'set -e; sudo mkdir -p /app/workspace; sudo ln -sfn "$CI_WORKSPACE" /app/workspace/compass; cd /app/workspace/compass/docker && ./deploy_compass.sh'
