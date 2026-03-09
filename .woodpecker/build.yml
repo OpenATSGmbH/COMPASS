@@ -16,6 +16,7 @@ steps:
       - sudo mkdir -p /app/workspace
       - sudo ln -s "$CI_WORKSPACE" /app/workspace/compass
       - sudo ln -s "$CI_WORKSPACE/../jasterix" /app/workspace/jasterix
+      - sudo chmod -R a+rw /app/workspace/jasterix
       - cd docker
       - ./build_jasterix.sh
       - ./build_compass.sh
