@@ -1,34 +1,5 @@
-when:
-  event: [push, manual]
-
 steps:
-  setup-workspace:
-    image: alpine/git
-    secrets: [github_token]
+  - name: test
+    image: alpine
     commands:
-      # Clone experimental_src: try same branch, fall back to devel
-      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
-
-  build:
-    image: compass/build_deb10
-    commands:
-      - sudo mkdir -p /app/workspace
-      - sudo ln -s "$CI_WORKSPACE" /app/workspace/compass
-      - cd docker
-      - ./build_jasterix.sh
-      - ./build_compass.sh
-
-  test:
-    image: compass/build_deb10
-    commands:
-      - sudo mkdir -p /app/workspace
-      - sudo ln -s "$CI_WORKSPACE" /app/workspace/compass
-      - ./build_deb10/bin/compass_tests
-
-  appimage:
-    image: compass/build_deb10
-    commands:
-      - sudo mkdir -p /app/workspace
-      - sudo ln -s "$CI_WORKSPACE" /app/workspace/compass
-      - cd docker
-      - ./deploy_compass.sh
+      - echo "hello from woodpecker"
