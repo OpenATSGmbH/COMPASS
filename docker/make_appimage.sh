@@ -5,6 +5,11 @@ set -e
 
 echo "os: '$OS_NAME'"
 
-./build_jasterix.sh
-./build_compass.sh
+CLEAN=""
+if [[ "$1" == "--clean" ]]; then
+    CLEAN="--clean"
+fi
+
+./build_jasterix.sh $CLEAN
+./build_compass.sh $CLEAN
 ./deploy_compass.sh
