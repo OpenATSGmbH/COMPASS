@@ -17,9 +17,7 @@ steps:
       - sudo mv "$CI_WORKSPACE/../jasterix" /app/workspace/jasterix
       - sudo mv "$CI_WORKSPACE" /app/workspace/compass
       - sudo chown -R $(id -u):$(id -g) /app/workspace
-      - cd /app/workspace/compass/docker
-      - ./build_jasterix.sh
-      - ./build_compass.sh
+      - cd /app/workspace/compass/docker && ./build_jasterix.sh && ./build_compass.sh
       - sudo mv /app/workspace/compass "$CI_WORKSPACE"
 
   - name: test
@@ -34,6 +32,5 @@ steps:
       - sudo mv "$CI_WORKSPACE/../jasterix" /app/workspace/jasterix
       - sudo mv "$CI_WORKSPACE" /app/workspace/compass
       - sudo chown -R $(id -u):$(id -g) /app/workspace
-      - cd /app/workspace/compass/docker
-      - ./deploy_compass.sh
+      - cd /app/workspace/compass/docker && ./deploy_compass.sh
       - sudo mv /app/workspace/compass "$CI_WORKSPACE"
