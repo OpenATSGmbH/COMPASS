@@ -2,32 +2,30 @@ when:
   event: [push, manual]
 
 steps:
-  - name: setup-workspace
+  setup-workspace:
     image: alpine/git
     secrets: [github_token]
     commands:
       # Clone experimental_src: try same branch, fall back to devel
       - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
 
-  - name: build
+  build:
     image: compass/build_deb10
     commands:
-      # Create the /app/workspace/compass symlink that the scripts expect
       - sudo mkdir -p /app/workspace
       - sudo ln -s "$CI_WORKSPACE" /app/workspace/compass
-      # Now the existing scripts work unmodified
       - cd docker
       - ./build_jasterix.sh
       - ./build_compass.sh
 
-  - name: test
+  test:
     image: compass/build_deb10
     commands:
       - sudo mkdir -p /app/workspace
       - sudo ln -s "$CI_WORKSPACE" /app/workspace/compass
       - ./build_deb10/bin/compass_tests
 
-  - name: appimage
+  appimage:
     image: compass/build_deb10
     commands:
       - sudo mkdir -p /app/workspace
