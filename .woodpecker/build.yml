@@ -1,8 +1,11 @@
 steps:
   - name: step1
     image: alpine
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
     commands:
-      - echo "step 1"
+      - echo "token length ${#GITHUB_TOKEN}"
 
   - name: step2
     image: alpine
