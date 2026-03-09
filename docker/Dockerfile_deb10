@@ -22,7 +22,7 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
 RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \
   && echo 'deb-src http://archive.debian.org/debian buster main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev sudo \
+  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev patchelf sudo \
   && apt-get build-dep -y libopenscenegraph-dev libosgearth-dev libboost-all-dev \
   && rm -rf /var/lib/apt/lists/*
 

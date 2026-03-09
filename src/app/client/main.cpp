@@ -26,6 +26,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <cstring>
 #include <dlfcn.h>
 #include <iostream>
 #include <signal.h>
@@ -158,8 +159,38 @@ int main(int argc, char** argv)
             }
         }
 
-        // Enable Qt high-DPI scaling
-        QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+        // Enable Qt high-DPI scaling unless --no_highdpi is given.
+        // Some systems (e.g. AlmaLinux 9.7 with GNOME) report inflated DPI,
+        // causing double-sized UI. Override with:
+        //   --no_highdpi                        (CLI flag)
+        //   QT_AUTO_SCREEN_SCALE_FACTOR=0       (env var)
+        //   QT_SCALE_FACTOR=1                   (env var, forces 1:1)
+        {
+            bool disable_highdpi = false;
+
+            for (int i = 1; i < argc; ++i)
+            {
+                if (std::strcmp(argv[i], "--no_highdpi") == 0)
+                {
+                    disable_highdpi = true;
+                    break;
+                }
+            }
+
+            if (!qEnvironmentVariableIsEmpty("QT_AUTO_SCREEN_SCALE_FACTOR") &&
+                qgetenv("QT_AUTO_SCREEN_SCALE_FACTOR") == "0")
+                disable_highdpi = true;
+
+            if (disable_highdpi)
+            {
+                std::cout << "COMPASSClient: high-DPI scaling disabled" << std::endl;
+                QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+            }
+            else
+            {
+                QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+            }
+        }
 
         Client client(argc, argv);
 
