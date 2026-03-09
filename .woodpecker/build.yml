@@ -9,18 +9,21 @@ steps:
     commands:
       - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
       - git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix
+      - ln -s "$CI_WORKSPACE" "$CI_WORKSPACE/../compass"
 
   - name: build
     image: compass/build_deb10
+    environment:
+      WORKSPACE_BASE: ${CI_WORKSPACE}/..
     commands:
-      - bash -c 'set -e; sudo mkdir -p /app/workspace; sudo ln -sfn "$CI_WORKSPACE" /app/workspace/compass; sudo ln -sfn "$CI_WORKSPACE/../jasterix" /app/workspace/jasterix; ls -la /app/workspace/; ls /app/workspace/compass/CMakeLists.txt; ls /app/workspace/jasterix/CMakeLists.txt; cd /app/workspace/compass/docker && ./build_jasterix.sh && ./build_compass.sh'
+      - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; cd $CI_WORKSPACE/docker && ./build_jasterix.sh && ./build_compass.sh"
 
   - name: test
     image: compass/build_deb10
     commands:
-      - ./build_deb10/bin/compass_tests
+      - $CI_WORKSPACE/build_deb10/bin/compass_tests
 
   - name: appimage
     image: compass/build_deb10
     commands:
-      - bash -c 'set -e; sudo mkdir -p /app/workspace; sudo ln -sfn "$CI_WORKSPACE" /app/workspace/compass; cd /app/workspace/compass/docker && ./deploy_compass.sh'
+      - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; cd $CI_WORKSPACE/docker && ./deploy_compass.sh"

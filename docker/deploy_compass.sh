@@ -8,7 +8,7 @@ echo "os: '$OS_NAME'"
 export ARCH=x86_64
 export QT_SELECT=5
 
-cd /app/workspace/compass/
+cd ${WORKSPACE_BASE:-/app/workspace}/compass/
 rm -rf appimage/appdir/*/ # deletes all subfolders
 mkdir -p appimage/appdir/bin/
 
@@ -34,11 +34,11 @@ export DEPLOY_GTK_VERSION=3
 
 export NO_STRIP=1
 
-cd /app/workspace/compass/docker/linuxdeploy/
-./linuxdeploy-x86_64.AppImage --appdir /app/workspace/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=/app/workspace/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file /app/workspace/compass/appimage/ats.png --output appimage
+cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker/linuxdeploy/
+./linuxdeploy-x86_64.AppImage --appdir ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/ats.png --output appimage
 
-mv COMPASS-x86_64.AppImage /app/workspace/compass/COMPASS_$OS_NAME-x86_64.AppImage
+mv COMPASS-x86_64.AppImage ${WORKSPACE_BASE:-/app/workspace}/compass/COMPASS_$OS_NAME-x86_64.AppImage
 
-cd /app/workspace/compass/docker
+cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker
 
 
