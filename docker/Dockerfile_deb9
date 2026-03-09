@@ -8,7 +8,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV USER_NAME=${USER_NAME} \
     USER_ID=${USER_ID} \
-    USER_GROUP_ID=${USER_GROUP_ID}
+    USER_GROUP_ID=${USER_GROUP_ID} \
+    OS_NAME=deb9
 
 RUN echo ">>> USER_NAME=${USER_NAME}" \
  && echo ">>> USER_ID=${USER_ID}" \
@@ -161,7 +162,7 @@ RUN duckdb -c "INSTALL json; LOAD json; SELECT json_object('status', 'success') 
 RUN ldconfig -v /usr/lib64/ /usr/local/
 RUN updatedb
 
-RUN echo "${USER_NAME} ALL=(ALL)  ALL" >> /etc/sudoers
+RUN echo "${USER_NAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN more /etc/sudoers
 
 USER ${USER_NAME}
