@@ -7,9 +7,12 @@ labels:
 when:
   - event: [manual]
 
+skip_clone: true
+
 steps:
   - name: run-python-tests
     image: local
     commands:
       - echo "TEST_MODULES=$TEST_MODULES"
-      - bash ${CI_WORKSPACE}/docker/run_ci_tests.sh "$TEST_MODULES" "$CI_PIPELINE_NUMBER" "$CI_COMMIT_BRANCH"
+      - echo "Pipeline=$CI_PIPELINE_NUMBER Branch=$CI_COMMIT_BRANCH"
+      - bash /home/user/ci/$(ls -t /home/user/ci/ | grep "\-${CI_PIPELINE_NUMBER}-${CI_COMMIT_BRANCH}$" | head -1)/run_ci_tests.sh "$TEST_MODULES" "$CI_PIPELINE_NUMBER" "$CI_COMMIT_BRANCH"
