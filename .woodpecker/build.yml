@@ -4,18 +4,17 @@ when:
 steps:
   - name: setup-workspace
     image: alpine/git
-    secrets:
-      - github_token
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
     commands:
-      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://$${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
+      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
       - git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix
       - chmod -R a+rwX ../jasterix ..
       - ln -s "$CI_WORKSPACE" "$CI_WORKSPACE/../compass"
 
   - name: build
     image: compass/build_deb10
-    environment:
-      WORKSPACE_BASE: ${CI_WORKSPACE}/..
     commands:
       - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; cd $CI_WORKSPACE/docker && ./build_jasterix.sh && ./build_compass.sh"
 
