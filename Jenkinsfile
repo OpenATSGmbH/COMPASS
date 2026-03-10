@@ -22,22 +22,9 @@ pipeline {
                 // Fix permissions on root-owned files from previous Docker builds
                 sh "docker run --rm -v \$(pwd):/ws -v \$(dirname \$(pwd))/jasterix:/jx ${DOCKER_IMAGE} bash -c 'chmod -R a+rwX /ws /jx' || true"
                 // Clone or update experimental_src
-                sh """
-                    if [ -d experimental_src/.git ]; then
-                        cd experimental_src && git fetch && git checkout ${BRANCH_NAME} 2>/dev/null || git checkout devel && git pull
-                    else
-                        git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src \
-                            || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
-                    fi
-                """
+                sh "if [ -d experimental_src/.git ]; then cd experimental_src && git fetch && (git checkout ${BRANCH_NAME} 2>/dev/null || git checkout devel) && git pull; else git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src; fi"
                 // Clone or update jASTERIX
-                sh '''
-                    if [ -d ../jasterix/.git ]; then
-                        cd ../jasterix && git pull
-                    else
-                        git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix
-                    fi
-                '''
+                sh 'if [ -d ../jasterix/.git ]; then cd ../jasterix && git pull; else git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix; fi'
             }
         }
 
