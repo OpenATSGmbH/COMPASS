@@ -19,14 +19,11 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Main repo is checked out automatically by Jenkins
                 // Clone experimental_src (try matching branch, fall back to devel)
-                sh '''
-                    git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src 2>/dev/null \
-                        || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
-                    git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix
-                    chmod -R a+rwX ../jasterix .
-                '''
+                sh 'rm -rf experimental_src'
+                sh "git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
+                sh 'rm -rf ../jasterix && git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix'
+                sh 'chmod -R a+rwX ../jasterix .'
             }
         }
 
