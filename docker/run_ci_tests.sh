@@ -54,6 +54,8 @@ python3 test_suite.py \
     --path="$TEST_PATH" \
     --data="$DATA_PATH" \
     --modules="$MODULES" \
+    --no-prompt \
+    --cfg-override=none \
     2>&1 | tee "$LOG_DIR/test_${MODULES}.log"
 
 echo ""
