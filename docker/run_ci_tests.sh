@@ -3,7 +3,7 @@
 # Run Python integration tests using the AppImage
 # Usage: run_ci_tests.sh <test_modules> <pipeline_number> <branch>
 
-set -e
+set -eo pipefail
 
 MODULES="$1"
 PIPELINE_NUM="$2"
@@ -47,6 +47,7 @@ echo "Modules: $MODULES"
 echo ""
 
 cd "$SCRIPTS/test"
+export PYTHONPATH="$SCRIPTS"
 
 python3 test_suite.py \
     --binary="$APPIMAGE" \
