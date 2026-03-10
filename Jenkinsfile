@@ -15,7 +15,7 @@ pipeline {
         TEST_DATA_PATH  = '/home/user/ci/test'
         DOCKER_IMAGE    = 'compass/build_deb10'
         DISPLAY             = ':0'
-        COMPASS_EXTRA_ARGS  = '--no_highdpi -r --no_cfg_save'
+        COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
     }
 
     stages {
