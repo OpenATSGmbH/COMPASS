@@ -49,14 +49,38 @@ echo ""
 cd "$SCRIPTS/test"
 export PYTHONPATH="$SCRIPTS"
 
-python3 test_suite.py \
-    --binary="$APPIMAGE" \
-    --path="$TEST_PATH" \
-    --data="$DATA_PATH" \
-    --modules="$MODULES" \
-    --no-prompt \
-    --cfg-override=none \
-    2>&1 | tee "$LOG_DIR/test_${MODULES}.log"
+# Find datasets: data subdirectories that contain a manifest.json
+MANIFESTS=$(find "$DATA_PATH" -maxdepth 2 -name manifest.json -type f 2>/dev/null)
 
-echo ""
-echo "Test logs saved to $LOG_DIR/test_${MODULES}.log"
+if [ -z "$MANIFESTS" ]; then
+    echo "ERROR: No manifest.json files found in $DATA_PATH"
+    echo "Each test dataset subdirectory must contain a manifest.json file."
+    exit 1
+fi
+
+# Run tests for each dataset with a manifest
+for MANIFEST in $MANIFESTS; do
+    DATASET_DIR=$(dirname "$MANIFEST")
+    DATASET_NAME=$(basename "$DATASET_DIR")
+
+    echo "=============================================="
+    echo "Running tests for dataset: $DATASET_NAME"
+    echo "Manifest: $MANIFEST"
+    echo "=============================================="
+    echo ""
+
+    python3 test_suite.py \
+        --binary="$APPIMAGE" \
+        --path="$TEST_PATH" \
+        --manifest="$MANIFEST" \
+        --output="$DATA_PATH" \
+        --modules="$MODULES" \
+        --deps=modules \
+        --no-prompt \
+        --cfg-override=none \
+        2>&1 | tee "$LOG_DIR/test_${DATASET_NAME}.log"
+
+    echo ""
+    echo "Test logs saved to $LOG_DIR/test_${DATASET_NAME}.log"
+    echo ""
+done
