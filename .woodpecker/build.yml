@@ -4,12 +4,8 @@ when:
 steps:
   - name: setup-workspace
     image: alpine/git
-    environment:
-      GITHUB_TOKEN:
-        from_secret: github_token
     commands:
-      - echo "hello"
-      - echo "token length is ${#GITHUB_TOKEN}"
+      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
       - git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix
       - chmod -R a+rwX ../jasterix ..
       - ln -s "$CI_WORKSPACE" "$CI_WORKSPACE/../compass"
