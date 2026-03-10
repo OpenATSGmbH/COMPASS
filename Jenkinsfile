@@ -19,13 +19,13 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Fix permissions on root-owned build dirs from previous Docker runs
-                sh "docker run --rm -v \$(pwd):/ws -v \$(dirname \$(pwd))/jasterix:/jx ${DOCKER_IMAGE} bash -c 'chmod -R a+rwX /ws/build_deb10 /jx/build_deb10 2>/dev/null; true'"
                 // Fresh clone experimental_src
                 sh 'rm -rf experimental_src'
                 sh "git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
                 // Fresh clone jASTERIX
                 sh 'rm -rf ../jasterix && git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix'
+                // Make workspace writable by Docker container user (uid 1000)
+                sh 'chmod -R a+rwX . ../jasterix'
             }
         }
 
