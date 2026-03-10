@@ -9,6 +9,7 @@ when:
 
 steps:
   - name: run-python-tests
+    image: local
     commands:
       - echo "TEST_MODULES=$TEST_MODULES"
       - bash ${CI_WORKSPACE}/docker/run_ci_tests.sh "$TEST_MODULES" "$CI_PIPELINE_NUMBER" "$CI_COMMIT_BRANCH"
