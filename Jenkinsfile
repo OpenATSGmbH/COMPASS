@@ -24,8 +24,6 @@ pipeline {
                 sh "git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
                 // Fresh clone jASTERIX
                 sh 'rm -rf ../jasterix && git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix'
-                // Make workspace writable by Docker container user (uid 1000)
-                sh 'chmod -R a+rwX . ../jasterix'
             }
         }
 
@@ -37,7 +35,7 @@ pipeline {
                         -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
                         -w /workspace/compass/docker \
                         ${DOCKER_IMAGE} \
-                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh && ./build_compass.sh && chmod -R a+rwX /workspace'
+                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh && ./build_compass.sh'
                 """
             }
         }
@@ -64,7 +62,7 @@ pipeline {
                         -v ${CI_DIR}:${CI_DIR} \
                         -w /workspace/compass \
                         ${DOCKER_IMAGE} \
-                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh && chmod -R a+rwX /workspace'
+                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh'
                 """
                 // Collect artifacts
                 sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
