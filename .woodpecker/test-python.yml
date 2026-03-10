@@ -11,7 +11,7 @@ skip_clone: true
 
 steps:
   - name: run-python-tests
-    image: local
+    image: bash
     environment:
       TEST_MODULES: ${TEST_MODULES:-db,ui,eval,system,extra}
     commands:
