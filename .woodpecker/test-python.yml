@@ -1,0 +1,14 @@
+depends_on:
+  - build
+
+labels:
+  type: local
+
+when:
+  - event: [manual]
+
+steps:
+  - name: run-python-tests
+    commands:
+      - echo "TEST_MODULES=$TEST_MODULES"
+      - bash ${CI_WORKSPACE}/docker/run_ci_tests.sh "$TEST_MODULES" "$CI_PIPELINE_NUMBER" "$CI_COMMIT_BRANCH"
