@@ -12,6 +12,8 @@ skip_clone: true
 steps:
   - name: run-python-tests
     image: local
+    environment:
+      TEST_MODULES: ${TEST_MODULES:-db,ui,eval,system,extra}
     commands:
       - echo "TEST_MODULES=$TEST_MODULES"
       - echo "Pipeline=$CI_PIPELINE_NUMBER Branch=$CI_COMMIT_BRANCH"
