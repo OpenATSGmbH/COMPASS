@@ -26,5 +26,8 @@ steps:
 
   - name: appimage
     image: compass/build_deb10
+    volumes:
+      - /home/user/ci:/home/user/ci
     commands:
       - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; sudo make -C $CI_WORKSPACE/../jasterix/build_deb10 install && sudo make -C $CI_WORKSPACE/build_deb10 install && cd $CI_WORKSPACE/docker && ./deploy_compass.sh"
+      - bash -c 'set -e; RUN_DIR=/home/user/ci/$(date +%Y%m%d-%H%M%S)-${CI_PIPELINE_NUMBER}-${CI_COMMIT_BRANCH}; mkdir -p $RUN_DIR/scripts; cp $CI_WORKSPACE/COMPASS_deb10-x86_64.AppImage $RUN_DIR/; cp -a $CI_WORKSPACE/experimental_src/py/* $RUN_DIR/scripts/; echo "Artifacts: $RUN_DIR"'
