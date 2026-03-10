@@ -136,6 +136,8 @@ pipeline {
         always {
             // Archive logs
             archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
+            // Publish per-test results from JUnit XML
+            junit testResults: "${TEST_DATA_PATH}/results/junit_results.xml", allowEmptyResults: true
         }
         failure {
             echo 'Build or tests failed!'
