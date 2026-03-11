@@ -86,6 +86,7 @@ void ASTERIXPostprocessJob::run_impl()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
+    checkARTASHashes();
     doRadarPlotPositionCalculations();
     doXYPositionCalculations();
     doADSBPositionProcessing();
@@ -120,6 +121,50 @@ void ASTERIXPostprocessJob::run_impl()
 }
 
 
+
+void ASTERIXPostprocessJob::checkARTASHashes()
+{
+    DBContentManager& dbcont_man = compass_.dbContentManager();
+
+    for (auto& buf_it : buffers_)
+    {
+        const string& dbcontent_name = buf_it.first;
+
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_))
+            continue;
+
+        shared_ptr<Buffer> buffer = buf_it.second;
+        unsigned int buffer_size = buffer->size();
+
+        if (!buffer_size)
+            continue;
+
+        dbContent::Variable& hash_var =
+            dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_);
+
+        if (!buffer->has<string>(hash_var.name()))
+        {
+            logerr << dbcontent_name
+                   << " has no ARTAS hash, " << buffer_size << " target reports affected";
+            continue;
+        }
+
+        NullableVector<string>& hash_vec = buffer->get<string>(hash_var.name());
+
+        unsigned int null_cnt = 0;
+
+        for (unsigned int cnt = 0; cnt < buffer_size; ++cnt)
+        {
+            if (hash_vec.isNull(cnt))
+                ++null_cnt;
+        }
+
+        if (null_cnt > 0)
+            logerr << dbcontent_name
+                   << " " << null_cnt << " of " << buffer_size
+                   << " target reports have null ARTAS hash";
+    }
+}
 
 void ASTERIXPostprocessJob::doRadarPlotPositionCalculations()
 {

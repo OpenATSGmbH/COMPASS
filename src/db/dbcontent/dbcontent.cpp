@@ -70,7 +70,7 @@ const Property DBContent::meta_var_detection_type_ {"Type", PropertyDataType::UC
 const Property DBContent::meta_var_x_ {"X", PropertyDataType::DOUBLE};
 const Property DBContent::meta_var_y_ {"Y", PropertyDataType::DOUBLE};
 
-const Property DBContent::meta_var_artas_hash_ {"ARTAS Hash", PropertyDataType::UINT};
+const Property DBContent::meta_var_artas_hash_ {"ARTAS Hash", PropertyDataType::STRING};
 const Property DBContent::meta_var_utn_ {"UTN", PropertyDataType::UINT};
 
 const Property DBContent::meta_var_vx_ {"Vx", PropertyDataType::DOUBLE};
