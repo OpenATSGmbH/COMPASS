@@ -71,6 +71,8 @@ CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTAS
         tt = "Chosen data source invalid or empty";
     else if (err == CreateARTASAssociationsTask::Error::NoDataForLineID)
         tt = "Chosen line empty";
+    else if (err == CreateARTASAssociationsTask::Error::NoHashData)
+        tt = "ARTAS hash variable has no data in the database";
 
     run_button->setDefault(true);
 
