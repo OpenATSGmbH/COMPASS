@@ -8,81 +8,75 @@
     "timestamp": "2024-02-07 15:32:06.190",
     "view": "TableView",
     "view_config": {
-        "parameters": {
-        },
-        "sub_configs": {
-            "TableViewDataSource": {
-                "TableViewDataSource0": {
-                    "parameters": null,
-                    "sub_configs": {
-                        "VariableOrderedSet": {
-                            "Default": {
-                                "parameters": {
-                                    "variable_definitions": [
-                                        [
-                                            "Meta",
-                                            "Timestamp"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "DS ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Line ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "UTN"
-                                        ],                                        
-                                        [
-                                            "Meta",
-                                            "Mode 3/A Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Address"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Identification"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Track Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode C Code"
-                                        ],
-                                        [
-                                            "CAT021",
-                                            "MOPS Version"
-                                        ],
-                                        [
-                                            "CAT021",
-                                            "NACp"
-                                        ],
-                                        [
-                                            "CAT021",
-                                            "NUCp or NIC"
-                                        ],
-                                        [
-                                            "CAT021",
-                                            "SIL"
-                                        ]
-                                    ]
-                                }
-                            }
+        "parameters": {},
+        "sub_configs": [
+            {
+                "class_name": "TableViewDataSource",
+                "instance_name": "TableViewDataSource0",
+                "parameters": null,
+                "sub_configs": [
+                    {
+                        "class_name": "VariableOrderedSet",
+                        "instance_name": "Default",
+                        "parameters": {
+                            "variable_definitions": [
+                                [
+                                    "Meta",
+                                    "Timestamp"
+                                ],
+                                [
+                                    "Meta",
+                                    "DS ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Line ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "UTN"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode 3/A Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Address"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Identification"
+                                ],
+                                [
+                                    "Meta",
+                                    "Track Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode C Code"
+                                ],
+                                [
+                                    "CAT021",
+                                    "MOPS Version"
+                                ],
+                                [
+                                    "CAT021",
+                                    "NACp"
+                                ],
+                                [
+                                    "CAT021",
+                                    "NUCp or NIC"
+                                ],
+                                [
+                                    "CAT021",
+                                    "SIL"
+                                ]
+                            ]
                         }
                     }
-                }
-            },
-            "TableViewWidget": {
-                "TableViewWidget0": {
-                    "parameters": null
-                }
+                ]
             }
-        }
+        ]
     }
 }

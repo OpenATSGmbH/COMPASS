@@ -1,5 +1,5 @@
 {
-    "app_version": "0.9.2",
+    "app_version": "1.0.0",
     "category": "Default",
     "deployed": true,
     "description": "Gives an overview of the data, color by DBContent over the OpenStreetMap map.",
@@ -104,12 +104,9 @@
                     "8": "Timestamp"
                 }
             },
-            "label_directions": {
-            },
-            "label_ds_ids": {
-            },
-            "label_lines": {
-            },
+            "label_directions": {},
+            "label_ds_ids": {},
+            "label_lines": {},
             "label_opacity": 0.8999999761581421,
             "label_placement_forcedir": 2,
             "label_placement_method": 1,
@@ -142,1161 +139,1208 @@
             "use_online_messages": false,
             "use_utn_as_id": false
         },
-        "sub_configs": {
-            "GeographicViewDataSource": {
-                "GeographicViewDataSource0": {
-                    "parameters": null,
-                    "sub_configs": {
-                        "VariableOrderedSet": {
-                            "VariableOrderedSet0": {
-                                "parameters": {
-                                    "variable_definitions": [
-                                        [
-                                            "Meta",
-                                            "Record Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "DS ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Line ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Timestamp"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Address"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Identification"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Track Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode 3/A Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode C Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Latitude"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Longitude"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Type"
-                                        ],
-                                        [
-                                            "CAT062",
-                                            "TRI Record Numbers"
-                                        ]
-                                    ]
-                                }
-                            }
+        "sub_configs": [
+            {
+                "class_name": "GeographicViewDataSource",
+                "instance_name": "GeographicViewDataSource0",
+                "parameters": null,
+                "sub_configs": [
+                    {
+                        "class_name": "VariableOrderedSet",
+                        "instance_name": "VariableOrderedSet0",
+                        "parameters": {
+                            "variable_definitions": [
+                                [
+                                    "Meta",
+                                    "Record Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "DS ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Line ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Timestamp"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Address"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Identification"
+                                ],
+                                [
+                                    "Meta",
+                                    "Track Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode 3/A Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode C Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Latitude"
+                                ],
+                                [
+                                    "Meta",
+                                    "Longitude"
+                                ],
+                                [
+                                    "Meta",
+                                    "Type"
+                                ],
+                                [
+                                    "CAT062",
+                                    "TRI Record Numbers"
+                                ]
+                            ]
                         }
                     }
-                }
+                ]
             },
-            "GeographicViewWidget": {
-                "GeographicViewWidget0": {
-                    "parameters": null
-                }
-            },
-            "GeometryStyleFactory": {
-                "GeometryStyleFactory0": {
-                    "parameters": {
-                        "current_sorting_variable": "DBContent",
-                        "current_style_preset": "Color by DBContent"
+            {
+                "class_name": "GeometryStyleFactory",
+                "instance_name": "GeometryStyleFactory0",
+                "parameters": {
+                    "current_sorting_variable": "DBContent",
+                    "current_style_preset": "Color by DBContent"
+                },
+                "sub_configs": [
+                    {
+                        "class_name": "GeometryRenderOrder",
+                        "instance_name": "GeometryRenderOrderDBContent",
+                        "parameters": {
+                            "items": [
+                                "CAT001",
+                                "CAT020",
+                                "CAT021",
+                                "CAT048",
+                                "CAT062"
+                            ],
+                            "sorting_variable": "DBContent"
+                        }
                     },
-                    "sub_configs": {
-                        "GeometryRenderOrder": {
-                            "GeometryRenderOrderDBContent": {
-                                "parameters": {
-                                    "items": [
-                                        "CAT001",
-                                        "CAT020",
-                                        "CAT021",
-                                        "CAT048",
-                                        "CAT062"
-                                    ],
-                                    "sorting_variable": "DBContent"
-                                }
-                            },
-                            "GeometryRenderOrderDSID": {
-                                "parameters": {
-                                    "items": [],
-                                    "sorting_variable": "DS ID"
-                                }
-                            }
-                        },
-                        "GeometryStylePreset": {
-                            "GeometryStylePresetColorByADSBMOPS": {
-                                "parameters": {
-                                    "name": "Color by ADSB MOPS"
-                                },
-                                "sub_configs": {
-                                    "ADSBMOPSStyleRule": {
-                                        "ADSBMOPSStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT021",
-                                                "line_width": 0.0,
-                                                "name": "Color by ADSB MOPS",
-                                                "none_color_str": "#FF0000",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "v0_color_str": "#FFA000",
-                                                "v1_color_str": "#00FF00",
-                                                "v2_color_str": "#0000FF"
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByADSBQuality": {
-                                "parameters": {
-                                    "name": "Color by ADSB Position Quality"
-                                },
-                                "sub_configs": {
-                                    "ADSBPositionQualityStyleRule": {
-                                        "ADSBPositionQualityStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT021",
-                                                "line_width": 0.0,
-                                                "nacp_color_str": "#0000FF",
-                                                "name": "Color by ADSB Position Quality",
-                                                "none_color_str": "#FF0000",
-                                                "nucp_color_str": "#FFA000",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByAircraftAddr": {
-                                "parameters": {
-                                    "name": "Color by Aircraft Address"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "RandomColorStyleRule": {
-                                        "RandomColorStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Aircraft Address",
-                                                "none_color_str": "#FF1DCE",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "variable_str": "Aircraft Address"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByAircraftID": {
-                                "parameters": {
-                                    "name": "Color by Aircraft Identification"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "RandomColorStyleRule": {
-                                        "RandomColorStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Aircraft Identification",
-                                                "none_color_str": "#FF1DCE",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "variable_str": "Aircraft Identification"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByDBContent": {
-                                "parameters": {
-                                    "name": "Color by DBContent"
-                                },
-                                "sub_configs": {
-                                    "GeometryLayerStyleRule": {
-                                        "GeometryLayerStyleRule DBContent: CAT001": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#00ff00",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT001",
-                                                "line_width": 0.0,
-                                                "name": "DBContent: CAT001",
-                                                "opacity": 0.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "GeometryLayerStyleRule DBContent: CAT020": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#ff0000",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT020",
-                                                "line_width": 0.0,
-                                                "name": "DBContent: CAT020",
-                                                "opacity": 0.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 3,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "GeometryLayerStyleRule DBContent: CAT021": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#6666ff",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT021",
-                                                "line_width": 0.0,
-                                                "name": "DBContent: CAT021",
-                                                "opacity": 0.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 2,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "GeometryLayerStyleRule DBContent: CAT048": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#00ff00",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT048",
-                                                "line_width": 0.0,
-                                                "name": "DBContent: CAT048",
-                                                "opacity": 0.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "GeometryLayerStyleRule DBContent: CAT062": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#dddddd",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT062",
-                                                "line_width": 0.0,
-                                                "name": "DBContent: CAT062",
-                                                "opacity": 0.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 1,
-                                                "symbol_size": 0.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "DBContent",
-                                                "generate_color": true,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByDSID": {
-                                "parameters": {
-                                    "name": "Color by DS ID"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "DS ID",
-                                                "generate_color": true,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByDSIDLineID": {
-                                "parameters": {
-                                    "name": "Color by DS ID+Line ID"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "DS ID+Line ID",
-                                                "generate_color": true,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByDetectionType": {
-                                "parameters": {
-                                    "name": "Color by Detection Type"
-                                },
-                                "sub_configs": {
-                                    "DetectionTypeStyleRule": {
-                                        "DetectionTypeStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Detection Type",
-                                                "none_color_str": "#666666",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "t0_color_str": "#c3c3c3",
-                                                "t1_color_str": "#e3bd9a",
-                                                "t2_color_str": "#0000ff",
-                                                "t3_color_str": "#00ff00",
-                                                "t4_color_str": "#AAAAFF",
-                                                "t5_color_str": "#aa00ff",
-                                                "t6_color_str": "#FFAAAA",
-                                                "t7_color_str": "#FFFFFF"
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByFlightLevel": {
-                                "parameters": {
-                                    "name": "Color by Flight Level"
-                                },
-                                "sub_configs": {
-                                    "FlightLevelStyleRule": {
-                                        "FlightLevelStyleRuleCAT001": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT001",
-                                                "line_width": 0.0,
-                                                "max_color_str": "#00FF00",
-                                                "min_color_str": "#005000",
-                                                "name": "CAT001",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "FlightLevelStyleRuleCAT020": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT020",
-                                                "line_width": 0.0,
-                                                "max_color_str": "#FF0000",
-                                                "min_color_str": "#500000",
-                                                "name": "CAT020",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 3,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "FlightLevelStyleRuleCAT021": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT021",
-                                                "line_width": 0.0,
-                                                "max_color_str": "#6666FF",
-                                                "min_color_str": "#000050",
-                                                "name": "CAT021",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 2,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "FlightLevelStyleRuleCAT048": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT048",
-                                                "line_width": 0.0,
-                                                "max_color_str": "#00FF00",
-                                                "min_color_str": "#005000",
-                                                "name": "CAT048",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "FlightLevelStyleRuleCAT062": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "CAT062",
-                                                "line_width": 0.0,
-                                                "max_color_str": "#DDDDDD",
-                                                "min_color_str": "#505050",
-                                                "name": "CAT062",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 1,
-                                                "symbol_size": 0.0
-                                            }
-                                        },
-                                        "FlightLevelStyleRuleRefTraj": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "layer_identifier_keys": "DBContent",
-                                                "layer_identifier_values": "RefTraj",
-                                                "line_width": 0.0,
-                                                "max_color_str": "#FFA500",
-                                                "min_color_str": "#663300",
-                                                "name": "RefTraj",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 4,
-                                                "symbol_size": 0.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByLineID": {
-                                "parameters": {
-                                    "name": "Color by Line ID"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "Line ID",
-                                                "generate_color": true,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByMode3A": {
-                                "parameters": {
-                                    "name": "Color by Mode 3/A Code"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "RandomColorStyleRule": {
-                                        "RandomColorStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Mode 3/A Code",
-                                                "none_color_str": "#FF1DCE",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "variable_str": "Mode 3/A Code"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorBySpeed": {
-                                "parameters": {
-                                    "name": "Color by Speed"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "SpeedStyleRule": {
-                                        "SpeedStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Speed",
-                                                "none_color_str": "#666666",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "spd0_color_str": "#AAAAAA",
-                                                "spd150_color_str": "#0000FF",
-                                                "spd350_color_str": "#00FF00",
-                                                "spd500_color_str": "#FFFFFF",
-                                                "spd650_color_str": "#FF0000",
-                                                "symbol": 0,
-                                                "symbol_size": 0.0
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByTrackAge": {
-                                "parameters": {
-                                    "name": "Color by Track Age"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "TrackAgeStyleRule": {
-                                        "TrackAgeStyleRuleDefault": {
-                                            "parameters": {
-                                                "above_2i_color_str": "#FF8800",
-                                                "above_3i_color_str": "#FF0000",
-                                                "above_i_color_str": "#FFFF00",
-                                                "active": true,
-                                                "below_i_color_str": "#00FF00",
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Track Age",
-                                                "none_color_str": "#FF00FF",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "time_interval": 4.0,
-                                                "variable_str": "PSR Update Age"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByTrackAngle": {
-                                "parameters": {
-                                    "name": "Color by Track Angle"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "TrackAngleStyleRule": {
-                                        "TrackAngleStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "east_color_str": "#00FF00",
-                                                "line_width": 0.0,
-                                                "name": "Color by Track Angle",
-                                                "none_color_str": "#666666",
-                                                "north_color_str": "#FF0000",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "south_color_str": "#0000FF",
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "west_color_str": "#FFFFFF"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByTrackNumber": {
-                                "parameters": {
-                                    "name": "Color by Track Number"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "RandomColorStyleRule": {
-                                        "RandomColorStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by Track Number",
-                                                "none_color_str": "#FF1DCE",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "variable_str": "Track Number"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetColorByUTN": {
-                                "parameters": {
-                                    "name": "Color by UTN"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    },
-                                    "GeometryStyleRuleGenerator": {
-                                        "GeometryStyleRuleGeneratorDefault": {
-                                            "parameters": {
-                                                "color_identifier_key": "",
-                                                "generate_color": false,
-                                                "generate_symbol": true,
-                                                "name": "Rule Generator",
-                                                "symbol_identifier_key": "DBContent"
-                                            }
-                                        }
-                                    },
-                                    "RandomColorStyleRule": {
-                                        "RandomColorStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "",
-                                                "line_width": 0.0,
-                                                "name": "Color by UTN",
-                                                "none_color_str": "#FF1DCE",
-                                                "opacity": 0.0,
-                                                "overrides_color": false,
-                                                "overrides_line_width": false,
-                                                "overrides_opacity": false,
-                                                "overrides_symbol": false,
-                                                "overrides_symbol_size": false,
-                                                "symbol": 0,
-                                                "symbol_size": 0.0,
-                                                "variable_str": "UTN"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "GeometryStylePresetDefault": {
-                                "parameters": {
-                                    "name": "Default"
-                                },
-                                "sub_configs": {
-                                    "GeometryStyleRule": {
-                                        "GeometryStyleRuleDefault": {
-                                            "parameters": {
-                                                "active": true,
-                                                "color_str": "#AAAAAA",
-                                                "line_width": 2.0,
-                                                "name": "Default Style",
-                                                "opacity": 1.0,
-                                                "overrides_color": true,
-                                                "overrides_line_width": true,
-                                                "overrides_opacity": true,
-                                                "overrides_symbol": true,
-                                                "overrides_symbol_size": true,
-                                                "symbol": 0,
-                                                "symbol_size": 10.0
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                    {
+                        "class_name": "GeometryRenderOrder",
+                        "instance_name": "GeometryRenderOrderDSID",
+                        "parameters": {
+                            "items": [],
+                            "sorting_variable": "DS ID"
                         }
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByADSBMOPS",
+                        "parameters": {
+                            "name": "Color by ADSB MOPS"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "ADSBMOPSStyleRule",
+                                "instance_name": "ADSBMOPSStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT021",
+                                    "line_width": 0.0,
+                                    "name": "Color by ADSB MOPS",
+                                    "none_color_str": "#FF0000",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "v0_color_str": "#FFA000",
+                                    "v1_color_str": "#00FF00",
+                                    "v2_color_str": "#0000FF"
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByADSBQuality",
+                        "parameters": {
+                            "name": "Color by ADSB Position Quality"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "ADSBPositionQualityStyleRule",
+                                "instance_name": "ADSBPositionQualityStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT021",
+                                    "line_width": 0.0,
+                                    "nacp_color_str": "#0000FF",
+                                    "name": "Color by ADSB Position Quality",
+                                    "none_color_str": "#FF0000",
+                                    "nucp_color_str": "#FFA000",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByAircraftAddr",
+                        "parameters": {
+                            "name": "Color by Aircraft Address"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "RandomColorStyleRule",
+                                "instance_name": "RandomColorStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Aircraft Address",
+                                    "none_color_str": "#FF1DCE",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "variable_str": "Aircraft Address"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByAircraftID",
+                        "parameters": {
+                            "name": "Color by Aircraft Identification"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "RandomColorStyleRule",
+                                "instance_name": "RandomColorStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Aircraft Identification",
+                                    "none_color_str": "#FF1DCE",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "variable_str": "Aircraft Identification"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByDBContent",
+                        "parameters": {
+                            "name": "Color by DBContent"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryLayerStyleRule",
+                                "instance_name": "GeometryLayerStyleRule DBContent: CAT001",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#00ff00",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT001",
+                                    "line_width": 0.0,
+                                    "name": "DBContent: CAT001",
+                                    "opacity": 0.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryLayerStyleRule",
+                                "instance_name": "GeometryLayerStyleRule DBContent: CAT020",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#ff0000",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT020",
+                                    "line_width": 0.0,
+                                    "name": "DBContent: CAT020",
+                                    "opacity": 0.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 3,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryLayerStyleRule",
+                                "instance_name": "GeometryLayerStyleRule DBContent: CAT021",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#6666ff",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT021",
+                                    "line_width": 0.0,
+                                    "name": "DBContent: CAT021",
+                                    "opacity": 0.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 2,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryLayerStyleRule",
+                                "instance_name": "GeometryLayerStyleRule DBContent: CAT048",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#00ff00",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT048",
+                                    "line_width": 0.0,
+                                    "name": "DBContent: CAT048",
+                                    "opacity": 0.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryLayerStyleRule",
+                                "instance_name": "GeometryLayerStyleRule DBContent: CAT062",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#dddddd",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT062",
+                                    "line_width": 0.0,
+                                    "name": "DBContent: CAT062",
+                                    "opacity": 0.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 1,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "DBContent",
+                                    "generate_color": true,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByDSID",
+                        "parameters": {
+                            "name": "Color by DS ID"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "DS ID",
+                                    "generate_color": true,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByDSIDLineID",
+                        "parameters": {
+                            "name": "Color by DS ID+Line ID"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "DS ID+Line ID",
+                                    "generate_color": true,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByDetectionType",
+                        "parameters": {
+                            "name": "Color by Detection Type"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "DetectionTypeStyleRule",
+                                "instance_name": "DetectionTypeStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Detection Type",
+                                    "none_color_str": "#666666",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "t0_color_str": "#c3c3c3",
+                                    "t1_color_str": "#e3bd9a",
+                                    "t2_color_str": "#0000ff",
+                                    "t3_color_str": "#00ff00",
+                                    "t4_color_str": "#AAAAFF",
+                                    "t5_color_str": "#aa00ff",
+                                    "t6_color_str": "#FFAAAA",
+                                    "t7_color_str": "#FFFFFF"
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByFlightLevel",
+                        "parameters": {
+                            "name": "Color by Flight Level"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "FlightLevelStyleRule",
+                                "instance_name": "FlightLevelStyleRuleCAT001",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT001",
+                                    "line_width": 0.0,
+                                    "max_color_str": "#00FF00",
+                                    "min_color_str": "#005000",
+                                    "name": "CAT001",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "FlightLevelStyleRule",
+                                "instance_name": "FlightLevelStyleRuleCAT020",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT020",
+                                    "line_width": 0.0,
+                                    "max_color_str": "#FF0000",
+                                    "min_color_str": "#500000",
+                                    "name": "CAT020",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 3,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "FlightLevelStyleRule",
+                                "instance_name": "FlightLevelStyleRuleCAT021",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT021",
+                                    "line_width": 0.0,
+                                    "max_color_str": "#6666FF",
+                                    "min_color_str": "#000050",
+                                    "name": "CAT021",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 2,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "FlightLevelStyleRule",
+                                "instance_name": "FlightLevelStyleRuleCAT048",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT048",
+                                    "line_width": 0.0,
+                                    "max_color_str": "#00FF00",
+                                    "min_color_str": "#005000",
+                                    "name": "CAT048",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "FlightLevelStyleRule",
+                                "instance_name": "FlightLevelStyleRuleCAT062",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "CAT062",
+                                    "line_width": 0.0,
+                                    "max_color_str": "#DDDDDD",
+                                    "min_color_str": "#505050",
+                                    "name": "CAT062",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 1,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "FlightLevelStyleRule",
+                                "instance_name": "FlightLevelStyleRuleRefTraj",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "layer_identifier_keys": "DBContent",
+                                    "layer_identifier_values": "RefTraj",
+                                    "line_width": 0.0,
+                                    "max_color_str": "#FFA500",
+                                    "min_color_str": "#663300",
+                                    "name": "RefTraj",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 4,
+                                    "symbol_size": 0.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByLineID",
+                        "parameters": {
+                            "name": "Color by Line ID"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "Line ID",
+                                    "generate_color": true,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByMode3A",
+                        "parameters": {
+                            "name": "Color by Mode 3/A Code"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "RandomColorStyleRule",
+                                "instance_name": "RandomColorStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Mode 3/A Code",
+                                    "none_color_str": "#FF1DCE",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "variable_str": "Mode 3/A Code"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorBySpeed",
+                        "parameters": {
+                            "name": "Color by Speed"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "SpeedStyleRule",
+                                "instance_name": "SpeedStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Speed",
+                                    "none_color_str": "#666666",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "spd0_color_str": "#AAAAAA",
+                                    "spd150_color_str": "#0000FF",
+                                    "spd350_color_str": "#00FF00",
+                                    "spd500_color_str": "#FFFFFF",
+                                    "spd650_color_str": "#FF0000",
+                                    "symbol": 0,
+                                    "symbol_size": 0.0
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByTrackAge",
+                        "parameters": {
+                            "name": "Color by Track Age"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "TrackAgeStyleRule",
+                                "instance_name": "TrackAgeStyleRuleDefault",
+                                "parameters": {
+                                    "above_2i_color_str": "#FF8800",
+                                    "above_3i_color_str": "#FF0000",
+                                    "above_i_color_str": "#FFFF00",
+                                    "active": true,
+                                    "below_i_color_str": "#00FF00",
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Track Age",
+                                    "none_color_str": "#FF00FF",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "time_interval": 4.0,
+                                    "variable_str": "PSR Update Age"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByTrackAngle",
+                        "parameters": {
+                            "name": "Color by Track Angle"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "TrackAngleStyleRule",
+                                "instance_name": "TrackAngleStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "east_color_str": "#00FF00",
+                                    "line_width": 0.0,
+                                    "name": "Color by Track Angle",
+                                    "none_color_str": "#666666",
+                                    "north_color_str": "#FF0000",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "south_color_str": "#0000FF",
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "west_color_str": "#FFFFFF"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByTrackNumber",
+                        "parameters": {
+                            "name": "Color by Track Number"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "RandomColorStyleRule",
+                                "instance_name": "RandomColorStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by Track Number",
+                                    "none_color_str": "#FF1DCE",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "variable_str": "Track Number"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetColorByUTN",
+                        "parameters": {
+                            "name": "Color by UTN"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            },
+                            {
+                                "class_name": "GeometryStyleRuleGenerator",
+                                "instance_name": "GeometryStyleRuleGeneratorDefault",
+                                "parameters": {
+                                    "color_identifier_key": "",
+                                    "generate_color": false,
+                                    "generate_symbol": true,
+                                    "name": "Rule Generator",
+                                    "symbol_identifier_key": "DBContent"
+                                }
+                            },
+                            {
+                                "class_name": "RandomColorStyleRule",
+                                "instance_name": "RandomColorStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "",
+                                    "line_width": 0.0,
+                                    "name": "Color by UTN",
+                                    "none_color_str": "#FF1DCE",
+                                    "opacity": 0.0,
+                                    "overrides_color": false,
+                                    "overrides_line_width": false,
+                                    "overrides_opacity": false,
+                                    "overrides_symbol": false,
+                                    "overrides_symbol_size": false,
+                                    "symbol": 0,
+                                    "symbol_size": 0.0,
+                                    "variable_str": "UTN"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class_name": "GeometryStylePreset",
+                        "instance_name": "GeometryStylePresetDefault",
+                        "parameters": {
+                            "name": "Default"
+                        },
+                        "sub_configs": [
+                            {
+                                "class_name": "GeometryStyleRule",
+                                "instance_name": "GeometryStyleRuleDefault",
+                                "parameters": {
+                                    "active": true,
+                                    "color_str": "#AAAAAA",
+                                    "line_width": 2.0,
+                                    "name": "Default Style",
+                                    "opacity": 1.0,
+                                    "overrides_color": true,
+                                    "overrides_line_width": true,
+                                    "overrides_opacity": true,
+                                    "overrides_symbol": true,
+                                    "overrides_symbol_size": true,
+                                    "symbol": 0,
+                                    "symbol_size": 10.0
+                                }
+                            }
+                        ]
                     }
-                }
+                ]
             }
-        }
+        ]
     }
 }
