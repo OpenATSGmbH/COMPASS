@@ -2,6 +2,8 @@ pipeline {
     agent any
 
     parameters {
+        string(name: 'EXPERIMENTAL_SRC_BRANCH', defaultValue: 'devel',  description: 'experimental_src branch (tries this branch, fallback to devel)')
+        string(name: 'JASTERIX_BRANCH',         defaultValue: 'devel', description: 'jASTERIX branch')
         booleanParam(name: 'RUN_DB_TESTS',     defaultValue: true,  description: 'Run database test module')
         booleanParam(name: 'RUN_UI_TESTS',     defaultValue: true,  description: 'Run UI test module')
         booleanParam(name: 'RUN_EVAL_TESTS',   defaultValue: true,  description: 'Run evaluation test module')
@@ -21,11 +23,20 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Fresh clone experimental_src
-                sh 'rm -rf experimental_src'
-                sh "git clone --depth 1 --branch ${BRANCH_NAME} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
-                // Fresh clone jASTERIX
-                sh 'rm -rf ../jasterix && git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix'
+                script {
+                    // Resolve branch parameters
+                    def expBranch = params.EXPERIMENTAL_SRC_BRANCH?.trim() ?: 'devel'
+                    def jasterixBranch = params.JASTERIX_BRANCH?.trim() ?: 'devel'
+
+                    echo "experimental_src branch: ${expBranch} (fallback: devel)"
+                    echo "jASTERIX branch: ${jasterixBranch}"
+
+                    // Fresh clone experimental_src
+                    sh 'rm -rf experimental_src'
+                    sh "git clone --depth 1 --branch ${expBranch} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
+                    // Fresh clone jASTERIX
+                    sh "rm -rf ../jasterix && git clone --depth 1 --branch ${jasterixBranch} https://github.com/hpuhr/jASTERIX.git ../jasterix"
+                }
             }
         }
 
