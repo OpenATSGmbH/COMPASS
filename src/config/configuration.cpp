@@ -455,7 +455,7 @@ void Configuration::parseJSONConfig(const nlohmann::json& config,
  */
 void Configuration::overrideJSONParameters(nlohmann::json& parameters_config)
 {
-    loginf << "class_name " << class_name_ << " instance_name " << instance_name_;
+    logdbg << "class_name " << class_name_ << " instance_name " << instance_name_;
 
     // is object
     traced_assert(parameters_config.is_object());
@@ -463,7 +463,7 @@ void Configuration::overrideJSONParameters(nlohmann::json& parameters_config)
     // store parameters in local json config
     for (auto& it : parameters_config.items())
     {
-        loginf << "overriding '" << it.key()
+        logdbg << "overriding '" << it.key()
                << "' with '" << it.value().dump(0) << "'";
 
         //overwrite key with new value
@@ -612,12 +612,12 @@ void Configuration::generateJSON(nlohmann::json& target,
  */
 void Configuration::writeBackToJson()
 {
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
-           << "' backing_json keys before writeBack=[";
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' backing_json keys before writeBack [";
     if (backing_json_.is_object())
         for (auto& [key, _] : backing_json_.items())
-            loginf << " " << key;
-    loginf << " ]";
+            logdbg << " " << key;
+    logdbg << " ]";
 
     auto export_filters_paramid = jsonExportFilters(JSONExportType::General, JSONExportFilterType::ParamID);
 
@@ -644,12 +644,12 @@ void Configuration::writeBackToJson()
         par_it.second->toJSON(params);
     }
 
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
-           << "' backing_json keys after writeBack=[";
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' backing_json keys after writeBack [";
     if (backing_json_.is_object())
         for (auto& [key, _] : backing_json_.items())
-            loginf << " " << key;
-    loginf << " ] params_count=" << params.size();
+            logdbg << " " << key;
+    logdbg << " ] params_count " << params.size();
 }
 
 bool Configuration::hasSubConfiguration(const std::string& class_name, const std::string& instance_name) const
@@ -773,14 +773,14 @@ const nlohmann::json* Configuration::findSubConfig(const std::string& class_name
  */
 void Configuration::rebuildSubConfigsToJson()
 {
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
-           << "' storage buckets=" << sub_config_storage_.size()
-           << " backing_json type=" << backing_json_.type_name();
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' storage buckets " << sub_config_storage_.size()
+           << " backing_json type " << backing_json_.type_name();
 
     if (sub_config_storage_.empty())
     {
         backing_json_.erase(SubConfigSection);
-        loginf << "class '" << class_name_ << "' instance '" << instance_name_
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' no sub_configs to rebuild (storage empty)";
         return;
     }
@@ -789,7 +789,7 @@ void Configuration::rebuildSubConfigsToJson()
     backing_json_[SubConfigSection] = json::array();
     for (const auto& [cls, entries] : sub_config_storage_)
     {
-        loginf << "class '" << class_name_ << "' instance '" << instance_name_
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' rebuilding bucket '" << cls << "' with " << entries.size() << " entries";
 
         for (const auto& ptr : entries)
@@ -804,14 +804,14 @@ void Configuration::rebuildSubConfigsToJson()
                 std::string iname = ptr->contains(INSTANCE_NAME_KEY) ?
                     (*ptr)[INSTANCE_NAME_KEY].get<std::string>() : "?";
 
-                loginf << "class '" << class_name_ << "' instance '" << instance_name_
-                       << "' rebuilding entry: class='" << cls << "' instance='" << iname
-                       << "' has_sub_configs=" << has_sub
-                       << " sub_count=" << sub_count
-                       << " keys=[";
+                logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+                       << "' rebuilding entry: class '" << cls << "' instance '" << iname
+                       << "' has_sub_configs " << has_sub
+                       << " sub_count " << sub_count
+                       << " keys [";
                 for (auto& [key, _] : ptr->items())
-                    loginf << " " << key;
-                loginf << " ]";
+                    logdbg << " " << key;
+                logdbg << " ]";
 
                 backing_json_[SubConfigSection].push_back(*ptr);
                 ++total_entries;
@@ -826,7 +826,7 @@ void Configuration::rebuildSubConfigsToJson()
         }
     }
 
-    loginf << "class '" << class_name_ << "' instance '" << instance_name_
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
            << "' rebuilt " << total_entries << " sub_config entries into backing_json";
 
     // Dump backing_json after rebuild (truncated)
@@ -835,7 +835,7 @@ void Configuration::rebuildSubConfigsToJson()
         const size_t max_dump = 2000;
         if (dumped.size() > max_dump)
             dumped = dumped.substr(0, max_dump) + "... [truncated, total " + std::to_string(dumped.size()) + " chars]";
-        loginf << "class '" << class_name_ << "' instance '" << instance_name_
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' backing_json after rebuild:\n" << dumped;
     }
 }

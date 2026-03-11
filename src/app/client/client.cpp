@@ -234,6 +234,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
         ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
         ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
+        ("no_highdpi", "disable Qt high-DPI scaling (fixes double-sized UI on some systems)")
         ;
 
     // add hidden options

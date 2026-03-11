@@ -1113,20 +1113,13 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     traced_assert(schema_);
 
-    std::vector<std::string> keys;
-
-    if (settings_.activeFileFraming() == "" || source_.isNetworkType()) // force netto when doing network import
-        keys = {"data_blocks", "content", "records"};
-    else
-        keys = {"frames", "content", "data_blocks", "content", "records"};
-
-    logdbg << "ASTERIXImportTask: addDecodedASTERIXSlot: framing '" << settings_.activeFileFraming()
-           << "' isNetworkType " << source_.isNetworkType()
+    logdbg << "ASTERIXImportTask: addDecodedASTERIXSlot:"
            << " num parsers " << schema_->parsers().size()
            << " num extracted_data " << extracted_data.size();
 
     std::shared_ptr<ASTERIXJSONMappingJob> json_map_job =
-        make_shared<ASTERIXJSONMappingJob>(std::move(extracted_data), source_name, keys, schema_->parsers());
+        make_shared<ASTERIXJSONMappingJob>(std::move(extracted_data), source_name,
+                                           schema_->parsers());
 
     json_map_jobs_.push_back(json_map_job);
 

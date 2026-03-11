@@ -69,6 +69,8 @@ public:
 
     // returns true on successful parse
     bool parseJSON(nlohmann::json& j, Buffer& buffer) const;
+    // flat format: map columnar JSON arrays directly into buffer, returns number of records mapped
+    size_t parseFlatJSON(const nlohmann::json& flat_cat_data, Buffer& buffer) const;
     void createMappingStubs(nlohmann::json& j);
 
     const dbContent::VariableSet& variableList() const;

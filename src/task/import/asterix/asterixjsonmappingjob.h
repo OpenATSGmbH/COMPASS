@@ -32,10 +32,8 @@ class ASTERIXJSONMappingJob : public Job
 {
   public:
     ASTERIXJSONMappingJob(std::vector<std::unique_ptr<nlohmann::json>> data,
-                            const std::string& source_name,
-                            const std::vector<std::string>& data_record_keys,
-                            const std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>>& parsers);
-      // json obj moved, mappings referenced
+                          const std::string& source_name,
+                          const std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>>& parsers);
     virtual ~ASTERIXJSONMappingJob();
 
     size_t numMapped() const;
@@ -62,8 +60,6 @@ private:
 
     std::vector<std::unique_ptr<nlohmann::json>> data_;
     std::string source_name_;
-
-    const std::vector<std::string> data_record_keys_;
 
     const std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>>& parsers_;
 

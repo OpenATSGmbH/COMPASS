@@ -1,13 +1,13 @@
 {
-    "name":"cat021_ref_1.5",
-    "type":"ReservedExpansionField",
-    "field_specification":{
-        "name":"REF_FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat021_ref_1.5",
+    "type": "ReservedExpansionField",
+    "field_specification": {
+        "name": "REF_FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "items_indicator":[
+    "items_indicator": [
         "BPS",
         "SelH",
         "NAV",
@@ -17,52 +17,52 @@
         "TNH",
         "MES"
     ],
-    "items":[
-    {
-            "number":"BPS",
-            "name":"Barometric Pressure Setting",
-            "comment":"2-Octet fixed length data item.",
-            "type":"item",
-            "data_fields":[
+    "items": [
+        {
+            "number": "BPS",
+            "name": "Barometric Pressure Setting",
+            "comment": "2-Octet fixed length data item.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"BPS",
-                    "comment":"BPS is the barometric pressure setting of the aircraft minus 800 hPa.\nA value of '0' indicates that in the aircraft a value of 800 hPa or less has been selected.\nA value of '409.5' indicates that in the aircraft a value of 1209.5 hPa or more has been selected.",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.1
+                    "name": "BPS",
+                    "comment": "BPS is the barometric pressure setting of the aircraft minus 800 hPa.\nA value of '0' indicates that in the aircraft a value of 800 hPa or less has been selected.\nA value of '409.5' indicates that in the aircraft a value of 1209.5 hPa or more has been selected.",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.1
                 }
             ]
         },
         {
-            "number":"SelH",
-            "name":"Selected Heading",
-            "comment":"2-Octet fixed length data item.",
-            "type":"item",
-            "data_fields":[
+            "number": "SelH",
+            "name": "Selected Heading",
+            "comment": "2-Octet fixed length data item.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Selected Heading",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "Selected Heading",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"HRD",
-                            "comment":"Horizontal Reference Direction\n0 = True North\n1 = Magnetic North",
-                            "type":"fixed_bits",
+                            "name": "HRD",
+                            "comment": "Horizontal Reference Direction\n0 = True North\n1 = Magnetic North",
+                            "type": "fixed_bits",
                             "start_bit": 11,
                             "bit_length": 1
                         },
-                                                {
-                            "name":"Stat",
-                            "comment":"Selected Heading Status\n0 = Data is either unavailable or invalid.\n1 = Data is available and valid.",
-                            "type":"fixed_bits",
+                        {
+                            "name": "Stat",
+                            "comment": "Selected Heading Status\n0 = Data is either unavailable or invalid.\n1 = Data is available and valid.",
+                            "type": "fixed_bits",
                             "start_bit": 10,
                             "bit_length": 1
                         },
                         {
-                            "name":"SelH",
-                            "comment":"Selected Heading",
-                            "type":"fixed_bits",
+                            "name": "SelH",
+                            "comment": "Selected Heading",
+                            "type": "fixed_bits",
                             "start_bit": 0,
                             "bit_length": 10,
                             "lsb": 0.703125
@@ -70,670 +70,681 @@
                     ]
                 }
             ]
-        },        
+        },
         {
-            "number":"NAV",
-            "name":"Navigation Mode Settings",
-            "comment":"1-Octet fixed length data item.",
-            "type":"item",
-            "data_fields":[
+            "number": "NAV",
+            "name": "Navigation Mode Settings",
+            "comment": "1-Octet fixed length data item.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Navigation Mode Settings",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Navigation Mode Settings",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"AP",
-                            "comment":"1 = Autopilot engaged",
-                            "type":"fixed_bits",
+                            "name": "AP",
+                            "comment": "1 = Autopilot engaged",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"VN",
-                            "comment":"1 = VNAV Active (Vertical Navigation)",
-                            "type":"fixed_bits",
+                            "name": "VN",
+                            "comment": "1 = VNAV Active (Vertical Navigation)",
+                            "type": "fixed_bits",
                             "start_bit": 6,
                             "bit_length": 1
                         },
                         {
-                            "name":"AH",
-                            "comment":"1 = Altitude Hold engaged",
-                            "type":"fixed_bits",
+                            "name": "AH",
+                            "comment": "1 = Altitude Hold engaged",
+                            "type": "fixed_bits",
                             "start_bit": 5,
                             "bit_length": 1
                         },
                         {
-                            "name":"AM",
-                            "comment":"1 = Approach Mode active",
-                            "type":"fixed_bits",
+                            "name": "AM",
+                            "comment": "1 = Approach Mode active",
+                            "type": "fixed_bits",
                             "start_bit": 4,
                             "bit_length": 1
                         },
                         {
-                            "name":"MFM",
-                            "comment":"Status of MCP/FCU Mode Bits",
-                            "type":"fixed_bits",
+                            "name": "MFM#EP",
+                            "comment": "Status of MCP/FCU Mode Bits Element Populated Bit\n0  Element not populated\n1  Element populated",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "MFM#VAL",
+                            "comment": "Status of MCP/FCU Mode Bits Value\n0 MCP/FCU Mode Bits not populated\n1 MCP/FCU Mode Bits populated",
+                            "type": "fixed_bits",
                             "start_bit": 2,
-                            "bit_length": 2
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"GAO",
-            "name":"GPS Antenna Offset",
-            "comment":"1-Octet fixed length data item.",
-            "type":"item",
-            "data_fields":[
+            "number": "GAO",
+            "name": "GPS Antenna Offset",
+            "comment": "1-Octet fixed length data item.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"GPS Antenna Offset",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "GPS Antenna Offset",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"Lateral",
-                            "comment":"Lateral axis GAO",
-                            "type":"fixed_bits",
+                            "name": "Lateral",
+                            "comment": "Lateral axis GAO",
+                            "type": "fixed_bits",
                             "start_bit": 5,
                             "bit_length": 3,
-                            "lsb" : 2
+                            "lsb": 2
                         },
                         {
-                            "name":"Longitudinal",
-                            "comment":"Longitudinal axis GAO",
-                            "type":"fixed_bits",
+                            "name": "Longitudinal",
+                            "comment": "Longitudinal axis GAO",
+                            "type": "fixed_bits",
                             "start_bit": 0,
                             "bit_length": 5,
-                            "lsb" : 2
+                            "lsb": 2
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"SGV",
-            "name":"Surface Ground Vector",
-            "comment":"Ground Speed and Track Angle elements of the Surface Ground Vector.",
-            "type":"item",
-            "data_fields":[
+            "number": "SGV",
+            "name": "Surface Ground Vector",
+            "comment": "Ground Speed and Track Angle elements of the Surface Ground Vector.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Surface Ground Vector",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "Surface Ground Vector",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"STP",
-                            "comment":"0 Aircraft has not stopped\n1 Aircraft has stopped",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "STP",
+                            "comment": "0 Aircraft has not stopped\n1 Aircraft has stopped",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"HTS",
-                            "comment":"0 Heading/Ground Track data is not valid\n1 Heading/Ground Track data is valid",
-                            "type":"fixed_bits",
+                            "name": "HTS",
+                            "comment": "0 Heading/Ground Track data is not valid\n1 Heading/Ground Track data is valid",
+                            "type": "fixed_bits",
                             "start_bit": 14,
                             "bit_length": 1
                         },
                         {
-                            "name":"HTT",
-                            "comment":"0 Heading data provided\n1 Ground Track provided",
-                            "type":"fixed_bits",
+                            "name": "HTT",
+                            "comment": "0 Heading data provided\n1 Ground Track provided",
+                            "type": "fixed_bits",
                             "start_bit": 13,
                             "bit_length": 1
                         },
                         {
-                            "name":"HRD",
-                            "comment":"0 True North\n1 Magnetic North",
-                            "type":"fixed_bits",
+                            "name": "HRD",
+                            "comment": "0 True North\n1 Magnetic North",
+                            "type": "fixed_bits",
                             "start_bit": 12,
                             "bit_length": 1
                         },
                         {
-                            "name":"GSS",
-                            "comment":"Ground speed, kts",
-                            "type":"fixed_bits",
+                            "name": "GSS",
+                            "comment": "Ground speed, kts",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 11,
-                            "lsb" : 0.125
+                            "lsb": 0.125
                         },
                         {
-                            "name":"FX1",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX1",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Surface Ground Vector First Extension",
+                    "name": "Surface Ground Vector First Extension",
                     "type": "fixed_bitfield",
                     "length": 1,
                     "optional": true,
                     "optional_variable_name": "FX1",
                     "optional_variable_value": 1,
-                    "items":[
+                    "items": [
                         {
-                            "name":"HGT",
-                            "comment":"Heading/Ground Track information, deg",
-                            "type":"fixed_bits",
+                            "name": "HGT",
+                            "comment": "Heading/Ground Track information, deg",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 7,
-                            "lsb" : 2.8125
+                            "lsb": 2.8125
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"STA",
-            "name":"Aircraft Status",
-            "comment":" This item contains information on the status of a target.\nFormat: Variable Length Data Item, comprising a primary subfield of one octet, followed by one-octet extensions as necessary.",
-            "type":"item",
-            "data_fields":[
+            "number": "STA",
+            "name": "Aircraft Status",
+            "comment": " This item contains information on the status of a target.\nFormat: Variable Length Data Item, comprising a primary subfield of one octet, followed by one-octet extensions as necessary.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Aircraft Status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Aircraft Status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"ES",
-                            "comment":"ES IN Capability\n0 Target is not 1090 ES IN capable\n1 Target is 1090 ES IN capable",
-                            "type":"fixed_bits",
+                            "name": "ES",
+                            "comment": "ES IN Capability\n0 Target is not 1090 ES IN capable\n1 Target is 1090 ES IN capable",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"UAT",
-                            "comment":"UAT IN Capability\n0 Target is not UAT IN capable\n1 Target is UAT IN capable",
-                            "type":"fixed_bits",
+                            "name": "UAT",
+                            "comment": "UAT IN Capability\n0 Target is not UAT IN capable\n1 Target is UAT IN capable",
+                            "type": "fixed_bits",
                             "start_bit": 6,
                             "bit_length": 1
                         },
                         {
-                            "name":"RCE#EP",
-                            "comment":"Reduced Capability Equipment Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "RCE#EP",
+                            "comment": "Reduced Capability Equipment Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 5,
                             "bit_length": 1
                         },
                         {
-                            "name":"RCE#VAL",
-                            "comment":"Reduced Capability Equipment Value\n0 Not RCE\n1 TABS\n2 Reserved for future use\n3 Other RCE",
-                            "type":"fixed_bits",
+                            "name": "RCE#VAL",
+                            "comment": "Reduced Capability Equipment Value\n0 Not RCE\n1 TABS\n2 Reserved for future use\n3 Other RCE",
+                            "type": "fixed_bits",
                             "start_bit": 3,
                             "bit_length": 2
                         },
                         {
-                            "name":"RRL#EP",
-                            "comment":"Reply Rate Limiting Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "RRL#EP",
+                            "comment": "Reply Rate Limiting Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 2,
                             "bit_length": 1
                         },
                         {
-                            "name":"RRL#VAL",
-                            "comment":"Reply Rate Limiting Value\n0 Reply Rate Limiting is not active\n1 Reply Rate Limiting is active",
-                            "type":"fixed_bits",
+                            "name": "RRL#VAL",
+                            "comment": "Reply Rate Limiting Value\n0 Reply Rate Limiting is not active\n1 Reply Rate Limiting is active",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 1
                         },
                         {
-                            "name":"FX1",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX1",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"STA - First Extension: Additional Target Characteristics",
+                    "name": "STA - First Extension: Additional Target Characteristics",
                     "type": "fixed_bitfield",
                     "length": 1,
                     "optional": true,
                     "optional_variable_name": "FX1",
                     "optional_variable_value": 1,
-                    "items":[
-{
-                            "name":"PS3#EP",
-                            "comment":"Priority Status for Version 3 ADS-B Systems Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                    "items": [
+                        {
+                            "name": "PS3#EP",
+                            "comment": "Priority Status for Version 3 ADS-B Systems Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"PS3#VAL",
-                            "comment":"Priority Status for Version 3 ADS-B Systems\n0 No emergency / not reported\n1 General emergency\n2 UAS/RPAS - Lost Link\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 Aircraft in Distress Automatic Activation\n7 Aircraft in Distress Manual Activation",
-                            "type":"fixed_bits",
+                            "name": "PS3#VAL",
+                            "comment": "Priority Status for Version 3 ADS-B Systems\n0 No emergency / not reported\n1 General emergency\n2 UAS/RPAS - Lost Link\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 Aircraft in Distress Automatic Activation\n7 Aircraft in Distress Manual Activation",
+                            "type": "fixed_bits",
                             "start_bit": 4,
                             "bit_length": 3
                         },
                         {
-                            "name":"TPW#EP",
-                            "comment":"Transmit Power Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "TPW#EP",
+                            "comment": "Transmit Power Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 3,
                             "bit_length": 1
                         },
                         {
-                            "name":"TPW#VAL",
-                            "comment":"Transmit Power Value\n0 Unavailable, Unknown, or less than 70 W\n1 70 W\n2 125 W\n3 200W",
-                            "type":"fixed_bits",
+                            "name": "TPW#VAL",
+                            "comment": "Transmit Power Value\n0 Unavailable, Unknown, or less than 70 W\n1 70 W\n2 125 W\n3 200W",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 2
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"STA - Second Extension: Additional Target Characteristics",
+                    "name": "STA - Second Extension: Additional Target Characteristics",
                     "type": "fixed_bitfield",
                     "length": 1,
                     "optional": true,
                     "optional_variable_name": "FX2",
                     "optional_variable_value": 1,
-                    "items":[
+                    "items": [
                         {
-                            "name":"TSI#EP",
-                            "comment":"Transponder Side Indication Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "TSI#EP",
+                            "comment": "Transponder Side Indication Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"TSI#VAL",
-                            "comment":"Transponder Side Indication Value\n0 Unknown\nTransponder #1 (left/pilot side or single)\n2 Transponder #2 (right/co-pilot side)\n3 Transponder #3 (auxiliary or Back-up)",
-                            "type":"fixed_bits",
+                            "name": "TSI#VAL",
+                            "comment": "Transponder Side Indication Value\n0 Unknown\nTransponder #1 (left/pilot side or single)\n2 Transponder #2 (right/co-pilot side)\n3 Transponder #3 (auxiliary or Back-up)",
+                            "type": "fixed_bits",
                             "start_bit": 5,
                             "bit_length": 2
                         },
                         {
-                            "name":"MUO#EP",
-                            "comment":"Manned / Unmanned Operation Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "MUO#EP",
+                            "comment": "Manned / Unmanned Operation Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 4,
                             "bit_length": 1
                         },
                         {
-                            "name":"MUO#VAL",
-                            "comment":"Manned / Unmanned Operation Value\n0 Manned Operation\n1 Unmanned Operation",
-                            "type":"fixed_bits",
+                            "name": "MUO#VAL",
+                            "comment": "Manned / Unmanned Operation Value\n0 Manned Operation\n1 Unmanned Operation",
+                            "type": "fixed_bits",
                             "start_bit": 3,
                             "bit_length": 1
                         },
                         {
-                            "name":"RWC#EP",
-                            "comment":"Remain Well Clear Corrective Alert Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "RWC#EP",
+                            "comment": "Remain Well Clear Corrective Alert Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 2,
                             "bit_length": 1
                         },
                         {
-                            "name":"RWC#VAL",
-                            "comment":"Remain Well Clear Corrective Alert Value\n0 RWC Corrective Alert not active\n1 RWC Corrective Alert active",
-                            "type":"fixed_bits",
+                            "name": "RWC#VAL",
+                            "comment": "Remain Well Clear Corrective Alert Value\n0 RWC Corrective Alert not active\n1 RWC Corrective Alert active",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 1
-                        },                        
+                        },
                         {
-                            "name":"FX3",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX3",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"STA - Third Extension: Additional Target Characteristics",
+                    "name": "STA - Third Extension: Additional Target Characteristics",
                     "type": "fixed_bitfield",
                     "length": 1,
                     "optional": true,
                     "optional_variable_name": "FX3",
                     "optional_variable_value": 1,
-                    "items":[
+                    "items": [
                         {
-                            "name":"DAA#EP",
-                            "comment":"Detect and Avoid Capabilities Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "DAA#EP",
+                            "comment": "Detect and Avoid Capabilities Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"DAA#VAL",
-                            "comment":"Detect and Avoid Capabilities Value\n0 No RWC Capability\n1 RWC/RA/OCM Capability\n2 RWC/OCM Capability\n3 Invalid ASTERIX Value",
-                            "type":"fixed_bits",
+                            "name": "DAA#VAL",
+                            "comment": "Detect and Avoid Capabilities Value\n0 No RWC Capability\n1 RWC/RA/OCM Capability\n2 RWC/OCM Capability\n3 Invalid ASTERIX Value",
+                            "type": "fixed_bits",
                             "start_bit": 5,
                             "bit_length": 2
                         },
                         {
-                            "name":"DF17CA#EP",
-                            "comment":"Transponder Capability Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "DF17CA#EP",
+                            "comment": "Transponder Capability Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 4,
                             "bit_length": 1
                         },
                         {
-                            "name":"DF17CA#VAL",
-                            "comment":"Transponder Capability Value\nCA is transmitted in Downlink Format 17 messages.",
-                            "type":"fixed_bits",
+                            "name": "DF17CA#VAL",
+                            "comment": "Transponder Capability Value\nCA is transmitted in Downlink Format 17 messages.",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 4
-                        },                        
+                        },
                         {
-                            "name":"FX4",
-                            "type":"fixed_bits",
+                            "name": "FX4",
+                            "type": "fixed_bits",
                             "start_bit": 0,
-                            "bit_length": 1
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"STA - Fourth Extension: Additional Target Characteristics",
+                    "name": "STA - Fourth Extension: Additional Target Characteristics",
                     "type": "fixed_bitfield",
                     "length": 1,
                     "optional": true,
                     "optional_variable_name": "FX4",
                     "optional_variable_value": 1,
-                    "items":[
+                    "items": [
                         {
-                            "name":"SVH#EP",
-                            "comment":"Sense Vertical & Horizontal Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "SVH#EP",
+                            "comment": "Sense Vertical & Horizontal Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"SVH#VAL",
-                            "comment":"Sense Vertical & Horizontal Value\n0 Vertical Only\n1 Horizontal Only\n2 Blended\n3 Vertical Only or Horizontal Only per intruder",
-                            "type":"fixed_bits",
+                            "name": "SVH#VAL",
+                            "comment": "Sense Vertical & Horizontal Value\n0 Vertical Only\n1 Horizontal Only\n2 Blended\n3 Vertical Only or Horizontal Only per intruder",
+                            "type": "fixed_bits",
                             "start_bit": 5,
                             "bit_length": 2
                         },
                         {
-                            "name":"CATC#EP",
-                            "comment":"CAS Type & Capability Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "CATC#EP",
+                            "comment": "CAS Type & Capability Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 4,
                             "bit_length": 1
                         },
                         {
-                            "name":"CATC#VAL",
-                            "comment":"CAS Type & Capability Value\n0 Active CAS (TCAS II) or no CAS\n1 Active CAS (not TCAS II)\n2 Active CAS (not TCAS II) with OCM transmit capability\n3 Active CAS of Junior Status\n4 Passive CAS with 1030 TCAS Resolution Message receive capability\n5Passive CAS with only OCM receive capability\n6 Reserved for future use\n7 Reserved for future use",
-                            "type":"fixed_bits",
+                            "name": "CATC#VAL",
+                            "comment": "CAS Type & Capability Value\n0 Active CAS (TCAS II) or no CAS\n1 Active CAS (not TCAS II)\n2 Active CAS (not TCAS II) with OCM transmit capability\n3 Active CAS of Junior Status\n4 Passive CAS with 1030 TCAS Resolution Message receive capability\n5Passive CAS with only OCM receive capability\n6 Reserved for future use\n7 Reserved for future use",
+                            "type": "fixed_bits",
                             "start_bit": 1,
                             "bit_length": 3
-                        },                        
+                        },
                         {
-                            "name":"FX5",
-                            "type":"fixed_bits",
+                            "name": "FX5",
+                            "type": "fixed_bits",
                             "start_bit": 0,
-                            "bit_length": 1
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"STA - Fifth Extension: Additional Target Characteristics",
+                    "name": "STA - Fifth Extension: Additional Target Characteristics",
                     "type": "fixed_bitfield",
                     "length": 1,
                     "optional": true,
                     "optional_variable_name": "FX5",
                     "optional_variable_value": 1,
-                    "items":[
+                    "items": [
                         {
-                            "name":"TAO#EP",
-                            "comment":"Transponder Antenna Offset Element Populated Bit\n0 Element not populated\n1 Element populated",
-                            "type":"fixed_bits",
+                            "name": "TAO#EP",
+                            "comment": "Transponder Antenna Offset Element Populated Bit\n0 Element not populated\n1 Element populated",
+                            "type": "fixed_bits",
                             "start_bit": 7,
                             "bit_length": 1
                         },
                         {
-                            "name":"TAO#VAL",
-                            "comment":"Transponder Antenna Offset Value",
-                            "type":"fixed_bits",
+                            "name": "TAO#VAL",
+                            "comment": "Transponder Antenna Offset Value",
+                            "type": "fixed_bits",
                             "start_bit": 2,
                             "bit_length": 5
-                        },                        
+                        },
                         {
-                            "name":"FX6",
-                            "type":"fixed_bits",
+                            "name": "FX6",
+                            "type": "fixed_bits",
                             "start_bit": 0,
-                            "bit_length": 1
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"TNH",
-            "name":"True North Heading",
-            "comment":"Element of Air Vector.\nFormat: Two-Octet fixed length data item.",
-            "type":"item",
-            "data_fields":[
+            "number": "TNH",
+            "name": "True North Heading",
+            "comment": "Element of Air Vector.\nFormat: Two-Octet fixed length data item.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"True North Heading",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
+                    "name": "True North Heading",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
                     "lsb": 0.0054931640625
                 }
             ]
         },
         {
-            "number":"MES",
-            "name":"Military Extended Squitter",
-            "comment":"Contents of Extended Squitters transmitted by Military Aircraft\nFormat: Compound data item comprising of a primary subfield of one octet extensible, followed by the indicated subfields.\nNOTE: The information contained in this data item is specific to 1090MHz Extended Squitter messages transmitted by military aircraft (Mode 5 Level 2 squitter).",
-            "type":"item",
-            "data_fields":[
+            "number": "MES",
+            "name": "Military Extended Squitter",
+            "comment": "Contents of Extended Squitters transmitted by Military Aircraft\nFormat: Compound data item comprising of a primary subfield of one octet extensible, followed by the indicated subfields.\nNOTE: The information contained in this data item is specific to 1090MHz Extended Squitter messages transmitted by military aircraft (Mode 5 Level 2 squitter).",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"MES",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "MES",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"SUM",
-                            "comment":"Mode 5 Summary",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "SUM",
+                            "comment": "Mode 5 Summary",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"SUM",
+                                    "name": "SUM",
                                     "type": "fixed_bitfield",
                                     "length": 1,
-                                    "items":[
+                                    "items": [
                                         {
-                                            "name":"M5",
-                                            "comment":"0 No Mode 5 interrogation\n1 Mode 5 interrogation",
-                                            "type":"fixed_bits",
+                                            "name": "M5",
+                                            "comment": "0 No Mode 5 interrogation\n1 Mode 5 interrogation",
+                                            "type": "fixed_bits",
                                             "start_bit": 7,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"ID",
-                                            "comment":"0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
-                                            "type":"fixed_bits",
+                                            "name": "ID",
+                                            "comment": "0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
+                                            "type": "fixed_bits",
                                             "start_bit": 6,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"DA",
-                                            "comment":"0 No authenticated Mode 5 Data reply or Report\n1 Authenticated Mode 5 Data reply or Report (i.e. any valid Mode 5 reply type other than ID)",
-                                            "type":"fixed_bits",
+                                            "name": "DA",
+                                            "comment": "0 No authenticated Mode 5 Data reply or Report\n1 Authenticated Mode 5 Data reply or Report (i.e. any valid Mode 5 reply type other than ID)",
+                                            "type": "fixed_bits",
                                             "start_bit": 5,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"M1",
-                                            "comment":"0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report.",
-                                            "type":"fixed_bits",
+                                            "name": "M1",
+                                            "comment": "0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report.",
+                                            "type": "fixed_bits",
                                             "start_bit": 4,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"M2",
-                                            "comment":"0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report.",
-                                            "type":"fixed_bits",
+                                            "name": "M2",
+                                            "comment": "0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report.",
+                                            "type": "fixed_bits",
                                             "start_bit": 3,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"M3",
-                                            "comment":"0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report.",
-                                            "type":"fixed_bits",
+                                            "name": "M3",
+                                            "comment": "0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report.",
+                                            "type": "fixed_bits",
                                             "start_bit": 2,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"MC",
-                                            "comment":"0 Flight Level not present or not from Mode 5 reply/report\n1 Flight Level from Mode 5 reply/report",
-                                            "type":"fixed_bits",
+                                            "name": "MC",
+                                            "comment": "0 Flight Level not present or not from Mode 5 reply/report\n1 Flight Level from Mode 5 reply/report",
+                                            "type": "fixed_bits",
                                             "start_bit": 1,
                                             "bit_length": 1
-                                        },                        
+                                        },
                                         {
-                                            "name":"PO",
-                                            "comment":"0 Position not from Mode 5 report (ADS-B report)\n1 Position from Mode 5 report",
-                                            "type":"fixed_bits",
+                                            "name": "PO",
+                                            "comment": "0 Position not from Mode 5 report (ADS-B report)\n1 Position from Mode 5 report",
+                                            "type": "fixed_bits",
                                             "start_bit": 0,
                                             "bit_length": 1
                                         }
                                     ]
-                                }                                
+                                }
                             ]
                         },
                         {
-                            "name":"PNO",
-                            "comment":" Mode 5 PIN/National Origin",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "PNO",
+                            "comment": " Mode 5 PIN/National Origin",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"PIN",
-                                    "comment":"PIN Code",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint"
+                                    "name": "PIN",
+                                    "comment": "PIN Code",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint"
                                 },
                                 {
-                                    "name":"NO",
-                                    "comment":"National Origin Code",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint"
+                                    "name": "NO",
+                                    "comment": "National Origin Code",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint"
                                 }
                             ]
                         },
                         {
-                            "name":"EM1",
-                            "comment":"Extended Mode 1 Code in Octal Representation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "EM1",
+                            "comment": "Extended Mode 1 Code in Octal Representation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"EM1",
-                                    "type":"fixed_bitfield",
-                                    "length":2,
-                                    "items":[
+                                    "name": "EM1",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
                                         {
-                                            "name":"V",
-                                            "comment":"0 Code validated\n1 Code not validated",
-                                            "type":"fixed_bits",
-                                            "start_bit":15,
-                                            "bit_length":1
+                                            "name": "V",
+                                            "comment": "0 Code validated\n1 Code not validated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"L",
-                                            "comment":"0 Mode 1 code as derived from the report of the transponder\n1 Smoothed Mode 1 code as provided by a local tracker",
-                                            "type":"fixed_bits",
-                                            "start_bit":13,
-                                            "bit_length":1
+                                            "name": "L",
+                                            "comment": "0 Mode 1 code as derived from the report of the transponder\n1 Smoothed Mode 1 code as provided by a local tracker",
+                                            "type": "fixed_bits",
+                                            "start_bit": 13,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"EM1",
-                                            "comment":"Extended Mode 1 Code in octal representation",
-                                            "type":"fixed_bits",
-                                            "data_type":"digits",
-                                            "start_bit":0,
-                                            "bit_length":12,
-                                            "num_digits":4,
-                                            "digit_bit_length":3
+                                            "name": "EM1",
+                                            "comment": "Extended Mode 1 Code in octal representation",
+                                            "type": "fixed_bits",
+                                            "data_type": "digits",
+                                            "start_bit": 0,
+                                            "bit_length": 12,
+                                            "num_digits": 4,
+                                            "digit_bit_length": 3
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"XP",
-                            "comment":"X Pulse Presence",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "XP",
+                            "comment": "X Pulse Presence",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"XP",
+                                    "name": "XP",
                                     "type": "fixed_bitfield",
                                     "length": 1,
-                                    "items":[
+                                    "items": [
                                         {
-                                            "name":"XP",
-                                            "comment":"X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present.\n1 X-pulse present.",
-                                            "type":"fixed_bits",
+                                            "name": "XP",
+                                            "comment": "X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present.\n1 X-pulse present.",
+                                            "type": "fixed_bits",
                                             "start_bit": 5,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"X5",
-                                            "comment":"X-pulse from Mode 5 Data reply or Report.\n0 X-pulse set to zero or no authenticated Data reply or Report received.\n1 X-pulse set to one (present).",
-                                            "type":"fixed_bits",
+                                            "name": "X5",
+                                            "comment": "X-pulse from Mode 5 Data reply or Report.\n0 X-pulse set to zero or no authenticated Data reply or Report received.\n1 X-pulse set to one (present).",
+                                            "type": "fixed_bits",
                                             "start_bit": 4,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"XC",
-                                            "comment":"X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
-                                            "type":"fixed_bits",
+                                            "name": "XC",
+                                            "comment": "X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
                                             "start_bit": 3,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"X3",
-                                            "comment":"X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
-                                            "type":"fixed_bits",
+                                            "name": "X3",
+                                            "comment": "X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
                                             "start_bit": 2,
                                             "bit_length": 1
                                         },
                                         {
-                                            "name":"X2",
-                                            "comment":"X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
-                                            "type":"fixed_bits",
+                                            "name": "X2",
+                                            "comment": "X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
                                             "start_bit": 1,
                                             "bit_length": 1
-                                        },                        
+                                        },
                                         {
-                                            "name":"X1",
-                                            "comment":"X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
-                                            "type":"fixed_bits",
+                                            "name": "X1",
+                                            "comment": "X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
                                             "start_bit": 0,
                                             "bit_length": 1
                                         }
@@ -742,56 +753,54 @@
                             ]
                         },
                         {
-                            "name":"FOM",
-                            "comment":" Figure of Merit",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "FOM",
+                            "comment": " Figure of Merit",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                    "name":"FOM",
-                                    "comment":"Figure of Merit\n Position Accuracy as extracted and provided by a Mode 5 transponder",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint"
+                                    "name": "FOM",
+                                    "comment": "Figure of Merit\n Position Accuracy as extracted and provided by a Mode 5 transponder",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint"
                                 }
                             ]
                         },
                         {
-                            "name":"M2",
-                            "comment":"Mode 2 Code",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "M2",
+                            "comment": "Mode 2 Code",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                    "name":"M2",
-                                    "type":"fixed_bitfield",
-                                    "length":2,
-                                    "items":[
+                                    "name": "M2",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
                                         {
-                                            "name":"V",
-                                            "comment":"0 Code validated\n1 Code not validated",
-                                            "type":"fixed_bits",
-                                            "start_bit":15,
-                                            "bit_length":1
+                                            "name": "V",
+                                            "comment": "0 Code validated\n1 Code not validated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"L",
-                                            "comment":"0 Mode-2 code as derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker",
-                                            "type":"fixed_bits",
-                                            "start_bit":13,
-                                            "bit_length":1
+                                            "name": "L",
+                                            "comment": "0 Mode-2 code as derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker",
+                                            "type": "fixed_bits",
+                                            "start_bit": 13,
+                                            "bit_length": 1
                                         },
                                         {
-                                            "name":"M2",
-                                            "comment":"Mode-2 code in octal representation",
-                                            "type":"fixed_bits",
-                                            "data_type":"digits",
-                                            "start_bit":0,
-                                            "bit_length":12,
-                                            "num_digits":4,
-                                            "digit_bit_length":3
+                                            "name": "M2",
+                                            "comment": "Mode-2 code in octal representation",
+                                            "type": "fixed_bits",
+                                            "data_type": "digits",
+                                            "start_bit": 0,
+                                            "bit_length": 12,
+                                            "num_digits": 4,
+                                            "digit_bit_length": 3
                                         }
                                     ]
                                 }
@@ -800,6 +809,6 @@
                     ]
                 }
             ]
-        }   
+        }
     ]
 }

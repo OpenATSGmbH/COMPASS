@@ -1,18 +1,18 @@
 {
-    "name":"cat001_1.1_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat001_1.1_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "020"
     ],
     "conditional_uaps": {
-        "key":"020.TYP",
+        "key": "020.TYP",
         "values": {
             "0": [
                 "040",
@@ -38,7 +38,7 @@
                 "-",
                 "FX"
             ],
-            "1":[
+            "1": [
                 "161",
                 "040",
                 "042",
@@ -66,163 +66,166 @@
             ]
         }
     },
-    "items":[
+    "items": [
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the radar station from which the data are received.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the radar station from which the data are received.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"020",
-            "name":"Target Report Descriptor",
-            "comment":"Type and characteristics of the radar data as transmitted by a radar station.",
-            "type":"item",
-            "data_fields":[
+            "number": "020",
+            "name": "Target Report Descriptor",
+            "comment": "Type and characteristics of the radar data as transmitted by a radar station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Target Report Descriptor First Part",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Target Report Descriptor First Part",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"TYP",
-                            "comment":"0 Plot\n 1 Track",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "TYP",
+                            "comment": "0 Plot\n 1 Track",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SIM",
-                            "comment":"0 Actual plot or track\n 1 Simulated plot or track",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "SIM",
+                            "comment": "0 Actual plot or track\n 1 Simulated plot or track",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SSR/PSR",
-                            "comment":"Radar detection in last antenna scan, as follows:\n0 No detection;\n1Sole primary detection;\n2Sole secondary detection;\n3 Combined primary and secondary detection.",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":2
+                            "name": "SSR/PSR",
+                            "comment": "Radar detection in last antenna scan, as follows:\n0 No detection;\n1Sole primary detection;\n2Sole secondary detection;\n3 Combined primary and secondary detection.",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 2
                         },
                         {
-                            "name":"ANT",
-                            "comment":"0 Target report from antenna\n1 Target report from antenna 2",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "ANT",
+                            "comment": "0 Target report from antenna\n1 Target report from antenna 2",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SPI",
-                            "comment":"0 Default\n1 Special Position Identification",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "SPI",
+                            "comment": "0 Default\n1 Special Position Identification",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RAB",
-                            "comment":"0 Default\n1 Plot or track from a fixed transponder",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "RAB",
+                            "comment": "0 Default\n1 Plot or track from a fixed transponder",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Target Report Descriptor First Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Target Report Descriptor First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"TST",
-                            "comment":"0 Default\n1 Test target indicator",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "TST",
+                            "comment": "0 Default\n1 Test target indicator",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"DS1/DS2",
-                            "comment":"0 Default\n1 Unlawful interference (code 7500)\n2 Radio-communication failure (code 7600)\n3 Emergency (code 7700)",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":2
+                            "name": "DS1/DS2",
+                            "comment": "0 Default\n1 Unlawful interference (code 7500)\n2 Radio-communication failure (code 7600)\n3 Emergency (code 7700)",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 2
                         },
                         {
-                            "name":"ME",
-                            "comment":"0 Default\n1 Military emergency",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "ME",
+                            "comment": "0 Default\n1 Military emergency",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MI",
-                            "comment":"0 Default\n1 Military identification",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "MI",
+                            "comment": "0 Default\n1 Military identification",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"030",
-            "name":"Warning/Error Conditions",
-            "comment":"Warning/error conditions detected by a radar station for the target report involved.",
-            "type":"item",
-            "data_fields":[
+            "number": "030",
+            "name": "Warning/Error Conditions",
+            "comment": "Warning/error conditions detected by a radar station for the target report involved.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Warning/Error Conditions",
-                    "type":"extendable",
-                    "items":[
+                    "name": "Warning/Error Conditions",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"warning/error_condition",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "warning/error_condition",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"W/E Value",
-                                    "comment":"0 no warning nor error condition;\n1 garbled reply;\n2 reflection;\n3 sidelobe reply;\n4 split plot;\n5 second time around reply;\n6 angels;\n7 terrestrial vehicles.\n64 possible wrong code in Mode-3/A;\n65 possible wrong altitude information, transmitted when the Code C credibility check fails together with the Mode-C code in binary notation;\n66 possible phantom MSSR plot;\n80 fixed PSR plot;\n81 slow PSR plot;\n82 low quality PSR plot.",
-                                    "type":"fixed_bits",
-                                    "start_bit":1,
-                                    "bit_length":7
+                                    "name": "W/E Value",
+                                    "comment": "0 no warning nor error condition;\n1 garbled reply;\n2 reflection;\n3 sidelobe reply;\n4 split plot;\n5 second time around reply;\n6 angels;\n7 terrestrial vehicles.\n64 possible wrong code in Mode-3/A;\n65 possible wrong altitude information, transmitted when the Code C credibility check fails together with the Mode-C code in binary notation;\n66 possible phantom MSSR plot;\n80 fixed PSR plot;\n81 slow PSR plot;\n82 low quality PSR plot.",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 7
                                 },
                                 {
-                                    "name":"extend",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":1
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
                                 }
                             ]
                         }
@@ -231,296 +234,297 @@
             ]
         },
         {
-            "number":"040",
-            "name":"Measured Position in Polar Coordinates",
-            "comment":"Measured position of an aircraft in local polar coordinates.",
-            "type":"item",
-            "data_fields":[
+            "number": "040",
+            "name": "Measured Position in Polar Coordinates",
+            "comment": "Measured position of an aircraft in local polar coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"RHO",
-                    "comment":"Max. range = 512 NM",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "RHO",
+                    "comment": "Max. range = 512 NM",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 },
                 {
-                    "name":"THETA",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0054931640625
+                    "name": "THETA",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0054931640625
                 }
             ]
         },
         {
-            "number":"042",
-            "name":"Calculated Position in Cartesian Coordinates",
-            "comment":"Calculated position of an aircraft in cartesian coordinates.",
-            "type":"item",
-            "data_fields":[
+            "number": "042",
+            "name": "Calculated Position in Cartesian Coordinates",
+            "comment": "Calculated position of an aircraft in cartesian coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"X-Component",
-                    "comment":"Max. range = 2^9 NM",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.015625
+                    "name": "X-Component",
+                    "comment": "Max. range = 2^9 NM",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.015625
                 },
                 {
-                    "name":"Y-Component",
-                    "comment":"Max. range = 2^9 NM",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.015625
+                    "name": "Y-Component",
+                    "comment": "Max. range = 2^9 NM",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.015625
                 }
             ]
         },
         {
-            "number":"050",
-            "name":"Mode-2 Code in Octal Representation",
-            "comment":"Reply to Mode-2 interrogation.",
-            "type":"item",
-            "data_fields":[
+            "number": "050",
+            "name": "Mode-2 Code in Octal Representation",
+            "comment": "Reply to Mode-2 interrogation.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"mode_2",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "mode_2",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"L",
-                            "comment":"0 Mode-2 code as derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":1
+                            "name": "L",
+                            "comment": "0 Mode-2 code as derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 1
                         },
                         {
-                            "name":"Mode-2 code",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":12
+                            "name": "Mode-2 code",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 12
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"060",
-            "name":"Mode-2 Code Confidence Indicator",
-            "comment":"Confidence level for each bit of a Mode-2 reply as provided by a monopulse SSR station.",
-            "type":"item",
-            "data_fields":[
+            "number": "060",
+            "name": "Mode-2 Code Confidence Indicator",
+            "comment": "Confidence level for each bit of a Mode-2 reply as provided by a monopulse SSR station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"QXi",
-                    "comment":"0 High quality pulse Xi\n1 Low quality pulse Xi",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "QXi",
+                    "comment": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"070",
-            "name":"Mode-3/A Code in Octal Representation",
-            "comment":"Mode-3/A code converted into octal representation.",
-            "type":"item",
-            "data_fields":[
+            "number": "070",
+            "name": "Mode-3/A Code in Octal Representation",
+            "comment": "Mode-3/A code converted into octal representation.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"mode_3a",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "mode_3a",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"L",
-                            "comment":"0 Mode-3/A code derived from the reply of the transponder\n1 Smoothed Mode-3/A code as provided by a local tracker",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":1
+                            "name": "L",
+                            "comment": "0 Mode-3/A code derived from the reply of the transponder\n1 Smoothed Mode-3/A code as provided by a local tracker",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 1
                         },
                         {
-                            "name":"Mode-3/A reply",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"digits",
-                            "start_bit":0,
-                            "bit_length":12,
-                            "num_digits":4,
-                            "digit_bit_length":3
+                            "name": "Mode-3/A reply",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "digits",
+                            "start_bit": 0,
+                            "bit_length": 12,
+                            "num_digits": 4,
+                            "digit_bit_length": 3
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"080",
-            "name":"Mode-3/A Code Confidence Indicator",
-            "comment":"Confidence level for each bit of a Mode-3/A reply as provided by a monopulse SSR station.",
-            "type":"item",
-            "data_fields":[
+            "number": "080",
+            "name": "Mode-3/A Code Confidence Indicator",
+            "comment": "Confidence level for each bit of a Mode-3/A reply as provided by a monopulse SSR station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"QXi",
-                    "comment":"0 High quality pulse Xi\n1 Low quality pulse Xi",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "QXi",
+                    "comment": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"090",
-            "name":"Mode-C Code in Binary Representation",
-            "comment":"Mode-C height converted into binary representation.",
-            "type":"item",
-            "data_fields":[
+            "number": "090",
+            "name": "Mode-C Code in Binary Representation",
+            "comment": "Mode-C height converted into binary representation.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"mode_c",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "mode_c",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"Mode-C HEIGHT",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":14,
-                            "data_type":"int",
-                            "lsb":25.0
+                            "name": "Mode-C HEIGHT",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 14,
+                            "data_type": "int",
+                            "lsb": 25.0
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"100",
-            "name":"Mode-C Code and Code Confidence Indicator",
-            "comment":"Mode-C height in Gray notation as received from the transponder together with the confidence level for each reply bit as provided by a monopulse SSR station.",
-            "type":"item",
-            "data_fields":[
+            "number": "100",
+            "name": "Mode-C Code and Code Confidence Indicator",
+            "comment": "Mode-C height in Gray notation as received from the transponder together with the confidence level for each reply bit as provided by a monopulse SSR station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"mode_c_code",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "mode_c_code",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"Mode-C reply",
-                            "comment":"Mode-C reply in Gray notation",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":12
+                            "name": "Mode-C reply",
+                            "comment": "Mode-C reply in Gray notation",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 12
                         }
                     ]
                 },
                 {
-                    "name":"QXi",
-                    "comment":"0 High quality pulse Xi\n1 Low quality pulse Xi",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "QXi",
+                    "comment": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"120",
-            "name":"Measured Radial Doppler Speed",
-            "comment":"Radial component of the ground speed as measured by means of Doppler filter banks in radar signal processors.",
-            "type":"item",
-            "data_fields":[
+            "number": "120",
+            "name": "Measured Radial Doppler Speed",
+            "comment": "Radial component of the ground speed as measured by means of Doppler filter banks in radar signal processors.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Measured Radial Doppler Speed",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":6.103515625e-5
+                    "name": "Measured Radial Doppler Speed",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 6.103515625e-05
                 }
             ]
         },
         {
-            "number":"130",
-            "name":"Radar Plot Characteristics",
-            "comment":"Additional information on the quality of the target report.",
-            "type":"item",
-            "data_fields":[
+            "number": "130",
+            "name": "Radar Plot Characteristics",
+            "comment": "Additional information on the quality of the target report.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Radar Plot Characteristics",
-                    "type":"extendable",
-                    "items":[
+                    "name": "Radar Plot Characteristics",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"radar_plot_characteristic",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "radar_plot_characteristic",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"Value",
-                                    "comment":"This Data Item may contain parameters such as plot runlength (primary and secondary), difference between primary and secondary derived azimuth, pulse amplitude, etc.",
-                                    "type":"fixed_bits",
-                                    "start_bit":1,
-                                    "bit_length":7
+                                    "name": "Value",
+                                    "comment": "This Data Item may contain parameters such as plot runlength (primary and secondary), difference between primary and secondary derived azimuth, pulse amplitude, etc.",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 7
                                 },
                                 {
-                                    "name":"extend",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":1
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
                                 }
                             ]
                         }
@@ -529,219 +533,221 @@
             ]
         },
         {
-            "number":"131",
-            "name":"Received Power",
-            "comment":"Measurement of the received power.",
-            "type":"item",
-            "data_fields":[
+            "number": "131",
+            "name": "Received Power",
+            "comment": "Measurement of the received power.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"POWER",
-                    "comment":"Decimal logarithm of the power received in dBm.\n POWER = 0 for 0 dBm",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":1.0
+                    "name": "POWER",
+                    "comment": "Decimal logarithm of the power received in dBm.\n POWER = 0 for 0 dBm",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 1.0
                 }
             ]
         },
         {
-            "number":"141",
-            "name":"Truncated Time of Day",
-            "comment":"Absolute time stamping expressed as Coordinated Universal Time (UTC) time.",
-            "type":"item",
-            "data_fields":[
+            "number": "141",
+            "name": "Truncated Time of Day",
+            "comment": "Absolute time stamping expressed as Coordinated Universal Time (UTC) time.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Truncated Time of Day",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Truncated Time of Day",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"150",
-            "name":"Presence of X-Pulse",
-            "comment":"Presence of the X-Pulse for the various modes applied in the interrogation interlace pattern.",
-            "type":"item",
-            "data_fields":[
+            "number": "150",
+            "name": "Presence of X-Pulse",
+            "comment": "Presence of the X-Pulse for the various modes applied in the interrogation interlace pattern.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"presence_of_x_pulse",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "presence_of_x_pulse",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"XA",
-                            "comment":"0 Default\n1 X-pulse received in Mode-3/A reply",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "XA",
+                            "comment": "0 Default\n1 X-pulse received in Mode-3/A reply",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"XC",
-                            "comment":"0 Default\n1 X-pulse received in Mode-C reply",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "XC",
+                            "comment": "0 Default\n1 X-pulse received in Mode-C reply",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"X2",
-                            "comment":"0 Default\n1 X-pulse received in Mode-2 reply",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "X2",
+                            "comment": "0 Default\n1 X-pulse received in Mode-2 reply",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"161",
-            "name":"Track Plot Number",
-            "comment":"An integer value representing a unique reference to a track/plot record within a particular track/plot file.",
-            "type":"item",
-            "data_fields":[
+            "number": "161",
+            "name": "Track Plot Number",
+            "comment": "An integer value representing a unique reference to a track/plot record within a particular track/plot file.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TRACK/PLOT NUMBER",
-                    "comment":"max. 65 535",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "TRACK/PLOT NUMBER",
+                    "comment": "max. 65 535",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"170",
-            "name":"Track Status",
-            "comment":"Status of track derived either from primary and/or secondary radar information.",
-            "type":"item",
-            "data_fields":[
+            "number": "170",
+            "name": "Track Status",
+            "comment": "Status of track derived either from primary and/or secondary radar information.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Track Status First Part",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "Track Status First Part",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"CON",
-                            "comment":"0 Confirmed track\n1 Track in initialisation phase",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "CON",
+                            "comment": "0 Confirmed track\n1 Track in initialisation phase",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RAD",
-                            "comment":"0 Primary track\n1 SSR/Combined track",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "RAD",
+                            "comment": "0 Primary track\n1 SSR/Combined track",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MAN",
-                            "comment":"0 Default\n1 Aircraft manoeuvring",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "MAN",
+                            "comment": "0 Default\n1 Aircraft manoeuvring",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"DOU",
-                            "comment":"0 Default\n1 Doubtful plot to track association",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "DOU",
+                            "comment": "0 Default\n1 Doubtful plot to track association",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RDPC",
-                            "comment":"Radar Data Processing Chain\n0 RDP Chain 1\n1 RDP Chain 2",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "RDPC",
+                            "comment": "Radar Data Processing Chain\n0 RDP Chain 1\n1 RDP Chain 2",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"GHO",
-                            "comment":"0 Default\n1 Ghost track",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "GHO",
+                            "comment": "0 Default\n1 Ghost track",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Track Status First Extend",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Track Status First Extend",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"TRE",
-                            "comment":"0 Default\n1 Last report for a track",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "TRE",
+                            "comment": "0 Default\n1 Last report for a track",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"200",
-            "name":"Calculated Track Velocity in Polar Coordinates",
-            "comment":"Calculated track velocity expressed in polar coordinates.",
-            "type":"item",
-            "data_fields":[
+            "number": "200",
+            "name": "Calculated Track Velocity in Polar Coordinates",
+            "comment": "Calculated track velocity expressed in polar coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CALCULATED GROUNDSPEED",
-                    "comment":"max. 2 NM/s",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":6.103515625e-5
+                    "name": "CALCULATED GROUNDSPEED",
+                    "comment": "max. 2 NM/s",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 6.103515625e-05
                 },
                 {
-                    "name":"CALCULATED HEADING",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0054931640625
+                    "name": "CALCULATED HEADING",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0054931640625
                 }
             ]
         },
         {
-            "number":"210",
-            "name":"Track Quality",
-            "comment":"Relative track quality.",
-            "type":"item",
-            "data_fields":[
+            "number": "210",
+            "name": "Track Quality",
+            "comment": "Relative track quality.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Track Quality",
-                    "type":"extendable",
-                    "items":[
+                    "name": "Track Quality",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"track_quality",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "track_quality",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"Value",
-                                    "comment":"Quality indicator\nActual bit signification is application dependent.",
-                                    "type":"fixed_bits",
-                                    "start_bit":1,
-                                    "bit_length":7
+                                    "name": "Value",
+                                    "comment": "Quality indicator\nActual bit signification is application dependent.",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 7
                                 },
                                 {
-                                    "name":"extend",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":1
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
                                 }
                             ]
                         }

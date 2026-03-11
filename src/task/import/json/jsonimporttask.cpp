@@ -376,7 +376,7 @@ void JSONImportTask::addReadJSONSlot()
 
     loginf << "starting parse job";
     json_parse_job_ =
-            std::make_shared<JSONParseJob>(std::move(objects), current_schema_name_, post_process_);
+            std::make_shared<JSONParseJob>(std::move(objects), current_schema_name_, file_line_id_, post_process_);
 
     connect(json_parse_job_.get(), &JSONParseJob::obsoleteSignal, this,
             &JSONImportTask::parseJSONObsoleteSlot, Qt::QueuedConnection);

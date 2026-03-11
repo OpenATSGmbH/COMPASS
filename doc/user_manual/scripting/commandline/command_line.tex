@@ -59,6 +59,7 @@ Allowed options:
   --no_cfg_save                         do not save configuration upon quitting
   --open_rt_cmd_port                    open runtime command port (default at 27960)
   --enable_event_log                    collect warnings and errors in the event log
+  --no_highdpi                          disable Qt high-DPI scaling (fixes double-sized UI on some systems)
   --quit                                quit after finishing all previous steps
 \end{lstlisting}
 \ \\
@@ -321,6 +322,10 @@ Sets the report export type to the given value (i.e. 'JSON','Latex','PDF') when 
 \subsubsection{-{}-no\_cfg\_save}
 
 When quitting the application later, no configuration changes are saved.
+
+\subsubsection{-{}-no\_highdpi}
+
+Disables Qt high-DPI scaling. On some systems (e.g. AlmaLinux 9.7 with GNOME) the reported DPI is inflated, causing a double-sized UI. This flag forces 1:1 pixel scaling. The same effect can be achieved by setting the environment variables \texttt{QT\_AUTO\_SCREEN\_SCALE\_FACTOR=0} or \texttt{QT\_SCALE\_FACTOR=1}.
 
 \subsubsection{-{}-quit}
 

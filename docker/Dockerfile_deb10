@@ -8,7 +8,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV USER_NAME=${USER_NAME} \
     USER_ID=${USER_ID} \
-    USER_GROUP_ID=${USER_GROUP_ID}
+    USER_GROUP_ID=${USER_GROUP_ID} \
+    OS_NAME=deb10
 
 RUN echo ">>> USER_NAME=${USER_NAME}" \
  && echo ">>> USER_ID=${USER_ID}" \
@@ -21,7 +22,7 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
 RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \
   && echo 'deb-src http://archive.debian.org/debian buster main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev sudo \
+  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev patchelf sudo \
   && apt-get build-dep -y libopenscenegraph-dev libosgearth-dev libboost-all-dev \
   && rm -rf /var/lib/apt/lists/*
 
@@ -97,6 +98,24 @@ RUN cd protobuf-3.19.1 && make -j$(nproc)
 RUN cd protobuf-3.19.1 && make install
 RUN cd protobuf-3.19.1 && ldconfig # refresh shared library cache.
 
+# Create CMake config for GEOS so osgEarth's find_package(geos) succeeds
+# Debian 10's libgeos-dev does not ship CMake config files
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/cmake/geos && \
+    echo 'add_library(GEOS::geos_c SHARED IMPORTED)' > /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo 'set_target_properties(GEOS::geos_c PROPERTIES' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo '  IMPORTED_LOCATION "/usr/lib/x86_64-linux-gnu/libgeos_c.so"' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake && \
+    echo ')' >> /usr/lib/x86_64-linux-gnu/cmake/geos/geos-config.cmake
+
+# Create CMake config for libzip so osgEarth's find_package(libzip) succeeds
+# Debian 10's libzip-dev does not ship CMake config files
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/cmake/libzip && \
+    echo 'add_library(libzip::zip SHARED IMPORTED)' > /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo 'set_target_properties(libzip::zip PROPERTIES' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo '  IMPORTED_LOCATION "/usr/lib/x86_64-linux-gnu/libzip.so"' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
+    echo ')' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake
+
 RUN git clone --branch osgearth-3.7.2 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.7.2
 RUN mkdir osgearth-3.7.2/build
 RUN cd osgearth-3.7.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
@@ -128,7 +147,7 @@ RUN duckdb -c "INSTALL json; LOAD json; SELECT json_object('status', 'success') 
 RUN ldconfig -v /usr/lib64/ /usr/local/
 RUN updatedb
 
-RUN echo "${USER_NAME} ALL=(ALL)  ALL" >> /etc/sudoers
+RUN echo "${USER_NAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN more /etc/sudoers
 
 USER ${USER_NAME} 

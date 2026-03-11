@@ -215,47 +215,18 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
            << "' framing '" << settings().activeFileFraming() << "' line " << current_file_line;
 
     //jasterix callback
-    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data, 
+    auto callback = [this, current_file_line, &file_info] (std::unique_ptr<nlohmann::json> data,
+                                               size_t total_num_bytes,
                                                size_t num_frames,
-                                               size_t num_records, 
-                                               size_t num_errors) 
+                                               size_t num_records,
+                                               size_t num_errors)
     {
-        // get last index
+        loginf << "jasterix callback: total_num_bytes " << total_num_bytes
+               << " num_frames " << num_frames
+               << " num_records " << num_records
+               << " num_errors " << num_errors;
 
-        if (settings().activeFileFraming() == "")
-        {
-            traced_assert(data->contains("data_blocks"));
-            traced_assert(data->at("data_blocks").is_array());
-
-            if (data->at("data_blocks").size())
-            {
-                json& data_block = data->at("data_blocks").back();
-
-                traced_assert(data_block.contains("content"));
-                traced_assert(data_block.at("content").is_object());
-                traced_assert(data_block.at("content").contains("index"));
-
-                setFileBytesRead(data_block.at("content").at("index"));
-            }
-        }
-        else
-        {
-            traced_assert(data->contains("frames"));
-            traced_assert(data->at("frames").is_array());
-
-            if (data->at("frames").size())
-            {
-                json& frame = data->at("frames").back();
-
-                if (frame.contains("content"))
-                {
-                    traced_assert(frame.at("content").is_object());
-                    traced_assert(frame.at("content").contains("index"));
-
-                    setFileBytesRead(frame.at("content").at("index"));
-                }
-            }
-        }
+        setFileBytesRead(total_num_bytes);
 
         addRecordsRead(num_records);
 
@@ -272,7 +243,7 @@ void ASTERIXFileDecoder::processFile(ASTERIXImportFileInfo& file_info)
 
     //start decoding
     if (settings().activeFileFraming() == "")
-        task().jASTERIX()->decodeFile(current_filename, callback);
+        task().jASTERIX()->decodeFile(current_filename, callback, true);
     else
-        task().jASTERIX()->decodeFile(current_filename, settings().activeFileFraming(), callback);
+        task().jASTERIX()->decodeFile(current_filename, settings().activeFileFraming(), callback, true);
 }

@@ -384,27 +384,6 @@ std::string ASTERIXDecoderFile::getCurrentFilename() const
 */
 std::string ASTERIXDecoderFile::statusInfoString() const
 {
-    // std::string text;
-
-    // const auto& file_infos = source_.files();
-
-    // for (const auto& file_info : file_infos)
-    // {
-    //     //skip unused
-    //     if (!file_info.used)
-    //         continue;
-
-    //     if (file_info.filename == getCurrentFilename())
-    //         text += "<p align=\"left\"><b>" + file_info.filename + "</b>";
-    //     else
-    //         text += "<p align=\"left\">"+file_info.filename + "";
-    // }
-
-    // text += "<br><p align=\"left\">Records/s: " + std::to_string((unsigned int) getRecordsPerSecond());
-    // text += "<p align=\"right\">Remaining: "+ Utils::String::timeStringFromDouble(getRemainingTime() + 1.0, false);
-
-    // return text;
-
     std::ostringstream html;
     // Start table and header row
     html << "<table border=\"0\" width=\"100%\">"
@@ -543,7 +522,15 @@ size_t ASTERIXDecoderFile::currentlyReadBytes() const
 */
 float ASTERIXDecoderFile::statusInfoProgress() const
 {
-    return 100.0 * (float)currentlyReadBytes() / (float)total_file_size_;
+    float progress = 100.0 * (float)currentlyReadBytes() / (float)total_file_size_;
+
+    loginf << "progress " << progress << "%"
+           << " done_file_size " << done_file_size_
+           << " file_bytes " << current_file_bytes_read_
+           << " chunk_bytes " << current_chunk_bytes_read_
+           << " total " << total_file_size_;
+
+    return progress;
 }
 
 std::string ASTERIXDecoderFile::currentDataSourceName() const
@@ -563,10 +550,18 @@ float ASTERIXDecoderFile::getRecordsPerSecond() const
 float ASTERIXDecoderFile::getRemainingTime() const
 {
     float  elapsed_secs    = elapsedSeconds();
-    size_t remaining_bytes = total_file_size_ - currentlyReadBytes();
-    float  bytes_per_s     = (float)currentlyReadBytes() / elapsed_secs;
+    size_t read_bytes      = currentlyReadBytes();
+    size_t remaining_bytes = total_file_size_ - read_bytes;
+    float  bytes_per_s     = (float)read_bytes / elapsed_secs;
+    float  remaining       = bytes_per_s > 0 ? (float)remaining_bytes / bytes_per_s : 0;
 
-    return (float)remaining_bytes / bytes_per_s;
+    logdbg << "remaining " << remaining << "s"
+           << " read " << read_bytes << "/" << total_file_size_
+           << " (" << (read_bytes * 100 / (total_file_size_ ? total_file_size_ : 1)) << "%)"
+           << " bytes/s " << bytes_per_s
+           << " elapsed " << elapsed_secs << "s";
+
+    return remaining;
 }
 
 /**

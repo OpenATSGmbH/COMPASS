@@ -330,6 +330,139 @@ bool ASTERIXJSONParser::parseJSON(nlohmann::json& j, Buffer& buffer) const
     return parsed_any;
 }
 
+size_t ASTERIXJSONParser::parseFlatJSON(const nlohmann::json& flat_cat_data, Buffer& buffer) const
+{
+    traced_assert(initialized_);
+    traced_assert(flat_cat_data.is_object());
+
+    // determine number of records from the longest non-empty array
+    size_t num_records = 0;
+    for (auto it = flat_cat_data.begin(); it != flat_cat_data.end(); ++it)
+    {
+        if (it.value().is_array() && it.value().size() > num_records)
+            num_records = it.value().size();
+    }
+
+    if (num_records == 0)
+        return 0;
+
+    size_t start_row = buffer.size();
+
+    logdbg << "ASTERIXJSONParser: parseFlatJSON: cat " << category_
+           << " num_records " << num_records << " start_row " << start_row;
+
+    for (const auto& map_it : data_mappings_)
+    {
+        if (!map_it->active())
+        {
+            traced_assert(!map_it->mandatory());
+            continue;
+        }
+
+        try
+        {
+            PropertyDataType data_type = map_it->variable().dataType();
+            const std::string& current_var_name = map_it->variable().name();
+
+            switch (data_type)
+            {
+            case PropertyDataType::BOOL:
+            {
+                traced_assert(buffer.has<bool>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<bool>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::CHAR:
+            {
+                traced_assert(buffer.has<char>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<char>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::UCHAR:
+            {
+                traced_assert(buffer.has<unsigned char>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<unsigned char>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::INT:
+            {
+                traced_assert(buffer.has<int>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<int>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::UINT:
+            {
+                traced_assert(buffer.has<unsigned int>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<unsigned int>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::LONGINT:
+            {
+                traced_assert(buffer.has<long int>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<long int>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::ULONGINT:
+            {
+                traced_assert(buffer.has<unsigned long>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<unsigned long>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::FLOAT:
+            {
+                traced_assert(buffer.has<float>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<float>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::DOUBLE:
+            {
+                traced_assert(buffer.has<double>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<double>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::STRING:
+            {
+                traced_assert(buffer.has<std::string>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<std::string>(current_var_name),
+                                           start_row, num_records);
+                break;
+            }
+            case PropertyDataType::JSON:
+            {
+                traced_assert(buffer.has<json>(current_var_name));
+                map_it->setFlatArrayJsonValues(flat_cat_data, buffer.get<json>(current_var_name),
+                                               start_row, num_records);
+                break;
+            }
+            case PropertyDataType::TIMESTAMP:
+            default:
+                logerr << "ASTERIXJSONParser: parseFlatJSON: impossible for property type "
+                       << Property::asString(data_type);
+                throw std::runtime_error(
+                    "ASTERIXJSONParser: parseFlatJSON: impossible property type " +
+                    Property::asString(data_type));
+            }
+        }
+        catch (exception& e)
+        {
+            logerr << "ASTERIXJSONParser: parseFlatJSON: caught exception '" << e.what()
+                   << "' mapping key " << map_it->jsonKey();
+            throw;
+        }
+    }
+
+    return num_records;
+}
+
 void ASTERIXJSONParser::createMappingStubs(nlohmann::json& j)
 {
     traced_assert(initialized_);

@@ -1,13 +1,13 @@
 {
-    "name":"cat020_ref_1.3",
-    "type":"ReservedExpansionField",
-    "field_specification":{
-        "name":"REF_FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat020_ref_1.3",
+    "type": "ReservedExpansionField",
+    "field_specification": {
+        "name": "REF_FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "items_indicator":[
+    "items_indicator": [
         "PA",
         "GVV",
         "GVA",
@@ -17,136 +17,132 @@
         "-",
         "-"
     ],
-    "items":[
+    "items": [
         {
-            "number":"PA",
-            "name":"Position Accuracy",
-            "comment":"Standard Deviation of Position",
-            "type":"item",
-            "data_fields":[
+            "number": "PA",
+            "name": "Position Accuracy",
+            "comment": "Standard Deviation of Position",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"PA",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "PA",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"DOP",
-                            "comment":"DOP of Position",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "DOP",
+                            "comment": "DOP of Position",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"DOP-x",
-                                    "comment":"DOP along x axis",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.25
+                                    "name": "DOP-x",
+                                    "comment": "DOP along x axis",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
                                 },
                                 {
-                                    "name":"DOP-y",
-                                    "comment":"DOP along y axis",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.25
+                                    "name": "DOP-y",
+                                    "comment": "DOP along y axis",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
                                 },
                                 {
-                                    "name":"DOP-xy",
-                                    "comment":"DOP Covariance Component in two's complement form",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.25
+                                    "name": "DOP-xy",
+                                    "comment": "DOP Covariance Component in two's complement form",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 0.25
                                 }
                             ]
                         },
                         {
-                            "name":"SDC",
-                            "comment":"Standard Deviation of Position (Cartesian)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "SDC",
+                            "comment": "Standard Deviation of Position (Cartesian)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"SDC (X-Component)",
-                                    "comment":"Standard Deviation of Position of the target expressed in Cartesian coordinates",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.25
+                                    "name": "SDC (X-Component)",
+                                    "comment": "Standard Deviation of Position of the target expressed in Cartesian coordinates",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
                                 },
                                 {
-                                    "name":"SDC (Y-Component)",
-                                    "comment":"Standard Deviation of Position of the target expressed in Cartesian coordinates",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.25
+                                    "name": "SDC (Y-Component)",
+                                    "comment": "Standard Deviation of Position of the target expressed in Cartesian coordinates",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
                                 },
                                 {
-                                    "name":"COV-XY (Covariance Component)",
-                                    "comment":"XY Covariance Component in two's complement form",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.25
+                                    "name": "COV-XY (Covariance Component)",
+                                    "comment": "XY Covariance Component in two's complement form",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 0.25
                                 }
                             ]
                         },
                         {
-                            "name":"SDH",
-                            "comment":"Standard Deviation of Geometric Height (WGS 84)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "SDH",
+                            "comment": "Standard Deviation of Geometric Height (WGS 84)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"SDH",
-                                    "comment":"Standard deviation of Geometric Height of the target expressed in WGS-84 (ft).",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":1
+                                    "name": "SDH",
+                                    "comment": "Standard deviation of Geometric Height of the target expressed in WGS-84 (ft).",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 1
                                 }
                             ]
                         },
                         {
-                            "name":"SDW",
-                            "comment":"Standard Deviation of Position (WGS-84)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "SDW",
+                            "comment": "Standard Deviation of Position (WGS-84)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"SDW (Latitude Component)",
-                                    "comment":"Standard Deviation of Position of the target expressed in WGS-84",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.00000536441
+                                    "name": "SDW (Latitude Component)",
+                                    "comment": "Standard Deviation of Position of the target expressed in WGS-84",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 5.36441e-06
                                 },
                                 {
-                                    "name":"SDW (Longitude Component)",
-                                    "comment":"Standard Deviation of Position of the target expressed in WGS-84",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"uint",
-                                    "lsb":0.00000536441
+                                    "name": "SDW (Longitude Component)",
+                                    "comment": "Standard Deviation of Position of the target expressed in WGS-84",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 5.36441e-06
                                 },
                                 {
-                                    "name":"COV-WGS (Lat/Long Covariance Component)",
-                                    "comment":"Lat/Long Covariance Component in two's complement form",
-                                    "type":"fixed_bytes",
-                                    "length":2,
-                                    "data_type":"int",
-                                    "lsb":0.00000536441
+                                    "name": "COV-WGS (Lat/Long Covariance Component)",
+                                    "comment": "Lat/Long Covariance Component in two's complement form",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 5.36441e-06
                                 }
                             ]
                         }
@@ -155,418 +151,395 @@
             ]
         },
         {
-            "number":"GVV",
-            "name":"Ground Velocity Vector",
-            "comment":"Four-Octet fixed length data item.",
-            "type":"item",
-            "data_fields":[
+            "number": "GVV",
+            "name": "Ground Velocity Vector",
+            "comment": "Four-Octet fixed length data item.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Ground Speed",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "Ground Speed",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"RE",
-                            "comment":"'Range Exceeded' Indicator\n0 Value in defined range\n1 Value exceeds defined range",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "RE",
+                            "comment": "'Range Exceeded' Indicator\n0 Value in defined range\n1 Value exceeds defined range",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"Ground Speed",
-                            "comment":"Ground Speed referenced to WGS-84",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":15,
-                            "lsb":0.00006103515
+                            "name": "Ground Speed",
+                            "comment": "Ground Speed referenced to WGS-84",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 15,
+                            "lsb": 6.103515e-05
                         }
                     ]
                 },
                 {
-                    "name":"Track Angle",
-                    "comment":"Track Angle clockwise reference to 'True North'",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00549316406
+                    "name": "Track Angle",
+                    "comment": "Track Angle clockwise reference to 'True North'",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.00549316406
                 }
             ]
         },
         {
-            "number":"GVA",
-            "name":"Ground Velocity Accuracy",
-            "comment":"Accuracy of the Ground Speed and Track Angle elements of Ground Velocity Vector.",
-            "type":"item",
-            "data_fields":[
+            "number": "GVA",
+            "name": "Ground Velocity Accuracy",
+            "comment": "Accuracy of the Ground Speed and Track Angle elements of Ground Velocity Vector.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"GSSD",
-                    "comment":"IStandard deviation of the Ground Speed",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00006103515 
+                    "name": "GSSD",
+                    "comment": "IStandard deviation of the Ground Speed",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 6.103515e-05
                 },
                 {
-                    "name":"TASD",
-                    "comment":"Standard deviation of the Track Angle",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.087890625 
+                    "name": "TASD",
+                    "comment": "Standard deviation of the Track Angle",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.087890625
                 }
             ]
         },
         {
-            "number":"TRT",
-            "name":"Time of ASTERIX Report Transmission",
-            "comment":"Time of the transmission of the ASTERIX category 020 report in the form of elapsed time since last midnight, expressed as UTC.",
-            "type":"item",
-            "data_fields":[
+            "number": "TRT",
+            "name": "Time of ASTERIX Report Transmission",
+            "comment": "Time of the transmission of the ASTERIX category 020 report in the form of elapsed time since last midnight, expressed as UTC.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time Of ASTERIX Report Transmission",
-                    "comment":"The time of ASTERIX report transmission value is reset to zero at every midnight. The Time of Report Transmission is the time used as a reference for the different data-ages provided in DA.",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Time Of ASTERIX Report Transmission",
+                    "comment": "The time of ASTERIX report transmission value is reset to zero at every midnight. The Time of Report Transmission is the time used as a reference for the different data-ages provided in DA.",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"DA",
-            "name":"Data-Ages",
-            "comment":"Age of specific data-items or subfields at the Time of Report Transmission provided in TRT.",
-            "type":"item",
-            "data_fields":[
+            "number": "DA",
+            "name": "Data-Ages",
+            "comment": "Age of specific data-items or subfields at the Time of Report Transmission provided in TRT.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"DA",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "DA",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"SPI",
-                            "comment":"Special Position Identification Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "SPI",
+                            "comment": "Special Position Identification Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                    "name":"SPI",
-                                    "comment":"Age of the Special Position Information (SPI) information transmitted in data item I020/020 SPI field.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "SPI",
+                                    "comment": "Age of the Special Position Information (SPI) information transmitted in data item I020/020 SPI field.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"TI",
-                            "comment":"Target Identification Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "TI",
+                            "comment": "Target Identification Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                    "name":"TI",
-                                    "comment":"Age of the Target Identification information transmitted in data item I020/245.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "TI",
+                                    "comment": "Age of the Target Identification information transmitted in data item I020/245.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"MBD",
-                            "comment":"Standard Deviation of Geometric Height (WGS 84)",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
+                            "name": "MBD",
+                            "comment": "Standard Deviation of Geometric Height (WGS 84)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                    "name":"Mode S MB Data",
-                                    "type":"repetitive",
-                                    "repetition_item":{
-                                        "name":"REP",
-                                        "type":"fixed_bytes",
-                                        "length":1,
-                                        "data_type":"uint"
-                                    },
-                                    "items":[
+                                    "name": "Mode S MB Data",
+                                    "type": "repetitive",
+                                    "items": [
                                         {
-                                            "name":"address",
-                                            "type":"fixed_bitfield",
-                                            "length":1,
-                                            "items":[
+                                            "name": "address",
+                                            "type": "fixed_bitfield",
+                                            "length": 1,
+                                            "items": [
                                                 {
-                                                    "name":"BDS1",
-                                                    "comment":"Comm B Data Buffer Store 1 Address",
-                                                    "type":"fixed_bits",
-                                                    "start_bit":4,
-                                                    "bit_length":4
+                                                    "name": "BDS1",
+                                                    "comment": "Comm B Data Buffer Store 1 Address",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 4,
+                                                    "bit_length": 4
                                                 },
                                                 {
-                                                    "name":"BDS2",
-                                                    "comment":"Comm B Data Buffer Store 2 Address",
-                                                    "type":"fixed_bits",
-                                                    "start_bit":0,
-                                                    "bit_length":4
+                                                    "name": "BDS2",
+                                                    "comment": "Comm B Data Buffer Store 2 Address",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 0,
+                                                    "bit_length": 4
                                                 }
                                             ]
                                         },
                                         {
-                                            "name":"MBA",
-                                            "comment":"Age of the information in the BDS report indicated in bits 16/9",
-                                            "type":"fixed_bytes",
-                                            "length":1,
-                                            "data_type":"uint",
-                                            "lsb":0.1
+                                            "name": "MBA",
+                                            "comment": "Age of the information in the BDS report indicated in bits 16/9",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint",
+                                            "lsb": 0.1
                                         }
                                     ]
                                 }
                             ]
                         },
                         {
-                            "name":"M3A",
-                            "comment":"Mode-3/A Code Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "M3A",
+                            "comment": "Mode-3/A Code Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                    "name":"M3A",
-                                    "comment":"Age of the information transmitted in data item I020/070.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "M3A",
+                                    "comment": "Age of the information transmitted in data item I020/070.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"FL",
-                            "comment":"Flight Level Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "FL",
+                            "comment": "Flight Level Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                    "name":"FL",
-                                    "comment":"Age of the information transmitted in data item I020/090.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "FL",
+                                    "comment": "Age of the information transmitted in data item I020/090.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"STAT",
-                            "comment":"Flight Status Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "STAT",
+                            "comment": "Flight Status Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                    "name":"STAT",
-                                    "comment":"Age of the Flight Status information transmitted in data item I020/230 STAT subfield.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "STAT",
+                                    "comment": "Age of the Flight Status information transmitted in data item I020/230 STAT subfield.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"GH",
-                            "comment":"Geometric / Measured Height Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":6,
-                            "data_fields":[
+                            "name": "GH",
+                            "comment": "Geometric / Measured Height Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
                                 {
-                                    "name":"GH",
-                                    "comment":"Age of the information transmitted in data item I020/105 or in data item I020/110.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "GH",
+                                    "comment": "Age of the information transmitted in data item I020/105 or in data item I020/110.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"TA",
-                            "comment":"Target Address Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":8,
-                            "data_fields":[
+                            "name": "TA",
+                            "comment": "Target Address Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 8,
+                            "data_fields": [
                                 {
-                                    "name":"TA",
-                                    "comment":"Age of the Target Address information transmitted in data item I020/220.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "TA",
+                                    "comment": "Age of the Target Address information transmitted in data item I020/220.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"MC",
-                            "comment":"Mode C Code Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":9,
-                            "data_fields":[
+                            "name": "MC",
+                            "comment": "Mode C Code Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 9,
+                            "data_fields": [
                                 {
-                                    "name":"MC",
-                                    "comment":"Age of the information transmitted in data item I020/100.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "MC",
+                                    "comment": "Age of the information transmitted in data item I020/100.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"MSSC",
-                            "comment":"Mode-S Specific Service Capability Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":10,
-                            "data_fields":[
+                            "name": "MSSC",
+                            "comment": "Mode-S Specific Service Capability Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 10,
+                            "data_fields": [
                                 {
-                                    "name":"MSSC",
-                                    "comment":"Age of the Mode-S Specific Service Capability information transmitted in data item I020/230 MSSC subfield.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "MSSC",
+                                    "comment": "Age of the Mode-S Specific Service Capability information transmitted in data item I020/230 MSSC subfield.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"ARC",
-                            "comment":"Altitude Reporting Capability Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":11,
-                            "data_fields":[
+                            "name": "ARC",
+                            "comment": "Altitude Reporting Capability Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 11,
+                            "data_fields": [
                                 {
-                                    "name":"ARC",
-                                    "comment":"Age of the Altitude reporting capability information transmitted in item I020/230 ARC subfield.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "ARC",
+                                    "comment": "Age of the Altitude reporting capability information transmitted in item I020/230 ARC subfield.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"AIC",
-                            "comment":"Aircraft Identification Capability age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":12,
-                            "data_fields":[
+                            "name": "AIC",
+                            "comment": "Aircraft Identification Capability age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 12,
+                            "data_fields": [
                                 {
-                                    "name":"AIC",
-                                    "comment":"Age of the Aircraft Identification Capability information transmitted in data item I020/230 AIC subfield.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "AIC",
+                                    "comment": "Age of the Aircraft Identification Capability information transmitted in data item I020/230 AIC subfield.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"M2",
-                            "comment":"Mode-2 Code Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":13,
-                            "data_fields":[
+                            "name": "M2",
+                            "comment": "Mode-2 Code Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 13,
+                            "data_fields": [
                                 {
-                                    "name":"M2",
-                                    "comment":"Age of the information transmitted in data item I020/050.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "M2",
+                                    "comment": "Age of the information transmitted in data item I020/050.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"M1",
-                            "comment":"Mode-1 Code Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":14,
-                            "data_fields":[
+                            "name": "M1",
+                            "comment": "Mode-1 Code Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 14,
+                            "data_fields": [
                                 {
-                                    "name":"M1",
-                                    "comment":"Age of information transmitted in data item I020/055.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "M1",
+                                    "comment": "Age of information transmitted in data item I020/055.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"ARA",
-                            "comment":"ACAS Resolution Advisory Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":16,
-                            "data_fields":[
+                            "name": "ARA",
+                            "comment": "ACAS Resolution Advisory Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 16,
+                            "data_fields": [
                                 {
-                                    "name":"ARA",
-                                    "comment":"Age of the ACAS Advisory Report information transmitted in data item I020/260.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "ARA",
+                                    "comment": "Age of the ACAS Advisory Report information transmitted in data item I020/260.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"VI",
-                            "comment":"Vehicle Fleet Identification Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":17,
-                            "data_fields":[
+                            "name": "VI",
+                            "comment": "Vehicle Fleet Identification Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 17,
+                            "data_fields": [
                                 {
-                                    "name":"VI",
-                                    "comment":"Age of the information transmitted in data item I020/300.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "VI",
+                                    "comment": "Age of the information transmitted in data item I020/300.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         },
                         {
-                            "name":"MSG",
-                            "comment":"Pre-programmed Message Age",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":18,
-                            "data_fields":[
+                            "name": "MSG",
+                            "comment": "Pre-programmed Message Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 18,
+                            "data_fields": [
                                 {
-                                    "name":"MSG",
-                                    "comment":"Age of the information transmitted in data item I020/310.",
-                                    "type":"fixed_bytes",
-                                    "length":1,
-                                    "data_type":"uint",
-                                    "lsb":0.1
+                                    "name": "MSG",
+                                    "comment": "Age of the information transmitted in data item I020/310.",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
                                 }
                             ]
                         }

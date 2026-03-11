@@ -104,8 +104,8 @@ void ConfigJSON::loadFromPath(const std::string& path)
     resolveSubConfigFiles(owned_json_, sub_config_files_);
 
     logdbg << "'" << path << "' load complete"
-           << " has_sub_configs=" << owned_json_.contains(Configuration::SubConfigSection)
-           << " has_sub_config_files=" << owned_json_.contains(ConfigJSON::SubConfigFileSection);
+           << " has_sub_configs " << owned_json_.contains(Configuration::SubConfigSection)
+           << " has_sub_config_files " << owned_json_.contains(ConfigJSON::SubConfigFileSection);
 }
 
 void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
@@ -228,14 +228,13 @@ void ConfigJSON::save() const
 {
     if (!file_backed_ || save_path_.empty())
     {
-        loginf << "save: skipping (file_backed=" << file_backed_
-               << " save_path='" << save_path_ << "')";
+        logdbg << "save: skipping, file_backed " << file_backed_
+               << " save_path '" << save_path_ << "'";
         return;
     }
 
     loginf << "save: saving to '" << save_path_ << "'"
-           << " json_ptr type=" << json_ptr_->type_name()
-           << " sub_config_files=" << sub_config_files_.size();
+           << " num sub files " << sub_config_files_.size();
 
     try
     {
@@ -252,10 +251,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                             const std::string& file_path,
                             const std::vector<SubConfigFile>& file_info)
 {
-    loginf << "saving to '" << file_path << "'"
-           << " json type=" << json.type_name()
-           << " has_sub_configs=" << json.contains(Configuration::SubConfigSection)
-           << " file_info_count=" << file_info.size();
+    logdbg << "saving to '" << file_path << "'";
 
     nlohmann::json output;
 
@@ -278,7 +274,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
     // Process sub_configs (array format)
     if (json.contains(Configuration::SubConfigSection) && json[Configuration::SubConfigSection].is_array())
     {
-        loginf << "'" << file_path << "' processing "
+        logdbg << "'" << file_path << "' processing "
                << json[Configuration::SubConfigSection].size() << " sub_config entries"
                << " (" << file_backed.size() << " file-backed)";
 
@@ -298,9 +294,9 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                     {
                         // Inline parent with file-backed children: save inline but
                         // reconstruct sub_config_files for its children
-                        loginf << "'" << file_path << "' inline parent with file-backed children: class '"
+                        logdbg << "'" << file_path << "' inline parent with file-backed children: class '"
                                << cid << "' instance '" << iid
-                               << "' children=" << it->second->children.size();
+                               << "' children " << it->second->children.size();
 
                         nlohmann::json inline_entry;
 
@@ -363,16 +359,16 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                         if (child_has_sc && child_json[Configuration::SubConfigSection].is_array())
                             child_sc_count = child_json[Configuration::SubConfigSection].size();
 
-                        loginf << "'" << file_path << "' saving file-backed child: class '"
+                        logdbg << "'" << file_path << "' saving file-backed child: class '"
                                << cid << "' instance '" << iid
                                << "' -> '" << it->second->filename << "'"
-                               << " child_has_sub_configs=" << child_has_sc
-                               << " child_sub_configs_count=" << child_sc_count
-                               << " child_file_info_children=" << it->second->children.size()
-                               << " child_keys=[";
+                               << " child_has_sub_configs " << child_has_sc
+                               << " child_sub_configs_count " << child_sc_count
+                               << " child_file_info_children " << it->second->children.size()
+                               << " child_keys [";
                         for (auto& [k, v] : child_json.items())
-                            loginf << " " << k;
-                        loginf << " ]";
+                            logdbg << " " << k;
+                        logdbg << " ]";
 
                         // File-backed child: save to its own file recursively
                         saveToFile(child_json,
@@ -388,7 +384,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                 }
                 else
                 {
-                    loginf << "'" << file_path << "' inline child: class '"
+                    logdbg << "'" << file_path << "' inline child: class '"
                            << cid << "' instance '" << iid << "'";
 
                     // Inline child: include in sub_configs array
@@ -401,7 +397,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
             catch (const std::exception& e)
             {
                 logerr << "'" << file_path << "' failed to process sub_config entry: " << e.what()
-                       << " entry=" << child_json.dump(2).substr(0, 200);
+                       << " entry " << child_json.dump(2).substr(0, 200);
                 throw;
             }
         }
@@ -409,9 +405,9 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
     else
     {
         if (!json.contains(Configuration::SubConfigSection))
-            loginf << "'" << file_path << "' no sub_configs key in json";
+            logdbg << "'" << file_path << "' no sub_configs key in json";
         else
-            loginf << "'" << file_path << "' sub_configs is not an array, type="
+            logdbg << "'" << file_path << "' sub_configs is not an array, type "
                    << json[Configuration::SubConfigSection].type_name();
     }
 
@@ -421,7 +417,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
         const size_t max_dump = 2000;
         if (dumped.size() > max_dump)
             dumped = dumped.substr(0, max_dump) + "... [truncated, total " + std::to_string(dumped.size()) + " chars]";
-        loginf << "SAVE '" << file_path << "' content:\n" << dumped;
+        logdbg << "saving '" << file_path << "' content:\n" << dumped;
     }
 
     // Write to file

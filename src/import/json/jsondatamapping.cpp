@@ -512,6 +512,137 @@ bool JSONDataMapping::findAndSetValues(const json& j, NullableVector<json>& arra
     }
 }
 
+template <typename T>
+bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data, NullableVector<T>& array_list,
+                                         size_t start_row, size_t num_records) const
+{
+    if (!flat_cat_data.contains(json_key_))
+    {
+        if (mandatory_)
+            return true;
+        return false;
+    }
+
+    const json& arr = flat_cat_data.at(json_key_);
+
+    if (!arr.is_array() || arr.empty())
+    {
+        if (mandatory_)
+            return true;
+        return false;
+    }
+
+    size_t arr_size = arr.size();
+
+    if (arr_size > num_records)
+    {
+        logwrn << "JSONDataMapping: setFlatArrayValues: key '" << json_key_
+               << "' array size " << arr_size << " > num_records " << num_records;
+    }
+
+    for (size_t i = 0; i < arr_size && i < num_records; ++i)
+    {
+        const json& val = arr[i];
+
+        if (val.is_null())
+            continue; // leave as null
+
+        size_t row = start_row + i;
+
+        try
+        {
+            setValue(&val, array_list, row);
+        }
+        catch (json::exception& e)
+        {
+            logerr << "JSONDataMapping: setFlatArrayValues: key " << json_key_
+                   << " row " << row << " json exception " << e.what();
+            array_list.setNull(row);
+        }
+    }
+
+    return false;
+}
+
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<bool>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<char>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<unsigned char>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<int>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<unsigned int>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<long int>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<unsigned long int>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<float>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<double>& array_list, size_t start_row, size_t num_records) const;
+template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
+NullableVector<std::string>& array_list, size_t start_row, size_t num_records) const;
+
+bool JSONDataMapping::setFlatArrayJsonValues(const json& flat_cat_data,
+                                             NullableVector<json>& array_list,
+                                             size_t start_row, size_t num_records) const
+{
+    if (!flat_cat_data.contains(json_key_))
+    {
+        if (mandatory_)
+            return true;
+        return false;
+    }
+
+    const json& arr = flat_cat_data.at(json_key_);
+
+    if (!arr.is_array() || arr.empty())
+    {
+        if (mandatory_)
+            return true;
+        return false;
+    }
+
+    size_t arr_size = arr.size();
+
+    for (size_t i = 0; i < arr_size && i < num_records; ++i)
+    {
+        const json& val = arr[i];
+
+        if (val.is_null())
+            continue;
+
+        size_t row = start_row + i;
+
+        try
+        {
+            if (val.is_array())
+            {
+                std::vector<json> values;
+                for (const auto& elem : val)
+                    values.push_back(elem);
+                array_list.set(row, values);
+            }
+            else
+            {
+                std::vector<json> values;
+                values.push_back(val);
+                array_list.set(row, values);
+            }
+        }
+        catch (json::exception& e)
+        {
+            logerr << "JSONDataMapping: setFlatArrayJsonValues: key " << json_key_
+                   << " row " << row << " json exception " << e.what();
+            array_list.setNull(row);
+        }
+    }
+
+    return false;
+}
+
 const json* JSONDataMapping::findKey(const json& j) const
 {
     const json* val_ptr = &j;
