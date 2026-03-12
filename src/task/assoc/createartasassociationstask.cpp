@@ -23,6 +23,7 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "datasourcemanager.h"
@@ -162,6 +163,13 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
         logerr << "needed metavars not available";
 
     traced_assert(has_needed_metavars);
+
+    // check that artas hash variable has actual data in the DB
+    if (!dbcontent_man.metaVariable(DBContent::meta_var_artas_hash_.name()).hasDBContent())
+    {
+        logerr << "ARTAS hash variable has no data in the database";
+        return CreateARTASAssociationsTask::Error::NoHashData;
+    }
 
     loginf << "no error";
 

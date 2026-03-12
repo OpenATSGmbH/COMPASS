@@ -65,7 +65,8 @@ public:
     {
         NoError = 0,
         NoDataSource,
-        NoDataForLineID
+        NoDataForLineID,
+        NoHashData
     };
 
     struct Settings

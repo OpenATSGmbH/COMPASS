@@ -22,12 +22,6 @@
             "render_color_value_min": "",
             "value_type": 3
         },
-        "sub_configs": {
-            "GridViewWidget": {
-                "GridViewWidget0": {
-                    "parameters": null
-                }
-            }
-        }
+        "sub_configs": []
     }
 }

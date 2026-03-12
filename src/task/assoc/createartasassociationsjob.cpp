@@ -782,10 +782,17 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
     NullableVector<string>& hashes = buffer->get<string>(hash_var.name());
     NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
 
+    unsigned int null_hash_cnt = 0;
+
     for (size_t cnt = 0; cnt < buffer_size; ++cnt)
     {
         traced_assert(!rec_nums.isNull(cnt));
-        traced_assert(!hashes.isNull(cnt));
+
+        if (hashes.isNull(cnt))
+        {
+            ++null_hash_cnt;
+            continue;
+        }
 
         if (ts_vec.isNull(cnt))
         {
@@ -794,13 +801,15 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
             continue;
         }
 
-        traced_assert(!ts_vec.isNull(cnt));
-
         // hash -> rec_num, tod
         // map <string, multimap<string, pair<int, float>>> sensor_hashes_;
 
         sensor_hashes_.emplace(hashes.get(cnt), make_pair(rec_nums.get(cnt), ts_vec.get(cnt)));
     }
+
+    if (null_hash_cnt)
+        logwrn << object.name() << ": " << null_hash_cnt << " of " << buffer_size
+               << " target reports have null ARTAS hash, skipped";
 }
 
 std::map<std::string, std::pair<unsigned int, unsigned int> > CreateARTASAssociationsJob::associationCounts() const

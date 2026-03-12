@@ -138,91 +138,83 @@
             "use_online_messages": false,
             "use_utn_as_id": false
         },
-        "sub_configs": {
-            "GeometryStyleFactory": {
-                "GeometryStyleFactory0": {
-                    "parameters": {
-                        "current_sorting_variable": "DBContent",
-                        "current_style_preset": "Color by DBContent"
-                    },
-                    "sub_configs": {
-                        "GeometryRenderOrder": {},
-                        "GeometryStylePreset": {}
-                    }
-                }
+        "sub_configs": [
+            {
+                "class_name": "GeometryStyleFactory",
+                "instance_name": "GeometryStyleFactory0",
+                "parameters": {
+                    "current_sorting_variable": "DBContent",
+                    "current_style_preset": "Color by DBContent"
+                },
+                "sub_configs": []
             },
-            "GeographicViewDataSource": {
-                "GeographicViewDataSource0": {
-                    "parameters": null,
-                    "sub_configs": {
-                        "VariableOrderedSet": {
-                            "VariableOrderedSet0": {
-                                "parameters": {
-                                    "variable_definitions": [
-                                        [
-                                            "Meta",
-                                            "Record Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "DS ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Line ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Timestamp"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Address"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Identification"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Track Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode 3/A Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode C Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Latitude"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Longitude"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Type"
-                                        ],
-                                        [
-                                            "CAT062",
-                                            "TRI Record Numbers"
-                                        ]
-                                    ]
-                                }
-                            }
+            {
+                "class_name": "GeographicViewDataSource",
+                "instance_name": "GeographicViewDataSource0",
+                "parameters": null,
+                "sub_configs": [
+                    {
+                        "class_name": "VariableOrderedSet",
+                        "instance_name": "VariableOrderedSet0",
+                        "parameters": {
+                            "variable_definitions": [
+                                [
+                                    "Meta",
+                                    "Record Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "DS ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Line ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Timestamp"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Address"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Identification"
+                                ],
+                                [
+                                    "Meta",
+                                    "Track Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode 3/A Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode C Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Latitude"
+                                ],
+                                [
+                                    "Meta",
+                                    "Longitude"
+                                ],
+                                [
+                                    "Meta",
+                                    "Type"
+                                ],
+                                [
+                                    "CAT062",
+                                    "TRI Record Numbers"
+                                ]
+                            ]
                         }
                     }
-                }
-            },
-            "GeographicViewWidget": {
-                "GeographicViewWidget0": {
-                    "parameters": null
-                }
+                ]
             }
-        }
+        ]
     }
 }

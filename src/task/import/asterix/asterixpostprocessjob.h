@@ -68,6 +68,7 @@ private:
     void doGroundSpeedCalculations();
     void doFilters();
     void doObfuscate();
+    void checkARTASHashes();
 
     void obfuscateM3A (unsigned int& value);
     void obfuscateACAD (unsigned int& value);
