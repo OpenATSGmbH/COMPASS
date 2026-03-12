@@ -145,7 +145,7 @@ pipeline {
                         echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})"
 
                         sh """
-                            cd '${scriptsDir}/test' && \
+                            cd '${scriptsDir}/test_infra' && \
                             PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
