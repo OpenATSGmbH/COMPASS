@@ -218,6 +218,8 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("calculate_artas_tr_usage", po::bool_switch(&calculate_artas_tr_usage_), "associate target reports based on ARTAS usage")
         ("reconstruct_references", po::bool_switch(&reconstruct_references_),
          "reconstruct references from sensor and tracker data")
+        ("reconstruct_references_cfg", po::value<std::string>(&reconstruct_references_cfg_),
+         "reconstructor configuration as JSON string, e.g. ''{\"current_reconstructor_str\": \"Scoring + UMKalman\"}''")
         ("load_data", po::bool_switch(&load_data_), "load data after start")
         ("export_view_points_report", po::value<std::string>(&export_view_points_report_filename_),
          "export view points report after start with given filename, e.g. '/data/db2/report.tex")
@@ -648,7 +650,12 @@ bool Client::run ()
             rt_man.addCommandFromConsole("calculate_artas_tr_usage");
 
         if (reconstruct_references_)
-            rt_man.addCommandFromConsole("reconstruct_references");
+        {
+            string cmd = "reconstruct_references";
+            if (!reconstruct_references_cfg_.empty())
+                cmd += " --config='" + jsonParam2RTCommandString(reconstruct_references_cfg_) + "'";
+            rt_man.addCommandFromConsole(cmd);
+        }
 
         if (load_data_)
             rt_man.addCommandFromConsole("load_data");

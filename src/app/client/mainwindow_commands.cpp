@@ -371,6 +371,16 @@ bool RTCommandReconstructReferences::run_impl()
 
     ReconstructorTask& task = compass_->taskManager().reconstructReferencesTask();
 
+    if (!config_.empty())
+    {
+        auto res = task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
     if (!disabled_sensors_.empty())
     {
         auto& ds_manager = compass_->dataSourceManager();
@@ -414,11 +424,13 @@ void RTCommandReconstructReferences::collectOptions_impl(OptionsDescription& opt
                                                          PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("disable_sensors,d", po::value<std::string>()->default_value(""), "optional list of sensor names to disables, e.g. ’GPS Trail 1;GPS Trail 2'");
+        ("config,c", po::value<std::string>()->default_value(""), "reconstructor configuration as json string")
+        ("disable_sensors,d", po::value<std::string>()->default_value(""), "optional list of sensor names to disables, e.g. ‘GPS Trail 1;GPS Trail 2’");
 }
 
 void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& variables)
 {
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "disable_sensors", std::string, disabled_sensors_)
 }
 

@@ -148,11 +148,25 @@ bool TaskResultMetaData::fromJSON(const nlohmann::json& j)
         !j.contains(TaskResult::FieldMetaDataComments))
         return false;
 
+    bool ok = false;
+
     std::string ts_created_str = j[ TaskResult::FieldMetaDataCreated ];
-    ts_created = Utils::Time::fromString(ts_created_str);
+    loginf << "parsing created timestamp '" << ts_created_str << "'";
+    ts_created = Utils::Time::fromString(ts_created_str, &ok);
+    if (!ok)
+    {
+        logerr << "invalid created timestamp '" << ts_created_str << "'";
+        return false;
+    }
 
     std::string ts_refreshed_str = j[ TaskResult::FieldMetaDataRefreshed ];
-    ts_refreshed = Utils::Time::fromString(ts_refreshed_str);
+    loginf << "parsing refreshed timestamp '" << ts_refreshed_str << "'";
+    ts_refreshed = Utils::Time::fromString(ts_refreshed_str, &ok);
+    if (!ok)
+    {
+        logerr << "invalid refreshed timestamp '" << ts_refreshed_str << "'";
+        return false;
+    }
 
     user     = j[ TaskResult::FieldMetaDataUser     ];
     comments = j[ TaskResult::FieldMetaDataComments ];
@@ -597,6 +611,16 @@ Result TaskResult::initResult()
  */
 Result TaskResult::prepareResult()
 {
+    auto now = Utils::Time::currentUTCTime();
+
+    if (metadata_.ts_created.is_not_a_date_time())
+        metadata_.ts_created = now;
+
+    metadata_.ts_refreshed = now;
+
+    loginf << "ts_created '" << Utils::Time::toString(metadata_.ts_created)
+           << "' ts_refreshed '" << Utils::Time::toString(metadata_.ts_refreshed) << "'";
+
     //clear report
     report()->clear();
 

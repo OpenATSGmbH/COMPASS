@@ -84,6 +84,7 @@ private:
     bool calculate_artas_tr_usage_ {false};
 
     bool reconstruct_references_ {false};
+    std::string reconstruct_references_cfg_;
 
     bool load_data_ {false};
 
