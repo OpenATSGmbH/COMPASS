@@ -552,8 +552,11 @@ void Configuration::writeJSON(nlohmann::json& parent_json,
 /**
  * Generates the full json config.
  * Parameters come from the cache; sub_configs come from sub_config_storage_.
- * Note: sub_config entries are shallow copies — nested sub_configs within children
- * are only present if rebuildSubConfigsToJson() was called bottom-up first.
+ *
+ * Important: sub_config entries are shallow copies — nested sub_configs within children
+ * are only present if Configurable::writeBackConfigRecursive() was called bottom-up first.
+ * Callers must ensure writeBackConfigRecursive() is called before generateJSON() whenever
+ * the Configurable tree has runtime-created descendants (e.g. EvaluationStandard requirement groups).
  */
 void Configuration::generateJSON(nlohmann::json& target,
                                  JSONExportType export_type) const

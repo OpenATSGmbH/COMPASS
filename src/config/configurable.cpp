@@ -250,6 +250,10 @@ void Configurable::writeJSON(nlohmann::json& parent_json, JSONExportType export_
     configuration_->writeJSON(parent_json, export_type);
 }
 
+/// Builds a standalone JSON object with class_name, instance_name, parameters, and sub_configs.
+/// Important: sub_configs in the output are shallow copies from sub_config_storage_.
+/// Call writeBackConfigRecursive() first to ensure nested sub_configs within children
+/// are fully populated (e.g. after runtime-created grandchildren).
 void Configurable::generateJSON(nlohmann::json& target, JSONExportType export_type) const
 {
     traced_assert(configuration_);
