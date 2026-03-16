@@ -151,22 +151,14 @@ bool TaskResultMetaData::fromJSON(const nlohmann::json& j)
     bool ok = false;
 
     std::string ts_created_str = j[ TaskResult::FieldMetaDataCreated ];
-    loginf << "parsing created timestamp '" << ts_created_str << "'";
     ts_created = Utils::Time::fromString(ts_created_str, &ok);
     if (!ok)
-    {
-        logerr << "invalid created timestamp '" << ts_created_str << "'";
-        return false;
-    }
+        logwrn << "invalid created timestamp '" << ts_created_str << "'";
 
     std::string ts_refreshed_str = j[ TaskResult::FieldMetaDataRefreshed ];
-    loginf << "parsing refreshed timestamp '" << ts_refreshed_str << "'";
     ts_refreshed = Utils::Time::fromString(ts_refreshed_str, &ok);
     if (!ok)
-    {
-        logerr << "invalid refreshed timestamp '" << ts_refreshed_str << "'";
-        return false;
-    }
+        logwrn << "invalid refreshed timestamp '" << ts_refreshed_str << "'";
 
     user     = j[ TaskResult::FieldMetaDataUser     ];
     comments = j[ TaskResult::FieldMetaDataComments ];

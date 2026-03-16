@@ -94,7 +94,7 @@ public:
                          bool is_default_calculator);
     virtual ~EvaluationCalculator();
 
-    ResultT<EvaluationCalculator*> clone() const;
+    ResultT<EvaluationCalculator*> clone();
     static ResultT<EvaluationCalculator*> clone(EvaluationManager& eval_man,
                                                 DBContentManager& dbcontent_man,
                                                 const nlohmann::json& config);

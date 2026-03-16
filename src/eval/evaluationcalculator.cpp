@@ -116,8 +116,11 @@ EvaluationCalculator::~EvaluationCalculator() = default;
 
 /**
  */
-ResultT<EvaluationCalculator*> EvaluationCalculator::clone() const
+ResultT<EvaluationCalculator*> EvaluationCalculator::clone()
 {
+    //ensure nested sub_configs are fully populated before export
+    writeBackConfigRecursive();
+
     //obtain current json config
     nlohmann::json config;
     generateJSON(config, Configurable::JSONExportType::General);
