@@ -324,6 +324,14 @@ void EvaluationCalculator::updateDerivedParameters()
  */
 Result EvaluationCalculator::canEvaluate() const
 {
+    loginf << "checking canEvaluate:"
+           << " has_associations " << eval_man_.dbContentManager().hasAssociations()
+           << " current_standard '" << settings_.current_standard_ << "'"
+           << " has_current_standard " << hasCurrentStandard()
+           << " sectors_loaded " << sectorsLoaded()
+           << " num_sector_layers " << (sectorsLoaded() ? sectorLayers().size() : 0)
+           << " use_grp_in_sector " << settings_.use_grp_in_sector_.dump();
+
     //needs associations
     if (!eval_man_.dbContentManager().hasAssociations())
     {
@@ -334,7 +342,10 @@ Result EvaluationCalculator::canEvaluate() const
     //needs a set standard
     if (!hasCurrentStandard())
     {
-        logerr << "no current standard";
+        logerr << "no current standard '" << settings_.current_standard_ << "'"
+               << ", available standards " << standards_.size();
+        for (const auto& s : standards_)
+            logerr << "  standard '" << s->name() << "'";
         return Result::failed("Please select a standard");
     }
 
@@ -1142,11 +1153,14 @@ bool EvaluationCalculator::anySectorsWithReq() const
         const EvaluationStandard& standard = currentStandard();
 
         const std::vector<std::shared_ptr<SectorLayer>>& sector_layers = sectorLayers();
-        loginf << "checking " << sector_layers.size() << " sector layers, standard '" << settings_.current_standard_ << "'";
+        loginf << "checking " << sector_layers.size() << " sector layers, standard '" << settings_.current_standard_ << "'"
+               << " use_grp_in_sector: " << settings_.use_grp_in_sector_.dump();
 
         for (const auto& sec_it : sector_layers)
         {
             const string& sector_layer_name = sec_it->name();
+
+            loginf << "sector '" << sector_layer_name << "' checking requirement groups";
 
             for (auto& req_group_it : standard)
             {

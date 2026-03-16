@@ -766,6 +766,8 @@ nlohmann::json TaskResult::toJSON() const
     //derived content
     toJSON_impl(j);
 
+    loginf << "writing result '" << name_ << "' JSON: " << j.dump();
+
     return j;
 }
 
@@ -773,16 +775,26 @@ nlohmann::json TaskResult::toJSON() const
  */
 bool TaskResult::fromJSON(const nlohmann::json& j)
 {
-    //loginf << j.dump(4);
+    loginf << "loading result JSON: " << j.dump();
 
-    if (!j.is_object()                    || 
+    if (!j.is_object()                    ||
         !j.contains(FieldType)            ||
         !j.contains(FieldID)              ||
         !j.contains(FieldName)            ||
         !j.contains(FieldMetaData)        ||
         !j.contains(FieldReport)          ||
         !j.contains(FieldConfig))
+    {
+        logerr << "missing required fields:"
+               << " is_object=" << j.is_object()
+               << " has_type=" << j.contains(FieldType)
+               << " has_id=" << j.contains(FieldID)
+               << " has_name=" << j.contains(FieldName)
+               << " has_metadata=" << j.contains(FieldMetaData)
+               << " has_report=" << j.contains(FieldReport)
+               << " has_config=" << j.contains(FieldConfig);
         return false;
+    }
 
     task::TaskResultType stored_type = j[ FieldType ];
     if (stored_type != type())
@@ -796,22 +808,31 @@ bool TaskResult::fromJSON(const nlohmann::json& j)
     name_     = j[ FieldName ];
 
     if (!metadata_.fromJSON(j[ FieldMetaData ]))
+    {
+        logerr << "failed to parse metadata for result '" << name_ << "'";
         return false;
+    }
 
     if (!report_->fromJSON(j[ FieldReport ]))
+    {
+        logerr << "failed to parse report for result '" << name_ << "'";
         return false;
+    }
 
     config_ = j[ FieldConfig ];
 
     //derived content
     if (!fromJSON_impl(j))
+    {
+        logerr << "failed to parse implementation data for result '" << name_ << "'";
         return false;
+    }
 
     //init after reading in data
     auto init_res = initResult();
     if (!init_res.ok())
     {
-        logerr << "initializing result failed: " << init_res.error();
+        logerr << "initializing result '" << name_ << "' failed: " << init_res.error();
         return false;
     }
 
