@@ -11,15 +11,36 @@ Depending on what Linux operating system is used, the commands will differ. In t
 sudo apt-get install texlive-full 
 \end{lstlisting}
 
-\subsection {CentOS \& Fedora Variants}
-
-The following command should work:
+\subsection {CentOS, Fedora \& AlmaLinux Variants}
 
 \begin{lstlisting}
-sudo yum install 'texlive-*'
+# AlmaLinux 9 / RHEL 9: enable CRB repository first
+sudo dnf config-manager --set-enabled crb
+sudo dnf install -y epel-release
+
+sudo dnf install 'texlive-*'
 \end{lstlisting}
 
-There is still a guide which provides a more cumbersome installation - since the author does not use CentOS both options are not yet verified. For the more elaborate installation please refer to \href{https://www.systutorials.com/how-to-install-tex-live-on-centos-7-linux/}{How To Install Tex Live on CentOS 7}.
+On AlmaLinux 9 (and similar RHEL 9 derivatives), some LaTeX packages required (e.g. \texttt{ltablex}, \texttt{silence}) are not available in the distribution repositories. These must be installed manually from CTAN into the local texmf tree:
+
+\begin{lstlisting}
+# Install ltablex
+sudo mkdir -p /usr/share/texlive/texmf-local/tex/latex/ltablex
+curl -sL https://mirrors.ctan.org/macros/latex/contrib/ltablex/ltablex.sty \
+  | sudo tee /usr/share/texlive/texmf-local/tex/latex/ltablex/ltablex.sty \
+  > /dev/null
+
+# Install silence
+sudo mkdir -p /usr/share/texlive/texmf-local/tex/latex/silence
+curl -sL https://mirrors.ctan.org/macros/latex/contrib/silence/silence.sty \
+  | sudo tee /usr/share/texlive/texmf-local/tex/latex/silence/silence.sty \
+  > /dev/null
+
+# Update TeX database
+sudo texhash /usr/share/texlive/texmf-local
+\end{lstlisting}
+
+Verify with \texttt{kpsewhich ltablex.sty} and \texttt{kpsewhich silence.sty}.
 
 \subsection{Testing}
 
