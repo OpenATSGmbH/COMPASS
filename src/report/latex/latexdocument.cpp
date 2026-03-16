@@ -104,7 +104,6 @@ std::string LatexDocument::toString()
           \usepackage{ltablex}
           \usepackage{pdflscape}
 
-          \usepackage{xcolor}
           \usepackage[table]{xcolor}
           \definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
           \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.13})";

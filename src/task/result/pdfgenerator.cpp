@@ -247,9 +247,13 @@ void PDFGenerator::run ()
                 dialog_->setElapsedTime(elapsed_time_str);
 
                 unsigned int run_cnt=0;
+                bool fatal_error = command_out.find("! LaTeX Error") != std::string::npos
+                                || command_out.find("! Emergency stop") != std::string::npos
+                                || command_out.find("Fatal error") != std::string::npos;
 
-                while (run_cnt < 3 || (command_out.find("Rerun to get outlines right") != std::string::npos
-                                       || command_out.find("Rerun to get cross-references right") != std::string::npos))
+                while (!fatal_error
+                       && (run_cnt < 3 || (command_out.find("Rerun to get outlines right") != std::string::npos
+                                           || command_out.find("Rerun to get cross-references right") != std::string::npos)))
                 {
                     loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");
@@ -258,12 +262,17 @@ void PDFGenerator::run ()
 
                     command_out = System::exec(command);
 
+                    stop_time = boost::posix_time::microsec_clock::local_time();
                     time_diff = stop_time - start_time;
                     ms = time_diff.total_milliseconds();
                     elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                     dialog_->setElapsedTime(elapsed_time_str);
 
                     logdbg << "re-run done";
+
+                    fatal_error = command_out.find("! LaTeX Error") != std::string::npos
+                               || command_out.find("! Emergency stop") != std::string::npos
+                               || command_out.find("Fatal error") != std::string::npos;
 
                     ++run_cnt;
                 }

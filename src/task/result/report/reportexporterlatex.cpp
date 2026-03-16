@@ -391,12 +391,20 @@ Result ReportExporterLatex::writePDF() const
     unsigned int max_runs = s.latex_pdf_max_reruns;
     unsigned int run_cnt  = 0;
 
-    while (run_cnt < max_runs || 
-           (command_out.find("Rerun to get outlines right"        ) != std::string::npos) || 
-           (command_out.find("Rerun to get cross-references right") != std::string::npos))
+    auto hasFatalError = [&command_out]()
+    {
+        return command_out.find("! LaTeX Error")   != std::string::npos
+            || command_out.find("! Emergency stop") != std::string::npos
+            || command_out.find("Fatal error")      != std::string::npos;
+    };
+
+    while (!hasFatalError() &&
+           (run_cnt < max_runs ||
+            (command_out.find("Rerun to get outlines right"        ) != std::string::npos) ||
+            (command_out.find("Rerun to get cross-references right") != std::string::npos)))
     {
         loginf << "re-running pdflatex";
-        
+
         //re-run
         runPDFLatex();
 
