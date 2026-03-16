@@ -164,7 +164,13 @@ void ViewContainer::addView(View* view)
 
     const QString view_name = QString::fromStdString(view->getName());
 
+    // Suppress paint events during tab insertion. QTabWidget::addTab triggers
+    // QWidget::setParent which can fire a paint event on the widget being
+    // reparented. For views containing a QOpenGLWidget (Geographic View) this
+    // causes OSG to render into a stale GL context and crash in SceneView::cull.
+    w->setUpdatesEnabled(false);
     int index = tab_widget_->addTab(w, view_name);
+    w->setUpdatesEnabled(true);
 
     QPushButton* manage_button = new QPushButton();
     UI_TEST_OBJ_NAME(manage_button, view_name + " Manager"); //manage buttons can be reached via e.g. window1.geographicview2_manager
