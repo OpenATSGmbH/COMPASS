@@ -34,6 +34,10 @@
 #include "viewpointsreportgeneratordialog.h"
 #include "util/timeconv.h"
 #include "viewpoint_commands.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include "geographicview_commands.h"
+#endif
 #include "global.h"
 
 #include "json.hpp"
@@ -60,6 +64,10 @@ ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
     init_view_point_commands(compass_);
+
+#if USE_EXPERIMENTAL_SOURCE == true
+    init_geographic_view_commands();
+#endif
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
