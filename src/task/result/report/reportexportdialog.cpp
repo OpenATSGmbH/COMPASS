@@ -74,11 +74,22 @@ ReportExportDialog::ReportExportDialog(TaskResult& task_result,
 }
 
 /**
+ * Bug: On Linux, Qt fires showEvent not only on the initial dialog show, but
+ * also when the window manager re-exposes the window (e.g. switching back to
+ * this virtual desktop). Without the guard, exportReport() would be called
+ * again mid-export — resetting the progress bar to 0 and starting a second
+ * export on top of the running one, making it appear as if the export
+ * "restarted from scratch" every time the user switched desktops.
+ *
+ * Fix: export_triggered_ ensures the auto-export fires exactly once.
  */
 void ReportExportDialog::showEvent(QShowEvent *event)
 {
-    if (no_interaction_mode_)
+    if (no_interaction_mode_ && !export_triggered_)
+    {
+        export_triggered_ = true;
         QTimer::singleShot(10, this, &ReportExportDialog::exportReport);
+    }
 }
 
 /**
