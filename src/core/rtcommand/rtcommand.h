@@ -206,6 +206,28 @@ protected:
 };
 
 /**
+ * Round-trip echo command: returns the received message in the reply.
+ * Useful for testing large message transmission over the TCP interface.
+ */
+struct RTCommandRoundTrip : public RTCommand
+{
+    std::string message_;
+
+protected:
+    virtual bool run_impl() override
+    {
+        nlohmann::json reply;
+        reply["message"] = message_;
+        reply["size"] = message_.size();
+        setJSONReply(reply);
+        return true;
+    }
+
+    DECLARE_RTCOMMAND(round_trip, "echoes the received message back in the reply")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
+/**
  * The help command.
  */
 struct RTCommandHelp : public RTCommand 
