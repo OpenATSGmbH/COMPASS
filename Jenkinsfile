@@ -17,6 +17,9 @@ pipeline {
         booleanParam(name: 'TAG_SCATTERPLOTVIEW', defaultValue: true, description: 'Tag: scatterplotview')
         booleanParam(name: 'TAG_GEOGRAPHICVIEW',  defaultValue: true, description: 'Tag: geographicview')
 
+        // Build options
+        booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
+
         // Datasets (checkboxes)
         booleanParam(name: 'DATASET_05H', defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
         booleanParam(name: 'DATASET_2H',  defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
@@ -54,14 +57,17 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v \$(pwd):/workspace/compass \
-                        -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
-                        -w /workspace/compass/docker \
-                        ${DOCKER_IMAGE} \
-                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh && ./build_compass.sh'
-                """
+                script {
+                    def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
+                    sh """
+                        docker run --rm \
+                            -v \$(pwd):/workspace/compass \
+                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -w /workspace/compass/docker \
+                            ${DOCKER_IMAGE} \
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} && ./build_compass.sh ${cleanFlag}'
+                    """
+                }
             }
         }
 
