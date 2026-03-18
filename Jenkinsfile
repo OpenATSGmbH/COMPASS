@@ -74,12 +74,12 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 sh """
-                    docker run --rm \
+                    docker run --rm --init \
                         -v \$(pwd):/workspace/compass \
                         -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
                         -w /workspace/compass \
                         ${DOCKER_IMAGE} \
-                        env MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests
+                        bash -c 'MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
                 """
             }
         }
