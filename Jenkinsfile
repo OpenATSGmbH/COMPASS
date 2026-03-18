@@ -73,7 +73,7 @@ pipeline {
                         -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
                         -w /workspace/compass \
                         ${DOCKER_IMAGE} \
-                        ./build_deb10/bin/compass_tests
+                        env MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests
                 """
             }
         }

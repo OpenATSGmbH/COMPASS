@@ -22,7 +22,8 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
 RUN cp /etc/apt/sources.list /etc/apt/sources.list~ \
   && echo 'deb-src http://archive.debian.org/debian buster main' >> /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev patchelf sudo \
+  && apt-get install -y --no-install-recommends git openssl apt-utils software-properties-common build-essential gcc g++ wget libssl-dev liblog4cpp5-dev libarchive-dev libeigen3-dev libgdal-dev libkml-dev locate zip unzip qtchooser chrpath libtbb-dev libgeos-dev libx11-dev libxcb1-dev libxkbcommon-dev libgles2-mesa-dev libegl1-mesa-dev libxrender-dev libxcb-xinerama0-dev libxcb-image0-dev libwayland-dev gedit libgl1-mesa-dev libxkbcommon-x11-dev qt5-* libqt5* qtwayland5 libgif-dev libjpeg-dev libgeos++-dev autoconf automake libtool curl libglew-dev libzip-dev libpcap-dev libgeographic-dev python2.7-dev libfreetype6-dev libfontconfig1-dev patchelf sudo xvfb xauth mesa-utils \
+
   && apt-get build-dep -y libopenscenegraph-dev libosgearth-dev libboost-all-dev \
   && rm -rf /var/lib/apt/lists/*
 
@@ -82,12 +83,12 @@ RUN cd OpenSceneGraph-3.6/build && make install
 
 RUN rm -rf OpenSceneGraph-3.6/build/lib
 
-RUN wget https://github.com/openscenegraph/osgQt/archive/Qt4.zip
-RUN unzip Qt4.zip
-RUN mkdir osgQt-Qt4/build
-RUN cd osgQt-Qt4/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
-RUN cd osgQt-Qt4/build && make -j$(nproc)
-RUN cd osgQt-Qt4/build && make install
+#RUN wget https://github.com/openscenegraph/osgQt/archive/Qt4.zip
+#RUN unzip Qt4.zip
+#RUN mkdir osgQt-Qt4/build
+#RUN cd osgQt-Qt4/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
+#RUN cd osgQt-Qt4/build && make -j$(nproc)
+#RUN cd osgQt-Qt4/build && make install
 
 RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v3.19.1/protobuf-cpp-3.19.1.zip
 RUN unzip protobuf-cpp-3.19.1.zip
@@ -118,7 +119,7 @@ RUN mkdir -p /usr/lib/x86_64-linux-gnu/cmake/libzip && \
 
 RUN git clone --branch osgearth-3.7.2 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.7.2
 RUN mkdir osgearth-3.7.2/build
-RUN cd osgearth-3.7.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
+RUN cd osgearth-3.7.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release ..
 RUN cd osgearth-3.7.2/build && make -j$(nproc)
 RUN cd osgearth-3.7.2/build && make install
 
@@ -150,5 +151,8 @@ RUN updatedb
 RUN echo "${USER_NAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN more /etc/sudoers
 
-USER ${USER_NAME} 
+# Verify Xvfb + software OpenGL core profile (3.3 needed for OSG GL3 build)
+RUN xvfb-run -a glxinfo | grep -E "OpenGL (core profile |)(renderer|version|shading language version)"
+
+USER ${USER_NAME}
 WORKDIR /app/workspace/compass/docker
