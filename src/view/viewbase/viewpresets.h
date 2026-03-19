@@ -127,7 +127,7 @@ public:
 
     bool scanForPresets();
 
-    bool createPreset(const View* view,
+    bool createPreset(View* view,
                       const std::string& name,
                       const PresetMetadata& metadata,
                       bool create_preview = true);
@@ -142,10 +142,10 @@ public:
                     const std::string& new_name,
                     const boost::optional<PresetMetadata>& new_metadata,
                     const View* view = nullptr);
-    bool updatePreset(const Key& key, 
+    bool updatePreset(const Key& key,
                       UpdateMode mode,
                       const Preset* preset,
-                      const View* view,
+                      View* view,
                       bool update_config_from_view = true,
                       bool update_preview = true);
     
@@ -154,7 +154,7 @@ public:
     bool nameExists(const std::string& name, const View* view) const;
 
     static void updatePresetStamp(Preset& preset, const std::string& app_version);
-    static bool updatePresetConfig(Preset& preset, const View* view, bool update_preview = true);
+    static bool updatePresetConfig(Preset& preset, View* view, bool update_preview = true);
     static QImage renderPreview(const View* view);
 
     static bool keyValid(const Key& key);
@@ -221,12 +221,12 @@ private:
                     const boost::optional<PresetMetadata>& new_metadata,
                     const View* view, 
                     bool signal_changes);
-    bool updatePreset(const Key& key, 
-                      const Preset* preset, 
-                      const View* view, 
-                      bool update_config_from_view, 
-                      UpdateMode mode, 
-                      bool update_preview, 
+    bool updatePreset(const Key& key,
+                      const Preset* preset,
+                      View* view,
+                      bool update_config_from_view,
+                      UpdateMode mode,
+                      bool update_preview,
                       bool signal_changes);
 
     std::string uniqueBasename(const Preset& preset) const;

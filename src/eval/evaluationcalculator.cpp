@@ -116,8 +116,11 @@ EvaluationCalculator::~EvaluationCalculator() = default;
 
 /**
  */
-ResultT<EvaluationCalculator*> EvaluationCalculator::clone() const
+ResultT<EvaluationCalculator*> EvaluationCalculator::clone()
 {
+    //ensure nested sub_configs are fully populated before export
+    writeBackConfigRecursive();
+
     //obtain current json config
     nlohmann::json config;
     generateJSON(config, Configurable::JSONExportType::General);
@@ -321,31 +324,63 @@ void EvaluationCalculator::updateDerivedParameters()
  */
 Result EvaluationCalculator::canEvaluate() const
 {
+    loginf << "checking canEvaluate:"
+           << " has_associations " << eval_man_.dbContentManager().hasAssociations()
+           << " current_standard '" << settings_.current_standard_ << "'"
+           << " has_current_standard " << hasCurrentStandard()
+           << " sectors_loaded " << sectorsLoaded()
+           << " num_sector_layers " << (sectorsLoaded() ? sectorLayers().size() : 0)
+           << " use_grp_in_sector " << settings_.use_grp_in_sector_.dump();
+
     //needs associations
     if (!eval_man_.dbContentManager().hasAssociations())
+    {
+        logerr << "no associations";
         return Result::failed("Please run target report association");
+    }
 
     //needs a set standard
     if (!hasCurrentStandard())
+    {
+        logerr << "no current standard '" << settings_.current_standard_ << "'"
+               << ", available standards " << standards_.size();
+        for (const auto& s : standards_)
+            logerr << "  standard '" << s->name() << "'";
         return Result::failed("Please select a standard");
+    }
 
     //needs selected ref data sources
     if (!hasSelectedReferenceDataSources())
+    {
+        logerr << "no selected reference data sources";
         return Result::failed("Please select reference data sources");
+    }
 
     //needs selected test data sources
     if (!hasSelectedTestDataSources())
+    {
+        logerr << "no selected test data sources";
         return Result::failed("Please select test data sources");
+    }
 
     //needs loaded sectors
     if (!sectorsLoaded())
+    {
+        logerr << "sectors not loaded";
         return Result::failed("No Database loaded");
+    }
 
     if (sectorLayers().empty())
+    {
+        logerr << "no sector layers";
         return Result::failed("Please add at least one sector");
+    }
 
     if (!anySectorsWithReq())
+    {
+        logerr << "no sectors with requirements";
         return Result::failed("Please set requirements for at least one sector");
+    }
 
     //@TODO
     //return "Please activate at least one requirement group";
@@ -1106,7 +1141,10 @@ bool EvaluationCalculator::sectorsLoaded() const
 bool EvaluationCalculator::anySectorsWithReq() const
 {
     if (!sectorsLoaded())
+    {
+        loginf << "sectors not loaded";
         return false;
+    }
 
     bool any = false;
 
@@ -1115,21 +1153,34 @@ bool EvaluationCalculator::anySectorsWithReq() const
         const EvaluationStandard& standard = currentStandard();
 
         const std::vector<std::shared_ptr<SectorLayer>>& sector_layers = sectorLayers();
+        loginf << "checking " << sector_layers.size() << " sector layers, standard '" << settings_.current_standard_ << "'"
+               << " use_grp_in_sector: " << settings_.use_grp_in_sector_.dump();
+
         for (const auto& sec_it : sector_layers)
         {
             const string& sector_layer_name = sec_it->name();
+
+            loginf << "sector '" << sector_layer_name << "' checking requirement groups";
 
             for (auto& req_group_it : standard)
             {
                 const string& requirement_group_name = req_group_it->name();
 
-                if (useGroupInSectorLayer(sector_layer_name, requirement_group_name))
+                bool use = useGroupInSectorLayer(sector_layer_name, requirement_group_name);
+                loginf << "sector '" << sector_layer_name << "' group '" << requirement_group_name << "' use=" << use;
+
+                if (use)
                 {
                     any = true;
                     break;
                 }
             }
         }
+    }
+    else
+    {
+        loginf << "no current standard, current_standard_='" << settings_.current_standard_
+               << "' num standards=" << standards_.size();
     }
 
     return any;

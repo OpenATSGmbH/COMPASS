@@ -279,3 +279,106 @@ TEST_CASE("FFTManager construction", "[interior][fftmanager]")
     }
 }
 
+// ---------------------------------------------------------------------------
+// generateJSON correctness
+// ---------------------------------------------------------------------------
+
+TEST_CASE("generateJSON produces complete nested output", "[interior][generatejson]")
+{
+    SECTION("Dimension generateJSON includes Unit sub_configs")
+    {
+        json cfg = makeConfig("Dimension", "Length");
+        cfg["sub_configs"] = {{"Unit", {
+            {"Metre",     {{"parameters", {{"definition", "base unit"}, {"factor", 1.0}}}}},
+            {"Kilometre", {{"parameters", {{"definition", ""},          {"factor", 0.001}}}}}
+        }}};
+
+        Dimension dim(cfg, nullptr);
+
+        // writeBackConfigRecursive ensures sub_config_storage_ is up to date
+        dim.writeBackConfigRecursive();
+
+        json output;
+        dim.generateJSON(output, Configuration::JSONExportType::General);
+
+        REQUIRE(output.contains("sub_configs"));
+        REQUIRE(output["sub_configs"].is_array());
+        REQUIRE(output["sub_configs"].size() == 2);
+
+        auto* metre = Configuration::findSubConfigEntry(output, "Unit", "Metre");
+        auto* km    = Configuration::findSubConfigEntry(output, "Unit", "Kilometre");
+        REQUIRE(metre != nullptr);
+        REQUIRE(km != nullptr);
+        REQUIRE((*metre)["parameters"]["factor"].get<double>() == Approx(1.0));
+        REQUIRE((*km)["parameters"]["factor"].get<double>() == Approx(0.001));
+    }
+
+    SECTION("UnitManager generateJSON includes nested Dimension and Unit sub_configs")
+    {
+        json cfg = makeFullUnitManagerConfig();
+        UnitManager um(cfg, nullptr);
+
+        // writeBackConfigRecursive rebuilds the full tree bottom-up
+        um.writeBackConfigRecursive();
+
+        json output;
+        um.generateJSON(output, Configuration::JSONExportType::General);
+
+        REQUIRE(output.contains("sub_configs"));
+
+        // Find the Angle dimension in the output
+        auto* angle = Configuration::findSubConfigEntry(output, "Dimension", "Angle");
+        REQUIRE(angle != nullptr);
+
+        // Angle dimension must contain its Unit sub_configs (nested level)
+        REQUIRE(angle->contains("sub_configs"));
+        auto* degree = Configuration::findSubConfigEntry(*angle, "Unit", "Degree");
+        auto* radian = Configuration::findSubConfigEntry(*angle, "Unit", "Radian");
+        REQUIRE(degree != nullptr);
+        REQUIRE(radian != nullptr);
+        REQUIRE((*degree)["parameters"]["factor"].get<double>() == Approx(1.0));
+    }
+
+    SECTION("generateJSON without writeBackConfigRecursive produces shallow output")
+    {
+        json cfg = makeFullUnitManagerConfig();
+        UnitManager um(cfg, nullptr);
+
+        // Deliberately skip writeBackConfigRecursive — sub_configs are shallow
+        json output;
+        um.generateJSON(output, Configuration::JSONExportType::General);
+
+        REQUIRE(output.contains("sub_configs"));
+
+        // Dimension entries exist but their Unit sub_configs may be absent
+        // because the storage was consumed during construction
+        auto* angle = Configuration::findSubConfigEntry(output, "Dimension", "Angle");
+        REQUIRE(angle != nullptr);
+
+        // Without writeBackConfigRecursive, nested sub_configs are not guaranteed
+        // (they depend on whether storage was rebuilt). This documents the current behavior.
+        // The key point: writeBackConfigRecursive makes them complete.
+    }
+
+    SECTION("generateJSON round-trips through a new Configurable")
+    {
+        // Build a UnitManager, export its JSON, then construct a new one from that JSON
+        json cfg = makeFullUnitManagerConfig();
+        UnitManager um(cfg, nullptr);
+
+        um.writeBackConfigRecursive();
+
+        json exported;
+        um.generateJSON(exported, Configuration::JSONExportType::General);
+
+        // Construct a second UnitManager from the exported JSON
+        UnitManager um2(exported, nullptr);
+
+        REQUIRE(um2.dimensions().size() == 5);
+        REQUIRE(um2.hasDimension("Angle"));
+        REQUIRE(um2.dimension("Angle").hasUnit("Degree"));
+        REQUIRE(um2.dimension("Angle").hasUnit("Radian"));
+        REQUIRE(um2.dimension("Angle").units().at("Degree")->factor() == Approx(1.0));
+    }
+}
+

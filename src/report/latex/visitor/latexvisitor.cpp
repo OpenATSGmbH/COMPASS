@@ -321,17 +321,6 @@ void LatexVisitor::visit(GeographicView* e)
     if (wait_on_map_loading_)
         data_widget->waitUntilMapLoaded();
 
-    const int RenderDelayMSec = 2000;
-
-    //wait a little for e.g. geoimages to warp and render correctly
-    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
-    while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
-            < RenderDelayMSec)
-    {
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        QThread::msleep(10);
-    }
-
     //data_widget->clearMouseCoordinates();
 
     // normal screenshot

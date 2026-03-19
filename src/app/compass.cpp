@@ -52,6 +52,13 @@
 
 #include <osgDB/Registry>
 
+#include "global.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include <osgEarth/weejobs.h>
+#include "ViewerWidget.h"
+#endif
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace std;
@@ -916,6 +923,17 @@ void COMPASS::shutdown()
     traced_assert(view_manager_);
     view_manager_->close();
     view_manager_ = nullptr;
+
+#if USE_EXPERIMENTAL_SOURCE == true
+    // Release retired GL contexts while OSG globals are still alive.
+    // If left for static destruction, OSG's ContextData double-frees.
+    osgEarth::QtGui::ViewerWidget::releaseRetiredContexts();
+
+    // Drain osgEarth's global job/thread pool after all views are destroyed.
+    // Must not be called per-view — it shuts down shared state that other
+    // Geographic Views would still need.
+    jobs::shutdown();
+#endif
 
     //osgDB::Registry::instance(true);
 

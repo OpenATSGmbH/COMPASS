@@ -2,13 +2,27 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'EXPERIMENTAL_SRC_BRANCH', defaultValue: 'devel',  description: 'experimental_src branch (tries this branch, fallback to devel)')
+        string(name: 'EXPERIMENTAL_SRC_BRANCH', defaultValue: '',  description: 'experimental_src branch (empty = same as pipeline branch, fallback to devel)')
         string(name: 'JASTERIX_BRANCH',         defaultValue: 'devel', description: 'jASTERIX branch')
-        booleanParam(name: 'RUN_DB_TESTS',     defaultValue: true,  description: 'Run database test module')
-        booleanParam(name: 'RUN_UI_TESTS',     defaultValue: true,  description: 'Run UI test module')
-        booleanParam(name: 'RUN_EVAL_TESTS',   defaultValue: true,  description: 'Run evaluation test module')
-        booleanParam(name: 'RUN_SYSTEM_TESTS', defaultValue: true,  description: 'Run system test module')
-        booleanParam(name: 'RUN_EXTRA_TESTS',  defaultValue: false, description: 'Run extra test module')
+
+        // Test tags (checkboxes)
+        booleanParam(name: 'TAG_SYSTEM',          defaultValue: true, description: 'Tag: system')
+        booleanParam(name: 'TAG_IMPORT',          defaultValue: true, description: 'Tag: import')
+        booleanParam(name: 'TAG_CALCULATE',       defaultValue: true, description: 'Tag: calculate')
+        booleanParam(name: 'TAG_EVAL',            defaultValue: true, description: 'Tag: eval')
+        booleanParam(name: 'TAG_UI',              defaultValue: true, description: 'Tag: ui (all UI tests)')
+        booleanParam(name: 'TAG_VIEWS',           defaultValue: true, description: 'Tag: views')
+        booleanParam(name: 'TAG_TABLEVIEW',       defaultValue: true, description: 'Tag: tableview')
+        booleanParam(name: 'TAG_HISTOGRAMVIEW',   defaultValue: true, description: 'Tag: histogramview')
+        booleanParam(name: 'TAG_SCATTERPLOTVIEW', defaultValue: true, description: 'Tag: scatterplotview')
+        booleanParam(name: 'TAG_GEOGRAPHICVIEW',  defaultValue: true, description: 'Tag: geographicview')
+
+        // Build options
+        booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
+
+        // Datasets (checkboxes)
+        booleanParam(name: 'DATASET_05H', defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
+        booleanParam(name: 'DATASET_2H',  defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
     }
 
     environment {
@@ -25,13 +39,14 @@ pipeline {
             steps {
                 script {
                     // Resolve branch parameters
-                    def expBranch = params.EXPERIMENTAL_SRC_BRANCH?.trim() ?: 'devel'
+                    // experimental_src: explicit param > pipeline branch > devel
+                    def expBranch = params.EXPERIMENTAL_SRC_BRANCH?.trim() ?: env.BRANCH_NAME
                     def jasterixBranch = params.JASTERIX_BRANCH?.trim() ?: 'devel'
 
                     echo "experimental_src branch: ${expBranch} (fallback: devel)"
                     echo "jASTERIX branch: ${jasterixBranch}"
 
-                    // Fresh clone experimental_src
+                    // Fresh clone experimental_src: try expBranch, fallback to devel
                     sh 'rm -rf experimental_src'
                     sh "git clone --depth 1 --branch ${expBranch} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
                     // Fresh clone jASTERIX
@@ -42,26 +57,29 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v \$(pwd):/workspace/compass \
-                        -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
-                        -w /workspace/compass/docker \
-                        ${DOCKER_IMAGE} \
-                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh && ./build_compass.sh'
-                """
+                script {
+                    def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
+                    sh """
+                        docker run --rm \
+                            -v \$(pwd):/workspace/compass \
+                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -w /workspace/compass/docker \
+                            ${DOCKER_IMAGE} \
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} && ./build_compass.sh ${cleanFlag}'
+                    """
+                }
             }
         }
 
         stage('Unit Tests') {
             steps {
                 sh """
-                    docker run --rm \
+                    docker run --rm --init \
                         -v \$(pwd):/workspace/compass \
                         -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
                         -w /workspace/compass \
                         ${DOCKER_IMAGE} \
-                        ./build_deb10/bin/compass_tests
+                        bash -c 'MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
                 """
             }
         }
@@ -85,19 +103,33 @@ pipeline {
         stage('Integration Tests') {
             when {
                 expression {
-                    return params.RUN_DB_TESTS || params.RUN_UI_TESTS || params.RUN_EVAL_TESTS || params.RUN_SYSTEM_TESTS || params.RUN_EXTRA_TESTS
+                    def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
+                                 params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
+                                 params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW
+                    def anyDataset = params.DATASET_05H || params.DATASET_2H
+                    return anyTag && anyDataset
                 }
             }
             steps {
                 script {
-                    // Build modules string from checkboxes
-                    def modules = []
-                    if (params.RUN_DB_TESTS)     modules << 'db'
-                    if (params.RUN_UI_TESTS)     modules << 'ui'
-                    if (params.RUN_EVAL_TESTS)   modules << 'eval'
-                    if (params.RUN_SYSTEM_TESTS) modules << 'system'
-                    if (params.RUN_EXTRA_TESTS)  modules << 'extra'
-                    env.TEST_MODULES = modules.join(',')
+                    // Build tags string from checkboxes
+                    def tags = []
+                    if (params.TAG_SYSTEM)          tags << 'system'
+                    if (params.TAG_IMPORT)          tags << 'import'
+                    if (params.TAG_CALCULATE)       tags << 'calculate'
+                    if (params.TAG_EVAL)            tags << 'eval'
+                    if (params.TAG_UI)              tags << 'ui'
+                    if (params.TAG_VIEWS)           tags << 'views'
+                    if (params.TAG_TABLEVIEW)       tags << 'tableview'
+                    if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
+                    if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
+                    if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
+                    def tagsStr = tags.join(',')
+
+                    // Build dataset list from checkboxes
+                    def datasets = []
+                    if (params.DATASET_05H) datasets << 'at_20230422_05h'
+                    if (params.DATASET_2H)  datasets << 'at_20230422_2h'
 
                     // Find the run directory created by collect_artifacts.sh
                     def runDir = sh(
@@ -112,30 +144,24 @@ pipeline {
                     def appimage = "${runDir}/COMPASS_deb10-x86_64.AppImage"
                     def scriptsDir = "${runDir}/scripts"
 
-                    // Find all manifests and run tests per dataset
-                    def manifests = sh(
-                        script: "find ${TEST_DATA_PATH} -maxdepth 2 -name manifest.json -type f",
-                        returnStdout: true
-                    ).trim().split('\n').findAll { it }
+                    // Run tests for each selected dataset
+                    for (dataset in datasets) {
+                        def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"
 
-                    for (manifest in manifests) {
-                        def datasetDir = sh(script: "dirname '${manifest}'", returnStdout: true).trim()
-                        def datasetName = sh(script: "basename '${datasetDir}'", returnStdout: true).trim()
-
-                        echo "Running tests for dataset: ${datasetName} (modules: ${env.TEST_MODULES})"
+                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})"
 
                         sh """
-                            cd '${scriptsDir}/test' && \
+                            cd '${scriptsDir}/test_infra' && \
                             PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
                                 --manifest='${manifest}' \
                                 --output='${TEST_DATA_PATH}' \
-                                --modules='${env.TEST_MODULES}' \
-                                --deps=modules \
+                                --tags='${tagsStr}' \
+                                --deps=tests \
                                 --no-prompt \
                                 --cfg-override=none \
-                                2>&1 | tee '${runDir}/test_${datasetName}.log'
+                                2>&1 | tee '${runDir}/test_${dataset}.log'
                         """
                     }
                 }

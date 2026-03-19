@@ -3,6 +3,32 @@
 
 This task allows importing (D)GPS trails into the opened database, by parsing an NMEA file and writing the position updates into the 'RefTraj' DBContent.
 
+\subsubsection{Required NMEA Sentences}
+
+COMPASS uses the NemaTode NMEA parser library, which supports the following NMEA sentence types. All talker ID prefixes are supported (GP, GL, GA, GN --- i.e.\ GPS, GLONASS, Galileo, and multi-GNSS solutions).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Sentence} & \textbf{Required} & \textbf{Data used by COMPASS} \\
+\hline
+GGA & Yes & Time, position (lat/lon), fix quality, number of tracking satellites, altitude \\
+\hline
+RMC & Yes & Time, \textbf{date}, position, speed over ground, track angle, active/void status \\
+\hline
+GSA & Yes & Fix type (2D/3D), PDOP, HDOP, VDOP (used for accuracy calculation) \\
+\hline
+GSV & Optional & Number of visible satellites, satellite SNR (signal-to-noise ratio) \\
+\hline
+VTG & Optional & Ground speed (used as fallback if RMC speed is unavailable) \\
+\hline
+\end{tabular}
+\caption{NMEA sentences used by COMPASS}
+\end{table}
+
+\textbf{Note:} The GGA sentence provides position and time-of-day but \textit{no date}. The date is only available from the RMC sentence. Without RMC, the 'Override Date' option must be used. The GSA sentence provides dilution-of-precision values which are used to compute position accuracy estimates. The GST sentence is \textit{not} supported.
+
 \begin{figure}[H]
   \center
     \includegraphics[width=16cm,frame]{figures/gps_import_task.png}

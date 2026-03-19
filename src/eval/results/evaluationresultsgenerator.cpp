@@ -480,7 +480,9 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     EvaluationTaskResult* eval_result = dynamic_cast<EvaluationTaskResult*>(result.get());
     traced_assert(eval_result);
 
-    //store eval config
+    //store eval config - rebuild sub_configs bottom-up so nested children are included
+    calculator_.writeBackConfigRecursive();
+
     nlohmann::json config;
     calculator_.generateJSON(config, Configurable::JSONExportType::General);
     result->setJSONConfiguration(config);

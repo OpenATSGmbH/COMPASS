@@ -1,0 +1,152 @@
+\section{Appendix: Remote GPU Access (VirtualGL + TurboVNC)}
+\label{sec:appendix_remote_gpu}
+
+This section describes how to set up remote GPU-accelerated OpenGL rendering on a Linux server (demonstrated on AlmaLinux~9), enabling COMPASS to be run remotely with full Geographic View support over a VNC session.
+
+\subsection{Overview}
+
+The setup uses:
+
+\begin{itemize}
+\item \textbf{VirtualGL}: Redirects OpenGL calls to the server's physical GPU.
+\item \textbf{TurboVNC}: High-speed VNC server that integrates with VirtualGL.
+\item \textbf{Desktop environment}: e.g. XFCE or KDE (XFCE is recommended as it is lightweight).
+\end{itemize}
+
+The instructions below use AlmaLinux~9 / RHEL~9 commands (\texttt{dnf}). For Debian/Ubuntu-based systems, substitute with \texttt{apt} and the corresponding package names.
+
+\subsection{Server Installation}
+
+\subsubsection{Install EPEL and Required Tools}
+
+\begin{lstlisting}
+sudo dnf install epel-release
+sudo dnf groupinstall "Development Tools"
+\end{lstlisting}
+
+\subsubsection{Install a Desktop Environment}
+
+For XFCE (lightweight, recommended for VNC):
+
+\begin{lstlisting}
+sudo dnf groupinstall "Xfce"
+\end{lstlisting}
+
+For KDE:
+
+\begin{lstlisting}
+sudo dnf groupinstall "KDE Plasma Workspaces"
+\end{lstlisting}
+
+Optionally set the default session:
+
+\begin{lstlisting}
+echo "exec startxfce4" > ~/.xinitrc
+\end{lstlisting}
+
+\subsubsection{Install NVIDIA Drivers}
+
+Install the NVIDIA driver from the CUDA repository:
+
+\begin{lstlisting}
+sudo dnf install \
+  https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
+sudo dnf install nvidia-driver nvidia-settings nvidia-xconfig
+sudo nvidia-xconfig
+sudo reboot
+\end{lstlisting}
+
+After rebooting, verify the GPU is detected:
+
+\begin{lstlisting}
+nvidia-smi
+\end{lstlisting}
+
+\subsubsection{Install TurboVNC and VirtualGL}
+
+Download the \texttt{.rpm} packages for TurboVNC and VirtualGL from \url{https://www.turbovnc.org}, then install:
+
+\begin{lstlisting}
+sudo dnf install ./turbovnc-*.rpm
+sudo dnf install ./virtualgl-*.rpm
+\end{lstlisting}
+
+\subsubsection{Configure TurboVNC}
+
+Set the VNC password:
+
+\begin{lstlisting}
+vncpasswd
+\end{lstlisting}
+
+Start the VNC server to verify it works, then stop it:
+
+\begin{lstlisting}
+vncserver :1
+vncserver -kill :1
+\end{lstlisting}
+
+\subsubsection{Configure VirtualGL}
+
+Run the VirtualGL configuration utility:
+
+\begin{lstlisting}
+sudo /opt/VirtualGL/bin/vglserver_config
+\end{lstlisting}
+
+Recommended answers:
+
+\begin{itemize}
+\item \textbf{Restrict to vglusers group?} Yes
+\item \textbf{Automatically add users to vglusers group?} Yes
+\item \textbf{Disable fake X server?} No (unless using a real X server for display)
+\item \textbf{Display manager restart?} No (manual setup preferred)
+\end{itemize}
+
+Then add your user to the \texttt{vglusers} group and re-login:
+
+\begin{lstlisting}
+sudo usermod -aG vglusers $USER
+\end{lstlisting}
+
+\subsection{Running COMPASS Remotely}
+
+\subsubsection{Start a VNC Session on the Server}
+
+\begin{lstlisting}
+vncserver :1
+\end{lstlisting}
+
+This starts a VNC session on display \texttt{:1} (port 5901).
+
+\subsubsection{Connect from the Client}
+
+From your local machine, use a VNC viewer (e.g. TigerVNC, RealVNC, or the TurboVNC viewer) to connect to:
+
+\begin{lstlisting}
+your-server-ip:1
+\end{lstlisting}
+
+\subsubsection{Run COMPASS with VirtualGL}
+
+Once inside the VNC session, open a terminal and run the COMPASS AppImage with \texttt{vglrun}:
+
+\begin{lstlisting}
+vglrun ./COMPASS-x86_64_release.AppImage
+\end{lstlisting}
+
+Alternatively, when connecting via SSH with VirtualGL forwarding:
+
+\begin{lstlisting}
+vglconnect user@your-server
+vglrun ./COMPASS-x86_64_release.AppImage
+\end{lstlisting}
+
+This redirects all OpenGL rendering to the server's physical GPU, streaming the rendered frames to the VNC client with full OpenGL support.
+
+\subsection{Reference}
+
+\begin{itemize}
+\item VirtualGL installation guide: \url{https://virtualgl.org/Documentation/Installation}
+\item TurboVNC user guide: \url{https://www.turbovnc.org/Documentation/Guide}
+\end{itemize}

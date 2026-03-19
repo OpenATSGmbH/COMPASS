@@ -89,6 +89,8 @@ Result EvaluationTaskResult::createCalculator()
 {
     calculator_.reset();
 
+    loginf << "creating calculator for result '" << name() << "' with config: " << config_.dump();
+
     //clone calculator from config
     auto res = EvaluationCalculator::clone(compass_.evaluationManager(),
                                               compass_.dbContentManager(),

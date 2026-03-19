@@ -269,8 +269,16 @@ void ViewPointsReportGenerator::run ()
                 elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                 dialog_->setElapsedTime(elapsed_time_str);
 
-                while (command_out.find("Rerun to get outlines right") != std::string::npos
-                       || command_out.find("Rerun to get cross-references right") != std::string::npos)
+                auto hasFatalLatexError = [&command_out]()
+                {
+                    return command_out.find("! LaTeX Error")    != std::string::npos
+                        || command_out.find("! Emergency stop") != std::string::npos
+                        || command_out.find("Fatal error")      != std::string::npos;
+                };
+
+                while (!hasFatalLatexError()
+                       && (command_out.find("Rerun to get outlines right") != std::string::npos
+                           || command_out.find("Rerun to get cross-references right") != std::string::npos))
                 {
                     loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");

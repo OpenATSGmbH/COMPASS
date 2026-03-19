@@ -95,6 +95,7 @@ struct RTCommandReconstructReferences : public rtcommand::RTCommand
     RTCommandReconstructReferences();
 
     std::string disabled_sensors_;
+    std::string config_;
 
 protected:
     virtual bool run_impl() override;

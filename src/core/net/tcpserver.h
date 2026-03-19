@@ -38,14 +38,12 @@ public:
 private:
     boost::asio::ip::tcp::socket socket_;
 
-    std::unique_ptr<char> data_;
-    unsigned int data_size_{10*1024*1024};
+    boost::asio::streambuf read_buf_;
 
     boost::mutex str_data_mutex_;
     std::vector<std::string> str_data_;
 
     void do_read();
-    void do_write(std::size_t length);
 };
 
 class TCPServer

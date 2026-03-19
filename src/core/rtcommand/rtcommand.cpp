@@ -40,6 +40,7 @@
 #include <QDialog>
 
 REGISTER_RTCOMMAND(rtcommand::RTCommandEmpty)
+REGISTER_RTCOMMAND(rtcommand::RTCommandRoundTrip)
 REGISTER_RTCOMMAND(rtcommand::RTCommandHelp)
 
 using namespace Utils;
@@ -639,6 +640,24 @@ namespace rtcommand
     {
         RTCOMMAND_GET_QSTRING_OR_THROW(variables, "command", command)
         RTCOMMAND_CHECK_VAR(variables, "details", details)
+    }
+
+    /**
+     */
+    void RTCommandRoundTrip::collectOptions_impl(OptionsDescription &options,
+                                                  PosOptionsDescription &positional)
+    {
+        ADD_RTCOMMAND_OPTIONS(options)
+        ("message", po::value<std::string>()->required(), "message string to echo back");
+
+        ADD_RTCOMMAND_POS_OPTION(positional, "message")
+    }
+
+    /**
+     */
+    void RTCommandRoundTrip::assignVariables_impl(const VariablesMap &variables)
+    {
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "message", std::string, message_)
     }
 
 } // namespace rtcommand

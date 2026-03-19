@@ -78,6 +78,85 @@ indicating that the command was successfully issued, the second one that the com
 was successfully executed. As one can also see, the \textbf{open\_db} command does not 
 send back reply data, so the 'reply' variable is set to \textit{null}.
 
+\subsection{Quoting and Escaping Rules}
+
+Command arguments are parsed using POSIX shell-style tokenization.
+This means that double quotes (\texttt{"}), single quotes (\texttt{'}),
+and backslashes (\texttt{\textbackslash}) have special meaning and are
+\textbf{not} passed through literally. \\
+
+\textbf{Rules for string arguments:}
+\begin{itemize}
+    \item Arguments containing spaces must be wrapped in double quotes.
+    \item Inner double quotes must be escaped as \texttt{\textbackslash"}.
+    \item Braces \texttt{\{\}}, brackets \texttt{[]}, colons, semicolons,
+          pipes, and angle brackets are safe and do not need escaping.
+\end{itemize}
+
+\textbf{Restrictions:} The following characters \textbf{cannot} appear
+inside string argument values, as they interfere with shell-style tokenization:
+\begin{itemize}
+    \item Literal double quotes (\texttt{"}) --- even when escaped, they
+          conflict with the outer quoting required for multi-word arguments.
+    \item Literal single quotes (\texttt{'}) --- interpreted as shell
+          single-quoting delimiters.
+    \item Literal backslashes (\texttt{\textbackslash}) --- interpreted as
+          escape characters by the tokenizer.
+\end{itemize}
+
+\textbf{JSON arguments:} Several commands accept JSON strings as arguments
+(e.g. \textbf{set\_view\_point}, \textbf{set\_data\_sources},
+\textbf{evaluate}, \textbf{reconstruct\_references}).
+To pass a JSON object correctly: \\
+
+\begin{enumerate}
+    \item Wrap the entire JSON in outer double quotes.
+    \item Escape all inner double quotes as \texttt{\textbackslash"}.
+    \item Do \textbf{not} use string values that contain literal backslashes,
+          single quotes, or double quotes.
+\end{enumerate}
+
+\textbf{Examples:} \\
+
+\textit{Wrong} --- unquoted JSON, quotes will be stripped:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point {"id": 1, "name": "All", "status": "open"}
+\end{lstlisting}
+
+\textit{Correct} --- JSON wrapped in outer quotes with escaped inner quotes:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"id\": 1, \"name\": \"All\", \"status\": \"open\"}"
+\end{lstlisting}
+
+\textit{Wrong} --- single quotes in a JSON string value:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"name\": \"it's a test\"}"
+\end{lstlisting}
+
+\textit{Correct} --- avoid single quotes in values:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"name\": \"it is a test\"}"
+\end{lstlisting}
+
+\textit{Wrong} --- backslash in a JSON string value:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"path\": \"C:\\data\\file.db\"}"
+\end{lstlisting}
+
+\textit{Correct} --- avoid backslashes in values (use forward slashes):
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"path\": \"C:/data/file.db\"}"
+\end{lstlisting}
+
+In Python, the escaping can be done programmatically: \\
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+import json
+vp = {"id": 1, "name": "All", "status": "open"}
+vp_escaped = '"' + json.dumps(vp).replace('"', '\\"') + '"'
+compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
+\end{lstlisting}
+
 \subsection{Runtime Commands}
 
 The existing commands cover various tasks, like creating or opening a database,
@@ -238,6 +317,7 @@ index \dots index in the recent file history \\
 
 \textbf{reconstruct\_references} \\
 \textit{reconstruct references} \\
+config \dots optional reconstructor configuration as JSON string, e.g. '\{"current\_reconstructor\_str": "Scoring + UMKalman"\}' \\
 disable\_sensors \dots optional list of sensor names to disable, e.g. "GPS Trail 1;GPS Trail 2" \\
 
 \textbf{set\_data\_sources} \\

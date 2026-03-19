@@ -121,6 +121,8 @@ public:
     /// Appends this config as a sub_configs array element in parent_json.
     void writeJSON(nlohmann::json& parent_json, JSONExportType export_type) const;
     /// Builds a standalone JSON object with class_name, instance_name, parameters, and sub_configs.
+    /// Sub_configs are shallow copies — call Configurable::writeBackConfigRecursive() first
+    /// to ensure nested sub_configs are complete.
     void generateJSON(nlohmann::json& target, JSONExportType export_type) const;
 
     void resetToDefault();

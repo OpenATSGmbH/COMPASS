@@ -17,11 +17,11 @@
 
 #include "tcpserver.h"
 #include "logger.h"
-#include "stringconv.h"
 #include "traced_assert.h"
 
+#include <istream>
+
 using namespace std;
-using namespace Utils;
 
 TCPSession::TCPSession(boost::asio::ip::tcp::socket socket)
     : socket_(std::move(socket))
@@ -50,68 +50,38 @@ std::vector<std::string> TCPSession::getStrData()
 
 void TCPSession::sendStrData(const std::string& str)
 {
-    unsigned int required_size = str.size() + 1;
+    auto self(shared_from_this());
+    auto buf = std::make_shared<std::string>(str);
 
-    if (!data_) // init if required
+    boost::asio::async_write(socket_, boost::asio::buffer(*buf),
+                             [self, buf](boost::system::error_code ec, std::size_t /*length*/)
     {
-        if (required_size > data_size_)
-            data_size_ = required_size;
-
-        data_.reset(new char [data_size_]);
-    }
-    else if (required_size > data_size_) // check size
-    {
-        data_size_ = required_size;
-        data_.reset(new char [data_size_]);
-    }
-
-    traced_assert(data_);
-    str.copy(data_.get(), str.size());
-    do_write(str.size());
+        traced_assert(!ec);
+    });
 }
 
 void TCPSession::do_read()
 {
     auto self(shared_from_this());
 
-    if (!data_)
-        data_.reset(new char [data_size_]);
-
-    traced_assert(data_);
-    socket_.async_read_some(boost::asio::buffer(data_.get(), data_size_),
-                            [this, self](boost::system::error_code ec, std::size_t length)
+    boost::asio::async_read_until(socket_, read_buf_, '\n',
+                                  [this, self](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
     {
         if (!ec)
         {
-            traced_assert(data_);
+            std::string line;
+            std::istream is(&read_buf_);
+            std::getline(is, line);
+            // any data beyond '\n' stays in read_buf_ for the next read
 
-            std::string tmp;
-            tmp.assign(data_.get(), length);
-
-            vector<string> string_vec = String::split(tmp, '\n');
-
-            //loginf << "SOCKET GOT MSG '" << tmp << "' LEN " << length << " num sub strings " << string_vec.size();
-
-            boost::mutex::scoped_lock lock(str_data_mutex_);
-            str_data_.insert(str_data_.end(), string_vec.begin(), string_vec.end());
+            {
+                boost::mutex::scoped_lock lock(str_data_mutex_);
+                str_data_.push_back(std::move(line));
+            }
 
             do_read();
         }
     });
-}
-
-void TCPSession::do_write(std::size_t length)
-{
-    traced_assert(data_);
-
-    auto self(shared_from_this());
-    boost::asio::async_write(socket_, boost::asio::buffer(data_.get(), length),
-                             [this, self](boost::system::error_code ec, std::size_t /*length*/)
-    {
-        traced_assert(!ec);
-    });
-
-    //do_read();
 }
 
 TCPServer::TCPServer(boost::asio::io_context& io_context, short port)

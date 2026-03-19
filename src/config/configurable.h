@@ -116,6 +116,8 @@ public:
     void setTmpDisableRemoveConfigOnDelete(bool value);
 
     void writeJSON(nlohmann::json& parent_json, JSONExportType export_type = JSONExportType::General) const;
+    /// Builds a standalone JSON object with class_name, instance_name, parameters, and sub_configs.
+    /// Important: call writeBackConfigRecursive() first to ensure nested sub_configs are complete.
     void generateJSON(nlohmann::json& target, JSONExportType export_type = JSONExportType::General) const;
 
     /// Applies a full JSON config tree (parameters + sub_configs) to this configurable and its
