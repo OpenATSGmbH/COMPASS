@@ -191,7 +191,7 @@ VariableOrderedSet* TableViewDataSource::getSet()
     return set_.get();
 }
 
-void TableViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
+void TableViewDataSource::unshowViewPoint (ViewableDataConfig* vp)
 {
     for (auto& var_it : temporary_added_variables_)
     {
@@ -203,7 +203,7 @@ void TableViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
     temporary_added_variables_.clear();
 }
 
-void TableViewDataSource::showViewPoint (const ViewableDataConfig* vp)
+void TableViewDataSource::showViewPoint (ViewableDataConfig* vp)
 {
     traced_assert(vp);
     const json& data = vp->data();

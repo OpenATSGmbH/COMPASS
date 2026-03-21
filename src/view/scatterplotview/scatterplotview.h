@@ -87,8 +87,8 @@ protected:
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) override;
 
-    virtual void unshowViewPoint(const ViewableDataConfig* vp) override;
-    virtual void showViewPoint(const ViewableDataConfig* vp) override;
+    virtual void unshowViewPoint(ViewableDataConfig* vp) override;
+    virtual void showViewPoint(ViewableDataConfig* vp) override;
 
     /// For data display
     ScatterPlotViewWidget* widget_{nullptr};

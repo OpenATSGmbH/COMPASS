@@ -53,8 +53,8 @@ class HistogramViewDataSource : public QObject, public Configurable
         traced_assert(set_);
         return set_;
     }
-    void unshowViewPoint (const ViewableDataConfig* vp); // vp can be nullptr
-    void showViewPoint (const ViewableDataConfig* vp);
+    void unshowViewPoint (ViewableDataConfig* vp); // vp can be nullptr
+    void showViewPoint (ViewableDataConfig* vp);
 
   protected:
     HistogramView* view_ = nullptr;

@@ -28,8 +28,8 @@ class TableView : public View
 {
     Q_OBJECT
 public slots:
-    virtual void unshowViewPointSlot (const ViewableDataConfig* vp) override;
-    virtual void showViewPointSlot (const ViewableDataConfig* vp) override;
+    virtual void unshowViewPointSlot (ViewableDataConfig* vp) override;
+    virtual void showViewPointSlot (ViewableDataConfig* vp) override;
 
 // signals:
 //     void showOnlySelectedSignal(bool value);

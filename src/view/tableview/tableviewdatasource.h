@@ -50,8 +50,8 @@ class TableViewDataSource : public QObject, public Configurable
 
     dbContent::VariableOrderedSet* getSet();
 
-    void unshowViewPoint (const ViewableDataConfig* vp); // vp can be nullptr
-    void showViewPoint (const ViewableDataConfig* vp);
+    void unshowViewPoint (ViewableDataConfig* vp); // vp can be nullptr
+    void showViewPoint (ViewableDataConfig* vp);
 
 protected:
     virtual void checkSubConfigurables();

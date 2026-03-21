@@ -359,7 +359,7 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
     viewPointsWidget()->addViewPoints(viewpoints);
 }
 
-void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
+void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
                                        bool load_blocking)
 {
     if (current_viewable_)
@@ -368,7 +368,6 @@ void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
     current_viewable_ = viewable;
 
     view_point_data_selected_ = false;
-    clearViewPointErrors();
 
     logdbg << "setting current view point data: '"
     << viewable->data().dump(4) << "'";
@@ -394,21 +393,7 @@ void ViewManager::unsetCurrentViewPoint ()
     }
 }
 
-void ViewManager::reportViewPointError(const std::string& component_name, const std::string& error)
-{
-    logwrn << "component '" << component_name << "': " << error;
-    vp_errors_.emplace_back(component_name, error);
-}
 
-void ViewManager::clearViewPointErrors()
-{
-    vp_errors_.clear();
-}
-
-const std::vector<std::pair<std::string, std::string>>& ViewManager::viewPointErrors() const
-{
-    return vp_errors_;
-}
 
 void ViewManager::doViewPointAfterLoad ()
 {

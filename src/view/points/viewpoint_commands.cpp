@@ -137,7 +137,10 @@ bool RTCommandSetViewPoint::run_impl()
 
 bool RTCommandSetViewPoint::checkResult_impl()
 {
-    const auto& errors = s_compass->viewManager().viewPointErrors();
+    if (!viewable_data_cfg_)
+        return true;
+
+    const auto& errors = viewable_data_cfg_->errors();
 
     if (!errors.empty())
     {

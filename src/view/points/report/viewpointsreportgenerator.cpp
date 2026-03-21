@@ -176,7 +176,7 @@ void ViewPointsReportGenerator::run ()
             }
 
             traced_assert(table_model->hasViewPoint(vp_id));
-            const ViewPoint& view_point = table_model->viewPoint(vp_id);
+            ViewPoint& view_point = table_model->viewPoint(vp_id);
 
             loginf << "setting vp " << vp_id;
             view_manager_.setCurrentViewPoint(&view_point);

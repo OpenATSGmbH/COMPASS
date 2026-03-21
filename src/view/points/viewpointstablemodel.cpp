@@ -455,10 +455,10 @@ const ViewPoint& ViewPointsTableModel::saveNewViewPoint(unsigned int id, const n
 //    return view_points_.count(id) == 1;
 //}
 
-const ViewPoint& ViewPointsTableModel::viewPoint(unsigned int id)
+ViewPoint& ViewPointsTableModel::viewPoint(unsigned int id)
 {
     traced_assert(hasViewPoint(id));
-    return *view_points_.get<vp_tag>().find(id);
+    return const_cast<ViewPoint&>(*view_points_.get<vp_tag>().find(id));
 }
 
 //void ViewPointsTableModel::removeViewPoint(unsigned int id)
