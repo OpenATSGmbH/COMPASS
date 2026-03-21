@@ -126,10 +126,14 @@ class ViewManager : public QObject, public Configurable
     void clearViewPoints();
     void addViewPoints(const std::vector <nlohmann::json>& viewpoints);
 
-    void setCurrentViewPoint (const ViewableDataConfig* viewable, 
+    void setCurrentViewPoint (const ViewableDataConfig* viewable,
                               bool load_blocking = false);
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
+
+    void reportViewPointError(const std::string& component_name, const std::string& error);
+    void clearViewPointErrors();
+    const std::vector<std::pair<std::string, std::string>>& viewPointErrors() const;
 
     void selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max);
 
@@ -203,6 +207,7 @@ protected:
 
     const ViewableDataConfig* current_viewable_ {nullptr};
     bool view_point_data_selected_ {false};
+    std::vector<std::pair<std::string, std::string>> vp_errors_;
 
     unsigned int container_count_{0};
 

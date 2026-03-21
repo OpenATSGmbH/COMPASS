@@ -20,6 +20,7 @@
 #include "rtcommand_registry.h"
 #include "dbcontentmanager.h"
 #include "viewmanager.h"
+#include "viewpointgenerator.h"
 #include "compass.h"
 
 #include <boost/program_options.hpp>
@@ -27,6 +28,42 @@
 REGISTER_RTCOMMAND(RTCommandSetViewPoint)
 
 using namespace std;
+
+namespace
+{
+    bool validateAnnotationFeatureTypes(const nlohmann::json& anno_json, std::string& error)
+    {
+        if (anno_json.contains("features") && anno_json.at("features").is_array())
+        {
+            for (const auto& feat : anno_json.at("features"))
+            {
+                if (!feat.contains("type"))
+                {
+                    error = "annotation feature without type";
+                    return false;
+                }
+
+                std::string type = feat.at("type");
+                if (!ViewPointGenFeature::knownFeatureTypes().count(type))
+                {
+                    error = "unknown annotation feature type '" + type + "'";
+                    return false;
+                }
+            }
+        }
+
+        if (anno_json.contains("annotations") && anno_json.at("annotations").is_array())
+        {
+            for (const auto& child : anno_json.at("annotations"))
+            {
+                if (!validateAnnotationFeatureTypes(child, error))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+}
 
 static COMPASS* s_compass = nullptr;
 
@@ -68,9 +105,23 @@ bool RTCommandSetViewPoint::run_impl()
 
     try
     {
-        nlohmann::json::object_t vp_json = nlohmann::json::parse(vp_json_str_);
+        nlohmann::json vp_json_parsed = nlohmann::json::parse(vp_json_str_);
 
-        viewable_data_cfg_.reset(new ViewableDataConfig(vp_json));
+        // validate annotation feature types
+        if (vp_json_parsed.contains("annotations") && vp_json_parsed.at("annotations").is_array())
+        {
+            std::string validation_error;
+            for (const auto& anno : vp_json_parsed.at("annotations"))
+            {
+                if (!validateAnnotationFeatureTypes(anno, validation_error))
+                {
+                    setResultMessage(validation_error);
+                    return false;
+                }
+            }
+        }
+
+        viewable_data_cfg_.reset(new ViewableDataConfig(vp_json_parsed.get<nlohmann::json::object_t>()));
 
         s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
     }
@@ -86,7 +137,20 @@ bool RTCommandSetViewPoint::run_impl()
 
 bool RTCommandSetViewPoint::checkResult_impl()
 {
-    return true; // if ok
+    const auto& errors = s_compass->viewManager().viewPointErrors();
+
+    if (!errors.empty())
+    {
+        nlohmann::json err_json = nlohmann::json::array();
+        for (const auto& [component, msg] : errors)
+            err_json.push_back({{"component", component}, {"error", msg}});
+
+        setJSONReply({{"view_point_errors", err_json}});
+        setResultMessage("view point consumption failed in " + std::to_string(errors.size()) + " component(s)");
+        return false;
+    }
+
+    return true;
 }
 
 

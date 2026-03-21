@@ -116,6 +116,8 @@ public:
     static const std::string FeatureFieldNamePropColor;
     static const std::string FeatureFieldNamePlotMetadata;
 
+    static const std::set<std::string>& knownFeatureTypes();
+
 protected:
     virtual void toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const = 0;
 

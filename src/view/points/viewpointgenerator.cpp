@@ -101,6 +101,25 @@ const std::string ViewPointGenFeature::FeatureFieldNamePlotMetadata = "plot_meta
 
 /**
 */
+const std::set<std::string>& ViewPointGenFeature::knownFeatureTypes()
+{
+    static const std::set<std::string> types = {
+        ViewPointGenFeaturePoints::FeatureName,
+        ViewPointGenFeatureLineString::FeatureName,
+        ViewPointGenFeatureLineString::FeatureNameInterp,
+        ViewPointGenFeatureLines::FeatureName,
+        ViewPointGenFeatureErrEllipses::FeatureName,
+        ViewPointGenFeatureText::FeatureName,
+        ViewPointGenFeatureGeoImage::FeatureName,
+        ViewPointGenFeatureGrid::FeatureName,
+        ViewPointGenFeatureHistogram::FeatureName,
+        ViewPointGenFeatureScatterSeries::FeatureName
+    };
+    return types;
+}
+
+/**
+*/
 ViewPointGenFeature::ViewPointGenFeature(const std::string& type)
 :   type_(type)
 {
