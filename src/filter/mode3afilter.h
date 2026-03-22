@@ -24,7 +24,7 @@
 class Mode3AFilter : public DBFilter
 {
 public:
-    Mode3AFilter(nlohmann::json& config, FilterManager* parent);
+    Mode3AFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
      virtual ~Mode3AFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,

@@ -16,12 +16,9 @@
  */
 
 #include "mlatrufilter.h"
-#include "compass.h"
-#include "datasourcemanager.h"
 #include "mlatrufilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -32,8 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-MLATRUFilter::MLATRUFilter(nlohmann::json& config, FilterManager* parent)
-    : DBFilter(config, false, parent)
+MLATRUFilter::MLATRUFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("rus_str", &rus_str_, std::string());
     registerParameter("match_all", &match_all_, false);
@@ -60,19 +57,13 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     traced_assert(dbcontent_name == "CAT020");
 
-    DBContentManager& dbcontent_man = dbContentManager();
+    auto& resolver = variableResolver();
 
-    traced_assert(
-        dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
+    traced_assert(resolver.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
+    std::string contrib_dbcol_name = resolver.getVariableDBColumn(dbcontent_name, DBContent::var_cat020_contrib_recv_);
 
-    std::string contrib_dbcol_name =
-        dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_).dbColumnName();
-
-    traced_assert(
-        dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-
-    std::string dsid_dbcol_name =
-        dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).dbColumnName();        
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    std::string dsid_dbcol_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_ds_id_);        
 
     vector<string> split_str = String::split(rus_str_, ',');
     
@@ -115,15 +106,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     loginf << "numbers " << numbers.size() << " null " << null_wanted;
 
-    DataSourceManager& ds_man = dataSourceManager();
-
-    std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> ru_lookup; // ds id -> ru name -> {ru indexes}
-
-    for (auto& db_src_it : ds_man.dbDataSources())
-    {
-        if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
-            ru_lookup[db_src_it->id()] = db_src_it->mlatRUNames();
-    }
+    const auto& ru_lookup = mlat_ru_lookup_; // ds id -> ru name -> {ru indexes}
 
     stringstream ss;
 
@@ -264,21 +247,6 @@ std::string MLATRUFilter::rus() const
 
 bool MLATRUFilter::checkRUs(const std::string& rus_str)
 {
-    DataSourceManager& ds_man = dataSourceManager();
-    std::set<std::string> known_ru_names;
-
-    for (auto& db_src_it : ds_man.dbDataSources())
-    {
-        if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
-        {
-            for (auto const& pair : db_src_it->mlatRUNames())
-            {
-                if (!known_ru_names.count(pair.first))
-                    known_ru_names.insert(pair.first);
-            }
-        }
-    }
-
     vector<string> split_str = String::split(rus_str, ',');
 
     bool ok;
@@ -304,9 +272,9 @@ bool MLATRUFilter::checkRUs(const std::string& rus_str)
 
         // else a name
 
-        if (!known_ru_names.count(str))
+        if (!known_ru_names_.count(str))
         {
-            loginf << "ru '" << str << "' not in '" << String::compress(known_ru_names,',') << "'";
+            loginf << "ru '" << str << "' not in '" << String::compress(known_ru_names_,',') << "'";
             return false;
         }
     }
@@ -329,6 +297,17 @@ bool MLATRUFilter::matchAll() const
 void MLATRUFilter::matchAll(bool match_all)
 {
     match_all_ = match_all;
+}
+
+void MLATRUFilter::updateMLATDataSources(
+    const std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>>& mlat_ru_lookup)
+{
+    mlat_ru_lookup_ = mlat_ru_lookup;
+}
+
+void MLATRUFilter::updateMLATKnownRUNames(const std::set<std::string>& known_ru_names)
+{
+    known_ru_names_ = known_ru_names;
 }
 
 

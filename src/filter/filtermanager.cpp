@@ -50,7 +50,8 @@ using namespace nlohmann;
 FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass),
       compass_(compass),
-      dbcontent_man_(compass.dbContentManager())
+      dbcontent_man_(compass.dbContentManager()),
+      var_resolver_(dbcontent_man_)
 {
     logdbg;
 
@@ -108,68 +109,68 @@ void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
 
     if (class_name == "DBFilter")
     {
-        DBFilter* filter = new DBFilter(child_json, true, this);
+        DBFilter* filter = new DBFilter(child_json, true, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "ADSBQualityFilter")
     {
-        ADSBQualityFilter* filter = new ADSBQualityFilter(child_json, this);
+        ADSBQualityFilter* filter = new ADSBQualityFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "ACADFilter")
     {
-        ACADFilter* filter = new ACADFilter(child_json, this);
+        ACADFilter* filter = new ACADFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "ACIDFilter")
     {
-        ACIDFilter* filter = new ACIDFilter(child_json, this);
+        ACIDFilter* filter = new ACIDFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "Mode3AFilter")
     {
-        Mode3AFilter* filter = new Mode3AFilter(child_json, this);
+        Mode3AFilter* filter = new Mode3AFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "ModeCFilter")
     {
-        ModeCFilter* filter = new ModeCFilter(child_json, this);
+        ModeCFilter* filter = new ModeCFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "TimestampFilter")
     {
-        TimestampFilter* filter = new TimestampFilter(child_json, this);
+        TimestampFilter* filter = new TimestampFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "TrackerTrackNumberFilter")
     {
-        TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(child_json, this);
+        TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "UTNFilter")
     {
-        UTNFilter* filter = new UTNFilter(child_json, this);
+        UTNFilter* filter = new UTNFilter(child_json, this, var_resolver_);
 
         filters_.emplace_back(filter);
     }
     else if (class_name == "PrimaryOnlyFilter")
     {
-        PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(child_json, this);
+        PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "RefTrajAccuracyFilter")
     {
-        RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(child_json, this);
+        RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "MLATRUFilter")
     {
-        MLATRUFilter* filter = new MLATRUFilter(child_json, this);
+        MLATRUFilter* filter = new MLATRUFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else if (class_name == "ExcludedTimeWindowsFilter")
     {
-        ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(child_json, this);
+        ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else
@@ -458,7 +459,27 @@ void FilterManager::databaseOpenedSlot()
         widget_->setDisabled(false);
 
     traced_assert(hasFilter("Timestamp"));
-    getFilter("Timestamp")->reset();
+
+    if (dbcontent_man_.hasMinMaxTimestamp())
+    {
+        auto minmax_ts = dbcontent_man_.minMaxTimestamp();
+
+        TimestampFilter* ts_filter = dynamic_cast<TimestampFilter*>(getFilter("Timestamp"));
+        traced_assert(ts_filter);
+        ts_filter->reset(minmax_ts.first, minmax_ts.second);
+
+        if (hasFilter("Excluded Time Windows"))
+        {
+            ExcludedTimeWindowsFilter* etw_filter =
+                dynamic_cast<ExcludedTimeWindowsFilter*>(getFilter("Excluded Time Windows"));
+            traced_assert(etw_filter);
+            etw_filter->updateMinMaxTimestamp(minmax_ts.first, minmax_ts.second);
+        }
+    }
+    else
+    {
+        getFilter("Timestamp")->reset();
+    }
 }
 
 void FilterManager::databaseClosedSlot()
@@ -473,17 +494,47 @@ void FilterManager::dataSourcesChangedSlot()
 {
     loginf;
 
+    DataSourceManager& ds_man = dataSourceManager();
+
     if (hasFilter("Tracker Track Number"))
     {
         TrackerTrackNumberFilter* filter = dynamic_cast<TrackerTrackNumberFilter*>(getFilter("Tracker Track Number"));
         traced_assert(filter);
-        filter->updateDataSourcesSlot();
+
+        // build tracker lines map: ds_id -> line_id -> count
+        std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
+        std::map<unsigned int, std::string> ds_names;
+        for (auto& ds_it : ds_man.dbDataSources())
+        {
+            if (ds_it->dsType() != "Tracker" || !ds_it->hasNumInserted())
+                continue;
+            tracker_lines[ds_it->id()] = ds_it->numInsertedLinesMap();
+            ds_names[ds_it->id()] = ds_it->name();
+        }
+        filter->updateTrackerDataSources(tracker_lines, ds_names);
     }
 
     if (hasFilter("MLAT RUs"))
     {
         MLATRUFilter* filter = dynamic_cast<MLATRUFilter*>(getFilter("MLAT RUs"));
         traced_assert(filter);
+
+        // build MLAT RU lookup: ds_id -> ru_name -> {ru_indexes}
+        std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> mlat_ru_lookup;
+        std::set<std::string> known_ru_names;
+
+        for (auto& db_src_it : ds_man.dbDataSources())
+        {
+            if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
+            {
+                mlat_ru_lookup[db_src_it->id()] = db_src_it->mlatRUNames();
+                for (auto const& pair : db_src_it->mlatRUNames())
+                    known_ru_names.insert(pair.first);
+            }
+        }
+        filter->updateMLATDataSources(mlat_ru_lookup);
+        filter->updateMLATKnownRUNames(known_ru_names);
+
         if (filter->widget())
             filter->widget()->update();
     }

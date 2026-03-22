@@ -16,11 +16,10 @@
  */
 
 #include "acidfilter.h"
-#include "compass.h"
 #include "acidfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
+#include "buffer/buffer.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -29,8 +28,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-ACIDFilter::ACIDFilter(nlohmann::json& config, FilterManager* parent)
-    : DBFilter(config, false, parent)
+ACIDFilter::ACIDFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -47,33 +46,33 @@ bool ACIDFilter::filters(const std::string& dbcont_name)
     if (dbcont_name == "CAT062")
         return true; // acid and callsign fpl
     else
-        return dbContentManager().metaVariable(
-                    DBContent::meta_var_acid_.name()).existsIn(dbcont_name);
+        return variableResolver().metaCanGetVariable(dbcont_name, DBContent::meta_var_acid_);
 }
 
 std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
         return "";
 
     stringstream ss;
 
     if (active_  && (values_.size() || null_wanted_))
     {
-        dbContent::Variable& acid_var = dbContentManager().metaVariable(
-                    DBContent::meta_var_acid_.name()).getFor(dbcontent_name);
+        string acid_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_acid_);
 
-        dbContent::Variable* cs_fpl_var {nullptr}; // only set in cat062
+        string cs_fpl_col; // only set in cat062
+        bool has_cs_fpl = false;
 
         if (dbcontent_name == "CAT062")
         {
-            traced_assert(dbContentManager().canGetVariable(
+            traced_assert(variableResolver().canGetVariable(
                         dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
-            cs_fpl_var = &dbContentManager().getVariable(
+            cs_fpl_col = variableResolver().getVariableDBColumn(
                         dbcontent_name, DBContent::var_cat062_callsign_fpl_);
+            has_cs_fpl = true;
         }
 
         if (!first)
@@ -88,10 +87,10 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
             if (!first_val)
                 ss << " OR";
 
-             ss << " (" << acid_var.dbColumnName()  << " LIKE '%" << val_it << "%'";
+             ss << " (" << acid_col  << " LIKE '%" << val_it << "%'";
 
-             if (cs_fpl_var)
-                ss << " OR " << cs_fpl_var->dbColumnName()  << " LIKE '%" << val_it << "%'";
+             if (has_cs_fpl)
+                ss << " OR " << cs_fpl_col  << " LIKE '%" << val_it << "%'";
 
              ss << ")";
 
@@ -103,10 +102,10 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
             if (!first_val)
                 ss << " OR";
 
-            ss << " (" << acid_var.dbColumnName()  << " IS NULL";
+            ss << " (" << acid_col  << " IS NULL";
 
-            if (cs_fpl_var)
-               ss << " OR " << cs_fpl_var->dbColumnName()  << " IS NULL";
+            if (has_cs_fpl)
+               ss << " OR " << cs_fpl_col  << " IS NULL";
 
             ss << ")";
         }
@@ -180,30 +179,28 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!dbContentManager().metaVariable(DBContent::meta_var_acid_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
         return to_be_removed;
 
-    dbContent::Variable& acid_var = dbContentManager().metaVariable(
-                DBContent::meta_var_acid_.name()).getFor(dbcontent_name);
+    string acid_var_name = variableResolver().metaGetVariableName(dbcontent_name, DBContent::meta_var_acid_);
 
-    traced_assert(buffer->has<string> (acid_var.name()));
+    traced_assert(buffer->has<string> (acid_var_name));
 
-    NullableVector<string>& acid_vec = buffer->get<string> (acid_var.name());
+    NullableVector<string>& acid_vec = buffer->get<string> (acid_var_name);
 
-    dbContent::Variable* cs_fpl_var {nullptr}; // only set in cat062
     NullableVector<string>* cs_fpl_vec {nullptr}; // only set in cat062
 
     if (dbcontent_name == "CAT062")
     {
-        traced_assert(dbContentManager().canGetVariable(
+        traced_assert(variableResolver().canGetVariable(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_));
 
-        cs_fpl_var = &dbContentManager().getVariable(
+        string cs_fpl_var_name = variableResolver().getVariableName(
                     dbcontent_name, DBContent::var_cat062_callsign_fpl_);
 
-        traced_assert(buffer->has<string> (cs_fpl_var->name()));
+        traced_assert(buffer->has<string> (cs_fpl_var_name));
 
-        cs_fpl_vec = &buffer->get<string> (cs_fpl_var->name());
+        cs_fpl_vec = &buffer->get<string> (cs_fpl_var_name);
     }
 
     bool found;

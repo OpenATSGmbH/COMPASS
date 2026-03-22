@@ -20,10 +20,13 @@
 #include "dbfilter.h"
 #include "util/timewindow.h"
 
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/optional.hpp>
+
 class ExcludedTimeWindowsFilter : public DBFilter
 {
 public:
-    ExcludedTimeWindowsFilter(nlohmann::json& config, FilterManager* parent);
+    ExcludedTimeWindowsFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~ExcludedTimeWindowsFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,
@@ -37,9 +40,19 @@ public:
 
     Utils::TimeWindowCollection& timeWindows();
 
+    // pushed by FilterManager when database is opened
+    void updateMinMaxTimestamp(const boost::posix_time::ptime& min_ts,
+                               const boost::posix_time::ptime& max_ts);
+
+    bool hasMinMaxTimestamp() const;
+    std::pair<boost::posix_time::ptime, boost::posix_time::ptime> minMaxTimestamp() const;
+
 protected:
     nlohmann::json time_windows_json_;
     Utils::TimeWindowCollection time_windows_;
+
+    boost::optional<boost::posix_time::ptime> min_timestamp_;
+    boost::optional<boost::posix_time::ptime> max_timestamp_;
 
     virtual DBFilterWidget* createWidget() override;
 };

@@ -16,9 +16,6 @@
  */
 
 #include "trackertracknumberfilterwidget.h"
-//#include "timeconv.h"
-#include "datasourcemanager.h"
-#include "compass.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -49,8 +46,6 @@ void TrackerTrackNumberFilterWidget::update()
 
     deleteChildrenFromLayout();
 
-    DataSourceManager& ds_man = filter_.dataSourceManager();
-
     // ds_id -> line_id -> values
     std::map<unsigned int, std::map<unsigned int, std::string>> active_values = filter_.getActiveTrackerTrackNums();
     std::string ds_name;
@@ -59,8 +54,7 @@ void TrackerTrackNumberFilterWidget::update()
     {
         for (auto& line_it : ds_it.second)
         {
-            traced_assert(ds_man.hasDBDataSource(ds_it.first));
-            ds_name = ds_man.dbDataSource(ds_it.first).name();
+            ds_name = filter_.dataSourceName(ds_it.first);
 
             QLineEdit* value_edit = new QLineEdit(line_it.second.c_str());
             value_edit->setProperty("ds_id", ds_it.first);

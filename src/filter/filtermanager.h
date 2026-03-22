@@ -20,12 +20,14 @@
 #include "configurable.h"
 #include "appmode.h"
 #include "dbfilter.h"
+#include "dbcontentmanagervariableresolver.h"
 
 #include <QObject>
 
 #include <map>
 #include <string>
 #include <vector>
+#include <memory>
 
 class DataSourcesFilter;
 class COMPASS;
@@ -100,9 +102,12 @@ public:
     DBContentManager& dbContentManager() { return dbcontent_man_; }
     DataSourceManager& dataSourceManager();
 
+    IDBVariableResolver& variableResolver() { return var_resolver_; }
+
 protected:
     COMPASS& compass_;
     DBContentManager& dbcontent_man_;
+    DBContentManagerVariableResolver var_resolver_;
 
     // database id, resets if changed
     std::string db_id_;

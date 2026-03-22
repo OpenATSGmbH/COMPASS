@@ -279,20 +279,31 @@ bool GridViewDataWidget::updateFromAnnotations()
 
     const auto& feature = anno.feature_json;
 
+    auto reportErr = [&](const std::string& msg)
+    {
+        traced_assert(view_->hasViewPoint());
+
+        view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + msg);
+    };
+
     if (!feature.is_object() || !feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid))
+    {
+        reportErr("missing '" + std::string(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid) + "' field");
         return false;
+    }
 
     std::unique_ptr<Grid2DLayer> layer(new Grid2DLayer);
     if (!layer->fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ]))
     {
-        logerr << "could not read grid layer";
+        reportErr("could not read grid layer");
         return false;
     }
 
-    if (layer->data.cols() < 1 || 
+    if (layer->data.cols() < 1 ||
         layer->data.rows() < 1)
     {
-        logerr << "grid layer empty";
+        reportErr("grid layer empty");
         return false;
     }
     
