@@ -359,7 +359,7 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
     viewPointsWidget()->addViewPoints(viewpoints);
 }
 
-void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
+void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
                                        bool load_blocking)
 {
     if (current_viewable_)
@@ -392,6 +392,8 @@ void ViewManager::unsetCurrentViewPoint ()
         view_point_data_selected_ = false;
     }
 }
+
+
 
 void ViewManager::doViewPointAfterLoad ()
 {

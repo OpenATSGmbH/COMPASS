@@ -24,11 +24,14 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/optional.hpp>
+
+#include <functional>
+
 namespace Utils {
 class TimeWindowCollection;
 }
-
-class DBContentManager;
 
 class TimeWindowCollectionWidget : public QWidget
 {
@@ -39,8 +42,12 @@ private slots:
     void editTimeWindow(QTreeWidgetItem* item);
 
 public:
-    explicit TimeWindowCollectionWidget(DBContentManager& dbcont_man,
-                                        Utils::TimeWindowCollection& collection,
+    // callback type for querying min/max timestamps
+    using MinMaxTimestampFunc = std::function<
+        boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>()>;
+
+    explicit TimeWindowCollectionWidget(Utils::TimeWindowCollection& collection,
+                                        MinMaxTimestampFunc min_max_func = {},
                                         QWidget* parent = nullptr);
 
     void refreshList();
@@ -52,8 +59,8 @@ private:
     QString timeWindowBeginToString(const Utils::TimeWindow& tw) const;
     QString timeWindowEndToString(const Utils::TimeWindow& tw) const;
 
-    DBContentManager& dbcont_man_;
     Utils::TimeWindowCollection& collection_;
+    MinMaxTimestampFunc min_max_func_;
     QTreeWidget* tree_widget_;
     QPushButton* add_button_;
 

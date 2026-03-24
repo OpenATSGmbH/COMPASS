@@ -277,36 +277,51 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
     if (!view_->hasCurrentAnnotation())
         return false;
 
-    const auto& anno = view_->currentAnnotation();
+    try
+    {
+        const auto& anno = view_->currentAnnotation();
 
-    title_       = anno.metadata.title_;
-    x_axis_name_ = anno.metadata.xAxisLabel();
-    y_axis_name_ = anno.metadata.yAxisLabel();
+        title_       = anno.metadata.title_;
+        x_axis_name_ = anno.metadata.xAxisLabel();
+        y_axis_name_ = anno.metadata.yAxisLabel();
 
-    const auto& feature = anno.feature_json;
+        const auto& feature = anno.feature_json;
 
-    if (!feature.is_object() || !feature.contains(ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries))
-        return false;
-    
-    if (!scatter_series_.fromJSON(feature[ ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries ]))
+        if (!feature.is_object())
+            throw std::runtime_error("scatter series annotation feature is not an object");
+
+        if (!feature.contains(ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries))
+            throw std::runtime_error("scatter series annotation feature missing '"
+                + std::string(ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries) + "' field");
+
+        if (!scatter_series_.fromJSON(feature[ ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries ]))
+        {
+            scatter_series_.clear();
+            throw std::runtime_error("could not read scatter series from annotation");
+        }
+
+        x_axis_is_datetime_ = scatter_series_.commonDataTypeX() == ScatterSeries::DataTypeTimestamp;
+        y_axis_is_datetime_ = scatter_series_.commonDataTypeY() == ScatterSeries::DataTypeTimestamp;
+
+        correctSeriesDateTime(scatter_series_);
+
+        data_model_.updateFrom(scatter_series_);
+
+        bounds_ = scatter_series_.getDataBounds();
+
+        if (scatter_series_.useConnectionLines().has_value())
+        {
+            view_->useConnectionLines(scatter_series_.useConnectionLines().value(), false);
+            view_->updateComponents();
+        }
+    }
+    catch (const std::exception& e)
     {
         scatter_series_.clear();
+        if (view_->hasViewPoint())
+            view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + e.what());
         return false;
-    }
-
-    x_axis_is_datetime_ = scatter_series_.commonDataTypeX() == ScatterSeries::DataTypeTimestamp;
-    y_axis_is_datetime_ = scatter_series_.commonDataTypeY() == ScatterSeries::DataTypeTimestamp;
-
-    correctSeriesDateTime(scatter_series_);
-
-    data_model_.updateFrom(scatter_series_);
-
-    bounds_ = scatter_series_.getDataBounds();
-
-    if (scatter_series_.useConnectionLines().has_value())
-    {
-        view_->useConnectionLines(scatter_series_.useConnectionLines().value(), false);
-        view_->updateComponents();
     }
 
     loginf << "done, generated " << scatter_series_.numDataSeries() << " series";

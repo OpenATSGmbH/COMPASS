@@ -24,7 +24,7 @@
 class TimestampFilter : public DBFilter
 {
 public:
-    TimestampFilter(nlohmann::json& config, FilterManager* parent);
+    TimestampFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~TimestampFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,
@@ -32,6 +32,7 @@ public:
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
+    void reset(boost::posix_time::ptime min, boost::posix_time::ptime max);
 
     virtual void saveViewPointConditions (nlohmann::json& filters) override;
     virtual void loadViewPointConditions (const nlohmann::json& filters) override;

@@ -96,7 +96,7 @@ void HistogramViewDataSource::checkSubConfigurables()
     }
 }
 
-void HistogramViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
+void HistogramViewDataSource::unshowViewPoint (ViewableDataConfig* vp)
 {
     for (auto& var_it : temporary_added_variables_)
     {
@@ -108,7 +108,7 @@ void HistogramViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
     temporary_added_variables_.clear();
 }
 
-void HistogramViewDataSource::showViewPoint (const ViewableDataConfig* vp)
+void HistogramViewDataSource::showViewPoint (ViewableDataConfig* vp)
 {
     traced_assert(vp);
     const json& data = vp->data();

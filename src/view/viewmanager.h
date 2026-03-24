@@ -47,8 +47,8 @@ class ViewManager : public QObject, public Configurable
 
   signals:
     void selectionChangedSignal();
-    void unshowViewPointSignal (const ViewableDataConfig* vp);
-    void showViewPointSignal (const ViewableDataConfig* vp);
+    void unshowViewPointSignal (ViewableDataConfig* vp);
+    void showViewPointSignal (ViewableDataConfig* vp);
     void reloadStateChanged();
     void automaticUpdatesChanged();
     void presetEdited(ViewPresets::EditAction ea);
@@ -126,7 +126,7 @@ class ViewManager : public QObject, public Configurable
     void clearViewPoints();
     void addViewPoints(const std::vector <nlohmann::json>& viewpoints);
 
-    void setCurrentViewPoint (const ViewableDataConfig* viewable, 
+    void setCurrentViewPoint (ViewableDataConfig* viewable,
                               bool load_blocking = false);
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
@@ -201,7 +201,7 @@ protected:
 
     std::unique_ptr<ViewPointsReportGenerator> view_points_report_gen_;
 
-    const ViewableDataConfig* current_viewable_ {nullptr};
+    ViewableDataConfig* current_viewable_ {nullptr};
     bool view_point_data_selected_ {false};
 
     unsigned int container_count_{0};

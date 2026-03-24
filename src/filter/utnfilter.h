@@ -22,7 +22,7 @@
 class UTNFilter : public DBFilter
 {
 public:
-    UTNFilter(nlohmann::json& config, FilterManager* parent);
+    UTNFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~UTNFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,

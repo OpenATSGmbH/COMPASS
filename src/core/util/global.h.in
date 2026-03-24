@@ -50,6 +50,10 @@ static const double ADSB_MAX_STOPPED_SPEED = 1.0;
 
 static const std::string NULL_GROUP_ID {"None"};
 
+static const char* const LINE_EDIT_INVALID_STYLE =
+    "QLineEdit { background: rgb(255, 100, 100); selection-background-color:"
+    " rgb(255, 200, 200); }";
+
 //std::string my_var = "@MY_VAR@";
 #define USE_EXPERIMENTAL_SOURCE @EXPERIMENTAL_SRC@
 

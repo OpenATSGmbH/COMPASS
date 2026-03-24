@@ -20,9 +20,7 @@
 #include "dbfiltercondition.h"
 #include "dbfilterwidget.h"
 #include "filtermanager.h"
-#include "compass.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "idbvariableresolver.h"
 #include "logger.h"
 
 #include <QVBoxLayout>
@@ -38,9 +36,10 @@ using namespace nlohmann;
 //     : Configurable(class_name, instance_name, parent) ...
 
 DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
-                   FilterManager* parent)
+                   FilterManager* parent, IDBVariableResolver& var_resolver)
     : Configurable(config, parent),
-      filter_manager_(*parent)
+      filter_manager_(parent),
+      var_resolver_(var_resolver)
 {
     registerParameter("name", &name_, instanceName());
     registerParameter("is_custom", &is_custom_, false);
@@ -53,10 +52,6 @@ DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
     if (className().compare("DBFilter") == 0)  // else do it in subclass
         createSubConfigurables();
 }
-
-COMPASS& DBFilter::compass() { return filter_manager_.compass(); }
-DBContentManager& DBFilter::dbContentManager() { return filter_manager_.dbContentManager(); }
-DataSourceManager& DBFilter::dataSourceManager() { return filter_manager_.dataSourceManager(); }
 
 DBFilter::~DBFilter()
 {

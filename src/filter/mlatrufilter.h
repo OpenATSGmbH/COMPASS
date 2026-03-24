@@ -23,7 +23,7 @@
 class MLATRUFilter : public DBFilter
 {
 public:
-    MLATRUFilter(nlohmann::json& config, FilterManager* parent);
+    MLATRUFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~MLATRUFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,
@@ -43,8 +43,18 @@ public:
     bool matchAll() const;
     void matchAll(bool match_all);
 
+    // pushed by FilterManager when data sources change
+    // ds_id -> ru_name -> {ru_indexes}
+    void updateMLATDataSources(
+        const std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>>& mlat_ru_lookup);
+    void updateMLATKnownRUNames(const std::set<std::string>& known_ru_names);
+
 protected:
     std::string db_column_name_;
+
+    // cached MLAT data source info
+    std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> mlat_ru_lookup_;
+    std::set<std::string> known_ru_names_;
 
     std::string rus_str_;
     bool match_all_;

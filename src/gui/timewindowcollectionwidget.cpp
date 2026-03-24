@@ -19,7 +19,6 @@
 #include "timewindowdialog.h"
 #include "util/files.h"
 #include "util/timeconv.h"
-#include "dbcontentmanager.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -27,10 +26,10 @@
 
 using namespace Utils;
 
-TimeWindowCollectionWidget::TimeWindowCollectionWidget(DBContentManager& dbcont_man,
-                                                       TimeWindowCollection& collection,
+TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& collection,
+                                                       MinMaxTimestampFunc min_max_func,
                                                        QWidget* parent)
-    : QWidget(parent), dbcont_man_(dbcont_man), collection_(collection)
+    : QWidget(parent), collection_(collection), min_max_func_(std::move(min_max_func))
 {
     //list_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -144,12 +143,13 @@ void TimeWindowCollectionWidget::addTimeWindow()
 {
     std::unique_ptr<TimeWindowDialog> dialog;
 
-    auto& dbcont_man = dbcont_man_;
-
-    if (dbcont_man.hasMinMaxTimestamp())
+    if (min_max_func_)
     {
-        auto time_stamps = dbcont_man.minMaxTimestamp();
-        dialog.reset(new TimeWindowDialog(this, std::get<0>(time_stamps), std::get<1>(time_stamps)));
+        auto minmax = min_max_func_();
+        if (minmax)
+            dialog.reset(new TimeWindowDialog(this, minmax->first, minmax->second));
+        else
+            dialog.reset(new TimeWindowDialog(this));
     }
     else
     {

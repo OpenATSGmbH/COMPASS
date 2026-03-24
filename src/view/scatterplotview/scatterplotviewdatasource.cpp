@@ -94,7 +94,7 @@ void ScatterPlotViewDataSource::checkSubConfigurables()
     }
 }
 
-void ScatterPlotViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
+void ScatterPlotViewDataSource::unshowViewPoint (ViewableDataConfig* vp)
 {
     for (auto& var_it : temporary_added_variables_)
     {
@@ -106,7 +106,7 @@ void ScatterPlotViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
     temporary_added_variables_.clear();
 }
 
-void ScatterPlotViewDataSource::showViewPoint (const ViewableDataConfig* vp)
+void ScatterPlotViewDataSource::showViewPoint (ViewableDataConfig* vp)
 {
     traced_assert(vp);
     const json& data = vp->data();

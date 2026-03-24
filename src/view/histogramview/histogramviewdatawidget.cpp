@@ -153,26 +153,41 @@ bool HistogramViewDataWidget::updateFromAnnotations()
     if (!view_->hasCurrentAnnotation())
         return false;
 
-    const auto& anno = view_->currentAnnotation();
+    try
+    {
+        const auto& anno = view_->currentAnnotation();
 
-    title_       = anno.metadata.title_;
-    x_axis_name_ = anno.metadata.xAxisLabel();
+        title_       = anno.metadata.title_;
+        x_axis_name_ = anno.metadata.xAxisLabel();
 
-    const auto& feature = anno.feature_json;
+        const auto& feature = anno.feature_json;
 
-    if (!feature.is_object() || !feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
-        return false;
+        if (!feature.is_object())
+            throw std::runtime_error("histogram annotation feature is not an object");
 
-    if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
+        if (!feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
+            throw std::runtime_error("histogram annotation feature missing '"
+                + ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram + "' field");
+
+        if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
+        {
+            histogram_raw_.clear();
+            throw std::runtime_error("could not read histogram from annotation");
+        }
+
+        if (histogram_raw_.useLogScale().has_value())
+        {
+            view_->useLogScale(histogram_raw_.useLogScale().value(), false);
+            view_->updateComponents();
+        }
+    }
+    catch (const std::exception& e)
     {
         histogram_raw_.clear();
+        if (view_->hasViewPoint())
+            view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + e.what());
         return false;
-    }
-
-    if (histogram_raw_.useLogScale().has_value())
-    {
-        view_->useLogScale(histogram_raw_.useLogScale().value(), false);
-        view_->updateComponents();
     }
 
     loginf << "done";

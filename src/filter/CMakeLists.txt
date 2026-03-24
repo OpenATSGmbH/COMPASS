@@ -38,6 +38,8 @@ target_sources(compass_filter
         "${CMAKE_CURRENT_LIST_DIR}/reftrajaccuracyfilterwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilterwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/idbvariableresolver.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagervariableresolver.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/dbfilter.cpp"
@@ -70,6 +72,7 @@ target_sources(compass_filter
         "${CMAKE_CURRENT_LIST_DIR}/reftrajaccuracyfilterwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilterwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagervariableresolver.cpp"
 )
 
 target_include_directories(compass_filter PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

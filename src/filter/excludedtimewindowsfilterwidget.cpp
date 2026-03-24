@@ -22,7 +22,15 @@
 ExcludedTimeWindowsFilterWidget::ExcludedTimeWindowsFilterWidget(ExcludedTimeWindowsFilter& filter)
     : DBFilterWidget(filter), filter_(filter)
 {
-    tw_widget_ = new TimeWindowCollectionWidget(filter_.dbContentManager(), filter_.timeWindows());
+    auto min_max_func = [&filter]()
+        -> boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+    {
+        if (filter.hasMinMaxTimestamp())
+            return filter.minMaxTimestamp();
+        return boost::none;
+    };
+
+    tw_widget_ = new TimeWindowCollectionWidget(filter_.timeWindows(), min_max_func);
 
     int insert_row = child_layout_->rowCount();
 

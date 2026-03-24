@@ -24,7 +24,7 @@
 class ACADFilter : public DBFilter
 {
 public:
-    ACADFilter(nlohmann::json& config, FilterManager* parent);
+    ACADFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~ACADFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,

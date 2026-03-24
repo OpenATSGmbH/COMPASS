@@ -19,6 +19,8 @@
 
 #include "json.hpp"
 
+#include <stdexcept>
+
 const std::string RawHistogram::TagBins        = "bins";
 const std::string RawHistogram::TagBinTag      = "tag";
 const std::string RawHistogram::TagBinCount    = "count";
@@ -116,44 +118,44 @@ bool RawHistogram::fromJSON(const nlohmann::json& data)
 {
     clear();
 
-    if (!data.is_object() || !data.contains(TagBins))
-        return false;
+    if (!data.is_object())
+        throw std::runtime_error("histogram data is not an object");
 
-    try
+    if (!data.contains(TagBins))
+        throw std::runtime_error("histogram data missing '" + TagBins + "' field");
+
+    const auto& jbins = data[ TagBins ];
+    if (!jbins.is_array())
+        throw std::runtime_error("histogram '" + TagBins + "' is not an array");
+
+    for (const auto& jbin : jbins)
     {
-        const auto& jbins = data[ TagBins ];
-        if (!jbins.is_array())
-            return false;
+        if (!jbin.is_object())
+            throw std::runtime_error("histogram bin is not an object");
 
-        for (const auto& jbin : jbins)
+        if (!jbin.contains(TagBinCount))
+            throw std::runtime_error("histogram bin missing '" + TagBinCount + "' field");
+
+        if (!jbin.contains(TagBinLabel))
+            throw std::runtime_error("histogram bin missing '" + TagBinLabel + "' field");
+
+        RawHistogramBin b;
+        b.count = jbin[ TagBinCount ];
+        b.label = jbin[ TagBinLabel ];
+
+        if (jbin.contains(TagBinTag))
         {
-            if (!jbin.is_object() ||
-                !jbin.contains(TagBinCount) ||
-                !jbin.contains(TagBinLabel))
-                return false;
-
-            RawHistogramBin b;
-            b.count = jbin[ TagBinCount ];
-            b.label = jbin[ TagBinLabel ];
-
-            if (jbin.contains(TagBinTag))
-            {
-                int t = jbin[ TagBinTag ];
-                b.tag = static_cast<RawHistogramBin::Tag>(t);
-            }
-
-            if (jbin.contains(TagBinLabelMin))
-                b.label_min = jbin[ TagBinLabelMin ];
-
-            if (jbin.contains(TagBinLabelMax))
-                b.label_max = jbin[ TagBinLabelMax ];
-
-            bins_.push_back(b);
+            int t = jbin[ TagBinTag ];
+            b.tag = static_cast<RawHistogramBin::Tag>(t);
         }
-    }
-    catch(...)
-    {
-        return false;
+
+        if (jbin.contains(TagBinLabelMin))
+            b.label_min = jbin[ TagBinLabelMin ];
+
+        if (jbin.contains(TagBinLabelMax))
+            b.label_max = jbin[ TagBinLabelMax ];
+
+        bins_.push_back(b);
     }
 
     return true;
@@ -309,47 +311,46 @@ bool RawHistogramCollection::fromJSON(const nlohmann::json& data)
 {
     clear();
 
-    if (!data.is_object() || !data.contains(TagDataSeries))
-        return false;
+    if (!data.is_object())
+        throw std::runtime_error("histogram collection data is not an object");
 
-    try
+    if (!data.contains(TagDataSeries))
+        throw std::runtime_error("histogram collection missing '" + TagDataSeries + "' field");
+
+    const auto& jlayers = data[ TagDataSeries ];
+    if (!jlayers.is_array())
+        throw std::runtime_error("histogram collection '" + TagDataSeries + "' is not an array");
+
+    for (const auto& jlayer : jlayers)
     {
-        const auto& jlayers = data[ TagDataSeries ];
-        if (!jlayers.is_array())
-            return false;
+        if (!jlayer.is_object())
+            throw std::runtime_error("histogram data series entry is not an object");
 
-        for (const auto& jlayer : jlayers)
+        if (!jlayer.contains(TagHistogram))
+            throw std::runtime_error("histogram data series missing '" + TagHistogram + "' field");
+
+        DataSeries l;
+
+        if (!l.histogram.fromJSON(jlayer[ TagHistogram ]))
+            throw std::runtime_error("could not read histogram data series");
+
+        if (jlayer.contains(TagName))
+            l.name = jlayer[ TagName ];
+
+        if (jlayer.contains(TagColor))
         {
-            if (!jlayer.is_object() || !jlayer.contains(TagHistogram))
-                return false;
-
-            DataSeries l;
-
-            if (!l.histogram.fromJSON(jlayer[ TagHistogram ]))
-                return false;
-
-            if (jlayer.contains(TagName))
-                l.name = jlayer[ TagName ];
-
-            if (jlayer.contains(TagColor))
-            {
-                std::string cname = jlayer[ TagColor ];
-                l.color = QColor(QString::fromStdString(cname));
-            }
-
-            if (!addDataSeries(l))
-                return false;
+            std::string cname = jlayer[ TagColor ];
+            l.color = QColor(QString::fromStdString(cname));
         }
 
-        if (data.contains(TagLogScale))
-        {
-            bool ls = data[ TagLogScale ];
-            log_scale_ = ls;
-        }
+        if (!addDataSeries(l))
+            throw std::runtime_error("could not add histogram data series");
     }
-    catch(...)
+
+    if (data.contains(TagLogScale))
     {
-        return false;
+        bool ls = data[ TagLogScale ];
+        log_scale_ = ls;
     }
 
     return true;

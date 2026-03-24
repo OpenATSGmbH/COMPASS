@@ -16,11 +16,9 @@
  */
 
 #include "reftrajaccuracyfilter.h"
-#include "compass.h"
 #include "reftrajaccuracyfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
 #include "logger.h"
 
 #include <iostream>
@@ -31,8 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-RefTrajAccuracyFilter::RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent)
-    : DBFilter(config, false, parent)
+RefTrajAccuracyFilter::RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("min_value", &min_value_, 30.0f);
 
@@ -52,26 +50,23 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 
-    if (!dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        dbContent::Variable& x_stddev_var = dbContentManager().metaVariable(
-                    DBContent::meta_var_x_stddev_.name()).getFor(dbcontent_name);
-
-        dbContent::Variable& y_stddev_var = dbContentManager().metaVariable(
-                    DBContent::meta_var_y_stddev_.name()).getFor(dbcontent_name);
+        string x_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_x_stddev_);
+        string y_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_y_stddev_);
 
         if (!first)
         {
             ss << " AND";
         }
 
-            ss << " sqrt(pow(" << x_stddev_var.dbColumnName() << ",2) + (pow("
-               << y_stddev_var.dbColumnName() << ",2))) <= " << min_value_ << "";
+            ss << " sqrt(pow(" << x_col << ",2) + (pow("
+               << y_col << ",2))) <= " << min_value_ << "";
 
         first = false;
     }

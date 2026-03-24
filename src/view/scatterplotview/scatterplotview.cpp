@@ -228,7 +228,7 @@ void ScatterPlotView::updateSelection()
 
 /**
 */
-void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
+void ScatterPlotView::unshowViewPoint(ViewableDataConfig* vp)
 {
     loginf;
 
@@ -239,7 +239,7 @@ void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
 
 /**
 */
-void ScatterPlotView::showViewPoint(const ViewableDataConfig* vp)
+void ScatterPlotView::showViewPoint(ViewableDataConfig* vp)
 {
     loginf;
 

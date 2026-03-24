@@ -26,14 +26,11 @@ class QWidget;
 class QLineEdit;
 class QLabel;
 
-class COMPASS;
-class DBContentManager;
+class IDBVariableResolver;
 class DBFilter;
 
 namespace dbContent
 {
-class Variable;
-class MetaVariable;
 class VariableSet;
 }
 
@@ -44,9 +41,6 @@ class DBFilterCondition : public QObject, public Configurable
 
 private slots:
     void valueChanged();
-
-// signals:
-//     void possibleFilterChange();
 
 public:
     DBFilterCondition(nlohmann::json& config, DBFilter* parent);
@@ -72,8 +66,7 @@ public:
     std::string getVariableName() const;
     void setVariableName(const std::string& variable_name);
 
-    bool hasVariable (const std::string& dbcontent_name);
-    dbContent::Variable& variable (const std::string& dbcontent_name);
+    bool hasVariable(const std::string& dbcontent_name);
 
     bool getAbsoluteValue() { return absolute_value_; }
     void setAbsoluteValue(bool abs) { absolute_value_ = abs; }
@@ -95,12 +88,10 @@ public:
     bool getDisplayInstanceId() const;
 
 private:
-    COMPASS& compass_;
-    DBContentManager& dbcont_man_;
+    IDBVariableResolver& var_resolver_;
 
     DBFilter* filter_parent_{nullptr};
     std::string operator_;
-    //bool op_and_{true};
     bool absolute_value_{false};
     std::string value_;
     std::string reset_value_;
@@ -116,6 +107,6 @@ private:
 
     // transformed val, null contained
     std::pair<std::string, bool> getTransformedValue(const std::string& untransformed_value,
-                                                     dbContent::Variable* variable);
+                                                     const std::string& dbcontent_name);
     bool checkValueInvalid(const std::string& new_value);
 };
