@@ -81,6 +81,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(DBContent::var_cat021_mops_version_, false);
     add(DBContent::var_cat021_nacp_, false);
     add(DBContent::var_cat021_nucp_nic_, false);
+    add(DBContent::var_cat021_sil_, false);
     add(DBContent::var_cat021_pos_check_failed_, false);
 
     add(DBContent::meta_var_x_stddev_, true);
@@ -146,6 +147,7 @@ void TargetReportAccessor::cacheVectors()
     cat021_mops_version_vec_            = varVector<unsigned char>(DBContent::var_cat021_mops_version_);
     cat021_nac_p_vec_                   = varVector<unsigned char>(DBContent::var_cat021_nacp_);
     cat021_nucp_nic_vec_                = varVector<unsigned char>(DBContent::var_cat021_nucp_nic_);
+    cat021_sil_vec_                     = varVector<unsigned char>(DBContent::var_cat021_sil_);
     cat021_pos_check_failed_vec_        = varVector<bool>(DBContent::var_cat021_pos_check_failed_);
 
     meta_pos_std_dev_x_m_vec_           = metaVarVector<double>(DBContent::meta_var_x_stddev_);
@@ -229,6 +231,11 @@ boost::optional<unsigned char> TargetReportAccessor::nacp(unsigned int index) co
     return getOptional<unsigned char>(cat021_nac_p_vec_, index);
 }
 
+boost::optional<unsigned char> TargetReportAccessor::sil(unsigned int index) const
+{
+    return getOptional<unsigned char>(cat021_sil_vec_, index);
+}
+
 boost::optional<bool> TargetReportAccessor::posCheckFailed(unsigned int index) const
 {
     return getOptional<bool>(cat021_pos_check_failed_vec_, index);
@@ -300,15 +307,29 @@ boost::optional<targetReport::PositionAccuracy> TargetReportAccessor::positionAc
         }
         else if (mops_version == 1 || mops_version == 2)
         {
-            if (!cat021_nac_p_vec_ || cat021_nac_p_vec_->isNull(index))
+            if (cat021_nac_p_vec_ && !cat021_nac_p_vec_->isNull(index))
+            {
+                auto nacp = cat021_nac_p_vec_->get(index);
+
+                if (!targetReport::AccuracyTables::adsb_v12_accuracies.count(nacp))
+                    return {}; // value unknown
+
+                qi_epu = targetReport::AccuracyTables::adsb_v12_accuracies.at(nacp);
+            }
+            else if (cat021_nucp_nic_vec_ && !cat021_nucp_nic_vec_->isNull(index))
+            {
+                // NACp unavailable, fall back to NIC Rc.
+                // NIC Rc is a containment radius, not a 95% accuracy bound.
+                // Approximate EPU ~ Rc / 2.0 (conservative conversion).
+                auto nic = cat021_nucp_nic_vec_->get(index);
+
+                if (!targetReport::AccuracyTables::adsb_v12_nic_accuracies.count(nic))
+                    return {};
+
+                qi_epu = targetReport::AccuracyTables::adsb_v12_nic_accuracies.at(nic) / 2.0;
+            }
+            else
                 return {};
-
-            auto nacp = cat021_nac_p_vec_->get(index);
-
-            if (!targetReport::AccuracyTables::adsb_v12_accuracies.count(nacp))
-                return {}; // value unknown
-
-            qi_epu = targetReport::AccuracyTables::adsb_v12_accuracies.at(nacp);
         }
         else
         {

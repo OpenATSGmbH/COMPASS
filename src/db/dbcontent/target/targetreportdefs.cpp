@@ -67,18 +67,20 @@ const std::map<int, float> AccuracyTables::adsb_nucr_nacv_accuracies =
 // 1   & < 20 NM (37040 m)  & < 10 NM (18520 m) & 9260  \\ \hline
 // 0   & > 20 NM (37040 m)  & > 10 NM (18520 m) & -  \\ \hline
 
+// Use Rc (95% containment radius), NOT HPL (10^-7 protection limit).
+// Rc is the 95% bound comparable to NACp EPU.
 const std::map<int, float> AccuracyTables::adsb_v0_accuracies =
 {
-    {9,    7.5f},     // NUCp = 9: <7.5 m
-    {8,   25.0f},     // NUCp = 8: <25 m
-    {7,  185.0f},     // NUCp = 7: <0.1 NM (~185 m)
-    {6,  370.0f},     // NUCp = 6: <0.2 NM (~370 m)
-    {5,  926.0f},     // NUCp = 5: <0.5 NM (~926 m)
-    {4, 1852.0f},     // NUCp = 4: <1.0 NM (~1852 m)
-    {3, 3704.0f},     // NUCp = 3: <2.0 NM (~3704 m)
-    {2, 18520.0f},    // NUCp = 2: <10 NM (~18520 m)
-    {1, 37040.0f},    // NUCp = 1: <20 NM (~37040 m)
-    {0, 37040.0f}     // NUCp = 0: >20 NM (37040 m used as worst-case)
+    {9,      3.0f},   // NUCp = 9: Rc < 3 m
+    {8,     10.0f},   // NUCp = 8: Rc < 10 m
+    {7,     93.0f},   // NUCp = 7: Rc < 0.05 NM (~93 m)
+    {6,    185.0f},   // NUCp = 6: Rc < 0.1 NM (~185 m)
+    {5,    463.0f},   // NUCp = 5: Rc < 0.25 NM (~463 m)
+    {4,    926.0f},   // NUCp = 4: Rc < 0.5 NM (~926 m)
+    {3,   1852.0f},   // NUCp = 3: Rc < 1.0 NM (~1852 m)
+    {2,   9260.0f},   // NUCp = 2: Rc < 5 NM (~9260 m)
+    {1,  18520.0f},   // NUCp = 1: Rc < 10 NM (~18520 m)
+    {0,  18520.0f}    // NUCp = 0: Rc > 10 NM (18520 m used as worst-case)
 };
 
 //    NACp | EPU (HFOM)         | VEPU (VFOM) |
@@ -109,6 +111,25 @@ const std::map<int, float> AccuracyTables::adsb_v12_accuracies =
     {2, 7408.0f},     // NACp = 2:  < 4 NM ~ 7408 m
     {1, 18520.0f},    // NACp = 1:  < 10 NM ~ 18520 m
     {0, 37040.0f}     // NACp = 0:  > 10 NM (unknown); worst-case value chosen here
+};
+
+// NIC Rc (containment radius) for V1/V2. NIC is an integrity metric, not accuracy.
+// To approximate EPU from Rc: EPU ~ Rc / 2.0 (conservative).
+// Used as fallback when NACp is unavailable for V1/V2.
+const std::map<int, float> AccuracyTables::adsb_v12_nic_accuracies =
+{
+    {11,    7.5f},    // NIC = 11: Rc < 7.5 m
+    {10,   25.0f},    // NIC = 10: Rc < 25 m
+    {9,    75.0f},    // NIC = 9:  Rc < 75 m
+    {8,   185.0f},    // NIC = 8:  Rc < 0.1 NM (~185 m)
+    {7,   370.0f},    // NIC = 7:  Rc < 0.2 NM (~370 m)
+    {6,   556.0f},    // NIC = 6:  Rc < 0.3 NM (~556 m) (with supplement bits)
+    {5,  1852.0f},    // NIC = 5:  Rc < 1.0 NM (~1852 m)
+    {4,  3704.0f},    // NIC = 4:  Rc < 2.0 NM (~3704 m)
+    {3,  7408.0f},    // NIC = 3:  Rc < 4.0 NM (~7408 m)
+    {2, 14800.0f},    // NIC = 2:  Rc < 8.0 NM (~14800 m)
+    {1, 37000.0f},    // NIC = 1:  Rc < 20 NM (~37000 m)
+    {0, 37000.0f}     // NIC = 0:  Rc > 20 NM (worst-case)
 };
 
 std::string BaseInfo::asStr() const

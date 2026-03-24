@@ -1203,6 +1203,7 @@ void ReconstructorBase::createTargetReports()
                 info.mops_ = tgt_acc.mopsVersion(cnt);
                 info.nacp_ = tgt_acc.nacp(cnt);
                 info.nucp_nic_ = tgt_acc.nucp(cnt);
+                info.sil_ = tgt_acc.sil(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
 
                 boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);

@@ -131,6 +131,7 @@ struct AccuracyTables
     static const std::map<int, float> adsb_nucr_nacv_accuracies;
     static const std::map<int, float> adsb_v0_accuracies;
     static const std::map<int, float> adsb_v12_accuracies;
+    static const std::map<int, float> adsb_v12_nic_accuracies; // NIC Rc containment radius (V1/V2)
 };
 
 
@@ -256,6 +257,7 @@ struct ReconstructorInfo : public BaseInfo
     boost::optional<unsigned char> mops_;
     boost::optional<unsigned char> nacp_;
     boost::optional<unsigned char> nucp_nic_;
+    boost::optional<unsigned char> sil_;
 
     boost::optional<unsigned int> ecat_;
 
