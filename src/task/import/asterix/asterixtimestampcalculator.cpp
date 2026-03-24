@@ -242,7 +242,7 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing(COMPASS& compass)
 
 void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset, COMPASS& compass)
 {
-    loginf << "offset "
+    logdbg << "offset "
            << String::doubleToStringPrecision(override_tod_offset, 3);
 
     DBContentManager& dbcont_man = compass.dbContentManager();

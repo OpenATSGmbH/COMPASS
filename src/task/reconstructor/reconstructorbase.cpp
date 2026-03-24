@@ -21,6 +21,7 @@
 #include "dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "logger.h"
+#include "stringconv.h"
 #include "timeconv.h"
 #include "datasourcemanager.h"
 #include "evaluationmanager.h"
@@ -894,6 +895,36 @@ void ReconstructorBase::processSlice()
     loginf << "processing slice";
 
     processSlice_impl();
+
+    // log association rates
+    {
+        const auto& counts = assocCounts();
+
+        DataSourceManager& ds_man = task_.manager().compass().dataSourceManager();
+        DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+
+        for (auto& ds_it : counts)
+        {
+            for (auto& dbcont_it : ds_it.second)
+            {
+                unsigned int a_cnt = dbcont_it.second.first;
+                unsigned int u_cnt = dbcont_it.second.second;
+
+                std::string ds_n = ds_man.dbDataSource(ds_it.first).name();
+                std::string dbc_n = dbcont_man.dbContentWithId(dbcont_it.first);
+
+                std::string perc_str;
+                if (a_cnt + u_cnt)
+                    perc_str = String::percentToString(
+                                   100.0 * a_cnt / (float)(a_cnt + u_cnt)) + "%";
+                else
+                    perc_str = "0%";
+
+                loginf << "association rate: " << ds_n << " " << dbc_n
+                       << " associated " << a_cnt << " " << perc_str;
+            }
+        }
+    }
 
     processing_ = false;
 
