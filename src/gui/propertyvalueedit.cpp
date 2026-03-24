@@ -28,6 +28,7 @@ PropertyValueEdit::PropertyValueEdit(PropertyDataType dtype,
                                      QWidget* parent)
 :   QWidget  (parent  )
 ,   decimals_(decimals)
+,   dtype_   (static_cast<PropertyDataType>(-1))  // sentinel so setPropertyDataType always runs
 {
     auto layout = new QHBoxLayout;
     setLayout(layout);

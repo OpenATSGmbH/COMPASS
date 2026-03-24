@@ -17,11 +17,12 @@
 
 #pragma once
 
+#include "idatasourceprovider.h"
+
 #include <QFrame>
 
 class QCheckBox;
 class QGridLayout;
-class DataSourceManager;
 
 class SelectDataSourcesWidget : public QFrame
 {
@@ -34,7 +35,7 @@ protected slots:
     void toggleDataSourceSlot();
 
 public:
-    SelectDataSourcesWidget(DataSourceManager& ds_man,
+    SelectDataSourcesWidget(IDataSourceProvider& ds_provider,
                             const std::string& title, const std::string& ds_type,
                             QWidget* parent=nullptr, Qt::WindowFlags f=Qt::WindowFlags());
 
@@ -43,7 +44,7 @@ public:
     void updateSelected(std::map<std::string, bool> selection);
 
 protected:
-    DataSourceManager& ds_man_;
+    IDataSourceProvider& ds_provider_;
     std::string title_;
     std::string ds_type_;
 

@@ -6,6 +6,7 @@ add_executable(compass_tests
 include("${CMAKE_SOURCE_DIR}/src/config/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 
 target_include_directories(compass_tests PRIVATE
     "${COMPASS_PATH}/lib"

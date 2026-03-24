@@ -21,6 +21,7 @@
 #include "configurable.h"
 #include "source/configurationdatasource.h"
 #include "source/dbdatasource.h"
+#include "idatasourceprovider.h"
 #include "json_fwd.hpp"
 
 #include <QObject>
@@ -39,7 +40,7 @@ namespace dbContent
     class VariableSet;
 }
 
-class DataSourceManager : public QObject, public Configurable
+class DataSourceManager : public QObject, public Configurable, public IDataSourceProvider
 {
     Q_OBJECT
 
@@ -106,6 +107,8 @@ class DataSourceManager : public QObject, public Configurable
 
     dbContent::DBDataSource& dbDataSource(unsigned int ds_id);
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& dbDataSources() const;
+
+    std::vector<DataSourceInfo> dataSourceInfos() const override;
 
     std::set<unsigned int> groundOnlyDBDataSources() const;
     std::map<unsigned int, dbContent::DataSourceType> dsTypes() const;

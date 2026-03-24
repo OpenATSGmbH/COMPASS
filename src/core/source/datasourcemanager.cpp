@@ -1097,6 +1097,15 @@ const std::vector<std::unique_ptr<dbContent::DBDataSource>>& DataSourceManager::
     return db_data_sources_;
 }
 
+std::vector<DataSourceInfo> DataSourceManager::dataSourceInfos() const
+{
+    std::vector<DataSourceInfo> infos;
+    infos.reserve(db_data_sources_.size());
+    for (auto& ds : db_data_sources_)
+        infos.push_back({ds->id(), ds->name(), ds->dsType()});
+    return infos;
+}
+
 std::set<unsigned int> DataSourceManager::groundOnlyDBDataSources() const
 {
     std::set<unsigned int> ds_ids;
