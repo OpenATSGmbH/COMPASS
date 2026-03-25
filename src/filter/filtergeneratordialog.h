@@ -20,63 +20,91 @@
 #include <QDialog>
 #include <vector>
 
-//#include "configuration.h"
+#include "json_fwd.hpp"
 
 namespace dbContent
 {
 class VariableSelectionWidget;
 }
 
+class DBFilter;
 class FilterManager;
 class QLineEdit;
 class QCheckBox;
 class QComboBox;
-class QListWidget;
+class QHBoxLayout;
+class QVBoxLayout;
 class QPushButton;
 
-typedef struct
+struct ConditionTemplate
 {
     std::string variable_name_;
     std::string variable_dbcont_name_;
     std::string operator_;
     std::string value_;
+    std::string value2_; // second value for BETWEEN
     std::string reset_value_;
-    bool absolute_value_;
-} ConditionTemplate;
+    bool absolute_value_{false};
+    bool include_null_{false};
+};
 
 class FilterGeneratorDialog : public QDialog
 {
     Q_OBJECT
 
   public slots:
-//    void loadMin();
-//    void loadMax();
+    void updateOperatorCombo();
+    void updateValueField();
     void updateAddConditionButton();
     void updateAddButton();
-    void addCondition();
+    void addOrUpdateCondition();
+    void editCondition(int index);
+    void removeCondition(int index);
+    void cancelEditCondition();
     void accept() override;
     void cancel();
 
   public:
+    // create mode
     FilterGeneratorDialog(FilterManager& filter_man, QWidget* parent = nullptr);
+    // edit mode
+    FilterGeneratorDialog(FilterManager& filter_man, DBFilter& filter, QWidget* parent = nullptr);
     virtual ~FilterGeneratorDialog();
 
   protected:
     FilterManager& filter_man_;
+    DBFilter* edit_filter_{nullptr};
 
     QLineEdit* filter_name_{nullptr};
     dbContent::VariableSelectionWidget* condition_variable_widget_{nullptr};
     QPushButton* add_condition_button_{nullptr};
+    QPushButton* cancel_edit_button_{nullptr};
     QPushButton* add_button_{nullptr};
     QComboBox* condition_combo_{nullptr};
+    QHBoxLayout* condition_combo_layout_{nullptr};
     QCheckBox* condition_absolute_{nullptr};
-    QLineEdit* condition_value_{nullptr};
-    //QComboBox* condition_reset_combo_{nullptr};
-    
-    QListWidget* conditions_list_{nullptr};
+    QCheckBox* condition_include_null_{nullptr};
+
+    // value field area — swapped based on operator
+    QHBoxLayout* condition_value_layout_{nullptr};
+    QLineEdit* condition_value_{nullptr};       // default single value
+    QLineEdit* condition_value_min_{nullptr};    // BETWEEN min
+    QLineEdit* condition_value_max_{nullptr};    // BETWEEN max
+    QComboBox* condition_value_is_{nullptr};     // IS / IS NOT dropdown
+
+    QVBoxLayout* conditions_list_layout_{nullptr};
 
     std::vector<ConditionTemplate> data_conditions_;
+    int editing_condition_index_{-1}; // -1 = adding new, >= 0 = editing existing
 
+    void init();
     void createGUIElements();
-    void updateWidgetList();
+    void loadConditionsFromFilter();
+    void updateConditionsList();
+    void clearValueFields();
+    void resetConditionFields();
+    ConditionTemplate collectConditionFromUI();
+    void populateUIFromCondition(const ConditionTemplate& cond);
+    bool validateValue();
+    void createConditionConfigs(nlohmann::json& parent_json, const std::string& filter_name);
 };

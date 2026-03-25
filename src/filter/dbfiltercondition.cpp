@@ -30,6 +30,7 @@
 #include <QStyle>
 
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "traced_assert.h"
 #include <sstream>
@@ -52,6 +53,8 @@ DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
 
     registerParameter("reset_value", &reset_value_, std::string(""));
     registerParameter("value", &value_, std::string());
+    registerParameter("value2", &value2_, std::string());
+    registerParameter("include_null", &include_null_, false);
 
     logdbg << "start" << instanceName() << " value " << value_
            << " usable " << usable_ << " invalid " << value_invalid_;
@@ -135,25 +138,39 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     tie(val_str, null_contained) = getTransformedValue(value_, dbcontent_name);
 
-    if (null_contained)
-    {
+    std::string col_expr = variable_prefix + db_item_str + variable_suffix;
+
+    bool needs_null_or = null_contained || include_null_;
+    bool is_between = (operator_ == "BETWEEN");
+    bool has_main_condition = false;
+
+    if (needs_null_or)
         ss << "(";
 
-        if (val_str.size())
-        {
-            ss << variable_prefix << db_item_str << variable_suffix;
-            ss << " " << operator_ << val_str << " OR ";
-        }
-
-        ss << variable_prefix << db_item_str << variable_suffix;
-        ss << " " << operator_ << " NULL";
-
-        ss << ")";
-    }
-    else
+    if (is_between)
     {
-        ss << variable_prefix << db_item_str << variable_suffix;
-        ss << " " << operator_ << val_str;
+        std::string val2_str;
+        bool null2;
+        tie(val2_str, null2) = getTransformedValue(value2_, dbcontent_name);
+        ss << col_expr << " BETWEEN " << val_str << " AND " << val2_str;
+        has_main_condition = true;
+    }
+    else if (null_contained && val_str.size())
+    {
+        ss << col_expr << " " << operator_ << val_str;
+        has_main_condition = true;
+    }
+    else if (!null_contained)
+    {
+        ss << col_expr << " " << operator_ << val_str;
+        has_main_condition = true;
+    }
+
+    if (needs_null_or)
+    {
+        if (has_main_condition)
+            ss << " OR ";
+        ss << col_expr << " IS NULL)";
     }
 
     if (ss.str().size())
@@ -356,20 +373,24 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
 
     for (auto value_it : value_strings)
     {
-        value_str = value_it;
+        value_str = String::trim(value_it);
+
+        if (value_str.empty())
+            continue;
 
         if (var_resolver_.variableHasNonStandardRepresentation(
                 dbcontent_name, variable_name_, variable_dbcontent_name_))
             value_str = var_resolver_.variableValueFromRepresentation(
                 dbcontent_name, variable_name_, variable_dbcontent_name_, value_str);
 
-        logdbg << "value string " << value_str;
-
         logdbg << "transformed value string " << value_str;
 
         if (var_resolver_.variableDataType(
                 dbcontent_name, variable_name_, variable_dbcontent_name_) == PropertyDataType::STRING)
+        {
+            boost::replace_all(value_str, "'", "''");
             transformed_value_strings.push_back("'" + value_str + "'");
+        }
         else
             transformed_value_strings.push_back(value_str);
     }

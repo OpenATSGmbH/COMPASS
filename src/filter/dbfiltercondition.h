@@ -66,6 +66,8 @@ public:
     std::string getVariableName() const;
     void setVariableName(const std::string& variable_name);
 
+    const std::string& getVariableDBContentName() const { return variable_dbcontent_name_; }
+
     bool hasVariable(const std::string& dbcontent_name);
 
     bool getAbsoluteValue() { return absolute_value_; }
@@ -76,6 +78,12 @@ public:
 
     std::string getValue() { return value_; }
     void setValue(const std::string& value);
+
+    std::string getValue2() { return value2_; }
+    void setValue2(const std::string& value) { value2_ = value; }
+
+    bool getIncludeNull() { return include_null_; }
+    void setIncludeNull(bool include_null) { include_null_ = include_null; }
 
     std::string getResetValue() { return reset_value_; }
     void setResetValue(std::string reset_value) { reset_value_ = reset_value; }
@@ -94,10 +102,12 @@ private:
     std::string operator_;
     bool absolute_value_{false};
     std::string value_;
+    std::string value2_; // second value for BETWEEN operator
     std::string reset_value_;
     std::string variable_dbcontent_name_;
     std::string variable_name_;
     bool display_instance_name_ {false};
+    bool include_null_{false};
 
     bool usable_{true};
     bool value_invalid_{false};

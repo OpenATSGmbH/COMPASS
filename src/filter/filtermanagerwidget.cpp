@@ -142,6 +142,7 @@ void FilterManagerWidget::addToConfigMenu(QMenu* menu)
     QAction* new_filter_action = menu->addAction("Add New Filter");
     connect(new_filter_action, &QAction::triggered, this, &FilterManagerWidget::addFilter);
 
+    auto edit_menu = menu->addMenu("Edit Filter");
     auto delete_menu = menu->addMenu("Delete Filter");
     bool has_custom = false;
 
@@ -151,10 +152,15 @@ void FilterManagerWidget::addToConfigMenu(QMenu* menu)
         {
             has_custom = true;
             std::string name = filter->getName();
-            QAction* action = delete_menu->addAction(QString::fromStdString(name));
-            connect(action, &QAction::triggered, this, [this, name]() { deleteFilter(name); });
+
+            QAction* edit_action = edit_menu->addAction(QString::fromStdString(name));
+            connect(edit_action, &QAction::triggered, this, [this, name]() { editFilter(name); });
+
+            QAction* delete_action = delete_menu->addAction(QString::fromStdString(name));
+            connect(delete_action, &QAction::triggered, this, [this, name]() { deleteFilter(name); });
         }
     }
+    edit_menu->setEnabled(has_custom);
     delete_menu->setEnabled(has_custom);
 
     menu->addSeparator();
@@ -240,10 +246,26 @@ void FilterManagerWidget::deleteFilter(const std::string& name)
 
 /**
  */
+void FilterManagerWidget::editFilter(const std::string& name)
+{
+    loginf << "filter '" << name << "'";
+
+    traced_assert(filter_manager_.hasFilter(name));
+    DBFilter* filter = filter_manager_.getFilter(name);
+    traced_assert(filter);
+    traced_assert(filter->isCustom());
+
+    FilterGeneratorDialog dialog(filter_manager_, *filter, this);
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        updateFilters();
+    }
+}
+
 void FilterManagerWidget::addFilter()
 {
     loginf;
-    
+
     FilterGeneratorDialog filter_generator(filter_manager_, this);
     if (filter_generator.exec() == QDialog::Accepted)
     {

@@ -78,6 +78,7 @@ class DBFilter : public Configurable
 
     const std::vector<std::unique_ptr<DBFilterCondition>>& getConditions() const { return conditions_; }
     unsigned int getNumConditions() { return conditions_.size(); }
+    void clearConditions();
     void deleteCondition(DBFilterCondition* condition);
 
     DBFilterWidget* widget();

@@ -193,6 +193,11 @@ void DBFilter::reset()
     }
 }
 
+void DBFilter::clearConditions()
+{
+    conditions_.clear();
+}
+
 void DBFilter::deleteCondition(DBFilterCondition* condition)
 {
     auto it = std::find_if(conditions_.begin(), conditions_.end(),
