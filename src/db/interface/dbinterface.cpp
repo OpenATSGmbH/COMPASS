@@ -667,12 +667,31 @@ bool DBInterface::logVerbose() const
     return log_verbose_;
 }
 
+Result DBInterface::validateSQL(const std::string& sql)
+{
+    traced_assert(ready());
+
+    return db_instance_->defaultConnection().execute("EXPLAIN " + sql);
+}
+
+Result DBInterface::validateFilter(const std::string& table_name, const std::string& where_clause)
+{
+    return validateSQL("SELECT * FROM " + table_name + " WHERE " + where_clause);
+}
+
 /**
  * !Protect by mutex when calling!
  */
 Result DBInterface::execute(const std::string& sql)
 {
     traced_assert(ready());
+
+    auto val_res = validateSQL(sql);
+    if (!val_res.ok())
+    {
+        logerr << "validateSQL failed '" << sql << "': " << val_res.error();
+        throw std::runtime_error("validateSQL failed '" + sql + "': " + val_res.error());
+    }
 
     auto res = db_instance_->defaultConnection().execute(sql);
 
@@ -691,6 +710,13 @@ Result DBInterface::execute(const std::string& sql)
 std::shared_ptr<DBResult> DBInterface::execute(const DBCommand& cmd)
 {
     traced_assert(ready());
+
+    auto val_res = validateSQL(cmd.get());
+    if (!val_res.ok())
+    {
+        logerr << "validateSQL failed '" << cmd.get() << "': " << val_res.error();
+        throw std::runtime_error("validateSQL failed '" + cmd.get() + "': " + val_res.error());
+    }
 
     auto res = db_instance_->defaultConnection().execute(cmd);
 
