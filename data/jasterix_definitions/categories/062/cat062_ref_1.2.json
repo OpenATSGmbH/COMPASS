@@ -111,7 +111,7 @@
                 },
                 {
                     "name": "Vy",
-                    "comment": "-8192m/s <= Vx <= 8191.75m/s",
+                    "comment": "-8192m/s <= Vy <= 8191.75m/s",
                     "type": "fixed_bytes",
                     "length": 2,
                     "data_type": "int",
@@ -121,45 +121,27 @@
         },
         {
             "number": "STS",
-            "name": "Ground Velocity Accuracy",
-            "comment": "Accuracy of the Ground Speed and Track Angle elements of Ground Velocity Vector.",
+            "name": "Supplementary Track Status",
+            "comment": "Track status information to be transmitted in addition to the information available in data item I062/080 (Track Status).",
             "type": "item",
             "data_fields": [
                 {
-                    "name": "GSSD",
-                    "comment": "IStandard deviation of the Ground Speed",
-                    "type": "fixed_bytes",
-                    "length": 2,
-                    "data_type": "uint",
-                    "lsb": 6.103515e-05
-                },
-                {
-                    "name": "TASD",
-                    "comment": "Standard deviation of the Track Angle",
-                    "type": "fixed_bytes",
-                    "length": 2,
-                    "data_type": "uint",
-                    "lsb": 0.087890625
-                }
-            ]
-        },
-        {
-            "number": "TRT",
-            "name": "Time of ASTERIX Report Transmission",
-            "comment": "Time of the transmission of the ASTERIX category 020 report in the form of elapsed time since last midnight, expressed as UTC.",
-            "type": "item",
-            "data_fields": [
-                {
-                    "name": "address",
-                    "type": "fixed_bitfield",
-                    "length": 1,
+                    "name": "STS",
+                    "type": "extendable",
                     "items": [
                         {
-                            "name": "FDR",
-                            "comment": "Flight Data Retained\n0: Flight plan data from active FDPS\n1: Flight plan data retained from no longer active FDPS",
-                            "type": "fixed_bits",
-                            "start_bit": 7,
-                            "bit_length": 1
+                            "name": "address",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "FDR",
+                                    "comment": "Flight Data Retained\n0: Flight plan data from active FDPS\n1: Flight plan data retained from no longer active FDPS",
+                                    "type": "fixed_bits",
+                                    "start_bit": 7,
+                                    "bit_length": 1
+                                }
+                            ]
                         }
                     ]
                 }

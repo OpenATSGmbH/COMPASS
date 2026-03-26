@@ -1,5 +1,5 @@
 {
-    "name": "cat062_1.16_record",
+    "name": "cat062_1.21_record",
     "type": "record",
     "field_specification": {
         "name": "FSPEC",
@@ -113,6 +113,20 @@
                     "type": "fixed_bitfield",
                     "length": 2,
                     "items": [
+                        {
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled Code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
+                        },
                         {
                             "name": "CH",
                             "comment": "Change in Mode 3/A\n0 No Change\n1 Mode 3/A has changed",
@@ -406,7 +420,7 @@
                         },
                         {
                             "name": "EMS",
-                            "comment": "Emergency Status Indication\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 \"Downed\" Aircraft\n7 Undefined",
+                            "comment": "Emergency Status Indication\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 'Downed' Aircraft\n7 Undefined",
                             "type": "fixed_bits",
                             "start_bit": 3,
                             "bit_length": 3
@@ -464,7 +478,59 @@
                             "bit_length": 1
                         },
                         {
+                            "name": "SFC",
+                            "comment": "0 Default value\n1 Surface target",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "IDD",
+                            "comment": "0 No indication\n1 Duplicate Flight-ID",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "IEC",
+                            "comment": "0 Default value\n1 Inconsistent Emergency Code",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "MLAT",
+                            "comment": "0 Default value\n1 Age of the last received MLAT track update is higher than system dependent threshold",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
+                        },
+                        {
                             "name": "FX6",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
+                        }
+                    ]
+                },
+                {
+                    "name": "Track Status Sixth Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX6",
+                    "optional_variable_value": 1,
+                    "items": [
+                        {
+                            "name": "M5I",
+                            "comment": "0 Default value\n1 Age of the last received Mode-5 interrogation track update is higher than system dependent threshold",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "FX7",
                             "type": "fixed_bits",
                             "start_bit": 0,
                             "bit_length": 1,
@@ -1361,7 +1427,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Magnetic Heading\" in item 062/380 (Subfield #3)",
+                                    "comment": "Age of the DAP 'Magnetic Heading' in item 062/380 (Subfield #3)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1376,7 +1442,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Indicated Airspeed/ Mach Number\" in item 062/380 (Subfield #4)",
+                                    "comment": "Age of the DAP 'Indicated Airspeed/ Mach Number' in item 062/380 (Subfield #4)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1391,7 +1457,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"True Airspeed\" in item 062/380 (Subfield #5)",
+                                    "comment": "Age of the DAP 'True Airspeed' in item 062/380 (Subfield #5)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1406,7 +1472,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Selected Altitude\" in item 062/380 (Subfield #6)",
+                                    "comment": "Age of the DAP 'Selected Altitude' in item 062/380 (Subfield #6)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1421,7 +1487,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Final State Selected Altitude\" in item 062/380 (Subfield #7)",
+                                    "comment": "Age of the DAP 'Final State Selected Altitude' in item 062/380 (Subfield #7)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1436,7 +1502,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Trajectory Intent\" in item 062/380 (Subfield #8)",
+                                    "comment": "Age of the DAP 'Trajectory Intent' in item 062/380 (Subfield #8)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1451,7 +1517,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Communication/ACAS Capability and Flight Status\" in item 062/380 (Subfield #10)",
+                                    "comment": "Age of the DAP 'Communication/ACAS Capability and Flight Status' in item 062/380 (Subfield #10)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1466,7 +1532,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Status Reported by ADS-B\" in item 062/380 (Subfield #11)",
+                                    "comment": "Age of the DAP 'Status Reported by ADS-B' in item 062/380 (Subfield #11)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint"
@@ -1480,7 +1546,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"ACAS Resolution Advisory Report\" in item 062/380 (Subfield #12)",
+                                    "comment": "Age of the DAP 'ACAS Resolution Advisory Report' in item 062/380 (Subfield #12)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1495,7 +1561,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Barometric Vertical Rate\" in item 062/380 (Subfield #13)",
+                                    "comment": "Age of the DAP 'Barometric Vertical Rate' in item 062/380 (Subfield #13)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1510,7 +1576,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Geometrical Vertical Rate\" in item 062/380 (Subfield #14)",
+                                    "comment": "Age of the DAP 'Geometrical Vertical Rate' in item 062/380 (Subfield #14)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1525,7 +1591,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Roll Angle\" in item 062/380 (Subfield #15)",
+                                    "comment": "Age of the DAP 'Roll Angle' in item 062/380 (Subfield #15)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1540,7 +1606,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Track Angle Rate\" in item 062/380 (Subfield #16)",
+                                    "comment": "Age of the DAP 'Track Angle Rate' in item 062/380 (Subfield #16)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1555,7 +1621,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Track Angle\" in item 062/380 (Subfield #17)",
+                                    "comment": "Age of the DAP 'Track Angle' in item 062/380 (Subfield #17)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1570,7 +1636,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Ground Speed\" in item 062/380 (Subfield #18)",
+                                    "comment": "Age of the DAP 'Ground Speed' in item 062/380 (Subfield #18)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1585,7 +1651,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Velocity Uncertainty\" in item 062/380 (Subfield #19)",
+                                    "comment": "Age of the DAP 'Velocity Uncertainty' in item 062/380 (Subfield #19)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1600,7 +1666,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Meteorological Data\" in item 062/380 (Subfield #20)",
+                                    "comment": "Age of the DAP 'Meteorological Data' in item 062/380 (Subfield #20)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1615,7 +1681,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Emitter Category\" in item 062/380 (Subfield #21)",
+                                    "comment": "Age of the DAP 'Emitter Category' in item 062/380 (Subfield #21)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1630,7 +1696,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Position\" in item 062/380 (Subfield #23)",
+                                    "comment": "Age of the DAP 'Position' in item 062/380 (Subfield #23)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1645,7 +1711,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Geometric Altitude\" in item 062/380 (Subfield #24)",
+                                    "comment": "Age of the DAP 'Geometric Altitude' in item 062/380 (Subfield #24)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1660,7 +1726,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Position Uncertainty\" in item 062/380 (Subfield #25)",
+                                    "comment": "Age of the DAP 'Position Uncertainty' in item 062/380 (Subfield #25)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1675,7 +1741,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Mode S MB Data\" in item 062/380 (Subfield #22)",
+                                    "comment": "Age of the DAP 'Mode S MB Data' in item 062/380 (Subfield #22)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1690,7 +1756,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Indicated Airspeed\" in item 062/380 (Subfield #26)",
+                                    "comment": "Age of the DAP 'Indicated Airspeed' in item 062/380 (Subfield #26)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1705,7 +1771,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Mach Number\" in item 062/380 (Subfield #27)",
+                                    "comment": "Age of the DAP 'Mach Number' in item 062/380 (Subfield #27)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -1720,7 +1786,7 @@
                             "data_fields": [
                                 {
                                     "name": "Age",
-                                    "comment": "Age of the DAP \"Barometric Pressure Setting\" in item 062/380 (Subfield #28)",
+                                    "comment": "Age of the DAP 'Barometric Pressure Setting' in item 062/380 (Subfield #28)",
                                     "type": "fixed_bytes",
                                     "length": 1,
                                     "data_type": "uint",
@@ -2308,7 +2374,7 @@
                                         },
                                         {
                                             "name": "STAT",
-                                            "comment": "Flight Status\n0 No alert, no SPI, aircraft airborne\n1 No alert, no SPI, aircraft on ground\n2 Alert, no SPI, aircraft airborne\n3 Alert, no SPI, aircraft on ground\n4 Alert, SPI, aircraft airborne or on ground\n5 No alert, SPI, aircraft airborne or on ground",
+                                            "comment": "Flight Status\n0 No alert, no SPI, aircraft airborne\n1 No alert, no SPI, aircraft on ground\n2 Alert, no SPI, aircraft airborne\n3 Alert, no SPI, aircraft on ground\n4 Alert, SPI, aircraft airborne or on ground\n5 No alert, SPI, aircraft airborne or on ground\n6 Not defined\n7 Unknown or not yet extracted",
                                             "type": "fixed_bits",
                                             "start_bit": 10,
                                             "bit_length": 3
@@ -2392,7 +2458,7 @@
                                         },
                                         {
                                             "name": "STAT",
-                                            "comment": "Flight Status\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 \"Downed\" Aircraft\n7 Unknown",
+                                            "comment": "Flight Status\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 'Downed' Aircraft\n7 Unknown",
                                             "type": "fixed_bits",
                                             "start_bit": 0,
                                             "bit_length": 3
