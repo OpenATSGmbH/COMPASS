@@ -48,7 +48,8 @@ public:
 
     void invert();
     bool filters(const std::string& dbcontent_name);
-    std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first);
+    std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
+                                   const std::string& logic_op = "AND");
 
     QLabel* getLabel()
     {
@@ -95,6 +96,9 @@ public:
 
     bool getDisplayInstanceId() const;
 
+    const std::string& labelPrefix() const { return label_prefix_; }
+    void setLabelPrefix(const std::string& prefix);
+
 private:
     IDBVariableResolver& var_resolver_;
 
@@ -111,6 +115,9 @@ private:
 
     bool usable_{true};
     bool value_invalid_{false};
+
+    std::string label_prefix_; // "AND " or "OR " — set by widget
+    std::string base_label_text_; // e.g. "altitude >"
 
     QLineEdit* edit_{nullptr};
     QLabel* label_{nullptr};

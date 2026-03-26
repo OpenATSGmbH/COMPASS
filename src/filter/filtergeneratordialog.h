@@ -48,6 +48,12 @@ struct ConditionTemplate
     bool include_null_{false};
 };
 
+enum class ConditionLogic
+{
+    AND = 0,
+    OR  = 1
+};
+
 class FilterGeneratorDialog : public QDialog
 {
     Q_OBJECT
@@ -92,6 +98,7 @@ class FilterGeneratorDialog : public QDialog
     QLineEdit* condition_value_max_{nullptr};    // BETWEEN max
     QComboBox* condition_value_is_{nullptr};     // IS / IS NOT dropdown
 
+    QComboBox* condition_logic_combo_{nullptr};
     QVBoxLayout* conditions_list_layout_{nullptr};
 
     std::vector<ConditionTemplate> data_conditions_;

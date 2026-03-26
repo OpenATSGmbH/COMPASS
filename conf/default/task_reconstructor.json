@@ -89,7 +89,7 @@
                 "max_mahalanobis_notok_verified": 7.0,
                 "max_mahalanobis_sec_unknown_dist": 3.0,
                 "max_mahalanobis_sec_verified_dist": 5.0,
-                "max_pos_stddev_air": 300.0,
+                "max_pos_stddev_air": 500.0,
                 "max_pos_stddev_ground": 30.0,
                 "max_ref_time_diff": 5.0,
                 "max_time_diff": 10.0,

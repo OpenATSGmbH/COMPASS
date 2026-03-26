@@ -78,6 +78,12 @@ void FilterGeneratorDialog::init()
         filter_name_->setText(QString::fromStdString(edit_filter_->getName()));
         filter_name_->setReadOnly(true);
         add_button_->setText(tr("Save"));
+
+        // load condition logic
+        if (edit_filter_->conditionLogic() == "OR")
+            condition_logic_combo_->setCurrentIndex(static_cast<int>(ConditionLogic::OR));
+        else
+            condition_logic_combo_->setCurrentIndex(static_cast<int>(ConditionLogic::AND));
     }
 
     updateConditionsList();
@@ -210,6 +216,20 @@ void FilterGeneratorDialog::createGUIElements()
     layout->addLayout(condition_button_layout);
 
     layout->addSpacing(20);
+
+    // condition logic selector
+    QHBoxLayout* logic_layout = new QHBoxLayout();
+    QLabel* logic_label = new QLabel(tr("Join conditions with"));
+    logic_label->setFont(font_bold);
+    logic_layout->addWidget(logic_label);
+
+    condition_logic_combo_ = new QComboBox();
+    condition_logic_combo_->addItem("AND");
+    condition_logic_combo_->addItem("OR");
+    condition_logic_combo_->setCurrentIndex(0);
+    logic_layout->addWidget(condition_logic_combo_);
+    logic_layout->addStretch();
+    layout->addLayout(logic_layout);
 
     // conditions list
     QLabel* conditions_label = new QLabel(tr("Current conditions"));
@@ -680,9 +700,12 @@ void FilterGeneratorDialog::accept()
     std::string filter_name = filter_name_->text().toStdString();
     traced_assert(!data_conditions_.empty());
 
+    std::string logic = condition_logic_combo_->currentIndex() == static_cast<int>(ConditionLogic::OR) ? "OR" : "AND";
+
     if (edit_filter_)
     {
-        // edit mode: clear existing conditions and recreate
+        // edit mode: update logic and clear existing conditions
+        edit_filter_->conditionLogic(logic);
         edit_filter_->clearConditions();
         edit_filter_->removeSubConfigurations("DBFilterCondition");
 
@@ -712,6 +735,7 @@ void FilterGeneratorDialog::accept()
         auto& child_json = filter_man_.addNewSubConfiguration("DBFilter");
         child_json[Configuration::ParameterSection]["name"] = filter_name;
         child_json[Configuration::ParameterSection]["is_custom"] = true;
+        child_json[Configuration::ParameterSection]["condition_logic"] = logic;
 
         createConditionConfigs(child_json, filter_name);
 

@@ -59,11 +59,13 @@ DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
     logdbg << "start" << instanceName() << " value " << value_
            << " usable " << usable_ << " invalid " << value_invalid_;
 
-    label_ = new QLabel();
     if (display_instance_name_)
-        label_->setText(tr((instanceName() + " " + operator_).c_str()));
+        base_label_text_ = instanceName() + " " + operator_;
     else
-        label_->setText(tr((variable_name_ + " " + operator_).c_str()));
+        base_label_text_ = variable_name_ + " " + operator_;
+
+    label_ = new QLabel();
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 
     edit_ = new QLineEdit(tr(value_.c_str()));
     edit_->setMaxLength(16*1024*1024);
@@ -94,7 +96,8 @@ bool DBFilterCondition::filters(const std::string& dbcontent_name)
     return hasVariable(dbcontent_name);
 }
 
-std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
+std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
+                                                   const std::string& logic_op)
 {
     logdbg << "dbcont_name " << dbcontent_name << " first " << first;
     traced_assert(usable_);
@@ -129,7 +132,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     if (!first)
     {
-        ss << " AND ";
+        ss << " " << logic_op << " ";
     }
     first = false;
 
@@ -259,11 +262,18 @@ bool DBFilterCondition::hasVariable(const std::string& dbcontent_name)
 void DBFilterCondition::update()
 {
     if (display_instance_name_)
-        label_->setText(tr((instanceName() + " " + operator_).c_str()));
+        base_label_text_ = instanceName() + " " + operator_;
     else
-        label_->setText(tr((variable_name_ + " " + operator_).c_str()));
+        base_label_text_ = variable_name_ + " " + operator_;
 
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
     edit_->setText(tr(value_.c_str()));
+}
+
+void DBFilterCondition::setLabelPrefix(const std::string& prefix)
+{
+    label_prefix_ = prefix;
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 }
 
 void DBFilterCondition::setValue(const std::string& value)
