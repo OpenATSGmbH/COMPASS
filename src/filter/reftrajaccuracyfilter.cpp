@@ -106,8 +106,12 @@ void RefTrajAccuracyFilter::loadViewPointConditions (const nlohmann::json& filte
     const json& filter = filters.at(name_);
 
     traced_assert(filter.contains("Accuracy Minimum"));
-    string value = filter.at("Accuracy Minimum");
-    min_value_ = std::stod(value);
+    const auto& val = filter.at("Accuracy Minimum");
+
+    if (val.is_number())
+        min_value_ = val.get<float>();
+    else
+        min_value_ = std::stod(val.get<string>());
 
     if (widget())
         widget()->update();

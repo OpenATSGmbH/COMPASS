@@ -146,3 +146,63 @@ TEST_CASE("ADSBQualityFilter with quality checks", "[filter][adsbquality]")
     CHECK(sql.find("nucp_nic >= 4") != std::string::npos);
     CHECK(sql.find("nucp_nic >= 5") != std::string::npos);
 }
+
+TEST_CASE("ADSBQualityFilter viewpoint save/load round-trip", "[filter][adsbquality][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ADSBQualityFilter", "ADSBQualityFilter", {
+        {"active", true},
+        {"use_v0", false}, {"use_v1", true}, {"use_v2", true},
+        {"use_min_nucp", true}, {"min_nucp", 4},
+        {"use_max_nucp", false}, {"max_nucp", 4},
+        {"use_min_nic", true}, {"min_nic", 5},
+        {"use_max_nic", false}, {"max_nic", 5},
+        {"use_min_nacp", true}, {"min_nacp", 5},
+        {"use_max_nacp", false}, {"max_nacp", 5},
+        {"use_min_sil_v1", false}, {"min_sil_v1", 0},
+        {"use_max_sil_v1", false}, {"max_sil_v1", 0},
+        {"use_min_sil_v2", true}, {"min_sil_v2", 2},
+        {"use_max_sil_v2", true}, {"max_sil_v2", 3}
+    });
+
+    ADSBQualityFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("ADSB Quality"));
+    const auto& f = vp_filters["ADSB Quality"];
+    CHECK(f["use_v0"] == false);
+    CHECK(f["use_v1"] == true);
+    CHECK(f["use_v2"] == true);
+    CHECK(f["use_min_nucp"] == true);
+    CHECK(f["min_nucp"] == 4);
+    CHECK(f["use_min_sil_v2"] == true);
+    CHECK(f["min_sil_v2"] == 2);
+    CHECK(f["max_sil_v2"] == 3);
+
+    // Load into fresh filter with different values
+    auto cfg2 = makeFilterConfig("ADSBQualityFilter", "ADSBQualityFilter", {
+        {"active", true},
+        {"use_v0", true}, {"use_v1", false}, {"use_v2", false},
+        {"use_min_nucp", false}, {"min_nucp", 0},
+        {"use_max_nucp", false}, {"max_nucp", 0},
+        {"use_min_nic", false}, {"min_nic", 0},
+        {"use_max_nic", false}, {"max_nic", 0},
+        {"use_min_nacp", false}, {"min_nacp", 0},
+        {"use_max_nacp", false}, {"max_nacp", 0},
+        {"use_min_sil_v1", false}, {"min_sil_v1", 0},
+        {"use_max_sil_v1", false}, {"max_sil_v1", 0},
+        {"use_min_sil_v2", false}, {"min_sil_v2", 0},
+        {"use_max_sil_v2", false}, {"max_sil_v2", 0}
+    });
+
+    ADSBQualityFilter filter2(cfg2, nullptr, mock);
+    filter2.loadViewPointConditions(vp_filters);
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

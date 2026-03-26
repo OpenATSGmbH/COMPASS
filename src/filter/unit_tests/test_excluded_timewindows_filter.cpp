@@ -136,3 +136,43 @@ TEST_CASE("ExcludedTimeWindowsFilter updateMinMaxTimestamp", "[filter][excludedt
     CHECK(got_min == min_ts);
     CHECK(got_max == max_ts);
 }
+
+TEST_CASE("ExcludedTimeWindowsFilter viewpoint save/load round-trip", "[filter][excludedtimewindows][viewpoint]")
+{
+    // Create time windows JSON (same format as config: array of [begin, end] arrays)
+    nlohmann::json windows = nlohmann::json::array();
+    nlohmann::json window = nlohmann::json::array();
+    window.push_back("2026-01-05 10:00:00.000");
+    window.push_back("2026-01-05 10:05:00.000");
+    windows.push_back(window);
+
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ExcludedTimeWindowsFilter", "ExcludedTimeWindowsFilter0", {
+        {"active", true},
+        {"time_windows_json", windows}
+    });
+
+    ExcludedTimeWindowsFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Excluded Time Windows"));
+    CHECK(vp_filters["Excluded Time Windows"].contains("Windows"));
+    CHECK(vp_filters["Excluded Time Windows"]["Windows"].size() == 1);
+
+    // Load into fresh filter with empty windows
+    auto cfg2 = makeFilterConfig("ExcludedTimeWindowsFilter", "ExcludedTimeWindowsFilter0", {
+        {"active", true},
+        {"time_windows_json", nlohmann::json::array()}
+    });
+
+    ExcludedTimeWindowsFilter filter2(cfg2, nullptr, mock);
+    filter2.loadViewPointConditions(vp_filters);
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

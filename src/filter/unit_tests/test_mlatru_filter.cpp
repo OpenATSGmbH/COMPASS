@@ -129,3 +129,43 @@ TEST_CASE("MLATRUFilter pushed data sources", "[filter][mlatru]")
     CHECK(filter.checkRUs("alpha"));
     CHECK_FALSE(filter.checkRUs("gamma"));
 }
+
+TEST_CASE("MLATRUFilter viewpoint save/load round-trip", "[filter][mlatru][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("MLATRUFilter", "MLATRUFilter0", {
+        {"active", true},
+        {"rus_str", "kor,schas"},
+        {"match_all", true}
+    });
+
+    MLATRUFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("MLAT RUs"));
+    CHECK(vp_filters["MLAT RUs"]["rus"] == "kor,schas");
+    CHECK(vp_filters["MLAT RUs"]["match_all"] == true);
+
+    // Load into fresh filter with different values
+    auto cfg2 = makeFilterConfig("MLATRUFilter", "MLATRUFilter0", {
+        {"active", true},
+        {"rus_str", "west"},
+        {"match_all", false}
+    });
+
+    MLATRUFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.rus() == "west");
+    CHECK_FALSE(filter2.matchAll());
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.rus() == "kor,schas");
+    CHECK(filter2.matchAll());
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

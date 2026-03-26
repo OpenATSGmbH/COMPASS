@@ -107,3 +107,39 @@ TEST_CASE("ACIDFilter inactive returns empty", "[filter][acid]")
 
     CHECK(sql.empty());
 }
+
+TEST_CASE("ACIDFilter viewpoint save/load round-trip", "[filter][acid][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ACIDFilter", "Aircraft Identification", {
+        {"active", true},
+        {"values_str", "AEE,DLH"}
+    });
+
+    ACIDFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Aircraft Identification"));
+    CHECK(vp_filters["Aircraft Identification"].contains("Aircraft Identification Values"));
+    CHECK(vp_filters["Aircraft Identification"]["Aircraft Identification Values"] == "AEE,DLH");
+
+    // Load into fresh filter with different initial value
+    auto cfg2 = makeFilterConfig("ACIDFilter", "Aircraft Identification", {
+        {"active", true},
+        {"values_str", "XXX"}
+    });
+
+    ACIDFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.valuesString() == "XXX");
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.valuesString() == "AEE,DLH");
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

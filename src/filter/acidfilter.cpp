@@ -153,6 +153,8 @@ void ACIDFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(filter.contains("Aircraft Identification Values"));
     values_str_ = filter.at("Aircraft Identification Values");
 
+    updateValuesFromStr(values_str_);
+
     if (widget())
         widget()->update();
 }

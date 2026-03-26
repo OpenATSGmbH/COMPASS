@@ -122,3 +122,57 @@ TEST_CASE("RefTrajAccuracyFilter setter", "[filter][reftrajaccuracy]")
     filter.minValue(50.0f);
     CHECK(filter.minValue() == Approx(50.0f));
 }
+
+TEST_CASE("RefTrajAccuracyFilter viewpoint save/load round-trip", "[filter][reftrajaccuracy][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("RefTrajAccuracyFilter", "RefTrajAccuracyFilter0", {
+        {"active", true},
+        {"min_value", 30.0}
+    });
+
+    RefTrajAccuracyFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("RefTraj Accuracy"));
+    CHECK(vp_filters["RefTraj Accuracy"].contains("Accuracy Minimum"));
+
+    // Load into fresh filter with different value
+    auto cfg2 = makeFilterConfig("RefTrajAccuracyFilter", "RefTrajAccuracyFilter0", {
+        {"active", true},
+        {"min_value", 99.0}
+    });
+
+    RefTrajAccuracyFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.minValue() == Approx(99.0f));
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.minValue() == Approx(30.0f));
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}
+
+TEST_CASE("RefTrajAccuracyFilter viewpoint load from string value", "[filter][reftrajaccuracy][viewpoint]")
+{
+    auto mock = createStandardMock();
+
+    // Simulate hand-written viewpoint file where value is a string
+    nlohmann::json vp_filters;
+    vp_filters["RefTraj Accuracy"] = {{"Accuracy Minimum", "25.5"}};
+
+    auto cfg = makeFilterConfig("RefTrajAccuracyFilter", "RefTrajAccuracyFilter0", {
+        {"active", true},
+        {"min_value", 30.0}
+    });
+
+    RefTrajAccuracyFilter filter(cfg, nullptr, mock);
+    filter.loadViewPointConditions(vp_filters);
+
+    CHECK(filter.minValue() == Approx(25.5f));
+}

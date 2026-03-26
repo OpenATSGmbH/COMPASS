@@ -109,3 +109,39 @@ TEST_CASE("ACADFilter unknown dbcontent returns empty", "[filter][acad]")
 
     CHECK(sql.empty());
 }
+
+TEST_CASE("ACADFilter viewpoint save/load round-trip", "[filter][acad][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ACADFilter", "Aircraft Address", {
+        {"active", true},
+        {"values_str", "4C8070"}
+    });
+
+    ACADFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Aircraft Address"));
+    CHECK(vp_filters["Aircraft Address"].contains("Aircraft Address Values"));
+    CHECK(vp_filters["Aircraft Address"]["Aircraft Address Values"] == "4C8070");
+
+    // Load into fresh filter with different initial value
+    auto cfg2 = makeFilterConfig("ACADFilter", "Aircraft Address", {
+        {"active", true},
+        {"values_str", "AAAAAA"}
+    });
+
+    ACADFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.valuesString() == "AAAAAA");
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.valuesString() == "4C8070");
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

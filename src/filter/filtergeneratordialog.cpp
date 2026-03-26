@@ -56,8 +56,8 @@ FilterGeneratorDialog::FilterGeneratorDialog(FilterManager& filter_man, DBFilter
     filter_man_(filter_man),
     edit_filter_(&filter)
 {
-    init();
     loadConditionsFromFilter();
+    init();
 }
 
 FilterGeneratorDialog::~FilterGeneratorDialog() {}
