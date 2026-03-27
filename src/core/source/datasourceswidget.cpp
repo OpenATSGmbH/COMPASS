@@ -17,14 +17,20 @@
 
 #include "datasourceswidget.h"
 #include "datasourcemanager.h"
+#include "deletedatadialog.h"
+#include "dbcontentdeletedbjob.h"
 
 #include "compass.h"
+#include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbdatasource.h"
+#include "jobmanager.h"
 
 #include "stringconv.h"
 #include "number.h"
 #include "files.h"
 #include "timeconv.h"
+#include "json.hpp"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -538,6 +544,11 @@ void DataSourcesWidget::addActionsToConfigMenu(QMenu* menu)
 
     QAction* show_cnt_action = menu->addAction("Toggle Show Counts");
     connect(show_cnt_action, &QAction::triggered, this, &DataSourcesWidget::toogleShowCounts);
+
+    menu->addSeparator();
+
+    QAction* delete_data_action = menu->addAction("Delete Data...");
+    connect(delete_data_action, &QAction::triggered, this, &DataSourcesWidget::deleteDataSlot);
 }
 
 /**
@@ -620,11 +631,15 @@ int DataSourcesWidget::generateDataSourceType(DataSourceTypeItem* item,
     const auto& db_data_sources = ds_man_.dbDataSources();
 
     //create needed items
-    int ncur = item->childCount();
-    int n    = 0;
+    std::vector<const dbContent::DBDataSource*> matching_ds;
     for (const auto& ds_it : db_data_sources)
+    {
         if (ds_it->dsType() == ds_type_name)
-            ++n;
+            matching_ds.push_back(ds_it.get());
+    }
+
+    int ncur = item->childCount();
+    int n    = (int)matching_ds.size();
 
     if (n > ncur)
     {
@@ -647,18 +662,12 @@ int DataSourcesWidget::generateDataSourceType(DataSourceTypeItem* item,
     }
 
     //configure data source items
-    int cnt = 0;
-    for (const auto& ds_it : db_data_sources)
+    for (int cnt = 0; cnt < n; ++cnt)
     {
-        if (ds_it->dsType() == ds_type_name)
-        {
-            auto ds_item = dynamic_cast<DataSourceItem*>(item->child(cnt));
-            traced_assert(ds_item);
+        auto ds_item = dynamic_cast<DataSourceItem*>(item->child(cnt));
+        traced_assert(ds_item);
 
-            changes += generateDataSource(ds_item, item, *ds_it);
-
-            ++cnt;
-        }
+        changes += generateDataSource(ds_item, item, *matching_ds[cnt]);
     }
 
     return changes;
@@ -1039,4 +1048,122 @@ void DataSourcesWidget::toogleShowCounts()
     setShowCounts(!getShowCounts());
 
     updateContent();
+}
+
+/**
+ */
+void DataSourcesWidget::deleteDataSlot()
+{
+    loginf;
+
+    if (delete_job_)
+    {
+        QMessageBox::warning(this, "Delete Data", "A delete operation is already in progress.");
+        return;
+    }
+
+    DeleteDataDialog dlg(ds_man_, this);
+
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    QString description = dlg.deleteDescription();
+
+    if (description.isEmpty())
+    {
+        QMessageBox::information(this, "Delete Data", "No data selected for deletion.");
+        return;
+    }
+
+    nlohmann::json delete_info = dlg.selectedDeleteInfo();
+
+    if (delete_info.empty())
+    {
+        QMessageBox::information(this, "Delete Data", "No data selected for deletion.");
+        return;
+    }
+
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this, "Confirm Delete",
+        "The following data will be permanently deleted:\n\n" + description
+            + "\n\nThis cannot be undone. Continue?",
+        QMessageBox::Yes | QMessageBox::No);
+
+    if (reply != QMessageBox::Yes)
+        return;
+
+    // clear loaded dataset
+    ds_man_.compass().dbContentManager().clearData();
+
+    // show blocking wait dialog
+    delete_wait_dialog_ = new QMessageBox(this);
+    delete_wait_dialog_->setWindowTitle("Deleting Data");
+    delete_wait_dialog_->setText("Please wait ...");
+    delete_wait_dialog_->setStandardButtons(QMessageBox::NoButton);
+    delete_wait_dialog_->setWindowModality(Qt::ApplicationModal);
+    delete_wait_dialog_->show();
+
+    // create and run delete job
+    delete_job_ = std::make_shared<DBContentDeleteDBJob>(ds_man_.compass().dbInterface());
+    delete_job_->setDeleteInfo(delete_info);
+    delete_job_->cleanupDB(true);
+
+    connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
+            this, &DataSourcesWidget::deleteJobDoneSlot, Qt::QueuedConnection);
+
+    ds_man_.compass().jobManager().addDBJob(delete_job_);
+}
+
+/**
+ */
+void DataSourcesWidget::deleteJobDoneSlot()
+{
+    loginf;
+
+    traced_assert(delete_job_);
+
+    const nlohmann::json& delete_info = delete_job_->deleteInfo();
+    DBContentManager& dbcont_man = ds_man_.compass().dbContentManager();
+
+    // adjust counts in DBDataSources (removes empty ones) and refresh DBContent counts
+    for (const auto& entry : delete_info)
+    {
+        std::string dbcontent_name = entry.at("dbcontent");
+
+        if (!entry.contains("data_sources"))
+        {
+            ds_man_.clearInsertedCounts(dbcontent_name);
+        }
+        else
+        {
+            for (const auto& ds_entry : entry.at("data_sources"))
+            {
+                unsigned int ds_id = ds_entry.at("ds_id");
+                std::vector<unsigned int> line_ids;
+
+                if (ds_entry.contains("line_ids"))
+                    line_ids = ds_entry.at("line_ids").get<std::vector<unsigned int>>();
+
+                ds_man_.clearInsertedCounts(ds_id, dbcontent_name, line_ids);
+            }
+        }
+
+        // refresh table count
+        if (dbcont_man.existsDBContent(dbcontent_name))
+            dbcont_man.dbContent(dbcontent_name).refreshCount();
+    }
+
+    ds_man_.saveDBDataSources();
+    emit ds_man_.dataSourcesChangedSignal();
+
+    delete_job_ = nullptr;
+
+    if (delete_wait_dialog_)
+    {
+        delete_wait_dialog_->close();
+        delete delete_wait_dialog_;
+        delete_wait_dialog_ = nullptr;
+    }
+
+    updateContent(true);
 }

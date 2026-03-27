@@ -319,6 +319,8 @@ public:
     size_t count();
     size_t loadedCount();
 
+    void refreshCount();
+
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     bool hasKeyVariable();

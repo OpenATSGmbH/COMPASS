@@ -963,6 +963,14 @@ size_t DBContent::count() { return count_; }
 
 /**
  */
+void DBContent::refreshCount()
+{
+    if (existsInDB())
+        count_ = compass_.dbInterface().count(db_table_name_);
+}
+
+/**
+ */
 size_t DBContent::loadedCount()
 {
     if (dbcont_manager_.data().count(name_))

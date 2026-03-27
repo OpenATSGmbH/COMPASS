@@ -523,6 +523,32 @@ void DataSourceManager::clearInsertedCounts(const std::string& dbcontent_name)
         load_widget_->updateContent();
 }
 
+void DataSourceManager::clearInsertedCounts(unsigned int ds_id,
+                                             const std::string& dbcontent_name,
+                                             const std::vector<unsigned int>& line_ids)
+{
+    auto it = find_if(db_data_sources_.begin(), db_data_sources_.end(),
+                      [ds_id](const std::unique_ptr<dbContent::DBDataSource>& s)
+                      { return s->id() == ds_id; });
+
+    if (it == db_data_sources_.end())
+        return;
+
+    if (line_ids.empty())
+    {
+        (*it)->clearNumInserted(dbcontent_name);
+    }
+    else
+    {
+        for (unsigned int line_id : line_ids)
+            (*it)->clearNumInserted(dbcontent_name, line_id);
+    }
+
+    // remove data source entirely if no data remains
+    if (!(*it)->hasNumInserted())
+        db_data_sources_.erase(it);
+}
+
 void DataSourceManager::selectAllDSTypes()
 {
     ds_type_loading_wanted_.clear();
