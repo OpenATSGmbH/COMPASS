@@ -1122,39 +1122,7 @@ void DataSourcesWidget::deleteJobDoneSlot()
 
     traced_assert(delete_job_);
 
-    const nlohmann::json& delete_info = delete_job_->deleteInfo();
-    DBContentManager& dbcont_man = ds_man_.compass().dbContentManager();
-
-    // adjust counts in DBDataSources (removes empty ones) and refresh DBContent counts
-    for (const auto& entry : delete_info)
-    {
-        std::string dbcontent_name = entry.at("dbcontent");
-
-        if (!entry.contains("data_sources"))
-        {
-            ds_man_.clearInsertedCounts(dbcontent_name);
-        }
-        else
-        {
-            for (const auto& ds_entry : entry.at("data_sources"))
-            {
-                unsigned int ds_id = ds_entry.at("ds_id");
-                std::vector<unsigned int> line_ids;
-
-                if (ds_entry.contains("line_ids"))
-                    line_ids = ds_entry.at("line_ids").get<std::vector<unsigned int>>();
-
-                ds_man_.clearInsertedCounts(ds_id, dbcontent_name, line_ids);
-            }
-        }
-
-        // refresh table count
-        if (dbcont_man.existsDBContent(dbcontent_name))
-            dbcont_man.dbContent(dbcontent_name).refreshCount();
-    }
-
-    ds_man_.saveDBDataSources();
-    emit ds_man_.dataSourcesChangedSignal();
+    ds_man_.applyDeleteInfo(delete_job_->deleteInfo());
 
     delete_job_ = nullptr;
 

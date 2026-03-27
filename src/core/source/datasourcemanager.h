@@ -164,6 +164,8 @@ class DataSourceManager : public QObject, public Configurable, public IDataSourc
                              const std::string& dbcontent_name,
                              const std::vector<unsigned int>& line_ids = {}); // specific ds/lines, removes ds if empty
 
+    void applyDeleteInfo(const nlohmann::json& delete_info); // adjust counts + remove empty ds + save + signal
+
 //    bool loadWidgetShowCounts() const;
 //    void loadWidgetShowCounts(bool value);
 

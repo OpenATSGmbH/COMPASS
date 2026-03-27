@@ -549,6 +549,56 @@ void DataSourceManager::clearInsertedCounts(unsigned int ds_id,
         db_data_sources_.erase(it);
 }
 
+void DataSourceManager::applyDeleteInfo(const nlohmann::json& delete_info)
+{
+    loginf;
+
+    DBContentManager& dbcont_man = compass_.dbContentManager();
+
+    for (const auto& entry : delete_info)
+    {
+        std::vector<std::string> dbcontent_names;
+
+        if (entry.contains("dbcontent"))
+        {
+            dbcontent_names.push_back(entry.at("dbcontent"));
+        }
+        else
+        {
+            for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
+                dbcontent_names.push_back(it->first);
+        }
+
+        for (const auto& dbcontent_name : dbcontent_names)
+        {
+            if (!entry.contains("data_sources"))
+            {
+                clearInsertedCounts(dbcontent_name);
+            }
+            else
+            {
+                for (const auto& ds_entry : entry.at("data_sources"))
+                {
+                    unsigned int ds_id = ds_entry.at("ds_id");
+                    std::vector<unsigned int> line_ids;
+
+                    if (ds_entry.contains("line_ids"))
+                        line_ids = ds_entry.at("line_ids").get<std::vector<unsigned int>>();
+
+                    clearInsertedCounts(ds_id, dbcontent_name, line_ids);
+                }
+            }
+
+            if (dbcont_man.existsDBContent(dbcontent_name))
+                dbcont_man.dbContent(dbcontent_name).refreshCount();
+        }
+    }
+
+    saveDBDataSources();
+    emit dataSourcesChangedSignal();
+    emit compass_.dbContentManager().dataDeletedSignal();
+}
+
 void DataSourceManager::selectAllDSTypes()
 {
     ds_type_loading_wanted_.clear();

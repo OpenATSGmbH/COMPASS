@@ -19,14 +19,20 @@
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
 #include "datasourcemanager.h"
+#include "dbcontentmanager.h"
+#include "dbcontentdeletedbjob.h"
+#include "dbinterface.h"
+#include "jobmanager.h"
 #include "compass.h"
 #include "logger.h"
+#include "json.hpp"
 
 #include <boost/program_options.hpp>
 
 REGISTER_RTCOMMAND(dbContent::RTCommandGetConfigDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandGetDBDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandSetDataSources)
+REGISTER_RTCOMMAND(dbContent::RTCommandDeleteData)
 
 using namespace std;
 
@@ -38,6 +44,7 @@ void init_data_source_commands()
     dbContent::RTCommandGetConfigDataSources::init();
     dbContent::RTCommandGetDBDataSources::init();
     dbContent::RTCommandSetDataSources::init();
+    dbContent::RTCommandDeleteData::init();
 }
 
 // get from config
@@ -139,5 +146,80 @@ void RTCommandSetDataSources::assignVariables_impl(const VariablesMap &vars)
     RTCOMMAND_GET_VAR_OR_THROW(vars, "data_sources", std::string, ds_json_str_)
 }
 
+
+// delete_data
+
+RTCommandDeleteData::RTCommandDeleteData()
+    : rtcommand::RTCommand()
+{
+    condition.setSignal("compass.dbcontentmanager.dataDeletedSignal()", -1);
+}
+
+bool RTCommandDeleteData::run_impl()
+{
+    loginf << "delete_info_str_ '" << delete_info_str_ << "'";
+
+    if (!compass_->dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    try
+    {
+        delete_info_ = nlohmann::json::parse(delete_info_str_);
+    }
+    catch (exception& e)
+    {
+        logerr << "JSON parse error '" << e.what() << "'";
+        setResultMessage(string("JSON parse error '") + e.what() + "'");
+        return false;
+    }
+
+    if (!delete_info_.is_array() || delete_info_.empty())
+    {
+        setResultMessage("delete_info must be a non-empty JSON array");
+        return false;
+    }
+
+    // clear loaded dataset
+    compass_->dbContentManager().clearData();
+
+    // create and submit delete job
+    auto job = make_shared<DBContentDeleteDBJob>(compass_->dbInterface());
+    job->setDeleteInfo(delete_info_);
+    job->cleanupDB(true);
+
+    DataSourceManager& ds_man = compass_->dataSourceManager();
+
+    QObject::connect(job.get(), &DBContentDeleteDBJob::doneSignal,
+            &ds_man, [&ds_man, delete_info = delete_info_]()
+            {
+                ds_man.applyDeleteInfo(delete_info);
+            }, Qt::QueuedConnection);
+
+    compass_->jobManager().addDBJob(job);
+
+    return true;
+}
+
+bool RTCommandDeleteData::checkResult_impl()
+{
+    return true;
+}
+
+void RTCommandDeleteData::collectOptions_impl(OptionsDescription& options,
+                                              PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+            ("delete_info", po::value<std::string>()->required(), "Delete info JSON array");
+
+    ADD_RTCOMMAND_POS_OPTION(positional, "delete_info")
+}
+
+void RTCommandDeleteData::assignVariables_impl(const VariablesMap& vars)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "delete_info", std::string, delete_info_str_)
+}
 
 } // namespace dbContent

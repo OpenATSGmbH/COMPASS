@@ -154,48 +154,62 @@ void DBContentDeleteDBJob::run_impl()
     {
         for (const auto& entry : delete_info_)
         {
-            traced_assert(entry.contains("dbcontent"));
-            string dbcontent_name = entry.at("dbcontent");
+            // collect dbcontents to delete from
+            vector<string> dbcontent_names;
 
-            if (!dbcont_man.existsDBContent(dbcontent_name))
+            if (entry.contains("dbcontent"))
             {
-                logwrn << "dbcontent '" << dbcontent_name << "' not found, skipping";
-                continue;
-            }
-
-            DBContent& dbcontent = dbcont_man.dbContent(dbcontent_name);
-
-            if (!dbcontent.existsInDB())
-                continue;
-
-            if (!entry.contains("data_sources"))
-            {
-                loginf << "deleting all data for " << dbcontent_name;
-                db_interface_.deleteAll(dbcontent);
+                dbcontent_names.push_back(entry.at("dbcontent"));
             }
             else
             {
-                for (const auto& ds_entry : entry.at("data_sources"))
-                {
-                    traced_assert(ds_entry.contains("ds_id"));
-                    unsigned int ds_id = ds_entry.at("ds_id");
-                    unsigned int sac = Number::sacFromDsId(ds_id);
-                    unsigned int sic = Number::sicFromDsId(ds_id);
+                // no dbcontent specified: apply to all
+                for (auto& dbcont_it : dbcont_man)
+                    dbcontent_names.push_back(dbcont_it.first);
+            }
 
-                    if (!ds_entry.contains("line_ids"))
+            for (const auto& dbcontent_name : dbcontent_names)
+            {
+                if (!dbcont_man.existsDBContent(dbcontent_name))
+                {
+                    logwrn << "dbcontent '" << dbcontent_name << "' not found, skipping";
+                    continue;
+                }
+
+                DBContent& dbcontent = dbcont_man.dbContent(dbcontent_name);
+
+                if (!dbcontent.existsInDB())
+                    continue;
+
+                if (!entry.contains("data_sources"))
+                {
+                    loginf << "deleting all data for " << dbcontent_name;
+                    db_interface_.deleteAll(dbcontent);
+                }
+                else
+                {
+                    for (const auto& ds_entry : entry.at("data_sources"))
                     {
-                        loginf << "deleting " << dbcontent_name
-                               << " for ds_id " << ds_id;
-                        db_interface_.deleteContent(dbcontent, sac, sic);
-                    }
-                    else
-                    {
-                        for (unsigned int line_id : ds_entry.at("line_ids"))
+                        traced_assert(ds_entry.contains("ds_id"));
+                        unsigned int ds_id = ds_entry.at("ds_id");
+                        unsigned int sac = Number::sacFromDsId(ds_id);
+                        unsigned int sic = Number::sicFromDsId(ds_id);
+
+                        if (!ds_entry.contains("line_ids"))
                         {
                             loginf << "deleting " << dbcontent_name
-                                   << " for ds_id " << ds_id
-                                   << " line " << line_id;
-                            db_interface_.deleteContent(dbcontent, sac, sic, line_id);
+                                   << " for ds_id " << ds_id;
+                            db_interface_.deleteContent(dbcontent, sac, sic);
+                        }
+                        else
+                        {
+                            for (unsigned int line_id : ds_entry.at("line_ids"))
+                            {
+                                loginf << "deleting " << dbcontent_name
+                                       << " for ds_id " << ds_id
+                                       << " line " << line_id;
+                                db_interface_.deleteContent(dbcontent, sac, sic, line_id);
+                            }
                         }
                     }
                 }
