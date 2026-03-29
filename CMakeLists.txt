@@ -257,6 +257,33 @@ IF (EXPERIMENTAL_SRC)
     include(experimental_src/CMakeLists.txt)
 ENDIF()
 
+# Precompiled headers for faster local incremental builds (not used in Docker/AppImage)
+if(NOT EXISTS "/.dockerenv")
+    set(COMPASS_PCH_HEADERS
+        <string>
+        <vector>
+        <map>
+        <memory>
+        <algorithm>
+        <functional>
+        <QString>
+        <QWidget>
+        <QObject>
+        <QVariant>
+        <boost/optional.hpp>
+        <boost/geometry.hpp>
+        "lib/json.hpp"
+    )
+
+    foreach(_target
+        compass_config compass_core compass_db compass_reconstruction
+        compass_import compass_gui compass_filter compass_task
+        compass_eval compass_view compass_report compass)
+        set_target_properties(${_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_precompile_headers(${_target} PRIVATE ${COMPASS_PCH_HEADERS})
+    endforeach()
+endif()
+
 configure_file(src/core/util/global.h.in include/global.h)
 
 # Application executables
