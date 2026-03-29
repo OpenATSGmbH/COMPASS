@@ -17,6 +17,7 @@
 
 #include "tableviewdatasource.h"
 #include "tableview.h"
+#include "viewabledataconfig.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -105,17 +106,17 @@ void TableViewDataSource::checkSubConfigurables()
 
 //        addDefaultVariables(*set.get());
 
-//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_mops_version_.name()));
-//        set->add(cat021_cont.variable(DBContent::var_cat021_mops_version_.name()));
+//        traced_assert(cat021_cont.hasVariable(dbcontent_vars::var_cat021_mops_version_.name()));
+//        set->add(cat021_cont.variable(dbcontent_vars::var_cat021_mops_version_.name()));
 
-//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_nacp_.name()));
-//        set->add(cat021_cont.variable(DBContent::var_cat021_nacp_.name()));
+//        traced_assert(cat021_cont.hasVariable(dbcontent_vars::var_cat021_nacp_.name()));
+//        set->add(cat021_cont.variable(dbcontent_vars::var_cat021_nacp_.name()));
 
-//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_sil_.name()));
-//        set->add(cat021_cont.variable(DBContent::var_cat021_sil_.name()));
+//        traced_assert(cat021_cont.hasVariable(dbcontent_vars::var_cat021_sil_.name()));
+//        set->add(cat021_cont.variable(dbcontent_vars::var_cat021_sil_.name()));
 
-//        traced_assert(cat021_cont.hasVariable(DBContent::var_cat021_nucp_nic_.name()));
-//        set->add(cat021_cont.variable(DBContent::var_cat021_nucp_nic_.name()));
+//        traced_assert(cat021_cont.hasVariable(dbcontent_vars::var_cat021_nucp_nic_.name()));
+//        set->add(cat021_cont.variable(dbcontent_vars::var_cat021_nucp_nic_.name()));
 //    }
 
 //    if (!hasSet("Horizontal Movement"))
@@ -127,14 +128,14 @@ void TableViewDataSource::checkSubConfigurables()
 
 //        addDefaultVariables(*set.get());
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_track_angle_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_track_angle_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_track_angle_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_track_angle_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_ground_speed_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_ground_speed_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_ground_speed_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_ground_speed_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_horizontal_man_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_horizontal_man_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_horizontal_man_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_horizontal_man_.name()));
 //    }
 
 //    if (!hasSet("Mode A/C Info"))
@@ -146,20 +147,20 @@ void TableViewDataSource::checkSubConfigurables()
 
 //        addDefaultVariables(*set.get());
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_m3a_g_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_m3a_g_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_m3a_g_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_m3a_g_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_m3a_v_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_m3a_v_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_m3a_v_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_m3a_v_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_m3a_smoothed_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_m3a_smoothed_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_m3a_smoothed_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_m3a_smoothed_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_mc_g_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_mc_g_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_mc_g_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_mc_g_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_mc_v_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_mc_v_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_mc_v_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_mc_v_.name()));
 //    }
 
 //    if (!hasSet("Track Lifetime"))
@@ -171,17 +172,17 @@ void TableViewDataSource::checkSubConfigurables()
 
 //        addDefaultVariables(*set.get());
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_track_begin_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_track_begin_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_track_begin_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_track_begin_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_track_confirmed_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_track_confirmed_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_track_confirmed_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_track_confirmed_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_track_coasting_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_track_coasting_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_track_coasting_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_track_coasting_.name()));
 
-//        if (dbcont_man.existsMetaVariable(DBContent::meta_var_track_end_.name()))
-//            set->add(dbcont_man.metaVariable(DBContent::meta_var_track_end_.name()));
+//        if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_track_end_.name()))
+//            set->add(dbcont_man.metaVariable(dbcontent_vars::meta_var_track_end_.name()));
 //    }
 }
 
@@ -313,30 +314,31 @@ void TableViewDataSource::addDefaultVariables (VariableOrderedSet& set)
     DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     // Timestamp
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_timestamp_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_timestamp_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()));
 
     // Datasource
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_ds_id_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_ds_id_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_ds_id_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_ds_id_.name()));
 
     // Mode 3/A code
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_m3a_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_m3a_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_m3a_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_m3a_.name()));
 
     // Mode S TA
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_acad_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_acad_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_acad_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_acad_.name()));
 
     // Mode S Callsign
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_acid_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_acid_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_acid_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_acid_.name()));
 
     // Mode C
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_mc_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_mc_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_mc_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_mc_.name()));
 
     // Track Number
-    if (dbcont_man.existsMetaVariable(DBContent::meta_var_track_num_.name()))
-        set.add(dbcont_man.metaVariable(DBContent::meta_var_track_num_.name()));
+    if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_track_num_.name()))
+        set.add(dbcont_man.metaVariable(dbcontent_vars::meta_var_track_num_.name()));
 }
+

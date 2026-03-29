@@ -1135,3 +1135,4 @@ void DataSourcesWidget::deleteJobDoneSlot()
 
     updateContent(true);
 }
+

@@ -251,3 +251,4 @@ void RangeEditT<T>::updateRange(QString& s0, QString& s1, RangeType limit)
 // ADD EXPLICIT TEMPLATE INSTANTIATIONS HERE
 template class RangeEditT<float>;
 template class RangeEditT<double>;
+

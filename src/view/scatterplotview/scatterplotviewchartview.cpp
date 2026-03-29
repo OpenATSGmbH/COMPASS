@@ -207,3 +207,4 @@ void ScatterPlotViewChartView::wheelEvent(QWheelEvent* event)
 }
 
 }
+

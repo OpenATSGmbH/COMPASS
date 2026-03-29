@@ -1,9 +1,5 @@
 add_library(compass_filter "")
 
-include_directories (
-    "${CMAKE_CURRENT_LIST_DIR}"
-    )
-
 target_sources(compass_filter
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/dbfilter.h"
@@ -38,7 +34,6 @@ target_sources(compass_filter
         "${CMAKE_CURRENT_LIST_DIR}/reftrajaccuracyfilterwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilterwidget.h"
-        "${CMAKE_CURRENT_LIST_DIR}/idbvariableresolver.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagervariableresolver.h"
 
     PRIVATE
@@ -80,6 +75,12 @@ target_include_directories(compass_filter PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(compass_filter
     PUBLIC
         compass_core
-        compass_db
         compass_gui
 )
+
+# filtermanager.cpp includes viewpoint.h — circular with compass_view, include-only
+target_include_directories(compass_filter PRIVATE
+    "${CMAKE_SOURCE_DIR}/src/view/points"
+)
+
+compass_automoc(compass_filter)

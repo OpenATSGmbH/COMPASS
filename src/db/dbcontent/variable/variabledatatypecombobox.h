@@ -21,6 +21,7 @@
 //#include "global.h"
 #include "property.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QComboBox>
 #include <stdexcept>

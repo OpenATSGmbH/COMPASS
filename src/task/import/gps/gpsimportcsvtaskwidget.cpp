@@ -391,3 +391,4 @@ void GPSImportCSVTaskWidget::updateText ()
     //        import_button_->setDisabled(false);
     //    }
 }
+

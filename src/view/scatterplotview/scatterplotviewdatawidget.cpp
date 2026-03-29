@@ -18,6 +18,7 @@
 #include "scatterplotviewdatawidget.h"
 #include "scatterplotviewwidget.h"
 #include "scatterplotview.h"
+#include "viewabledataconfig.h"
 #include "viewvariable.h"
 #include "viewpointgenerator.h"
 
@@ -423,8 +424,8 @@ void ScatterPlotViewDataWidget::invertSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
         {
@@ -446,8 +447,8 @@ void ScatterPlotViewDataWidget::clearSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
             selected_vec.set(cnt, false);
@@ -1020,3 +1021,4 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         info[ "chart" ] = chart_info;
     }
 }
+

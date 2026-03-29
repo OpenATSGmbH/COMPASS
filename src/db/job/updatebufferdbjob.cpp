@@ -88,3 +88,4 @@ void UpdateBufferDBJob::run_impl()
 
     done_ = true;
 }
+

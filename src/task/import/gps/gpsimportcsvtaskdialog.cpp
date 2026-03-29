@@ -81,3 +81,4 @@ void GPSImportCSVTaskDialog::cancelClickedSlot()
 {
     emit cancelSignal();
 }
+

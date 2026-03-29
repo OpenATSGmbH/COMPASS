@@ -101,3 +101,4 @@ void JSONImportTaskDialog::cancelClickedSlot()
 {
     emit cancelSignal();
 }
+

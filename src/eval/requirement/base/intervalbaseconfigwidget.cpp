@@ -254,3 +254,4 @@ void IntervalBaseConfigWidget::toggleHoldForAnyTargetSlot()
 }
 
 } // namespace EvaluationRequirement
+

@@ -217,3 +217,4 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText(unsigned int
 
     return data;
 }
+

@@ -604,3 +604,4 @@ void FilterManager::resetToStartupConfiguration()
     useFilters(false);
 }
 
+

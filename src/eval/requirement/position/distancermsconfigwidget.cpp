@@ -65,3 +65,4 @@ PositionDistanceRMSConfig& PositionDistanceRMSConfigWidget::config()
 }
 
 }
+

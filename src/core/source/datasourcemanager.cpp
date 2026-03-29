@@ -190,13 +190,13 @@ void DataSourceManager::addSensorStatusVariables(const std::string& dbcontent_na
     {
         if (dbcontent_name == "CAT063")
         {
-            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_con_));
-            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_con_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
 
-            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_con_));
-            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_con_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
         }
     }
 }
@@ -1262,3 +1262,4 @@ std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>
 
     return lines;
 }
+

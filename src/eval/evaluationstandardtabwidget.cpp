@@ -115,6 +115,8 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
     setLayout(main_layout);
 }
 
+EvaluationStandardTabWidget::~EvaluationStandardTabWidget() = default;
+
 /**
  */
 void EvaluationStandardTabWidget::changedStandardsSlot()
@@ -316,3 +318,4 @@ void EvaluationStandardTabWidget::updateStandardWidget()
         standards_layout_->addWidget(widget);
     }
 }
+

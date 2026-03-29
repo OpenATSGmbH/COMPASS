@@ -76,3 +76,4 @@ void ProjectionManagerWidget::selectedObjectParserSlot(const QString& name)
     traced_assert(projection_manager_.hasProjection(name.toStdString()));
     projection_manager_.currentProjectionName(name.toStdString());
 }
+

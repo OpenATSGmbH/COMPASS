@@ -235,3 +235,4 @@ void VariableEditDialog::doneSlot()
 }
 
 }
+

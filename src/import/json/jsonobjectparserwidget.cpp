@@ -524,3 +524,4 @@ void JSONObjectParserWidget::mappingDeleteSlot()
 
     updateMappingsGrid();
 }
+

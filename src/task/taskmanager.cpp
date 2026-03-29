@@ -16,6 +16,7 @@
  */
 
 #include "taskmanager.h"
+#include "taskresultswidget.h"
 
 #include "compass.h"
 #include "createartasassociationstask.h"
@@ -768,3 +769,4 @@ void TaskManager::restoreBackupSection()
     if (widget_)
         widget_->restoreBackupSection();
 }
+

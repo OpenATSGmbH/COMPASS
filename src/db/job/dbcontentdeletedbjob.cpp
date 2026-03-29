@@ -242,3 +242,4 @@ bool DBContentDeleteDBJob::useBeforeTimestamp() const
 {
     return use_before_timestamp_;
 }
+

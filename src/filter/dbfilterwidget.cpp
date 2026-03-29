@@ -323,3 +323,4 @@ void DBFilterWidget::setMaximumColumnWidth(int layout_column, int width)
             litem->widget()->setMaximumWidth(width);
     }
 }
+

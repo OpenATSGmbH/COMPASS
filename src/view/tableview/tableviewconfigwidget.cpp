@@ -169,3 +169,4 @@ void TableViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "use_presentation"   ] = presentation_check_->isChecked();
     info[ "ignore_non_target_reports"   ] = ignore_non_target_reports_check_->isChecked();
 }
+

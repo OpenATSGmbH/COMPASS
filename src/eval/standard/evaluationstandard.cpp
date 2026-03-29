@@ -254,3 +254,4 @@ std::set<std::string> EvaluationStandard::getAllRequirementNames() const
 
     return names;
 }
+

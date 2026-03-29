@@ -78,3 +78,4 @@ ProbabilityBaseConfig& ProbabilityBaseConfigWidget::config()
 
 
 } // namespace EvaluationRequirement
+

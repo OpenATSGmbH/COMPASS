@@ -139,3 +139,4 @@ void UnitSelectionWidget::triggerSlot(QAction* action)
 
     //  emit selectionChanged();
 }
+

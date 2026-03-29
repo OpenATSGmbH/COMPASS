@@ -18,6 +18,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QTime>
 
 class ASTERIXImportTask;
 

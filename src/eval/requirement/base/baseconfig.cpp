@@ -203,3 +203,4 @@ void BaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 }
 
 }
+

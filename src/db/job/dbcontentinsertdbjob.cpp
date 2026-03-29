@@ -89,3 +89,4 @@ bool DBContentInsertDBJob::emitChange() const
 { 
     return emit_change_; 
 }
+

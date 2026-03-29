@@ -1025,3 +1025,4 @@ void ASTERIXJSONParser::mappingChecksDirty(bool mapping_checks_dirty)
 {
     mapping_checks_dirty_ = mapping_checks_dirty;
 }
+

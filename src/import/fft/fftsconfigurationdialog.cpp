@@ -287,3 +287,4 @@ void FFTsConfigurationDialog::doneClickedSlot()
 {
     emit doneSignal();
 }
+

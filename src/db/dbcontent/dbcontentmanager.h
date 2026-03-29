@@ -20,7 +20,7 @@
 #include "configurable.h"
 #include "buffer.h"
 #include "targetmodel.h"
-#include "viewabledataconfig.h"
+class ViewableDataConfig;
 
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/optional.hpp>

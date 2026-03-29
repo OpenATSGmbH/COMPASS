@@ -145,6 +145,8 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     setLayout(main_layout);
 }
 
+EvaluationMainTabWidget::~EvaluationMainTabWidget() = default;
+
 /**
  */
 void EvaluationMainTabWidget::setReportName(const std::string& name)
@@ -336,3 +338,4 @@ void EvaluationMainTabWidget::updateReportName()
 {
     report_name_edit_->setText(QString::fromStdString(calculator_.suggestReportName()));
 }
+

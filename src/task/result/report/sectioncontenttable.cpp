@@ -2529,3 +2529,4 @@ bool SectionContentTableWidget::configure(const nlohmann::json& j)
 }
 
 }
+

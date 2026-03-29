@@ -345,3 +345,4 @@ std::string ASTERIXDecodeJob::errorMessage() const
     return (decoder_ ? decoder_->errorMessage() : ""); 
 }
 
+

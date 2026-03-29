@@ -281,3 +281,4 @@ void DataSourcesConfigurationDialog::doneClickedSlot()
 {
     emit doneSignal();
 }
+

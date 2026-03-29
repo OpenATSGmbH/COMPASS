@@ -20,6 +20,7 @@
 #include <jasterix/jasterix.h>
 
 #include <QWidget>
+#include <QDate>
 
 #include <memory>
 

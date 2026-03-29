@@ -103,3 +103,4 @@ void TrackerTrackNumberFilterWidget::valueEditedSlot(const QString& value)
 
 //    filter_.maxValue(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()), false);
 //}
+

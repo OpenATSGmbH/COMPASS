@@ -166,3 +166,4 @@ void EvaluationTimestampConditionsDialog::timeEndEditedSlot (const QDateTime& da
 
     something_changed_flag_ = true;
 }
+

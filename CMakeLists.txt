@@ -42,8 +42,31 @@ message("Qt Widgets version: ${Qt5Widgets_VERSION}")
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-# Instruct CMake to run moc automatically when needed.
-set(CMAKE_AUTOMOC ON)
+# Global AUTOMOC is OFF — each target opts in explicitly to avoid
+# duplicate MOC generation when a library's .cpp files #include
+# Q_OBJECT headers from dependency libraries.
+set(CMAKE_AUTOMOC OFF)
+
+# compass_automoc(<target>)
+# Collect the target's own .h sources that contain Q_OBJECT or Q_GADGET,
+# run qt5_wrap_cpp on them, and add the result as PRIVATE sources.
+# Call this AFTER all target_sources() calls for the target.
+function(compass_automoc target)
+    get_target_property(_sources ${target} SOURCES)
+    set(_headers_to_moc)
+    foreach(_src IN LISTS _sources)
+        if(_src MATCHES "\\.h$")
+            file(STRINGS "${_src}" _has_qobject REGEX "Q_OBJECT|Q_GADGET" LIMIT_COUNT 1)
+            if(_has_qobject)
+                list(APPEND _headers_to_moc "${_src}")
+            endif()
+        endif()
+    endforeach()
+    if(_headers_to_moc)
+        qt5_wrap_cpp(_moc_srcs ${_headers_to_moc} TARGET ${target})
+        target_sources(${target} PRIVATE ${_moc_srcs})
+    endif()
+endfunction()
 
 #add_definitions(${Qt5Widgets_DEFINITIONS})
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -162,84 +185,10 @@ link_directories(
 # Third-party headers
 include(lib/CMakeLists.txt)
 
-# Keep src/ include path for backward compatibility
+# src/ root include (for #include "src/..." style paths)
 include(src/CMakeLists.txt)
 
-# Collect ALL subdirectories under src/ to replicate old monolithic include behavior.
-# The old build used include() which kept all include_directories() in root scope.
-# With add_subdirectory(), we need to explicitly add them globally.
-file(GLOB_RECURSE _all_src_headers "src/*.h")
-if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/experimental_src")
-    file(GLOB_RECURSE _all_exp_headers "experimental_src/*.h")
-    list(APPEND _all_src_headers ${_all_exp_headers})
-endif()
-set(_all_src_dirs "")
-foreach(_f ${_all_src_headers})
-    get_filename_component(_d "${_f}" DIRECTORY)
-    list(APPEND _all_src_dirs "${_d}")
-endforeach()
-list(REMOVE_DUPLICATES _all_src_dirs)
-list(SORT _all_src_dirs)
-include_directories(
-    ${_all_src_dirs}
-    # Library root dirs (may not contain .h files directly but needed for
-    # path-prefixed includes like #include "dbcontent/variable/variable.h")
-    "${CMAKE_CURRENT_LIST_DIR}/src/core"
-    "${CMAKE_CURRENT_LIST_DIR}/src/db"
-    "${CMAKE_CURRENT_LIST_DIR}/src/reconstruction"
-    "${CMAKE_CURRENT_LIST_DIR}/src/import"
-    "${CMAKE_CURRENT_LIST_DIR}/src/gui"
-    "${CMAKE_CURRENT_LIST_DIR}/src/filter"
-    "${CMAKE_CURRENT_LIST_DIR}/src/task"
-    "${CMAKE_CURRENT_LIST_DIR}/src/eval"
-    "${CMAKE_CURRENT_LIST_DIR}/src/view"
-    "${CMAKE_CURRENT_LIST_DIR}/src/report"
-    "${CMAKE_CURRENT_LIST_DIR}/src/app"
-)
-
-# Component libraries (order matters: dependencies first)
-add_subdirectory(src/config)
-add_subdirectory(src/core)
-add_subdirectory(src/db)
-add_subdirectory(src/reconstruction)
-add_subdirectory(src/import)
-add_subdirectory(src/gui)
-add_subdirectory(src/filter)
-add_subdirectory(src/task)
-add_subdirectory(src/eval)
-add_subdirectory(src/view)
-add_subdirectory(src/report)
-
-# Aggregation library for experimental_src backward compatibility
-# experimental_src still adds target_sources(compass ...) so we keep this target
-add_library(compass "")
-target_link_libraries(compass
-    PUBLIC
-        compass_config
-        compass_core
-        compass_db
-        compass_reconstruction
-        compass_import
-        compass_gui
-        compass_filter
-        compass_task
-        compass_eval
-        compass_view
-        compass_report
-        Qt5::Widgets
-        Qt5::Core
-        Qt5::OpenGL
-        Qt5::Charts
-        Qt5::Test
-        ${OPENSCENEGRAPH_LIBRARIES}
-        ${OSGEARTH_LIBRARY}
-)
-target_compile_definitions(compass PRIVATE
-    BOOST_STACKTRACE_USE_BACKTRACE
-    BOOST_STACKTRACE_LINK
-)
-
-# Experimental source (adds to 'compass' target)
+# Detect experimental source early (before component libs that check EXPERIMENTAL_SRC)
 set (EXPERIMENTAL_SRC true)
 message("Experimental source: ${EXPERIMENTAL_SRC}")
 
@@ -252,6 +201,18 @@ IF (EXPERIMENTAL_SRC)
     ENDIF()
 ENDIF()
 
+# Component libraries (order matters: dependencies first)
+add_subdirectory(src/config)
+add_subdirectory(src/core)
+add_subdirectory(src/reconstruction)
+add_subdirectory(src/gui)
+add_subdirectory(src/filter)
+add_subdirectory(src/task)
+add_subdirectory(src/eval)
+add_subdirectory(src/view)
+add_subdirectory(src/report)
+
+# Experimental source — creates its own library targets
 IF (EXPERIMENTAL_SRC)
     MESSAGE(STATUS "Including experimental source")
     include(experimental_src/CMakeLists.txt)
@@ -275,10 +236,18 @@ if(NOT EXISTS "/.dockerenv")
         "lib/json.hpp"
     )
 
-    foreach(_target
-        compass_config compass_core compass_db compass_reconstruction
-        compass_import compass_gui compass_filter compass_task
-        compass_eval compass_view compass_report compass)
+    set(COMPASS_PCH_TARGETS
+        compass_config compass_core compass_reconstruction
+        compass_gui compass_filter compass_task
+        compass_eval compass_view compass_report)
+
+    if(EXPERIMENTAL_SRC)
+        list(APPEND COMPASS_PCH_TARGETS
+            compass_osg_utils compass_docx compass_reconst_adv
+            compass_geo_view compass_rtcmd_ext compass_test_lab)
+    endif()
+
+    foreach(_target ${COMPASS_PCH_TARGETS})
         set_target_properties(${_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_precompile_headers(${_target} PRIVATE ${COMPASS_PCH_HEADERS})
     endforeach()
@@ -289,7 +258,7 @@ configure_file(src/core/util/global.h.in include/global.h)
 # Application executables
 add_subdirectory(src/app)
 
-# compass_app links against 'compass' aggregation library inside src/app/CMakeLists.txt
+# compass_app links against component libraries inside src/app/CMakeLists.txt
 
 # unit tests
 enable_testing()
@@ -305,7 +274,16 @@ message("Installing using prefix: ${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY "conf" DESTINATION compass)
 install(DIRECTORY "data" DESTINATION compass)
 
-install (TARGETS compass DESTINATION lib
+set(COMPASS_INSTALL_LIBS
+    compass_config compass_core compass_reconstruction
+    compass_gui compass_filter compass_task
+    compass_eval compass_view compass_report)
+if(EXPERIMENTAL_SRC)
+    list(APPEND COMPASS_INSTALL_LIBS
+        compass_osg_utils compass_docx compass_reconst_adv
+        compass_geo_view compass_rtcmd_ext compass_test_lab)
+endif()
+install(TARGETS ${COMPASS_INSTALL_LIBS} DESTINATION lib
     PUBLIC_HEADER DESTINATION include/compass)
 
 # compass_client and compass_handler install() moved to src/app/client/ and

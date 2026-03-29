@@ -1071,3 +1071,4 @@ void JSONImportTask::insertDoneSlot()
 
     loginf << "done";
 }
+

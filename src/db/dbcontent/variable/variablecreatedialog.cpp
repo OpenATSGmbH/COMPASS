@@ -292,3 +292,4 @@ void VariableCreateDialog::checkSettings()
 }
 
 }
+

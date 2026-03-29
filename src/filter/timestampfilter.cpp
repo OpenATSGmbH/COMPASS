@@ -47,21 +47,21 @@ TimestampFilter::~TimestampFilter() {}
 
 bool TimestampFilter::filters(const std::string& dbcont_name)
 {
-    return variableResolver().metaCanGetVariable(dbcont_name, DBContent::meta_var_timestamp_);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_);
 }
 
 std::string TimestampFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_timestamp_);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (!first)
         {

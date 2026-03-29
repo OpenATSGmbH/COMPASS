@@ -983,7 +983,7 @@ void ReconstructorTask::writeDataSlice()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
         }
 
         loginf << "references dbcontent slice idx " << writing_slice_->slice_count_;
@@ -1005,7 +1005,7 @@ void ReconstructorTask::writeDataSlice()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
         }
 
         loginf << "references dbcontent (overlap) slice idx " << last_slice_->slice_count_;
@@ -1563,3 +1563,4 @@ void ReconstructorTask::showDialog()
     traced_assert(canRun());
     run();
 }
+

@@ -100,10 +100,10 @@ void ASTERIXTimestampCalculator::calculate(
         {
             buffer_size = buf_it.second->size();
 
-            traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+            traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
             dbContent::Variable& tod_var =
-                dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+                dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
             Property tod_prop {tod_var.name(), tod_var.dataType()};
 
@@ -170,11 +170,11 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing(COMPASS& compass)
     if (!buffer_size)
         return;
 
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
-    dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
+    dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_);
 
     traced_assert(tod_var.dataType() == PropertyDataType::FLOAT);
 
@@ -197,17 +197,17 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing(COMPASS& compass)
     NullableVector<float>* tort_vec {nullptr};
     NullableVector<float>* tod_dep_vec {nullptr};
 
-    if (buffer->has<float>(DBContent::var_cat021_toa_position_.name()))
-        toa_position_vec = &buffer->get<float>(DBContent::var_cat021_toa_position_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_toa_position_.name()))
+        toa_position_vec = &buffer->get<float>(dbcontent_vars::var_cat021_toa_position_.name());
 
-    if (buffer->has<float>(DBContent::var_cat021_tomr_position_.name()))
-        tomr_position_vec = &buffer->get<float>(DBContent::var_cat021_tomr_position_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_tomr_position_.name()))
+        tomr_position_vec = &buffer->get<float>(dbcontent_vars::var_cat021_tomr_position_.name());
 
-    if (buffer->has<float>(DBContent::var_cat021_tort_.name()))
-        tort_vec = &buffer->get<float>(DBContent::var_cat021_tort_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_tort_.name()))
+        tort_vec = &buffer->get<float>(dbcontent_vars::var_cat021_tort_.name());
 
-    if (buffer->has<float>(DBContent::var_cat021_tod_dep_.name()))
-        tod_dep_vec = &buffer->get<float>(DBContent::var_cat021_tod_dep_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_tod_dep_.name()))
+        tod_dep_vec = &buffer->get<float>(dbcontent_vars::var_cat021_tod_dep_.name());
 
     for (unsigned int index=0; index < buffer_size; index++)
     {
@@ -253,10 +253,10 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset, COMPAS
     {
         buffer_size = buf_it.second->size();
 
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
         dbContent::Variable& tod_var =
-            dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
 
@@ -318,9 +318,9 @@ void ASTERIXTimestampCalculator::doFutureTimestampsCheck(COMPASS& compass)
     {
         buffer_size = buf_it.second->size();
 
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
-        dbContent::Variable& tod_var = dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+        dbContent::Variable& tod_var = dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
 
@@ -395,9 +395,9 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps, 
         buffer_size = buf_it.second->size();
 
         // tod
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
         dbContent::Variable& tod_var =
-            dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
         traced_assert(buf_it.second->hasProperty(tod_prop));
@@ -405,9 +405,9 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps, 
         NullableVector<float>& tod_vec = buf_it.second->get<float>(tod_var.name());
 
         // timestamp
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).existsIn(buf_it.first));
         dbContent::Variable& timestamp_var =
-            dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it.first);
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(buf_it.first);
 
         Property timestamp_prop {timestamp_var.name(), timestamp_var.dataType()};
         traced_assert(!buf_it.second->hasProperty(timestamp_prop));

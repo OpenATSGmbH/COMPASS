@@ -415,3 +415,4 @@ void ASTERIXImportSource::setFileUsage(bool use,
         emit fileUsageChanged();
     }
 }
+

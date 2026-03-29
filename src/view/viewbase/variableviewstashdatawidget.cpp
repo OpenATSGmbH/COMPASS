@@ -143,15 +143,15 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
         DataSourceManager& ds_man        = variableView()->compass().dataSourceManager();
 
         traced_assert(buffer.has<unsigned int>(
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name()));
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_).name()));
         traced_assert(buffer.has<unsigned int>(
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name()));
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_).name()));
 
         const NullableVector<unsigned int>& ds_ids = buffer.get<unsigned int>(
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_).name());
 
         const NullableVector<unsigned int>& line_ids = buffer.get<unsigned int>(
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_).name());
 
         unsigned int ds_id, line_id;
 
@@ -161,14 +161,14 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
         if (dbcontent_name == "CAT063") // use sensor sec/sic special case
         {
             traced_assert(buffer.has<unsigned char>(
-                dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_).name()));
+                dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name()));
             traced_assert(buffer.has<unsigned char>(
-                dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_).name()));
+                dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name()));
 
             sensor_sacs = &buffer.get<unsigned char>(
-                dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_).name());
+                dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name());
             sensor_sics = &buffer.get<unsigned char>(
-                dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_).name());
+                dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name());
         }
 
         for (unsigned int index = last_size; index < current_size; ++index)
@@ -208,11 +208,11 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
     }
 
     // add selected flags & rec_nums
-    traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
-    traced_assert(buffer.has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+    traced_assert(buffer.has<bool>(dbcontent_vars::selected_var_.name()));
+    traced_assert(buffer.has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
 
-    const NullableVector<bool>&          selected_vec = buffer.get<bool>(DBContent::selected_var.name());
-    const NullableVector<unsigned long>& rec_num_vec  = buffer.get<unsigned long>(DBContent::meta_var_rec_num_.name());
+    const NullableVector<bool>&          selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
+    const NullableVector<unsigned long>& rec_num_vec  = buffer.get<unsigned long>(dbcontent_vars::meta_var_rec_num_.name());
 
     for (auto& group_it : grouped_indexes)
     {
@@ -513,8 +513,8 @@ void VariableViewStashDataWidget::selectData(double x_min,
     {
         for (auto& buf_it : viewData())
         {
-            traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+            traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+            NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
             selected_vec.setAll(false);
         }
@@ -529,12 +529,12 @@ void VariableViewStashDataWidget::selectData(double x_min,
         traced_assert(viewData().count(dbcontent_name));
         auto buffer = viewData().at(dbcontent_name);
 
-        traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
+        traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
-        traced_assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+        traced_assert(buffer->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
         NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(
-            DBContent::meta_var_rec_num_.name());
+            dbcontent_vars::meta_var_rec_num_.name());
 
         std::map<boost::optional<unsigned long>, std::vector<unsigned int>> rec_num_indexes =
             rec_num_vec.distinctValuesWithIndexes(0, rec_num_vec.contentSize());
@@ -556,12 +556,12 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
     // for (auto& buf_it : viewData())
     // {
-    //     traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-    //     NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+    //     traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+    //     NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
-    //     traced_assert(buf_it.second->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+    //     traced_assert(buf_it.second->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
     //     NullableVector<unsigned long>& rec_num_vec = buf_it.second->get<unsigned long>(
-    //         DBContent::meta_var_rec_num_.name());
+    //         dbcontent_vars::meta_var_rec_num_.name());
 
     //     std::map<unsigned long, std::vector<unsigned int>> rec_num_indexes =
     //         rec_num_vec.distinctValuesWithIndexes(0, rec_num_vec.size());

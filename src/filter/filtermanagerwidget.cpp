@@ -386,3 +386,4 @@ void FilterManagerWidget::syncFilterLayouts()
         it->widget()->setMaximumColumnWidth(0, MaxWidth);
     }
 }
+

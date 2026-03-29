@@ -50,15 +50,15 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        string x_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_x_stddev_);
-        string y_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_y_stddev_);
+        string x_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
+        string y_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 
         if (!first)
         {

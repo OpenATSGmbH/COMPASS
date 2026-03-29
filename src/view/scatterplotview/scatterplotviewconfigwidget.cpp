@@ -168,3 +168,4 @@ void ScatterPlotViewConfigWidget::configChanged_impl()
 //        msgBox.exec();
 //    }
 //}
+

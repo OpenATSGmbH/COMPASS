@@ -343,3 +343,4 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
             percent_label->setText("0");
     }
 }
+

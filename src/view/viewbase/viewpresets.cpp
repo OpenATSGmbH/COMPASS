@@ -862,3 +862,4 @@ bool ViewPresets::hasPreset(const Key& key) const
 {
     return presets_.count(key) > 0;
 }
+

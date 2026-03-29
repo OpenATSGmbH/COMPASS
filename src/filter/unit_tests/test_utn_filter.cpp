@@ -79,7 +79,7 @@ TEST_CASE("UTNFilter getConditionString", "[filter][utn]")
     {
         // Create a mock without UTN for a specific dbcontent
         MockVariableResolver mock2;
-        mock2.addMetaVariable(DBContent::meta_var_timestamp_,
+        mock2.addMetaVariable(dbcontent_vars::meta_var_timestamp_,
             {{"NoUTN", "timestamp"}});
 
         auto cfg2 = makeFilterConfig("UTNFilter", "UTNFilter0", {

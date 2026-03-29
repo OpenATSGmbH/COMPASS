@@ -1,6 +1,6 @@
 include("${CMAKE_CURRENT_LIST_DIR}/visitor/CMakeLists.txt")
 
-include_directories (
+target_include_directories(compass_report PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 

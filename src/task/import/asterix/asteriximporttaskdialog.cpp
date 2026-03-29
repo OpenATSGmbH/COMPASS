@@ -113,3 +113,4 @@ void ASTERIXImportTaskDialog::decodingStateChangedSlot()
     updateTitle();
     updateButtons();
 }
+

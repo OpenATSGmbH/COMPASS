@@ -246,7 +246,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(dbcontent_man.metaGetVariable(
-                                     buf_it.first, DBContent::meta_var_rec_num_), buf_it.second);
+                                     buf_it.first, dbcontent_vars::meta_var_rec_num_), buf_it.second);
 
             connect(&dbcontent, &DBContent::updateDoneSignal, this, &RadarPlotPositionCalculatorTask::updateDoneSlot);
         }
@@ -318,30 +318,31 @@ dbContent::VariableSet RadarPlotPositionCalculatorTask::getReadSetFor(const std:
 
     VariableSet read_set;
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
-    read_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_radar_range_));
+    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_range_));
+    read_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_radar_range_));
 
-    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
-    read_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_radar_azimuth_));
+    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_azimuth_));
+    read_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_radar_azimuth_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
     // optionals
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
 
     return read_set;
 }
+

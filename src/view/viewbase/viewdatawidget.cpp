@@ -446,3 +446,4 @@ void ViewDataWidget::addNanCount(size_t n)
 
     count_nan_.value() += n;
 }
+

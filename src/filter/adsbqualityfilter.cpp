@@ -90,10 +90,10 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 
     auto& resolver = variableResolver();
 
-    string mops_col_name = resolver.getVariableDBColumn("CAT021", DBContent::var_cat021_mops_version_);
-    string nacp_col_name = resolver.getVariableDBColumn("CAT021", DBContent::var_cat021_nacp_);
-    string mucp_nic_col_name = resolver.getVariableDBColumn("CAT021", DBContent::var_cat021_nucp_nic_);
-    string sil_col_name = resolver.getVariableDBColumn("CAT021", DBContent::var_cat021_sil_);
+    string mops_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_mops_version_);
+    string nacp_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_nacp_);
+    string mucp_nic_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_nucp_nic_);
+    string sil_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_sil_);
 
     if (active_)
     {

@@ -418,3 +418,4 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
 
     return {value_str, null_set};
 }
+

@@ -1,14 +1,9 @@
 add_library(compass_gui "")
 
-include_directories (
-    "${CMAKE_CURRENT_LIST_DIR}"
-    )
-
 target_sources(compass_gui
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/invalidqlineedit.h"
-        "${CMAKE_CURRENT_LIST_DIR}/textfielddoublevalidator.h"
         "${CMAKE_CURRENT_LIST_DIR}/textfieldhexvalidator.h"
         "${CMAKE_CURRENT_LIST_DIR}/textfieldoctvalidator.h"
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.h"
@@ -50,7 +45,8 @@ target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(compass_gui
     PUBLIC
         compass_core
-        compass_db
         Qt5::Widgets
         Qt5::Charts
 )
+
+compass_automoc(compass_gui)

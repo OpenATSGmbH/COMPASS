@@ -142,22 +142,22 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
 
     logdbg << "tracker vars";
 
-    bool has_needed_cat_62_vars = tracker_object.hasVariable(DBContent::var_cat062_tris_.name()) &&
-                                  tracker_object.hasVariable(DBContent::var_cat062_track_begin_.name()) &&
-                                  tracker_object.hasVariable(DBContent::var_cat062_coasting_.name()) &&
-                                  tracker_object.hasVariable(DBContent::var_cat062_track_end_.name());
+    bool has_needed_cat_62_vars = tracker_object.hasVariable(dbcontent_vars::var_cat062_tris_.name()) &&
+                                  tracker_object.hasVariable(dbcontent_vars::var_cat062_track_begin_.name()) &&
+                                  tracker_object.hasVariable(dbcontent_vars::var_cat062_coasting_.name()) &&
+                                  tracker_object.hasVariable(dbcontent_vars::var_cat062_track_end_.name());
     
     if (!has_needed_cat_62_vars)
         logerr << "needed CAT062 vars not available";
 
     traced_assert(has_needed_cat_62_vars);
 
-    bool has_needed_metavars = dbcontent_man.existsMetaVariable(DBContent::meta_var_rec_num_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_ds_id_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_timestamp_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_track_num_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_artas_hash_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_utn_.name());
+    bool has_needed_metavars = dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_rec_num_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_ds_id_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_timestamp_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_track_num_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_artas_hash_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_utn_.name());
 
     if (!has_needed_metavars)
         logerr << "needed metavars not available";
@@ -165,7 +165,7 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
     traced_assert(has_needed_metavars);
 
     // check that artas hash variable has actual data in the DB
-    if (!dbcontent_man.metaVariable(DBContent::meta_var_artas_hash_.name()).hasDBContent())
+    if (!dbcontent_man.metaVariable(dbcontent_vars::meta_var_artas_hash_.name()).hasDBContent())
     {
         logerr << "ARTAS hash variable has no data in the database";
         return CreateARTASAssociationsTask::Error::NoHashData;
@@ -246,9 +246,9 @@ void CreateARTASAssociationsTask::run()
 
             traced_assert(ds_found);
             std::string custom_filter_clause {
-                dbcontent_man.metaGetVariable(dbcont_it.first, DBContent::meta_var_ds_id_).dbColumnName()
+                dbcontent_man.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_ds_id_).dbColumnName()
                         + " in (" + std::to_string(current_ds_id) + ") AND " +
-                dbcontent_man.metaGetVariable(dbcont_it.first, DBContent::meta_var_line_id_).dbColumnName()
+                dbcontent_man.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_line_id_).dbColumnName()
                         + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")"
             };
 
@@ -528,26 +528,26 @@ VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcont
 
     VariableSet read_set;
 
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_));
 
     if (dbcontent_name == "CAT062")
     {
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_));
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_));
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_coasting_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_));
 
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_tris_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_tri_recnums_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_tris_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_tri_recnums_));
     }
     else if (dbcont_man.dbContent(dbcontent_name).containsTargetReports())
     {
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_artas_hash_));
     }
 
     // must be last for update process
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
 
     return read_set;
 }
@@ -586,3 +586,4 @@ void CreateARTASAssociationsTask::closeStatusDialogSlot()
     status_dialog_->close();
     status_dialog_ = nullptr;
 }
+

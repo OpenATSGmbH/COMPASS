@@ -286,13 +286,13 @@ inline MockVariableResolver createStandardMock()
     MockVariableResolver mock;
 
     // Timestamp
-    mock.addMetaVariable(DBContent::meta_var_timestamp_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_timestamp_,
         {{"CAT001", "timestamp"}, {"CAT010", "timestamp"}, {"CAT020", "timestamp"},
          {"CAT021", "timestamp"}, {"CAT048", "timestamp"}, {"CAT062", "timestamp"},
          {"RefTraj", "timestamp"}});
 
     // Mode 3/A
-    mock.addMetaVariable(DBContent::meta_var_m3a_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_m3a_,
         {{"CAT001", "mode3a_code"}, {"CAT010", "mode3a_code"}, {"CAT020", "mode3a_code"},
          {"CAT021", "mode3a_code"}, {"CAT048", "mode3a_code"}, {"CAT062", "mode3a_code"},
          {"RefTraj", "mode3a_code"}},
@@ -301,7 +301,7 @@ inline MockVariableResolver createStandardMock()
          {"RefTraj", "Mode 3/A Code"}});
 
     // Mode C
-    mock.addMetaVariable(DBContent::meta_var_mc_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_mc_,
         {{"CAT001", "modec_code_ft"}, {"CAT010", "modec_code_ft"}, {"CAT020", "modec_code_ft"},
          {"CAT021", "modec_code_ft"}, {"CAT048", "modec_code_ft"}, {"CAT062", "modec_code_ft"},
          {"RefTraj", "modec_code_ft"}},
@@ -310,14 +310,14 @@ inline MockVariableResolver createStandardMock()
          {"RefTraj", "Mode C Code"}});
 
     // Aircraft Address (ACAD)
-    mock.addMetaVariable(DBContent::meta_var_acad_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_acad_,
         {{"CAT010", "target_addr"}, {"CAT020", "target_addr"}, {"CAT021", "target_addr"},
          {"CAT048", "target_addr"}, {"CAT062", "target_addr"}, {"RefTraj", "target_addr"}},
         {{"CAT010", "Aircraft Address"}, {"CAT020", "Aircraft Address"}, {"CAT021", "Aircraft Address"},
          {"CAT048", "Aircraft Address"}, {"CAT062", "Aircraft Address"}, {"RefTraj", "Aircraft Address"}});
 
     // Aircraft Identification (ACID)
-    mock.addMetaVariable(DBContent::meta_var_acid_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_acid_,
         {{"CAT010", "target_id"}, {"CAT020", "target_id"}, {"CAT021", "target_id"},
          {"CAT048", "target_id"}, {"CAT062", "target_id"}, {"RefTraj", "target_id"}},
         {{"CAT010", "Aircraft Identification"}, {"CAT020", "Aircraft Identification"},
@@ -325,22 +325,22 @@ inline MockVariableResolver createStandardMock()
          {"CAT062", "Aircraft Identification"}, {"RefTraj", "Aircraft Identification"}});
 
     // UTN
-    mock.addMetaVariable(DBContent::meta_var_utn_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_utn_,
         {{"CAT001", "utn"}, {"CAT010", "utn"}, {"CAT020", "utn"}, {"CAT021", "utn"},
          {"CAT048", "utn"}, {"CAT062", "utn"}, {"RefTraj", "utn"}});
 
     // DS ID
-    mock.addMetaVariable(DBContent::meta_var_ds_id_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_ds_id_,
         {{"CAT001", "ds_id"}, {"CAT010", "ds_id"}, {"CAT020", "ds_id"}, {"CAT021", "ds_id"},
          {"CAT048", "ds_id"}, {"CAT062", "ds_id"}, {"RefTraj", "ds_id"}});
 
     // Line ID
-    mock.addMetaVariable(DBContent::meta_var_line_id_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_line_id_,
         {{"CAT001", "line_id"}, {"CAT010", "line_id"}, {"CAT020", "line_id"}, {"CAT021", "line_id"},
          {"CAT048", "line_id"}, {"CAT062", "line_id"}, {"RefTraj", "line_id"}});
 
     // Track Number
-    mock.addMetaVariable(DBContent::meta_var_track_num_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_track_num_,
         {{"CAT001", "track_num"}, {"CAT010", "track_num"}, {"CAT020", "track_num"},
          {"CAT021", "track_num"}, {"CAT048", "track_num"}, {"CAT062", "track_num"},
          {"RefTraj", "track_num"}},
@@ -349,51 +349,51 @@ inline MockVariableResolver createStandardMock()
          {"RefTraj", "Track Number"}});
 
     // Detection Type
-    mock.addMetaVariable(DBContent::meta_var_detection_type_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_detection_type_,
         {{"CAT001", "detection_type"}, {"CAT048", "detection_type"}, {"CAT062", "detection_type"}},
         {{"CAT001", "Type"}, {"CAT048", "Type"}, {"CAT062", "Type"}});
 
     // Ground Bit
-    mock.addMetaVariable(DBContent::meta_var_ground_bit_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_ground_bit_,
         {{"CAT010", "ground_bit"}, {"CAT020", "ground_bit"}, {"CAT021", "ground_bit"},
          {"CAT062", "ground_bit"}, {"RefTraj", "ground_bit"}});
 
     // X/Y StdDev
-    mock.addMetaVariable(DBContent::meta_var_x_stddev_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_x_stddev_,
         {{"RefTraj", "x_stddev"}, {"CAT062", "x_stddev"}});
-    mock.addMetaVariable(DBContent::meta_var_y_stddev_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_y_stddev_,
         {{"RefTraj", "y_stddev"}, {"CAT062", "y_stddev"}});
 
     // Latitude / Longitude
-    mock.addMetaVariable(DBContent::meta_var_latitude_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_latitude_,
         {{"CAT001", "latitude"}, {"CAT010", "latitude"}, {"CAT020", "latitude"},
          {"CAT021", "latitude"}, {"CAT048", "latitude"}, {"CAT062", "latitude"},
          {"RefTraj", "latitude"}});
-    mock.addMetaVariable(DBContent::meta_var_longitude_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_longitude_,
         {{"CAT001", "longitude"}, {"CAT010", "longitude"}, {"CAT020", "longitude"},
          {"CAT021", "longitude"}, {"CAT048", "longitude"}, {"CAT062", "longitude"},
          {"RefTraj", "longitude"}});
 
     // Time of Day
-    mock.addMetaVariable(DBContent::meta_var_time_of_day_,
+    mock.addMetaVariable(dbcontent_vars::meta_var_time_of_day_,
         {{"CAT001", "tod"}, {"CAT010", "tod"}, {"CAT020", "tod"}, {"CAT021", "tod"},
          {"CAT048", "tod"}, {"CAT062", "tod"}, {"RefTraj", "tod"}});
 
     // --- Direct variables ---
 
     // CAT021 ADS-B quality
-    mock.addDirectVariable("CAT021", DBContent::var_cat021_mops_version_, "mops_version");
-    mock.addDirectVariable("CAT021", DBContent::var_cat021_nacp_, "nacp");
-    mock.addDirectVariable("CAT021", DBContent::var_cat021_nucp_nic_, "nucp_nic");
-    mock.addDirectVariable("CAT021", DBContent::var_cat021_sil_, "sil");
+    mock.addDirectVariable("CAT021", dbcontent_vars::var_cat021_mops_version_, "mops_version");
+    mock.addDirectVariable("CAT021", dbcontent_vars::var_cat021_nacp_, "nacp");
+    mock.addDirectVariable("CAT021", dbcontent_vars::var_cat021_nucp_nic_, "nucp_nic");
+    mock.addDirectVariable("CAT021", dbcontent_vars::var_cat021_sil_, "sil");
 
     // CAT020 MLAT contrib receivers
-    mock.addDirectVariable("CAT020", DBContent::var_cat020_contrib_recv_, "contrib_receivers");
+    mock.addDirectVariable("CAT020", dbcontent_vars::var_cat020_contrib_recv_, "contrib_receivers");
 
     // CAT062 direct variables
-    mock.addDirectVariable("CAT062", DBContent::var_cat062_baro_alt_, "baro_alt");
-    mock.addDirectVariable("CAT062", DBContent::var_cat062_fl_measured_, "fl_measured");
-    mock.addDirectVariable("CAT062", DBContent::var_cat062_callsign_fpl_, "callsign_fpl",
+    mock.addDirectVariable("CAT062", dbcontent_vars::var_cat062_baro_alt_, "baro_alt");
+    mock.addDirectVariable("CAT062", dbcontent_vars::var_cat062_fl_measured_, "fl_measured");
+    mock.addDirectVariable("CAT062", dbcontent_vars::var_cat062_callsign_fpl_, "callsign_fpl",
                            "Callsign FPL");
 
     return mock;

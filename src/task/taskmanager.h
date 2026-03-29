@@ -22,13 +22,15 @@
 #include "configurable.h"
 #include "taskdefs.h"
 #include "task.h"
-#include "taskresultswidget.h"
 #include "reportdefs.h"
+
+#include <memory>
 #include "result.h"
 
 #include <boost/optional.hpp>
 
 class COMPASS;
+class TaskResultsWidget;
 class CreateARTASAssociationsTask;
 class JSONImportTask;
 class GPSTrailImportTask;

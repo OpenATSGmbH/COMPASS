@@ -527,3 +527,4 @@ void ASTERIXOverrideWidget::obfuscateSecondaryInfoCheckedSlot()
 
     task_.settings().obfuscate_secondary_info_ = obfuscate_secondary_info_check_->checkState() == Qt::Checked;
 }
+

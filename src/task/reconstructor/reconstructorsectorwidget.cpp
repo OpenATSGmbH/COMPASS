@@ -161,3 +161,4 @@ void ReconstructorSectorWidget::sectorsDeltaChangedSlot(const QString& value_str
         loginf << "unable to parse string '" << value_str.toStdString() << "'";
 }
 
+

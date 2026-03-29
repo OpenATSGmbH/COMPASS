@@ -68,3 +68,4 @@ ViewPointsImportTaskDialog::ViewPointsImportTaskDialog(ViewPointsImportTask& tas
     setLayout(main_layout);
 }
 
+

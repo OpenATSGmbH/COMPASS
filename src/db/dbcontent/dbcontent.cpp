@@ -39,140 +39,6 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-const Property DBContent::meta_var_rec_num_ {"Record Number", PropertyDataType::ULONGINT};
-const Property DBContent::meta_var_ds_id_ {"DS ID", PropertyDataType::UINT};
-const Property DBContent::meta_var_sac_id_ {"SAC", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_sic_id_ {"SIC", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_line_id_ {"Line ID", PropertyDataType::UINT};
-const Property DBContent::meta_var_time_of_day_ {"Time of Day", PropertyDataType::FLOAT};
-const Property DBContent::meta_var_timestamp_ {"Timestamp", PropertyDataType::TIMESTAMP};
-const Property DBContent::meta_var_m3a_ {"Mode 3/A Code", PropertyDataType::UINT};
-const Property DBContent::meta_var_m3a_g_ {"Mode 3/A Garbled", PropertyDataType::BOOL};
-const Property DBContent::meta_var_m3a_v_ {"Mode 3/A Valid", PropertyDataType::BOOL};
-const Property DBContent::meta_var_m3a_smoothed_ {"Mode 3/A Smoothed", PropertyDataType::BOOL};
-const Property DBContent::meta_var_acad_ {"Aircraft Address", PropertyDataType::UINT};
-const Property DBContent::meta_var_acid_ {"Aircraft Identification", PropertyDataType::STRING};
-const Property DBContent::meta_var_mc_ {"Mode C Code", PropertyDataType::FLOAT};
-const Property DBContent::meta_var_mc_g_ {"Mode C Garbled", PropertyDataType::BOOL};
-const Property DBContent::meta_var_mc_v_ {"Mode C Valid", PropertyDataType::BOOL};
-const Property DBContent::meta_var_ground_bit_ {"Ground Bit", PropertyDataType::BOOL};
-const Property DBContent::meta_var_track_num_ {"Track Number", PropertyDataType::UINT};
-
-const Property DBContent::meta_var_track_begin_ {"Track Begin", PropertyDataType::BOOL};
-const Property DBContent::meta_var_track_confirmed_ {"Track Confirmed", PropertyDataType::BOOL};
-const Property DBContent::meta_var_track_coasting_ {"Track Coasting", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_track_end_ {"Track End", PropertyDataType::BOOL};
-
-const Property DBContent::meta_var_latitude_ {"Latitude", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_longitude_ {"Longitude", PropertyDataType::DOUBLE};
-
-const Property DBContent::meta_var_detection_type_ {"Type", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_x_ {"X", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_y_ {"Y", PropertyDataType::DOUBLE};
-
-const Property DBContent::meta_var_artas_hash_ {"ARTAS Hash", PropertyDataType::STRING};
-const Property DBContent::meta_var_utn_ {"UTN", PropertyDataType::UINT};
-
-const Property DBContent::meta_var_vx_ {"Vx", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_vy_ {"Vy", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_ground_speed_ {"Track Groundspeed", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_track_angle_ {"Track Angle", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_horizontal_man_ {"Track Horizontal Manoeuvre", PropertyDataType::BOOL};
-
-const Property DBContent::meta_var_ax_ {"Ax", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_ay_ {"Ay", PropertyDataType::DOUBLE};
-
-const Property DBContent::meta_var_mom_long_acc_ {"MOM Longitudinal Acc", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_mom_trans_acc_ {"MOM Transversal Acc", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_mom_vert_rate_ {"MOM Vertical Rate", PropertyDataType::UCHAR};
-
-const Property DBContent::meta_var_x_stddev_ {"X StdDev", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_y_stddev_ {"Y StdDev", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_xy_cov_ {"X/Y Covariance", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_latitude_stddev_ {"Latitude StdDev", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_longitude_stddev_ {"Longitude StdDev", PropertyDataType::DOUBLE};
-const Property DBContent::meta_var_latlon_cov_ {"Lat/Lon Cov", PropertyDataType::DOUBLE};
-
-const Property DBContent::meta_var_max_stddev_xy{"X/Y Covariance", PropertyDataType::DOUBLE};
-
-const Property DBContent::meta_var_climb_descent_{"Track Climbing/Descending", PropertyDataType::UCHAR};
-const Property DBContent::meta_var_rocd_ {"Rate Of Climb/Descent", PropertyDataType::FLOAT};
-const Property DBContent::meta_var_spi_{"SPI", PropertyDataType::BOOL};
-
-const Property DBContent::meta_var_message_type_ {"Message Type", PropertyDataType::UCHAR};
-
-const Property DBContent::var_radar_range_ {"Range", PropertyDataType::DOUBLE};
-const Property DBContent::var_radar_azimuth_ {"Azimuth", PropertyDataType::DOUBLE};
-const Property DBContent::var_radar_altitude_ {"Mode C Code", PropertyDataType::FLOAT};
-
-const Property DBContent::var_cat020_contrib_recv_ {"Contributing Receivers", PropertyDataType::JSON};
-
-const Property DBContent::var_cat021_toa_position_ {"ToA Position", PropertyDataType::FLOAT};
-const Property DBContent::var_cat021_tomr_position_ {"ToMR Position", PropertyDataType::FLOAT};
-const Property DBContent::var_cat021_tort_ {"ToRT", PropertyDataType::FLOAT};
-const Property DBContent::var_cat021_tod_dep_ {"Time of Day Deprecated", PropertyDataType::FLOAT};
-
-const Property DBContent::var_cat021_mops_version_ {"MOPS Version", PropertyDataType::UCHAR};
-const Property DBContent::var_cat021_nacp_ {"NACp", PropertyDataType::UCHAR};
-const Property DBContent::var_cat021_nucp_nic_ {"NUCp or NIC", PropertyDataType::UCHAR};
-const Property DBContent::var_cat021_nucv_nacv_ {"NUCr or NACv", PropertyDataType::UCHAR};
-const Property DBContent::var_cat021_sil_ {"SIL", PropertyDataType::UCHAR};
-const Property DBContent::var_cat021_pos_check_failed_ {"Position Check Failed", PropertyDataType::BOOL};
-const Property DBContent::var_cat021_geo_alt_ {"Geometric Height", PropertyDataType::FLOAT};
-const Property DBContent::var_cat021_geo_alt_accuracy_ {"Geometric Altitude Accuracy", PropertyDataType::UCHAR};
-const Property DBContent::var_cat021_ecat_ {"Emitter Category", PropertyDataType::UINT};
-
-const Property DBContent::var_cat021_latitude_hr_ {"Latitude HR", PropertyDataType::DOUBLE};
-const Property DBContent::var_cat021_longitude_hr_ {"Longitude HR", PropertyDataType::DOUBLE};
-
-const Property DBContent::var_cat021_sgv_gss_ {"SGV GSS", PropertyDataType::FLOAT};
-const Property DBContent::var_cat021_sgv_hgt_ {"SGV HGT", PropertyDataType::DOUBLE};
-const Property DBContent::var_cat021_sgv_htt_ {"SGV HTT", PropertyDataType::BOOL};
-const Property DBContent::var_cat021_sgv_hrd_ {"SGV HRD", PropertyDataType::BOOL};
-const Property DBContent::var_cat021_sgv_stp_ {"SGV STP", PropertyDataType::BOOL};
-
-const Property DBContent::var_cat062_tris_ {"Target Report Identifiers", PropertyDataType::STRING};
-const Property DBContent::var_cat062_tri_recnums_ {"TRI Record Numbers", PropertyDataType::JSON};
-const Property DBContent::var_cat062_track_begin_ {"Track Begin", PropertyDataType::BOOL};
-const Property DBContent::var_cat062_coasting_ {"Coasting", PropertyDataType::UCHAR};
-const Property DBContent::var_cat062_track_end_ {"Track End", PropertyDataType::BOOL};
-const Property DBContent::var_cat062_mono_sensor_ {"Monosensor", PropertyDataType::BOOL};
-const Property DBContent::var_cat062_type_lm_ {"Type LM", PropertyDataType::UCHAR};
-const Property DBContent::var_cat062_baro_alt_ {"Barometric Altitude Calculated", PropertyDataType::FLOAT};
-const Property DBContent::var_cat062_fl_measured_ {"Flight Level Measured", PropertyDataType::FLOAT};
-
-const Property DBContent::var_cat062_wtc_ {"Wake Turbulence Category FPL", PropertyDataType::STRING};
-const Property DBContent::var_cat062_callsign_fpl_ {"Callsign FPL", PropertyDataType::STRING};
-
-const Property DBContent::var_cat062_vx_stddev_ {"Vx StdDev", PropertyDataType::DOUBLE};
-const Property DBContent::var_cat062_vy_stddev_ {"Vy StdDev", PropertyDataType::DOUBLE};
-
-const Property DBContent::var_cat062_num_contrib_sensors_ {"Num Contributing Sensors", PropertyDataType::UCHAR};
-const Property DBContent::var_cat062_num_contrib_sensors_tn_ {"Num Contributing Sensors Track Number", PropertyDataType::UCHAR};
-const Property DBContent::var_cat062_sum_num_contrib_sensors_ {"Sum Number Contributing Sensors", PropertyDataType::UCHAR};
-
-const Property DBContent::var_cat063_sensor_sac_ {"Sensor SAC", PropertyDataType::UCHAR};
-const Property DBContent::var_cat063_sensor_sic_ {"Sensor SIC", PropertyDataType::UCHAR};
-const Property DBContent::var_cat063_con_        {"CON", PropertyDataType::UCHAR};
-
-const Property DBContent::var_cat065_batch_number_ {"Batch Number", PropertyDataType::UCHAR};
-
-const Property DBContent::var_reftraj_contrib_adsb_age_{"Contributing ADS-B Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_contrib_mlat_age_{"Contributing MLAT Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_contrib_radar_age_{"Contributing Radar Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_contrib_tracker_age_{"Contributing Tracker Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_contrib_reftraj_age_{"Contributing RefTraj Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_contrib_other_age_{"Contributing Other Age", PropertyDataType::FLOAT};
-
-const Property DBContent::var_reftraj_contrib_sources_{"Contributing Sources", PropertyDataType::JSON};
-const Property DBContent::var_reftraj_contrib_sources_num_{"Contributing Sources Number", PropertyDataType::UINT};
-
-const Property DBContent::var_reftraj_update_age_primary_{"Primary Update Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_update_age_modeac_{"Mode A/C Update Age", PropertyDataType::FLOAT};
-const Property DBContent::var_reftraj_update_age_modes_{"Mode S Update Age", PropertyDataType::FLOAT};
-
-const Property DBContent::selected_var {"selected", PropertyDataType::BOOL};
-
 DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
     : Configurable(config, parent)
     , compass_(parent->compass())
@@ -207,22 +73,22 @@ DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
 
     logdbg << "created with instance_name " << instanceName() << " name " << name_;
 
-    checkStaticVariable(DBContent::meta_var_ds_id_);
+    checkStaticVariable(dbcontent_vars::meta_var_ds_id_);
 
     if (contains_target_reports_)
     {
-        checkStaticVariable(DBContent::meta_var_latitude_);
-        checkStaticVariable(DBContent::meta_var_longitude_);
-        checkStaticVariable(DBContent::meta_var_utn_);
+        checkStaticVariable(dbcontent_vars::meta_var_latitude_);
+        checkStaticVariable(dbcontent_vars::meta_var_longitude_);
+        checkStaticVariable(dbcontent_vars::meta_var_utn_);
     }
 
     is_reftraj_content_ = name_ == "RefTraj";
 
     if (name_ == "CAT001" || name_ == "CAT048")
     {
-        checkStaticVariable(DBContent::var_radar_range_);
-        checkStaticVariable(DBContent::var_radar_azimuth_);
-        checkStaticVariable(DBContent::var_radar_altitude_);
+        checkStaticVariable(dbcontent_vars::var_radar_range_);
+        checkStaticVariable(dbcontent_vars::var_radar_azimuth_);
+        checkStaticVariable(dbcontent_vars::var_radar_altitude_);
     }
 }
 
@@ -426,18 +292,18 @@ void DBContent::load(dbContent::VariableSet& read_set,
         vector<unsigned int> ds_ids_to_load = ds_man.unfilteredDS(name_);
         traced_assert(ds_ids_to_load.size());
 
-        traced_assert(hasVariable(DBContent::meta_var_ds_id_.name()));
+        traced_assert(hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
 
-        Variable& datasource_var = variable(DBContent::meta_var_ds_id_.name());
+        Variable& datasource_var = variable(dbcontent_vars::meta_var_ds_id_.name());
         traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
 
         if (ds_man.lineSpecificLoadingRequired(name_)) // ds specific line loading
         {
             logdbg << name_ << ": load: line specific loading wanted";
 
-            traced_assert(hasVariable(DBContent::meta_var_line_id_.name()));
+            traced_assert(hasVariable(dbcontent_vars::meta_var_line_id_.name()));
 
-            Variable& line_var = variable(DBContent::meta_var_line_id_.name());
+            Variable& line_var = variable(dbcontent_vars::meta_var_line_id_.name());
             traced_assert(line_var.dataType() == PropertyDataType::UINT);
 
             bool any_added = false;
@@ -545,14 +411,14 @@ void DBContent::loadFiltered(dbContent::VariableSet& read_set,
     traced_assert(!read_job_);
 
     // add required vars for processing
-    traced_assert(dbcont_manager_.metaCanGetVariable(name_, DBContent::meta_var_rec_num_));
-    read_set.add(dbcont_manager_.metaGetVariable(name_, DBContent::meta_var_rec_num_));
+    traced_assert(dbcont_manager_.metaCanGetVariable(name_, dbcontent_vars::meta_var_rec_num_));
+    read_set.add(dbcont_manager_.metaGetVariable(name_, dbcontent_vars::meta_var_rec_num_));
 
-    traced_assert(dbcont_manager_.metaCanGetVariable(name_, DBContent::meta_var_ds_id_));
-    read_set.add(dbcont_manager_.metaGetVariable(name_, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_manager_.metaCanGetVariable(name_, dbcontent_vars::meta_var_ds_id_));
+    read_set.add(dbcont_manager_.metaGetVariable(name_, dbcontent_vars::meta_var_ds_id_));
 
-    traced_assert(dbcont_manager_.metaCanGetVariable(name_, DBContent::meta_var_line_id_));
-    read_set.add(dbcont_manager_.metaGetVariable(name_, DBContent::meta_var_line_id_));
+    traced_assert(dbcont_manager_.metaCanGetVariable(name_, dbcontent_vars::meta_var_line_id_));
+    read_set.add(dbcont_manager_.metaGetVariable(name_, dbcontent_vars::meta_var_line_id_));
 
     read_job_ = shared_ptr<DBContentReadDBJob>(
                 new DBContentReadDBJob(compass_.dbInterface(), *this, read_set, custom_filter_clause));
@@ -598,9 +464,9 @@ bool DBContent::prepareInsert(shared_ptr<Buffer>& buffer)
             variable(prop_it.name()).setHasDBContent();
     }
 
-    traced_assert(hasVariable(DBContent::meta_var_rec_num_.name())); // added during final db insert
-    if (!variable(DBContent::meta_var_rec_num_.name()).hasDBContent())
-        variable(DBContent::meta_var_rec_num_.name()).setHasDBContent();
+    traced_assert(hasVariable(dbcontent_vars::meta_var_rec_num_.name())); // added during final db insert
+    if (!variable(dbcontent_vars::meta_var_rec_num_.name()).hasDBContent())
+        variable(dbcontent_vars::meta_var_rec_num_.name()).setHasDBContent();
 
     // transform variable names from dbcontvars to dbcolumns
     buffer_utils::transformVariables(*buffer, list, false);
@@ -616,24 +482,24 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 {
     logdbg << name_;
 
-    traced_assert(hasVariable(DBContent::meta_var_ds_id_.name()));
+    traced_assert(hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
 
     // ds
-    Variable& datasource_var = variable(DBContent::meta_var_ds_id_.name());
+    Variable& datasource_var = variable(dbcontent_vars::meta_var_ds_id_.name());
     traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
 
     string datasource_col_str = datasource_var.dbColumnName();
     traced_assert(buffer->has<unsigned int>(datasource_col_str));
 
     // line
-    Variable& line_var = variable(DBContent::meta_var_line_id_.name());
+    Variable& line_var = variable(dbcontent_vars::meta_var_line_id_.name());
     traced_assert(line_var.dataType() == PropertyDataType::UINT);
 
     string line_col_str = line_var.dbColumnName();
     traced_assert(buffer->has<unsigned int>(line_col_str));
 
     // timestamp
-    Variable& timestamp_var = variable(DBContent::meta_var_timestamp_.name());
+    Variable& timestamp_var = variable(dbcontent_vars::meta_var_timestamp_.name());
     traced_assert(timestamp_var.dataType() == PropertyDataType::TIMESTAMP);
     string timestamp_col_str = timestamp_var.dbColumnName();
 
@@ -877,7 +743,7 @@ void DBContent::readJobIntermediateSlot(shared_ptr<Buffer> buffer)
     buffer_utils::transformVariables(*buffer, sender->readList(), true);
 
     // add boolean to indicate selection
-    buffer->addProperty(DBContent::selected_var);
+    buffer->addProperty(dbcontent_vars::selected_var_);
 
     // add loaded data
     dbcont_manager_.addLoadedData({{name_, buffer}});
@@ -1020,3 +886,4 @@ bool DBContent::isReferenceContent() const
 {
     return is_reftraj_content_;
 }
+

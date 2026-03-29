@@ -43,21 +43,21 @@ ACADFilter::~ACADFilter() {}
 
 bool ACADFilter::filters(const std::string& dbcont_name)
 {
-    return variableResolver().metaCanGetVariable(dbcont_name, DBContent::meta_var_acad_);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acad_);
 }
 
 std::string ACADFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
         return "";
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_acad_);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
         if (!first)
             ss << " AND";
@@ -150,10 +150,10 @@ std::vector<unsigned int> ACADFilter::filterBuffer(const std::string& dbcontent_
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
         return to_be_removed;
 
-    string var_name = variableResolver().metaGetVariableName(dbcontent_name, DBContent::meta_var_acad_);
+    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
     traced_assert(buffer->has<unsigned int> (var_name));
 

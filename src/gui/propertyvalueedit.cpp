@@ -185,3 +185,4 @@ void PropertyValueEdit::connectEdit(PropertyValueEdit* edit, bool is_min)
 
     connect(edit, &PropertyValueEdit::valueChanged, this, &PropertyValueEdit::checkValidity);
 }
+

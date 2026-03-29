@@ -749,3 +749,4 @@ void FilterGeneratorDialog::cancel()
 {
     reject();
 }
+

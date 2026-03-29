@@ -227,3 +227,4 @@ void BaseBufferTableWidget::keyPressEvent(QKeyEvent* event)
 
     loginf << "done";
 }
+

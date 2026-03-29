@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "fft/fftbase.h"
+#include "fftbase.h"
 #include "property.h"
 
 class DBFFT : public FFTBase

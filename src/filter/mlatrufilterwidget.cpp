@@ -80,3 +80,4 @@ void MLATRUFilterWidget::matchAllToggledSlot(bool checked)
 {
     filter_.matchAll(checked);
 }
+

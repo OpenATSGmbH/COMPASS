@@ -123,3 +123,4 @@ void SelectDataSourcesWidget::toggleDataSourceSlot()
 
     emit selectionChangedSignal(selection);
 }
+

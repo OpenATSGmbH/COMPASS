@@ -1,15 +1,10 @@
 
-include_directories (
+add_executable ( compass_handler "${CMAKE_CURRENT_LIST_DIR}/main.cpp")
+
+target_include_directories(compass_handler PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-#target_sources(compass
-#    PUBLIC
-#
-#    PRIVATE
-#)
-
-add_executable ( compass_handler "${CMAKE_CURRENT_LIST_DIR}/main.cpp")
 target_link_libraries ( compass_handler
     Qt5::Widgets
     Qt5::Core

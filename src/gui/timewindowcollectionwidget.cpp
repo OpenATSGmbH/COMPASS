@@ -185,3 +185,4 @@ bool TimeWindowCollectionWidget::somethingChangedFlag() const
 {
     return something_changed_flag_;
 }
+

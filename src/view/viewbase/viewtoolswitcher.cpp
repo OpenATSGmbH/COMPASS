@@ -184,3 +184,4 @@ bool ViewToolSwitcher::hasTool(int id) const
 {
     return (tools_.find(id) != tools_.end());
 }
+

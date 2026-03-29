@@ -333,3 +333,4 @@ QString DeleteDataDialog::deleteDescription() const
 
     return lines.join("\n");
 }
+

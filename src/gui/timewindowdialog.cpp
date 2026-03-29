@@ -80,3 +80,4 @@ std::string TimeWindowDialog::comment() const
 {
     return comment_edit_->text().toStdString();
 }
+

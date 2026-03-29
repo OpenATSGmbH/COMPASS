@@ -17,6 +17,7 @@
 
 
 #include "featuredefinition_scatterseries.h"
+#include "idbvariableresolver.h"
 
 namespace EvaluationRequirementResult
 {
@@ -166,7 +167,7 @@ std::unique_ptr<ViewPointGenFeature> FeatureDefinitionCustomScatterSeries::creat
 FeatureDefinitionTimedScatterSeries::FeatureDefinitionTimedScatterSeries(const EvaluationCalculator& calculator,
                                                                          const std::string& feature_description,
                                                                          const std::string& y_axis_label)
-:   FeatureDefinition(calculator, "scatterseries_timed", feature_description, DBContent::meta_var_timestamp_.name(), y_axis_label) {}
+:   FeatureDefinition(calculator, "scatterseries_timed", feature_description, dbcontent_vars::meta_var_timestamp_.name(), y_axis_label) {}
 
 
 /**

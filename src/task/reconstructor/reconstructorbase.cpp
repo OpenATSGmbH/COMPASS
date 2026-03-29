@@ -1456,14 +1456,14 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             logdbg << "db content " << dbcontent_name;
 
             string rec_num_name =
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(dbcontent_name).name();
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(dbcontent_name).name();
 
             string utn_name =
-                dbcontent_man.metaVariable(DBContent::meta_var_utn_.name()).getFor(dbcontent_name).name();
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_utn_.name()).getFor(dbcontent_name).name();
 
             PropertyList properties;
-            properties.addProperty(utn_name,  DBContent::meta_var_utn_.dataType());
-            properties.addProperty(rec_num_name,  DBContent::meta_var_rec_num_.dataType());
+            properties.addProperty(utn_name,  dbcontent_vars::meta_var_utn_.dataType());
+            properties.addProperty(rec_num_name,  dbcontent_vars::meta_var_rec_num_.dataType());
 
             assoc_data[dbcontent_name].reset(new Buffer(properties));
 
@@ -1553,7 +1553,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
         if (buffer && buffer->size())
         {
             NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(
-                DBContent::meta_var_timestamp_.name());
+                dbcontent_vars::meta_var_timestamp_.name());
 
             logdbg << "buffer size " << buffer->size()
                 << " ts min " << Time::toString(ts_vec.get(0))
@@ -2232,3 +2232,4 @@ void ReconstructorBase::initAssocChainPredictors()
                             assocChainEstimatorSettings(),
                             num_threads);
 }
+

@@ -99,3 +99,4 @@ bool RTCommandRunnerStash::postCheckCommand(RTCommandMetaTypeWrapper wrapper) co
 }
 
 } // namespace rtcommand
+

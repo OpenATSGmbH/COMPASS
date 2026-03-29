@@ -288,3 +288,4 @@ void ASTERIXJSONParserWidget::keyPressEvent(QKeyEvent* event)
         QApplication::clipboard()->setText(ss.str().c_str());
     }
 }
+

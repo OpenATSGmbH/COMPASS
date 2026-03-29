@@ -19,8 +19,8 @@
 #include "fftmanager.h"
 #include "logger.h"
 #include "files.h"
-#include "fft/dbfft.h"
-#include "fft/configurationfft.h"
+#include "dbfft.h"
+#include "configurationfft.h"
 
 using namespace Utils;
 using namespace std;
