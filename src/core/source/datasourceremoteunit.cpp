@@ -17,6 +17,7 @@
 
 #include "datasourceremoteunit.h"
 #include "traced_assert.h"
+#include "json.hpp"
 
 const std::string DataSourceRemoteUnit::KeyIndex     = "index";
 const std::string DataSourceRemoteUnit::KeyName      = "name";

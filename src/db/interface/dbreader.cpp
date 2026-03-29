@@ -24,6 +24,7 @@
 #include "logger.h"
 
 #include <QString>
+#include <json.hpp>
 
 /***************************************************************************************
  * DBReader

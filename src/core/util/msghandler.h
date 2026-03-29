@@ -20,7 +20,7 @@
 #include "message.h"
 #include "logstream.h"
 #include "logger.h"
-#include "json.hpp"
+#include "json_fwd.hpp"
 
 class LogStore;
 
