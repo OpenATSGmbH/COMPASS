@@ -398,3 +398,4 @@ void EvaluationDataWidget::updateInterestMenu()
 
     interest_button_->setEnabled(eval_data_.interestSwitches().size() > 0);
 }
+

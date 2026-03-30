@@ -59,11 +59,11 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
 
     auto& resolver = variableResolver();
 
-    traced_assert(resolver.canGetVariable(dbcontent_name, DBContent::var_cat020_contrib_recv_));
-    std::string contrib_dbcol_name = resolver.getVariableDBColumn(dbcontent_name, DBContent::var_cat020_contrib_recv_);
+    traced_assert(resolver.canGetVariable(dbcontent_name, dbcontent_vars::var_cat020_contrib_recv_));
+    std::string contrib_dbcol_name = resolver.getVariableDBColumn(dbcontent_name, dbcontent_vars::var_cat020_contrib_recv_);
 
-    traced_assert(resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    std::string dsid_dbcol_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_ds_id_);        
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    std::string dsid_dbcol_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_ds_id_);        
 
     vector<string> split_str = String::split(rus_str_, ',');
     

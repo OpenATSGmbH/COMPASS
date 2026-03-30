@@ -108,3 +108,4 @@ PositionDistanceConfig& PositionDistanceConfigWidget::config()
 }
 
 }
+

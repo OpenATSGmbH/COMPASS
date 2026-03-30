@@ -11,7 +11,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/extra/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/dubious/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/generic/CMakeLists.txt")
 
-include_directories (
+target_include_directories(compass_eval PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 

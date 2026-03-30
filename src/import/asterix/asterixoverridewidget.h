@@ -18,11 +18,13 @@
 #pragma once
 
 #include <QWidget>
+#include <QTime>
 
 class ASTERIXImportTask;
 
 class QCheckBox;
 class QLineEdit;
+class QPushButton;
 class QTimeEdit;
 
 class ASTERIXOverrideWidget : public QWidget
@@ -34,6 +36,7 @@ class ASTERIXOverrideWidget : public QWidget
 
     void overrideActiveCheckedSlot();
     void todOffsetEditedSlot(const QString& value);
+    void fromResurfLogSlot();
 
     void filterTimeOfDayActiveCheckedSlot();
     void minTimeChanged(QTime time);

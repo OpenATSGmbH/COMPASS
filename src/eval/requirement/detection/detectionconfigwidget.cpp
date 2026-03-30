@@ -262,3 +262,4 @@ void DetectionConfigWidget::updateActive()
 }
 
 }
+

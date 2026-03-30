@@ -92,3 +92,34 @@ TEST_CASE("PrimaryOnlyFilter inactive returns empty", "[filter][primaryonly]")
     // (unlike other filters that check active_ internally)
     CHECK_FALSE(sql.empty());
 }
+
+TEST_CASE("PrimaryOnlyFilter viewpoint save/load round-trip", "[filter][primaryonly][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("PrimaryOnlyFilter", "Primary Only", {
+        {"active", true}
+    });
+
+    PrimaryOnlyFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Primary Only"));
+    CHECK(vp_filters["Primary Only"].is_object());
+    CHECK(vp_filters["Primary Only"].empty());
+
+    // Load into fresh filter — no state to change, just verify no crash
+    auto cfg2 = makeFilterConfig("PrimaryOnlyFilter", "Primary Only", {
+        {"active", true}
+    });
+
+    PrimaryOnlyFilter filter2(cfg2, nullptr, mock);
+    filter2.loadViewPointConditions(vp_filters);
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

@@ -17,6 +17,7 @@
 
 #include "scatterplotviewdatasource.h"
 #include "scatterplotview.h"
+#include "viewabledataconfig.h"
 
 #include <QMessageBox>
 
@@ -201,5 +202,6 @@ void ScatterPlotViewDataSource::removeTemporaryVariable (const std::string& dbco
         set_->removeVariable(var);
     }
 }
+
 
 

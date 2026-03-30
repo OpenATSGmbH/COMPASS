@@ -198,3 +198,4 @@ void LabelContentDialog::createVariableGrid()
 }
 
 }
+

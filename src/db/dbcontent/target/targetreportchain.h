@@ -18,7 +18,7 @@
 #pragma once
 
 #include "dbcontent/target/targetreportdefs.h"
-#include "dbcontent/target/targetposition.h"
+#include "targetposition.h"
 #include "dbcontent/target/targetpositionaccuracy.h"
 #include "dbcontent/target/targetvelocity.h"
 #include "projection/transformation.h"

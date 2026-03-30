@@ -300,3 +300,4 @@ const nlohmann::json& ViewPointsImportTask::currentData() const
 {
     return current_data_;
 }
+

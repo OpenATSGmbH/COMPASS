@@ -137,3 +137,47 @@ TEST_CASE("ModeCFilter inactive returns empty", "[filter][modec]")
 
     CHECK(sql.empty());
 }
+
+TEST_CASE("ModeCFilter viewpoint save/load round-trip", "[filter][modec][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ModeCFilter", "Mode C Codes", {
+        {"active", true},
+        {"min_value", 100.0},
+        {"max_value", 5000.0},
+        {"null_wanted", true}
+    });
+
+    ModeCFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Mode C Codes"));
+    const auto& f = vp_filters["Mode C Codes"];
+    CHECK(f["Barometric Altitude Minimum"] == Approx(100.0));
+    CHECK(f["Barometric Altitude Maximum"] == Approx(5000.0));
+    CHECK(f["Barometric Altitude NULL"] == true);
+
+    // Load into fresh filter with different values
+    auto cfg2 = makeFilterConfig("ModeCFilter", "Mode C Codes", {
+        {"active", true},
+        {"min_value", -1000.0},
+        {"max_value", 3000.0},
+        {"null_wanted", false}
+    });
+
+    ModeCFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.minValue() == Approx(-1000.0f));
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.minValue() == Approx(100.0f));
+    CHECK(filter2.maxValue() == Approx(5000.0f));
+    CHECK(filter2.nullWanted());
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

@@ -1344,3 +1344,4 @@ bool ViewPresetWidget::uiSet(const QString& str)
 
     return true;
 }
+

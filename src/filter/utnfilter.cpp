@@ -59,7 +59,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
     stringstream ss;
 
     // check if filter non-associated content
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_))
     {
         if (!null_wanted_)
         {
@@ -80,7 +80,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
 
     if (values_.size() || null_wanted_)
     {
-        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_utn_);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_utn_);
 
         if (!first)
             ss << " AND";

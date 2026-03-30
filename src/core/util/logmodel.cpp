@@ -504,3 +504,4 @@ void LogStore::databaseClosedSlot()
 {
     clearMessages();
 }
+

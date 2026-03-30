@@ -40,16 +40,16 @@ bool PrimaryOnlyFilter::filters(const std::string& dbcontent_name)
 {
     auto& resolver = variableResolver();
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
         return true;
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return true;
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
         return true;
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
         return true;
 
     return false;
@@ -63,9 +63,9 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
 
     auto& resolver = variableResolver();
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
     {
-        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_m3a_);
+        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
         if (!first)
             ss << " AND";
@@ -75,9 +75,9 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
         first = false;
     }
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
     {
-        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_mc_);
+        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_mc_);
 
         if (!first)
             ss << " AND";
@@ -87,9 +87,9 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
         first = false;
     }
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
     {
-        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_acad_);
+        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
         if (!first)
             ss << " AND";
@@ -99,9 +99,9 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
         first = false;
     }
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
     {
-        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_acid_);
+        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
         if (!first)
             ss << " AND";
@@ -111,9 +111,9 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
         first = false;
     }
 
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_detection_type_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_detection_type_))
     {
-        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_detection_type_);
+        string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_detection_type_);
 
         if (!first)
             ss << " AND";
@@ -180,41 +180,41 @@ std::vector<unsigned int> PrimaryOnlyFilter::filterBuffer(const std::string& dbc
     auto& resolver = variableResolver();
 
     NullableVector<unsigned int>* m3a_vec {nullptr};
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
     {
-        string vn = resolver.metaGetVariableName(dbcontent_name, DBContent::meta_var_m3a_);
+        string vn = resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_m3a_);
         traced_assert(buffer->has<unsigned int> (vn));
         m3a_vec = &buffer->get<unsigned int> (vn);
     }
 
     NullableVector<float>* mc_vec {nullptr};
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
     {
-        string vn = resolver.metaGetVariableName(dbcontent_name, DBContent::meta_var_mc_);
+        string vn = resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_mc_);
         traced_assert(buffer->has<float> (vn));
         mc_vec = &buffer->get<float> (vn);
     }
 
     NullableVector<unsigned int>* ta_vec {nullptr};
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
     {
-        string vn = resolver.metaGetVariableName(dbcontent_name, DBContent::meta_var_acad_);
+        string vn = resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acad_);
         traced_assert(buffer->has<unsigned int> (vn));
         ta_vec = &buffer->get<unsigned int> (vn);
     }
 
     NullableVector<string>* ti_vec {nullptr};
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
     {
-        string vn = resolver.metaGetVariableName(dbcontent_name, DBContent::meta_var_acid_);
+        string vn = resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acid_);
         traced_assert(buffer->has<string> (vn));
         ti_vec = &buffer->get<string> (vn);
     }
 
     NullableVector<unsigned char>* type_vec {nullptr};
-    if (resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_detection_type_))
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_detection_type_))
     {
-        string vn = resolver.metaGetVariableName(dbcontent_name, DBContent::meta_var_detection_type_);
+        string vn = resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_detection_type_);
         traced_assert(buffer->has<unsigned char> (vn));
         type_vec = &buffer->get<unsigned char> (vn);
     }

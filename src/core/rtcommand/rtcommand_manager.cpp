@@ -340,3 +340,4 @@ std::vector<std::string> RTCommandManager::commandBacklog() const
 {
     return command_backlog_.get<std::vector<std::string>>();
 }
+

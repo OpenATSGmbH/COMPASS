@@ -22,6 +22,8 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variableset.h"
 
+#include <QLabel>
+
 using namespace dbContent;
 
 TEST_CASE("DBFilter Position with 4 conditions", "[filter][condition]")
@@ -337,4 +339,200 @@ TEST_CASE("DBFilter viewpoint save/load round-trip", "[filter][condition]")
     std::string sql2 = filter2.getConditionString("CAT048", read_set2, first2);
 
     CHECK(sql1 == sql2);
+}
+
+TEST_CASE("DBFilter condition label base text", "[filter][condition][label]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TestFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TestFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "LatCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", "<="},
+                {"value", "45.0"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "Latitude"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    REQUIRE(filter.getNumConditions() == 1);
+    auto* cond = filter.getConditions().at(0).get();
+
+    CHECK(cond->getLabel()->text().toStdString() == "Latitude <=");
+}
+
+TEST_CASE("DBFilter condition setLabelPrefix updates label text", "[filter][condition][label]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TestFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TestFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "LatCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", ">="},
+                {"value", "40.0"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "Latitude"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+    auto* cond = filter.getConditions().at(0).get();
+
+    CHECK(cond->getLabel()->text().toStdString() == "Latitude >=");
+
+    cond->setLabelPrefix("AND ");
+    CHECK(cond->getLabel()->text().toStdString() == "AND Latitude >=");
+
+    cond->setLabelPrefix("OR ");
+    CHECK(cond->getLabel()->text().toStdString() == "OR Latitude >=");
+
+    cond->setLabelPrefix("");
+    CHECK(cond->getLabel()->text().toStdString() == "Latitude >=");
+}
+
+TEST_CASE("DBFilter conditionLogic default and setter", "[filter][condition][label]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TestFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TestFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array();
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    CHECK(filter.conditionLogic() == "AND");
+
+    filter.conditionLogic("OR");
+    CHECK(filter.conditionLogic() == "OR");
+
+    filter.conditionLogic("AND");
+    CHECK(filter.conditionLogic() == "AND");
+}
+
+TEST_CASE("DBFilter multi-condition AND label prefixes", "[filter][condition][label]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TestFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TestFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "Cond0"},
+            {"parameters", {
+                {"operator", "<="}, {"value", "46.0"},
+                {"variable_dbcontent_name", "Meta"}, {"variable_name", "Latitude"}
+            }}
+        },
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "Cond1"},
+            {"parameters", {
+                {"operator", ">="}, {"value", "45.0"},
+                {"variable_dbcontent_name", "Meta"}, {"variable_name", "Latitude"}
+            }}
+        },
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "Cond2"},
+            {"parameters", {
+                {"operator", "<="}, {"value", "16.0"},
+                {"variable_dbcontent_name", "Meta"}, {"variable_name", "Longitude"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    REQUIRE(filter.getNumConditions() == 3);
+    CHECK(filter.conditionLogic() == "AND");
+
+    // simulate what updateChildWidget() does for AND mode
+    const auto& conditions = filter.getConditions();
+    for (unsigned int cnt = 0; cnt < conditions.size(); cnt++)
+    {
+        if (cnt > 0)
+            conditions.at(cnt)->setLabelPrefix("AND ");
+        else
+            conditions.at(cnt)->setLabelPrefix("");
+    }
+
+    CHECK(conditions.at(0)->getLabel()->text().toStdString() == "Latitude <=");
+    CHECK(conditions.at(1)->getLabel()->text().toStdString() == "AND Latitude >=");
+    CHECK(conditions.at(2)->getLabel()->text().toStdString() == "AND Longitude <=");
+}
+
+TEST_CASE("DBFilter multi-condition OR label prefixes", "[filter][condition][label]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TestFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TestFilter"},
+        {"condition_logic", "OR"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "Cond0"},
+            {"parameters", {
+                {"operator", ">"}, {"value", "5000"},
+                {"variable_dbcontent_name", "Meta"}, {"variable_name", "Mode C Code"}
+            }}
+        },
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "Cond1"},
+            {"parameters", {
+                {"operator", ">="}, {"value", "200"},
+                {"variable_dbcontent_name", "Meta"}, {"variable_name", "Latitude"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    REQUIRE(filter.getNumConditions() == 2);
+    CHECK(filter.conditionLogic() == "OR");
+
+    // simulate what updateChildWidget() does for OR mode
+    const auto& conditions = filter.getConditions();
+    const std::string& logic = filter.conditionLogic();
+    for (unsigned int cnt = 0; cnt < conditions.size(); cnt++)
+    {
+        if (cnt > 0)
+            conditions.at(cnt)->setLabelPrefix(logic + " ");
+        else
+            conditions.at(cnt)->setLabelPrefix("");
+    }
+
+    CHECK(conditions.at(0)->getLabel()->text().toStdString() == "Mode C Code >");
+    CHECK(conditions.at(1)->getLabel()->text().toStdString() == "OR Latitude >=");
 }

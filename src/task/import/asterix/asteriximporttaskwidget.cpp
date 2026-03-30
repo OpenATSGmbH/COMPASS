@@ -514,3 +514,4 @@ void ASTERIXImportTaskWidget::sourceClicked(QTreeWidgetItem* item, int column)
         task_.source().setFileUsage(selected, (size_t)index.x(), index.y());
     }
 }
+

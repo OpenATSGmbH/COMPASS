@@ -325,7 +325,7 @@ void LatexVisitor::visit(GeographicView* e)
 
     // normal screenshot
 
-    QImage screenshot = data_widget->osgViewerWidget()->grabFramebuffer();
+    QImage screenshot = data_widget->renderData();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceName()+".jpg";
     traced_assert(!screenshot.isNull());

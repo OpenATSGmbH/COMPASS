@@ -30,6 +30,7 @@
 #include <QStyle>
 
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "traced_assert.h"
 #include <sstream>
@@ -52,15 +53,19 @@ DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
 
     registerParameter("reset_value", &reset_value_, std::string(""));
     registerParameter("value", &value_, std::string());
+    registerParameter("value2", &value2_, std::string());
+    registerParameter("include_null", &include_null_, false);
 
     logdbg << "start" << instanceName() << " value " << value_
            << " usable " << usable_ << " invalid " << value_invalid_;
 
-    label_ = new QLabel();
     if (display_instance_name_)
-        label_->setText(tr((instanceName() + " " + operator_).c_str()));
+        base_label_text_ = instanceName() + " " + operator_;
     else
-        label_->setText(tr((variable_name_ + " " + operator_).c_str()));
+        base_label_text_ = variable_name_ + " " + operator_;
+
+    label_ = new QLabel();
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 
     edit_ = new QLineEdit(tr(value_.c_str()));
     edit_->setMaxLength(16*1024*1024);
@@ -91,7 +96,8 @@ bool DBFilterCondition::filters(const std::string& dbcontent_name)
     return hasVariable(dbcontent_name);
 }
 
-std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
+std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
+                                                   const std::string& logic_op)
 {
     logdbg << "dbcont_name " << dbcontent_name << " first " << first;
     traced_assert(usable_);
@@ -126,7 +132,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     if (!first)
     {
-        ss << " AND ";
+        ss << " " << logic_op << " ";
     }
     first = false;
 
@@ -135,25 +141,39 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     tie(val_str, null_contained) = getTransformedValue(value_, dbcontent_name);
 
-    if (null_contained)
-    {
+    std::string col_expr = variable_prefix + db_item_str + variable_suffix;
+
+    bool needs_null_or = null_contained || include_null_;
+    bool is_between = (operator_ == "BETWEEN");
+    bool has_main_condition = false;
+
+    if (needs_null_or)
         ss << "(";
 
-        if (val_str.size())
-        {
-            ss << variable_prefix << db_item_str << variable_suffix;
-            ss << " " << operator_ << val_str << " OR ";
-        }
-
-        ss << variable_prefix << db_item_str << variable_suffix;
-        ss << " " << operator_ << " NULL";
-
-        ss << ")";
-    }
-    else
+    if (is_between)
     {
-        ss << variable_prefix << db_item_str << variable_suffix;
-        ss << " " << operator_ << val_str;
+        std::string val2_str;
+        bool null2;
+        tie(val2_str, null2) = getTransformedValue(value2_, dbcontent_name);
+        ss << col_expr << " BETWEEN " << val_str << " AND " << val2_str;
+        has_main_condition = true;
+    }
+    else if (null_contained && val_str.size())
+    {
+        ss << col_expr << " " << operator_ << val_str;
+        has_main_condition = true;
+    }
+    else if (!null_contained)
+    {
+        ss << col_expr << " " << operator_ << val_str;
+        has_main_condition = true;
+    }
+
+    if (needs_null_or)
+    {
+        if (has_main_condition)
+            ss << " OR ";
+        ss << col_expr << " IS NULL)";
     }
 
     if (ss.str().size())
@@ -242,11 +262,18 @@ bool DBFilterCondition::hasVariable(const std::string& dbcontent_name)
 void DBFilterCondition::update()
 {
     if (display_instance_name_)
-        label_->setText(tr((instanceName() + " " + operator_).c_str()));
+        base_label_text_ = instanceName() + " " + operator_;
     else
-        label_->setText(tr((variable_name_ + " " + operator_).c_str()));
+        base_label_text_ = variable_name_ + " " + operator_;
 
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
     edit_->setText(tr(value_.c_str()));
+}
+
+void DBFilterCondition::setLabelPrefix(const std::string& prefix)
+{
+    label_prefix_ = prefix;
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 }
 
 void DBFilterCondition::setValue(const std::string& value)
@@ -356,20 +383,24 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
 
     for (auto value_it : value_strings)
     {
-        value_str = value_it;
+        value_str = String::trim(value_it);
+
+        if (value_str.empty())
+            continue;
 
         if (var_resolver_.variableHasNonStandardRepresentation(
                 dbcontent_name, variable_name_, variable_dbcontent_name_))
             value_str = var_resolver_.variableValueFromRepresentation(
                 dbcontent_name, variable_name_, variable_dbcontent_name_, value_str);
 
-        logdbg << "value string " << value_str;
-
         logdbg << "transformed value string " << value_str;
 
         if (var_resolver_.variableDataType(
                 dbcontent_name, variable_name_, variable_dbcontent_name_) == PropertyDataType::STRING)
+        {
+            boost::replace_all(value_str, "'", "''");
             transformed_value_strings.push_back("'" + value_str + "'");
+        }
         else
             transformed_value_strings.push_back(value_str);
     }
@@ -387,3 +418,4 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
 
     return {value_str, null_set};
 }
+

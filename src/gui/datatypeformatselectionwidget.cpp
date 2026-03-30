@@ -160,3 +160,4 @@ void DataTypeFormatSelectionWidget::triggerSlot(QAction* action)
         setText("");
     }
 }
+

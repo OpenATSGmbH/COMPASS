@@ -143,3 +143,4 @@ void ImportSectorDialog::importSlot()
 {
     accept();
 }
+

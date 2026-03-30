@@ -128,8 +128,16 @@ void DBFilterWidget::updateChildWidget()
     deleteChildrenFromLayout();
 
     const auto& conditions = filter_.getConditions();
+    const std::string& logic = filter_.conditionLogic();
+
     for (unsigned int cnt = 0; cnt < conditions.size(); cnt++)
     {
+        // set label prefix for subsequent conditions
+        if (cnt > 0)
+            conditions.at(cnt)->setLabelPrefix(logic + " ");
+        else
+            conditions.at(cnt)->setLabelPrefix("");
+
         auto label = conditions.at(cnt)->getLabel();
         auto edit  = conditions.at(cnt)->getEdit();
 
@@ -139,9 +147,6 @@ void DBFilterWidget::updateChildWidget()
         int row = child_layout_->rowCount();
         child_layout_->addWidget(label, row, 0);
         child_layout_->addWidget(edit , row, 1);
-
-        // connect(conditions.at(cnt), SIGNAL(possibleFilterChange()), this,
-        //         SLOT(possibleSubFilterChange()), Qt::UniqueConnection);
     }
 }
 
@@ -318,3 +323,4 @@ void DBFilterWidget::setMaximumColumnWidth(int layout_column, int width)
             litem->widget()->setMaximumWidth(width);
     }
 }
+

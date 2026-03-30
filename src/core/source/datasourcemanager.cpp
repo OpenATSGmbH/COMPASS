@@ -190,13 +190,13 @@ void DataSourceManager::addSensorStatusVariables(const std::string& dbcontent_na
     {
         if (dbcontent_name == "CAT063")
         {
-            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_con_));
-            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_con_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+            traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
 
-            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_con_));
-            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-            var_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_con_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+            var_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
         }
     }
 }
@@ -521,6 +521,82 @@ void DataSourceManager::clearInsertedCounts(const std::string& dbcontent_name)
 
     if (load_widget_)
         load_widget_->updateContent();
+}
+
+void DataSourceManager::clearInsertedCounts(unsigned int ds_id,
+                                             const std::string& dbcontent_name,
+                                             const std::vector<unsigned int>& line_ids)
+{
+    auto it = find_if(db_data_sources_.begin(), db_data_sources_.end(),
+                      [ds_id](const std::unique_ptr<dbContent::DBDataSource>& s)
+                      { return s->id() == ds_id; });
+
+    if (it == db_data_sources_.end())
+        return;
+
+    if (line_ids.empty())
+    {
+        (*it)->clearNumInserted(dbcontent_name);
+    }
+    else
+    {
+        for (unsigned int line_id : line_ids)
+            (*it)->clearNumInserted(dbcontent_name, line_id);
+    }
+
+    // remove data source entirely if no data remains
+    if (!(*it)->hasNumInserted())
+        db_data_sources_.erase(it);
+}
+
+void DataSourceManager::applyDeleteInfo(const nlohmann::json& delete_info)
+{
+    loginf;
+
+    DBContentManager& dbcont_man = compass_.dbContentManager();
+
+    for (const auto& entry : delete_info)
+    {
+        std::vector<std::string> dbcontent_names;
+
+        if (entry.contains("dbcontent"))
+        {
+            dbcontent_names.push_back(entry.at("dbcontent"));
+        }
+        else
+        {
+            for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
+                dbcontent_names.push_back(it->first);
+        }
+
+        for (const auto& dbcontent_name : dbcontent_names)
+        {
+            if (!entry.contains("data_sources"))
+            {
+                clearInsertedCounts(dbcontent_name);
+            }
+            else
+            {
+                for (const auto& ds_entry : entry.at("data_sources"))
+                {
+                    unsigned int ds_id = ds_entry.at("ds_id");
+                    std::vector<unsigned int> line_ids;
+
+                    if (ds_entry.contains("line_ids"))
+                        line_ids = ds_entry.at("line_ids").get<std::vector<unsigned int>>();
+
+                    clearInsertedCounts(ds_id, dbcontent_name, line_ids);
+                }
+            }
+
+            if (dbcont_man.existsDBContent(dbcontent_name))
+                dbcont_man.dbContent(dbcontent_name).refreshCount();
+        }
+    }
+
+    saveDBDataSources();
+    emit dataSourcesChangedSignal();
+    emit compass_.dbContentManager().dataDeletedSignal();
 }
 
 void DataSourceManager::selectAllDSTypes()
@@ -1186,3 +1262,4 @@ std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>
 
     return lines;
 }
+

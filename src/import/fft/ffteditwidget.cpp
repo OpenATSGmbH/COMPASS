@@ -372,3 +372,4 @@ void FFTEditWidget::updateContent()
         main_widget_->setHidden(false);
     }
 }
+

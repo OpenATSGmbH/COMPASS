@@ -55,3 +55,4 @@ RadarPlotPositionCalculatorTaskWidget::~RadarPlotPositionCalculatorTaskWidget()
     task_.projectionManager().deleteWidget();
 }
 
+

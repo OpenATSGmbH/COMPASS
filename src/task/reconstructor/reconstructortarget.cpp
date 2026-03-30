@@ -2382,69 +2382,69 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     PropertyList buffer_list;
 
     // basics
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
     // pos
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_));
 
     // track num begin, end
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_));
 
     // spd
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rocd_));
 
     // accs
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ax_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ay_));
 
     // stddevs
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_xy_cov_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_));
 
     // secondary
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_));
 
     // yo mom so acc
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_long_acc_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_trans_acc_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_));
 
     // contrib
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_tracker_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_reftraj_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_other_age_));
 
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_));
 
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_));
 
     std::shared_ptr<Buffer> buffer_written = std::make_shared<Buffer>(buffer_list, dbcontent_name);
     std::shared_ptr<Buffer> buffer_glue    = std::make_shared<Buffer>(buffer_list, dbcontent_name);
@@ -2536,109 +2536,109 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     auto addRefDataToBuffer = [ & ] (Buffer* buffer, bool to_be_written)
     {
         NullableVector<unsigned int>& ds_id_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_).name());
         NullableVector<unsigned char>& sac_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_).name());
         NullableVector<unsigned char>& sic_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_).name());
         NullableVector<unsigned int>& line_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_).name());
 
         NullableVector<float>& tod_vec = buffer->get<float> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_).name());
         NullableVector<ptime>& ts_vec = buffer->get<ptime> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_).name());
 
         NullableVector<double>& lat_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_).name());
         NullableVector<double>& lon_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_).name());
         NullableVector<float>& mc_vec = buffer->get<float> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_).name());
 
         // track num begin, end
         NullableVector<bool>& track_begin_vec = buffer->get<bool> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_).name());
         NullableVector<bool>& track_end_vec = buffer->get<bool> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_).name());
         NullableVector<unsigned int>& track_num_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_).name());
 
         // speed, track angle
         NullableVector<double>& vx_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_).name());
         NullableVector<double>& vy_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_).name());
 
         NullableVector<double>& speed_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_).name());
         NullableVector<double>& track_angle_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_).name());
 
         NullableVector<float>& rocd_vec = buffer->get<float> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rocd_).name());
 
         // accs
         NullableVector<double>& ax_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ax_).name());
         NullableVector<double>& ay_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ay_).name());
 
         // stddevs
         NullableVector<double>& x_stddev_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_).name());
         NullableVector<double>& y_stddev_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_).name());
         NullableVector<double>& xy_cov_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_xy_cov_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_).name());
 
         // ground bit
         NullableVector<bool>& gb_vec = buffer->get<bool> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_).name());
 
         NullableVector<unsigned int>& m3a_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_).name());
         NullableVector<unsigned int>& acad_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_).name());
         NullableVector<string>& acid_vec = buffer->get<string> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_).name());
 
         // mom
         NullableVector<unsigned char>& mom_long_acc_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_long_acc_).name());
         NullableVector<unsigned char>& mom_trans_acc_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_trans_acc_).name());
         NullableVector<unsigned char>& mom_vert_rate_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_).name());
 
         // contribution
         NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_).name());
         NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_).name());
         NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_).name());
         NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_tracker_age_).name());
         NullableVector<float>& cont_reftraj_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_reftraj_age_).name());
         NullableVector<float>& cont_other_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_other_age_).name());
 
         NullableVector<json>& cont_sources_vec = buffer->get<json>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_).name());
         NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_).name());        
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_).name());        
 
         NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_).name());
         NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_).name());
         NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_).name());
 
         NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_).name());
 
         unsigned int buffer_cnt = 0;
 

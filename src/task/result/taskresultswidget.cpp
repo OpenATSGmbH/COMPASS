@@ -482,3 +482,4 @@ void TaskResultsWidget::restoreBackupSection()
     
     loginf << "restored section '" << current_section_name_backup_ << "'";
 }
+

@@ -123,12 +123,12 @@ QVariant BaseBufferTableModel::data(const QModelIndex& index, int role) const
     {
         if (col == 0)  // selected special case
         {
-            traced_assert(rd.buffer->has<bool>(DBContent::selected_var.name()));
+            traced_assert(rd.buffer->has<bool>(dbcontent_vars::selected_var_.name()));
 
-            if (rd.buffer->get<bool>(DBContent::selected_var.name()).isNull(rd.buffer_index))
+            if (rd.buffer->get<bool>(dbcontent_vars::selected_var_.name()).isNull(rd.buffer_index))
                 return Qt::Unchecked;
 
-            if (rd.buffer->get<bool>(DBContent::selected_var.name()).get(rd.buffer_index))
+            if (rd.buffer->get<bool>(dbcontent_vars::selected_var_.name()).get(rd.buffer_index))
                 return Qt::Checked;
             else
                 return Qt::Unchecked;
@@ -200,17 +200,17 @@ bool BaseBufferTableModel::setData(const QModelIndex& index, const QVariant& val
         RowData rd = resolveRow(index.row());
 
         traced_assert(rd.buffer);
-        traced_assert(rd.buffer->has<bool>(DBContent::selected_var.name()));
+        traced_assert(rd.buffer->has<bool>(dbcontent_vars::selected_var_.name()));
 
         if (value == Qt::Checked)
         {
             logdbg << "checked row index " << rd.buffer_index;
-            rd.buffer->get<bool>(DBContent::selected_var.name()).set(rd.buffer_index, true);
+            rd.buffer->get<bool>(dbcontent_vars::selected_var_.name()).set(rd.buffer_index, true);
         }
         else
         {
             logdbg << "unchecked row index " << rd.buffer_index;
-            rd.buffer->get<bool>(DBContent::selected_var.name()).set(rd.buffer_index, false);
+            rd.buffer->get<bool>(dbcontent_vars::selected_var_.name()).set(rd.buffer_index, false);
         }
 
         view_.emitSelectionChange();
@@ -266,7 +266,7 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
         return false;
 
     // handle CAT020 contributing receivers
-    if (var.dbContent().id() == 20 && var.name() == DBContent::var_cat020_contrib_recv_.name())
+    if (var.dbContent().id() == 20 && var.name() == dbcontent_vars::var_cat020_contrib_recv_.name())
     {
         if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))
             return false;
@@ -278,8 +278,8 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
 
         auto& dbcontent_man = compass.dbContentManager();
 
-        traced_assert(dbcontent_man.metaCanGetVariable(var.dbContentName(), DBContent::meta_var_ds_id_));
-        auto& ds_var = dbcontent_man.metaGetVariable(var.dbContentName(), DBContent::meta_var_ds_id_);
+        traced_assert(dbcontent_man.metaCanGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_));
+        auto& ds_var = dbcontent_man.metaGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_);
         traced_assert(buffer.hasAnyPropertyNamed(ds_var.name()));
 
         auto& ds_vec = buffer.get<unsigned int>(ds_var.name());
@@ -363,3 +363,4 @@ void BaseBufferTableModel::sortRowIndexes()
 {
     // default no-op; subclasses override with type-specific sorting
 }
+

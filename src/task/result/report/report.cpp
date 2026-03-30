@@ -356,3 +356,4 @@ std::shared_ptr<ResultReport::SectionContent> Report::loadContent(ResultReport::
 }
 
 }
+

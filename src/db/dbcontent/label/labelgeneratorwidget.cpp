@@ -456,3 +456,4 @@ void LabelGeneratorWidget::opacitySliderChangedSlot(int value)
 }
 
 }
+

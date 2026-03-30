@@ -445,3 +445,4 @@ void DBContentManagerWidget::updateMetaVariablesSlot()
         row++;
     }
 }
+

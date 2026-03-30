@@ -13,4 +13,5 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_excluded_timewindows_filter.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_dbfilter_condition.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_filter_buffer.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_filter_generator_dialog.cpp
 )

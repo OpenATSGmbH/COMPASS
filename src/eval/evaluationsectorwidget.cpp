@@ -129,3 +129,4 @@ void EvaluationSectorWidget::toggleUseGroupSlot()
 
     dialog_.updateButtons();
 }
+

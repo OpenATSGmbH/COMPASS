@@ -56,17 +56,17 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
     auto& resolver = variableResolver();
 
-    traced_assert(resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    traced_assert(resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
 
     // ds_id -> line_id -> values
     std::map<unsigned int, std::map<unsigned int, std::string>> active_tns = getActiveTrackerTrackNums();
 
     if (active_ && active_tns.size())
     {
-        string ds_id_col = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_ds_id_);
-        string line_col = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_line_id_);
-        string tn_col = resolver.metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_track_num_);
+        string ds_id_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+        string line_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_line_id_);
+        string tn_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_track_num_);
 
         if (!first)
         {
@@ -253,3 +253,4 @@ void TrackerTrackNumberFilter::updateDataSourcesSlot()
     if (widget_)
         widget_->update();
 }
+

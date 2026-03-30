@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fft/dbfft.h"
+#include "dbfft.h"
 #include "logger.h"
 
 using namespace std;

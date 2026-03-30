@@ -89,3 +89,4 @@ void AutoResumeDialog::resumeClickedSlot()
 {
     emit resumeSignal();
 }
+

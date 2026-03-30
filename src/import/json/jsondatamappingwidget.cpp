@@ -39,3 +39,4 @@ JSONDataMappingWidget::JSONDataMappingWidget(JSONDataMapping& mapping, QWidget* 
 }
 
 void JSONDataMappingWidget::setMapping(JSONDataMapping& mapping) { mapping_ = &mapping; }
+

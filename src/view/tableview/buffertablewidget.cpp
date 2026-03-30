@@ -54,3 +54,4 @@ bool BufferTableWidget::hasData() const
     traced_assert(buffer_model_);
     return buffer_model_->hasData();
 }
+

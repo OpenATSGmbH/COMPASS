@@ -20,7 +20,7 @@
 #include "fftsconfigurationdialog.h"
 #include "compass.h"
 #include "dbinterface.h"
-#include "fft/dbfft.h"
+#include "dbfft.h"
 #include "stringconv.h"
 #include "number.h"
 #include "files.h"
@@ -525,3 +525,4 @@ void FFTManager::updateFFTNamesAll()
 
     std::copy(fft_names_set.begin(), fft_names_set.end(), std::back_inserter(fft_names_all_)); // copy to vec
 }
+

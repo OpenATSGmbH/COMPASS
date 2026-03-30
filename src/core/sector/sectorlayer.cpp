@@ -17,7 +17,7 @@
 
 #include "sectorlayer.h"
 #include "sector.h"
-#include "dbcontent/target/targetposition.h"
+#include "targetposition.h"
 #include "logger.h"
 
 #include "traced_assert.h"

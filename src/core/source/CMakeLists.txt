@@ -1,5 +1,5 @@
 
-include_directories (
+target_include_directories(compass_core PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
@@ -20,6 +20,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/datasourceeditwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcetablemodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesconfigurationdialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/deletedatadialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/dstypeselectioncombobox.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecreatedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecompoundcoverage.h"
@@ -27,6 +28,8 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatus.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatuswidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatustoolwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/toolboxdefs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/datasourcemanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcebase.cpp"
@@ -42,10 +45,12 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/datasourceeditwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcetablemodel.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesconfigurationdialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/deletedatadialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecreatedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcecompoundcoverage.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourceremoteunit.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatus.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatuswidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcesstatustoolwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.cpp"
 )

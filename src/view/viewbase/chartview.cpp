@@ -464,3 +464,4 @@ void ChartView::addLegendOnlyItem(const QString& name, const QColor& color)
 
     chart()->addSeries(series);
 }
+

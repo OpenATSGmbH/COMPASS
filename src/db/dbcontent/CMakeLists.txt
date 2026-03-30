@@ -3,11 +3,11 @@ include(${CMAKE_CURRENT_LIST_DIR}/label/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/target/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/variable/CMakeLists.txt)
 
-include_directories (
+target_include_directories(compass_core PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass_db
+target_sources(compass_core
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentaccessor.h"

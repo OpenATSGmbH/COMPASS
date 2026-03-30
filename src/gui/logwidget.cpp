@@ -186,3 +186,4 @@ void LogWidget::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
 }
 
+

@@ -65,6 +65,9 @@ class DBFilter : public Configurable
 
     bool isCustom() { return is_custom_; }
 
+    const std::string& conditionLogic() const { return condition_logic_; }
+    void conditionLogic(const std::string& logic);
+
     /// where condition string for a DBContent
     virtual std::string getConditionString(const std::string& dbcontent_name, 
       dbContent::VariableSet& read_set, bool& first);
@@ -78,6 +81,7 @@ class DBFilter : public Configurable
 
     const std::vector<std::unique_ptr<DBFilterCondition>>& getConditions() const { return conditions_; }
     unsigned int getNumConditions() { return conditions_.size(); }
+    void clearConditions();
     void deleteCondition(DBFilterCondition* condition);
 
     DBFilterWidget* widget();
@@ -108,6 +112,8 @@ protected:
     bool disabled_ {false}; // if disabled due to other reasons (e.g. AppMode)
 
     bool widget_visible_ {true};
+
+    std::string condition_logic_{"AND"}; // "AND" or "OR" — how conditions are joined
 
     std::vector<std::unique_ptr<DBFilterCondition>> conditions_;
 

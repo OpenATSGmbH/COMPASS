@@ -60,7 +60,7 @@ HistogramView::HistogramView(nlohmann::json& config, ViewContainer* parent)
                                                         PropertyDataType::FLOAT,
                                                         PropertyDataType::DOUBLE };
 
-    addVariable("data_var", "", "data_var", META_OBJECT_NAME, DBContent::meta_var_timestamp_.name(), true, true, false, valid_types);
+    addVariable("data_var", "", "data_var", META_OBJECT_NAME, dbcontent_vars::meta_var_timestamp_.name(), true, true, false, valid_types);
 
     // create sub done in init
 }
@@ -268,3 +268,4 @@ void HistogramView::viewInfoJSON_impl(nlohmann::json& info) const
 
     info[ "use_log_scale"] = settings_.use_log_scale;
 }
+

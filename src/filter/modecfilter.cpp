@@ -44,7 +44,7 @@ ModeCFilter::~ModeCFilter() {}
 
 bool ModeCFilter::filters(const std::string& dbcont_name)
 {
-    return variableResolver().metaCanGetVariable(dbcont_name, DBContent::meta_var_mc_);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_);
 }
 
 std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
@@ -53,7 +53,7 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
 
     auto& resolver = variableResolver();
 
-    if (!resolver.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return "";
 
     stringstream ss;
@@ -62,7 +62,7 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
     {
         { // first check always to enforce if null_wanted_
             string col_name = resolver.metaGetVariableDBColumn(
-                dbcontent_name, DBContent::meta_var_mc_);
+                dbcontent_name, dbcontent_vars::meta_var_mc_);
 
             if (!first)
                 ss << " AND";
@@ -80,10 +80,10 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
         if (dbcontent_name == "CAT062")
         {
             {
-                if (resolver.variableHasDBContent(dbcontent_name, DBContent::var_cat062_baro_alt_))
+                if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_))
                 {
                     string col_name = resolver.getVariableDBColumn(
-                        dbcontent_name, DBContent::var_cat062_baro_alt_);
+                        dbcontent_name, dbcontent_vars::var_cat062_baro_alt_);
 
                     if (!first)
                         ss << " AND";
@@ -100,10 +100,10 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
             }
 
             {
-                if (resolver.variableHasDBContent(dbcontent_name, DBContent::var_cat062_fl_measured_))
+                if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_))
                 {
                     string col_name = resolver.getVariableDBColumn(
-                        dbcontent_name, DBContent::var_cat062_fl_measured_);
+                        dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
 
                     if (!first)
                         ss << " AND";
@@ -182,10 +182,10 @@ std::vector<unsigned int> ModeCFilter::filterBuffer(const std::string& dbcontent
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return to_be_removed;
 
-    string var_name = variableResolver().metaGetVariableName(dbcontent_name, DBContent::meta_var_mc_);
+    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_mc_);
 
     traced_assert(buffer->has<float> (var_name));
 

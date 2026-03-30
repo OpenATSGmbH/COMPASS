@@ -108,23 +108,23 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
 
     unsigned int num_skipped {0};
 
-    traced_assert(accessor_->hasMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_));
-    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_));
-    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_));
-    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_));
-    traced_assert(accessor_->hasMetaVar<double>(dbcontent_name, DBContent::meta_var_max_stddev_xy));
+    traced_assert(accessor_->hasMetaVar<ptime>(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_line_id_));
+    traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_utn_));
+    traced_assert(accessor_->hasMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_));
 
     NullableVector<ptime>& ts_vec =
-        accessor_->getMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_);
+        accessor_->getMetaVar<ptime>(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
     NullableVector<unsigned int>& ds_ids =
-        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_);
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
     NullableVector<unsigned int>& line_ids =
-        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_);
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_line_id_);
     NullableVector<unsigned int>& utn_vec =
-        accessor_->getMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_);
+        accessor_->getMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_utn_);
 
     NullableVector<double>& max_stddev_xy_vec =
-        accessor_->getMetaVar<double>(dbcontent_name, DBContent::meta_var_max_stddev_xy);
+        accessor_->getMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_);
 
     unsigned int buffer_size = ts_vec.contentSize();
 
@@ -226,19 +226,19 @@ void EvaluationData::addTestData (const std::string& dbcontent_name, unsigned in
     bool use_active_srcs = (calculator_.dbContentNameRef() == calculator_.dbContentNameTst());
     unsigned int num_skipped {0};
 
-    if (accessor_->hasMetaVar<ptime>(dbcontent_name, DBContent::meta_var_timestamp_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_ds_id_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_line_id_) &&
-        accessor_->hasMetaVar<unsigned int>(dbcontent_name, DBContent::meta_var_utn_))
+    if (accessor_->hasMetaVar<ptime>(dbcontent_name, dbcontent_vars::meta_var_timestamp_) &&
+        accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+        accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_line_id_) &&
+        accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_utn_))
     {
         NullableVector<ptime>& ts_vec = accessor_->getMetaVar<ptime>(
-                    dbcontent_name, DBContent::meta_var_timestamp_);
+                    dbcontent_name, dbcontent_vars::meta_var_timestamp_);
         NullableVector<unsigned int>& ds_ids = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_ds_id_);
+                    dbcontent_name, dbcontent_vars::meta_var_ds_id_);
         NullableVector<unsigned int>& line_ids = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_line_id_);
+                    dbcontent_name, dbcontent_vars::meta_var_line_id_);
         NullableVector<unsigned int>& utn_vec = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name, DBContent::meta_var_utn_);
+                    dbcontent_name, dbcontent_vars::meta_var_utn_);
 
         unsigned int buffer_size = ts_vec.contentSize();
 

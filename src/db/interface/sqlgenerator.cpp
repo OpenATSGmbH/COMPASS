@@ -26,7 +26,7 @@
 #include "property.h"
 #include "propertylist.h"
 #include "source/dbdatasource.h"
-#include "fft/dbfft.h"
+#include "dbfft.h"
 #include "util/timeconv.h"
 #include "dbinterface.h"
 
@@ -82,15 +82,15 @@ string SQLGenerator::getCreateTableStatement(const DBContent& object)
     if (config_.indexing)
     {
         indices.emplace_back("TIMESTAMP_INDEX_" + object.name(), 
-                             dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_timestamp_).dbColumnName());
+                             dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_timestamp_).dbColumnName());
         indices.emplace_back("DS_ID_INDEX_" + object.name(), 
-                             dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_ds_id_).dbColumnName());
+                             dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_ds_id_).dbColumnName());
         indices.emplace_back("LINE_ID_INDEX_" + object.name(), 
-                             dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_line_id_).dbColumnName());
-        if (dbcont_man_.metaCanGetVariable(object.name(), DBContent::meta_var_utn_))
+                             dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_line_id_).dbColumnName());
+        if (dbcont_man_.metaCanGetVariable(object.name(), dbcontent_vars::meta_var_utn_))
         {
             indices.emplace_back("UTN_INDEX_" + object.name(), 
-                                 dbcont_man_.metaGetVariable(object.name(), DBContent::meta_var_utn_).dbColumnName());
+                                 dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_utn_).dbColumnName());
         }
     }
 
@@ -307,7 +307,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(
         const DBContent& dbcontent, boost::posix_time::ptime before_timestamp)
 {
     stringstream ss;
-    ss << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_timestamp_).dbColumnName();
+    ss << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_timestamp_).dbColumnName();
     ss << " < " << Time::toLong(before_timestamp);
 
     return getDeleteCommand(dbcontent.dbTableName(), ss.str());
@@ -327,9 +327,9 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcon
                                                           unsigned int sic)
 {
     stringstream ss;
-    ss << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sac_id_).dbColumnName() << " = " << sac
+    ss << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sac_id_).dbColumnName() << " = " << sac
        << " AND "
-       << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sic_id_).dbColumnName() << " = " << sic;
+       << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sic_id_).dbColumnName() << " = " << sic;
 
     return getDeleteCommand(dbcontent.dbTableName(), ss.str());
 }
@@ -342,11 +342,11 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcon
                                                           unsigned int line_id)
 {
     stringstream ss;
-    ss << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sac_id_).dbColumnName() << " = " << sac
+    ss << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sac_id_).dbColumnName() << " = " << sac
        << " AND "
-       << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_sic_id_).dbColumnName() << " = " << sic
+       << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sic_id_).dbColumnName() << " = " << sic
        << " AND "
-       << dbcont_man_.metaGetVariable(dbcontent.name(), DBContent::meta_var_line_id_).dbColumnName() << " = " << line_id;
+       << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_line_id_).dbColumnName() << " = " << line_id;
 
        return getDeleteCommand(dbcontent.dbTableName(), ss.str());
 }

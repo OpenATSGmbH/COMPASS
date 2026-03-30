@@ -59,3 +59,4 @@ colorscale::ColorScale ColorScaleSelection::selectedScale() const
 {
     return (colorscale::ColorScale)combo_->currentData().toInt();
 }
+

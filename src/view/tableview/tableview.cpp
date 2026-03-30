@@ -249,3 +249,4 @@ const TableView::Settings& TableView::settings() const
 {
     return settings_;
 }
+

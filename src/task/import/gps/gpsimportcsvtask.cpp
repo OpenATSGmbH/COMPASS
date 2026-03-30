@@ -496,45 +496,45 @@ void GPSImportCSVTask::run()
     string dbcontent_name = "RefTraj";
     traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
 
     loginf << "getting variables";
 
     using namespace dbContent;
 
-    Variable& sac_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_);
-    Variable& sic_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_);
-    Variable& ds_id_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_);
-    Variable& line_id_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_);
-    Variable& tod_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
-    Variable& ts_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
-    Variable& lat_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
-    Variable& long_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
-    Variable& m3a_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
-    Variable& mc_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_);
-    Variable& ta_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_);
-    Variable& ti_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_);
-    Variable& tn_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_);
-    Variable& vx_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_);
-    Variable& vy_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_);
-    Variable& speed_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
-    Variable& track_angle_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_);
+    Variable& sac_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_);
+    Variable& sic_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_);
+    Variable& ds_id_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+    Variable& line_id_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_);
+    Variable& tod_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_);
+    Variable& ts_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
+    Variable& lat_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+    Variable& long_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_);
+    Variable& m3a_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_);
+    Variable& mc_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_);
+    Variable& ta_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_);
+    Variable& ti_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
+    Variable& tn_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_);
+    Variable& vx_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_);
+    Variable& vy_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_);
+    Variable& speed_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
+    Variable& track_angle_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
 
     PropertyList properties;
     properties.addProperty(sac_var.name(), PropertyDataType::UCHAR);
@@ -728,3 +728,4 @@ void GPSImportCSVTask::dialogCancelSlot()
 //{
 //    loginf;
 //}
+

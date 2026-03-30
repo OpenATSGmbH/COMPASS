@@ -547,3 +547,4 @@ void Group::useNone()
     for (auto& c : configs_)
         c->use(false);
 }
+

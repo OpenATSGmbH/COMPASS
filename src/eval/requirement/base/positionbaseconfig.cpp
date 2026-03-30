@@ -77,3 +77,4 @@ void PositionBaseValueConfig::addToReport(std::shared_ptr<ResultReport::Report> 
 }
 
 }  // namespace EvaluationRequirement
+

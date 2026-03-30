@@ -22,7 +22,11 @@
 #include <QPushButton>
 #include <QTreeWidgetItem>
 
+#include <memory>
+
 class DataSourceManager;
+class DBContentDeleteDBJob;
+class QMessageBox;
 
 class QTreeWidget;
 
@@ -213,7 +217,8 @@ protected:
     void selectSpecificLines();
     void toogleShowCounts();
 
-
+    void deleteDataSlot();
+    void deleteJobDoneSlot();
 
 private:
     friend class DataSourcesWidgetItem;
@@ -238,4 +243,6 @@ private:
 
     void updateAllContent();
 
+    std::shared_ptr<DBContentDeleteDBJob> delete_job_;
+    QMessageBox* delete_wait_dialog_{nullptr};
 };

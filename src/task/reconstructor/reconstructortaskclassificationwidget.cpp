@@ -85,3 +85,4 @@ void ReconstructorTaskClassificationWidget::vehicleACADsChangedSlot()
     traced_assert(vehicle_acads_edit_);
     reconstructor_.settings().setVehicleACADs(vehicle_acads_edit_->document()->toPlainText().toStdString());
 }
+

@@ -344,3 +344,4 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
     info[ "tables" ] = table_infos;
 }
+

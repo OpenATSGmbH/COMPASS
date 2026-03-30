@@ -28,6 +28,9 @@
 #include "logger.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
+#include "viewcontainerwidget.h"
+#include "view.h"
+#include "viewwidget.h"
 #include "evaluationmanager.h"
 #include "mainwindow.h"
 #include "files.h"
@@ -40,6 +43,7 @@
 #include "fftmanager.h"
 #include "util/async.h"
 #include "licensemanager.h"
+#include "dbcontentmanagervariableresolver.h"
 #include "configurationmanager.h"
 #include "result.h"
 #include "dbinstance.h"
@@ -56,7 +60,7 @@
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include <osgEarth/weejobs.h>
-#include "ViewerWidget.h"
+#include "geo_view_api.h"
 #endif
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -408,6 +412,13 @@ void COMPASS::checkSubConfigurables()
         generateSubConfigurableFromConfig("ProjectionManager", "ProjectionManager0");
     if (!rt_cmd_manager_)
         generateSubConfigurableFromConfig("RTCommandManager", "RTCommandManager0");
+
+    // wire up variable resolver for projection manager (breaks core→db dep)
+    if (projection_manager_ && dbcontent_manager_ && !var_resolver_)
+    {
+        var_resolver_ = std::make_unique<DBContentManagerVariableResolver>(*dbcontent_manager_);
+        projection_manager_->varResolver(*var_resolver_);
+    }
 }
 
 LogStore& COMPASS::logStore()
@@ -805,6 +816,27 @@ ViewManager& COMPASS::viewManager()
     return *view_manager_;
 }
 
+QWidget* COMPASS::viewContainerWidget(const std::string& name)
+{
+    traced_assert(view_manager_);
+    return view_manager_->containerWidget(name);
+}
+
+QWidget* COMPASS::latestViewContainerWidget()
+{
+    traced_assert(view_manager_);
+    return view_manager_->latestViewContainer();
+}
+
+QWidget* COMPASS::latestViewWidget()
+{
+    traced_assert(view_manager_);
+    auto* view = view_manager_->latestView();
+    if (!view)
+        return nullptr;
+    return view->getCentralWidget()->findChild<ViewWidget*>();
+}
+
 SimpleConfig& COMPASS::config()
 {
     traced_assert(simple_config_);
@@ -927,7 +959,7 @@ void COMPASS::shutdown()
 #if USE_EXPERIMENTAL_SOURCE == true
     // Release retired GL contexts while OSG globals are still alive.
     // If left for static destruction, OSG's ContextData double-frees.
-    osgEarth::QtGui::ViewerWidget::releaseRetiredContexts();
+    geo_view::releaseRetiredContexts();
 
     // Drain osgEarth's global job/thread pool after all views are destroyed.
     // Must not be called per-view — it shuts down shared state that other

@@ -21,6 +21,7 @@
 #include "buffer.h"
 
 class COMPASS;
+class IDBVariableResolver;
 
 #include "gdal_priv.h"
 
@@ -76,8 +77,12 @@ public:
 
     COMPASS& compass() { return compass_; }
 
+    void varResolver(IDBVariableResolver& resolver) { var_resolver_ = &resolver; }
+    IDBVariableResolver& varResolver() const { return *var_resolver_; }
+
 protected:
     COMPASS& compass_;
+    IDBVariableResolver* var_resolver_ {nullptr};
 
     std::string current_projection_name_;
 

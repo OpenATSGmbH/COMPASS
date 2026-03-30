@@ -75,3 +75,4 @@ void ManageSectorsTaskDialog::doneClickedSlot()
     emit doneSignal();
 }
 
+

@@ -38,11 +38,11 @@ DBContentReadDBJob::DBContentReadDBJob(DBInterface& db_interface, DBContent& dbc
 
     use_order_ = true; // always order
     traced_assert(dbcontent_.compass().dbContentManager().metaCanGetVariable(
-                dbcontent_.name(), DBContent::meta_var_timestamp_));
+                dbcontent_.name(), dbcontent_vars::meta_var_timestamp_));
 
     // always order by timestamp
     order_variable_ = &dbcontent_.compass().dbContentManager().metaGetVariable(
-                dbcontent_.name(), DBContent::meta_var_timestamp_);
+                dbcontent_.name(), dbcontent_vars::meta_var_timestamp_);
 }
 
 DBContentReadDBJob::~DBContentReadDBJob() {}
@@ -146,3 +146,4 @@ void DBContentReadDBJob::run_impl()
 }
 
 unsigned int DBContentReadDBJob::rowCount() const { return row_count_; }
+

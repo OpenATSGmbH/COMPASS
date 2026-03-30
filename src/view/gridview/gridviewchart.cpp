@@ -365,3 +365,4 @@ void GridViewChart::zoom(const QPointF& p1, const QPointF& p2)
 }
 
 }
+

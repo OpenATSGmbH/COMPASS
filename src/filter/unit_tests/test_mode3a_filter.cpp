@@ -126,3 +126,38 @@ TEST_CASE("Mode3AFilter first=false prepends AND", "[filter][mode3a]")
 
     CHECK(sql.substr(0, 4) == " AND");
 }
+
+TEST_CASE("Mode3AFilter viewpoint save/load round-trip", "[filter][mode3a][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("Mode3AFilter", "Mode 3/A Codes", {
+        {"active", true},
+        {"values_str", "7000,7777"}
+    });
+
+    Mode3AFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Mode 3/A Codes"));
+    CHECK(vp_filters["Mode 3/A Codes"]["Mode 3/A Codes Values"] == "7000,7777");
+
+    // Load into fresh filter with different value
+    auto cfg2 = makeFilterConfig("Mode3AFilter", "Mode 3/A Codes", {
+        {"active", true},
+        {"values_str", "1234"}
+    });
+
+    Mode3AFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.valuesString() == "1234");
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.valuesString() == "7000,7777");
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

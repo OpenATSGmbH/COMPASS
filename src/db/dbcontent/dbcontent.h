@@ -20,6 +20,7 @@
 #include "configurable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
+#include "idbvariableresolver.h"
 #include "traced_assert.h"
 
 #include <QObject>
@@ -117,145 +118,6 @@ public slots:
     void deleteJobDoneSlot();
 
 public:
-    static const Property meta_var_rec_num_;
-    static const Property meta_var_ds_id_;
-    static const Property meta_var_sac_id_;
-    static const Property meta_var_sic_id_;
-    static const Property meta_var_line_id_;
-    static const Property meta_var_time_of_day_;
-    static const Property meta_var_timestamp_; // boost::posix_time::ptime
-    static const Property meta_var_m3a_;
-    static const Property meta_var_m3a_g_;
-    static const Property meta_var_m3a_v_;
-    static const Property meta_var_m3a_smoothed_;
-    static const Property meta_var_acad_;
-    static const Property meta_var_acid_;
-    static const Property meta_var_mc_;
-    static const Property meta_var_mc_g_;
-    static const Property meta_var_mc_v_;
-    static const Property meta_var_ground_bit_;
-
-    static const Property meta_var_track_num_;
-    static const Property meta_var_track_begin_;
-    static const Property meta_var_track_confirmed_;
-    static const Property meta_var_track_coasting_;
-    static const Property meta_var_track_end_;
-
-    static const Property meta_var_latitude_;
-    static const Property meta_var_longitude_;
-    static const Property meta_var_detection_type_;
-    static const Property meta_var_x_;
-    static const Property meta_var_y_;
-
-    static const Property meta_var_artas_hash_;
-    static const Property meta_var_utn_;
-
-    static const Property meta_var_vx_;
-    static const Property meta_var_vy_;
-    static const Property meta_var_ground_speed_; // kts
-    static const Property meta_var_track_angle_; // deg
-    static const Property meta_var_horizontal_man_;
-
-    static const Property meta_var_ax_;
-    static const Property meta_var_ay_;
-
-    static const Property meta_var_mom_long_acc_;
-    static const Property meta_var_mom_trans_acc_;
-    static const Property meta_var_mom_vert_rate_;
-
-    static const Property meta_var_x_stddev_;
-    static const Property meta_var_y_stddev_;
-    static const Property meta_var_xy_cov_;
-
-    static const Property meta_var_max_stddev_xy;
-
-    static const Property meta_var_latitude_stddev_;
-    static const Property meta_var_longitude_stddev_;
-    static const Property meta_var_latlon_cov_;
-
-    static const Property meta_var_climb_descent_;
-    static const Property meta_var_rocd_;
-    static const Property meta_var_spi_;
-
-    static const Property meta_var_message_type_;
-
-    static const Property var_radar_range_;
-    static const Property var_radar_azimuth_;
-    static const Property var_radar_altitude_;
-
-    static const Property var_cat020_contrib_recv_;
-
-    static const Property var_cat021_toa_position_;     // "ToA Position" 071.Time of Applicability for Position
-    static const Property var_cat021_tomr_position_; // "ToMR Position" 0.73 Time of Message Reception for Position
-    static const Property var_cat021_tort_; // "ToRT" 077.Time of Report Transmission
-    static const Property var_cat021_tod_dep_; // "Time of Day Deprecated" 030.Time of Day
-
-    static const Property var_cat021_mops_version_;
-    static const Property var_cat021_nacp_;
-    static const Property var_cat021_nucp_nic_;
-    static const Property var_cat021_nucv_nacv_;
-    static const Property var_cat021_sil_;
-    static const Property var_cat021_pos_check_failed_;
-    static const Property var_cat021_geo_alt_;
-    static const Property var_cat021_geo_alt_accuracy_;
-    static const Property var_cat021_ecat_;
-
-    static const Property var_cat021_latitude_hr_;
-    static const Property var_cat021_longitude_hr_;
-
-    static const Property var_cat021_sgv_gss_; // ground speed, kts
-    static const Property var_cat021_sgv_hgt_; // heading / ground track, deg, based on htt
-    static const Property var_cat021_sgv_htt_; // heading 0 / ground track 1
-    static const Property var_cat021_sgv_hrd_; // true north 0 / magnetic north 1
-    static const Property var_cat021_sgv_stp_; // true north 0 / magnetic north 1
-
-    static const Property var_cat062_tris_;
-    static const Property var_cat062_tri_recnums_;
-    static const Property var_cat062_track_begin_;
-    static const Property var_cat062_coasting_;
-    static const Property var_cat062_track_end_;
-    static const Property var_cat062_mono_sensor_;
-    static const Property var_cat062_type_lm_;
-    static const Property var_cat062_baro_alt_;
-    static const Property var_cat062_fl_measured_; // trusted, not valid
-    static const Property var_cat062_num_contrib_sensors_;
-    static const Property var_cat062_num_contrib_sensors_tn_;
-    static const Property var_cat062_sum_num_contrib_sensors_;
-
-    //Rate of Climb/Descent float feet / min
-    //Ax Ay float m/s2
-    // trans long vert "MOM Longitudinal Acc" "MOM Transversal Acc" "MOM Vertical Rate" uchar
-
-    static const Property var_cat062_wtc_;
-    static const Property var_cat062_callsign_fpl_;
-
-    static const Property var_cat062_vx_stddev_;
-    static const Property var_cat062_vy_stddev_;
-
-    static const Property var_cat063_sensor_sac_;
-    static const Property var_cat063_sensor_sic_;
-    static const Property var_cat063_con_;
-
-    static const Property var_cat065_batch_number_;
-
-    // reftraj contrib
-    static const Property var_reftraj_contrib_adsb_age_;
-    static const Property var_reftraj_contrib_mlat_age_;
-    static const Property var_reftraj_contrib_radar_age_;
-    static const Property var_reftraj_contrib_tracker_age_;
-    static const Property var_reftraj_contrib_reftraj_age_;
-    static const Property var_reftraj_contrib_other_age_;
-
-    static const Property var_reftraj_contrib_sources_;
-    static const Property var_reftraj_contrib_sources_num_;
-
-    static const Property var_reftraj_update_age_primary_;
-    static const Property var_reftraj_update_age_modeac_;
-    static const Property var_reftraj_update_age_modes_;
-
-    static const Property selected_var;
-
-public:
     DBContent(nlohmann::json& config, DBContentManager* parent);
     virtual ~DBContent();
 
@@ -318,6 +180,8 @@ public:
     bool hasData();
     size_t count();
     size_t loadedCount();
+
+    void refreshCount();
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 

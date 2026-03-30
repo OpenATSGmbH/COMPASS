@@ -221,3 +221,4 @@ void ViewManagerWidget::update()
 //    loginf << "start" << variant.toString().toStdString();
 //    ViewManager::getInstance().addContainerWithTemplateView(variant.toString().toStdString());
 //}
+

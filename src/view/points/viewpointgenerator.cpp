@@ -1267,6 +1267,8 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
 
     if (no_data_loaded_)
         j[ViewPoint::VP_DS_TYPES_KEY] = nlohmann::json::array();
+    else if (!ds_types_.empty())
+        j[ViewPoint::VP_DS_TYPES_KEY] = ds_types_;
 }
 
 /**

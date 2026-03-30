@@ -435,3 +435,4 @@ void SimpleReconstructorAssociationWidget::minUpdatesEditedSlot (const QString& 
 }
 
 
+

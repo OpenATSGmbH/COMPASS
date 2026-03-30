@@ -54,3 +54,4 @@ void ExcludedTimeWindowsFilterWidget::update()
 
     tw_widget_->refreshList();
 }
+

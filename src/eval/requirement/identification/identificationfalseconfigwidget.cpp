@@ -116,3 +116,4 @@ IdentificationFalseConfig& IdentificationFalseConfigWidget::config()
     return *config;
 }
 }
+

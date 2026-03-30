@@ -569,3 +569,4 @@ void ViewPointsTableModel::setStatus (const QModelIndex& row_index, const std::s
     //    emit dataChanged(index, index, {Qt::UserRole});
 }
 
+

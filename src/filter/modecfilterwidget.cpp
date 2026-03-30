@@ -127,3 +127,4 @@ void ModeCFilterWidget::nullWantedChangedSlot()
 
     filter_.nullWanted(wanted);
 }
+

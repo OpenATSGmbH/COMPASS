@@ -19,7 +19,7 @@
 
 #include "probabilitybase.h"
 #include "dbcontent/target/targetreportdefs.h"
-#include "dbcontent/target/targetposition.h"
+#include "targetposition.h"
 
 #include <string>
 

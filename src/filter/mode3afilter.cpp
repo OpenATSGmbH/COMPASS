@@ -43,21 +43,21 @@ Mode3AFilter::~Mode3AFilter() {}
 
 bool Mode3AFilter::filters(const std::string& dbcont_name)
 {
-    return variableResolver().metaCanGetVariable(dbcont_name, DBContent::meta_var_m3a_);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_m3a_);
 }
 
 std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
         return "";
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_m3a_);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
         if (!first)
         {
@@ -156,10 +156,10 @@ std::vector<unsigned int> Mode3AFilter::filterBuffer(const std::string& dbconten
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
         return to_be_removed;
 
-    string var_name = variableResolver().metaGetVariableName(dbcontent_name, DBContent::meta_var_m3a_);
+    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
     traced_assert(buffer->has<unsigned int> (var_name));
 

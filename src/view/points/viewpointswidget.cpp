@@ -843,3 +843,4 @@ std::vector<unsigned int> ViewPointsWidget::viewedViewPoints()
     return data;
 }
 
+

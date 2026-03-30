@@ -110,3 +110,4 @@ ExtraDataConfig& ExtraDataConfigWidget::config()
 }
 
 }
+

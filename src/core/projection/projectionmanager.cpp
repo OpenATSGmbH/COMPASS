@@ -20,8 +20,7 @@
 #include "logger.h"
 #include "projectionmanagerwidget.h"
 #include "rs2gprojection.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/dbcontent.h"
+#include "idbvariableresolver.h"
 #include "datasourcemanager.h"
 #include "fftmanager.h"
 #include "compass.h"
@@ -172,7 +171,7 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     // do radar position projection
 
     DataSourceManager& ds_man = compass_.dataSourceManager();
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    auto& var_resolver = varResolver();
     FFTManager& fft_man = compass_.fftManager();
 
     unsigned int ds_id;
@@ -199,19 +198,19 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     unsigned int buffer_size = buffer->size();
     traced_assert(buffer_size);
 
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_radar_altitude_));
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(var_resolver.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_range_));
+    traced_assert(var_resolver.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_azimuth_));
+    traced_assert(var_resolver.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_altitude_));
+    traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
-    datasource_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name();
-    range_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::var_radar_range_).name();
-    azimuth_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::var_radar_azimuth_).name();
-    altitude_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::var_radar_altitude_).name();
-    latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
-    longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
+    datasource_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+    range_var_name = var_resolver.getVariableName(dbcontent_name, dbcontent_vars::var_radar_range_);
+    azimuth_var_name = var_resolver.getVariableName(dbcontent_name, dbcontent_vars::var_radar_azimuth_);
+    altitude_var_name = var_resolver.getVariableName(dbcontent_name, dbcontent_vars::var_radar_altitude_);
+    latitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+    longitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_longitude_);
 
     traced_assert(buffer->has<unsigned int>(datasource_var_name));
     traced_assert(buffer->has<double>(range_var_name));
@@ -232,18 +231,18 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     // optional data for fft check
     NullableVector<unsigned int>* acad_vec {nullptr};
 
-    if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+    if (var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
     {
-        acad_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_).name();
+        acad_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acad_);
         traced_assert(buffer->has<unsigned int>(acad_var_name));
 
         acad_vec = &buffer->get<unsigned int>(acad_var_name);
     }
 
     NullableVector<unsigned int>* mode_a_code_vec {nullptr};
-    if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+    if (var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
     {
-        mode_a_code_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_).name();
+        mode_a_code_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_m3a_);
         traced_assert(buffer->has<unsigned int>(mode_a_code_var_name));
 
         mode_a_code_vec = &buffer->get<unsigned int>(mode_a_code_var_name);
@@ -426,7 +425,7 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
     // do radar position projection
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    auto& var_resolver = varResolver();
 
     unsigned int ds_id;
     double x_m;
@@ -440,17 +439,17 @@ unsigned int ProjectionManager::doXYPositionCalculations (
     unsigned int buffer_size = buffer->size();
     traced_assert(buffer_size);
 
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_x_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_y_));
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(var_resolver.canGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_));
+    traced_assert(var_resolver.canGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_));
+    traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
-    datasource_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name();
-    x_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::meta_var_x_).name();
-    y_var_name = dbcont_man.getVariable(dbcontent_name, DBContent::meta_var_y_).name();
-    latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
-    longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
+    datasource_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+    x_var_name = var_resolver.getVariableName(dbcontent_name, dbcontent_vars::meta_var_x_);
+    y_var_name = var_resolver.getVariableName(dbcontent_name, dbcontent_vars::meta_var_y_);
+    latitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+    longitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_longitude_);
 
     traced_assert(buffer->has<unsigned int>(datasource_var_name));
 
@@ -560,7 +559,7 @@ unsigned int ProjectionManager::doRadarPlotPositionCalculations (
 {
     unsigned int transformation_errors {0};
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    auto& var_resolver = varResolver();
     string dbcontent_name;
 
     string latitude_var_name;
@@ -575,11 +574,11 @@ unsigned int ProjectionManager::doRadarPlotPositionCalculations (
 
         shared_ptr<Buffer> buffer = buf_it.second;
 
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+        traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+        traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
-        latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
-        longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
+        latitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+        longitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_longitude_);
 
         if (!buffer->has<double>(latitude_var_name))
             buffer->addProperty(latitude_var_name, PropertyDataType::DOUBLE);
@@ -601,7 +600,7 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 {
     unsigned int transformation_errors {0};
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    auto& var_resolver = varResolver();
     string dbcontent_name;
 
     string latitude_var_name;
@@ -618,11 +617,11 @@ unsigned int ProjectionManager::doXYPositionCalculations (
 
         shared_ptr<Buffer> buffer = buf_it.second;
 
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+        traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+        traced_assert(var_resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
-        latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
-        longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
+        latitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+        longitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_longitude_);
 
         if (!buffer->has<double>(latitude_var_name))
             buffer->addProperty(latitude_var_name, PropertyDataType::DOUBLE);
@@ -652,7 +651,7 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
     unsigned int transformation_errors {0};
     std::map<std::string, std::shared_ptr<Buffer>> update_buffers;
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    auto& var_resolver = varResolver();
     string dbcontent_name;
 
     string latitude_var_name;
@@ -668,9 +667,9 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
         shared_ptr<Buffer> read_buffer = buf_it.second;
         unsigned int read_size = read_buffer->size();
 
-        latitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name();
-        longitude_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name();
-        rec_num_var_name = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_).name();
+        latitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+        longitude_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_longitude_);
+        rec_num_var_name = var_resolver.metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_rec_num_);
 
         PropertyList update_buffer_list;
 

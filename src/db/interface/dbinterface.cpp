@@ -35,7 +35,7 @@
 #include "sector.h"
 #include "sectorlayer.h"
 #include "source/dbdatasource.h"
-#include "fft/dbfft.h"
+#include "dbfft.h"
 
 #include "task/taskmanager.h"
 #include "task/result/taskresult.h"
@@ -667,12 +667,31 @@ bool DBInterface::logVerbose() const
     return log_verbose_;
 }
 
+Result DBInterface::validateSQL(const std::string& sql)
+{
+    traced_assert(ready());
+
+    return db_instance_->defaultConnection().execute("EXPLAIN " + sql);
+}
+
+Result DBInterface::validateFilter(const std::string& table_name, const std::string& where_clause)
+{
+    return validateSQL("SELECT * FROM " + table_name + " WHERE " + where_clause);
+}
+
 /**
  * !Protect by mutex when calling!
  */
 Result DBInterface::execute(const std::string& sql)
 {
     traced_assert(ready());
+
+    auto val_res = validateSQL(sql);
+    if (!val_res.ok())
+    {
+        logerr << "validateSQL failed '" << sql << "': " << val_res.error();
+        throw std::runtime_error("validateSQL failed '" + sql + "': " + val_res.error());
+    }
 
     auto res = db_instance_->defaultConnection().execute(sql);
 
@@ -691,6 +710,13 @@ Result DBInterface::execute(const std::string& sql)
 std::shared_ptr<DBResult> DBInterface::execute(const DBCommand& cmd)
 {
     traced_assert(ready());
+
+    auto val_res = validateSQL(cmd.get());
+    if (!val_res.ok())
+    {
+        logerr << "validateSQL failed '" << cmd.get() << "': " << val_res.error();
+        throw std::runtime_error("validateSQL failed '" + cmd.get() + "': " + val_res.error());
+    }
 
     auto res = db_instance_->defaultConnection().execute(cmd);
 
@@ -805,12 +831,12 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
     traced_assert(ready());
     traced_assert(object.existsInDB());
 
-    traced_assert(dbcontent_man_.existsMetaVariable(DBContent::meta_var_rec_num_.name()));
+    traced_assert(dbcontent_man_.existsMetaVariable(dbcontent_vars::meta_var_rec_num_.name()));
     traced_assert(dbcontent_man_.metaVariable(
-                DBContent::meta_var_rec_num_.name()).existsIn(object.name()));
+                dbcontent_vars::meta_var_rec_num_.name()).existsIn(object.name()));
 
     Variable& rec_num_var = dbcontent_man_.metaVariable(
-                DBContent::meta_var_rec_num_.name()).getFor(object.name());
+                dbcontent_vars::meta_var_rec_num_.name()).getFor(object.name());
 
     traced_assert(object.hasVariable(rec_num_var.name()));
 
@@ -853,12 +879,12 @@ unsigned int DBInterface::getMaxRefTrackTrackNum()
     if(!reftraj_content.existsInDB())
         return 0;
 
-    traced_assert(dbcontent_man_.existsMetaVariable(DBContent::meta_var_track_num_.name()));
+    traced_assert(dbcontent_man_.existsMetaVariable(dbcontent_vars::meta_var_track_num_.name()));
     traced_assert(dbcontent_man_.metaVariable(
-                DBContent::meta_var_track_num_.name()).existsIn("RefTraj"));
+                dbcontent_vars::meta_var_track_num_.name()).existsIn("RefTraj"));
 
     Variable& track_num_var = dbcontent_man_.metaVariable(
-                DBContent::meta_var_track_num_.name()).getFor("RefTraj");
+                dbcontent_vars::meta_var_track_num_.name()).getFor("RefTraj");
 
     traced_assert(reftraj_content.hasVariable(track_num_var.name()));
 
@@ -2611,9 +2637,9 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
                                       std::shared_ptr<Buffer> buffer)
 {
     // create record numbers & and store new max rec num
-    traced_assert(dbcontent.hasVariable(DBContent::meta_var_rec_num_.name()));
+    traced_assert(dbcontent.hasVariable(dbcontent_vars::meta_var_rec_num_.name()));
 
-    Variable& rec_num_var = dbcontent.variable(DBContent::meta_var_rec_num_.name());
+    Variable& rec_num_var = dbcontent.variable(dbcontent_vars::meta_var_rec_num_.name());
     traced_assert(rec_num_var.dataType() == PropertyDataType::ULONGINT);
 
     string rec_num_col_str = rec_num_var.dbColumnName();
@@ -3188,3 +3214,4 @@ std::string DBInterface::dbInfo()
 
     return db_instance_->dbInfo();
 }
+

@@ -46,21 +46,21 @@ bool ACIDFilter::filters(const std::string& dbcont_name)
     if (dbcont_name == "CAT062")
         return true; // acid and callsign fpl
     else
-        return variableResolver().metaCanGetVariable(dbcont_name, DBContent::meta_var_acid_);
+        return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_);
 }
 
 std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
         return "";
 
     stringstream ss;
 
     if (active_  && (values_.size() || null_wanted_))
     {
-        string acid_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_acid_);
+        string acid_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
         string cs_fpl_col; // only set in cat062
         bool has_cs_fpl = false;
@@ -68,10 +68,10 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
         if (dbcontent_name == "CAT062")
         {
             traced_assert(variableResolver().canGetVariable(
-                        dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+                        dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
 
             cs_fpl_col = variableResolver().getVariableDBColumn(
-                        dbcontent_name, DBContent::var_cat062_callsign_fpl_);
+                        dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
             has_cs_fpl = true;
         }
 
@@ -153,6 +153,8 @@ void ACIDFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(filter.contains("Aircraft Identification Values"));
     values_str_ = filter.at("Aircraft Identification Values");
 
+    updateValuesFromStr(values_str_);
+
     if (widget())
         widget()->update();
 }
@@ -179,10 +181,10 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
         return to_be_removed;
 
-    string acid_var_name = variableResolver().metaGetVariableName(dbcontent_name, DBContent::meta_var_acid_);
+    string acid_var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
     traced_assert(buffer->has<string> (acid_var_name));
 
@@ -193,10 +195,10 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
     if (dbcontent_name == "CAT062")
     {
         traced_assert(variableResolver().canGetVariable(
-                    dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
 
         string cs_fpl_var_name = variableResolver().getVariableName(
-                    dbcontent_name, DBContent::var_cat062_callsign_fpl_);
+                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
 
         traced_assert(buffer->has<string> (cs_fpl_var_name));
 

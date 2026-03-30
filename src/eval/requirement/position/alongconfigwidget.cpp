@@ -68,3 +68,4 @@ PositionAlongConfig& PositionAlongConfigWidget::config()
 }
 
 }
+

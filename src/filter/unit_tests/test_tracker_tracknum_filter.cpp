@@ -117,3 +117,51 @@ TEST_CASE("TrackerTrackNumberFilter pushed data sources", "[filter][trackertrack
     CHECK(filter.dataSourceName(20) == "Other");
     CHECK_FALSE(filter.hasDataSourceName(99));
 }
+
+TEST_CASE("TrackerTrackNumberFilter viewpoint save/load round-trip", "[filter][trackertracknum][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("TrackerTrackNumberFilter", "TrackerTrackNumberFilter0", {
+        {"active", true},
+        {"tracker_track_nums", nlohmann::json::object()}
+    });
+
+    TrackerTrackNumberFilter filter(cfg, nullptr, mock);
+
+    // Set up tracker data sources (required for save to include values)
+    std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
+    tracker_lines[10][0] = 5;
+    tracker_lines[10][1] = 3;
+    std::map<unsigned int, std::string> ds_names;
+    ds_names[10] = "ARTAS";
+    filter.updateTrackerDataSources(tracker_lines, ds_names);
+
+    filter.setTrackerTrackNum(10, 0, "4171,4281");
+    filter.setTrackerTrackNum(10, 1, "4197");
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Tracker Track Number"));
+    CHECK(vp_filters["Tracker Track Number"].contains("Values"));
+    const auto& vals = vp_filters["Tracker Track Number"]["Values"];
+    CHECK(vals.contains("10"));
+    CHECK(vals["10"]["0"] == "4171,4281");
+    CHECK(vals["10"]["1"] == "4197");
+
+    // Load into fresh filter with same tracker data sources
+    auto cfg2 = makeFilterConfig("TrackerTrackNumberFilter", "TrackerTrackNumberFilter0", {
+        {"active", true},
+        {"tracker_track_nums", nlohmann::json::object()}
+    });
+
+    TrackerTrackNumberFilter filter2(cfg2, nullptr, mock);
+    filter2.updateTrackerDataSources(tracker_lines, ds_names);
+    filter2.loadViewPointConditions(vp_filters);
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

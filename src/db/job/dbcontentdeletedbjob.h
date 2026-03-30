@@ -18,6 +18,7 @@
 #pragma once
 
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include "json.hpp"
 #include "job.h"
 
 class DBInterface;
@@ -40,6 +41,9 @@ public:
     bool useSpecificDBContent() const;
     bool useBeforeTimestamp() const;
 
+    void setDeleteInfo(const nlohmann::json& delete_info);
+    const nlohmann::json& deleteInfo() const;
+
 protected:
     virtual void run_impl();
 
@@ -59,4 +63,6 @@ protected:
     unsigned int specific_line_id_ {0};
 
     bool cleanup_db_ = false;
+
+    nlohmann::json delete_info_;
 };

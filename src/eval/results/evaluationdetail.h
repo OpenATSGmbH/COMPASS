@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "dbcontent/target/targetposition.h"
+#include "targetposition.h"
 #include "timeconv.h"
 #include "traced_assert.h"
 

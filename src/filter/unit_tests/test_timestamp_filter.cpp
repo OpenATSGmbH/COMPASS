@@ -138,3 +138,41 @@ TEST_CASE("TimestampFilter reset with ptime values", "[filter][timestamp]")
     CHECK(filter.minValue() == new_min);
     CHECK(filter.maxValue() == new_max);
 }
+
+TEST_CASE("TimestampFilter viewpoint save/load round-trip", "[filter][timestamp][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("TimestampFilter", "TimestampFilter0", {
+        {"active", true},
+        {"min_value", "2026-01-05 09:59:58.752"},
+        {"max_value", "2026-01-05 12:05:19.968"}
+    });
+
+    TimestampFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("Timestamp"));
+    CHECK(vp_filters["Timestamp"]["Timestamp Minimum"] == "2026-01-05 09:59:58.752");
+    CHECK(vp_filters["Timestamp"]["Timestamp Maximum"] == "2026-01-05 12:05:19.968");
+
+    // Load into fresh filter with different values
+    auto cfg2 = makeFilterConfig("TimestampFilter", "TimestampFilter0", {
+        {"active", true},
+        {"min_value", "2020-01-01 00:00:00.000"},
+        {"max_value", "2020-01-01 23:59:59.999"}
+    });
+
+    TimestampFilter filter2(cfg2, nullptr, mock);
+    filter2.loadViewPointConditions(vp_filters);
+
+    CHECK(filter2.minValue() == Utils::Time::fromString("2026-01-05 09:59:58.752"));
+    CHECK(filter2.maxValue() == Utils::Time::fromString("2026-01-05 12:05:19.968"));
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
+}

@@ -1,1 +1,0 @@
-cd build && ctest --verbose

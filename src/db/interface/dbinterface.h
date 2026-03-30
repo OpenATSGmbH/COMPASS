@@ -223,6 +223,9 @@ public:
     db::PerformanceMetrics stopPerformanceMetrics() const;
     bool hasActivePerformanceMetrics() const;
 
+    Result validateSQL(const std::string& sql);
+    Result validateFilter(const std::string& table_name, const std::string& where_clause);
+
     std::string dbInfo();
 
     //std::map<unsigned int, std::tuple<std::set<unsigned int>, std::tuple<bool, unsigned int, unsigned int>,

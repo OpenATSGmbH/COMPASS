@@ -22,6 +22,7 @@
 #include <QApplication>
 #include <QMetaObject>
 #include <QThread>
+#include "json.hpp"
 
 namespace msghandler
 {

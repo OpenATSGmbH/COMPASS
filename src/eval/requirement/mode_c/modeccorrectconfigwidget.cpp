@@ -70,3 +70,4 @@ ModeCCorrectConfig& ModeCCorrectConfigWidget::config()
 }
 
 }
+

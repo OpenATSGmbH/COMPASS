@@ -91,3 +91,4 @@ void ViewPointsImportTaskWidget::updateText ()
     }
 }
 
+

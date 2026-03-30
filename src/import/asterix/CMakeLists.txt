@@ -1,9 +1,9 @@
 
-include_directories (
+target_include_directories(compass_task PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass_import
+target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/asterixconfigwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixoverridewidget.h"
@@ -27,7 +27,7 @@ target_sources(compass_import
         "${CMAKE_CURRENT_LIST_DIR}/asterixpostprocess.cpp"
 )
 
-target_sources(compass_import
+target_sources(compass_task
     PUBLIC
     PRIVATE
     )

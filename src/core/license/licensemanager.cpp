@@ -356,3 +356,4 @@ size_t LicenseManager::numLicenses() const
 {
     return licenses_.size();
 }
+

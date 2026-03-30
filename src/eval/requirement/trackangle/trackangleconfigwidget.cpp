@@ -142,3 +142,4 @@ void TrackAngleConfigWidget::updateActive()
 
 
 }
+

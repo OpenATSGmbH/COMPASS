@@ -79,7 +79,7 @@ TEST_CASE("UTNFilter getConditionString", "[filter][utn]")
     {
         // Create a mock without UTN for a specific dbcontent
         MockVariableResolver mock2;
-        mock2.addMetaVariable(DBContent::meta_var_timestamp_,
+        mock2.addMetaVariable(dbcontent_vars::meta_var_timestamp_,
             {{"NoUTN", "timestamp"}});
 
         auto cfg2 = makeFilterConfig("UTNFilter", "UTNFilter0", {
@@ -133,4 +133,39 @@ TEST_CASE("UTNFilter multiple UTNs", "[filter][utn]")
     CHECK(sql.find("1") != std::string::npos);
     CHECK(sql.find("5") != std::string::npos);
     CHECK(sql.find("10") != std::string::npos);
+}
+
+TEST_CASE("UTNFilter viewpoint save/load round-trip", "[filter][utn][viewpoint]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("UTNFilter", "UTNFilter0", {
+        {"active", true},
+        {"utns_str", "1,5,10"}
+    });
+
+    UTNFilter filter(cfg, nullptr, mock);
+
+    // Save
+    nlohmann::json vp_filters;
+    filter.saveViewPointConditions(vp_filters);
+
+    CHECK(vp_filters.contains("UTNs"));
+    CHECK(vp_filters["UTNs"]["utns"] == "1,5,10");
+
+    // Load into fresh filter with different value
+    auto cfg2 = makeFilterConfig("UTNFilter", "UTNFilter0", {
+        {"active", true},
+        {"utns_str", "99"}
+    });
+
+    UTNFilter filter2(cfg2, nullptr, mock);
+    CHECK(filter2.utns() == "99");
+
+    filter2.loadViewPointConditions(vp_filters);
+    CHECK(filter2.utns() == "1,5,10");
+
+    // Re-save and compare
+    nlohmann::json vp_filters2;
+    filter2.saveViewPointConditions(vp_filters2);
+    CHECK(vp_filters == vp_filters2);
 }

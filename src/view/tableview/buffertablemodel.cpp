@@ -193,7 +193,7 @@ void BufferTableModel::updateRows()
     DBContentManager& dbcont_man = view_.compass().dbContentManager();
 
     if (view_.settings().ignore_non_target_reports_
-        && !dbcont_man.metaCanGetVariable(buffer_->dbContentName(), DBContent::meta_var_latitude_))
+        && !dbcont_man.metaCanGetVariable(buffer_->dbContentName(), dbcontent_vars::meta_var_latitude_))
     {
         return;
     }
@@ -208,8 +208,8 @@ void BufferTableModel::updateRows()
     unsigned int buffer_index{0};
     unsigned int buffer_size = buffer_->size();
 
-    traced_assert(buffer_->has<bool>(DBContent::selected_var.name()));
-    NullableVector<bool>& selected_vec = buffer_->get<bool>(DBContent::selected_var.name());
+    traced_assert(buffer_->has<bool>(dbcontent_vars::selected_var_.name()));
+    NullableVector<bool>& selected_vec = buffer_->get<bool>(dbcontent_vars::selected_var_.name());
 
     while (buffer_index < buffer_size)
     {
@@ -260,8 +260,8 @@ void BufferTableModel::sortRowIndexes()
 
     if (col == 0)  // checkbox column
     {
-        if (buffer_->has<bool>(DBContent::selected_var.name()))
-            buffer_->get<bool>(DBContent::selected_var.name()).sortIndices(row_indexes_, ascending);
+        if (buffer_->has<bool>(dbcontent_vars::selected_var_.name()))
+            buffer_->get<bool>(dbcontent_vars::selected_var_.name()).sortIndices(row_indexes_, ascending);
         return;
     }
 
@@ -294,3 +294,4 @@ void BufferTableModel::saveAsCSV(const std::string& file_name)
 
     view_.compass().jobManager().addBlockingJob(export_job_);
 }
+

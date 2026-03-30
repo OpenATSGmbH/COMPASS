@@ -56,3 +56,4 @@ void ACIDFilterWidget::valueEditedSlot(const QString& value)
 
     filter_.valuesString(value_str);
 }
+

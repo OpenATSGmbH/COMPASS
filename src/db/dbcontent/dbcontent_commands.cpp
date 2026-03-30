@@ -21,7 +21,7 @@
 #include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
-#include "viewmanager.h"
+#include "view/viewmanager.h"
 #include "compass.h"
 #include "metavariable.h"
 
@@ -101,7 +101,7 @@ bool RTCommandGetData::run_impl()
     if (utn_.has_value())
     {
         dbContent::Variable& var = compass_->dbContentManager().metaVariable(
-            DBContent::meta_var_utn_.name()).getFor(dbcontent_name_);
+            dbcontent_vars::meta_var_utn_.name()).getFor(dbcontent_name_);
 
         string custom_clause = var.dbColumnName() + " IN (" + std::to_string(utn_.value()) + ")";
 
@@ -169,16 +169,16 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
     DBContent& db_content = dbcont_man.dbContent(dbcontent_name_);
 
     // ds id
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_ds_id_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, dbcontent_vars::meta_var_ds_id_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, dbcontent_vars::meta_var_ds_id_));
 
     // line id
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_line_id_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, DBContent::meta_var_line_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, dbcontent_vars::meta_var_line_id_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, dbcontent_vars::meta_var_line_id_));
 
     // timestamp
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, DBContent::meta_var_timestamp_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, DBContent::meta_var_timestamp_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, dbcontent_vars::meta_var_timestamp_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name_, dbcontent_vars::meta_var_timestamp_));
 
     for (auto& var_it : variables_)
     {

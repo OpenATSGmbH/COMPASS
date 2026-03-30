@@ -295,8 +295,8 @@ void GridViewConfigWidget::updateExport()
 
         auto& dbc_man = view_->compass().dbContentManager();
 
-        const auto& metavar_lon = dbc_man.metaVariable(DBContent::meta_var_longitude_.name());
-        const auto& metavar_lat = dbc_man.metaVariable(DBContent::meta_var_latitude_.name());
+        const auto& metavar_lon = dbc_man.metaVariable(dbcontent_vars::meta_var_longitude_.name());
+        const auto& metavar_lat = dbc_man.metaVariable(dbcontent_vars::meta_var_latitude_.name());
 
         bool has_lon = var_sel_x->hasMetaVariable() && &var_sel_x->selectedMetaVariable() == &metavar_lon;
         bool has_lat = var_sel_y->hasMetaVariable() && &var_sel_y->selectedMetaVariable() == &metavar_lat;

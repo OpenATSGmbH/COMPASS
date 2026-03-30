@@ -61,8 +61,8 @@ ScatterPlotView::ScatterPlotView(nlohmann::json& config, ViewContainer* parent)
                                                         PropertyDataType::DOUBLE,
                                                         PropertyDataType::TIMESTAMP };
 
-    addVariable("data_var_x", "X", "x", META_OBJECT_NAME, DBContent::meta_var_longitude_.name(), true, true, false, valid_types);
-    addVariable("data_var_y", "Y", "y", META_OBJECT_NAME, DBContent::meta_var_latitude_.name() , true, true, false, valid_types);
+    addVariable("data_var_x", "X", "x", META_OBJECT_NAME, dbcontent_vars::meta_var_longitude_.name(), true, true, false, valid_types);
+    addVariable("data_var_y", "Y", "y", META_OBJECT_NAME, dbcontent_vars::meta_var_latitude_.name() , true, true, false, valid_types);
 
     // create sub done in init
 }
@@ -177,11 +177,11 @@ VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
     {
         DBContentManager& dbcont_man = compass().dbContentManager();
 
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
 
-        set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-        set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+        set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+        set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
     }
 
     return set;
@@ -267,3 +267,4 @@ std::set<std::string> ScatterPlotView::acceptedAnnotationFeatureTypes() const
 
     return types;
 }
+

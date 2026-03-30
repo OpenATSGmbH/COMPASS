@@ -106,10 +106,10 @@ void AllBufferCSVExportJob::run_impl()
 
             traced_assert(buffer_index < buffer->size());
 
-            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
+            traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+            NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
-            traced_assert(buffer->has<unsigned long>(DBContent::meta_var_rec_num_.name()));
+            traced_assert(buffer->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
 
             // check if skipped because not selected
             if (only_selected_ &&

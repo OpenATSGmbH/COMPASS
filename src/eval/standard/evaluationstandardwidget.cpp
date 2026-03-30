@@ -454,3 +454,4 @@ void EvaluationStandardWidget::refMinAccEditSlot(QString value)
     else
         loginf << "invalid value";
 }
+

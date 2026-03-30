@@ -50,15 +50,15 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        string x_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_x_stddev_);
-        string y_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, DBContent::meta_var_y_stddev_);
+        string x_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
+        string y_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 
         if (!first)
         {
@@ -106,8 +106,12 @@ void RefTrajAccuracyFilter::loadViewPointConditions (const nlohmann::json& filte
     const json& filter = filters.at(name_);
 
     traced_assert(filter.contains("Accuracy Minimum"));
-    string value = filter.at("Accuracy Minimum");
-    min_value_ = std::stod(value);
+    const auto& val = filter.at("Accuracy Minimum");
+
+    if (val.is_number())
+        min_value_ = val.get<float>();
+    else
+        min_value_ = std::stod(val.get<string>());
 
     if (widget())
         widget()->update();

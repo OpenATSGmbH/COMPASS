@@ -160,6 +160,11 @@ class DataSourceManager : public QObject, public Configurable, public IDataSourc
     void setLoadedCounts(std::map<unsigned int, std::map<std::string,
                                                          std::map<unsigned int, unsigned int>>> loaded_counts); // ds id->dbcont->line->cnt
     void clearInsertedCounts(const std::string& dbcontent_name); // after delete all dbcontent
+    void clearInsertedCounts(unsigned int ds_id,
+                             const std::string& dbcontent_name,
+                             const std::vector<unsigned int>& line_ids = {}); // specific ds/lines, removes ds if empty
+
+    void applyDeleteInfo(const nlohmann::json& delete_info); // adjust counts + remove empty ds + save + signal
 
 //    bool loadWidgetShowCounts() const;
 //    void loadWidgetShowCounts(bool value);

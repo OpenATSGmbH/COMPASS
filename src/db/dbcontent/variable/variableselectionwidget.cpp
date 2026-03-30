@@ -457,3 +457,4 @@ QWidget* VariableSelectionWidget::uiRerouteToNative() const
 }
 
 }
+

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "fft/fftbase.h"
+#include "fftbase.h"
 #include "configurable.h"
 
 class FFTManager;

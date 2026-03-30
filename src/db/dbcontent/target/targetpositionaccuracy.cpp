@@ -107,13 +107,13 @@ boost::optional<TargetPositionAccuracy> getADSBPositionAccuracy(
     boost::optional<TargetPositionAccuracy> ret;
 
     NullableVector<unsigned char>& mops_version_vec =
-            accessor->getVar<unsigned char>(dbcontent_name, DBContent::var_cat021_mops_version_);
+            accessor->getVar<unsigned char>(dbcontent_name, dbcontent_vars::var_cat021_mops_version_);
 
     NullableVector<unsigned char>& nac_p_vec =
-            accessor->getVar<unsigned char>(dbcontent_name, DBContent::var_cat021_nacp_);
+            accessor->getVar<unsigned char>(dbcontent_name, dbcontent_vars::var_cat021_nacp_);
 
     NullableVector<unsigned char>& nucp_nic_vec =
-            accessor->getVar<unsigned char>(dbcontent_name, DBContent::var_cat021_nucp_nic_);
+            accessor->getVar<unsigned char>(dbcontent_name, dbcontent_vars::var_cat021_nucp_nic_);
 
     if (mops_version_vec.isNull(index)
             || (nac_p_vec.isNull(index) && nucp_nic_vec.isNull(index)))
@@ -169,13 +169,13 @@ boost::optional<TargetPositionAccuracy> getXYPositionAccuracy(
     double x_stddev, y_stddev, xy_cov {0};
 
     NullableVector<double>& pos_std_dev_x_m =
-            accessor->getMetaVar<double>(dbcontent_name, DBContent::meta_var_x_stddev_);
+            accessor->getMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
 
     NullableVector<double>& pos_std_dev_y_m =
-            accessor->getMetaVar<double>(dbcontent_name, DBContent::meta_var_y_stddev_);
+            accessor->getMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 
     NullableVector<double>& pos_std_dev_xy_corr_coeff =
-            accessor->getMetaVar<double>(dbcontent_name, DBContent::meta_var_xy_cov_);
+            accessor->getMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_xy_cov_);
 
     if (pos_std_dev_x_m.isNull(index) || pos_std_dev_y_m.isNull(index))
         return ret;
