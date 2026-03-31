@@ -784,7 +784,7 @@ void DataSourceManager::configurationDialogDoneSlot()
     emit dataSourcesChangedSignal();
 }
 
-bool DataSourceManager::hasConfigDataSource (unsigned int ds_id)
+bool DataSourceManager::hasConfigDataSource (unsigned int ds_id) const
 {
     return find_if(config_data_sources_.begin(), config_data_sources_.end(),
                    [ds_id] (const std::unique_ptr<dbContent::ConfigurationDataSource>& s)
@@ -826,6 +826,15 @@ void DataSourceManager::deleteConfigDataSource(unsigned int ds_id)
 }
 
 dbContent::ConfigurationDataSource& DataSourceManager::configDataSource (unsigned int ds_id)
+{
+    traced_assert(hasConfigDataSource(ds_id));
+
+    return *find_if(config_data_sources_.begin(), config_data_sources_.end(),
+                    [ds_id] (const std::unique_ptr<dbContent::ConfigurationDataSource>& s)
+    { return s->id() == ds_id; } )->get();
+}
+
+const dbContent::ConfigurationDataSource& DataSourceManager::configDataSource (unsigned int ds_id) const
 {
     traced_assert(hasConfigDataSource(ds_id));
 
@@ -940,14 +949,14 @@ bool DataSourceManager::canAddNewDataSourceFromConfig (unsigned int ds_id)
     return hasConfigDataSource(ds_id);
 }
 
-bool DataSourceManager::hasDBDataSource(unsigned int ds_id)
+bool DataSourceManager::hasDBDataSource(unsigned int ds_id) const
 {
     return find_if(db_data_sources_.begin(), db_data_sources_.end(),
                    [ds_id] (const std::unique_ptr<dbContent::DBDataSource>& s)
     { return s->id() == ds_id; } ) != db_data_sources_.end();
 }
 
-bool DataSourceManager::hasDBDataSource(const std::string& ds_name)
+bool DataSourceManager::hasDBDataSource(const std::string& ds_name) const
 {
     return find_if(db_data_sources_.begin(), db_data_sources_.end(),
                    [ds_name] (const std::unique_ptr<dbContent::DBDataSource>& s)
@@ -1017,6 +1026,15 @@ void DataSourceManager::addNewDataSource (unsigned int ds_id, bool emit_signal)
 }
 
 dbContent::DBDataSource& DataSourceManager::dbDataSource(unsigned int ds_id)
+{
+    traced_assert(hasDBDataSource(ds_id));
+
+    return *find_if(db_data_sources_.begin(), db_data_sources_.end(),
+                    [ds_id] (const std::unique_ptr<dbContent::DBDataSource>& s)
+    { return s->id() == ds_id; } )->get();
+}
+
+const dbContent::DBDataSource& DataSourceManager::dbDataSource(unsigned int ds_id) const
 {
     traced_assert(hasDBDataSource(ds_id));
 

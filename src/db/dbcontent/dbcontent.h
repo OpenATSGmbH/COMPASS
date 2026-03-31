@@ -278,7 +278,7 @@ public:
         name_ = name;
     }
 
-    unsigned int id();
+    unsigned int id() const;
 
     const std::string& info() const { return info_; }
     void info(const std::string& info) { info_ = info; }

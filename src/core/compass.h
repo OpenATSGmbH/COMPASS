@@ -97,6 +97,23 @@ public:
     RTCommandManager& rtCommandManager();
     ConfigurationManager& configManager() { return config_manager_; }
 
+    const DBInterface& dbInterface() const;
+    const DBContentManager& dbContentManager() const;
+    const DataSourceManager& dataSourceManager() const;
+    const FilterManager& filterManager() const;
+    const TaskManager& taskManager() const;
+    const ViewManager& viewManager() const;
+    const SimpleConfig& config() const;
+    const EvaluationManager& evaluationManager() const;
+    const rtcommand::RTCommandRunner& rtCmdRunner() const;
+    const FFTManager& fftManager() const;
+    const LicenseManager& licenseManager() const;
+    const JobManager& jobManager() const;
+    const UnitManager& unitManager() const;
+    const ProjectionManager& projectionManager() const;
+    const RTCommandManager& rtCommandManager() const;
+    const ConfigurationManager& configManager() const { return config_manager_; }
+
     void init();
     void shutdown();
 

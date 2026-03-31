@@ -40,6 +40,7 @@
 #include "dbcontent_commands.h"
 #include "viewpoint.h"
 #include "dbcontentinsertdbjob.h"
+#include "dbcontentdatastore.h"
 #include "timeconv.h"
 
 #include "util/tbbhack.h"
@@ -82,6 +83,8 @@ DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     traced_assert(!target_model_);
     target_model_.reset(new dbContent::TargetModel(*this));
     traced_assert(target_model_);
+
+    data_store_.reset(new DBContentDataStore(*this));
 }
 
 /**
@@ -143,7 +146,7 @@ void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
 
 /**
  */
-bool DBContentManager::existsDBContent(const std::string& dbcontent_name)
+bool DBContentManager::existsDBContent(const std::string& dbcontent_name) const
 {
     logdbg << "'" << dbcontent_name << "'";
 
@@ -153,6 +156,17 @@ bool DBContentManager::existsDBContent(const std::string& dbcontent_name)
 /**
  */
 DBContent& DBContentManager::dbContent(const std::string& dbcontent_name)
+{
+    logdbg << "name " << dbcontent_name;
+
+    traced_assert(dbcontent_.find(dbcontent_name) != dbcontent_.end());
+
+    return *dbcontent_.at(dbcontent_name);
+}
+
+/**
+ */
+const DBContent& DBContentManager::dbContent(const std::string& dbcontent_name) const
 {
     logdbg << "name " << dbcontent_name;
 
@@ -203,7 +217,7 @@ bool DBContentManager::hasData()
 
 /**
  */
-unsigned int DBContentManager::getMaxDBContentID()
+unsigned int DBContentManager::getMaxDBContentID() const
 {
     unsigned int ret = 0;
 
@@ -215,20 +229,22 @@ unsigned int DBContentManager::getMaxDBContentID()
 
 /**
  */
-bool DBContentManager::existsDBContentWithId (unsigned int id)
+bool DBContentManager::existsDBContentWithId (unsigned int id) const
 {
     return dbcontent_ids_.count(id);
 }
 
 /**
  */
-const std::string& DBContentManager::dbContentWithId (unsigned int id)
+const std::string& DBContentManager::dbContentWithId (unsigned int id) const
 {
     traced_assert(dbcontent_ids_.count(id));
     return dbcontent_ids_.at(id)->name();
 }
 
-unsigned int DBContentManager::dbContentId(const std::string& dbcont_name)
+/**
+ */
+unsigned int DBContentManager::dbContentId(const std::string& dbcont_name) const
 {
     assert (existsDBContent(dbcont_name));
     return dbContent(dbcont_name).id();
@@ -441,6 +457,7 @@ void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffe
 
     bool something_changed = false;
 
+    std::vector<std::string> changed_dbc_contents;
     for (auto& buf_it : data)
     {
         if (!buf_it.second->size()) // empty buffer
@@ -465,12 +482,16 @@ void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffe
         }
 
         something_changed = true;
+        changed_dbc_contents.push_back(buf_it.first);
     }
 
     if (something_changed)
     {
         updateNumLoadedCounts();
         restoreSelectedRecNums();
+
+        //update all changed dbcontents in data store
+        data_store_->update(changed_dbc_contents);
 
         logdbg << "emitting signal";
 
@@ -734,6 +755,8 @@ bool DBContentManager::loadInProgress() const
 void DBContentManager::clearData()
 {
     loginf;
+
+    data_store_->reset();
 
     data_.clear();
 

@@ -47,31 +47,7 @@ bool DBContentAccessor::add(std::map<std::string, std::shared_ptr<Buffer>> buffe
     bool something_changed = false;
 
     for (auto& buf_it : buffers)
-    {
-        traced_assert(buf_it.second);
-
-        if (!buf_it.second->size()) // empty buffer
-            continue;
-
-        if (buffers_.count(buf_it.first))
-        {
-            logdbg << "adding buffer dbcont " << buf_it.first
-                   << " adding size " << buf_it.second->size() << " current size " << buffers_.at(buf_it.first)->size();
-
-            buffers_.at(buf_it.first)->seizeBuffer(*buf_it.second.get());
-
-            logdbg << "new buffer dbcont " << buf_it.first
-                   << " size " << buffers_.at(buf_it.first)->size();
-        }
-        else
-        {
-            buffers_[buf_it.first] = std::move(buf_it.second);
-
-            logdbg << "created buffer dbcont " << buf_it.first
-                   << " size " << buffers_.at(buf_it.first)->size();
-        }
-        something_changed = true;
-    }
+        something_changed |= add(buf_it.first, buf_it.second, false);
 
     if (something_changed)
         updateDBContentLookup();
@@ -79,6 +55,48 @@ bool DBContentAccessor::add(std::map<std::string, std::shared_ptr<Buffer>> buffe
     loginf << "done";
 
     return something_changed;
+}
+
+bool DBContentAccessor::add(const std::string& dbcontent_name, 
+                            std::shared_ptr<Buffer> buffer,
+                            bool update_lookup)
+{
+    traced_assert(buffer);
+
+    if (!buffer) // empty buffer
+        return false;
+
+    //WARNING: this modifies external data!
+    //!nobody is aware of the changes this code might trigger!
+    //the passed buffers should be unique pointers for this pattern!
+    if (buffers_.count(dbcontent_name))
+    {
+        logdbg << "adding buffer dbcont " << dbcontent_name
+                << " adding size " << buffer->size() << " current size " << buffers_.at(dbcontent_name)->size();
+
+        buffers_.at(dbcontent_name)->seizeBuffer(*buffer.get());
+
+        logdbg << "new buffer dbcont " << dbcontent_name
+                << " size " << buffers_.at(dbcontent_name)->size();
+    }
+    else
+    {
+        buffers_[dbcontent_name] = std::move(buffer);
+
+        logdbg << "created buffer dbcont " << dbcontent_name
+                << " size " << buffers_.at(dbcontent_name)->size();
+    }
+
+    if (update_lookup)
+        updateDBContentLookup(dbcontent_name);
+    
+    return true;
+}
+
+void DBContentAccessor::removeDBContent(const std::string& dbcontent_name)
+{
+    buffers_.erase(dbcontent_name);
+    dbcontent_lookup_.erase(dbcontent_name);
 }
 
 void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime remove_before_time)
@@ -286,6 +304,20 @@ void DBContentAccessor::updateDBContentLookup()
 
 /**
 */
+void DBContentAccessor::updateDBContentLookup(const std::string& dbcontent_name)
+{
+    traced_assert(buffers_.count(dbcontent_name));
+    const auto& buffer = buffers_.at(dbcontent_name);
+
+    dbcontent_lookup_.erase(dbcontent_name);
+
+    auto& lookup = dbcontent_lookup_[dbcontent_name];
+    lookup = std::shared_ptr<DBContentVariableLookup>(new DBContentVariableLookup(dbcontent_name, buffer));
+    lookup->update(dbcont_man_);
+}
+
+/**
+*/
 BufferAccessor DBContentAccessor::bufferAccessor(const std::string& dbcontent_name) const
 {
     traced_assert(has(dbcontent_name));
@@ -298,6 +330,22 @@ TargetReportAccessor DBContentAccessor::targetReportAccessor(const std::string& 
 {
     traced_assert(has(dbcontent_name));
     return TargetReportAccessor(dbcontent_lookup_.at(dbcontent_name));
+}
+
+/**
+*/
+std::shared_ptr<BufferAccessor> DBContentAccessor::createBufferAccessor(const std::string& dbcontent_name) const
+{
+    traced_assert(has(dbcontent_name));
+    return std::make_shared<BufferAccessor>(dbcontent_lookup_.at(dbcontent_name));
+}
+
+/**
+*/
+std::shared_ptr<TargetReportAccessor> DBContentAccessor::createTargetReportAccessor(const std::string& dbcontent_name) const
+{
+    traced_assert(has(dbcontent_name));
+    return std::make_shared<TargetReportAccessor>(dbcontent_lookup_.at(dbcontent_name));
 }
 
 /**

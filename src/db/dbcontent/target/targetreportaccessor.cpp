@@ -68,6 +68,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(DBContent::meta_var_rec_num_, true);
     add(DBContent::meta_var_ds_id_, true);
     add(DBContent::meta_var_line_id_, true);
+    add(DBContent::meta_var_utn_, true);
 
     add(DBContent::meta_var_acad_, true);
     add(DBContent::meta_var_acid_, true);
@@ -130,6 +131,8 @@ void TargetReportAccessor::cacheVectors()
     traced_assert(meta_ds_id_vec_);
     meta_line_id_vec_   = metaVarVector<unsigned int>(DBContent::meta_var_line_id_);
     traced_assert(meta_line_id_vec_);
+
+    meta_utn_vec_       = metaVarVector<unsigned int>(DBContent::meta_var_utn_);
 
     meta_acad_vec_      = metaVarVector<unsigned int>(DBContent::meta_var_acad_);
     meta_acid_vec_      = metaVarVector<std::string>(DBContent::meta_var_acid_);
@@ -210,6 +213,13 @@ unsigned int TargetReportAccessor::dsID(unsigned int index) const
 unsigned int TargetReportAccessor::lineID(unsigned int index) const
 {
     return getNotOptional<unsigned int>(meta_line_id_vec_, index);
+}
+
+/**
+*/
+boost::optional<unsigned int> TargetReportAccessor::utn(unsigned int index) const
+{
+    return getOptional<unsigned int>(meta_utn_vec_, index);
 }
 
 /**

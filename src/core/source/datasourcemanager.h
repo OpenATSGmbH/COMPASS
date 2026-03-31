@@ -91,20 +91,22 @@ class DataSourceManager : public QObject, public Configurable
 
     const std::vector<unsigned int>& getAllDsIDs(); // both config and db
 
-    bool hasConfigDataSource(unsigned int ds_id);
+    bool hasConfigDataSource(unsigned int ds_id) const;
     void createConfigDataSource(unsigned int ds_id);
     void deleteConfigDataSource(unsigned int ds_id);
     dbContent::ConfigurationDataSource& configDataSource(unsigned int ds_id);
+    const dbContent::ConfigurationDataSource& configDataSource(unsigned int ds_id) const;
     const std::vector<std::unique_ptr<dbContent::ConfigurationDataSource>>& configDataSources() const;
 
-    bool hasDBDataSource(unsigned int ds_id);
-    bool hasDBDataSource(const std::string& ds_name);
+    bool hasDBDataSource(unsigned int ds_id) const;
+    bool hasDBDataSource(const std::string& ds_name) const;
     unsigned int getDBDataSourceDSID(const std::string& ds_name);
     bool hasDataSourcesOfDBContent(const std::string dbcontent_name);
     bool canAddNewDataSourceFromConfig (unsigned int ds_id);
     void addNewDataSource (unsigned int ds_id, bool emit_signal=true); // be sure not to call from different thread
 
     dbContent::DBDataSource& dbDataSource(unsigned int ds_id);
+    const dbContent::DBDataSource& dbDataSource(unsigned int ds_id) const;
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& dbDataSources() const;
 
     std::set<unsigned int> groundOnlyDBDataSources() const;

@@ -21,6 +21,8 @@ target_sources(compass_db
         "${CMAKE_CURRENT_LIST_DIR}/stringrepresentationcombobox.h"
         "${CMAKE_CURRENT_LIST_DIR}/selectdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent_commands.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentdatastore.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemprovider.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentaccessor.cpp"
@@ -31,4 +33,6 @@ target_sources(compass_db
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagerwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentstatusinfo.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent_commands.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentdatastore.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemprovider.cpp"
 )

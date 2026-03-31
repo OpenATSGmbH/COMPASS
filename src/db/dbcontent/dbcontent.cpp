@@ -324,7 +324,7 @@ bool DBContent::hasVariableDBColumnName(const std::string& col_name) const
 
 /**
  */
-unsigned int DBContent::id()
+unsigned int DBContent::id() const
 {
     return id_;
 }

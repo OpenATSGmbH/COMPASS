@@ -37,6 +37,10 @@ public:
     virtual ~DBContentAccessor() = default;
 
     bool add(std::map<std::string, std::shared_ptr<Buffer>> buffers); // something changed flag
+    bool add(const std::string& dbcontent_name, 
+             std::shared_ptr<Buffer> buffer,
+             bool update_lookup = true); // something changed flag
+    void removeDBContent(const std::string& dbcontent_name);
     void removeContentBeforeTimestamp(boost::posix_time::ptime remove_before_time);
     void removeEmptyBuffers();
     void clear();
@@ -62,10 +66,14 @@ public:
     BufferAccessor bufferAccessor(const std::string& dbcontent_name) const;
     TargetReportAccessor targetReportAccessor(const std::string& dbcontent_name) const;
 
+    std::shared_ptr<BufferAccessor> createBufferAccessor(const std::string& dbcontent_name) const;
+    std::shared_ptr<TargetReportAccessor> createTargetReportAccessor(const std::string& dbcontent_name) const;
+
     void print() const;
 
 protected:
     void updateDBContentLookup();
+    void updateDBContentLookup(const std::string& dbcontent_name);
 
     DBContentManager& dbcont_man_;
 

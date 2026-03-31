@@ -36,6 +36,7 @@ class DBContentManagerWidget;
 class DBSchemaManager;
 class DBContentDeleteDBJob;
 class DBContentInsertDBJob;
+class DBContentDataStore;
 
 namespace dbContent 
 {
@@ -80,11 +81,13 @@ public:
     virtual ~DBContentManager();
 
     COMPASS& compass() { return compass_; }
+    const COMPASS& compass() const { return compass_; }
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
-    bool existsDBContent(const std::string& dbcontent_name);
+    bool existsDBContent(const std::string& dbcontent_name) const;
     DBContent& dbContent(const std::string& dbcontent_name);
+    const DBContent& dbContent(const std::string& dbcontent_name) const;
     void deleteDBContent(const std::string& dbcontent_name);
     bool hasData();
 
@@ -93,10 +96,10 @@ public:
     DBContentIterator end() { return dbcontent_.end(); }
     size_t size() { return dbcontent_.size(); }
 
-    unsigned int getMaxDBContentID();
-    bool existsDBContentWithId (unsigned int id);
-    const std::string& dbContentWithId (unsigned int id);
-    unsigned int dbContentId(const std::string& dbcont_name);
+    unsigned int getMaxDBContentID() const;
+    bool existsDBContentWithId (unsigned int id) const;
+    const std::string& dbContentWithId (unsigned int id) const;
+    unsigned int dbContentId(const std::string& dbcont_name) const;
 
     bool existsMetaVariable(const std::string& var_name);
     dbContent::MetaVariable& metaVariable(const std::string& var_name);
@@ -206,6 +209,9 @@ public:
     bool hasMaxLatency() const;
     boost::posix_time::time_duration maxLatency() const;
 
+    DBContentDataStore& dataStore() { return *data_store_; }
+    const DBContentDataStore& dataStore() const { return *data_store_; }
+
 protected:
     void finishLoading();
     void finishInserting();
@@ -262,6 +268,8 @@ protected:
     std::map<std::string, DBContent*> dbcontent_;
     std::map<unsigned int, DBContent*> dbcontent_ids_;
     std::map<std::string, std::unique_ptr<dbContent::MetaVariable>> meta_variables_;
+
+    std::unique_ptr<DBContentDataStore> data_store_;
 
     std::unique_ptr<DBContentManagerWidget> widget_;
 

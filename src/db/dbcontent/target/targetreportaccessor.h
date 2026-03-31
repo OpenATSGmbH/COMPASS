@@ -55,6 +55,8 @@ public:
     unsigned int dsID(unsigned int index) const;
     unsigned int lineID(unsigned int index) const;
 
+    boost::optional<unsigned int> utn(unsigned int index) const;
+
     boost::optional<unsigned char> mopsVersion(unsigned int index) const;
     boost::optional<unsigned char> nucp(unsigned int index) const;
     boost::optional<unsigned char> nacp(unsigned int index) const;
@@ -135,6 +137,7 @@ private:
     const NullableVector<unsigned int>*             meta_line_id_vec_   = nullptr;
     const NullableVector<unsigned int>*             meta_acad_vec_      = nullptr;
     const NullableVector<std::string>*              meta_acid_vec_      = nullptr;
+    const NullableVector<unsigned int>*             meta_utn_vec_       = nullptr;
 
     //position
     const NullableVector<double>* meta_latitude_vec_      = nullptr;

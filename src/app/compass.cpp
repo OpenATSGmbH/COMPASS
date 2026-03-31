@@ -859,6 +859,96 @@ RTCommandManager& COMPASS::rtCommandManager()
     return *rt_cmd_manager_;
 }
 
+const DBInterface& COMPASS::dbInterface() const
+{
+    traced_assert(db_interface_);
+    return *db_interface_;
+}
+
+const DBContentManager& COMPASS::dbContentManager() const
+{
+    traced_assert(dbcontent_manager_);
+    return *dbcontent_manager_;
+}
+
+const DataSourceManager& COMPASS::dataSourceManager() const
+{
+    traced_assert(ds_manager_);
+    return *ds_manager_;
+}
+
+const FilterManager& COMPASS::filterManager() const
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
+}
+
+const TaskManager& COMPASS::taskManager() const
+{
+    traced_assert(task_manager_);
+    return *task_manager_;
+}
+
+const ViewManager& COMPASS::viewManager() const
+{
+    traced_assert(view_manager_);
+    return *view_manager_;
+}
+
+const SimpleConfig& COMPASS::config() const
+{
+    traced_assert(simple_config_);
+    return *simple_config_;
+}
+
+const EvaluationManager& COMPASS::evaluationManager() const
+{
+    traced_assert(eval_manager_);
+    return *eval_manager_;
+}
+
+const rtcommand::RTCommandRunner& COMPASS::rtCmdRunner() const
+{
+    traced_assert(rt_cmd_runner_);
+    return *rt_cmd_runner_;
+}
+
+const FFTManager& COMPASS::fftManager() const
+{
+    traced_assert(fft_manager_);
+    return *fft_manager_;
+}
+
+const LicenseManager& COMPASS::licenseManager() const
+{
+    traced_assert(license_manager_);
+    return *license_manager_;
+}
+
+const JobManager& COMPASS::jobManager() const
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+const UnitManager& COMPASS::unitManager() const
+{
+    traced_assert(unit_manager_);
+    return *unit_manager_;
+}
+
+const ProjectionManager& COMPASS::projectionManager() const
+{
+    traced_assert(projection_manager_);
+    return *projection_manager_;
+}
+
+const RTCommandManager& COMPASS::rtCommandManager() const
+{
+    traced_assert(rt_cmd_manager_);
+    return *rt_cmd_manager_;
+}
+
 bool COMPASS::dbOpened()
 {
     return db_opened_;
