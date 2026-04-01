@@ -124,8 +124,8 @@ void ACADFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateValuesFromStr(values_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string ACADFilter::valuesString() const

@@ -128,7 +128,7 @@ DBFilterWidget* ACIDFilter::createWidget()
 
 void ACIDFilter::reset()
 {
-    if (widget())
+    if (widget_)
         widget_->update();
 }
 
@@ -155,8 +155,8 @@ void ACIDFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateValuesFromStr(values_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string ACIDFilter::valuesString() const

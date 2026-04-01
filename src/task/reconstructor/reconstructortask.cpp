@@ -1427,7 +1427,6 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointNoData(const
 
 std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix) const
 {
-    bool created;
     string name;
 
     if (name_prefix.size())
@@ -1435,14 +1434,9 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
     else
         name = "UTN " + std::to_string(utn);
 
-    auto vp = getDebugViewpoint(name, "UTN", &created);
+    auto vp = getDebugViewpoint(name, "UTN");
 
-    if (created)
-    {
-        ViewPointGenFilterUTN* filter_utn = new ViewPointGenFilterUTN(utn);
-
-        vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(filter_utn));
-    }
+    vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(new ViewPointGenFilterUTN(utn)));
 
     return vp;
 }

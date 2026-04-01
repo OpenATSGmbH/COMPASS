@@ -1096,7 +1096,7 @@ bool SectionContentTable::clicked(unsigned int row)
 
     if (annotation.figure_id.has_value())
     {
-        loginf << "index has associated viewable via id " << annotation.figure_id.value();
+        loginf << "index has associated figure viewable via id " << annotation.figure_id.value();
         has_valid_link = true;
 
         //figure from content in parent section
@@ -1105,7 +1105,7 @@ bool SectionContentTable::clicked(unsigned int row)
     }
     else if (!annotation.section_link.empty() && !annotation.section_figure.empty())
     {
-        loginf << "index has associated viewable via" 
+        loginf << "index has associated linked viewable via" 
                << " section '" << annotation.section_link << "'"
                << " figure '" << annotation.section_figure << "'";
         has_valid_link = true;

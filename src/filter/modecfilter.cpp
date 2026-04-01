@@ -169,8 +169,8 @@ void ModeCFilter::loadViewPointConditions (const nlohmann::json& filters)
         null_wanted_ = false;
 
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 bool ModeCFilter::activeInLiveMode()

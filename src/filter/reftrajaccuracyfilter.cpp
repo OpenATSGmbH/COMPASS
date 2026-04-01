@@ -113,8 +113,8 @@ void RefTrajAccuracyFilter::loadViewPointConditions (const nlohmann::json& filte
     else
         min_value_ = std::stod(val.get<string>());
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 float RefTrajAccuracyFilter::minValue() const

@@ -134,8 +134,8 @@ void TimestampFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(max_value_str_.size());
     max_value_ = Time::fromString(max_value_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 boost::posix_time::ptime TimestampFilter::minValue() const
