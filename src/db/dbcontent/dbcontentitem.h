@@ -31,6 +31,11 @@ class TargetReportAccessor;
  */
 struct Item
 {
+    std::string itemIDString() const
+    {
+        return item_id.is_null() ? "None" : item_id.dump(0);
+    }
+
     nlohmann::json            item_id;   // item id (content determined by grouping)
     unsigned int              idx_begin; // range index into group buffer indices begin
     unsigned int              idx_end;   // range index into group buffer indices end
