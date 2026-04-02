@@ -59,44 +59,6 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace std;
 
-//const float ram_threshold = 4.0;
-
-/**
-*/
-ASTERIXImportTaskSettings::ASTERIXImportTaskSettings()
-    :   reset_date_between_files_ (true)
-    ,   ignore_time_jumps_        (false)
-    ,   debug_jasterix_           (false)
-    ,   current_file_framing_     ("")
-    ,   num_packets_overload_     (60)
-    ,   override_tod_active_      (false)
-    ,   override_tod_offset_      (0.0f)
-    ,   filter_tod_active_        (false)
-    ,   filter_tod_min_           (0.0f)
-    ,   filter_tod_max_           (24*3600.0 - 1)
-    ,   filter_position_rec_active_   (false)
-    ,   filter_rec_latitude_min_      (-90.0)
-    ,   filter_rec_latitude_max_      ( 90.0)
-    ,   filter_rec_longitude_min_     (-180.0)
-    ,   filter_rec_longitude_max_     ( 180.0)
-    ,   filter_position_circ_active_  (false)
-    ,   filter_circ_latitude_         (0.0)
-    ,   filter_circ_longitude_        (0.0)
-    ,   filter_circ_range_            (10.0)    
-    ,   filter_modec_active_      (false)
-    ,   filter_modec_min_         (-10000.0f)
-    ,   filter_modec_max_         ( 50000.0f)
-    ,   file_line_id_             (0)
-    ,   date_str_                 ()
-    ,   network_ignore_future_ts_ (false)
-    ,   obfuscate_secondary_info_ (false)
-    ,   date_                     ()
-    ,   max_network_lines_        (4)
-    ,   chunk_size_jasterix       (2000)
-    ,   chunk_size_insert         (50000)
-{
-}
-
 /**
 */
 // (old constructor removed)
@@ -262,6 +224,8 @@ ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent
     addJSONExportFilter(JSONExportType::General, JSONExportFilterType::ParamID, "obfuscate_secondary_info");
     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
+    registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
+                      ASTERIXImportTaskSettings().max_packets_in_processing_);
 
     std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
 
@@ -278,9 +242,6 @@ ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent
 
     connect(&source_, &ASTERIXImportSource::changed, this, &ASTERIXImportTask::sourceChanged);
     connect(&source_, &ASTERIXImportSource::fileUsageChanged, this, &ASTERIXImportTask::sourceUsageChanged);
-
-    registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
-                      settings_.max_packets_in_processing_);
 }
 
 /**
@@ -763,6 +724,13 @@ void ASTERIXImportTask::testFileDecoding()
 
     file_decoding_tested_ = false;
 
+    // use small chunk size for decoding check (fast probe, not full import)
+    static const unsigned int check_chunk_size = 2000;
+    unsigned int saved_frame_chunk    = jASTERIX::frame_chunk_size;
+    unsigned int saved_data_chunk     = jASTERIX::data_block_chunk_size;
+    jASTERIX::frame_chunk_size      = check_chunk_size;
+    jASTERIX::data_block_chunk_size = check_chunk_size;
+
     auto check_decoding = [ this ] (const AsyncTaskState& state, AsyncTaskProgressWrapper& progress)
     {
         //refresh decoder check
@@ -776,6 +744,10 @@ void ASTERIXImportTask::testFileDecoding()
 
     AsyncFuncTask task(check_decoding, "Testing decoding", "Please wait...", false);
     task.runAsyncDialog(true, nullptr);
+
+    // restore chunk sizes for actual import
+    jASTERIX::frame_chunk_size      = saved_frame_chunk;
+    jASTERIX::data_block_chunk_size = saved_data_chunk;
 
     file_decoding_tested_ = true;
 
@@ -917,6 +889,14 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     traced_assert(queued_insert_buffers_.empty());
 
     traced_assert(canRun());
+
+    // re-push chunk sizes in case the RAM tier was changed after construction
+    jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
+    jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
+
+    max_process_ram_gb_ = 0.0f;
+
+    logRAMUsage("run");
 
     if (source_.isNetworkType())
     {
@@ -1496,6 +1476,8 @@ void ASTERIXImportTask::insertData()
 
     logdbg << "inserting " << current_num_records << " records";
 
+    logRAMUsage("before insert");
+
     if (!insert_slot_connected_)
     {
         loginf << "connecting slot";
@@ -1710,7 +1692,11 @@ void ASTERIXImportTask::checkAllDone()
         emit dbcontent_man_.dbContentStatusChanged();
         compass_.dbInterface().saveProperties();
 
+        logRAMUsage("finalize before malloc_trim");
+
         malloc_trim(0); // release unused memory
+
+        logRAMUsage("finalize after malloc_trim");
 
         if (insert_slot_connected_) // moved here from insertDoneSlot
         {
@@ -1735,6 +1721,26 @@ void ASTERIXImportTask::checkAllDone()
     }
 
     logdbg << "done";
+}
+
+/**
+*/
+void ASTERIXImportTask::logRAMUsage(const std::string& context)
+{
+    float process_ram = Utils::System::getProcessRAMinGB();
+
+    if (process_ram > max_process_ram_gb_)
+        max_process_ram_gb_ = process_ram;
+
+    double elapsed_s = (boost::posix_time::microsec_clock::local_time() - start_time_).total_milliseconds() / 1000.0;
+    int records_per_second = num_records_ / std::max(1.0, elapsed_s);
+
+    loginf << "RAM [" << context << "]"
+           << " process=" << String::doubleToStringPrecision(process_ram, 2) << " GB"
+           << " max=" << String::doubleToStringPrecision(max_process_ram_gb_, 2) << " GB"
+           << " free=" << String::doubleToStringPrecision(Utils::System::getFreeRAMinGB(), 2) << " GB"
+           << " total=" << String::doubleToStringPrecision(Utils::System::getTotalRAMinGB(), 2) << " GB"
+           << " records=" << num_records_ << " rec/s=" << records_per_second;
 }
 
 /**

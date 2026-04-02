@@ -27,9 +27,9 @@ class ASTERIXImportTaskSettings
 public:
     ASTERIXImportTaskSettings(); // defines default param values
 
-    std::string activeFileFraming() const 
-    { 
-        return current_file_framing_override_.has_value() ? current_file_framing_override_.value() : current_file_framing_; 
+    std::string activeFileFraming() const
+    {
+        return current_file_framing_override_.has_value() ? current_file_framing_override_.value() : current_file_framing_;
     }
     void setActiveFileFraming(const std::string& file_framing)
     {

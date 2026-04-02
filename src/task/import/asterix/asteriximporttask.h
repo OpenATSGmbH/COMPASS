@@ -152,6 +152,7 @@ protected:
 
     void insertData(); // inserts queued job buffers
     void checkAllDone();
+    void logRAMUsage(const std::string& context);
 
     bool maxLoadReached();
     void updateFileProgressDialog(bool force=false);
@@ -213,4 +214,6 @@ protected:
 
     bool insert_slot_connected_ {false};
     bool all_done_{false};
+
+    float max_process_ram_gb_{0.0f};
 };
