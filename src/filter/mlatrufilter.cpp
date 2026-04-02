@@ -236,8 +236,8 @@ void MLATRUFilter::loadViewPointConditions (const nlohmann::json& filters)
     else
         match_all_ = false;
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string MLATRUFilter::rus() const

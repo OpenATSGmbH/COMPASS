@@ -123,8 +123,8 @@ void ExcludedTimeWindowsFilter::loadViewPointConditions (const nlohmann::json& f
 
     time_windows_.setFrom(time_windows_json_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 Utils::TimeWindowCollection& ExcludedTimeWindowsFilter::timeWindows()

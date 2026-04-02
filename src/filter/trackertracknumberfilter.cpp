@@ -148,8 +148,8 @@ void TrackerTrackNumberFilter::loadViewPointConditions (const nlohmann::json& fi
         }
     }
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 void TrackerTrackNumberFilter::setTrackerTrackNum(unsigned int ds_id, unsigned int line_id, const std::string& value)

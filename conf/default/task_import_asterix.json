@@ -3,7 +3,7 @@
     "instance_name": "ASTERIXImportTask0",
     "parameters": {
         "chunk_size_insert": 50000,
-        "chunk_size_jasterix": 2000,
+        "chunk_size_jasterix": 10000,
         "current_file_framing": "ioss",
         "current_framing": "",
         "file_list": [],

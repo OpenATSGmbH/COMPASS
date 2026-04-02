@@ -99,7 +99,7 @@ DBFilterWidget* Mode3AFilter::createWidget()
 
 void Mode3AFilter::reset()
 {
-    if (widget())
+    if (widget_)
         widget_->update();
 }
 
@@ -126,8 +126,8 @@ void Mode3AFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateValuesFromStr(values_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string Mode3AFilter::valuesString() const

@@ -339,10 +339,14 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     QBarSeries* chart_series = new QBarSeries();
     chart->addSeries(chart_series);
 
-    //create x axis
+    //create x axis; use setTitleText(" ") to reserve layout space for the axis
+    // title, then render the actual label via ChartView::setXAxisLabel() as a
+    // QGraphicsSimpleTextItem — Qt Charts truncates the real title to "..." when
+    // tick labels are rotated
     QBarCategoryAxis* chart_x_axis = new QBarCategoryAxis;
     chart_x_axis->setLabelsAngle(LabelAngleX);
-    chart_x_axis->setTitleText(x_axis_name);
+    chart_x_axis->setTitleText(" ");
+    chart_x_axis->setTitleBrush(Qt::transparent);
 
     chart->addAxis(chart_x_axis, Qt::AlignBottom);
     chart_series->attachAxis(chart_x_axis);
@@ -454,6 +458,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     //create new chart view
     chart_view_.reset(new HistogramViewChartView(this, chart));
     chart_view_->setObjectName("chart_view");
+    chart_view_->setXAxisLabel(x_axis_name);
 
     //    connect (chart_series_, &QBarSeries::clicked,
     //             chart_view_, &HistogramViewChartView::seriesPressedSlot);
@@ -665,7 +670,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
             bool y_axis_log = dynamic_cast<QLogValueAxis*>(chart_view_->chart()->axes(Qt::Vertical).first()) != nullptr;
 
-            chart_info[ "x_axis_label" ] = chart_view_->chart()->axes(Qt::Horizontal).first()->titleText().toStdString();
+            chart_info[ "x_axis_label" ] = x_axis_name_;
             chart_info[ "y_axis_label" ] = chart_view_->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
             chart_info[ "y_axis_log"   ] = y_axis_log;
             chart_info[ "num_series"   ] = chart_view_->chart()->series().count();

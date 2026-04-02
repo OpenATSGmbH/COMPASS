@@ -129,6 +129,34 @@ viewManager().reportViewPointError(getName(), "description of what failed");
 This works from any `View` subclass. For non-view components, pass the component name directly.
 All reported errors will appear in the command's reply JSON.
 
+## Data Source Selection (`data_sources`)
+
+View points can restrict which data sources are loaded via the `"data_sources"` key. The value is a JSON array of `[ds_id, [line_ids]]` pairs (how nlohmann/json serializes `map<unsigned int, set<unsigned int>>`). An empty line array means **no lines** — `disableAllLines()` is called first, then only listed lines are enabled. To load all lines, list them explicitly (e.g. `[0, 1, 2, 3]`).
+
+```json
+{
+    "data_sources": [
+        [12750, [0, 1]],
+        [65025, []]
+    ]
+}
+```
+
+- When `data_sources` is present, only the listed sources are loaded (`DataSourceManager::setLoadOnlyDataSources`).
+- When absent, all data sources are loaded.
+- `data_source_types` (e.g. `["ADSB", "RefTraj"]`) is applied independently — it restricts which DS types are enabled.
+- The read side uses `get<map<unsigned int, set<unsigned int>>>()` which also accepts a JSON object with string keys (`{"12750": [0, 1]}`), but the write side always produces array-of-pairs.
+
+**Key source files**:
+- Write: `FilterManager::getFilterState()` in `filtermanager.cpp` — serializes via `ViewPoint::VP_DS_KEY`
+- Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` — deserializes and calls `setLoadOnlyDataSources`
+- Constant: `ViewPoint::VP_DS_KEY` = `"data_sources"` in `viewpoint.h`
+
+**Key source files**:
+- Write: `FilterManager::getFilterState()` in `filtermanager.cpp` — serializes via `ViewPoint::VP_DS_KEY`
+- Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` — deserializes and calls `setLoadOnlyDataSources`
+- Constant: `ViewPoint::VP_DS_KEY` = `"data_sources"` in `viewpoint.h`
+
 ## Files
 
 | File | Role |

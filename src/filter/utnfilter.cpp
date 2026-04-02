@@ -146,8 +146,8 @@ void UTNFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateUTNSFromStr(utns_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string UTNFilter::utns() const

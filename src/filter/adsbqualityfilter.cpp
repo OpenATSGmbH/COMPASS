@@ -319,8 +319,8 @@ void ADSBQualityFilter::loadViewPointConditions (const nlohmann::json& filters)
     max_sil_v2_ = filter.at("max_sil_v2");
 
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 bool ADSBQualityFilter::useV0() const

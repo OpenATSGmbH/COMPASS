@@ -59,7 +59,6 @@
 #include "global.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
-#include <osgEarth/weejobs.h>
 #include "geo_view_api.h"
 #endif
 
@@ -957,14 +956,9 @@ void COMPASS::shutdown()
     view_manager_ = nullptr;
 
 #if USE_EXPERIMENTAL_SOURCE == true
-    // Release retired GL contexts while OSG globals are still alive.
-    // If left for static destruction, OSG's ContextData double-frees.
-    geo_view::releaseRetiredContexts();
-
-    // Drain osgEarth's global job/thread pool after all views are destroyed.
-    // Must not be called per-view — it shuts down shared state that other
-    // Geographic Views would still need.
-    jobs::shutdown();
+    // Release cached textures, retired GL contexts, and drain osgEarth's
+    // job pool — must happen while OSG globals are still alive.
+    geo_view::shutdown();
 #endif
 
     //osgDB::Registry::instance(true);
