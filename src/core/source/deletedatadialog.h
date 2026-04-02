@@ -45,6 +45,10 @@ public:
 private:
     void createUI();
     void populateDataSourcesTree();
+    void itemChangedSlot(QTreeWidgetItem* item, int column);
+    void showTreeContextMenu(const QPoint& pos);
+
+    static void setCheckRecursive(QTreeWidgetItem* item, Qt::CheckState state);
 
     struct SelectedDS
     {

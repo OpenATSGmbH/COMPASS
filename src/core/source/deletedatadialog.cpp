@@ -30,6 +30,7 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHeaderView>
+#include <QMenu>
 #include <QLabel>
 #include <QPushButton>
 #include <QTreeWidget>
@@ -76,6 +77,28 @@ void DeleteDataDialog::createUI()
     dbc_group->setLayout(dbc_layout);
     main_layout->addWidget(dbc_group);
 
+    // select all / select none buttons
+    QHBoxLayout* dbc_button_layout = new QHBoxLayout;
+
+    QPushButton* select_all_btn = new QPushButton("Select All");
+    connect(select_all_btn, &QPushButton::clicked, [this]() {
+        for (auto& cb_it : dbcontent_checks_)
+            cb_it.second->setChecked(true);
+    });
+    dbc_button_layout->addWidget(select_all_btn);
+
+    QPushButton* select_none_btn = new QPushButton("Select None");
+    connect(select_none_btn, &QPushButton::clicked, [this]() {
+        for (auto& cb_it : dbcontent_checks_)
+            cb_it.second->setChecked(false);
+    });
+    dbc_button_layout->addWidget(select_none_btn);
+
+    dbc_button_layout->addStretch();
+
+    main_layout->addLayout(dbc_button_layout);
+    main_layout->addSpacing(10);
+
     // data sources tree with checkboxes
     QGroupBox* ds_group = new QGroupBox("Data Sources");
     QVBoxLayout* ds_group_layout = new QVBoxLayout;
@@ -88,6 +111,11 @@ void DeleteDataDialog::createUI()
 
     populateDataSourcesTree();
 
+    connect(ds_tree_, &QTreeWidget::itemChanged, this, &DeleteDataDialog::itemChangedSlot);
+
+    ds_tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ds_tree_, &QTreeWidget::customContextMenuRequested, this, &DeleteDataDialog::showTreeContextMenu);
+
     ds_group_layout->addWidget(ds_tree_);
     ds_group->setLayout(ds_group_layout);
     main_layout->addWidget(ds_group, 1);
@@ -96,8 +124,8 @@ void DeleteDataDialog::createUI()
     QDialogButtonBox* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     button_box->button(QDialogButtonBox::Ok)->setText("Delete");
-    //button_box->button(QDialogButtonBox::Ok)->setIcon(QIcon());
-    //button_box->button(QDialogButtonBox::Cancel)->setIcon(QIcon());
+    button_box->button(QDialogButtonBox::Ok)->setIcon(QIcon());
+    button_box->button(QDialogButtonBox::Cancel)->setIcon(QIcon());
 
     connect(button_box, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(button_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -124,7 +152,7 @@ void DeleteDataDialog::populateDataSourcesTree()
         {
             auto* dstype_item = new QTreeWidgetItem(ds_tree_);
             dstype_item->setText(0, ds_type.c_str());
-            dstype_item->setFlags(dstype_item->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate);
+            dstype_item->setFlags(dstype_item->flags() | Qt::ItemIsUserCheckable);
             dstype_item->setCheckState(0, Qt::Unchecked);
 
             QFont font = dstype_item->font(0);
@@ -145,7 +173,7 @@ void DeleteDataDialog::populateDataSourcesTree()
         ds_item->setText(0, ds->name().c_str());
         ds_item->setText(1, QString::number(total_count));
         ds_item->setData(0, Qt::UserRole, ds_id);
-        ds_item->setFlags(ds_item->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate);
+        ds_item->setFlags(ds_item->flags() | Qt::ItemIsUserCheckable);
         ds_item->setCheckState(0, Qt::Unchecked);
 
         // line items
@@ -184,30 +212,40 @@ void DeleteDataDialog::collectSelections(set<string>& dbcontents,
     {
         QTreeWidgetItem* dstype_item = ds_tree_->topLevelItem(t);
 
+        // DSType must be checked for any DS under it to count
+        if (dstype_item->checkState(0) != Qt::Checked)
+            continue;
+
         for (int d = 0; d < dstype_item->childCount(); ++d)
         {
             QTreeWidgetItem* ds_item = dstype_item->child(d);
 
-            if (ds_item->checkState(0) == Qt::Unchecked)
+            // DS must be checked for any lines under it to count
+            if (ds_item->checkState(0) != Qt::Checked)
                 continue;
 
             DeleteDataDialog::SelectedDS sel;
             sel.ds_id = ds_item->data(0, Qt::UserRole).toUInt();
             sel.name = ds_item->text(0).toStdString();
 
-            if (ds_item->checkState(0) == Qt::Checked)
+            // collect checked lines
+            set<unsigned int> checked_lines;
+            for (int l = 0; l < ds_item->childCount(); ++l)
             {
+                QTreeWidgetItem* line_item = ds_item->child(l);
+                if (line_item->checkState(0) == Qt::Checked)
+                    checked_lines.insert(line_item->data(0, Qt::UserRole + 1).toUInt());
+            }
+
+            if (checked_lines.empty())
+            {
+                // DS checked but no lines checked → all lines
                 sel.all_lines = true;
             }
             else
             {
                 sel.all_lines = false;
-                for (int l = 0; l < ds_item->childCount(); ++l)
-                {
-                    QTreeWidgetItem* line_item = ds_item->child(l);
-                    if (line_item->checkState(0) == Qt::Checked)
-                        sel.line_ids.insert(line_item->data(0, Qt::UserRole + 1).toUInt());
-                }
+                sel.line_ids = checked_lines;
             }
 
             data_sources.push_back(sel);
@@ -291,6 +329,102 @@ nlohmann::json DeleteDataDialog::selectedDeleteInfo() const
     }
 
     return result;
+}
+
+void DeleteDataDialog::itemChangedSlot(QTreeWidgetItem* /*item*/, int /*column*/)
+{
+    // no propagation — each item is toggled independently, like in DataSourcesUseWidget
+}
+
+void DeleteDataDialog::setCheckRecursive(QTreeWidgetItem* item, Qt::CheckState state)
+{
+    item->setCheckState(0, state);
+    for (int i = 0; i < item->childCount(); ++i)
+        setCheckRecursive(item->child(i), state);
+}
+
+void DeleteDataDialog::showTreeContextMenu(const QPoint& pos)
+{
+    QTreeWidgetItem* item = ds_tree_->itemAt(pos);
+
+    QMenu menu;
+
+    // Select All — entire tree
+    menu.addAction("Select All", [this]() {
+        ds_tree_->blockSignals(true);
+        for (int i = 0; i < ds_tree_->topLevelItemCount(); ++i)
+            setCheckRecursive(ds_tree_->topLevelItem(i), Qt::Checked);
+        ds_tree_->blockSignals(false);
+    });
+
+    // Select None — entire tree
+    menu.addAction("Select None", [this]() {
+        ds_tree_->blockSignals(true);
+        for (int i = 0; i < ds_tree_->topLevelItemCount(); ++i)
+            setCheckRecursive(ds_tree_->topLevelItem(i), Qt::Unchecked);
+        ds_tree_->blockSignals(false);
+    });
+
+    if (item)
+    {
+        menu.addSeparator();
+
+        // Select All Siblings — same parent, same level, propagate down
+        menu.addAction("Select All Siblings", [this, item]() {
+            ds_tree_->blockSignals(true);
+            QTreeWidgetItem* parent = item->parent();
+            if (parent)
+            {
+                for (int i = 0; i < parent->childCount(); ++i)
+                    setCheckRecursive(parent->child(i), Qt::Checked);
+            }
+            else
+            {
+                for (int i = 0; i < ds_tree_->topLevelItemCount(); ++i)
+                    setCheckRecursive(ds_tree_->topLevelItem(i), Qt::Checked);
+            }
+            ds_tree_->blockSignals(false);
+        });
+
+        // Select None Siblings
+        menu.addAction("Select None Siblings", [this, item]() {
+            ds_tree_->blockSignals(true);
+            QTreeWidgetItem* parent = item->parent();
+            if (parent)
+            {
+                for (int i = 0; i < parent->childCount(); ++i)
+                    setCheckRecursive(parent->child(i), Qt::Unchecked);
+            }
+            else
+            {
+                for (int i = 0; i < ds_tree_->topLevelItemCount(); ++i)
+                    setCheckRecursive(ds_tree_->topLevelItem(i), Qt::Unchecked);
+            }
+            ds_tree_->blockSignals(false);
+        });
+
+        // Select All Children — only if item has children
+        if (item->childCount() > 0)
+        {
+            menu.addSeparator();
+
+            menu.addAction("Select All Children", [this, item]() {
+                ds_tree_->blockSignals(true);
+                for (int i = 0; i < item->childCount(); ++i)
+                    setCheckRecursive(item->child(i), Qt::Checked);
+                ds_tree_->blockSignals(false);
+            });
+
+            menu.addAction("Select None Children", [this, item]() {
+                ds_tree_->blockSignals(true);
+                for (int i = 0; i < item->childCount(); ++i)
+                    setCheckRecursive(item->child(i), Qt::Unchecked);
+                ds_tree_->blockSignals(false);
+            });
+        }
+    }
+
+    menu.exec(ds_tree_->viewport()->mapToGlobal(pos));
 }
 
 QString DeleteDataDialog::deleteDescription() const
