@@ -575,8 +575,16 @@ void EvaluationManager::loadSectors()
     sector_layers_ = compass_.dbInterface().loadSectors();
     sectors_loaded_ = true;
 
+    for (const auto& layer : sector_layers_)
+        for (const auto& s : layer->sectors())
+        {
+            s->serializeSector(true);
+            s->setSaveCallback([this](unsigned int id) { saveSector(id); });
+            s->setMoveCallback([this](unsigned int id, const std::string& ol, const std::string& nl) { moveSector(id, ol, nl); });
+        }
+
     updateMaxSectorID();
-    
+
     emit sectorsChangedSignal();
 }
 
