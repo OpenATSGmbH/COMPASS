@@ -82,3 +82,4 @@ void EvaluationStandardComboBox::updateStandards()
     else
         setCurrentIndex(0);
 }
+

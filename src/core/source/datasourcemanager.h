@@ -21,6 +21,7 @@
 #include "configurable.h"
 #include "source/configurationdatasource.h"
 #include "source/dbdatasource.h"
+#include "idatasourceprovider.h"
 #include "json_fwd.hpp"
 
 #include <QObject>
@@ -39,7 +40,7 @@ namespace dbContent
     class VariableSet;
 }
 
-class DataSourceManager : public QObject, public Configurable
+class DataSourceManager : public QObject, public Configurable, public IDataSourceProvider
 {
     Q_OBJECT
 
@@ -109,6 +110,8 @@ class DataSourceManager : public QObject, public Configurable
     const dbContent::DBDataSource& dbDataSource(unsigned int ds_id) const;
     const std::vector<std::unique_ptr<dbContent::DBDataSource>>& dbDataSources() const;
 
+    std::vector<DataSourceInfo> dataSourceInfos() const override;
+
     std::set<unsigned int> groundOnlyDBDataSources() const;
     std::map<unsigned int, dbContent::DataSourceType> dsTypes() const;
 
@@ -159,6 +162,11 @@ class DataSourceManager : public QObject, public Configurable
     void setLoadedCounts(std::map<unsigned int, std::map<std::string,
                                                          std::map<unsigned int, unsigned int>>> loaded_counts); // ds id->dbcont->line->cnt
     void clearInsertedCounts(const std::string& dbcontent_name); // after delete all dbcontent
+    void clearInsertedCounts(unsigned int ds_id,
+                             const std::string& dbcontent_name,
+                             const std::vector<unsigned int>& line_ids = {}); // specific ds/lines, removes ds if empty
+
+    void applyDeleteInfo(const nlohmann::json& delete_info); // adjust counts + remove empty ds + save + signal
 
 //    bool loadWidgetShowCounts() const;
 //    void loadWidgetShowCounts(bool value);

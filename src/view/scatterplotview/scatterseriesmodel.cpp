@@ -192,3 +192,4 @@ void ScatterSeriesModel::deselectAll()
     root_item_->hideAll();
     root_item_->hide(false);
 }
+

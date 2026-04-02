@@ -245,3 +245,4 @@ void EvaluationDataSourceWidget::lineIDEditSlot(const QString& text)
 
     emit lineChangedSignal(line_id);
 }
+

@@ -18,6 +18,7 @@
 #include "gridviewdatawidget.h"
 #include "gridviewwidget.h"
 #include "gridview.h"
+#include "viewabledataconfig.h"
 #include "gridviewchart.h"
 #include "grid2d.h"
 #include "grid2dlayer.h"
@@ -279,20 +280,31 @@ bool GridViewDataWidget::updateFromAnnotations()
 
     const auto& feature = anno.feature_json;
 
+    auto reportErr = [&](const std::string& msg)
+    {
+        traced_assert(view_->hasViewPoint());
+
+        view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + msg);
+    };
+
     if (!feature.is_object() || !feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid))
+    {
+        reportErr("missing '" + std::string(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid) + "' field");
         return false;
+    }
 
     std::unique_ptr<Grid2DLayer> layer(new Grid2DLayer);
     if (!layer->fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ]))
     {
-        logerr << "could not read grid layer";
+        reportErr("could not read grid layer");
         return false;
     }
 
-    if (layer->data.cols() < 1 || 
+    if (layer->data.cols() < 1 ||
         layer->data.rows() < 1)
     {
-        logerr << "grid layer empty";
+        reportErr("grid layer empty");
         return false;
     }
     
@@ -417,8 +429,8 @@ void GridViewDataWidget::invertSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
         {
@@ -440,8 +452,8 @@ void GridViewDataWidget::clearSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
             selected_vec.set(cnt, false);
@@ -739,3 +751,4 @@ const ColorLegend& GridViewDataWidget::currentLegend() const
     traced_assert(legend_);
     return legend_->currentLegend();
 }
+

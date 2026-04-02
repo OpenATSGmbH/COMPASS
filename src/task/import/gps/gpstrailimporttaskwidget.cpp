@@ -447,3 +447,4 @@ void GPSTrailImportTaskWidget::updateText ()
     //        import_button_->setDisabled(false);
     //    }
 }
+

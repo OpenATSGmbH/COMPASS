@@ -130,7 +130,7 @@ void ASTERIXPostprocessJob::checkARTASHashes()
     {
         const string& dbcontent_name = buf_it.first;
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_))
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_artas_hash_))
             continue;
 
         shared_ptr<Buffer> buffer = buf_it.second;
@@ -140,7 +140,7 @@ void ASTERIXPostprocessJob::checkARTASHashes()
             continue;
 
         dbContent::Variable& hash_var =
-            dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_);
+            dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_artas_hash_);
 
         if (!buffer->has<string>(hash_var.name()))
         {
@@ -195,17 +195,17 @@ void ASTERIXPostprocessJob::doADSBPositionProcessing()
     if (!buffer_size)
         return;
 
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_latitude_hr_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_longitude_hr_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat021_latitude_hr_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat021_longitude_hr_));
 
-    dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
-    dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
+    dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+    dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_);
 
-    dbContent::Variable& lat_hr_var = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_latitude_hr_);
-    dbContent::Variable& lon_hr_var = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_longitude_hr_);
+    dbContent::Variable& lat_hr_var = dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat021_latitude_hr_);
+    dbContent::Variable& lon_hr_var = dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat021_longitude_hr_);
 
     traced_assert(lat_var.dataType() == PropertyDataType::DOUBLE);
     traced_assert(lon_var.dataType() == PropertyDataType::DOUBLE);
@@ -264,22 +264,22 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
     {
         dbcontent_name = buf_it.first;
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_)
-            || !dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_))
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_)
+            || !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_))
             continue;
 
         shared_ptr<Buffer> buffer = buf_it.second;
         unsigned int buffer_size = buffer->size();
         //assert(buffer_size);
 
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
+        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
 
-        dbContent::Variable& vx_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_);
-        dbContent::Variable& vy_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_);
-        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
+        dbContent::Variable& vx_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_);
+        dbContent::Variable& vy_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_);
+        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
         dbContent::Variable& track_angle_var =
-            dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_);
+            dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
 
         vx_var_name = vx_var.name();
         vy_var_name = vy_var.name();
@@ -361,19 +361,19 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         unsigned int buffer_size = buffer->size();
         traced_assert(buffer_size);
 
-        if (!buffer->has<float>(DBContent::var_cat021_sgv_gss_.name()) &&
-            buffer->has<bool>(DBContent::var_cat021_sgv_stp_.name()))
+        if (!buffer->has<float>(dbcontent_vars::var_cat021_sgv_gss_.name()) &&
+            buffer->has<bool>(dbcontent_vars::var_cat021_sgv_stp_.name()))
         {  // no speed but sgv stopped bit
             logdbg << "got ads-b no gss but stp";
 
             unsigned int stp_set {0};
 
             dbContent::Variable& speed_var =
-                dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
+                dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
             traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
 
             NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
-            NullableVector<bool>& sgv_stp_vec = buffer->get<bool>(DBContent::var_cat021_sgv_stp_.name());
+            NullableVector<bool>& sgv_stp_vec = buffer->get<bool>(dbcontent_vars::var_cat021_sgv_stp_.name());
 
             for (unsigned int index = 0; index < buffer_size; index++)
             {
@@ -403,20 +403,20 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         }
 
         logdbg << "got ads-b sgv gss "
-               << buffer->has<float>(DBContent::var_cat021_sgv_gss_.name())
-               << " hgt " << buffer->has<double>(DBContent::var_cat021_sgv_hgt_.name())
-               << " htt " << buffer->has<bool>(DBContent::var_cat021_sgv_htt_.name())
-               << " hrd " << buffer->has<bool>(DBContent::var_cat021_sgv_hrd_.name());
+               << buffer->has<float>(dbcontent_vars::var_cat021_sgv_gss_.name())
+               << " hgt " << buffer->has<double>(dbcontent_vars::var_cat021_sgv_hgt_.name())
+               << " htt " << buffer->has<bool>(dbcontent_vars::var_cat021_sgv_htt_.name())
+               << " hrd " << buffer->has<bool>(dbcontent_vars::var_cat021_sgv_hrd_.name());
 
-        if (!buffer->has<float>(DBContent::var_cat021_sgv_gss_.name())
-            || !buffer->has<double>(DBContent::var_cat021_sgv_hgt_.name())
-            || !buffer->has<bool>(DBContent::var_cat021_sgv_htt_.name())
-            || !buffer->has<bool>(DBContent::var_cat021_sgv_hrd_.name()))
+        if (!buffer->has<float>(dbcontent_vars::var_cat021_sgv_gss_.name())
+            || !buffer->has<double>(dbcontent_vars::var_cat021_sgv_hgt_.name())
+            || !buffer->has<bool>(dbcontent_vars::var_cat021_sgv_htt_.name())
+            || !buffer->has<bool>(dbcontent_vars::var_cat021_sgv_hrd_.name()))
             return;
 
-        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
+        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
         dbContent::Variable& track_angle_var =
-            dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_);
+            dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
 
         speed_var_name = speed_var.name();
         track_angle_var_name = track_angle_var.name();
@@ -427,29 +427,29 @@ void ASTERIXPostprocessJob::doGroundSpeedCalculations()
         NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
         NullableVector<double>& track_angle_vec = buffer->get<double>(track_angle_var_name);
 
-        NullableVector<float>& sgv_gss_vec = buffer->get<float>(DBContent::var_cat021_sgv_gss_.name());
-        NullableVector<double>& sgv_hgt_vec = buffer->get<double>(DBContent::var_cat021_sgv_hgt_.name());
-        NullableVector<bool>& sgv_htt_vec = buffer->get<bool>(DBContent::var_cat021_sgv_htt_.name());
-        NullableVector<bool>& sgv_hrd_vec = buffer->get<bool>(DBContent::var_cat021_sgv_hrd_.name());
+        NullableVector<float>& sgv_gss_vec = buffer->get<float>(dbcontent_vars::var_cat021_sgv_gss_.name());
+        NullableVector<double>& sgv_hgt_vec = buffer->get<double>(dbcontent_vars::var_cat021_sgv_hgt_.name());
+        NullableVector<bool>& sgv_htt_vec = buffer->get<bool>(dbcontent_vars::var_cat021_sgv_htt_.name());
+        NullableVector<bool>& sgv_hrd_vec = buffer->get<bool>(dbcontent_vars::var_cat021_sgv_hrd_.name());
 
-        traced_assert(buffer->has<boost::posix_time::ptime>(DBContent::meta_var_timestamp_.name()));
+        traced_assert(buffer->has<boost::posix_time::ptime>(dbcontent_vars::meta_var_timestamp_.name()));
         NullableVector<boost::posix_time::ptime> ts_vec =
-            buffer->get<boost::posix_time::ptime>(DBContent::meta_var_timestamp_.name());
+            buffer->get<boost::posix_time::ptime>(dbcontent_vars::meta_var_timestamp_.name());
 
         NullableVector<double>* lat_vec {nullptr};
         NullableVector<double>* lon_vec {nullptr};
         NullableVector<float>* mode_c_vec {nullptr};
 
-        if(buffer->has<double>(DBContent::meta_var_latitude_.name())
-            && buffer->has<double>(DBContent::meta_var_longitude_.name()))
+        if(buffer->has<double>(dbcontent_vars::meta_var_latitude_.name())
+            && buffer->has<double>(dbcontent_vars::meta_var_longitude_.name()))
         {
 
-            lat_vec = &buffer->get<double>(DBContent::meta_var_latitude_.name());
-            lon_vec = &buffer->get<double>(DBContent::meta_var_longitude_.name());
+            lat_vec = &buffer->get<double>(dbcontent_vars::meta_var_latitude_.name());
+            lon_vec = &buffer->get<double>(dbcontent_vars::meta_var_longitude_.name());
         }
 
-        if(buffer->has<float>(DBContent::meta_var_mc_.name()))
-            mode_c_vec = &buffer->get<float>(DBContent::meta_var_mc_.name());
+        if(buffer->has<float>(dbcontent_vars::meta_var_mc_.name()))
+            mode_c_vec = &buffer->get<float>(dbcontent_vars::meta_var_mc_.name());
 
         // Define position and date parameters
         // double latitude = 37.7749;   // Latitude in degrees (example: San Francisco)
@@ -554,9 +554,9 @@ void ASTERIXPostprocessJob::doFilters()
             if(!buffer_size)
                 continue;
 
-            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
-            dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
+            dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_);
 
             tod_var_name = tod_var.name();
 
@@ -591,9 +591,9 @@ void ASTERIXPostprocessJob::doFilters()
         {
             dbcontent_name = buf_it.first;
 
-            if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_)
-                || !dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_)
-                || !dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
+            if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_)
+                || !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_)
+                || !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
                 continue;
 
             shared_ptr<Buffer> buffer = buf_it.second;
@@ -602,13 +602,13 @@ void ASTERIXPostprocessJob::doFilters()
             if(!buffer_size)
                 continue;
 
-            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
+            traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-            dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
-            dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
-            dbContent::Variable& mc_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_);
+            dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+            dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_);
+            dbContent::Variable& mc_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_);
 
             lat_var_name = lat_var.name();
             lon_var_name = lon_var.name();
@@ -626,8 +626,8 @@ void ASTERIXPostprocessJob::doFilters()
 
             if (dbcontent_name == "CAT062")
             {
-                traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
-                dbContent::Variable& mc_var2 = dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_);
+                traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
+                dbContent::Variable& mc_var2 = dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
 
                 if (buffer->has<float>(mc_var2.name()))
                     mc_vec2 = &buffer->get<float>(mc_var2.name());
@@ -722,10 +722,10 @@ void ASTERIXPostprocessJob::doObfuscate()
             if(!buffer_size)
                 continue;
 
-            if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
+            if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
                 continue;
 
-            dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
+            dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
             var_name = var.name();
 
@@ -773,10 +773,10 @@ void ASTERIXPostprocessJob::doObfuscate()
             if(!buffer_size)
                 continue;
 
-            if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
+            if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
                 continue;
 
-            dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_);
+            dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
             var_name = var.name();
 
@@ -814,10 +814,10 @@ void ASTERIXPostprocessJob::doObfuscate()
             if(!buffer_size)
                 continue;
 
-            if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
+            if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
                 continue;
 
-            dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_);
+            dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
             var_name = var.name();
 

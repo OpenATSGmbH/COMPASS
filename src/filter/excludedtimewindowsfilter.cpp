@@ -17,18 +17,16 @@
 
 #include "excludedtimewindowsfilter.h"
 #include "excludedtimewindowsfilterwidget.h"
-#include "compass.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
 #include "util/timeconv.h"
 
 using namespace std;
 using namespace Utils;
 using namespace nlohmann;
 
-ExcludedTimeWindowsFilter::ExcludedTimeWindowsFilter(nlohmann::json& config, FilterManager* parent)
-    : DBFilter(config, false, parent)
+ExcludedTimeWindowsFilter::ExcludedTimeWindowsFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("time_windows_json", &time_windows_json_, json::array());
 
@@ -43,25 +41,21 @@ ExcludedTimeWindowsFilter::~ExcludedTimeWindowsFilter() {}
 
 bool ExcludedTimeWindowsFilter::filters(const std::string& dbcont_name)
 {
-    return dbContentManager().metaVariable(
-                                                     DBContent::meta_var_timestamp_.name()).existsIn(dbcont_name);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_);
 }
 
 std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    auto& dbcont_man = dbContentManager();
-
-    if (!dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         return "";
 
     stringstream ss;
 
     if (active_ && time_windows_.size())
     {
-        dbContent::Variable& var = dbcont_man.metaVariable(
-                                                 DBContent::meta_var_timestamp_.name()).getFor(dbcontent_name);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (!first)
         {
@@ -77,7 +71,7 @@ std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbc
             if (cnt != 0)
                 ss << " OR";
 
-            ss << " " << var.dbColumnName() << " BETWEEN " << Time::toLong(tw.begin())
+            ss << " " << col_name << " BETWEEN " << Time::toLong(tw.begin())
                << " AND " << Time::toLong(tw.end());
         }
 
@@ -129,11 +123,28 @@ void ExcludedTimeWindowsFilter::loadViewPointConditions (const nlohmann::json& f
 
     time_windows_.setFrom(time_windows_json_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 Utils::TimeWindowCollection& ExcludedTimeWindowsFilter::timeWindows()
 {
     return time_windows_;
+}
+
+void ExcludedTimeWindowsFilter::updateMinMaxTimestamp(const boost::posix_time::ptime& min_ts,
+                                                       const boost::posix_time::ptime& max_ts)
+{
+    min_timestamp_ = min_ts;
+    max_timestamp_ = max_ts;
+}
+
+bool ExcludedTimeWindowsFilter::hasMinMaxTimestamp() const
+{
+    return min_timestamp_.has_value() && max_timestamp_.has_value();
+}
+
+std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ExcludedTimeWindowsFilter::minMaxTimestamp() const
+{
+    return {min_timestamp_.value(), max_timestamp_.value()};
 }

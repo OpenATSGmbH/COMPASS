@@ -817,3 +817,4 @@ void ASTERIXJSONParserDetailWidget::deleteMappingSlot()
     setting_new_content_ = false;
 
 }
+

@@ -291,3 +291,4 @@ void CreateARTASAssociationsTaskWidget::anyTrackFlagChangedSlot()
         task_.markTrackCoastingAssociationsDubious(
                     mark_track_coasting_associations_dubious_check_->checkState() == Qt::Checked);
 }
+

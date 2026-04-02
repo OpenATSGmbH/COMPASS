@@ -48,3 +48,4 @@ ModeCPresentConfig& ModeCPresentConfigWidget::config()
 }
 
 }
+

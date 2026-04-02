@@ -698,8 +698,8 @@ AzimuthBiasResult estimateAzimuthBias(
     if (diff_values.empty())
         return result;
 
-    double bias = std::accumulate(diff_values.begin(), diff_values.end(), 0.0)
-                  / static_cast<double>(diff_values.size());
+    std::sort(diff_values.begin(), diff_values.end());
+    double bias = diff_values[diff_values.size() / 2]; // median
 
     if (std::fabs(bias) > max_bias_deg)
         return result;

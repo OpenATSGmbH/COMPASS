@@ -171,3 +171,4 @@ void EvaluationReportTabWidget::resultDetailZoomEditSlot(QString value)
     else
         loginf << "axvalid value";
 }
+

@@ -816,3 +816,4 @@ void DataSourcesWidgetBase::updateAllContent()
     for (int i = 0; i < tree_widget_->topLevelItemCount(); ++i)
         updateContentRecursive(tree_widget_->topLevelItem(i));
 }
+

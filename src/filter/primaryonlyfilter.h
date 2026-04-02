@@ -22,7 +22,7 @@
 class PrimaryOnlyFilter : public DBFilter
 {
 public:
-    PrimaryOnlyFilter(nlohmann::json& config, FilterManager* parent);
+    PrimaryOnlyFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~PrimaryOnlyFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,

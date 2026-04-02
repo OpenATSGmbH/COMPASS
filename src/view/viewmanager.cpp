@@ -359,7 +359,7 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
     viewPointsWidget()->addViewPoints(viewpoints);
 }
 
-void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
+void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
                                        bool load_blocking)
 {
     if (current_viewable_)
@@ -392,6 +392,8 @@ void ViewManager::unsetCurrentViewPoint ()
         view_point_data_selected_ = false;
     }
 }
+
+
 
 void ViewManager::doViewPointAfterLoad ()
 {
@@ -452,20 +454,20 @@ void ViewManager::doViewPointAfterLoad ()
     {
         std::string dbcontent_name = dbcont_it.first;
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         {
             logerr << "required variables missing in " << dbcontent_name;
             continue;
         }
 
-        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
+        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (dbcont_man.data().count(dbcont_it.first))
         {
             std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
+            traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+            NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
             traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& tods = buffer->get<boost::posix_time::ptime>(ts_var.name());
@@ -523,20 +525,20 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
     {
         std::string dbcontent_name = dbcont_it.first;
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         {
             logerr << "required variables missing, quitting";
             continue;
         }
 
-        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
+        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (dbcont_man.data().count(dbcont_it.first))
         {
             std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
+            traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+            NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
             traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
@@ -1038,3 +1040,4 @@ void ViewManager::updateFeatures()
 //    //view->saveConfigurationAsTemplate("Template"+view->getInstanceId());
 //    saveTemplateConfiguration (view, template_name);
 //}
+

@@ -20,7 +20,7 @@
 #include "unit.h"
 #include "dimension.h"
 #include "source/configurationdatasource.h"
-#include "fft/configurationfft.h"
+#include "configurationfft.h"
 #include "asterixcategoryconfig.h"
 #include "json.hpp"
 

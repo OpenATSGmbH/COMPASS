@@ -199,8 +199,8 @@ protected:
         unsigned int data_size = data.contentSize();
 
         //selected vector?
-        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
+        traced_assert(buffer.has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
 
         unsigned int select_cnt = 0;
 
@@ -407,8 +407,8 @@ private:
         NullableVector<T>& data = buffer.get<T>(current_var_name);
         unsigned int data_size = data.contentSize();
 
-        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
+        traced_assert(buffer.has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
 
         auto& histogram = histograms_[ db_content ];
 

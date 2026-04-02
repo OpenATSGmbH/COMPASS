@@ -151,3 +151,4 @@ void EvaluationStandardTreeModel::updateCheckStates()
 {
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1), { Qt::CheckStateRole });
 }
+

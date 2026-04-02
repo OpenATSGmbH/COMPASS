@@ -1096,7 +1096,7 @@ bool SectionContentTable::clicked(unsigned int row)
 
     if (annotation.figure_id.has_value())
     {
-        loginf << "index has associated viewable via id " << annotation.figure_id.value();
+        loginf << "index has associated figure viewable via id " << annotation.figure_id.value();
         has_valid_link = true;
 
         //figure from content in parent section
@@ -1105,7 +1105,7 @@ bool SectionContentTable::clicked(unsigned int row)
     }
     else if (!annotation.section_link.empty() && !annotation.section_figure.empty())
     {
-        loginf << "index has associated viewable via" 
+        loginf << "index has associated linked viewable via" 
                << " section '" << annotation.section_link << "'"
                << " figure '" << annotation.section_figure << "'";
         has_valid_link = true;
@@ -1233,6 +1233,24 @@ void SectionContentTable::copyContent()
 {
     loginf;
 
+    auto quoteCSV = [](const std::string& val) -> std::string
+    {
+        if (val.find('"') != std::string::npos ||
+            val.find(';') != std::string::npos ||
+            val.find('\n') != std::string::npos)
+        {
+            std::string escaped = val;
+            size_t pos = 0;
+            while ((pos = escaped.find('"', pos)) != std::string::npos)
+            {
+                escaped.insert(pos, 1, '"');
+                pos += 2;
+            }
+            return "\"" + escaped + "\"";
+        }
+        return val;
+    };
+
     std::stringstream ss;
 
     auto proxy_headings = proxyHeadings();
@@ -1242,9 +1260,9 @@ void SectionContentTable::copyContent()
     for (unsigned int cnt=0; cnt < num_cols; ++cnt)
     {
         if (cnt == 0)
-            ss << proxy_headings.at(cnt);
+            ss << quoteCSV(proxy_headings.at(cnt));
         else
-            ss <<  ";" << proxy_headings.at(cnt);
+            ss <<  ";" << quoteCSV(proxy_headings.at(cnt));
     }
     ss << "\n";
 
@@ -1264,9 +1282,9 @@ void SectionContentTable::copyContent()
             traced_assert(d.is_string());
 
             if (cnt == 0)
-                ss << d.get<std::string>();
+                ss << quoteCSV(d.get<std::string>());
             else
-                ss <<  ";" << d.get<std::string>();
+                ss <<  ";" << quoteCSV(d.get<std::string>());
         }
         ss << "\n";
     }
@@ -2529,3 +2547,4 @@ bool SectionContentTableWidget::configure(const nlohmann::json& j)
 }
 
 }
+

@@ -18,7 +18,7 @@
 #include "airspace.h"
 #include "sectorlayer.h"
 #include "sector.h"
-#include "dbcontent/target/targetposition.h"
+#include "targetposition.h"
 #include "json.hpp"
 #include "logger.h"
 #include "traced_assert.h"

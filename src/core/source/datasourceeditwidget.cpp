@@ -1845,3 +1845,4 @@ void DataSourceEditWidget::setTabVisibleCompat(int index, bool visible)
         tab_widget_->setCurrentIndex(0);
 #endif
 }
+

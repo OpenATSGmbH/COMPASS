@@ -20,9 +20,7 @@
 #include "dbfiltercondition.h"
 #include "dbfilterwidget.h"
 #include "filtermanager.h"
-#include "compass.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "idbvariableresolver.h"
 #include "logger.h"
 
 #include <QVBoxLayout>
@@ -38,9 +36,10 @@ using namespace nlohmann;
 //     : Configurable(class_name, instance_name, parent) ...
 
 DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
-                   FilterManager* parent)
+                   FilterManager* parent, IDBVariableResolver& var_resolver)
     : Configurable(config, parent),
-      filter_manager_(*parent)
+      filter_manager_(parent),
+      var_resolver_(var_resolver)
 {
     registerParameter("name", &name_, instanceName());
     registerParameter("is_custom", &is_custom_, false);
@@ -49,14 +48,11 @@ DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
     registerParameter("visible", &visible_, false);
 
     registerParameter("widget_visible", &widget_visible_, true);
+    registerParameter("condition_logic", &condition_logic_, std::string("AND"));
 
     if (className().compare("DBFilter") == 0)  // else do it in subclass
         createSubConfigurables();
 }
-
-COMPASS& DBFilter::compass() { return filter_manager_.compass(); }
-DBContentManager& DBFilter::dbContentManager() { return filter_manager_.dbContentManager(); }
-DataSourceManager& DBFilter::dataSourceManager() { return filter_manager_.dataSourceManager(); }
 
 DBFilter::~DBFilter()
 {
@@ -99,6 +95,12 @@ void DBFilter::setName(const std::string& name)
         widget_->update();
 }
 
+void DBFilter::conditionLogic(const std::string& logic)
+{
+    traced_assert(logic == "AND" || logic == "OR");
+    condition_logic_ = logic;
+}
+
 bool DBFilter::filters(const std::string& dbcont_name)
 {
     if (unusable_)
@@ -128,6 +130,12 @@ std::string DBFilter::getConditionString(
 
     if (active_)
     {
+        bool use_or = (condition_logic_ == "OR");
+
+        // for OR mode, collect conditions internally with a local first flag,
+        // then wrap in parens and AND-join with outer query
+        bool local_first = true;
+
         for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
         {
             if (conditions_.at(cnt)->valueInvalid())
@@ -137,11 +145,32 @@ std::string DBFilter::getConditionString(
                 continue;
             }
 
-            std::string text =
-                conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, first);
-            ss << text;
+            if (use_or)
+            {
+                std::string text =
+                    conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, local_first, "OR");
+                ss << text;
+            }
+            else
+            {
+                std::string text =
+                    conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, first);
+                ss << text;
+            }
         }
 
+        // for OR mode, wrap in parens and join with outer AND chain
+        if (use_or && !local_first) // local_first==false means we added at least one condition
+        {
+            std::string or_block = ss.str();
+            ss.str("");
+
+            if (!first)
+                ss << " AND ";
+            first = false;
+
+            ss << "(" << or_block << ")";
+        }
     }
 
     loginf << instanceName() << ": dbcont " << dbcontent_name
@@ -196,6 +225,11 @@ void DBFilter::reset()
     {
         conditions_.at(cnt)->reset();
     }
+}
+
+void DBFilter::clearConditions()
+{
+    conditions_.clear();
 }
 
 void DBFilter::deleteCondition(DBFilterCondition* condition)

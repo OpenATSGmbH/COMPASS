@@ -393,3 +393,4 @@ bool ScatterSeriesTreeItem::itemHidden() const
 {
     return hidden() || (parent_item_ && parent_item_->itemHidden());
 }
+

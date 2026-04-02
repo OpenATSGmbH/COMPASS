@@ -123,3 +123,4 @@ void WrappedToolBoxWidget::addToToolBar(QToolBar* tool_bar)
     if (addToToolBar_cb_)
         addToToolBar_cb_(tool_bar);
 }
+

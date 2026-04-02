@@ -177,3 +177,4 @@ void MetaVariableWidget::updateSlot()
 }
 
 }
+

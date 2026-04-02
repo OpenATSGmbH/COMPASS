@@ -287,3 +287,4 @@ void LabelDSWidget::selectLineSlot()
 }
 
 }
+

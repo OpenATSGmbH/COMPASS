@@ -797,3 +797,4 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsJSON(const std::string& filen
 
     updateSectorTableSlot();
 }
+

@@ -210,7 +210,7 @@ void TableView::updateSelection()
         widget_->getViewDataWidget()->resetModels();  // just updates the checkboxes
 }
 
-void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
+void TableView::unshowViewPointSlot (ViewableDataConfig* vp)
 {
     loginf;
 
@@ -219,7 +219,7 @@ void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
     data_source_->unshowViewPoint(vp);
 }
 
-void TableView::showViewPointSlot (const ViewableDataConfig* vp)
+void TableView::showViewPointSlot (ViewableDataConfig* vp)
 {
     loginf;
 
@@ -249,3 +249,4 @@ const TableView::Settings& TableView::settings() const
 {
     return settings_;
 }
+

@@ -153,26 +153,41 @@ bool HistogramViewDataWidget::updateFromAnnotations()
     if (!view_->hasCurrentAnnotation())
         return false;
 
-    const auto& anno = view_->currentAnnotation();
+    try
+    {
+        const auto& anno = view_->currentAnnotation();
 
-    title_       = anno.metadata.title_;
-    x_axis_name_ = anno.metadata.xAxisLabel();
+        title_       = anno.metadata.title_;
+        x_axis_name_ = anno.metadata.xAxisLabel();
 
-    const auto& feature = anno.feature_json;
+        const auto& feature = anno.feature_json;
 
-    if (!feature.is_object() || !feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
-        return false;
+        if (!feature.is_object())
+            throw std::runtime_error("histogram annotation feature is not an object");
 
-    if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
+        if (!feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
+            throw std::runtime_error("histogram annotation feature missing '"
+                + ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram + "' field");
+
+        if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
+        {
+            histogram_raw_.clear();
+            throw std::runtime_error("could not read histogram from annotation");
+        }
+
+        if (histogram_raw_.useLogScale().has_value())
+        {
+            view_->useLogScale(histogram_raw_.useLogScale().value(), false);
+            view_->updateComponents();
+        }
+    }
+    catch (const std::exception& e)
     {
         histogram_raw_.clear();
+        if (view_->hasViewPoint())
+            view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + e.what());
         return false;
-    }
-
-    if (histogram_raw_.useLogScale().has_value())
-    {
-        view_->useLogScale(histogram_raw_.useLogScale().value(), false);
-        view_->updateComponents();
     }
 
     loginf << "done";
@@ -324,10 +339,14 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     QBarSeries* chart_series = new QBarSeries();
     chart->addSeries(chart_series);
 
-    //create x axis
+    //create x axis; use setTitleText(" ") to reserve layout space for the axis
+    // title, then render the actual label via ChartView::setXAxisLabel() as a
+    // QGraphicsSimpleTextItem — Qt Charts truncates the real title to "..." when
+    // tick labels are rotated
     QBarCategoryAxis* chart_x_axis = new QBarCategoryAxis;
     chart_x_axis->setLabelsAngle(LabelAngleX);
-    chart_x_axis->setTitleText(x_axis_name);
+    chart_x_axis->setTitleText(" ");
+    chart_x_axis->setTitleBrush(Qt::transparent);
 
     chart->addAxis(chart_x_axis, Qt::AlignBottom);
     chart_series->attachAxis(chart_x_axis);
@@ -439,6 +458,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     //create new chart view
     chart_view_.reset(new HistogramViewChartView(this, chart));
     chart_view_->setObjectName("chart_view");
+    chart_view_->setXAxisLabel(x_axis_name);
 
     //    connect (chart_series_, &QBarSeries::clicked,
     //             chart_view_, &HistogramViewChartView::seriesPressedSlot);
@@ -522,8 +542,8 @@ void HistogramViewDataWidget::invertSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
         {
@@ -545,8 +565,8 @@ void HistogramViewDataWidget::clearSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
             selected_vec.set(cnt, false);
@@ -650,7 +670,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
             bool y_axis_log = dynamic_cast<QLogValueAxis*>(chart_view_->chart()->axes(Qt::Vertical).first()) != nullptr;
 
-            chart_info[ "x_axis_label" ] = chart_view_->chart()->axes(Qt::Horizontal).first()->titleText().toStdString();
+            chart_info[ "x_axis_label" ] = x_axis_name_;
             chart_info[ "y_axis_label" ] = chart_view_->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
             chart_info[ "y_axis_log"   ] = y_axis_log;
             chart_info[ "num_series"   ] = chart_view_->chart()->series().count();
@@ -705,3 +725,4 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         }
     }
 }
+

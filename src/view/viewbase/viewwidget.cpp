@@ -627,3 +627,4 @@ void ViewWidget::uiRefresh()
     //just refresh the view
     refreshView();
 }
+

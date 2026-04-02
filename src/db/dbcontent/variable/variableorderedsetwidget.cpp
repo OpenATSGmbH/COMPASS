@@ -335,3 +335,4 @@ bool VariableOrderedSetWidget::uiSet(const QString& str)
 }
 
 }
+

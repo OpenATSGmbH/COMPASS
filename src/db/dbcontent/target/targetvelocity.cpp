@@ -64,7 +64,7 @@ boost::optional<TargetVelocityAccuracy> getVelocityAccuracyADSB(
         std::shared_ptr<dbContent::DBContentAccessor> accessor, const std::string& dbcontent_name, unsigned int index)
 {
     NullableVector<unsigned char>& nucv_nacv_vec =
-            accessor->getVar<unsigned char>(dbcontent_name, DBContent::var_cat021_nucv_nacv_);
+            accessor->getVar<unsigned char>(dbcontent_name, dbcontent_vars::var_cat021_nucv_nacv_);
 
     if (nucv_nacv_vec.isNull(index))
         return {}; // no info
@@ -86,10 +86,10 @@ boost::optional<TargetVelocityAccuracy> getVelocityAccuracyTracker(
 {
 
     NullableVector<double>& vx_stddev_vec =
-            accessor->getVar<double>(dbcontent_name, DBContent::var_cat062_vx_stddev_);
+            accessor->getVar<double>(dbcontent_name, dbcontent_vars::var_cat062_vx_stddev_);
 
     NullableVector<double>& vy_stddev_vec =
-            accessor->getVar<double>(dbcontent_name, DBContent::var_cat062_vy_stddev_);
+            accessor->getVar<double>(dbcontent_name, dbcontent_vars::var_cat062_vy_stddev_);
 
     if (vx_stddev_vec.isNull(index) || vy_stddev_vec.isNull(index))
         return {}; // no info

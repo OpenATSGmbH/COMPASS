@@ -65,3 +65,4 @@ PositionRadarAzimuthConfig& PositionRadarAzimuthConfigWidget::config()
 }
 
 }
+

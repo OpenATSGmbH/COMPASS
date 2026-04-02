@@ -142,3 +142,4 @@ void SpeedConfigWidget::updateActive()
 
 
 }
+

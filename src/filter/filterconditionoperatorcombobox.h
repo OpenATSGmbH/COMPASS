@@ -38,6 +38,7 @@ class FilterConditionOperatorComboBox : public QComboBox
                 stringlist.append(">=");
                 stringlist.append("<");
                 stringlist.append("<=");
+                stringlist.append("BETWEEN");
             }
 
             stringlist.append("IN");
@@ -46,6 +47,7 @@ class FilterConditionOperatorComboBox : public QComboBox
             if (!numeric_only)
             {
                 stringlist.append("LIKE");
+                stringlist.append("NOT LIKE");
             }
 
             stringlist.append("IS");

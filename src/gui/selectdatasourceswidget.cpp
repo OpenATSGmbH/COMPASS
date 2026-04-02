@@ -17,7 +17,7 @@
 
 #include "selectdatasourceswidget.h"
 #include "logger.h"
-#include "datasourcemanager.h"
+#include "traced_assert.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -28,10 +28,10 @@
 using namespace std;
 
 SelectDataSourcesWidget::SelectDataSourcesWidget(
-        DataSourceManager& ds_man,
+        IDataSourceProvider& ds_provider,
         const std::string& title, const std::string& ds_type,
         QWidget* parent, Qt::WindowFlags f)
-    : QFrame(parent, f), ds_man_(ds_man), title_(title), ds_type_(ds_type)
+    : QFrame(parent, f), ds_provider_(ds_provider), title_(title), ds_type_(ds_type)
 {
     setFrameStyle(QFrame::Panel | QFrame::Raised);
     setLineWidth(2);
@@ -78,30 +78,28 @@ void SelectDataSourcesWidget::updateSelected(std::map<std::string, bool> selecti
     unsigned int col, row;
     unsigned int cnt = 0;
 
-    DataSourceManager& ds_man = ds_man_;
-
     unsigned int ds_id;
     string ds_id_str;
     bool selected;
 
-    for (auto& ds_it : ds_man.dbDataSources())
+    for (auto& ds_info : ds_provider_.dataSourceInfos())
     {
-        if (ds_it->dsType() != ds_type_)
+        if (ds_info.ds_type != ds_type_)
             continue;
 
-        ds_id = ds_it->id();
+        ds_id = ds_info.id;
 
         ds_id_str = to_string(ds_id);
 
         selected = selection.count(ds_id_str) ? selection.at(ds_id_str) : true; // auto selected
 
-        QCheckBox* checkbox = new QCheckBox(ds_it->name().c_str());
+        QCheckBox* checkbox = new QCheckBox(ds_info.name.c_str());
         checkbox->setChecked(selected);
         checkbox->setProperty("id", ds_id);
         connect(checkbox, SIGNAL(clicked()), this, SLOT(toggleDataSourceSlot()));
 
         loginf << "got sensor " << ds_id << " name "
-               << ds_it->name() << " active " << checkbox->isChecked();
+               << ds_info.name << " active " << checkbox->isChecked();
 
         data_sources_checkboxes_[ds_id] = checkbox;
 

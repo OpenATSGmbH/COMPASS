@@ -70,8 +70,8 @@ void BufferCSVExportJob::run_impl()
         }
         output_file << ss.str() << "\n";
 
-        traced_assert(buffer_->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buffer_->get<bool>(DBContent::selected_var.name());
+        traced_assert(buffer_->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buffer_->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (; row < buffer_size; ++row)
         {

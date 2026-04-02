@@ -1,5 +1,5 @@
 
-include_directories (
+target_include_directories(compass_view PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
@@ -26,10 +26,6 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/variableviewstashdatawidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/chartview.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewscreenshotdialog.h"
-        "${CMAKE_CURRENT_LIST_DIR}/colorscales.h"
-        "${CMAKE_CURRENT_LIST_DIR}/colormap_defs.h"
-        "${CMAKE_CURRENT_LIST_DIR}/colorlegend.h"
-        "${CMAKE_CURRENT_LIST_DIR}/colormap.h"
         "${CMAKE_CURRENT_LIST_DIR}/colormapwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/plotmetadata.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewinfo.h"
@@ -55,8 +51,6 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/variableviewstashdatawidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/chartview.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewscreenshotdialog.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/colorlegend.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/colormap.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/colormapwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/plotmetadata.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewinfo.cpp"

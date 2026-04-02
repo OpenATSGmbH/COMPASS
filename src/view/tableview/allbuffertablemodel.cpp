@@ -290,7 +290,7 @@ void AllBufferTableModel::buildRowIndexes()
     for (auto& buf_it : buffers_)
     {
         if (view_.settings().ignore_non_target_reports_
-            && !dbcont_man.metaCanGetVariable(buf_it.first, DBContent::meta_var_latitude_))
+            && !dbcont_man.metaCanGetVariable(buf_it.first, dbcontent_vars::meta_var_latitude_))
             continue;
 
         const std::string& dbcontent_name = buf_it.first;
@@ -303,14 +303,14 @@ void AllBufferTableModel::buildRowIndexes()
             continue;
 
         const dbContent::Variable& ts_var =
-                dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(dbcontent_name);
+                dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(dbcontent_name);
 
         traced_assert(buf_it.second->has<boost::posix_time::ptime>(ts_var.name()));
         NullableVector<boost::posix_time::ptime>& ts_vec =
             buf_it.second->get<boost::posix_time::ptime>(ts_var.name());
 
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         unsigned int num_time_none = 0;
 
@@ -387,7 +387,7 @@ void AllBufferTableModel::sortRowIndexes()
     {
         std::map<unsigned int, std::string> var_names;
         for (const auto& p : number_to_dbcont_)
-            var_names[p.first] = DBContent::selected_var.name();
+            var_names[p.first] = dbcontent_vars::selected_var_.name();
 
         typedSortPairs<bool>(row_indexes_, number_to_dbcont_, buffers_, var_names, ascending);
         return;
@@ -477,11 +477,11 @@ std::pair<int,int> AllBufferTableModel::getSelectedRows()
 
         std::shared_ptr<Buffer> buffer = buffers_.at(dbcontent_name);
 
-        traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-        if (buffer->get<bool>(DBContent::selected_var.name()).isNull(buffer_index))
+        traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+        if (buffer->get<bool>(dbcontent_vars::selected_var_.name()).isNull(buffer_index))
             continue;
 
-        if (buffer->get<bool>(DBContent::selected_var.name()).get(buffer_index))
+        if (buffer->get<bool>(dbcontent_vars::selected_var_.name()).get(buffer_index))
         {
             if (first_row == -1)
                 first_row = cnt;
@@ -492,3 +492,4 @@ std::pair<int,int> AllBufferTableModel::getSelectedRows()
 
     return std::make_pair(first_row, last_row);
 }
+

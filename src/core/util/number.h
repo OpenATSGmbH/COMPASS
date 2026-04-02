@@ -125,7 +125,7 @@ extern RangeBiasGainResult estimateRangeBiasGain(
     const std::vector<double>& ref_ranges_m,
     double max_range_ratio_diff = 0.1,
     double max_gain = 0.05,
-    double max_bias_m = 5000.0);
+    double max_bias_m = 2000.0);
 
 //template <typename T>
 //double getStatistics(const std::vector<>);

@@ -234,3 +234,4 @@ void MetaVariableConfigurationDialog::okClickedSlot()
 }
 
 }
+

@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fft/fftbase.h"
+#include "fftbase.h"
 #include "logger.h"
 #include "number.h"
 #include "traced_assert.h"

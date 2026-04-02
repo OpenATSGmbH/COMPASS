@@ -25,7 +25,7 @@
 #include <boost/optional.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 
-#include <json.hpp>
+#include <json_fwd.hpp>
 
 class Buffer;
 class DBResult;

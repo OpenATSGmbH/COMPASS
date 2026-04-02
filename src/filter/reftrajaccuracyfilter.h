@@ -24,7 +24,7 @@
 class RefTrajAccuracyFilter : public DBFilter
 {
 public:
-    RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent);
+    RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~RefTrajAccuracyFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,

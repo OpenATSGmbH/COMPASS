@@ -983,7 +983,7 @@ void ReconstructorTask::writeDataSlice()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
         }
 
         loginf << "references dbcontent slice idx " << writing_slice_->slice_count_;
@@ -1005,7 +1005,7 @@ void ReconstructorTask::writeDataSlice()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
         }
 
         loginf << "references dbcontent (overlap) slice idx " << last_slice_->slice_count_;
@@ -1427,7 +1427,6 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointNoData(const
 
 std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix) const
 {
-    bool created;
     string name;
 
     if (name_prefix.size())
@@ -1435,14 +1434,9 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
     else
         name = "UTN " + std::to_string(utn);
 
-    auto vp = getDebugViewpoint(name, "UTN", &created);
+    auto vp = getDebugViewpoint(name, "UTN");
 
-    if (created)
-    {
-        ViewPointGenFilterUTN* filter_utn = new ViewPointGenFilterUTN(utn);
-
-        vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(filter_utn));
-    }
+    vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(new ViewPointGenFilterUTN(utn)));
 
     return vp;
 }
@@ -1563,3 +1557,4 @@ void ReconstructorTask::showDialog()
     traced_assert(canRun());
     run();
 }
+

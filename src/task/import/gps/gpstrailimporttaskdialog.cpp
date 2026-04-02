@@ -83,3 +83,4 @@ void GPSTrailImportTaskDialog::cancelClickedSlot()
 {
     emit cancelSignal();
 }
+

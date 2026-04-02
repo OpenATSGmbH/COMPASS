@@ -1,5 +1,5 @@
 
-include_directories (
+target_include_directories(compass_core PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 

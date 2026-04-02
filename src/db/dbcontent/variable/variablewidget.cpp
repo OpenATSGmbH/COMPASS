@@ -185,3 +185,4 @@ void VariableWidget::editDescriptionSlot()
 //}
 
 }
+

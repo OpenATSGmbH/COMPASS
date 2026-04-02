@@ -2083,3 +2083,4 @@ void EvaluationCalculator::onConfigurationChanged(const std::vector<std::string>
 
     loginf << "configuration changed, can evaluate? " << canEvaluate().ok();
 }
+

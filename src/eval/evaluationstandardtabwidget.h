@@ -17,12 +17,13 @@
 
 #pragma once
 
+#include "evaluationstandardcombobox.h"
+
 #include <QWidget>
 
 #include <memory>
 
 class EvaluationCalculator;
-class EvaluationStandardComboBox;
 
 class QPushButton;
 class QStackedWidget;
@@ -46,6 +47,7 @@ private slots:
 
 public:
     EvaluationStandardTabWidget(EvaluationCalculator& calculator);
+    ~EvaluationStandardTabWidget() override;
 
 protected:
     EvaluationCalculator& calculator_;

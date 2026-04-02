@@ -190,3 +190,4 @@ void HistogramViewChartView::wheelEvent(QWheelEvent* event)
 }
 
 }
+

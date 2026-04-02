@@ -388,3 +388,4 @@ void DubiousTargetConfigWidget::updateActive()
 
 
 }
+

@@ -20,7 +20,7 @@
 #include "configurable.h"
 #include "buffer.h"
 #include "targetmodel.h"
-#include "viewabledataconfig.h"
+class ViewableDataConfig;
 
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/optional.hpp>
@@ -75,6 +75,7 @@ signals:
     void loadedDataSignal (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     void loadingDoneSignal(); // emitted when all dbconts have finished loading
     void insertDoneSignal(); // emitted when all dbconts have finished loading
+    void dataDeletedSignal(); // emitted after data has been deleted and counts adjusted
 
 public:
     DBContentManager(nlohmann::json& config, COMPASS& compass);

@@ -71,7 +71,7 @@
 #include "logwidget.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
-#include "geometrytreeitem.h"
+#include "geo_view_api.h"
 #include "test_lab.h"
 #include "extra_commands.h"
 #endif
@@ -1099,7 +1099,7 @@ void MainWindow::resetViewsMenuSlot()
             compass_.filterManager().resetToStartupConfiguration();
 
 #if USE_EXPERIMENTAL_SOURCE == true
-            GeometryTreeItem::clearHiddenIdentifierStrs(); // clears hidden layers
+            geo_view::clearHiddenLayers();
 #endif
 
             compass_.viewManager().resetToStartupConfiguration();

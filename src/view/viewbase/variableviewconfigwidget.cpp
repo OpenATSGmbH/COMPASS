@@ -346,3 +346,4 @@ void VariableViewConfigWidget::switchVariables(int idx0, int idx1)
 {
     var_view_->switchVariables(idx0, idx1, true);
 }
+

@@ -159,3 +159,4 @@ void ReportExport::updateProgress(ReportExporter* exporter)
 }
 
 }
+

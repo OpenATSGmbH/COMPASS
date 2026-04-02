@@ -246,3 +246,4 @@ std::pair<bool, std::string> ReconstructorTaskDialog::configValid() const
 
     return std::make_pair(true, "");
 }
+

@@ -19,7 +19,7 @@
 
 #include "eval/results/base/probabilitybase.h"
 
-#include "dbcontent/target/targetposition.h"
+#include "targetposition.h"
 
 #include <memory>
 #include <string>

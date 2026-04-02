@@ -64,3 +64,4 @@ PositionRadarRangeConfig& PositionRadarRangeConfigWidget::config()
 }
 
 }
+

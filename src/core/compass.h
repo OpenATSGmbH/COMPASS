@@ -47,6 +47,8 @@ class JobManager;
 class UnitManager;
 class ProjectionManager;
 class RTCommandManager;
+class IDBVariableResolver;
+class QWidget;
 
 namespace rtcommand
 {
@@ -120,6 +122,13 @@ public:
     void setAppState(AppState state);
 
     MainWindow& mainWindow();
+
+    // View lookup facades — allow rtcommand helpers to navigate the view
+    // tree without including viewmanager.h (which would pull view-layer
+    // Q_OBJECT headers into core).
+    QWidget* viewContainerWidget(const std::string& name);
+    QWidget* latestViewContainerWidget();
+    QWidget* latestViewWidget();
 
     std::string lastUsedPath();
     void lastUsedPath(const std::string& last_path);
@@ -251,6 +260,7 @@ protected:
     std::unique_ptr<UnitManager> unit_manager_;
     std::unique_ptr<ProjectionManager> projection_manager_;
     std::unique_ptr<RTCommandManager> rt_cmd_manager_;
+    std::unique_ptr<IDBVariableResolver> var_resolver_;
 
     std::unique_ptr<rtcommand::RTCommandRunner> rt_cmd_runner_;
 

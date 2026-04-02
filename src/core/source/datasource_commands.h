@@ -72,4 +72,21 @@ protected:
     DECLARE_RTCOMMAND_OPTIONS
 };
 
+// delete_data '[ {"dbcontent": "CAT021", "data_sources": [{"ds_id": 510}]} ]'
+struct RTCommandDeleteData : public rtcommand::RTCommand
+{
+public:
+    std::string delete_info_str_;
+    nlohmann::json delete_info_;
+
+    RTCommandDeleteData();
+
+protected:
+    virtual bool run_impl() override;
+    virtual bool checkResult_impl() override;
+
+    DECLARE_RTCOMMAND(delete_data, "deletes data from the database")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
 }

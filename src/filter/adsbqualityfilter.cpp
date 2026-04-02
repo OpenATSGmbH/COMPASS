@@ -17,9 +17,8 @@
 
 #include "adsbqualityfilter.h"
 #include "adsbqualityfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "compass.h"
 #include "logger.h"
 //#include "stringconv.h"
 
@@ -29,8 +28,8 @@ using namespace std;
 using namespace Utils;
 using namespace nlohmann;
 
-ADSBQualityFilter::ADSBQualityFilter(nlohmann::json& config, FilterManager* parent)
-    : DBFilter(config, false, parent)
+ADSBQualityFilter::ADSBQualityFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("use_v0", &use_v0_, true);
     registerParameter("use_v1", &use_v1_, true);
@@ -89,12 +88,12 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 
     stringstream ss;
 
-    DBContentManager& dbcont_man = dbContentManager();
+    auto& resolver = variableResolver();
 
-    string mops_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_mops_version_).dbColumnName();
-    string nacp_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_nacp_).dbColumnName();
-    string mucp_nic_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_nucp_nic_).dbColumnName();
-    string sil_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_sil_).dbColumnName();
+    string mops_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_mops_version_);
+    string nacp_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_nacp_);
+    string mucp_nic_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_nucp_nic_);
+    string sil_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_sil_);
 
     if (active_)
     {
@@ -320,8 +319,8 @@ void ADSBQualityFilter::loadViewPointConditions (const nlohmann::json& filters)
     max_sil_v2_ = filter.at("max_sil_v2");
 
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 bool ADSBQualityFilter::useV0() const

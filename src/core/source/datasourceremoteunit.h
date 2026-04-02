@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "json.hpp"
+#include "json_fwd.hpp"
 
 struct RemoteUnitDefinition
 {

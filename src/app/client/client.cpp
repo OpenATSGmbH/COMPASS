@@ -274,8 +274,10 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     }
     catch (exception& e)
     {
-        throw runtime_error("COMPASSClient: unable to parse command line parameters: " +
-                            string(e.what()));
+        cout << "COMPASSClient: unable to parse command line parameters: " 
+         << string(e.what()) << "\n";
+        quit_requested_ = true;
+        return;
     }
 
     checkAndSetupConfig();

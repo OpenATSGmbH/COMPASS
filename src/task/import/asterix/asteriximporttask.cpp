@@ -1307,7 +1307,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
         logdbg << "buffer " << buf_it.second->dbContentName()
                << " size " << buf_it.second->size();
 
-        traced_assert(buf_it.second->hasProperty(DBContent::meta_var_timestamp_));
+        traced_assert(buf_it.second->hasProperty(dbcontent_vars::meta_var_timestamp_));
 
         buffer_cnt += buf_it.second->size();
     }
@@ -1396,7 +1396,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
                 logdbg << "buffer " << b.second->dbContentName()
                        << " size " << b.second->size();
 
-                traced_assert(b.second->hasProperty(DBContent::meta_var_timestamp_));
+                traced_assert(b.second->hasProperty(dbcontent_vars::meta_var_timestamp_));
 
                 if (b.second->size() > size_max)
                     size_max = b.second->size();
@@ -1808,3 +1808,4 @@ void ASTERIXImportTask::runDialog(QWidget* parent)
     //otherwise run import
     run();
 }
+

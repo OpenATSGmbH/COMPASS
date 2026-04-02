@@ -428,3 +428,4 @@ void ReconstructorTaskAnalysisWidget::timestampsChanged()
         loginf << "set ts max to "
                << Utils::Time::toString(ts_max.value());
 }
+

@@ -496,3 +496,4 @@ void JSONImportTaskWidget::updateParserBox()
         }
     }
 }
+

@@ -170,3 +170,4 @@ int VariableViewAnnotationWidget::currentAnnotationIdx() const
 {
     return anno_combo_->currentIndex();
 }
+

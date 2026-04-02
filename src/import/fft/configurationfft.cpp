@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fft/configurationfft.h"
-#include "fft/dbfft.h"
+#include "configurationfft.h"
+#include "dbfft.h"
 #include "fftmanager.h"
 #include "logger.h"
 

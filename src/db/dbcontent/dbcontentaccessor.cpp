@@ -123,10 +123,10 @@ void DBContentAccessor::removeContentBeforeTimestamp(boost::posix_time::ptime re
             continue;
         }
 
-        traced_assert(dbcont_man_.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it->first));
+        traced_assert(dbcont_man_.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).existsIn(buf_it->first));
 
         dbContent::Variable& ts_var = dbcont_man_.metaVariable(
-                                                    DBContent::meta_var_timestamp_.name()).getFor(buf_it->first);
+                                                    dbcontent_vars::meta_var_timestamp_.name()).getFor(buf_it->first);
 
         Property ts_prop {ts_var.name(), ts_var.dataType()};
         traced_assert(buf_it->second->hasProperty(ts_prop));

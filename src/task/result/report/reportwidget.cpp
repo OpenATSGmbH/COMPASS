@@ -390,3 +390,4 @@ bool ReportWidget::configureSection(const nlohmann::json& config)
 }
 
 }
+

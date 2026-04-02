@@ -296,10 +296,10 @@ Self-associate new targets (find matching UTNs created by the same target):
     \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Max. Std.Dev. for Association in Air & Maximum standard deviation / minimum accuracy (air).  & Advanced & 1000 m & 1 -- 10000 m \\ \hline
-    Min. Std.Dev. for Association in Air & Minimum standard deviation / maximum accuracy (air). & Advanced & 50 m & 1 -- 10000 m \\ \hline
-    Max. Std.Dev. for Association on Ground & Maximum standard deviation / minimum accuracy (ground). & Advanced & 20 m & 1 -- 10000 m \\ \hline
-    Min. Std.Dev. for Association on Ground & Minimum standard deviation / maximum accuracy (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association in Air & Maximum combined standard deviation for position-based association (air). Limits how wide the Mahalanobis gate can open. & Advanced & 300 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association in Air & Minimum combined standard deviation for position-based association (air). Prevents overly tight gates. & Advanced & 50 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association on Ground & Maximum combined standard deviation for position-based association (ground). & Advanced & 30 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association on Ground & Minimum combined standard deviation for position-based association (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
     \end{tabular}
 \end{table}
 \ \\

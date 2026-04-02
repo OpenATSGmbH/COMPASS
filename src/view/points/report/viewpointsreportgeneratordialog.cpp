@@ -371,3 +371,4 @@ void ViewPointsReportGeneratorDialog::setRemainingTime (const std::string& time_
     traced_assert(remaining_time_label_);
     remaining_time_label_->setText(time_str.c_str());
 }
+

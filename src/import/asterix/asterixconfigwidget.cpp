@@ -443,3 +443,4 @@ void ASTERIXConfigWidget::categorySPFEditionEditSlot()
 
 //    task_.setActiveMapping(cat, mapping_str);
 //}
+

@@ -1,13 +1,10 @@
 <!--
 osgEarth Sample
-
-layout crop_features="true"
 -->
 
 <map name="Wordwide Line Vectors" type="geocentric">
-  
+
     <options>
-        <lighting>false</lighting>
         <terrain>
             <tile_size>2</tile_size>
             <color>#000000FF</color>
@@ -18,25 +15,23 @@ layout crop_features="true"
     <OGRFeatures name="world-data">
         <url>shapefiles/TM_WORLD_BORDERS-0.3.shp</url>
     </OGRFeatures>
-  
 
   <FeatureModel name="world_boundaries" features="world-data">
-      <layout>
+      <layout paged="true">
           <level max_range="1e10"/>
       </layout>
       <styles>
           <style type="text/css">
               world {
-                 stroke:       #ffff00;
-                 stroke-width: 2px;
-                 stroke-smooth:            true;
-                 render-anti-aliased:  true;
+                 stroke:                   #ffff00;
+                 stroke-width:             2px;
                  stroke-tessellation-size: 500m;
                  altitude-clamping:        terrain-gpu;
                  altitude-technique:       scene;
-                 render-clip-plane: 0;
+                 render-lighting:          false;
+                 render-clip-plane:        0;
                  render-anti-aliased:      true;
-                 render-depth-test: false;
+                 render-depth-test:        false;
               }                
           </style>
       </styles>

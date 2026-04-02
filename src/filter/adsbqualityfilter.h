@@ -22,7 +22,7 @@
 class ADSBQualityFilter : public DBFilter
 {
 public:
-    ADSBQualityFilter(nlohmann::json& config, FilterManager* parent);
+    ADSBQualityFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~ADSBQualityFilter();
 
     virtual std::string getConditionString(const std::string& dbcontent_name,

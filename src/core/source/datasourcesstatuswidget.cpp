@@ -496,23 +496,23 @@ void DataSourcesStatusWidget::dataLoaded()
     {
         auto buffer = it->second;
 
-        bool has_rn_var    = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_rec_num_  );
-        bool has_ts_var    = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_timestamp_);
-        bool has_ds_id_var = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_ds_id_    );
-        bool has_line_var  = dbcontent_man_.metaCanGetVariable(DBCType, DBContent::meta_var_line_id_  );
+        bool has_rn_var    = dbcontent_man_.metaCanGetVariable(DBCType, dbcontent_vars::meta_var_rec_num_  );
+        bool has_ts_var    = dbcontent_man_.metaCanGetVariable(DBCType, dbcontent_vars::meta_var_timestamp_);
+        bool has_ds_id_var = dbcontent_man_.metaCanGetVariable(DBCType, dbcontent_vars::meta_var_ds_id_    );
+        bool has_line_var  = dbcontent_man_.metaCanGetVariable(DBCType, dbcontent_vars::meta_var_line_id_  );
 
-        auto var_rn        = has_rn_var    ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_rec_num_  ) : nullptr;
-        auto var_ts        = has_ts_var    ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_timestamp_) : nullptr;
-        auto var_ds        = has_ds_id_var ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_ds_id_    ) : nullptr;
-        auto var_line      = has_line_var  ? &dbcontent_man_.metaGetVariable(DBCType, DBContent::meta_var_line_id_  ) : nullptr;
+        auto var_rn        = has_rn_var    ? &dbcontent_man_.metaGetVariable(DBCType, dbcontent_vars::meta_var_rec_num_  ) : nullptr;
+        auto var_ts        = has_ts_var    ? &dbcontent_man_.metaGetVariable(DBCType, dbcontent_vars::meta_var_timestamp_) : nullptr;
+        auto var_ds        = has_ds_id_var ? &dbcontent_man_.metaGetVariable(DBCType, dbcontent_vars::meta_var_ds_id_    ) : nullptr;
+        auto var_line      = has_line_var  ? &dbcontent_man_.metaGetVariable(DBCType, dbcontent_vars::meta_var_line_id_  ) : nullptr;
 
         bool has_rn        = var_rn   && buffer->hasAnyPropertyNamed(var_rn->name());
         bool has_ts        = var_ts   && buffer->hasAnyPropertyNamed(var_ts->name());
         bool has_ds_id     = var_ds   && buffer->hasAnyPropertyNamed(var_ds->name());
         bool has_line      = var_line && buffer->hasAnyPropertyNamed(var_line->name());
-        bool has_con       = buffer->hasAnyPropertyNamed(DBContent::var_cat063_con_.name());
-        bool has_sen_sac   = buffer->hasAnyPropertyNamed(DBContent::var_cat063_sensor_sac_.name());
-        bool has_sen_sic   = buffer->hasAnyPropertyNamed(DBContent::var_cat063_sensor_sic_.name());
+        bool has_con       = buffer->hasAnyPropertyNamed(dbcontent_vars::var_cat063_con_.name());
+        bool has_sen_sac   = buffer->hasAnyPropertyNamed(dbcontent_vars::var_cat063_sensor_sac_.name());
+        bool has_sen_sic   = buffer->hasAnyPropertyNamed(dbcontent_vars::var_cat063_sensor_sic_.name());
 
         bool all_vars_present = has_rn && has_ts && has_ds_id && has_line && has_con && has_sen_sac && has_sen_sic;
 
@@ -538,9 +538,9 @@ void DataSourcesStatusWidget::dataLoaded()
         auto& ts_vec      = buffer->get<boost::posix_time::ptime>(var_ts->name());
         auto& ds_id_vec   = buffer->get<unsigned int>(var_ds->name());
         auto& line_vec    = buffer->get<unsigned int>(var_line->name());
-        auto& con_vec     = buffer->get<unsigned char>(DBContent::var_cat063_con_.name());
-        auto& sen_sac_vec = buffer->get<unsigned char>(DBContent::var_cat063_sensor_sac_.name());
-        auto& sen_sic_vec = buffer->get<unsigned char>(DBContent::var_cat063_sensor_sic_.name());
+        auto& con_vec     = buffer->get<unsigned char>(dbcontent_vars::var_cat063_con_.name());
+        auto& sen_sac_vec = buffer->get<unsigned char>(dbcontent_vars::var_cat063_sensor_sac_.name());
+        auto& sen_sic_vec = buffer->get<unsigned char>(dbcontent_vars::var_cat063_sensor_sic_.name());
 
         // auto ts0 = ts_vec.get(0);
         // auto ts1 = ts_vec.get(buffer->size() - 1);
@@ -822,3 +822,4 @@ void DataSourcesStatusWidget::showLastUpdates(bool show)
     ds_man_.config().sensor_status_show_last_updates_ = show;
     showColumn(LastUpdateColumn, show);
 }
+

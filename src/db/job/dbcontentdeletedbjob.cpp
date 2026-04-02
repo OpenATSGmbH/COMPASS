@@ -19,9 +19,9 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-//#include "dbcontent/variable/variable.h"
 #include "logger.h"
 #include "compass.h"
+#include "number.h"
 #include "util/timeconv.h"
 
 using namespace std;
@@ -74,6 +74,20 @@ void DBContentDeleteDBJob::cleanupDB(bool cleanup_db)
     cleanup_db_ = cleanup_db;
 }
 
+void DBContentDeleteDBJob::setDeleteInfo(const nlohmann::json& delete_info)
+{
+    traced_assert(!use_before_timestamp_);
+    traced_assert(!use_specific_dbcontent_);
+    traced_assert(delete_info.is_array());
+
+    delete_info_ = delete_info;
+}
+
+const nlohmann::json& DBContentDeleteDBJob::deleteInfo() const
+{
+    return delete_info_;
+}
+
 void DBContentDeleteDBJob::run_impl()
 {
     logdbg;
@@ -86,9 +100,9 @@ void DBContentDeleteDBJob::run_impl()
         return;
     }
 
-    if (!(use_before_timestamp_ || use_specific_dbcontent_))
+    if (!(use_before_timestamp_ || use_specific_dbcontent_ || !delete_info_.empty()))
     {
-        logerr << "neither before time or dbcontent defined";
+        logerr << "neither before time, dbcontent, or delete info defined";
         done_ = true;
         return;
     }
@@ -136,6 +150,72 @@ void DBContentDeleteDBJob::run_impl()
             db_interface_.deleteAll(dbcont_man.dbContent(specific_dbcontent_));
         }
     }
+    else if (!delete_info_.empty())
+    {
+        for (const auto& entry : delete_info_)
+        {
+            // collect dbcontents to delete from
+            vector<string> dbcontent_names;
+
+            if (entry.contains("dbcontent"))
+            {
+                dbcontent_names.push_back(entry.at("dbcontent"));
+            }
+            else
+            {
+                // no dbcontent specified: apply to all
+                for (auto& dbcont_it : dbcont_man)
+                    dbcontent_names.push_back(dbcont_it.first);
+            }
+
+            for (const auto& dbcontent_name : dbcontent_names)
+            {
+                if (!dbcont_man.existsDBContent(dbcontent_name))
+                {
+                    logwrn << "dbcontent '" << dbcontent_name << "' not found, skipping";
+                    continue;
+                }
+
+                DBContent& dbcontent = dbcont_man.dbContent(dbcontent_name);
+
+                if (!dbcontent.existsInDB())
+                    continue;
+
+                if (!entry.contains("data_sources"))
+                {
+                    loginf << "deleting all data for " << dbcontent_name;
+                    db_interface_.deleteAll(dbcontent);
+                }
+                else
+                {
+                    for (const auto& ds_entry : entry.at("data_sources"))
+                    {
+                        traced_assert(ds_entry.contains("ds_id"));
+                        unsigned int ds_id = ds_entry.at("ds_id");
+                        unsigned int sac = Number::sacFromDsId(ds_id);
+                        unsigned int sic = Number::sicFromDsId(ds_id);
+
+                        if (!ds_entry.contains("line_ids"))
+                        {
+                            loginf << "deleting " << dbcontent_name
+                                   << " for ds_id " << ds_id;
+                            db_interface_.deleteContent(dbcontent, sac, sic);
+                        }
+                        else
+                        {
+                            for (unsigned int line_id : ds_entry.at("line_ids"))
+                            {
+                                loginf << "deleting " << dbcontent_name
+                                       << " for ds_id " << ds_id
+                                       << " line " << line_id;
+                                db_interface_.deleteContent(dbcontent, sac, sic, line_id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     else
         traced_assert(false);
 
@@ -162,3 +242,4 @@ bool DBContentDeleteDBJob::useBeforeTimestamp() const
 {
     return use_before_timestamp_;
 }
+

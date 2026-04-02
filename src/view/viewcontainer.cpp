@@ -405,3 +405,4 @@ void ViewContainer::resetToStartupConfiguration()
 
 //    last_active_manage_button_=0;
 //}
+

@@ -76,7 +76,7 @@ public:
     unsigned int saveNewViewPoint(const nlohmann::json& data, bool update=true);
     const ViewPoint& saveNewViewPoint(unsigned int id, const nlohmann::json& data, bool update=true);
     //bool existsViewPoint(unsigned int id);
-    const ViewPoint& viewPoint(unsigned int id);
+    ViewPoint& viewPoint(unsigned int id);
     //void removeViewPoint(unsigned int id);
     void deleteAllViewPoints ();
 

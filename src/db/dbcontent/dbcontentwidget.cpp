@@ -409,3 +409,4 @@ void DBContentWidget::updateDBContVarsGridSlot()
     }
     // logdbg  << "done";
 }
+

@@ -150,8 +150,8 @@ signals:
 
 public slots:
     void selectionChangedSlot();
-    virtual void unshowViewPointSlot (const ViewableDataConfig* vp)=0;
-    virtual void showViewPointSlot (const ViewableDataConfig* vp)=0;
+    virtual void unshowViewPointSlot (ViewableDataConfig* vp)=0;
+    virtual void showViewPointSlot (ViewableDataConfig* vp)=0;
 
     COMPASS& compass();
     COMPASS& compass() const;

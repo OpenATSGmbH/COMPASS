@@ -19,6 +19,10 @@
 
 #include "json.hpp"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 class ViewableDataConfig
 {
 public:
@@ -34,7 +38,17 @@ public:
 
   const nlohmann::json& data() const { return data_; }
 
+  void reportError(const std::string& component_name, const std::string& error)
+  {
+      errors_.emplace_back(component_name, error);
+  }
+
+  bool hasErrors() const { return !errors_.empty(); }
+
+  const std::vector<std::pair<std::string, std::string>>& errors() const { return errors_; }
+
 protected:
     nlohmann::json data_;
+    std::vector<std::pair<std::string, std::string>> errors_;
 };
 

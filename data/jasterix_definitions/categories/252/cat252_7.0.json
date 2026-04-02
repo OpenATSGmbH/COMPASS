@@ -478,6 +478,7 @@
                             "name": "LOWER DOMAIN LIMIT",
                             "comment": "Vmin = -15 FL = -1500 ft\nVmax = 1500 FL = 150000 ft",
                             "type": "fixed_bits",
+                            "data_type": "int",
                             "start_bit": 0,
                             "bit_length": 14,
                             "lsb": 0.25
@@ -501,6 +502,7 @@
                             "name": "UPPER DOMAIN LIMIT",
                             "comment": "Vmin = -15 FL = -1500 ft\nVmax = 1500 FL = 150000 ft",
                             "type": "fixed_bits",
+                            "data_type": "int",
                             "start_bit": 0,
                             "bit_length": 14,
                             "lsb": 0.25

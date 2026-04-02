@@ -77,28 +77,28 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
 
     using namespace dbContent;
 
-    Variable& utn_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_);
+    Variable& utn_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_);
 
     Variable* acid_var {nullptr};
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
-        acid_var = &dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_);
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
+        acid_var = &dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
     dbContent::Variable* acid_fpl_var {nullptr}; // only set in cat062
 
     if (dbcontent_name == "CAT062")
     {
-        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
 
-        acid_fpl_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_);
+        acid_fpl_var = &dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
 
         traced_assert(buffer->has<string> (acid_fpl_var->name()));
     }
 
     Variable* acad_var {nullptr};
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
-        acad_var = &dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_);
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
+        acad_var = &dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
-    Variable& m3a_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
+    Variable& m3a_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
     // first row
     // 1x1
@@ -224,28 +224,28 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
     {
         using namespace dbContent;
 
-        Variable& utn_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_);
+        Variable& utn_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_);
 
         Variable* acid_var {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
-            acid_var = &dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_);
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
+            acid_var = &dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
         dbContent::Variable* acid_fpl_var {nullptr}; // only set in cat062
 
         if (dbcontent_name == "CAT062")
         {
-            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
 
-            acid_fpl_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_);
+            acid_fpl_var = &dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
 
             traced_assert(buffer->has<string> (acid_fpl_var->name()));
         }
 
         Variable* acad_var {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
-            acad_var = &dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_);
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
+            acad_var = &dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
-        Variable& m3a_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
+        Variable& m3a_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
         string varname, value, unit;
 
@@ -353,7 +353,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             used_varnames.insert(varname);
 
         // 2,2
-        Variable& mc_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_);
+        Variable& mc_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_);
         varname = mc_var.name();
         value = "";
         unit = mc_var.dimensionUnitStr();
@@ -748,12 +748,12 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
     // check line
     {
-        traced_assert(dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_line_id_));
+        traced_assert(dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_line_id_));
         dbContent::Variable& line_var = dbcont_manager_.metaGetVariable(
-                    dbcont_name, DBContent::meta_var_line_id_);
-        traced_assert(dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_ds_id_));
+                    dbcont_name, dbcontent_vars::meta_var_line_id_);
+        traced_assert(dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_ds_id_));
         dbContent::Variable& ds_id_var = dbcont_manager_.metaGetVariable(
-                    dbcont_name, DBContent::meta_var_ds_id_);
+                    dbcont_name, dbcontent_vars::meta_var_ds_id_);
 
 
         traced_assert(buffer->has<unsigned int> (line_var.name()));
@@ -774,10 +774,10 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
     if (config_.filter_mode3a_active_)
     {
-        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_m3a_))
+        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_m3a_))
             return false;
 
-        dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_m3a_);
+        dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_m3a_);
 
         traced_assert(buffer->has<unsigned int> (var.name()));
 
@@ -794,10 +794,10 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
     if (config_.filter_modec_min_active_ || config_.filter_modec_max_active_)
     {
-        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_mc_))
+        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_))
             return false;
 
-        dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_mc_);
+        dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_);
 
         traced_assert(buffer->has<float> (var.name()));
 
@@ -820,10 +820,10 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
     if (config_.filter_ti_active_)
     {
-        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_acid_))
+        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_))
             return false;
 
-        dbContent::Variable& acid_var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acid_);
+        dbContent::Variable& acid_var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_);
 
         traced_assert(buffer->has<string> (acid_var.name()));
 
@@ -834,9 +834,9 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
         if (dbcont_name == "CAT062")
         {
-            traced_assert(dbcont_manager_.canGetVariable(dbcont_name, DBContent::var_cat062_callsign_fpl_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcont_name, dbcontent_vars::var_cat062_callsign_fpl_));
 
-            cs_fpl_var = &dbcont_manager_.getVariable(dbcont_name, DBContent::var_cat062_callsign_fpl_);
+            cs_fpl_var = &dbcont_manager_.getVariable(dbcont_name, dbcontent_vars::var_cat062_callsign_fpl_);
 
             traced_assert(buffer->has<string> (cs_fpl_var->name()));
             cs_fpl_vec = &buffer->get<string> (cs_fpl_var->name());
@@ -888,10 +888,10 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
 
     if (config_.filter_ta_active_)
     {
-        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_acad_))
+        if (!dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acad_))
             return false;
 
-        dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acad_);
+        dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_acad_);
 
         traced_assert(buffer->has<unsigned int> (var.name()));
 
@@ -909,41 +909,41 @@ bool LabelGenerator::labelWanted(std::shared_ptr<Buffer> buffer, unsigned int in
     if (config_.filter_primary_only_active_)
     {
         NullableVector<unsigned int>* m3a_vec {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_m3a_))
+        if (dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_m3a_))
         {
-            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_m3a_);
+            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_m3a_);
             traced_assert(buffer->has<unsigned int> (var.name()));
             m3a_vec = &buffer->get<unsigned int> (var.name());
         }
 
         NullableVector<float>* mc_vec {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_mc_))
+        if (dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_))
         {
-            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_mc_);
+            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_);
             traced_assert(buffer->has<float> (var.name()));
             mc_vec = &buffer->get<float> (var.name());
         }
 
         NullableVector<unsigned int>* ta_vec {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_acad_))
+        if (dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acad_))
         {
-            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acad_);
+            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_acad_);
             traced_assert(buffer->has<unsigned int> (var.name()));
             ta_vec = &buffer->get<unsigned int> (var.name());
         }
 
         NullableVector<string>* ti_vec {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_acid_))
+        if (dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_))
         {
-            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_acid_);
+            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_);
             traced_assert(buffer->has<string> (var.name()));
             ti_vec = &buffer->get<string> (var.name());
         }
 
         NullableVector<unsigned char>* type_vec {nullptr};
-        if (dbcont_manager_.metaCanGetVariable(dbcont_name, DBContent::meta_var_detection_type_))
+        if (dbcont_manager_.metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_detection_type_))
         {
-            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, DBContent::meta_var_detection_type_);
+            dbContent::Variable& var = dbcont_manager_.metaGetVariable(dbcont_name, dbcontent_vars::meta_var_detection_type_);
             traced_assert(buffer->has<unsigned char> (var.name()));
             type_vec = &buffer->get<unsigned char> (var.name());
         }
@@ -1132,33 +1132,33 @@ void LabelGenerator::checkLabelConfig()
                     if (row == 0 && col == 0)
                         dbcont_def[key] = "Best available Identification";
                     else if (row == 0 && col == 1
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_acid_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_acid_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_acid_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_acid_).name();
                     else if (row == 0 && col == 2
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_acad_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_acad_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_acad_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_acad_).name();
                     else if (row == 1 && col == 0
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_m3a_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_m3a_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_m3a_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_m3a_).name();
                     else if (row == 1 && col == 1
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_mc_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_mc_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_mc_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_mc_).name();
                     else if (row == 1 && col == 2
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_ds_id_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_ds_id_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_ds_id_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_ds_id_).name();
                     else if (row == 2 && col == 0
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_ground_speed_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_ground_speed_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_ground_speed_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_ground_speed_).name();
                     else if (row == 2 && col == 2
-                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, DBContent::meta_var_timestamp_))
+                             && dbcont_manager_.metaCanGetVariable(dbcont_it.first, dbcontent_vars::meta_var_timestamp_))
                         dbcont_def[key] =
-                                dbcont_manager_.metaGetVariable(dbcont_it.first, DBContent::meta_var_timestamp_).name();
+                                dbcont_manager_.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_timestamp_).name();
                 }
             }
         }
@@ -1358,39 +1358,39 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
     }
 
     // "Mode C Garbled"
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_g_))
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_))
     {
-        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_g_);
+        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_);
         if (!read_set.hasVariable(var))
             read_set.add(var);
     }
     // "Mode C Valid"
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_v_))
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_v_))
     {
-        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_v_);
+        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_v_);
         if (!read_set.hasVariable(var))
             read_set.add(var);
     }
 
     // "Mode 3/A Valid"
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_smoothed_))
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_smoothed_))
     {
-        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_smoothed_);
+        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_smoothed_);
         if (!read_set.hasVariable(var))
             read_set.add(var);
     }
     // "Mode 3/A Garbled"
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_g_))
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_g_))
     {
-        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_g_);
+        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_g_);
         if (!read_set.hasVariable(var))
             read_set.add(var);
     }
 
     // "Mode 3/A Smoothed"
-    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_v_))
+    if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_v_))
     {
-        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_v_);
+        Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_v_);
         if (!read_set.hasVariable(var))
             read_set.add(var);
     }
@@ -1398,25 +1398,25 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
     if (dbcontent_name == "CAT062")
     {
         {
-            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_baro_alt_));
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_));
 
-            Variable& var = dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_baro_alt_);
-
-            if (!read_set.hasVariable(var))
-                read_set.add(var);
-        }
-
-        {
-            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
-            Variable& var = dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_);
+            Variable& var = dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_);
 
             if (!read_set.hasVariable(var))
                 read_set.add(var);
         }
 
         {
-            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_));
-            Variable& var = dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_callsign_fpl_);
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
+            Variable& var = dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
+
+            if (!read_set.hasVariable(var))
+                read_set.add(var);
+        }
+
+        {
+            traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
+            Variable& var = dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
 
             if (!read_set.hasVariable(var))
                 read_set.add(var);
@@ -1917,7 +1917,7 @@ std::string LabelGenerator::getMode3AText (const std::string& dbcontent_name,
 {
     string text;
 
-    Variable& m3a_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
+    Variable& m3a_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
     if (buffer->has<unsigned int>(m3a_var.name()) &&
             !buffer->get<unsigned int>(m3a_var.name()).isNull(buffer_index))
@@ -1928,26 +1928,26 @@ std::string LabelGenerator::getMode3AText (const std::string& dbcontent_name,
         bool valid=true, garbled=false, smoothed=false;
 
         // "Mode 3/A Valid"
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_v_))
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_v_))
         {
-            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_v_);
+            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_v_);
 
             if (buffer->has<bool>(var.name()) && !buffer->get<bool>(var.name()).isNull(buffer_index))
                 valid = buffer->get<bool>(var.name()).get(buffer_index);
         }
         // "Mode 3/A Garbled"
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_g_))
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_g_))
         {
-            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_g_);
+            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_g_);
 
             if (buffer->has<bool>(var.name()) && !buffer->get<bool>(var.name()).isNull(buffer_index))
                 garbled = buffer->get<bool>(var.name()).get(buffer_index);
         }
 
         // "Mode 3/A Smoothed"
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_smoothed_))
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_smoothed_))
         {
-            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_smoothed_);
+            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_smoothed_);
 
             if (buffer->has<bool>(var.name()) && !buffer->get<bool>(var.name()).isNull(buffer_index))
                 smoothed = buffer->get<bool>(var.name()).get(buffer_index);
@@ -1974,18 +1974,18 @@ std::string LabelGenerator::getModeCText (const std::string& dbcontent_name,
 {
     string text;
 
-    Variable& mc_var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_);
+    Variable& mc_var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_);
 
     dbContent::Variable* cat062_baro_alt_var {nullptr}; // only set in cat062
     dbContent::Variable* cat062_fl_meas_var {nullptr}; // only set in cat062
 
     if (dbcontent_name == "CAT062")
     {
-        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_baro_alt_));
-        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
+        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_));
+        traced_assert(dbcont_manager_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
 
-        cat062_baro_alt_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_baro_alt_);
-        cat062_fl_meas_var = &dbcont_manager_.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_);
+        cat062_baro_alt_var = &dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_);
+        cat062_fl_meas_var = &dbcont_manager_.getVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
 
         traced_assert(buffer->has<float> (cat062_baro_alt_var->name()));
         traced_assert(buffer->has<float> (cat062_fl_meas_var->name()));
@@ -1999,17 +1999,17 @@ std::string LabelGenerator::getModeCText (const std::string& dbcontent_name,
         bool valid=true, garbled=false;
 
         // "Mode CValid"
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_v_))
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_v_))
         {
-            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_v_);
+            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_v_);
 
             if (buffer->has<bool>(var.name()) && !buffer->get<bool>(var.name()).isNull(buffer_index))
                 valid = buffer->get<bool>(var.name()).get(buffer_index);
         }
         // "Mode C Garbled"
-        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_g_))
+        if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_))
         {
-            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_g_);
+            Variable& var = dbcont_manager_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_);
 
             if (buffer->has<bool>(var.name()) && !buffer->get<bool>(var.name()).isNull(buffer_index))
                 garbled = buffer->get<bool>(var.name()).get(buffer_index);
@@ -2046,3 +2046,4 @@ std::string LabelGenerator::getModeCText (const std::string& dbcontent_name,
 //}
 
 }
+

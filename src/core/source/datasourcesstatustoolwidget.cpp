@@ -490,3 +490,4 @@ void DataSourcesStatusToolWidget::updateInfos()
 
     info_received_label_->setText(QString::fromStdString(update_recv_txt));
 }
+

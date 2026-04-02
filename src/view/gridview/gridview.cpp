@@ -80,8 +80,8 @@ GridView::GridView(nlohmann::json& config, ViewContainer* parent)
                                                            PropertyDataType::FLOAT,
                                                            PropertyDataType::DOUBLE };
 
-    addVariable("data_var_x", "X"          , "x", META_OBJECT_NAME, DBContent::meta_var_longitude_.name(), true, true, false, valid_types_xy);
-    addVariable("data_var_y", "Y"          , "y", META_OBJECT_NAME, DBContent::meta_var_latitude_.name() , true, true, false, valid_types_xy);
+    addVariable("data_var_x", "X"          , "x", META_OBJECT_NAME, dbcontent_vars::meta_var_longitude_.name(), true, true, false, valid_types_xy);
+    addVariable("data_var_y", "Y"          , "y", META_OBJECT_NAME, dbcontent_vars::meta_var_latitude_.name() , true, true, false, valid_types_xy);
     addVariable("data_var_z", "Distributed", "z", ""              , ""                                   , true, true, true , valid_types_z );
 
     updateSettingsFromVariable();

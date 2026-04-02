@@ -813,3 +813,4 @@ nlohmann::json View::viewInfoJSON() const
 
     return info;
 }
+

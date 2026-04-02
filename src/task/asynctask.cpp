@@ -449,3 +449,4 @@ void AsyncTaskDialog::updateState()
             setButtonClose();
     }
 }
+

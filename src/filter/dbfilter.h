@@ -27,9 +27,7 @@
 #include <vector>
 #include <memory>
 
-class COMPASS;
-class DBContentManager;
-class DataSourceManager;
+class IDBVariableResolver;
 class DBFilterCondition;
 class FilterManager;
 class Buffer;
@@ -47,13 +45,11 @@ class DBFilter : public Configurable
     // DBFilter(const std::string& class_name, const std::string& instance_name, Configurable* parent,
     //          bool is_generic = true);
     DBFilter(nlohmann::json& config, bool is_generic,
-             FilterManager* parent);
+             FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~DBFilter();
 
-    FilterManager& filterManager() { return filter_manager_; }
-    COMPASS& compass();
-    DBContentManager& dbContentManager();
-    DataSourceManager& dataSourceManager();
+    FilterManager& filterManager() { traced_assert(filter_manager_); return *filter_manager_; }
+    IDBVariableResolver& variableResolver() { return var_resolver_; }
 
     void setActive(bool active);
     bool getActive();
@@ -69,6 +65,9 @@ class DBFilter : public Configurable
 
     bool isCustom() { return is_custom_; }
 
+    const std::string& conditionLogic() const { return condition_logic_; }
+    void conditionLogic(const std::string& logic);
+
     /// where condition string for a DBContent
     virtual std::string getConditionString(const std::string& dbcontent_name, 
       dbContent::VariableSet& read_set, bool& first);
@@ -82,6 +81,7 @@ class DBFilter : public Configurable
 
     const std::vector<std::unique_ptr<DBFilterCondition>>& getConditions() const { return conditions_; }
     unsigned int getNumConditions() { return conditions_.size(); }
+    void clearConditions();
     void deleteCondition(DBFilterCondition* condition);
 
     DBFilterWidget* widget();
@@ -100,7 +100,8 @@ class DBFilter : public Configurable
     void widgetVisible(bool widget_expanded);
 
 protected:
-    FilterManager& filter_manager_;
+    FilterManager* filter_manager_{nullptr};
+    IDBVariableResolver& var_resolver_;
     std::string name_;
     bool is_custom_; // indicates if created by user and can be deleted
 
@@ -111,6 +112,8 @@ protected:
     bool disabled_ {false}; // if disabled due to other reasons (e.g. AppMode)
 
     bool widget_visible_ {true};
+
+    std::string condition_logic_{"AND"}; // "AND" or "OR" — how conditions are joined
 
     std::vector<std::unique_ptr<DBFilterCondition>> conditions_;
 

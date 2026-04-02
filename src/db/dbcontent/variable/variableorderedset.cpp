@@ -322,3 +322,4 @@ void VariableOrderedSet::onConfigurationChanged(const std::vector<std::string>& 
 }
 
 }
+

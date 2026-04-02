@@ -22,11 +22,16 @@
 #include "traced_assert.h"
 
 #include <QCheckBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDoubleValidator>
 #include <QGridLayout>
 #include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QPushButton>
+#include <QRegularExpression>
 #include <QTimeEdit>
 #include <QVBoxLayout>
 
@@ -58,6 +63,15 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     tod_offset_edit_->setValidator(new TextFieldDoubleValidator(-24 * 3600, 24 * 3600, 5));
     connect(tod_offset_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::todOffsetEditedSlot);
     grid->addWidget(tod_offset_edit_, row, 2);
+
+    QPushButton* resurf_btn = new QPushButton("From ReSURF Log...");
+    resurf_btn->setToolTip(
+        "Calculate TOD offset from ReSURF log output.\n"
+        "Paste lines containing:\n"
+        "  File input=...: first frame time set to HH:MM:SS.ss\n"
+        "  File input=...: rendez-vous time set to HH:MM:SS.ss");
+    connect(resurf_btn, &QPushButton::clicked, this, &ASTERIXOverrideWidget::fromResurfLogSlot);
+    grid->addWidget(resurf_btn, row, 3);
 
     // filters
 
@@ -297,6 +311,87 @@ void ASTERIXOverrideWidget::todOffsetEditedSlot(const QString& value)
         task_.settings().override_tod_offset_ = tod_offset_edit_->text().toDouble();
 }
 
+void ASTERIXOverrideWidget::fromResurfLogSlot()
+{
+    loginf;
+
+    const QString example_text =
+        "File input=LQ_ADSB_20260312/20260310.ff: first frame time set to 07:59:50.02\n"
+        "File input=LQ_ADSB_20260312/20260310.ff: rendez-vous time set to 14:56:30.96";
+
+    QDialog dlg(this);
+    dlg.setWindowTitle("Calculate Offset from ReSURF Log");
+    dlg.setMinimumWidth(600);
+
+    QVBoxLayout* layout = new QVBoxLayout();
+
+    layout->addWidget(new QLabel("Paste ReSURF log output containing 'first frame time set to' "
+                                 "and 'rendez-vous time set to' lines:"));
+
+    QPlainTextEdit* text_edit = new QPlainTextEdit();
+    text_edit->setPlaceholderText(example_text);
+    layout->addWidget(text_edit);
+
+    QLabel* result_label = new QLabel();
+    layout->addWidget(result_label);
+
+    QDialogButtonBox* btn_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    btn_box->button(QDialogButtonBox::Ok)->setEnabled(false);
+    layout->addWidget(btn_box);
+
+    double computed_offset = 0.0;
+
+    connect(text_edit, &QPlainTextEdit::textChanged, [&]()
+    {
+        QString text = text_edit->toPlainText();
+
+        QRegularExpression first_frame_re(R"(first frame time set to (\d{2}:\d{2}:\d{2}\.\d+))");
+        QRegularExpression rendez_vous_re(R"(rendez-vous time set to (\d{2}:\d{2}:\d{2}\.\d+))");
+
+        auto first_match = first_frame_re.match(text);
+        auto rdv_match = rendez_vous_re.match(text);
+
+        if (first_match.hasMatch() && rdv_match.hasMatch())
+        {
+            bool ok_first = false, ok_rdv = false;
+
+            double first_secs = String::timeFromString(first_match.captured(1).toStdString(), &ok_first);
+            double rdv_secs = String::timeFromString(rdv_match.captured(1).toStdString(), &ok_rdv);
+
+            if (ok_first && ok_rdv)
+            {
+                computed_offset = first_secs - rdv_secs;
+                result_label->setText(
+                    QString("First frame: %1 (%2s)  |  Rendez-vous: %3 (%4s)  |  Offset: %5s")
+                        .arg(first_match.captured(1))
+                        .arg(first_secs, 0, 'f', 2)
+                        .arg(rdv_match.captured(1))
+                        .arg(rdv_secs, 0, 'f', 2)
+                        .arg(computed_offset, 0, 'f', 2));
+                btn_box->button(QDialogButtonBox::Ok)->setEnabled(true);
+                return;
+            }
+        }
+
+        result_label->setText("Could not parse both timestamps.");
+        btn_box->button(QDialogButtonBox::Ok)->setEnabled(false);
+    });
+
+    connect(btn_box, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btn_box, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    dlg.setLayout(layout);
+
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        task_.settings().override_tod_active_ = true;
+        task_.settings().override_tod_offset_ = computed_offset;
+        updateSlot();
+
+        loginf << "set TOD offset from ReSURF log: " << computed_offset;
+    }
+}
+
 void ASTERIXOverrideWidget::filterTimeOfDayActiveCheckedSlot()
 {
     loginf;
@@ -432,3 +527,4 @@ void ASTERIXOverrideWidget::obfuscateSecondaryInfoCheckedSlot()
 
     task_.settings().obfuscate_secondary_info_ = obfuscate_secondary_info_check_->checkState() == Qt::Checked;
 }
+

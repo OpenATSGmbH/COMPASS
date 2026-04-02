@@ -24,6 +24,9 @@
 #include <QLineSeries>
 #include <QXYSeries>
 #include <QLegendMarker>
+#include <QBarCategoryAxis>
+#include <QFontMetricsF>
+#include <QtMath>
 
 const QColor ChartView::SelectionColor = Qt::red;
 
@@ -65,6 +68,99 @@ ChartView::ChartView(QtCharts::QChart* chart, SelectionStyle sel_style, QWidget*
 /**
  */
 ChartView::~ChartView() = default;
+
+/**
+ * Sets a custom x-axis label rendered as a QGraphicsSimpleTextItem on the chart.
+ * This bypasses QAbstractAxis::setTitleText(), which Qt Charts' internal layout
+ * truncates to "..." when rotated tick labels consume too much vertical space.
+ */
+void ChartView::setXAxisLabel(const QString& label)
+{
+    if (label.isEmpty())
+    {
+        if (x_axis_label_item_)
+        {
+            delete x_axis_label_item_;
+            x_axis_label_item_ = nullptr;
+        }
+        return;
+    }
+
+    if (!x_axis_label_item_)
+    {
+        x_axis_label_item_ = new QGraphicsSimpleTextItem(chart());
+
+        // use the same font as the axis title would
+        QFont f = chart()->font();
+        f.setBold(true);
+        x_axis_label_item_->setFont(f);
+    }
+
+    x_axis_label_item_->setText(label);
+    updateXAxisLabelPosition();
+}
+
+/**
+ */
+void ChartView::resizeEvent(QResizeEvent* event)
+{
+    QChartView::resizeEvent(event);
+    updateXAxisLabelPosition();
+}
+
+/**
+ * Positions the custom x-axis label centered below the plot area,
+ * dynamically below the tick labels to avoid overlap.
+ *
+ * Qt Charts paints tick labels directly inside the axis item (not as child
+ * graphics items), so their extent cannot be discovered via the scene graph.
+ * Instead, the tick label height is calculated from font metrics and the
+ * configured label rotation angle.
+ */
+void ChartView::updateXAxisLabelPosition()
+{
+    if (!x_axis_label_item_)
+        return;
+
+    QRectF plot_area = chart()->plotArea();
+    QRectF label_rect = x_axis_label_item_->boundingRect();
+
+    // calculate the vertical extent of rotated tick labels from font metrics
+    qreal tick_label_height = 0;
+
+    for (auto* axis : chart()->axes(Qt::Horizontal))
+    {
+        QFontMetricsF fm(axis->labelsFont());
+        qreal max_label_width = 0;
+
+        auto* cat_axis = dynamic_cast<QtCharts::QBarCategoryAxis*>(axis);
+        if (cat_axis)
+        {
+            for (const auto& cat : cat_axis->categories())
+                max_label_width = std::max(max_label_width, fm.horizontalAdvance(cat));
+        }
+
+        // rotated label height = width * sin(angle) + height * cos(angle)
+        qreal angle_rad = qDegreesToRadians(qAbs((qreal)axis->labelsAngle()));
+        tick_label_height = max_label_width * qSin(angle_rad) + fm.height() * qCos(angle_rad);
+
+        // account for tick mark length
+        tick_label_height += 8;
+    }
+
+    qreal x = plot_area.center().x() - label_rect.width() / 2.0;
+    qreal y = plot_area.bottom() + tick_label_height + 4;
+
+    // clamp so it doesn't overlap the legend
+    if (chart()->legend() && chart()->legend()->isVisible())
+    {
+        qreal legend_top = chart()->legend()->geometry().top();
+        if (y + label_rect.height() > legend_top)
+            y = legend_top - label_rect.height() - 2;
+    }
+
+    x_axis_label_item_->setPos(x, y);
+}
 
 /**
  * Convert from local widget coordinates to chart coordinates.
@@ -464,3 +560,4 @@ void ChartView::addLegendOnlyItem(const QString& name, const QColor& color)
 
     chart()->addSeries(series);
 }
+

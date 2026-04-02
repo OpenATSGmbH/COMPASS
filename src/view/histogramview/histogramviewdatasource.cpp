@@ -17,6 +17,7 @@
 
 #include "histogramviewdatasource.h"
 #include "histogramview.h"
+#include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "compass.h"
 //#include "configuration.h"
@@ -96,7 +97,7 @@ void HistogramViewDataSource::checkSubConfigurables()
     }
 }
 
-void HistogramViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
+void HistogramViewDataSource::unshowViewPoint (ViewableDataConfig* vp)
 {
     for (auto& var_it : temporary_added_variables_)
     {
@@ -108,7 +109,7 @@ void HistogramViewDataSource::unshowViewPoint (const ViewableDataConfig* vp)
     temporary_added_variables_.clear();
 }
 
-void HistogramViewDataSource::showViewPoint (const ViewableDataConfig* vp)
+void HistogramViewDataSource::showViewPoint (ViewableDataConfig* vp)
 {
     traced_assert(vp);
     const json& data = vp->data();
@@ -203,4 +204,5 @@ void HistogramViewDataSource::removeTemporaryVariable (const std::string& dbcont
         set_->removeVariable(var);
     }
 }
+
 

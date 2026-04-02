@@ -23,8 +23,6 @@
 #include "stringconv.h"
 #include "ui_test_find.h"
 #include "compass.h"
-#include "viewmanager.h"
-#include "viewcontainerwidget.h"
 
 #include "logger.h"
 

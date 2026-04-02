@@ -1,7 +1,5 @@
 add_library(compass_config "")
 
-include_directories("${CMAKE_CURRENT_LIST_DIR}")
-
 target_sources(compass_config
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/config_paths.h"
@@ -18,7 +16,12 @@ target_sources(compass_config
         "${CMAKE_CURRENT_LIST_DIR}/configjson.cpp"
 )
 
-target_include_directories(compass_config PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+target_include_directories(compass_config PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}"
+    # traced_assert.h lives in core/util but is needed by config headers.
+    # Cannot link compass_core (circular dep), so expose the dir directly.
+    "${CMAKE_CURRENT_LIST_DIR}/../core/util"
+)
 
 target_link_libraries(compass_config
     PUBLIC

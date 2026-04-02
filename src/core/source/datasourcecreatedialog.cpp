@@ -167,3 +167,4 @@ bool DataSourceCreateDialog::cancelled() const
 {
     return cancelled_;
 }
+

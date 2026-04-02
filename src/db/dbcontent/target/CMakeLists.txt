@@ -1,9 +1,9 @@
 
-include_directories (
+target_include_directories(compass_core PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass_db
+target_sources(compass_core
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/targetreportdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/target.h"
@@ -12,7 +12,6 @@ target_sources(compass_db
         "${CMAKE_CURRENT_LIST_DIR}/targetmodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/targetlistwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/targetreportchain.h"
-        "${CMAKE_CURRENT_LIST_DIR}/targetposition.h"
         "${CMAKE_CURRENT_LIST_DIR}/targetpositionaccuracy.h"
         "${CMAKE_CURRENT_LIST_DIR}/targetvelocity.h"
         "${CMAKE_CURRENT_LIST_DIR}/targetreportaccessor.h"

@@ -16,14 +16,11 @@
  */
 
 #include "dbfiltercondition.h"
-#include "compass.h"
 #include "dbfilter.h"
-#include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/variable.h"
-#include "dbcontent/variable/metavariable.h"
+#include "idbvariableresolver.h"
 #include "stringconv.h"
 #include "global.h"
+#include "logger.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -33,6 +30,7 @@
 #include <QStyle>
 
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "traced_assert.h"
 #include <sstream>
@@ -42,8 +40,7 @@ using namespace std;
 
 DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
     : Configurable(config, parent),
-      compass_(parent->compass()),
-      dbcont_man_(parent->dbContentManager()),
+      var_resolver_(parent->variableResolver()),
       filter_parent_(parent)
 {
     registerParameter("operator", &operator_, std::string(">"));
@@ -56,15 +53,19 @@ DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
 
     registerParameter("reset_value", &reset_value_, std::string(""));
     registerParameter("value", &value_, std::string());
+    registerParameter("value2", &value2_, std::string());
+    registerParameter("include_null", &include_null_, false);
 
     logdbg << "start" << instanceName() << " value " << value_
            << " usable " << usable_ << " invalid " << value_invalid_;
 
-    label_ = new QLabel();
     if (display_instance_name_)
-        label_->setText(tr((instanceName() + " " + operator_).c_str()));
+        base_label_text_ = instanceName() + " " + operator_;
     else
-        label_->setText(tr((variable_name_ + " " + operator_).c_str()));
+        base_label_text_ = variable_name_ + " " + operator_;
+
+    label_ = new QLabel();
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 
     edit_ = new QLineEdit(tr(value_.c_str()));
     edit_->setMaxLength(16*1024*1024);
@@ -95,7 +96,8 @@ bool DBFilterCondition::filters(const std::string& dbcontent_name)
     return hasVariable(dbcontent_name);
 }
 
-std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
+std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
+                                                   const std::string& logic_op)
 {
     logdbg << "dbcont_name " << dbcontent_name << " first " << first;
     traced_assert(usable_);
@@ -113,58 +115,78 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     traced_assert(hasVariable(dbcontent_name));
 
-    dbContent::Variable& var = variable(dbcontent_name);
+    std::string db_expression = var_resolver_.variableDBExpression(
+        dbcontent_name, variable_name_, variable_dbcontent_name_);
 
     std::string db_item_str;
-    
-    if (var.dbExpression().size())
-        db_item_str = var.dbColumnName();
+
+    if (db_expression.size())
+        db_item_str = var_resolver_.variableDBColumnName(
+            dbcontent_name, variable_name_, variable_dbcontent_name_);
     else
-        db_item_str = var.dbTableName()+"."+var.dbColumnName();
+        db_item_str = var_resolver_.variableDBTableName(
+                          dbcontent_name, variable_name_, variable_dbcontent_name_)
+                      + "."
+                      + var_resolver_.variableDBColumnName(
+                          dbcontent_name, variable_name_, variable_dbcontent_name_);
 
     if (!first)
     {
-        //if (op_and_)
-        ss << " AND ";
-        //else
-        //    ss << " OR ";
+        ss << " " << logic_op << " ";
     }
     first = false;
 
     string val_str;
     bool null_contained;
 
-    tie(val_str, null_contained) = getTransformedValue(value_, &var);
+    tie(val_str, null_contained) = getTransformedValue(value_, dbcontent_name);
 
-    if (null_contained)
-    {
+    std::string col_expr = variable_prefix + db_item_str + variable_suffix;
+
+    bool needs_null_or = null_contained || include_null_;
+    bool is_between = (operator_ == "BETWEEN");
+    bool has_main_condition = false;
+
+    if (needs_null_or)
         ss << "(";
 
-        if (val_str.size())
-        {
-            ss << variable_prefix << db_item_str << variable_suffix;
-            ss << " " << operator_ << val_str << " OR ";
-        }
-
-        ss << variable_prefix << db_item_str << variable_suffix;
-        ss << " " << operator_ << " NULL";
-
-        ss << ")";
-    }
-    else
+    if (is_between)
     {
-        ss << variable_prefix << db_item_str << variable_suffix;
-        ss << " " << operator_ << val_str;
+        std::string val2_str;
+        bool null2;
+        tie(val2_str, null2) = getTransformedValue(value2_, dbcontent_name);
+        ss << col_expr << " BETWEEN " << val_str << " AND " << val2_str;
+        has_main_condition = true;
+    }
+    else if (null_contained && val_str.size())
+    {
+        ss << col_expr << " " << operator_ << val_str;
+        has_main_condition = true;
+    }
+    else if (!null_contained)
+    {
+        ss << col_expr << " " << operator_ << val_str;
+        has_main_condition = true;
+    }
+
+    if (needs_null_or)
+    {
+        if (has_main_condition)
+            ss << " OR ";
+        ss << col_expr << " IS NULL)";
     }
 
     if (ss.str().size())
         loginf << instanceName() << ": '" << ss.str()
                << "'";
 
-    if (var.dbExpression().size() && !read_set.hasVariable(var))
+    if (db_expression.size()
+        && !var_resolver_.readSetHasVariable(dbcontent_name, variable_name_,
+                                             variable_dbcontent_name_, read_set))
     {
-        loginf << "db expression, adding var " << var.name() << " to read set";
-        read_set.add(var);
+        loginf << "db expression, adding var " << variable_name_ << " to read set";
+        var_resolver_.addVariableToReadSet(dbcontent_name, variable_name_,
+                                           variable_dbcontent_name_, read_set);
     }
 
     return ss.str();
@@ -183,8 +205,6 @@ void DBFilterCondition::valueChanged()
     if (!value_invalid_ && value_ != new_value)
     {
         value_ = new_value;
-
-        //emit possibleFilterChange();
     }
 
     loginf << "value '" << value_ << "' invalid "
@@ -192,16 +212,11 @@ void DBFilterCondition::valueChanged()
 
     if (value_invalid_)
     {
-        edit_->setStyleSheet(compass_.lineEditInvalidStyle());
+        edit_->setStyleSheet(LINE_EDIT_INVALID_STYLE);
     }
     else
     {
-        //edit_->setStyleSheet(QApplication::style()->objectName());
         edit_->setStyleSheet("");
-
-        // edit_->setStyleSheet(
-        //             "QLineEdit { background: rgb(255, 255, 255); selection-background-color:"
-        //             " rgb(200, 200, 200); }");
     }
 }
 
@@ -222,47 +237,43 @@ void DBFilterCondition::setVariableName(const std::string& variable_name)
     }
 }
 
-bool DBFilterCondition::hasVariable (const std::string& dbcontent_name)
+bool DBFilterCondition::hasVariable(const std::string& dbcontent_name)
 {
     if (variable_dbcontent_name_ == META_OBJECT_NAME)
     {
-        if (!dbcont_man_.existsMetaVariable(variable_name_))
+        if (!var_resolver_.existsMetaVariable(variable_name_))
             return false;
 
-        return dbcont_man_.metaVariable(variable_name_).existsIn(dbcontent_name);
+        return var_resolver_.metaVariableExistsIn(variable_name_, dbcontent_name);
     }
     else
     {
         if (dbcontent_name != variable_dbcontent_name_)
             return false;
 
-        if (!dbcont_man_.existsDBContent(variable_dbcontent_name_))
+        if (!var_resolver_.existsDBContent(variable_dbcontent_name_))
             return false;
 
-        return dbcont_man_.dbContent(variable_dbcontent_name_).hasVariable(variable_name_);
+        return var_resolver_.dbContentHasVariable(variable_dbcontent_name_, variable_name_);
     }
-}
-
-
-dbContent::Variable& DBFilterCondition::variable (const std::string& dbcontent_name)
-{
-    traced_assert(hasVariable(dbcontent_name));
-
-    if (variable_dbcontent_name_ == META_OBJECT_NAME)
-        return dbcont_man_.metaVariable(variable_name_).getFor(dbcontent_name);
-    else
-         return dbcont_man_.dbContent(variable_dbcontent_name_).variable(variable_name_);
 }
 
 
 void DBFilterCondition::update()
 {
     if (display_instance_name_)
-        label_->setText(tr((instanceName() + " " + operator_).c_str()));
+        base_label_text_ = instanceName() + " " + operator_;
     else
-        label_->setText(tr((variable_name_ + " " + operator_).c_str()));
+        base_label_text_ = variable_name_ + " " + operator_;
 
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
     edit_->setText(tr(value_.c_str()));
+}
+
+void DBFilterCondition::setLabelPrefix(const std::string& prefix)
+{
+    label_prefix_ = prefix;
+    label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 }
 
 void DBFilterCondition::setValue(const std::string& value)
@@ -280,38 +291,6 @@ void DBFilterCondition::reset()
 
     std::string value;
 
-//    if (reset_value_.compare("MIN") == 0 || reset_value_.compare("MAX") == 0)
-//    {
-//        if (reset_value_.compare("MIN") == 0)
-//        {
-//            if (variable_)
-//            {
-//                value = variable_->getMinStringRepresentation();
-//                logdbg << "value " << value << " repr " << value;
-//            }
-//            else
-//            {
-//                traced_assert(meta_variable_);
-//                value = meta_variable_->getMinStringRepresentation();
-//                logdbg << "value " << value << " repr " << value;
-//            }
-//        }
-//        else if (reset_value_.compare("MAX") == 0)
-//        {
-//            if (variable_)
-//            {
-//                value = variable_->getMaxStringRepresentation();
-//                logdbg << "value " << value << " repr " << value;
-//            }
-//            else
-//            {
-//                traced_assert(meta_variable_);
-//                value = meta_variable_->getMaxStringRepresentation();
-//                logdbg << "value " << value << " repr " << value;
-//            }
-//        }
-//    }
-//    else
     value = reset_value_;
 
     value_ = value;
@@ -331,36 +310,35 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
 {
     traced_assert(usable_);
 
-    std::vector<dbContent::Variable*> variables;
-
     if (new_value.size() == 0)
     {
         loginf << "no value, returning invalid";
         return true;
     }
 
+    // collect dbcontent names for all concrete variables
+    std::vector<std::string> dbcontent_names;
+
     if (variable_dbcontent_name_ == META_OBJECT_NAME)
     {
-        traced_assert(dbcont_man_.existsMetaVariable(variable_name_));
-
-        for (auto var_it : dbcont_man_.metaVariable(variable_name_).variables())
-            variables.push_back(&var_it.second);
+        traced_assert(var_resolver_.existsMetaVariable(variable_name_));
+        dbcontent_names = var_resolver_.metaVariableDBContentNames(variable_name_);
     }
     else
     {
         traced_assert(hasVariable(variable_dbcontent_name_));
-        variables.push_back(&variable(variable_dbcontent_name_));
+        dbcontent_names.push_back(variable_dbcontent_name_);
     }
 
     bool invalid = true;
 
     try
     {
-        for (auto var_it : variables)
+        for (const auto& dbc_name : dbcontent_names)
         {
             std::string transformed_value;
             bool null_contained;
-            tie(transformed_value, null_contained) = getTransformedValue(new_value, var_it);
+            tie(transformed_value, null_contained) = getTransformedValue(new_value, dbc_name);
             logdbg << "transformed value " << transformed_value
                    << " null " << null_contained;
         }
@@ -378,11 +356,9 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
     return invalid;
 }
 
-std::pair<std::string, bool> DBFilterCondition::getTransformedValue(const std::string& untransformed_value,
-                                                                    dbContent::Variable* variable)
+std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
+    const std::string& untransformed_value, const std::string& dbcontent_name)
 {
-    traced_assert(variable);
-
     std::vector<std::string> value_strings;
     std::vector<std::string> transformed_value_strings;
 
@@ -407,31 +383,24 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(const std::s
 
     for (auto value_it : value_strings)
     {
-        value_str = value_it;
+        value_str = String::trim(value_it);
 
-        if (variable->representation() != dbContent::Variable::Representation::STANDARD)
-            value_str =
-                    variable->getValueStringFromRepresentation(value_str);  // fix representation
+        if (value_str.empty())
+            continue;
 
-        logdbg << "value string " << value_str;
+        if (var_resolver_.variableHasNonStandardRepresentation(
+                dbcontent_name, variable_name_, variable_dbcontent_name_))
+            value_str = var_resolver_.variableValueFromRepresentation(
+                dbcontent_name, variable_name_, variable_dbcontent_name_, value_str);
 
         logdbg << "transformed value string " << value_str;
 
-//        if (column.dataFormat() == "")
-//            ;
-//        else if (column.dataFormat() == "hexadecimal")
-//            value_str = String::hexStringFromInt(std::stoi(value_str));
-//        else if (column.dataFormat() == "octal")
-//            value_str = String::octStringFromInt(std::stoi(value_str));
-//        else
-//            logwrn << "variable '" << var.name()
-//                   << "' unknown format '" << column.dataFormat() << "'";
-
-//        logdbg << "data format transformed value string "
-//               << value_str;
-
-        if (variable->dataType() == PropertyDataType::STRING)
+        if (var_resolver_.variableDataType(
+                dbcontent_name, variable_name_, variable_dbcontent_name_) == PropertyDataType::STRING)
+        {
+            boost::replace_all(value_str, "'", "''");
             transformed_value_strings.push_back("'" + value_str + "'");
+        }
         else
             transformed_value_strings.push_back(value_str);
     }
@@ -449,3 +418,4 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(const std::s
 
     return {value_str, null_set};
 }
+
