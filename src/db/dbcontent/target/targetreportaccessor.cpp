@@ -68,6 +68,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::meta_var_rec_num_, true);
     add(dbcontent_vars::meta_var_ds_id_, true);
     add(dbcontent_vars::meta_var_line_id_, true);
+    add(DBContent::meta_var_utn_, true);
 
     add(dbcontent_vars::meta_var_acad_, true);
     add(dbcontent_vars::meta_var_acid_, true);
@@ -132,8 +133,10 @@ void TargetReportAccessor::cacheVectors()
     meta_line_id_vec_   = metaVarVector<unsigned int>(dbcontent_vars::meta_var_line_id_);
     traced_assert(meta_line_id_vec_);
 
-    meta_acad_vec_      = metaVarVector<unsigned int>(dbcontent_vars::meta_var_acad_);
-    meta_acid_vec_      = metaVarVector<std::string>(dbcontent_vars::meta_var_acid_);
+    meta_utn_vec_       = metaVarVector<unsigned int>(DBContent::meta_var_utn_);
+
+    meta_acad_vec_      = metaVarVector<unsigned int>(DBContent::meta_var_acad_);
+    meta_acid_vec_      = metaVarVector<std::string>(DBContent::meta_var_acid_);
 
     //position
     meta_latitude_vec_      = metaVarVector<double>(dbcontent_vars::meta_var_latitude_);
@@ -154,8 +157,8 @@ void TargetReportAccessor::cacheVectors()
     meta_pos_std_dev_y_m_vec_           = metaVarVector<double>(dbcontent_vars::meta_var_y_stddev_);
     meta_pos_std_dev_xy_corr_coeff_vec_ = metaVarVector<double>(dbcontent_vars::meta_var_xy_cov_);
 
-    meta_radar_range_vec_    = metaVarVector<double>(dbcontent_vars::var_radar_range_);;
-    meta_radar_azimuth_vec_  = metaVarVector<double>(dbcontent_vars::var_radar_azimuth_);;
+    meta_radar_range_vec_    = metaVarVector<double>(dbcontent_vars::var_radar_range_);
+    meta_radar_azimuth_vec_  = metaVarVector<double>(dbcontent_vars::var_radar_azimuth_);
 
     //velocity / angle
     meta_speed_vec_       = metaVarVector<double>(dbcontent_vars::meta_var_ground_speed_);
@@ -212,6 +215,13 @@ unsigned int TargetReportAccessor::dsID(unsigned int index) const
 unsigned int TargetReportAccessor::lineID(unsigned int index) const
 {
     return getNotOptional<unsigned int>(meta_line_id_vec_, index);
+}
+
+/**
+*/
+boost::optional<unsigned int> TargetReportAccessor::utn(unsigned int index) const
+{
+    return getOptional<unsigned int>(meta_utn_vec_, index);
 }
 
 /**
