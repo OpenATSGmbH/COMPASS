@@ -183,7 +183,7 @@ VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
     config_layout_ = new QVBoxLayout;
 
     cfg_layout->addLayout(config_layout_);
-    cfg_layout->addStretch();
+    cfg_layout->addSpacing(30);
 
     cfg_widget->setLayout(cfg_layout);
 
