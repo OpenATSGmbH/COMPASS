@@ -18,6 +18,7 @@
 #include "client.h"
 
 #include "compass.h"
+#include "db_context_manager.h"
 #include "config.h"
 #include "configurationmanager.h"
 #include "files.h"
@@ -492,6 +493,13 @@ bool Client::run ()
     }
 
     splash.finish(&main_window);
+
+    // ensure a data context is active before proceeding
+    if (!compass_->dbContextManager().ensureActiveContext(&main_window))
+    {
+        loginf << "no data context selected — exiting";
+        return 0;
+    }
 
     RTCommandManager& rt_man = compass_->rtCommandManager();
 

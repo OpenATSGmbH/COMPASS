@@ -23,8 +23,7 @@
 #include "dbcontent/variable/variableset.h"
 //#include "dbcontent/label/labelgeneratorwidget.h"
 #include "dbcontent/label/labelcontentdialog.h"
-#include "datasourcemanager.h"
-#include "dbdatasource.h"
+#include "db_context_manager.h"
 #include "logger.h"
 #include "util/stringconv.h"
 #include "util/timeconv.h"
@@ -701,10 +700,10 @@ void LabelGenerator::removeLabelDSID(unsigned int ds_id)
 
 void LabelGenerator::labelAllDSIDs()
 {
-    DataSourceManager& ds_man = dbcont_manager_.compass().dataSourceManager();
+    auto& ctx_man = dbcont_manager_.compass().dbContextManager();
 
-    for (const auto& ds_it : ds_man.dbDataSources())
-        config_.label_ds_ids_[to_string(ds_it->id())] = true;
+    for (const auto& ds : ctx_man.activeContext().dataSources())
+        config_.label_ds_ids_[to_string(ds.id())] = true;
 
     emit labelConfigChanged();
     emit labelOptionsChangedSignal();
@@ -1237,15 +1236,15 @@ unsigned int LabelGenerator::labelLine (unsigned int ds_id) // returns 0...3
     }
     else
     {
-        DataSourceManager& ds_man = dbcont_manager_.compass().dataSourceManager();
-        traced_assert(ds_man.hasDBDataSource(ds_id));
-
-        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
+        auto& ctx_man = dbcont_manager_.compass().dbContextManager();
+        traced_assert(ctx_man.hasDataSource(ds_id));
 
         unsigned int line = 0;
 
-        if (ds.hasAnyNumLoaded())
-            line = ds.getFirstLoadedLine();
+        // find first line with loaded data
+        auto lines_map = ctx_man.numInsertedLinesMap(ds_id);
+        if (!lines_map.empty())
+            line = lines_map.begin()->first;
 
         config_.label_lines_[key] = line;
         return line;
@@ -1271,7 +1270,7 @@ void LabelGenerator::updateAvailableLabelLines()
     unsigned int ds_id;
     unsigned int line_id;
 
-    DataSourceManager& ds_man = dbcont_manager_.compass().dataSourceManager();
+    auto& ctx_man = dbcont_manager_.compass().dbContextManager();
 
     bool something_changed {false};
 
@@ -1280,18 +1279,18 @@ void LabelGenerator::updateAvailableLabelLines()
         ds_id = std::atoi(line_it.first.c_str());
         line_id = line_it.second;
 
-        if (!ds_man.hasDBDataSource(ds_id)) // check if existing in current db
+        if (!ctx_man.hasDataSource(ds_id)) // check if existing in current db
             continue;
 
-        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
+        auto lines_map = ctx_man.numInsertedLinesMap(ds_id);
 
-        if (ds.hasAnyNumLoaded())
+        if (!lines_map.empty())
         {
-            if (ds.hasNumLoaded(line_id)) // check if current line id has data
+            if (lines_map.count(line_id)) // check if current line id has data
                 continue; // has data in current line
             else // set to first line with data
             {
-                labelLine(ds_id, ds.getFirstLoadedLine());
+                labelLine(ds_id, lines_map.begin()->first);
                 something_changed = true;
             }
         }

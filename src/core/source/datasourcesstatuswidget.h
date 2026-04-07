@@ -99,7 +99,7 @@ public:
         std::set<sensor_status::Event> candidates;
     };
 
-    DataSourcesStatusWidget(DataSourceManager& ds_man, 
+    DataSourcesStatusWidget(context::DBContextManager& ctx_man,
                             DBContentManager& dbcontent_man,
                             bool init_ui = true);
     virtual ~DataSourcesStatusWidget();

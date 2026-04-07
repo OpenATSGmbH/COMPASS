@@ -131,6 +131,8 @@ public:
 protected:
     void createUI();
     void createMenus();
+    void createContextMenu();
+    void updateContextMenuTitle();
     void createDebugMenu();
 
     void updateWindowTitle();
@@ -161,6 +163,10 @@ protected:
 
     // configure sectors
     QAction* sectors_action_ {nullptr};
+
+    // context menu
+    QMenu* context_menu_ {nullptr};
+    QMenu* context_switch_menu_ {nullptr};
 
     // import menu
     QMenu* import_menu_ {nullptr};

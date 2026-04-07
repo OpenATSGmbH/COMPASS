@@ -18,7 +18,8 @@
 #include "datasourcesconfigurationdialog.h"
 #include "datasourcetablemodel.h"
 #include "datasourceeditwidget.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
+#include "data_source.h"
 #include "datasourcecreatedialog.h"
 #include "util/number.h"
 #include "logger.h"
@@ -37,8 +38,8 @@
 using namespace std;
 using namespace Utils;
 
-DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager& ds_man)
-    : QDialog(), ds_man_(ds_man)
+DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(context::DBContextManager& ctx_man)
+    : QDialog(), ctx_man_(ctx_man)
 {
     setWindowTitle("Configure Data Sources");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
@@ -57,7 +58,7 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
 
     QHBoxLayout* top_layout = new QHBoxLayout();
 
-    table_model_ = new DataSourceTableModel(ds_man_, *this);
+    table_model_ = new DataSourceTableModel(ctx_man_, *this);
 
     proxy_model_ = new QSortFilterProxyModel();
     proxy_model_->setSourceModel(table_model_);
@@ -90,11 +91,11 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(DataSourceManager
     std::function<void(unsigned int)> delete_ds_func = [this](unsigned int ds_id)
     {
         table_model_->beginModelReset();
-        ds_man_.deleteConfigDataSource(ds_id);
+        ctx_man_.deleteDataSource(ds_id);
         table_model_->endModelReset();
     };
 
-    edit_widget_ = new DataSourceEditWidget (true, ds_man_, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (true, ctx_man_, update_ds_func, delete_ds_func);
     top_layout->addWidget(edit_widget_);
 
     main_layout->addLayout(top_layout);
@@ -172,7 +173,7 @@ void DataSourcesConfigurationDialog::newDSClickedSlot()
 {
     loginf;
 
-    create_dialog_.reset(new DataSourceCreateDialog(*this, ds_man_));
+    create_dialog_.reset(new DataSourceCreateDialog(*this, ctx_man_));
     connect(create_dialog_.get(), &DataSourceCreateDialog::doneSignal,
             this, &DataSourcesConfigurationDialog::newDSDoneSlot);
 
@@ -197,13 +198,12 @@ void DataSourcesConfigurationDialog::newDSDoneSlot()
 
         unsigned int ds_id = Number::dsIdFrom(sac, sic);
 
-        traced_assert(!ds_man_.hasConfigDataSource(ds_id));
+        traced_assert(!ctx_man_.hasDataSource(ds_id));
 
         table_model_->beginModelReset();
 
-        ds_man_.createConfigDataSource(ds_id);
-        traced_assert(ds_man_.hasConfigDataSource(ds_id));
-        ds_man_.configDataSource(ds_id).dsType(ds_type);
+        auto& new_ds = ctx_man_.createDataSource(sac, sic);
+        new_ds.dsType(ds_type);
 
         table_model_->endModelReset();
 
@@ -225,13 +225,13 @@ void DataSourcesConfigurationDialog::importClickedSlot()
 
     string filename = QFileDialog::getOpenFileName(
                 this, "Import Data Sources",
-                ds_man_.compass().lastUsedPath().c_str(), "*.json").toStdString();
+                ctx_man_.compass().lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {
         table_model_->beginModelReset();
 
-        ds_man_.importDataSources(filename);
+        ctx_man_.importSensors(filename);
 
         table_model_->endModelReset();
 
@@ -254,7 +254,9 @@ void DataSourcesConfigurationDialog::deleteAllClickedSlot()
 
         table_model_->beginModelReset();
 
-        ds_man_.deleteAllConfigDataSources();
+        auto ds_ids = ctx_man_.allDataSourceIds();
+        for (auto ds_id : ds_ids)
+            ctx_man_.deleteDataSource(ds_id);
         edit_widget_->clear();
 
         table_model_->endModelReset();
@@ -267,13 +269,13 @@ void DataSourcesConfigurationDialog::exportClickedSlot()
 
     string filename = QFileDialog::getSaveFileName(
                 this, "Export Data Sources as JSON",
-                ds_man_.compass().lastUsedPath().c_str(), "*.json").toStdString();
+                ctx_man_.compass().lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {
         loginf << "file '" << filename << "'";
 
-        ds_man_.exportDataSources(filename);
+        ctx_man_.exportSensors(filename);
     }
 }
 

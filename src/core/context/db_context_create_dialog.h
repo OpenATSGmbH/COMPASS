@@ -15,23 +15,36 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dbfft.h"
-#include "logger.h"
+#pragma once
 
-using namespace std;
+#include <QDialog>
 
+class QLineEdit;
 
-const std::string DBFFT::table_name_{"ffts"};
-
-const Property DBFFT::name_column_{"name", PropertyDataType::STRING};
-const Property DBFFT::info_column_{"info", PropertyDataType::STRING};
-
-DBFFT::DBFFT()
-{
-}
-
-DBFFT::~DBFFT()
+namespace context
 {
 
-}
+class DBContextManager;
 
+/**
+ * Dialog shown when no contexts exist. Forces the user to create one.
+ */
+class DBContextCreateDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    explicit DBContextCreateDialog(DBContextManager& manager, QWidget* parent = nullptr);
+
+    std::string createdContextName() const { return created_name_; }
+
+private slots:
+    void createSlot();
+
+private:
+    DBContextManager& manager_;
+    QLineEdit* name_edit_{nullptr};
+    std::string created_name_;
+};
+
+} // namespace context

@@ -32,7 +32,7 @@
 class DataSourcesFilter;
 class COMPASS;
 class DBContentManager;
-class DataSourceManager;
+namespace context { class DBContextManager; }
 class FilterManagerWidget;
 class ViewableDataConfig;
 class Buffer;
@@ -100,7 +100,7 @@ public:
 
     COMPASS& compass() { return compass_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
-    DataSourceManager& dataSourceManager();
+    context::DBContextManager& dbContextManager();
 
     IDBVariableResolver& variableResolver() { return var_resolver_; }
 

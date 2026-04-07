@@ -30,7 +30,7 @@
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -86,18 +86,16 @@ bool RadarPlotPositionCalculatorTask::canRun()
             && !dbcont_man.dbContent("CAT048").loadable())
         return false;
 
-    const std::vector<std::unique_ptr<dbContent::DBDataSource>>& db_srcs =
-            compass_.dataSourceManager().dbDataSources();
+    auto& ctx_man = compass_.dbContextManager();
 
     bool found_radar_with_data = false;
-    for (const auto& src : db_srcs)
+    for (const auto& ds : ctx_man.activeContext().dataSources())
     {
-        if (src->dsType() == "Radar" && src->hasNumInserted())
+        if (ds.dsType() == "Radar" && ctx_man.hasNumInserted(ds.id()))
         {
             found_radar_with_data = true;
             break;
         }
-
     }
 
     return found_radar_with_data;

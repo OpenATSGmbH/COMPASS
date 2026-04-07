@@ -17,31 +17,36 @@
 
 #pragma once
 
-#include "source/datasourcebase.h"
-#include "configurable.h"
+#include <QDialog>
 
-class DataSourceManager;
+class QListWidget;
 
-namespace dbContent
+namespace context
 {
 
-class DBDataSource;
+class DBContextManager;
 
-class ConfigurationDataSource : public Configurable, public DataSourceBase
+/**
+ * Dialog shown when contexts exist but none is active.
+ * Forces the user to select one before proceeding.
+ */
+class DBContextSelectDialog : public QDialog
 {
+    Q_OBJECT
+
 public:
-    ConfigurationDataSource(nlohmann::json& config, DataSourceManager* parent);
-    //ConfigurationDataSource() = default;
-    virtual ~ConfigurationDataSource();
+    explicit DBContextSelectDialog(DBContextManager& manager, QWidget* parent = nullptr);
 
-    virtual bool inDataBase() const override { return false; }
+    std::string selectedContextName() const { return selected_name_; }
 
-    virtual void setFromJSON(const nlohmann::json& j);
+private slots:
+    void selectSlot();
+    void itemDoubleClickedSlot();
 
-    DBDataSource* getAsNewDBDS();
-
-protected:
-    virtual void checkSubConfigurables() {}
+private:
+    DBContextManager& manager_;
+    QListWidget* list_widget_{nullptr};
+    std::string selected_name_;
 };
 
-}
+} // namespace context

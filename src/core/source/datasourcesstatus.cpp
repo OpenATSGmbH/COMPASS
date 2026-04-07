@@ -17,7 +17,7 @@
 
 #include "datasourcesstatus.h"
 
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 
 #include "timeconv.h"
 #include "logger.h"
@@ -50,7 +50,7 @@ std::string Event::typeToString(Type type)
 
 /**
  */
-std::string Event::toString(DataSourceManager& ds_man,
+std::string Event::toString(context::DBContextManager& ctx_man,
                             bool add_tracker_info,
                             bool add_sensor_info) const
 {
@@ -63,17 +63,15 @@ std::string Event::toString(DataSourceManager& ds_man,
 
     if (add_tracker_info && tracker_key.has_value())
     {
-        traced_assert(ds_man.hasDBDataSource(tracker_key.value().first));
-        txt += ds_man.dbDataSource(tracker_key.value().first).name() + " ";
+        traced_assert(ctx_man.hasDataSource(tracker_key.value().first));
+        txt += ctx_man.dataSource(tracker_key.value().first)->name() + " ";
         txt += "L" + std::to_string(tracker_key.value().second + 1) + " ";
     }
 
     if (add_sensor_info && sensor_ds_id.has_value())
     {
-        if (ds_man.hasDBDataSource(sensor_ds_id.value()))
-            txt += ds_man.dbDataSource(sensor_ds_id.value()).name() + " ";
-        else if (ds_man.hasConfigDataSource(sensor_ds_id.value()))
-            txt += ds_man.configDataSource(sensor_ds_id.value()).name() + " ";
+        if (ctx_man.hasDataSource(sensor_ds_id.value()))
+            txt += ctx_man.dataSource(sensor_ds_id.value())->name() + " ";
         else
             txt += std::to_string(sensor_ds_id.value()) + " ";
     }

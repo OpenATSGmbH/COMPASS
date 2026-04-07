@@ -20,7 +20,7 @@
 #include "logger.h"
 #include "compass.h"
 #include "taskmanager.h"
-#include "evaluationmanager.h"
+#include "db_context_manager.h"
 #include "sector.h"
 #include "airspace.h"
 #include "sectorlayer.h"
@@ -199,12 +199,12 @@ void ManageSectorsTaskWidget::updateSectorTableSlot()
 
     sector_table_->blockSignals(true);
 
-    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
+    auto& ctx = task_.manager().compass().dbContextManager();
 
     sector_table_->setDisabled(true); // otherwise first element is edited after
     sector_table_->clearContents();
 
-    if (!eval_man.sectorsLoaded())
+    if (!ctx.sectorsLoaded())
     {
         sector_table_->blockSignals(false);
         sector_table_->setDisabled(false);
@@ -212,8 +212,8 @@ void ManageSectorsTaskWidget::updateSectorTableSlot()
         return;
     }
 
-    traced_assert(eval_man.sectorsLoaded());
-    vector<std::shared_ptr<SectorLayer>>& sector_layers = eval_man.sectorsLayers();
+    traced_assert(ctx.sectorsLoaded());
+    vector<std::shared_ptr<SectorLayer>>& sector_layers = ctx.sectorLayers();
 
     unsigned int num_layers=0;
     for (auto& sec_lay_it : sector_layers)
@@ -507,17 +507,17 @@ void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
     loginf << "sector_id " << sector_id
            << " col_name " << col_name << " text '" << text << "'";
 
-    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
+    auto& ctx = task_.manager().compass().dbContextManager();
 
-    traced_assert(eval_man.hasSector(sector_id));
+    traced_assert(ctx.hasSector(sector_id));
 
-    std::shared_ptr<Sector> sector = eval_man.sector(sector_id);
+    std::shared_ptr<Sector> sector = ctx.sector(sector_id);
 
     if (col_name == "Sector Name")
     {
         if (text.size())
         {
-            if (eval_man.hasSector(text, sector->layerName()))
+            if (ctx.hasSector(text, sector->layerName()))
             {
                 QMessageBox m_warning(QMessageBox::Warning, "Sector Change Failed",
                 ("Layer '"+sector->layerName()+"' Sector '"+text+"' already exists.").c_str(), QMessageBox::Ok);
@@ -531,7 +531,7 @@ void ManageSectorsTaskWidget::sectorItemChangedSlot(QTableWidgetItem* item)
     {
         if (text.size())
         {
-            if (eval_man.hasSector(sector->name(), text))
+            if (ctx.hasSector(sector->name(), text))
             {
                 QMessageBox m_warning(QMessageBox::Warning, "Sector Change Failed",
                 ("Layer '"+text+"' Sector '"+sector->name()+"' already exists.").c_str(), QMessageBox::Ok);
@@ -587,11 +587,11 @@ void ManageSectorsTaskWidget::changeSectorColorSlot()
 
     unsigned int sector_id = sector_id_var.toUInt();
 
-    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
+    auto& ctx = task_.manager().compass().dbContextManager();
 
-    traced_assert(eval_man.hasSector(sector_id));
+    traced_assert(ctx.hasSector(sector_id));
 
-    std::shared_ptr<Sector> sector = eval_man.sector(sector_id);
+    std::shared_ptr<Sector> sector = ctx.sector(sector_id);
 
     QColor current_color = QColor(sector->colorStr().c_str());
 
@@ -618,13 +618,13 @@ void ManageSectorsTaskWidget::deleteSectorSlot()
 
     unsigned int sector_id = sector_id_var.toUInt();
 
-    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
+    auto& ctx = task_.manager().compass().dbContextManager();
 
-    traced_assert(eval_man.hasSector(sector_id));
+    traced_assert(ctx.hasSector(sector_id));
 
-    std::shared_ptr<Sector> sector = eval_man.sector(sector_id);
+    std::shared_ptr<Sector> sector = ctx.sector(sector_id);
 
-    eval_man.deleteSector(sector);
+    ctx.deleteSector(sector);
 
     updateSectorTableSlot();
 }
@@ -633,7 +633,7 @@ void ManageSectorsTaskWidget::exportSectorsSlot ()
 {
     loginf;
 
-    EvaluationManager& eval_man = task_.manager().compass().evaluationManager();
+    auto& ctx = task_.manager().compass().dbContextManager();
 
     QFileDialog dialog(nullptr);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -653,14 +653,14 @@ void ManageSectorsTaskWidget::exportSectorsSlot ()
         loginf << "cancelled";
 
     if (filename.size() > 0)
-        eval_man.exportSectors(filename.toStdString());
+        ctx.exportSectors(filename.toStdString());
 }
 
 void ManageSectorsTaskWidget::clearSectorsSlot ()
 {
     loginf;
 
-    task_.manager().compass().evaluationManager().deleteAllSectors();
+    task_.manager().compass().dbContextManager().deleteAllSectors();
 
     updateSectorTableSlot();
 }
@@ -687,7 +687,7 @@ void ManageSectorsTaskWidget::importSectorsJSON (const std::string& filename)
 
     traced_assert(Files::fileExists(filename));
 
-    task_.manager().compass().evaluationManager().importSectors(filename);
+    task_.manager().compass().dbContextManager().importSectors(filename);
 
     updateSectorTableSlot();
 }
@@ -712,7 +712,7 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsJSON(const std::string& filen
 
     traced_assert(Files::fileExists(filename));
 
-    auto max_sector_id = task_.manager().compass().evaluationManager().getMaxSectorId();
+    auto max_sector_id = task_.manager().compass().dbContextManager().maxSectorId();
 
     AirSpace air_space;
 
@@ -780,20 +780,19 @@ void ManageSectorsTaskWidget::importAirSpaceSectorsJSON(const std::string& filen
     if (ret == QDialog::Rejected)
         return;
 
-    std::set<std::string> sectors_to_import;
+    std::map<std::string, bool> sectors_to_import;
 
     for (int i = 0; i < list->topLevelItemCount(); ++i)
     {
         QTreeWidgetItem* item = list->topLevelItem(i);
         if (item->checkState(0) == Qt::Checked)
-            sectors_to_import.insert(item->text(1).toStdString());
+            sectors_to_import[item->text(1).toStdString()] = true;
     }
 
     if (sectors_to_import.empty())
         return;
 
-    if (!task_.manager().compass().evaluationManager().importAirSpace(air_space, sectors_to_import))
-        QMessageBox::critical(this, "Error", "Importing air space sectors failed.");
+    task_.manager().compass().dbContextManager().importAirSpace(air_space, sectors_to_import);
 
     updateSectorTableSlot();
 }

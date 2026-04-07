@@ -17,7 +17,8 @@
 
 #include "managesectorstask.h"
 #include "compass.h"
-#include "evaluationmanager.h"
+#include "db_context_manager.h"
+#include "logger.h"
 #include "managesectorstaskdialog.h"
 #include "taskmanager.h"
 #include "files.h"
@@ -88,7 +89,7 @@ void ManageSectorsTask::dialogDoneSlot()
     traced_assert(dialog_);
     dialog_->hide();
 
-    emit manager().compass().evaluationManager().sectorsChangedSignal();
+    emit manager().compass().dbContextManager().sectorsChangedSignal();
 }
 
 bool ManageSectorsTask::hasFile(const std::string& filename) const
@@ -402,7 +403,7 @@ void ManageSectorsTask::parseCurrentFile (bool import)
     GDALClose(data_set);
 
     if (import)
-        emit manager().compass().evaluationManager().sectorsChangedSignal();
+        emit manager().compass().dbContextManager().sectorsChangedSignal();
 
     if (dialog_)
         dialog_->updateParseMessage();
@@ -418,13 +419,13 @@ void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& 
 
     if (import)
     {
-        addLinearRing(sector_name+to_string(manager().compass().evaluationManager().getMaxSectorId()+1), *ring, import);
+        addLinearRing(sector_name+to_string(manager().compass().dbContextManager().maxSectorId()+1), *ring, import);
 
          for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
          {
              ring = polygon.getInteriorRing(ring_cnt);
              traced_assert(ring);
-             addLinearRing(sector_name+to_string(manager().compass().evaluationManager().getMaxSectorId()+1), *ring, import);
+             addLinearRing(sector_name+to_string(manager().compass().dbContextManager().maxSectorId()+1), *ring, import);
          }
     }
     else // no eval man call during ctor
@@ -481,11 +482,11 @@ void ManageSectorsTask::addSector (const std::string& sector_name, std::vector<s
     loginf << "layer '" << layer_name_ << "' name '" << sector_name
            << "' num points " << points.size();
 
-    EvaluationManager& eval_man = manager().compass().evaluationManager();
+    auto& ctx = manager().compass().dbContextManager();
 
-    traced_assert(!eval_man.hasSector(sector_name, layer_name_));
+    traced_assert(!ctx.hasSector(sector_name, layer_name_));
 
     loginf << "adding layer '" << layer_name_ << "' name '" << sector_name;
-    eval_man.createNewSector(sector_name, layer_name_, exclude_, color_, points);
+    ctx.createSector(sector_name, layer_name_, exclude_, color_, points);
 }
 

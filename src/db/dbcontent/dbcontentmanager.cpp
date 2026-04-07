@@ -28,7 +28,7 @@
 #include "dbcontent/target/targetlistwidget.h"
 #include "logger.h"
 #include "dbcontent/variable/metavariable.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "stringconv.h"
 #include "viewmanager.h"
 #include "jobmanager.h"
@@ -371,7 +371,7 @@ void DBContentManager::load(const std::string& custom_filter_clause,
 
     bool load_job_created = false;
 
-    DataSourceManager& ds_man =  compass_.dataSourceManager();
+    auto& ctx_man = compass_.dbContextManager();
     DBInterface& db_interface = compass_.dbInterface();
 
     if (measure_db_performance)
@@ -381,10 +381,10 @@ void DBContentManager::load(const std::string& custom_filter_clause,
     {
         logdbg << "object " << object.first
                << " loadable " << object.second->loadable()
-               << " loading wanted " << ds_man.loadingWanted(object.first)
+               << " loading wanted " << ctx_man.loadingWanted(object.first)
                << " filters " << compass_.filterManager().useFilters();
 
-        if (object.second->loadable() && ds_man.loadingWanted(object.first))
+        if (object.second->loadable() && ctx_man.loadingWanted(object.first))
         {
             logdbg << "loading object " << object.first;
             
@@ -692,7 +692,7 @@ void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
     has_associations_ = true;
     associations_id_ = assoc_id;
 
-    compass_.dataSourceManager().updateWidgets();
+    // updateWidgets removed — handled by signals
 
     emit associationStatusChangedSignal();
 }
@@ -718,7 +718,7 @@ void DBContentManager::clearAssociationsIdentifier()
 
     dbinterface.saveProperties();
 
-    compass_.dataSourceManager().updateWidgets();
+    // updateWidgets removed — handled by signals
 
     emit associationStatusChangedSignal();
 }
@@ -968,7 +968,7 @@ void DBContentManager::finishInserting()
     else
     {
         //non-live updates
-        compass_.dataSourceManager().updateWidgets();
+        // updateWidgets removed — handled by signals
         //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
         logdbg << "update widgets + lines took "
@@ -1147,7 +1147,7 @@ void DBContentManager::processLiveModeSlot()
         }
     }
 
-    compass_.dataSourceManager().updateWidgets();
+    // updateWidgets removed — handled by signals
 
     //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
@@ -1186,7 +1186,7 @@ void DBContentManager::addInsertedDataToChache()
         //label_generator_->addVariables(buf_it->first, read_set);
 
         //sensor status
-        compass_.dataSourceManager().addSensorStatusVariables(buf_it->first, read_set);
+        // TODO: addSensorStatusVariables — to be migrated to DBContextManager
 
         // for (unsigned int i = 0; i < read_set.getSize(); ++i)
         //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";
@@ -1258,7 +1258,7 @@ void DBContentManager::filterDataSources()
     logdbg;
 
     std::map<unsigned int, std::set<unsigned int>> wanted_data_sources =
-        compass_.dataSourceManager().getLoadDataSources();
+        compass_.dbContextManager().getLoadDataSources();
 
     unsigned int num_buffers = data_.size();
 
@@ -1416,7 +1416,7 @@ void DBContentManager::updateNumLoadedCounts()
             loaded_counts[ds_id_vec.get(cnt)][buf_it.first][line_id_vec.get(cnt)] += 1;
     }
 
-    compass_.dataSourceManager().setLoadedCounts(loaded_counts);
+    compass_.dbContextManager().setLoadedCounts(loaded_counts);
 }
 
 /**

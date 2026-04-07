@@ -19,7 +19,7 @@
 
 #include <QDialog>
 
-class DataSourceManager;
+namespace context { class DBContextManager; }
 class DataSourcesConfigurationDialog;
 class DSTypeSelectionComboBox;
 
@@ -43,7 +43,7 @@ public slots:
     void doneClickedSlot();
 
 public:
-    DataSourceCreateDialog(DataSourcesConfigurationDialog& dialog, DataSourceManager& ds_man);
+    DataSourceCreateDialog(DataSourcesConfigurationDialog& dialog, context::DBContextManager& ctx_man);
     virtual ~DataSourceCreateDialog();
 
     unsigned int sac() const;
@@ -55,7 +55,7 @@ public:
     bool cancelled() const;
 
 protected:
-    DataSourceManager& ds_man_;
+    context::DBContextManager& ctx_man_;
 
     DSTypeSelectionComboBox* dstype_combo_{nullptr};
 

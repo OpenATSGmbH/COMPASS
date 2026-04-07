@@ -16,7 +16,7 @@
  */
 
 #include "dbcontent/label/labeldswidget.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "dbcontentmanager.h"
 #include "compass.h"
 #include "dbcontent/label/labelgenerator.h"
@@ -58,7 +58,7 @@ LabelDSWidget::LabelDSWidget(LabelGenerator& label_generator, QWidget* parent, Q
 
     setLayout(main_layout);
 
-    connect(&label_generator_.dbContentManager().compass().dataSourceManager(), &DataSourceManager::dataSourcesChangedSignal,
+    connect(&label_generator_.dbContentManager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
             this, &LabelDSWidget::updateListSlot); // update if data sources changed
 
     connect(&label_generator, &LabelGenerator::labelLinesChangedSignal,
@@ -78,12 +78,12 @@ void LabelDSWidget::updateListSlot()
 {
     logdbg;
 
-    DataSourceManager& ds_man = label_generator_.dbContentManager().compass().dataSourceManager();
+    auto& ctx_man = label_generator_.dbContentManager().compass().dbContextManager();
 
     std::map<std::string, std::string> current_sources;
-    for (const auto& ds_it : ds_man.dbDataSources())
-        current_sources[ds_it->name()] = String::lineStrFrom(label_generator_.labelLine(ds_it->id()))
-                + to_string((unsigned int)label_generator_.labelDirection(ds_it->id()));
+    for (const auto& ds : ctx_man.activeContext().dataSources())
+        current_sources[ds.name()] = String::lineStrFrom(label_generator_.labelLine(ds.id()))
+                + to_string((unsigned int)label_generator_.labelDirection(ds.id()));
 
     if (old_sources_ == current_sources)
         return;
@@ -118,36 +118,36 @@ void LabelDSWidget::updateListSlot()
     dir_label->setFont(font_bold);
     ds_grid_->addWidget(dir_label, row, 2);
 
-    for (const auto& ds_it : ds_man.dbDataSources())
+    for (const auto& ds : ctx_man.activeContext().dataSources())
     {
         ++row;
 
-        QCheckBox* box = new QCheckBox(ds_it->name().c_str());
-        box->setProperty("ds_id", ds_it->id());
-        box->setChecked(label_generator_.labelWanted(ds_it->id()));
+        QCheckBox* box = new QCheckBox(ds.name().c_str());
+        box->setProperty("ds_id", ds.id());
+        box->setChecked(label_generator_.labelWanted(ds.id()));
         connect(box, &QCheckBox::clicked, this, &LabelDSWidget::sourceClickedSlot);
         ds_grid_->addWidget(box, row, 0);
 
-        QPushButton* line = new QPushButton(String::lineStrFrom(label_generator_.labelLine(ds_it->id())).c_str());
-        line->setProperty("ds_id", ds_it->id());
+        QPushButton* line = new QPushButton(String::lineStrFrom(label_generator_.labelLine(ds.id())).c_str());
+        line->setProperty("ds_id", ds.id());
         line->setFixedWidth(2*UI_ICON_SIZE.width());
         //direction->setFixedSize(UI_ICON_SIZE);
         line->setFlat(UI_ICON_BUTTON_FLAT);
         connect(line, &QPushButton::clicked, this, &LabelDSWidget::changeLineSlot);
         ds_grid_->addWidget(line, row, 1);
 
-        line_buttons_[ds_it->id()] = line;
+        line_buttons_[ds.id()] = line;
 
         QPushButton* direction = new QPushButton();
-        direction->setProperty("ds_id", ds_it->id());
-        direction->setIcon(iconForDirection(label_generator_.labelDirection(ds_it->id())));
+        direction->setProperty("ds_id", ds.id());
+        direction->setIcon(iconForDirection(label_generator_.labelDirection(ds.id())));
         direction->setFixedWidth(2*UI_ICON_SIZE.width());
         //direction->setFixedSize(UI_ICON_SIZE);
         direction->setFlat(UI_ICON_BUTTON_FLAT);
         connect(direction, &QPushButton::clicked, this, &LabelDSWidget::changeDirectionSlot);
         ds_grid_->addWidget(direction, row, 2);
 
-        direction_buttons_[ds_it->id()] = direction;
+        direction_buttons_[ds.id()] = direction;
     }
 
     old_sources_ = current_sources;
@@ -179,16 +179,23 @@ void LabelDSWidget::changeLineSlot()
 
     loginf << "ds_id " << ds_id;
 
-    DataSourceManager& ds_man = label_generator_.dbContentManager().compass().dataSourceManager();
-    traced_assert(ds_man.hasDBDataSource(ds_id));
-
-    dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
+    auto& ctx_man = label_generator_.dbContentManager().compass().dbContextManager();
+    traced_assert(ctx_man.hasDataSource(ds_id));
 
     QMenu menu;
 
     for (unsigned int line_cnt=0; line_cnt < 4; ++line_cnt)
     {
-        if (!ds.hasNumLoaded(line_cnt))
+        // check if any dbcontent has loaded data for this line
+        // TODO: add a dedicated hasNumLoaded(ds_id, line_id) to DBContextManager
+        bool has_loaded = false;
+        for (const auto& dbcont : std::vector<std::string>{"CAT001","CAT010","CAT020","CAT021","CAT048","CAT062","RefTraj"})
+        {
+            auto per_line = ctx_man.numInsertedPerLine(ds_id, dbcont);
+            if (per_line.count(line_cnt) && per_line.at(line_cnt) > 0)
+            { has_loaded = true; break; }
+        }
+        if (!has_loaded)
             continue;
 
         QAction* action = menu.addAction(String::lineStrFrom(line_cnt).c_str());

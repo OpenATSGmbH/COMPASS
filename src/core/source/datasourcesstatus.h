@@ -19,7 +19,7 @@
 
 #include "traced_assert.h"
 
-class DataSourceManager;
+namespace context { class DBContextManager; }
 
 #include <map>
 #include <deque>
@@ -87,7 +87,7 @@ struct Event
     bool isTrackerSpecific() const { return tracker_key.has_value(); }
     bool isTrackerSpecific(const TrackerKey& key) const { return isTrackerSpecific() && tracker_key.value() == key; }
 
-    std::string toString(DataSourceManager& ds_man,
+    std::string toString(context::DBContextManager& ctx_man,
                          bool add_tracker_info,
                          bool add_sensor_info) const;
 

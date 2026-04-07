@@ -16,8 +16,6 @@
  */
 
 #include "accuracyestimatorbase.h"
-#include "datasourcemanager.h"
-#include "dbdatasource.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "reconstructorbase.h"

@@ -20,13 +20,13 @@
 #include <QAbstractItemModel>
 #include <QIcon>
 
-class DataSourceManager;
+namespace context { class DBContextManager; }
 class DataSourcesConfigurationDialog;
 
 class DataSourceTableModel : public QAbstractItemModel
 {
 public:
-    DataSourceTableModel(DataSourceManager& ds_man, DataSourcesConfigurationDialog& dialog);
+    DataSourceTableModel(context::DBContextManager& ctx_man, DataSourcesConfigurationDialog& dialog);
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
@@ -47,10 +47,10 @@ public:
     void endModelReset();
 
 protected:
-    DataSourceManager& ds_man_;
+    context::DBContextManager& ctx_man_;
     DataSourcesConfigurationDialog& dialog_;
 
-    QStringList table_columns_ {"Name", "Short Name", "DSType", "SAC", "SIC", "In DB", "In Cfg"};
+    QStringList table_columns_ {"Name", "Short Name", "DSType", "SAC", "SIC"};
 
     QIcon db_icon_;
     QIcon config_icon_;

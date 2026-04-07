@@ -40,7 +40,6 @@ class COMPASS;
 class DBContentManager;
 class TaskManager;
 
-class ASTERIXCategoryConfig;
 class ASTERIXStatusDialog;
 
 class QProgressDialog;
@@ -159,7 +158,9 @@ protected:
 
     void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
-    void refreshjASTERIX() const;
+    void initjASTERIX() const;        // create decoder, validate framings — no context needed
+    void configurejASTERIX() const;   // apply context category configs to decoder — needs context
+    void refreshjASTERIX() const;     // init + configure
 
     void sourceChanged();
 
@@ -176,7 +177,6 @@ protected:
     ASTERIXPostProcess post_process_;
 
     //sub-configurables
-    std::map<unsigned int, ASTERIXCategoryConfig> category_configs_;
     std::shared_ptr<ASTERIXJSONParsingSchema>     schema_;
 
     std::unique_ptr<ASTERIXDecoderBase> decoder_;

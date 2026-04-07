@@ -17,21 +17,23 @@
 
 #pragma once
 
-#include "fftbase.h"
-#include "property.h"
+#include <string>
+#include <vector>
 
-class DBFFT : public FFTBase
+/**
+ * Lightweight interface for querying data source info.
+ * Decouples widgets from the full DBContextManager.
+ */
+class IDataSourceProvider
 {
 public:
+    struct DataSourceInfo
+    {
+        unsigned int id;
+        std::string name;
+        std::string ds_type;
+    };
 
-    static const std::string table_name_;
-
-    const static Property name_column_;
-    const static Property info_column_;
-
-    DBFFT();
-    virtual ~DBFFT();
-
-protected:
+    virtual ~IDataSourceProvider() = default;
+    virtual std::vector<DataSourceInfo> dataSourceInfos() const = 0;
 };
-

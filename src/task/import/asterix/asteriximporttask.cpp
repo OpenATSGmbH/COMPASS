@@ -16,13 +16,13 @@
  */
 
 #include "asteriximporttask.h"
-#include "asterixcategoryconfig.h"
+#include "asterix_decoding_config.h"
 #include "compass.h"
 #include "buffer.h"
 #include "configurable.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "files.h"
 #include "logger.h"
 #include "asteriximporttaskdialog.h"
@@ -236,7 +236,7 @@ ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent
     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
     jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
 
-    refreshjASTERIX(); // needed for available framings check etc.
+    initjASTERIX(); // create decoder for ASTERIXJSONParser — no context needed
 
     createSubConfigurables();
 
@@ -259,22 +259,8 @@ void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
     const auto& instance_name = Configuration::getInstanceName(child_json);
     if (class_name == "ASTERIXCategoryConfig")
     {
-        unsigned int category = child_json.at(Configuration::ParameterSection).at("category").get<unsigned int>();
-
-        traced_assert(category_configs_.find(category) == category_configs_.end());
-
-        logdbg << "generating asterix config "
-               << instance_name << " with cat " << category;
-
-        category_configs_.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(category),              // args for key
-            std::forward_as_tuple(child_json, this));     // args for mapped value
-
-        logdbg << "cat " << category << " decode "
-               << category_configs_.at(category).decode() << " edition '"
-               << category_configs_.at(category).edition() << "' ref '"
-               << category_configs_.at(category).ref() << "'";
+        loginf << "skipping legacy ASTERIXCategoryConfig '"
+               << instance_name << "' — now managed by DBContextManager";
     }
     else if (class_name == "ASTERIXJSONParsingSchema")
     {
@@ -323,11 +309,13 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
     if (!config.is_object())
         throw runtime_error("ASTERIXImportTask: asterixDecoderConfig: json config is not an object");
 
+    auto& ctx_mgr = compass_.dbContextManager();
+
     for (auto& cat_it : config.items())
     {
         std::string cat_str = cat_it.key();
 
-        unsigned int cat = stoi (cat_str);
+        unsigned int cat = stoi(cat_str);
 
         if (!hasConfiguratonFor(cat))
             throw runtime_error("ASTERIXImportTask: asterixDecoderConfig: unknown cat "+to_string(cat)
@@ -337,6 +325,9 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
         if (!cat_cfg.is_object())
             throw runtime_error("ASTERIXImportTask: asterixDecoderConfig: cat "+to_string(cat)
                                 +" config is not an object");
+
+        auto* cfg = ctx_mgr.asterixConfig(cat);
+        traced_assert(cfg);
 
         if (cat_cfg.contains("edition"))
         {
@@ -353,7 +344,7 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
             loginf << "setting cat " << cat
                    << " edition " << edition;
 
-            category_configs_.at(cat).edition(edition);
+            cfg->edition(edition);
         }
 
         if (cat_cfg.contains("ref_edition"))
@@ -371,7 +362,7 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
             loginf << "setting cat " << cat
                    << " ref edition " << ref_ed;
 
-            category_configs_.at(cat).ref(ref_ed);
+            cfg->ref(ref_ed);
         }
 
         if (cat_cfg.contains("spf_edition"))
@@ -389,9 +380,11 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
             loginf << "setting cat " << cat
                    << " spf edition " << spf_ed;
 
-            category_configs_.at(cat).spf(spf_ed);
+            cfg->spf(spf_ed);
         }
     }
+
+    ctx_mgr.saveContext(ctx_mgr.activeContextName());
 }
 
 /**
@@ -446,7 +439,7 @@ std::shared_ptr<jASTERIX::jASTERIX> ASTERIXImportTask::jASTERIX(bool refresh) co
 
 /**
 */
-void ASTERIXImportTask::refreshjASTERIX() const
+void ASTERIXImportTask::initjASTERIX() const
 {
     std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
 
@@ -462,68 +455,80 @@ void ASTERIXImportTask::refreshjASTERIX() const
     {
         logdbg << "resetting to no framing";
 
-        //@TODO: thats not nice...
         ASTERIXImportTaskSettings& settings = const_cast<ASTERIXImportTaskSettings&>(settings_);
         settings.setActiveFileFraming("");
     }
+}
 
-    // set category configs
+void ASTERIXImportTask::configurejASTERIX() const
+{
+    traced_assert(jasterix_);
+
     jasterix_->decodeNoCategories();
 
-    for (auto& cat_it : category_configs_)
+    if (!compass_.hasActiveContext())
+        return;
+
+    auto& ctx_mgr = compass_.dbContextManager();
+
+    for (const auto& cfg : ctx_mgr.activeContext().asterixDecoding())
     {
-        // loginf << "setting category " << cat_it.first;
+        unsigned int cat = cfg.category();
 
-        logdbg << "setting cat " << cat_it.first << " decode "
-               << cat_it.second.decode() << " edition '" << cat_it.second.edition() << "' ref '"
-               << cat_it.second.ref() << "'";
+        logdbg << "setting cat " << cat << " decode "
+               << cfg.decode() << " edition '" << cfg.edition() << "' ref '"
+               << cfg.ref() << "'";
 
-        if (!jasterix_->hasCategory(cat_it.first))
+        if (!jasterix_->hasCategory(cat))
         {
-            logwrn << "cat '" << cat_it.first
+            logwrn << "cat '" << cat
                    << "' not defined in decoder";
             continue;
         }
 
-        if (!jasterix_->category(cat_it.first)->hasEdition(cat_it.second.edition()))
+        if (!jasterix_->category(cat)->hasEdition(cfg.edition()))
         {
-            logwrn << "cat " << cat_it.first << " edition '"
-                   << cat_it.second.edition() << "' not defined in decoder";
+            logwrn << "cat " << cat << " edition '"
+                   << cfg.edition() << "' not defined in decoder";
             continue;
         }
 
-        if (cat_it.second.ref().size() &&  // only if value set
-            !jasterix_->category(cat_it.first)->hasREFEdition(cat_it.second.ref()))
+        if (cfg.ref().size() &&
+            !jasterix_->category(cat)->hasREFEdition(cfg.ref()))
         {
-            logwrn << "cat " << cat_it.first << " ref '"
-                   << cat_it.second.ref() << "' not defined in decoder";
+            logwrn << "cat " << cat << " ref '"
+                   << cfg.ref() << "' not defined in decoder";
             continue;
         }
 
-        if (cat_it.second.spf().size() &&  // only if value set
-            !jasterix_->category(cat_it.first)->hasSPFEdition(cat_it.second.spf()))
+        if (cfg.spf().size() &&
+            !jasterix_->category(cat)->hasSPFEdition(cfg.spf()))
         {
-            logwrn << "cat " << cat_it.first << " spf '"
-                   << cat_it.second.spf() << "' not defined in decoder";
+            logwrn << "cat " << cat << " spf '"
+                   << cfg.spf() << "' not defined in decoder";
             continue;
         }
 
-        //        loginf << "setting cat " <<  cat_it.first
-        //               << " decode flag " << cat_it.second.decode();
-        jasterix_->setDecodeCategory(cat_it.first, cat_it.second.decode());
-        logdbg << "setting cat " <<  cat_it.first
-               << " edition " << cat_it.second.edition();
-        jasterix_->category(cat_it.first)->setCurrentEdition(cat_it.second.edition());
-        jasterix_->category(cat_it.first)->setCurrentREFEdition(cat_it.second.ref());
-        jasterix_->category(cat_it.first)->setCurrentSPFEdition(cat_it.second.spf());
+        jasterix_->setDecodeCategory(cat, cfg.decode());
+        logdbg << "setting cat " << cat
+               << " edition " << cfg.edition();
+        jasterix_->category(cat)->setCurrentEdition(cfg.edition());
+        jasterix_->category(cat)->setCurrentREFEdition(cfg.ref());
+        jasterix_->category(cat)->setCurrentSPFEdition(cfg.spf());
     }
+}
+
+void ASTERIXImportTask::refreshjASTERIX() const
+{
+    initjASTERIX();
+    configurejASTERIX();
 }
 
 /**
 */
 bool ASTERIXImportTask::hasConfiguratonFor(unsigned int category)
 {
-    return category_configs_.count(category) > 0;
+    return compass_.dbContextManager().hasAsterixConfig(category);
 }
 
 /**
@@ -531,7 +536,7 @@ bool ASTERIXImportTask::hasConfiguratonFor(unsigned int category)
 bool ASTERIXImportTask::decodeCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
-    return category_configs_.at(category).decode();
+    return compass_.dbContextManager().asterixConfig(category)->decode();
 }
 
 /**
@@ -542,19 +547,13 @@ void ASTERIXImportTask::decodeCategory(unsigned int category, bool decode)
 
     loginf << "cat " << category << " decode " << decode;
 
-    if (!hasConfiguratonFor(category))
-    {
-        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
-        cj[Configuration::ParameterSection]["category"] = category;
-        cj[Configuration::ParameterSection]["decode"] = decode;
-        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
-        cj[Configuration::ParameterSection]["ref"] = jasterix_->category(category)->defaultREFEdition();
+    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
+        category,
+        jasterix_->category(category)->defaultEdition(),
+        jasterix_->category(category)->defaultREFEdition());
+    cfg.decode(decode);
 
-        generateSubConfigurable(cj);
-        traced_assert(hasConfiguratonFor(category));
-    }
-    else
-        category_configs_.at(category).decode(decode);
+    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
 
     testFileDecoding();
 }
@@ -565,16 +564,16 @@ std::string ASTERIXImportTask::editionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
 
-    // check if edition exists, otherwise rest to default
-    if (jasterix_->category(category)->editions().count(category_configs_.at(category).edition()) ==
-        0)
+    auto* cfg = compass_.dbContextManager().asterixConfig(category);
+
+    // check if edition exists, otherwise reset to default
+    if (jasterix_->category(category)->editions().count(cfg->edition()) == 0)
     {
-        loginf << "cat " << category
-               << " reset to default edition";
-        category_configs_.at(category).edition(jasterix_->category(category)->defaultEdition());
+        loginf << "cat " << category << " reset to default edition";
+        cfg->edition(jasterix_->category(category)->defaultEdition());
     }
 
-    return category_configs_.at(category).edition();
+    return cfg->edition();
 }
 
 /**
@@ -585,19 +584,13 @@ void ASTERIXImportTask::editionForCategory(unsigned int category, const std::str
 
     loginf << "cat " << category << " edition " << edition;
 
-    if (!hasConfiguratonFor(category))
-    {
-        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
-        cj[Configuration::ParameterSection]["category"] = category;
-        cj[Configuration::ParameterSection]["decode"] = false;
-        cj[Configuration::ParameterSection]["edition"] = edition;
-        cj[Configuration::ParameterSection]["ref"] = jasterix_->category(category)->defaultREFEdition();
+    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
+        category,
+        edition,
+        jasterix_->category(category)->defaultREFEdition());
+    cfg.edition(edition);
 
-        generateSubConfigurable(cj);
-        traced_assert(hasConfiguratonFor(category));
-    }
-    else
-        category_configs_.at(category).edition(edition);
+    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
 
     testFileDecoding();
 }
@@ -608,17 +601,17 @@ std::string ASTERIXImportTask::refEditionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
 
-    // check if edition exists, otherwise rest to default
-    if (category_configs_.at(category).ref().size() &&  // if value set and not exist in jASTERIX
-        jasterix_->category(category)->refEditions().count(category_configs_.at(category).ref()) ==
-            0)
+    auto* cfg = compass_.dbContextManager().asterixConfig(category);
+
+    // check if edition exists, otherwise reset to default
+    if (cfg->ref().size() &&  // if value set and not exist in jASTERIX
+        jasterix_->category(category)->refEditions().count(cfg->ref()) == 0)
     {
-        loginf << "cat " << category
-               << " reset to default ref";
-        category_configs_.at(category).ref(jasterix_->category(category)->defaultREFEdition());
+        loginf << "cat " << category << " reset to default ref";
+        cfg->ref(jasterix_->category(category)->defaultREFEdition());
     }
 
-    return category_configs_.at(category).ref();
+    return cfg->ref();
 }
 
 /**
@@ -629,19 +622,13 @@ void ASTERIXImportTask::refEditionForCategory(unsigned int category, const std::
 
     loginf << "cat " << category << " ref '" << ref << "'";
 
-    if (!hasConfiguratonFor(category))
-    {
-        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
-        cj[Configuration::ParameterSection]["category"] = category;
-        cj[Configuration::ParameterSection]["decode"] = false;
-        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
-        cj[Configuration::ParameterSection]["ref"] = ref;
+    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
+        category,
+        jasterix_->category(category)->defaultEdition(),
+        ref);
+    cfg.ref(ref);
 
-        generateSubConfigurable(cj);
-        traced_assert(hasConfiguratonFor(category));
-    }
-    else
-        category_configs_.at(category).ref(ref);
+    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
 
     testFileDecoding();
 }
@@ -652,17 +639,17 @@ std::string ASTERIXImportTask::spfEditionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
 
-    // check if edition exists, otherwise rest to default
-    if (category_configs_.at(category).spf().size() &&  // if value set and not exist in jASTERIX
-        jasterix_->category(category)->spfEditions().count(category_configs_.at(category).spf()) ==
-            0)
+    auto* cfg = compass_.dbContextManager().asterixConfig(category);
+
+    // check if edition exists, otherwise reset to default
+    if (cfg->spf().size() &&  // if value set and not exist in jASTERIX
+        jasterix_->category(category)->spfEditions().count(cfg->spf()) == 0)
     {
-        loginf << "cat " << category
-               << " reset to default spf";
-        category_configs_.at(category).spf(jasterix_->category(category)->defaultSPFEdition());
+        loginf << "cat " << category << " reset to default spf";
+        cfg->spf(jasterix_->category(category)->defaultSPFEdition());
     }
 
-    return category_configs_.at(category).spf();
+    return cfg->spf();
 }
 
 /**
@@ -671,22 +658,16 @@ void ASTERIXImportTask::spfEditionForCategory(unsigned int category, const std::
 {
     traced_assert(jasterix_->hasCategory(category));
 
-    loginf << "cat " << category << " spf '" << spf
-           << "'";
+    loginf << "cat " << category << " spf '" << spf << "'";
 
-    if (!hasConfiguratonFor(category))
-    {
-        auto& cj = addNewSubConfiguration("ASTERIXCategoryConfig");
-        cj[Configuration::ParameterSection]["category"] = category;
-        cj[Configuration::ParameterSection]["decode"] = false;
-        cj[Configuration::ParameterSection]["edition"] = jasterix_->category(category)->defaultEdition();
-        cj[Configuration::ParameterSection]["spf"] = spf;
+    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
+        category,
+        jasterix_->category(category)->defaultEdition(),
+        "",
+        spf);
+    cfg.spf(spf);
 
-        generateSubConfigurable(cj);
-        traced_assert(hasConfiguratonFor(category));
-    }
-    else
-        category_configs_.at(category).spf(spf);
+    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
 
     testFileDecoding();
 }
@@ -957,7 +938,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     loginf << "starting decode job";
 
     if (source_.isNetworkType())
-        compass_.dataSourceManager().createNetworkDBDataSources();
+        compass_.dbContextManager().createNetworkDBDataSources();
 
     decode_job_ = make_shared<ASTERIXDecodeJob>(*this, post_process_);
 
@@ -1687,8 +1668,8 @@ void ASTERIXImportTask::checkAllDone()
             logdbg << "deleting status widget";
         }
 
-        compass_.dataSourceManager().saveDBDataSources();
-        emit compass_.dataSourceManager().dataSourcesChangedSignal();
+        compass_.dbContextManager().writeContextToDB();
+        emit compass_.dbContextManager().activeContextChangedSignal();
         emit dbcontent_man_.dbContentStatusChanged();
         compass_.dbInterface().saveProperties();
 
