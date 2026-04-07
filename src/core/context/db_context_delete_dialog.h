@@ -19,7 +19,10 @@
 
 #include <QDialog>
 
-class QLineEdit;
+#include <map>
+#include <string>
+
+class QCheckBox;
 class QPushButton;
 
 namespace context
@@ -28,26 +31,25 @@ namespace context
 class DBContextManager;
 
 /**
- * Dialog shown when no contexts exist. Forces the user to create one.
+ * Dialog for deleting one or more contexts. At least one must remain.
  */
-class DBContextCreateDialog : public QDialog
+class DBContextDeleteDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit DBContextCreateDialog(DBContextManager& manager, QWidget* parent = nullptr);
-
-    std::string createdContextName() const { return created_name_; }
+    explicit DBContextDeleteDialog(DBContextManager& manager, QWidget* parent = nullptr);
 
 private slots:
-    void createSlot();
-    void updateCreateButton();
+    void selectAllSlot();
+    void selectNoneSlot();
+    void updateDeleteButton();
+    void deleteSlot();
 
 private:
     DBContextManager& manager_;
-    QLineEdit* name_edit_{nullptr};
-    QPushButton* create_button_{nullptr};
-    std::string created_name_;
+    std::map<std::string, QCheckBox*> checkboxes_;
+    QPushButton* delete_button_{nullptr};
 };
 
 } // namespace context

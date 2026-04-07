@@ -21,6 +21,7 @@
 
 #include <QLabel>
 #include <QLineEdit>
+#include <QIcon>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -39,7 +40,7 @@ DBContextCreateDialog::DBContextCreateDialog(DBContextManager& manager, QWidget*
 
     auto* layout = new QVBoxLayout();
 
-    layout->addWidget(new QLabel("No data context exists. Please create one to continue."));
+    layout->addWidget(new QLabel("Create a new data context:"));
     layout->addSpacing(10);
 
     auto* name_layout = new QHBoxLayout();
@@ -52,36 +53,57 @@ DBContextCreateDialog::DBContextCreateDialog(DBContextManager& manager, QWidget*
     layout->addSpacing(10);
 
     auto* button_layout = new QHBoxLayout();
+
+    auto* cancel_button = new QPushButton("Cancel");
+    cancel_button->setIcon(QIcon());
+    connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
+    button_layout->addWidget(cancel_button);
+
     button_layout->addStretch();
 
-    auto* create_button = new QPushButton("Create");
-    create_button->setDefault(true);
-    connect(create_button, &QPushButton::clicked, this, &DBContextCreateDialog::createSlot);
-    button_layout->addWidget(create_button);
+    create_button_ = new QPushButton("Create");
+    create_button_->setIcon(QIcon());
+    create_button_->setEnabled(false);
+    create_button_->setDefault(true);
+    connect(create_button_, &QPushButton::clicked, this, &DBContextCreateDialog::createSlot);
+    button_layout->addWidget(create_button_);
 
     layout->addLayout(button_layout);
 
     setLayout(layout);
 
+    connect(name_edit_, &QLineEdit::textChanged, this, &DBContextCreateDialog::updateCreateButton);
     connect(name_edit_, &QLineEdit::returnPressed, this, &DBContextCreateDialog::createSlot);
 }
 
-void DBContextCreateDialog::createSlot()
+void DBContextCreateDialog::updateCreateButton()
 {
     std::string name = name_edit_->text().trimmed().toStdString();
 
     if (name.empty())
     {
-        QMessageBox::warning(this, "Error", "Please enter a context name.");
+        create_button_->setEnabled(false);
+        create_button_->setToolTip("Enter a name for the new context");
         return;
     }
 
     if (manager_.hasContext(name))
     {
-        QMessageBox::warning(this, "Error",
-            "Context '" + QString::fromStdString(name) + "' already exists.");
+        create_button_->setEnabled(false);
+        create_button_->setToolTip("A context with this name already exists");
         return;
     }
+
+    create_button_->setEnabled(true);
+    create_button_->setToolTip("");
+}
+
+void DBContextCreateDialog::createSlot()
+{
+    if (!create_button_->isEnabled())
+        return;
+
+    std::string name = name_edit_->text().trimmed().toStdString();
 
     manager_.createContext(name);
     manager_.setActiveContext(name);

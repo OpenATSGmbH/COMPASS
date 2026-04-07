@@ -19,6 +19,7 @@
 
 #include <QDialog>
 
+class QComboBox;
 class QLineEdit;
 class QPushButton;
 
@@ -28,26 +29,24 @@ namespace context
 class DBContextManager;
 
 /**
- * Dialog shown when no contexts exist. Forces the user to create one.
+ * Dialog for copying (duplicating) a context under a new name.
  */
-class DBContextCreateDialog : public QDialog
+class DBContextCopyDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit DBContextCreateDialog(DBContextManager& manager, QWidget* parent = nullptr);
-
-    std::string createdContextName() const { return created_name_; }
+    explicit DBContextCopyDialog(DBContextManager& manager, QWidget* parent = nullptr);
 
 private slots:
-    void createSlot();
-    void updateCreateButton();
+    void updateCopyButton();
+    void copySlot();
 
 private:
     DBContextManager& manager_;
+    QComboBox* source_combo_{nullptr};
     QLineEdit* name_edit_{nullptr};
-    QPushButton* create_button_{nullptr};
-    std::string created_name_;
+    QPushButton* copy_button_{nullptr};
 };
 
 } // namespace context

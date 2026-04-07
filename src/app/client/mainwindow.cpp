@@ -19,6 +19,9 @@
 #include "mainwindow_commands.h"
 #include "compass.h"
 #include "configurationmanager.h"
+#include "db_context_copy_dialog.h"
+#include "db_context_create_dialog.h"
+#include "db_context_delete_dialog.h"
 #include "datasourcesconfigurationdialog.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetlistwidget.h"
@@ -1416,12 +1419,10 @@ void MainWindow::createContextMenu()
         context_switch_menu_->addAction(act);
     }
 
-    if (context_switch_menu_->isEmpty())
-    {
-        QAction* none_act = new QAction("(no other contexts)", context_switch_menu_);
-        none_act->setEnabled(false);
-        context_switch_menu_->addAction(none_act);
-    }
+    bool can_switch = !context_switch_menu_->isEmpty();
+    context_switch_menu_->setEnabled(can_switch);
+    context_switch_menu_->setToolTip(can_switch ? "Switch to another context"
+                                                : "No other contexts available");
 
     // Compare
     QAction* compare_act = new QAction("Compare...", context_menu_);
@@ -1436,63 +1437,34 @@ void MainWindow::createContextMenu()
     new_act->setToolTip("Create a new empty context");
     connect(new_act, &QAction::triggered, this, [this]()
     {
-        bool ok;
-        QString name = QInputDialog::getText(this, "New Context", "Context name:",
-                                             QLineEdit::Normal, "", &ok);
-        if (ok && !name.isEmpty())
-        {
-            auto& mgr = compass_.dbContextManager();
-            if (mgr.hasContext(name.toStdString()))
-            {
-                QMessageBox::warning(this, "Error", "Context '" + name + "' already exists.");
-                return;
-            }
-            mgr.createContext(name.toStdString());
-            mgr.setActiveContext(name.toStdString());
-        }
+        context::DBContextCreateDialog dialog(compass_.dbContextManager(), this);
+        if (dialog.exec() == QDialog::Accepted)
+            compass_.dbContextManager().setActiveContext(dialog.createdContextName());
     });
     context_menu_->addAction(new_act);
 
-    // Duplicate
-    QAction* dup_act = new QAction("Duplicate...", context_menu_);
-    dup_act->setToolTip("Duplicate current context under a new name");
-    dup_act->setEnabled(ctx_mgr.hasActiveContext());
-    connect(dup_act, &QAction::triggered, this, [this]()
+    // Copy
+    QAction* copy_act = new QAction("Copy...", context_menu_);
+    copy_act->setToolTip("Copy a context under a new name");
+    connect(copy_act, &QAction::triggered, this, [this]()
     {
-        bool ok;
-        QString name = QInputDialog::getText(this, "Duplicate Context", "New context name:",
-                                             QLineEdit::Normal, "", &ok);
-        if (ok && !name.isEmpty())
-        {
-            auto& mgr = compass_.dbContextManager();
-            if (mgr.hasContext(name.toStdString()))
-            {
-                QMessageBox::warning(this, "Error", "Context '" + name + "' already exists.");
-                return;
-            }
-            mgr.duplicateContext(mgr.activeContextName(), name.toStdString());
-        }
+        context::DBContextCopyDialog dialog(compass_.dbContextManager(), this);
+        dialog.exec();
     });
-    context_menu_->addAction(dup_act);
+    context_menu_->addAction(copy_act);
 
     // Delete
-    QAction* del_act = new QAction("Delete", context_menu_);
-    del_act->setToolTip("Delete current context");
-    del_act->setEnabled(ctx_mgr.hasActiveContext());
-    connect(del_act, &QAction::triggered, this, [this]()
+    context_delete_action_ = new QAction("Delete...", context_menu_);
+    bool can_delete = ctx_mgr.contextNames().size() > 1;
+    context_delete_action_->setEnabled(can_delete);
+    context_delete_action_->setToolTip(can_delete ? "Delete one or more contexts"
+                                                  : "Cannot delete the last remaining context");
+    connect(context_delete_action_, &QAction::triggered, this, [this]()
     {
-        auto& mgr = compass_.dbContextManager();
-        if (!mgr.hasActiveContext())
-            return;
-
-        auto reply = QMessageBox::question(this, "Delete Context",
-            "Delete context '" + QString::fromStdString(mgr.activeContextName()) + "'?",
-            QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::Yes)
-            mgr.deleteContext(mgr.activeContextName());
+        context::DBContextDeleteDialog dialog(compass_.dbContextManager(), this);
+        dialog.exec();
     });
-    context_menu_->addAction(del_act);
+    context_menu_->addAction(context_delete_action_);
 
     // update menu when context changes
     connect(&ctx_mgr, &context::DBContextManager::activeContextChangedSignal,
@@ -1527,12 +1499,16 @@ void MainWindow::updateContextMenuTitle()
         context_switch_menu_->addAction(act);
     }
 
-    if (context_switch_menu_->isEmpty())
-    {
-        QAction* none_act = new QAction("(no other contexts)", context_switch_menu_);
-        none_act->setEnabled(false);
-        context_switch_menu_->addAction(none_act);
-    }
+    bool can_switch = !context_switch_menu_->isEmpty();
+    context_switch_menu_->setEnabled(can_switch);
+    context_switch_menu_->setToolTip(can_switch ? "Switch to another context"
+                                                : "No other contexts available");
+
+    // update delete action
+    bool can_delete = ctx_mgr.contextNames().size() > 1;
+    context_delete_action_->setEnabled(can_delete);
+    context_delete_action_->setToolTip(can_delete ? "Delete one or more contexts"
+                                                  : "Cannot delete the last remaining context");
 }
 
 void MainWindow::createDebugMenu()

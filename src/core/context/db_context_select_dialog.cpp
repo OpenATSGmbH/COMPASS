@@ -21,6 +21,7 @@
 
 #include <QLabel>
 #include <QListWidget>
+#include <QIcon>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -56,9 +57,16 @@ DBContextSelectDialog::DBContextSelectDialog(DBContextManager& manager, QWidget*
     layout->addWidget(list_widget_);
 
     auto* button_layout = new QHBoxLayout();
+
+    auto* cancel_button = new QPushButton("Cancel");
+    cancel_button->setIcon(QIcon());
+    connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
+    button_layout->addWidget(cancel_button);
+
     button_layout->addStretch();
 
     auto* select_button = new QPushButton("Select");
+    select_button->setIcon(QIcon());
     select_button->setDefault(true);
     connect(select_button, &QPushButton::clicked, this, &DBContextSelectDialog::selectSlot);
     button_layout->addWidget(select_button);
@@ -73,7 +81,12 @@ void DBContextSelectDialog::selectSlot()
     auto* item = list_widget_->currentItem();
     if (!item)
     {
-        QMessageBox::warning(this, "Error", "Please select a context.");
+        QMessageBox msg(this);
+        msg.setWindowTitle("Error");
+        msg.setText("Please select a context.");
+        auto* ok_btn = msg.addButton("OK", QMessageBox::AcceptRole);
+        ok_btn->setIcon(QIcon());
+        msg.exec();
         return;
     }
 

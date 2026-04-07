@@ -15,6 +15,8 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/idatasourceprovider.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_create_dialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_select_dialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_delete_dialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_copy_dialog.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/data_source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fft.cpp"
@@ -25,4 +27,6 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_manager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_create_dialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_select_dialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_delete_dialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_copy_dialog.cpp"
 )
