@@ -22,6 +22,7 @@
 #include "db_context_copy_dialog.h"
 #include "db_context_create_dialog.h"
 #include "db_context_delete_dialog.h"
+#include "db_context_edit_dialog.h"
 #include "datasourcesconfigurationdialog.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetlistwidget.h"
@@ -1399,7 +1400,11 @@ void MainWindow::createContextMenu()
     // Edit
     QAction* edit_act = new QAction("Edit...", context_menu_);
     edit_act->setToolTip("Edit the current context");
-    edit_act->setEnabled(false); // deferred to later phase
+    connect(edit_act, &QAction::triggered, this, [this]()
+    {
+        context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
+        dialog.exec();
+    });
     context_menu_->addAction(edit_act);
 
     // Switch submenu

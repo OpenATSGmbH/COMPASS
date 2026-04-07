@@ -64,6 +64,14 @@ DBContextManager::DBContextManager(COMPASS& compass)
     // load last active context name
     loadActiveContextName();
 
+    // build sector layers if a context is already active
+    if (hasActiveContext())
+    {
+        loginf << "constructor: rebuilding sector layers for active context '" << active_context_name_ << "'";
+        rebuildSectorLayers();
+        loginf << "constructor: sectors_loaded_=" << sectors_loaded_;
+    }
+
     loginf << "initialized with " << contexts_.size() << " contexts"
            << (active_context_name_.empty() ? "" : ", active: " + active_context_name_);
 }
@@ -250,7 +258,11 @@ void DBContextManager::setActiveContext(const string& name)
     active_context_name_ = name;
     saveActiveContextName();
 
-    loginf << "active context set to '" << name << "'";
+    loginf << "active context set to '" << name << "', rebuilding sector layers";
+
+    rebuildSectorLayers();
+
+    loginf << "sector layers rebuilt, sectors_loaded_=" << sectors_loaded_;
 
     emit activeContextChangedSignal();
 }
@@ -1137,18 +1149,12 @@ void DBContextManager::databaseOpenedSlot()
         }
     }
 
-    rebuildSectorLayers();
-
     emit activeContextChangedSignal();
 }
 
 void DBContextManager::databaseClosedSlot()
 {
     loginf << "database closed";
-
-    sector_layers_.clear();
-    max_sector_id_ = 0;
-    sectors_loaded_ = false;
 }
 
 // ============================================================
@@ -1481,7 +1487,7 @@ ASTERIXDecodingConfig& DBContextManager::getOrCreateAsterixConfig(unsigned int c
         return *existing;
 
     // create new entry
-    activeContext().asterixDecoding().emplace_back(category, false, default_edition, default_ref, default_spf);
+    activeContext().asterixDecoding().emplace_back(category, default_edition, default_ref, default_spf);
 
     saveContext(activeContextName());
 

@@ -34,6 +34,7 @@ class QPushButton;
 class QGridLayout;
 class QComboBox;
 class QCheckBox;
+class QFormLayout;
 class QVBoxLayout;
 class QTreeWidget;
 
@@ -122,19 +123,23 @@ protected:
     QComboBox* detection_type_combo_{nullptr};
     QCheckBox* ground_only_check_{nullptr}; 
     
-    QWidget* radar_widget_{nullptr};
-    QCheckBox* radar_ignore_azmrng_check_{nullptr}; 
+    // radar-specific (label + field hidden/shown together)
+    QLabel* radar_ignore_label_{nullptr};
+    QCheckBox* radar_ignore_azmrng_check_{nullptr};
 
-    // position
-    QWidget* position_widget_{nullptr};
+    // position (labels for show/hide)
+    QLabel* latitude_label_{nullptr};
     QLineEdit* latitude_edit_{nullptr};
+    QLabel* longitude_label_{nullptr};
     QLineEdit* longitude_edit_{nullptr};
+    QLabel* altitude_label_{nullptr};
     QLineEdit* altitude_edit_{nullptr};
 
-    // psr settings
-    QWidget* psr_jpda_widget_{nullptr};
+    // psr settings (labels for show/hide)
+    QLabel* psr_pd_label_{nullptr};
     QLineEdit* psr_pd_edit_{nullptr};
-    QLineEdit* psr_clutter_rate_edit_{nullptr};    
+    QLabel* psr_clutter_rate_label_{nullptr};
+    QLineEdit* psr_clutter_rate_edit_{nullptr};
 
     // radar ranges
     QWidget* ranges_widget_{nullptr};

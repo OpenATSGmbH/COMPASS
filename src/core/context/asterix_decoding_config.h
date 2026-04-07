@@ -32,16 +32,13 @@ class ASTERIXDecodingConfig
 {
 public:
     ASTERIXDecodingConfig();
-    ASTERIXDecodingConfig(unsigned int category, bool decode,
+    ASTERIXDecodingConfig(unsigned int category,
                           const std::string& edition,
                           const std::string& ref = "",
                           const std::string& spf = "");
 
     unsigned int category() const { return category_; }
     void category(unsigned int cat) { category_ = cat; }
-
-    bool decode() const { return decode_; }
-    void decode(bool decode) { decode_ = decode; }
 
     std::string edition() const { return edition_; }
     void edition(const std::string& edition) { edition_ = edition; }
@@ -60,7 +57,6 @@ public:
 
 private:
     unsigned int category_{0};
-    bool decode_{false};
     std::string edition_;
     std::string ref_;
     std::string spf_;

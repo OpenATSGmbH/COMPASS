@@ -31,7 +31,7 @@ class DBContext;
  * Storage layout:
  *   ~/.compass/data_contexts/<name>/
  *       context_meta.json
- *       sensors.json
+ *       data_sources.json
  *       ffts.json
  *       asterix_decoding.json
  *       sectors.json
@@ -42,7 +42,7 @@ class DBContextSerializer
 {
 public:
     static constexpr const char* META_FILENAME            = "context_meta.json";
-    static constexpr const char* SENSORS_FILENAME         = "sensors.json";
+    static constexpr const char* SENSORS_FILENAME         = "data_sources.json";
     static constexpr const char* FFTS_FILENAME            = "ffts.json";
     static constexpr const char* ASTERIX_DECODING_FILENAME = "asterix_decoding.json";
     static constexpr const char* SECTORS_FILENAME         = "sectors.json";

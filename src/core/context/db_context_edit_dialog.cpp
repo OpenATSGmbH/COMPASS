@@ -1,0 +1,688 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "db_context_edit_dialog.h"
+#include "db_context_edit_tree_item.h"
+#include "db_context_edit_tree_model.h"
+#include "db_context_manager.h"
+#include "db_context_copy_dialog.h"
+#include "db_context_delete_dialog.h"
+#include "db_context_rename_dialog.h"
+#include "datasourceeditwidget.h"
+#include "asterixconfigwidget.h"
+#include "sector.h"
+#include "sectorlayer.h"
+#include "logger.h"
+
+#include <QApplication>
+#include <QComboBox>
+#include <QFileDialog>
+#include <QHBoxLayout>
+#include <QInputDialog>
+#include <QLabel>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPainter>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QSplitter>
+#include <QStackedWidget>
+#include <QStyledItemDelegate>
+#include <QTreeView>
+#include <QVBoxLayout>
+
+namespace context
+{
+
+/**
+ * Custom delegate that right-aligns the "(sac/sic)" suffix in DataSource items.
+ */
+class TreeItemDelegate : public QStyledItemDelegate
+{
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+               const QModelIndex& index) const override
+    {
+        QStyleOptionViewItem opt = option;
+        initStyleOption(&opt, index);
+
+        QString text = opt.text;
+        int paren = text.lastIndexOf('(');
+
+        if (paren < 0)
+        {
+            QStyledItemDelegate::paint(painter, opt, index);
+            return;
+        }
+
+        // draw selection/hover background
+        opt.text.clear();
+        QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
+
+        QString name_part = text.left(paren).trimmed();
+        QString suffix_part = text.mid(paren);
+
+        painter->save();
+
+        if (opt.state & QStyle::State_Selected)
+            painter->setPen(opt.palette.color(QPalette::HighlightedText));
+        else
+            painter->setPen(opt.palette.color(QPalette::Text));
+
+        QRect rect = opt.rect.adjusted(4, 0, -4, 0);
+        painter->drawText(rect, Qt::AlignLeft | Qt::AlignVCenter, name_part);
+        painter->drawText(rect, Qt::AlignRight | Qt::AlignVCenter, suffix_part);
+
+        painter->restore();
+    }
+};
+
+DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* parent)
+    : QDialog(parent)
+    , manager_(manager)
+{
+    loginf << "opening edit dialog";
+
+    setWindowTitle("Edit Data Contexts");
+    setMinimumSize(900, 600);
+    setModal(true);
+
+    auto* main_layout = new QVBoxLayout();
+
+    // top bar: context selector + buttons
+    {
+        auto* top_layout = new QHBoxLayout();
+
+        top_layout->addWidget(new QLabel("Context:"));
+
+        context_combo_ = new QComboBox();
+        context_combo_->setMinimumWidth(200);
+        connect(context_combo_, &QComboBox::currentTextChanged,
+                this, &DBContextEditDialog::contextComboChangedSlot);
+        top_layout->addWidget(context_combo_);
+
+        top_layout->addStretch();
+
+        copy_button_ = new QPushButton("Copy");
+        copy_button_->setIcon(QIcon());
+        copy_button_->setToolTip("Copy this context under a new name");
+        connect(copy_button_, &QPushButton::clicked, this, &DBContextEditDialog::copySlot);
+        top_layout->addWidget(copy_button_);
+
+        rename_button_ = new QPushButton("Rename");
+        rename_button_->setIcon(QIcon());
+        rename_button_->setToolTip("Rename the current context");
+        connect(rename_button_, &QPushButton::clicked, this, &DBContextEditDialog::renameSlot);
+        top_layout->addWidget(rename_button_);
+
+        delete_button_ = new QPushButton("Delete");
+        delete_button_->setIcon(QIcon());
+        delete_button_->setToolTip("Delete one or more contexts");
+        connect(delete_button_, &QPushButton::clicked, this, &DBContextEditDialog::deleteSlot);
+        top_layout->addWidget(delete_button_);
+
+        main_layout->addLayout(top_layout);
+    }
+
+    // splitter: tree (left) + detail (right)
+    {
+        auto* splitter = new QSplitter(Qt::Horizontal);
+
+        // tree view
+        tree_view_ = new QTreeView();
+        tree_view_->setHeaderHidden(true);
+        tree_view_->setItemDelegate(new TreeItemDelegate(tree_view_));
+        tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(tree_view_, &QTreeView::customContextMenuRequested,
+                this, &DBContextEditDialog::showContextMenuSlot);
+        connect(tree_view_, &QTreeView::clicked,
+                this, &DBContextEditDialog::itemClickedSlot);
+        splitter->addWidget(tree_view_);
+
+        // detail area
+        auto* scroll = new QScrollArea();
+        scroll->setWidgetResizable(true);
+
+        detail_stack_ = new QStackedWidget();
+        scroll->setWidget(detail_stack_);
+
+        splitter->addWidget(scroll);
+
+        splitter->setSizes({320, 580});
+
+        main_layout->addWidget(splitter, 1);
+    }
+
+    // close button
+    {
+        auto* button_layout = new QHBoxLayout();
+        button_layout->addStretch();
+
+        auto* close_button = new QPushButton("Close");
+        close_button->setIcon(QIcon());
+        connect(close_button, &QPushButton::clicked, this, &QDialog::accept);
+        button_layout->addWidget(close_button);
+
+        main_layout->addLayout(button_layout);
+    }
+
+    setLayout(main_layout);
+
+    // build tree model
+    tree_model_ = new DBContextEditTreeModel(manager_, this);
+    tree_view_->setModel(tree_model_);
+
+    // create data source edit widget
+    ds_edit_widget_ = new DataSourceEditWidget(
+        false, manager_,
+        [this](unsigned int) { rebuildTree(); },
+        [this](unsigned int) { rebuildTree(); });
+    detail_stack_->addWidget(ds_edit_widget_);
+
+    // create ASTERIX config widget
+    asterix_widget_ = new ASTERIXConfigWidget(manager_, {}, {}, this);
+    detail_stack_->addWidget(asterix_widget_);
+
+    // initial empty placeholder
+    auto* empty_label = new QLabel("Select an item to view details.");
+    empty_label->setAlignment(Qt::AlignCenter);
+    detail_stack_->addWidget(empty_label);
+    detail_stack_->setCurrentWidget(empty_label);
+
+    loginf << "dialog created, populating";
+
+    // populate combo and expand tree
+    rebuildContextCombo();
+    tree_view_->expandAll();
+
+    // connect to context changes
+    connect(&manager_, &DBContextManager::activeContextChangedSignal,
+            this, [this]() { rebuildContextCombo(); rebuildTree(); });
+    connect(&manager_, &DBContextManager::contextsChangedSignal,
+            this, [this]() { rebuildContextCombo(); rebuildTree(); });
+}
+
+DBContextEditDialog::~DBContextEditDialog() = default;
+
+void DBContextEditDialog::rebuildContextCombo()
+{
+    loginf << "rebuilding context combo";
+
+    QSignalBlocker blocker(context_combo_);
+    context_combo_->clear();
+
+    for (const auto& name : manager_.contextNames())
+        context_combo_->addItem(QString::fromStdString(name));
+
+    if (manager_.hasActiveContext())
+        context_combo_->setCurrentText(QString::fromStdString(manager_.activeContextName()));
+
+    bool can_delete = manager_.contextNames().size() > 1;
+    delete_button_->setEnabled(can_delete);
+    delete_button_->setToolTip(can_delete ? "Delete one or more contexts"
+                                          : "Cannot delete the last remaining context");
+}
+
+void DBContextEditDialog::rebuildTree()
+{
+    loginf << "rebuilding tree";
+
+    tree_model_->rebuild();
+    tree_view_->expandAll();
+    ds_edit_widget_->clear();
+
+    // refresh ASTERIX widget
+    asterix_widget_->updateSlot();
+}
+
+void DBContextEditDialog::contextComboChangedSlot(const QString& name)
+{
+    std::string ctx_name = name.toStdString();
+    if (ctx_name.empty() || !manager_.hasContext(ctx_name))
+        return;
+
+    if (manager_.hasActiveContext() && manager_.activeContextName() == ctx_name)
+        return;
+
+    loginf << "switching to context '" << ctx_name << "'";
+
+    manager_.setActiveContext(ctx_name);
+}
+
+void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
+{
+    if (!index.isValid())
+        return;
+
+    auto* item = static_cast<DBContextEditTreeItem*>(index.internalPointer());
+
+    if (auto* ds_item = dynamic_cast<DataSourceItem*>(item))
+    {
+        loginf << "clicked data source id " << ds_item->dsId();
+
+        ds_edit_widget_->showID(ds_item->dsId());
+        showDetailWidget(ds_edit_widget_);
+    }
+    else if (dynamic_cast<ASTERIXConfigLeafItem*>(item))
+    {
+        loginf << "clicked ASTERIX configuration";
+
+        showDetailWidget(asterix_widget_);
+    }
+    else if (auto* group = dynamic_cast<GroupItem*>(item))
+    {
+        auto& ctx = manager_.activeContext();
+        QString summary;
+        switch (group->groupType())
+        {
+        case GroupItem::DataSources:
+            summary = QString::number(ctx.dataSources().size()) + " data source(s)";
+            break;
+        case GroupItem::SectorLayers:
+            summary = QString::number(manager_.sectorLayers().size()) + " sector layer(s), " +
+                      QString::number(ctx.sectors().size()) + " sector(s)";
+            break;
+        case GroupItem::FFTs:
+            summary = QString::number(ctx.ffts().size()) + " FFT(s)";
+            break;
+        }
+        loginf << "clicked group: " << summary.toStdString();
+
+        showDetailWidget(createPlaceholderLabel(summary));
+    }
+    else if (auto* sl_item = dynamic_cast<SectorLayerItem*>(item))
+    {
+        if (manager_.sectorsLoaded() && manager_.hasSectorLayer(sl_item->layerName()))
+        {
+            auto layer = manager_.sectorLayer(sl_item->layerName());
+            QString summary = QString::number(layer->size()) + " sector(s) in layer '" +
+                              QString::fromStdString(sl_item->layerName()) + "'";
+            showDetailWidget(createPlaceholderLabel(summary));
+        }
+    }
+    else if (auto* sec_item = dynamic_cast<SectorItem*>(item))
+    {
+        loginf << "clicked sector id " << sec_item->sectorId();
+
+        showDetailWidget(createPlaceholderLabel("Sector editing — coming soon"));
+    }
+    else if (auto* fft_item = dynamic_cast<FFTItem*>(item))
+    {
+        loginf << "clicked FFT '" << fft_item->fftName() << "'";
+
+        showDetailWidget(createPlaceholderLabel("FFT editing — coming soon"));
+    }
+}
+
+void DBContextEditDialog::showDetailWidget(QWidget* widget)
+{
+    if (!widget)
+        return;
+
+    logdbg << "showing detail widget";
+
+    if (detail_stack_->indexOf(widget) < 0)
+        detail_stack_->addWidget(widget);
+
+    detail_stack_->setCurrentWidget(widget);
+}
+
+QWidget* DBContextEditDialog::createPlaceholderLabel(const QString& text)
+{
+    auto* label = new QLabel(text);
+    label->setAlignment(Qt::AlignCenter);
+    label->setWordWrap(true);
+    return label;
+}
+
+void DBContextEditDialog::showContextMenuSlot(const QPoint& pos)
+{
+    QModelIndex index = tree_view_->indexAt(pos);
+    if (!index.isValid())
+        return;
+
+    auto* item = static_cast<DBContextEditTreeItem*>(index.internalPointer());
+
+    loginf << "context menu on item '" << item->data(0).toString().toStdString() << "'";
+
+    if (auto* group = dynamic_cast<GroupItem*>(item))
+    {
+        switch (group->groupType())
+        {
+        case GroupItem::DataSources:  showDataSourcesGroupMenu(); break;
+        case GroupItem::SectorLayers: showSectorLayersGroupMenu(); break;
+        case GroupItem::FFTs:         showFFTsGroupMenu(); break;
+        }
+    }
+    else if (auto* ds_item = dynamic_cast<DataSourceItem*>(item))
+    {
+        showDataSourceItemMenu(ds_item->dsId());
+    }
+    else if (auto* sl_item = dynamic_cast<SectorLayerItem*>(item))
+    {
+        showSectorLayerMenu(sl_item->layerName());
+    }
+    else if (auto* sec_item = dynamic_cast<SectorItem*>(item))
+    {
+        showSectorItemMenu(sec_item->sectorId());
+    }
+    else if (auto* fft_item = dynamic_cast<FFTItem*>(item))
+    {
+        showFFTItemMenu(fft_item->fftName());
+    }
+}
+
+// ============================================================
+// Context menu: Data Sources
+// ============================================================
+
+void DBContextEditDialog::showDataSourcesGroupMenu()
+{
+    loginf << "showing data sources group menu";
+
+    QMenu menu;
+
+    menu.addAction("Add Data Source...", [this]()
+    {
+        bool ok = false;
+        int sac = QInputDialog::getInt(this, "Add Data Source", "SAC:", 0, 0, 255, 1, &ok);
+        if (!ok) return;
+        int sic = QInputDialog::getInt(this, "Add Data Source", "SIC:", 0, 0, 255, 1, &ok);
+        if (!ok) return;
+
+        manager_.createDataSource(sac, sic);
+        manager_.saveContext(manager_.activeContextName());
+        rebuildTree();
+    });
+
+    menu.addSeparator();
+
+    menu.addAction("Import...", [this]()
+    {
+        QString path = QFileDialog::getOpenFileName(this, "Import Sensors", "", "JSON Files (*.json)");
+        if (path.isEmpty()) return;
+        manager_.importSensors(path.toStdString());
+        rebuildTree();
+    });
+
+    menu.addAction("Export...", [this]()
+    {
+        QString path = QFileDialog::getSaveFileName(this, "Export Sensors", "", "JSON Files (*.json)");
+        if (path.isEmpty()) return;
+        manager_.exportSensors(path.toStdString());
+    });
+
+    menu.addSeparator();
+
+    auto* del_all = menu.addAction("Delete All", [this]()
+    {
+        if (QMessageBox::question(this, "Delete All Data Sources",
+                "Delete all data sources from this context?") != QMessageBox::Yes)
+            return;
+
+        auto& ctx = manager_.activeContext();
+        ctx.dataSources().clear();
+        manager_.saveContext(manager_.activeContextName());
+        rebuildTree();
+    });
+    del_all->setEnabled(!manager_.activeContext().dataSources().empty());
+
+    menu.exec(QCursor::pos());
+}
+
+void DBContextEditDialog::showDataSourceItemMenu(unsigned int ds_id)
+{
+    loginf << "showing menu for data source id " << ds_id;
+
+    QMenu menu;
+
+    menu.addAction("Delete", [this, ds_id]()
+    {
+        if (QMessageBox::question(this, "Delete Data Source",
+                "Delete this data source?") != QMessageBox::Yes)
+            return;
+
+        manager_.deleteDataSource(ds_id);
+        manager_.saveContext(manager_.activeContextName());
+        ds_edit_widget_->clear();
+        rebuildTree();
+    });
+
+    menu.exec(QCursor::pos());
+}
+
+// ============================================================
+// Context menu: Sector Layers
+// ============================================================
+
+void DBContextEditDialog::showSectorLayersGroupMenu()
+{
+    loginf << "showing sector layers group menu";
+
+    QMenu menu;
+
+    menu.addAction("Import...", [this]()
+    {
+        QString path = QFileDialog::getOpenFileName(this, "Import Sectors", "", "JSON Files (*.json)");
+        if (path.isEmpty()) return;
+        manager_.importSectors(path.toStdString());
+        rebuildTree();
+    });
+
+    menu.addAction("Export...", [this]()
+    {
+        QString path = QFileDialog::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
+        if (path.isEmpty()) return;
+        manager_.exportSectors(path.toStdString());
+    });
+
+    menu.addSeparator();
+
+    auto* del_all = menu.addAction("Delete All", [this]()
+    {
+        if (QMessageBox::question(this, "Delete All Sectors",
+                "Delete all sectors from this context?") != QMessageBox::Yes)
+            return;
+
+        manager_.deleteAllSectors();
+        rebuildTree();
+    });
+    del_all->setEnabled(!manager_.activeContext().sectors().empty());
+
+    menu.exec(QCursor::pos());
+}
+
+void DBContextEditDialog::showSectorLayerMenu(const std::string& layer_name)
+{
+    loginf << "showing menu for sector layer '" << layer_name << "'";
+
+    QMenu menu;
+
+    menu.addAction("Delete Layer", [this, layer_name]()
+    {
+        if (QMessageBox::question(this, "Delete Sector Layer",
+                "Delete all sectors in layer '" + QString::fromStdString(layer_name) + "'?")
+                != QMessageBox::Yes)
+            return;
+
+        auto layer = manager_.sectorLayer(layer_name);
+        if (!layer)
+            return;
+
+        // delete all sectors in this layer (copy vector since deletion modifies it)
+        auto sectors_copy = layer->sectors();
+        for (const auto& sector : sectors_copy)
+            manager_.deleteSector(sector);
+
+        rebuildTree();
+    });
+
+    menu.exec(QCursor::pos());
+}
+
+void DBContextEditDialog::showSectorItemMenu(unsigned int sector_id)
+{
+    loginf << "showing menu for sector id " << sector_id;
+
+    QMenu menu;
+
+    menu.addAction("Move to Layer...", [this, sector_id]()
+    {
+        auto sector = manager_.sector(sector_id);
+        if (!sector)
+            return;
+
+        bool ok = false;
+        QString new_layer = QInputDialog::getText(this, "Move Sector",
+            "New layer name:", QLineEdit::Normal,
+            QString::fromStdString(sector->layerName()), &ok);
+        if (!ok || new_layer.isEmpty()) return;
+
+        manager_.moveSector(sector_id, sector->layerName(), new_layer.toStdString());
+        rebuildTree();
+    });
+
+    menu.addAction("Delete", [this, sector_id]()
+    {
+        if (QMessageBox::question(this, "Delete Sector",
+                "Delete this sector?") != QMessageBox::Yes)
+            return;
+
+        auto sector = manager_.sector(sector_id);
+        if (sector)
+            manager_.deleteSector(sector);
+        rebuildTree();
+    });
+
+    menu.exec(QCursor::pos());
+}
+
+// ============================================================
+// Context menu: FFTs
+// ============================================================
+
+void DBContextEditDialog::showFFTsGroupMenu()
+{
+    loginf << "showing FFTs group menu";
+
+    QMenu menu;
+
+    menu.addAction("Add FFT...", [this]()
+    {
+        bool ok = false;
+        QString name = QInputDialog::getText(this, "Add FFT", "FFT name:",
+                                             QLineEdit::Normal, "", &ok);
+        if (!ok || name.isEmpty()) return;
+
+        std::string fft_name = name.toStdString();
+        if (manager_.hasFFT(fft_name))
+        {
+            QMessageBox::warning(this, "Add FFT", "An FFT with this name already exists.");
+            return;
+        }
+
+        manager_.createFFT(fft_name);
+        manager_.saveContext(manager_.activeContextName());
+        rebuildTree();
+    });
+
+    menu.addSeparator();
+
+    menu.addAction("Import...", [this]()
+    {
+        QString path = QFileDialog::getOpenFileName(this, "Import FFTs", "", "JSON Files (*.json)");
+        if (path.isEmpty()) return;
+        manager_.importFFTs(path.toStdString());
+        rebuildTree();
+    });
+
+    menu.addAction("Export...", [this]()
+    {
+        QString path = QFileDialog::getSaveFileName(this, "Export FFTs", "", "JSON Files (*.json)");
+        if (path.isEmpty()) return;
+        manager_.exportFFTs(path.toStdString());
+    });
+
+    menu.addSeparator();
+
+    auto* del_all = menu.addAction("Delete All", [this]()
+    {
+        if (QMessageBox::question(this, "Delete All FFTs",
+                "Delete all FFTs from this context?") != QMessageBox::Yes)
+            return;
+
+        manager_.deleteAllFFTs();
+        rebuildTree();
+    });
+    del_all->setEnabled(!manager_.activeContext().ffts().empty());
+
+    menu.exec(QCursor::pos());
+}
+
+void DBContextEditDialog::showFFTItemMenu(const std::string& fft_name)
+{
+    loginf << "showing menu for FFT '" << fft_name << "'";
+
+    QMenu menu;
+
+    menu.addAction("Delete", [this, fft_name]()
+    {
+        if (QMessageBox::question(this, "Delete FFT",
+                "Delete FFT '" + QString::fromStdString(fft_name) + "'?") != QMessageBox::Yes)
+            return;
+
+        manager_.deleteFFT(fft_name);
+        rebuildTree();
+    });
+
+    menu.exec(QCursor::pos());
+}
+
+// ============================================================
+// Top-bar buttons
+// ============================================================
+
+void DBContextEditDialog::copySlot()
+{
+    loginf << "copy button clicked";
+
+    DBContextCopyDialog dialog(manager_, this);
+    dialog.exec();
+}
+
+void DBContextEditDialog::renameSlot()
+{
+    if (!manager_.hasActiveContext())
+        return;
+
+    loginf << "rename button clicked";
+
+    DBContextRenameDialog dialog(manager_, this);
+    dialog.exec();
+}
+
+void DBContextEditDialog::deleteSlot()
+{
+    loginf << "delete button clicked";
+
+    DBContextDeleteDialog dialog(manager_, this);
+    dialog.exec();
+}
+
+} // namespace context

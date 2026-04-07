@@ -29,12 +29,11 @@ namespace context
 
 ASTERIXDecodingConfig::ASTERIXDecodingConfig() = default;
 
-ASTERIXDecodingConfig::ASTERIXDecodingConfig(unsigned int category, bool decode,
+ASTERIXDecodingConfig::ASTERIXDecodingConfig(unsigned int category,
                                              const string& edition,
                                              const string& ref,
                                              const string& spf)
     : category_(category)
-    , decode_(decode)
     , edition_(edition)
     , ref_(ref)
     , spf_(spf)
@@ -46,7 +45,6 @@ json ASTERIXDecodingConfig::toJSON() const
     json j;
 
     j["category"] = category_;
-    j["decode"] = decode_;
     j["edition"] = edition_;
 
     if (!ref_.empty())
@@ -65,9 +63,6 @@ ASTERIXDecodingConfig ASTERIXDecodingConfig::fromJSON(const json& j)
     traced_assert(j.contains("category"));
     cfg.category_ = j.at("category");
 
-    traced_assert(j.contains("decode"));
-    cfg.decode_ = j.at("decode");
-
     traced_assert(j.contains("edition"));
     cfg.edition_ = j.at("edition");
 
@@ -83,7 +78,6 @@ ASTERIXDecodingConfig ASTERIXDecodingConfig::fromJSON(const json& j)
 bool ASTERIXDecodingConfig::operator==(const ASTERIXDecodingConfig& other) const
 {
     return category_ == other.category_
-        && decode_ == other.decode_
         && edition_ == other.edition_
         && ref_ == other.ref_
         && spf_ == other.spf_;

@@ -20,26 +20,28 @@
 #include <jasterix/jasterix.h>
 
 #include <QWidget>
+#include <functional>
 #include <memory>
 
-class ASTERIXImportTask;
+namespace context { class DBContextManager; }
 
 class QVBoxLayout;
 class QGridLayout;
-class QComboBox;
 class QPushButton;
-class ASTERIXFramingComboBox;
+
+/**
+ * Decode getter: returns whether a category should be decoded.
+ * Decode setter: sets whether a category should be decoded.
+ * When no lambdas are provided, checkboxes are checked and disabled (read-only).
+ */
+using DecodeGetter = std::function<bool(unsigned int)>;
+using DecodeSetter = std::function<void(unsigned int, bool)>;
 
 class ASTERIXConfigWidget : public QWidget
 {
     Q_OBJECT
 
-  signals:
-
   public slots:
-    void framingChangedSlot();
-    void framingEditSlot();
-
     void categoryCheckedSlot();
     void editionChangedSlot(const std::string& cat_str, const std::string& ed_str);
     void refEditionChangedSlot(const std::string& cat_str, const std::string& ed_str);
@@ -47,30 +49,30 @@ class ASTERIXConfigWidget : public QWidget
     void categoryEditionEditSlot();
     void categoryREFEditionEditSlot();
     void categorySPFEditionEditSlot();
-    //void categoryMappingChangedSlot(unsigned int cat, const std::string& mapping_str);
-
-    void editDataBlockSlot();
-    void editCategoriesSlot();
-    void refreshjASTERIXSlot();
 
     void updateSlot();
 
   public:
-    ASTERIXConfigWidget(ASTERIXImportTask& task, QWidget* parent = nullptr);
+    ASTERIXConfigWidget(context::DBContextManager& ctx_mgr,
+                        DecodeGetter decode_getter = {},
+                        DecodeSetter decode_setter = {},
+                        QWidget* parent = nullptr);
     virtual ~ASTERIXConfigWidget();
 
   protected:
-    ASTERIXImportTask& task_;
+    context::DBContextManager& ctx_mgr_;
+    std::shared_ptr<jASTERIX::jASTERIX> jasterix_;
+
+    DecodeGetter decode_getter_;
+    DecodeSetter decode_setter_;
+    bool decode_editable_{false};
 
     QVBoxLayout* main_layout_{nullptr};
     QGridLayout* categories_grid_{nullptr};
 
-    ASTERIXFramingComboBox* framing_combo_{nullptr};
-    QPushButton* framing_edit_{nullptr};
-
     std::map<unsigned int, QPushButton*> ref_edit_buttons_;
     std::map<unsigned int, QPushButton*> spf_edit_buttons_;
 
-    void updateFraming();
+    void initjASTERIX();
     void updateCategories();
 };

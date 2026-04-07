@@ -110,14 +110,13 @@ TEST_CASE("FFT JSON round-trip", "[context]")
 
 TEST_CASE("ASTERIXDecodingConfig JSON round-trip", "[context]")
 {
-    ASTERIXDecodingConfig cfg(48, true, "1.31", "1.4", "");
+    ASTERIXDecodingConfig cfg(48, "1.31", "1.4", "");
 
     json j = cfg.toJSON();
     ASTERIXDecodingConfig cfg2 = ASTERIXDecodingConfig::fromJSON(j);
 
     REQUIRE(cfg == cfg2);
     REQUIRE(cfg2.category() == 48);
-    REQUIRE(cfg2.decode() == true);
     REQUIRE(cfg2.edition() == "1.31");
     REQUIRE(cfg2.ref() == "1.4");
     REQUIRE(cfg2.spf().empty());
@@ -146,7 +145,7 @@ TEST_CASE("DBContext JSON round-trip", "[context]")
     ctx.ffts().push_back(fft);
 
     // add an ASTERIX config
-    ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, true, "1.31"));
+    ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, "1.31"));
 
     json j = ctx.toJSON();
     DBContext ctx2 = DBContext::fromJSON(j);
@@ -183,13 +182,13 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
         ds.name("Malta PSR");
         ctx.dataSources().push_back(ds);
 
-        ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, true, "1.31"));
+        ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, "1.31"));
 
         DBContextSerializer::save(ctx, tmp.string());
 
         // verify files exist
         REQUIRE(fs::exists(tmp / "malta_site" / "context_meta.json"));
-        REQUIRE(fs::exists(tmp / "malta_site" / "sensors.json"));
+        REQUIRE(fs::exists(tmp / "malta_site" / "data_sources.json"));
         REQUIRE(fs::exists(tmp / "malta_site" / "ffts.json"));
         REQUIRE(fs::exists(tmp / "malta_site" / "asterix_decoding.json"));
         REQUIRE(fs::exists(tmp / "malta_site" / "sectors.json"));
@@ -247,13 +246,13 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
         DBContext ctx("versioned");
         DBContextSerializer::save(ctx, tmp.string());
 
-        std::ifstream ifs((tmp / "versioned" / "sensors.json").string());
+        std::ifstream ifs((tmp / "versioned" / "data_sources.json").string());
         json j;
         ifs >> j;
         REQUIRE(j.contains("version"));
         REQUIRE(j["version"] == "1.0");
         REQUIRE(j.contains("content_type"));
-        REQUIRE(j["content_type"] == "sensors");
+        REQUIRE(j["content_type"] == "data_sources");
     }
 
     // cleanup

@@ -17,6 +17,10 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_select_dialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_delete_dialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_copy_dialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_rename_dialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_dialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_item.h"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_model.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/data_source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fft.cpp"
@@ -29,4 +33,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_select_dialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_delete_dialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_copy_dialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_rename_dialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_dialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_model.cpp"
 )

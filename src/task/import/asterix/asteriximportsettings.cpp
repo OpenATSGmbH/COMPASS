@@ -50,3 +50,16 @@ ASTERIXImportTaskSettings::ASTERIXImportTaskSettings()
     ,   chunk_size_insert         (50000)
 {
 }
+
+bool ASTERIXImportTaskSettings::decodeCategory(unsigned int category) const
+{
+    auto it = decode_flags_.find(category);
+    if (it != decode_flags_.end())
+        return it->second;
+    return true; // default: decode all
+}
+
+void ASTERIXImportTaskSettings::decodeCategory(unsigned int category, bool decode)
+{
+    decode_flags_[category] = decode;
+}

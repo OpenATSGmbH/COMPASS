@@ -475,8 +475,10 @@ void ASTERIXImportTask::configurejASTERIX() const
     {
         unsigned int cat = cfg.category();
 
+        bool decode = settings_.decodeCategory(cat);
+
         logdbg << "setting cat " << cat << " decode "
-               << cfg.decode() << " edition '" << cfg.edition() << "' ref '"
+               << decode << " edition '" << cfg.edition() << "' ref '"
                << cfg.ref() << "'";
 
         if (!jasterix_->hasCategory(cat))
@@ -509,7 +511,7 @@ void ASTERIXImportTask::configurejASTERIX() const
             continue;
         }
 
-        jasterix_->setDecodeCategory(cat, cfg.decode());
+        jasterix_->setDecodeCategory(cat, decode);
         logdbg << "setting cat " << cat
                << " edition " << cfg.edition();
         jasterix_->category(cat)->setCurrentEdition(cfg.edition());
@@ -535,25 +537,16 @@ bool ASTERIXImportTask::hasConfiguratonFor(unsigned int category)
 */
 bool ASTERIXImportTask::decodeCategory(unsigned int category)
 {
-    traced_assert(hasConfiguratonFor(category));
-    return compass_.dbContextManager().asterixConfig(category)->decode();
+    return settings_.decodeCategory(category);
 }
 
 /**
 */
 void ASTERIXImportTask::decodeCategory(unsigned int category, bool decode)
 {
-    traced_assert(jasterix_->hasCategory(category));
-
     loginf << "cat " << category << " decode " << decode;
 
-    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
-        category,
-        jasterix_->category(category)->defaultEdition(),
-        jasterix_->category(category)->defaultREFEdition());
-    cfg.decode(decode);
-
-    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
+    settings_.decodeCategory(category, decode);
 
     testFileDecoding();
 }

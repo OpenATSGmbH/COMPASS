@@ -93,11 +93,11 @@ void DBContextSerializer::save(const DBContext& ctx, const string& base_path)
         writeJSONFile(dir + "/" + META_FILENAME, meta);
     }
 
-    // sensors.json
+    // data_sources.json
     {
         json j;
         j["version"] = CURRENT_VERSION;
-        j["content_type"] = "sensors";
+        j["content_type"] = "data_sources";
         json arr = json::array();
         for (const auto& ds : ctx.dataSources())
             arr.push_back(ds.toJSON());
@@ -171,13 +171,13 @@ DBContext DBContextSerializer::load(const string& context_dir)
             ctx.modified(meta.at("modified"));
     }
 
-    // sensors.json
+    // data_sources.json
     {
         string path = context_dir + "/" + SENSORS_FILENAME;
         if (fs::exists(path))
         {
             json j = readJSONFile(path);
-            j = upgradeSection(j, "sensors");
+            j = upgradeSection(j, "data_sources");
 
             if (j.contains("data"))
             {

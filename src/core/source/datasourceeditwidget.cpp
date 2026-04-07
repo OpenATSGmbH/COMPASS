@@ -123,58 +123,29 @@ void DataSourceEditWidget::createMainTab()
 {
     auto main_layout = createTab(TabMainName, true);
 
-    QGridLayout* properties_layout_ = new QGridLayout();
+    auto* form = new QFormLayout();
+    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
-    unsigned int row = 0;
-
-    // "Name", "Short Name", "DSType", "SAC", "SIC"
-
-    //name_edit_
-    properties_layout_->addWidget(new QLabel("Name"), row, 0);
-
+    // common fields (always visible)
     name_edit_ = new QLineEdit();
     connect(name_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::nameEditedSlot);
-    properties_layout_->addWidget(name_edit_, row, 1);
-    row++;
-
-    //short_name_edit_
-
-    properties_layout_->addWidget(new QLabel("Short Name"), row, 0);
+    form->addRow(new QLabel("Name"), name_edit_);
 
     short_name_edit_ = new QLineEdit();
     connect(short_name_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::shortNameEditedSlot);
-    properties_layout_->addWidget(short_name_edit_, row, 1);
-    row++;
-
-    // dstype_combo_
-
-    properties_layout_->addWidget(new QLabel("DSType"), row, 0);
+    form->addRow(new QLabel("Short Name"), short_name_edit_);
 
     dstype_combo_ = new DSTypeSelectionComboBox();
     connect(dstype_combo_, &DSTypeSelectionComboBox::changedTypeSignal, this, &DataSourceEditWidget::dsTypeEditedSlot);
-    properties_layout_->addWidget(dstype_combo_, row, 1);
-    row++;
-
-    //QLabel* sac_label_{nullptr};
-
-    properties_layout_->addWidget(new QLabel("SAC/SIC    (DS ID)"), row, 0);
+    form->addRow(new QLabel("DSType"), dstype_combo_);
 
     sac_sic_id_label_ = new QLabel();
-    properties_layout_->addWidget(sac_sic_id_label_, row, 1);
-    row++;
-
-    // update interval
-
-    properties_layout_->addWidget(new QLabel("Update Interval [s]"), row, 0);
+    form->addRow(new QLabel("SAC/SIC  (DS ID)"), sac_sic_id_label_);
 
     update_interval_edit_ = new QLineEdit();
     update_interval_edit_->setValidator(new TextFieldDoubleValidator(0, 90, 3));
     connect(update_interval_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::updateIntervalEditedSlot);
-    properties_layout_->addWidget(update_interval_edit_, row, 1);
-
-    main_layout->addLayout(properties_layout_);
-
-    ++row;
+    form->addRow(new QLabel("Update Interval [s]"), update_interval_edit_);
 
     detection_type_combo_ = new QComboBox(this);
     detection_type_combo_->addItem("Undefined");
@@ -183,104 +154,53 @@ void DataSourceEditWidget::createMainTab()
     detection_type_combo_->addItem("Mode A/C Combined");
     detection_type_combo_->addItem("Mode S");
     detection_type_combo_->addItem("Mode S Combined");
-
-    properties_layout_->addWidget(new QLabel("Detection Type"), row, 0);
-    properties_layout_->addWidget(detection_type_combo_, row, 1);
-
     connect(detection_type_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourceEditWidget::detectionTypeChangedSlot);
+    form->addRow(new QLabel("Detection Type"), detection_type_combo_);
 
-    // ground_only_check_
-
-    ++row;
-    properties_layout_->addWidget(new QLabel("Ground Only"), row, 0);
-    
     ground_only_check_ = new QCheckBox();
     connect(ground_only_check_, &QCheckBox::clicked,
             this, &DataSourceEditWidget::groundOnlyCheckedSlot);
+    form->addRow(new QLabel("Ground Only"), ground_only_check_);
 
-    properties_layout_->addWidget(ground_only_check_, row, 1);
-
-    //  radar_widget_
-    radar_widget_ = new QWidget();
-    radar_widget_->setContentsMargins(0, 0, 0, 0);
-
-    QGridLayout* radar_layout = new QGridLayout();
-    radar_layout->setContentsMargins(0, 0, 0, 0);
-
-    radar_layout->addWidget(new QLabel("Ignore Range/Azimuth Values"), 0, 0);
-
+    // radar-specific (hidden/shown via label + field visibility)
+    radar_ignore_label_ = new QLabel("Ignore Range/Azimuth");
     radar_ignore_azmrng_check_ = new QCheckBox();
     connect(radar_ignore_azmrng_check_, &QCheckBox::clicked, this,
             &DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot);
+    form->addRow(radar_ignore_label_, radar_ignore_azmrng_check_);
 
-    radar_layout->addWidget(radar_ignore_azmrng_check_, 0, 1);
+    // psr JPDA (hidden/shown via label + field visibility)
+    psr_pd_label_ = new QLabel("JPDA PD [1]");
+    psr_pd_edit_ = new QLineEdit();
+    psr_pd_edit_->setValidator(new TextFieldDoubleValidator(0.001, 1, 3));
+    connect(psr_pd_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
+    form->addRow(psr_pd_label_, psr_pd_edit_);
 
-    radar_widget_->setLayout(radar_layout);
+    psr_clutter_rate_label_ = new QLabel("Clutter Rate [1]");
+    psr_clutter_rate_edit_ = new QLineEdit();
+    psr_clutter_rate_edit_->setValidator(new TextFieldDoubleValidator(1, 10000, 0));
+    connect(psr_clutter_rate_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::clutterRateEditedSlot);
+    form->addRow(psr_clutter_rate_label_, psr_clutter_rate_edit_);
 
-    main_layout->addWidget(radar_widget_);
-
-    // position_widget_
-
-    position_widget_ = new QWidget();
-    position_widget_->setContentsMargins(0, 0, 0, 0);
-
-    QGridLayout* position_layout = new QGridLayout();
-    position_layout->setContentsMargins(0, 0, 0, 0);
-
-    position_layout->addWidget(new QLabel("Latitude"), 0, 0);
-
+    // position (hidden/shown via label + field visibility)
+    latitude_label_ = new QLabel("Latitude");
     latitude_edit_ = new QLineEdit();
-    //latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 12));
     connect(latitude_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::latitudeEditedSlot);
-    position_layout->addWidget(latitude_edit_, 0, 1);
+    form->addRow(latitude_label_, latitude_edit_);
 
-    position_layout->addWidget(new QLabel("Longitude"), 1, 0);
-
+    longitude_label_ = new QLabel("Longitude");
     longitude_edit_ = new QLineEdit();
-    //longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 12));
     connect(longitude_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::longitudeEditedSlot);
-    position_layout->addWidget(longitude_edit_, 1, 1);
+    form->addRow(longitude_label_, longitude_edit_);
 
-    position_layout->addWidget(new QLabel("Altitude"), 2, 0);
-
+    altitude_label_ = new QLabel("Altitude");
     altitude_edit_ = new QLineEdit();
     altitude_edit_->setValidator(new TextFieldDoubleValidator(-10000, 10000, 12));
     connect(altitude_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::altitudeEditedSlot);
-    position_layout->addWidget(altitude_edit_, 2, 1);
+    form->addRow(altitude_label_, altitude_edit_);
 
-    position_widget_->setLayout(position_layout);
-
-    main_layout->addWidget(position_widget_);
-
-    // psr settings
-    {
-        psr_jpda_widget_ = new QWidget();
-        psr_jpda_widget_->setContentsMargins(0, 0, 0, 0);
-
-        QGridLayout* jpda_layout = new QGridLayout();
-        unsigned int row_cnt = 0;
-
-        jpda_layout->addWidget(new QLabel("JPDA PD [1]"), row_cnt, 0);
-
-        psr_pd_edit_ = new QLineEdit();
-        psr_pd_edit_->setValidator(new TextFieldDoubleValidator(0.001, 1, 3));
-        connect(psr_pd_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
-        jpda_layout->addWidget(psr_pd_edit_, row_cnt, 1);
-
-        ++row_cnt;
-
-        jpda_layout->addWidget(new QLabel("Clutter Rate [1]"), row_cnt, 0);
-
-        psr_clutter_rate_edit_ = new QLineEdit();
-        psr_clutter_rate_edit_->setValidator(new TextFieldDoubleValidator(1, 10000, 0));
-        connect(psr_clutter_rate_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::clutterRateEditedSlot);
-        jpda_layout->addWidget(psr_clutter_rate_edit_, row_cnt, 1);
-
-        psr_jpda_widget_->setLayout(jpda_layout);
-
-        main_layout->addWidget(psr_jpda_widget_);
-    }
+    main_layout->addLayout(form);
 
     delete_button_ = new QPushButton("Delete");
     delete_button_->setToolTip("Deletes the data source in configuration");
@@ -292,6 +212,7 @@ void DataSourceEditWidget::createMainTab()
 
     main_layout->addStretch();
 }
+
 
 void DataSourceEditWidget::createRadarRangesTab()
 {
@@ -1297,23 +1218,6 @@ context::DataSource* DataSourceEditWidget::currentDataSource()
 
 void DataSourceEditWidget::updateContent()
 {
-    traced_assert(name_edit_);
-    traced_assert(short_name_edit_);
-    traced_assert(dstype_combo_);
-    traced_assert(sac_sic_id_label_);
-    traced_assert(detection_type_combo_);
-    traced_assert(ground_only_check_);
-    traced_assert(position_widget_);
-    traced_assert(add_ranges_button_);
-    traced_assert(ranges_widget_);
-    traced_assert(accuracies_widget_);
-    traced_assert(add_accuracies_button_);
-    traced_assert(remote_units_widget_);
-    traced_assert(add_remote_units_button_);
-    traced_assert(add_remote_units_placeholder_);
-    traced_assert(net_widget_);
-    traced_assert(add_lines_button_);
-
     detection_type_combo_->blockSignals(true);
 
     auto ds = currentDataSource();
@@ -1325,23 +1229,18 @@ void DataSourceEditWidget::updateContent()
     else
     {
         updateMain(ds);
-
-        // position
         updatePosition(ds);
 
-        // radars
         if (ds->dsType() == "Radar")
             updateRadar(ds);
         else
             enableRadar(false);
 
-        // mlat
         if (ds->dsType() == "MLAT")
             updateMLAT(ds);
         else
             enableMLAT(false);
 
-        // lines
         if (show_network_lines_)
             updateNetwork(ds);
         else
@@ -1379,16 +1278,31 @@ void DataSourceEditWidget::enableCommon(bool enable)
     detection_type_combo_->setEnabled(enable);
 
     ground_only_check_->setVisible(enable);
-    position_widget_->setVisible(enable);
+
+    // hide all optional rows when disabled
+    radar_ignore_label_->setVisible(false);
+    radar_ignore_azmrng_check_->setVisible(false);
+    psr_pd_label_->setVisible(false);
+    psr_pd_edit_->setVisible(false);
+    psr_clutter_rate_label_->setVisible(false);
+    psr_clutter_rate_edit_->setVisible(false);
+    latitude_label_->setVisible(false);
+    latitude_edit_->setVisible(false);
+    longitude_label_->setVisible(false);
+    longitude_edit_->setVisible(false);
+    altitude_label_->setVisible(false);
+    altitude_edit_->setVisible(false);
 }
 
 void DataSourceEditWidget::enableRadar(bool enable)
 {
-    radar_widget_->setVisible(enable);
-    psr_jpda_widget_->setVisible(enable);
+    radar_ignore_label_->setVisible(enable);
+    radar_ignore_azmrng_check_->setVisible(enable);
+    psr_pd_label_->setVisible(false);
+    psr_pd_edit_->setVisible(false);
+    psr_clutter_rate_label_->setVisible(false);
+    psr_clutter_rate_edit_->setVisible(false);
 
-    // tab_widget_->setTabVisible(tabIndex(TabRadarAccuraciesName), enable);
-    // tab_widget_->setTabVisible(tabIndex(TabRadarRangesName), enable);
     setTabVisibleCompat(tabIndex(TabRadarAccuraciesName), enable);
     setTabVisibleCompat(tabIndex(TabRadarRangesName), enable);
 }
@@ -1455,20 +1369,28 @@ void DataSourceEditWidget::updatePosition(context::DataSource* ds)
         altitude_edit_->setText("0");
     }
 
-    position_widget_->setHidden(false);
+    latitude_label_->setVisible(true);
+    latitude_edit_->setVisible(true);
+    longitude_label_->setVisible(true);
+    longitude_edit_->setVisible(true);
+    altitude_label_->setVisible(true);
+    altitude_edit_->setVisible(true);
 }
 
 void DataSourceEditWidget::updateRadar(context::DataSource* ds)
 {
-    traced_assert (radar_widget_);
-    radar_widget_->setHidden(false);
-
+    radar_ignore_label_->setVisible(true);
+    radar_ignore_azmrng_check_->setVisible(true);
     radar_ignore_azmrng_check_->setChecked(ds->ignoreRadarAzmRange());
 
-    if (ds->detectionTypeInt() == 1) // PrimaryOnly
-    {
-        psr_jpda_widget_->setHidden(false);
+    bool show_jpda = (ds->detectionTypeInt() == 1); // PrimaryOnly
+    psr_pd_label_->setVisible(show_jpda);
+    psr_pd_edit_->setVisible(show_jpda);
+    psr_clutter_rate_label_->setVisible(show_jpda);
+    psr_clutter_rate_edit_->setVisible(show_jpda);
 
+    if (show_jpda)
+    {
         if (ds->info().contains("pd"))
             psr_pd_edit_->setText(QString::number(ds->probabilityOfDetection()));
         else
@@ -1477,11 +1399,7 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
         if (ds->info().contains("clutter_rate"))
             psr_clutter_rate_edit_->setText(QString::number(ds->clutterRate()));
         else
-            psr_clutter_rate_edit_->setText("");            
-    }
-    else
-    {
-        psr_jpda_widget_->setHidden(true);
+            psr_clutter_rate_edit_->setText("");
     }
 
     if (ds->hasRadarRanges())
