@@ -22,6 +22,7 @@
 #include <QCheckBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -85,10 +86,14 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* quit_button_ = new QPushButton("Cancel");
+    quit_button_->setIcon(QIcon());
     connect(quit_button_, &QPushButton::clicked, this, &ImportSectorDialog::cancelSlot);
     button_layout->addWidget(quit_button_);
 
+    button_layout->addStretch();
+
     QPushButton* import_button_ = new QPushButton("Import");
+    import_button_->setIcon(QIcon());
     connect(import_button_, &QPushButton::clicked, this, &ImportSectorDialog::importSlot);
     button_layout->addWidget(import_button_);
 

@@ -23,7 +23,12 @@
 #include "db_context_delete_dialog.h"
 #include "db_context_rename_dialog.h"
 #include "datasourceeditwidget.h"
+#include "datasourcecreatedialog.h"
 #include "asterixconfigwidget.h"
+#include "sector_edit_widget.h"
+#include "sector_import_utils.h"
+#include "fft_edit_widget.h"
+#include "importsectordialog.h"
 #include "sector.h"
 #include "sectorlayer.h"
 #include "logger.h"
@@ -199,6 +204,14 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     asterix_widget_ = new ASTERIXConfigWidget(manager_, {}, {}, this);
     detail_stack_->addWidget(asterix_widget_);
 
+    // create sector edit widget
+    sector_edit_widget_ = new SectorEditWidget(manager_, [this]() { rebuildTree(); }, this);
+    detail_stack_->addWidget(sector_edit_widget_);
+
+    // create FFT edit widget
+    fft_edit_widget_ = new FFTEditWidget(manager_, [this]() { rebuildTree(); }, this);
+    detail_stack_->addWidget(fft_edit_widget_);
+
     // initial empty placeholder
     auto* empty_label = new QLabel("Select an item to view details.");
     empty_label->setAlignment(Qt::AlignCenter);
@@ -246,6 +259,8 @@ void DBContextEditDialog::rebuildTree()
     tree_model_->rebuild();
     tree_view_->expandAll();
     ds_edit_widget_->clear();
+    sector_edit_widget_->clear();
+    fft_edit_widget_->clear();
 
     // refresh ASTERIX widget
     asterix_widget_->updateSlot();
@@ -320,13 +335,15 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
     {
         loginf << "clicked sector id " << sec_item->sectorId();
 
-        showDetailWidget(createPlaceholderLabel("Sector editing — coming soon"));
+        sector_edit_widget_->showSector(sec_item->sectorId());
+        showDetailWidget(sector_edit_widget_);
     }
     else if (auto* fft_item = dynamic_cast<FFTItem*>(item))
     {
         loginf << "clicked FFT '" << fft_item->fftName() << "'";
 
-        showDetailWidget(createPlaceholderLabel("FFT editing — coming soon"));
+        fft_edit_widget_->showFFT(fft_item->fftName());
+        showDetailWidget(fft_edit_widget_);
     }
 }
 
@@ -400,13 +417,15 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     menu.addAction("Add Data Source...", [this]()
     {
-        bool ok = false;
-        int sac = QInputDialog::getInt(this, "Add Data Source", "SAC:", 0, 0, 255, 1, &ok);
-        if (!ok) return;
-        int sic = QInputDialog::getInt(this, "Add Data Source", "SIC:", 0, 0, 255, 1, &ok);
-        if (!ok) return;
+        DataSourceCreateDialog dialog(manager_, this);
+        connect(&dialog, &DataSourceCreateDialog::doneSignal, &dialog, &QDialog::close);
+        dialog.exec();
 
-        manager_.createDataSource(sac, sic);
+        if (dialog.cancelled())
+            return;
+
+        auto& ds = manager_.createDataSource(dialog.sac(), dialog.sic());
+        ds.dsType(dialog.dsType());
         manager_.saveContext(manager_.activeContextName());
         rebuildTree();
     });
@@ -477,15 +496,53 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     QMenu menu;
 
-    menu.addAction("Import...", [this]()
+    menu.addAction("Import from File...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sectors", "", "JSON Files (*.json)");
+        QString path = QFileDialog::getOpenFileName(this, "Import Sectors",  "",
+            "Vector Files (*.shp *.geojson *.json *.gml);;All Files (*)");
+        if (path.isEmpty()) return;
+
+        auto sectors = sector_utils::parseGDALFile(path.toStdString());
+        if (sectors.empty())
+        {
+            QMessageBox::warning(this, "Import Sectors",
+                "No sectors found in file or file could not be opened.");
+            return;
+        }
+
+        loginf << "parsed " << sectors.size() << " sectors from '" << path.toStdString() << "'";
+
+        // extract filename without extension as default layer name
+        QFileInfo fi(path);
+        std::string default_layer = fi.baseName().toStdString();
+
+        ImportSectorDialog dialog(default_layer, this);
+        if (dialog.exec() != QDialog::Accepted)
+            return;
+
+        std::string layer_name = dialog.layerName();
+        bool exclude = dialog.exclude();
+        QColor color = dialog.color();
+
+        for (const auto& sec : sectors)
+            manager_.createSector(sec.name, layer_name, exclude, color, sec.points);
+
+        loginf << "imported " << sectors.size() << " sectors into layer '" << layer_name << "'";
+
+        rebuildTree();
+    });
+
+    menu.addSeparator();
+
+    menu.addAction("Import JSON...", [this]()
+    {
+        QString path = QFileDialog::getOpenFileName(this, "Import Sectors (JSON)", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         manager_.importSectors(path.toStdString());
         rebuildTree();
     });
 
-    menu.addAction("Export...", [this]()
+    menu.addAction("Export JSON...", [this]()
     {
         QString path = QFileDialog::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;

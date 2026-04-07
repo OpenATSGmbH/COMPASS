@@ -173,7 +173,7 @@ void DataSourcesConfigurationDialog::newDSClickedSlot()
 {
     loginf;
 
-    create_dialog_.reset(new DataSourceCreateDialog(*this, ctx_man_));
+    create_dialog_.reset(new DataSourceCreateDialog(ctx_man_, this));
     connect(create_dialog_.get(), &DataSourceCreateDialog::doneSignal,
             this, &DataSourcesConfigurationDialog::newDSDoneSlot);
 

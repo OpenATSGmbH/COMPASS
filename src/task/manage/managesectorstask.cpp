@@ -20,12 +20,9 @@
 #include "db_context_manager.h"
 #include "logger.h"
 #include "managesectorstaskdialog.h"
+#include "sector_import_utils.h"
 #include "taskmanager.h"
 #include "files.h"
-
-#include "gdal.h"
-#include "gdal_priv.h"
-#include "ogrsf_frmts.h"
 
 #include "json.hpp"
 
@@ -263,218 +260,37 @@ void ManageSectorsTask::parseCurrentFile (bool import)
     found_sectors_num_ = 0;
     parse_message_ = "";
 
-    GDALAllRegister();
+    auto sectors = sector_utils::parseGDALFile(current_filename_);
 
-    GDALDataset* data_set;
-
-    data_set = (GDALDataset*) GDALOpenEx(current_filename_.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL );
-
-    if(data_set == NULL)
+    if (sectors.empty())
     {
-        logwrn << "open failed";
-        parse_message_ = "file '"+current_filename_+"' open failed.";
+        parse_message_ = "file '" + current_filename_ + "' open failed or contains no sectors.";
+
+        if (dialog_)
+            dialog_->updateParseMessage();
         return;
     }
 
-    OGRLayer* layer = nullptr;
-
-    for (int layer_cnt=0; layer_cnt < data_set->GetLayerCount(); ++layer_cnt) // OGRLayer*
+    for (const auto& sec : sectors)
     {
-        layer = data_set->GetLayer(layer_cnt);
-        traced_assert(layer);
+        ++found_sectors_num_;
 
-        logdbg << "found sector name '" << layer->GetName() << "'";
-        std::string sector_name = layer->GetName();
+        if (layer_name_.size())
+            parse_message_ += "Found layer '" + layer_name_ + "' sector name '" + sec.name
+                    + "' num points " + to_string(sec.points.size()) + "\n";
+        else
+            parse_message_ += "Found sector name '" + sec.name
+                    + "' num points " + to_string(sec.points.size()) + "\n";
 
-        OGRFeature* feature = nullptr;
-
-        for (int feature_cnt=0; feature_cnt < layer->GetFeatureCount(); ++feature_cnt) // OGRFeature
-        {
-            feature = layer->GetNextFeature();
-
-            if (!feature) // TODO solve this
-            {
-                logwrn << "non-feature at cnt " << feature_cnt;
-                continue;
-            }
-
-            traced_assert(feature);
-
-            logdbg << "found feature '"
-                   << feature->GetDefnRef()->GetName() << "'";
-
-            //std::string feature_name = feature->GetDefnRef()->GetName();
-
-            OGRFeatureDefn* feature_def = layer->GetLayerDefn();
-            traced_assert(feature_def);
-            int field_cnt;
-
-            for (field_cnt = 0; field_cnt < feature_def->GetFieldCount(); field_cnt++)
-            {
-                OGRFieldDefn* field_def = feature_def->GetFieldDefn(field_cnt);
-                traced_assert(field_def);
-
-                switch(field_def->GetType())
-                {
-                    case OFTInteger:
-                        logdbg << "int " << feature->GetFieldAsInteger(field_cnt);
-                        break;
-                    case OFTInteger64:
-                        logdbg << "int64 "
-                               << feature->GetFieldAsInteger64(field_cnt);
-                        //printf( CPL_FRMT_GIB ",", oField.GetInteger64() );
-                        break;
-                    case OFTReal:
-                        logdbg << "double " << feature->GetFieldAsDouble(field_cnt);
-                        break;
-                    case OFTString:
-                        logdbg << "string '"
-                               << feature->GetFieldAsString(field_cnt) << "'";
-                        break;
-                    default:
-                        logdbg << "default " << feature->GetFieldAsString(field_cnt);
-                        break;
-                }
-            }
-
-            OGRGeometry* geometry;
-
-            //geometry = feature->GetGeometryRef();
-
-            int geom_field_cnt;
-            int geom_field_num;
-            geom_field_num = feature->GetGeomFieldCount();
-
-            for(geom_field_cnt = 0; geom_field_cnt < geom_field_num; geom_field_cnt ++ )
-            {
-                geometry = feature->GetGeomFieldRef(geom_field_cnt);
-
-                if (!geometry)
-                    continue;
-                if (geometry->getGeometryType() != wkbPolygon
-                    && geometry->getGeometryType() != wkbPolygon25D
-                    && geometry->getGeometryType() != wkbMultiPolygon
-                    && geometry->getGeometryType() != wkbMultiPolygon25D)
-                {
-                    loginf << "skipping unsupported geometry name "
-                           << geometry->getGeometryName()
-                           << " type " << geometry->getGeometryType();
-                    continue;
-                }
-
-                if(wkbFlatten(geometry->getGeometryType()) == wkbPolygon)
-                {
-                    OGRPolygon* polygon = dynamic_cast<OGRPolygon*>(geometry);
-                    traced_assert(polygon);
-
-                    addPolygon(sector_name, *polygon, import);
-                }
-                else if (wkbFlatten(geometry->getGeometryType()) == wkbMultiPolygon)
-                {
-                    OGRMultiPolygon* multi_polygon = dynamic_cast<OGRMultiPolygon*>(geometry);
-                    traced_assert(multi_polygon);
-
-                    OGRGeometry* sub_geometry;
-
-                    for (int poly_cnt=0; poly_cnt < multi_polygon->getNumGeometries(); ++poly_cnt)
-                    {
-                        sub_geometry = multi_polygon->getGeometryRef(poly_cnt);
-                        traced_assert(sub_geometry);
-
-                        if (wkbFlatten(sub_geometry->getGeometryType()) == wkbPolygon)
-                        {
-                            OGRPolygon* sub_polygon = dynamic_cast<OGRPolygon*>(sub_geometry);
-                            traced_assert(sub_polygon);
-
-                            addPolygon(sector_name, *sub_polygon, import);
-                        }
-                        else
-                            logdbg << "no polygon in multipolygon found";
-                    }
-                }
-                else
-                {
-                    logdbg << "no geometry found";
-                }
-            }
-        }
+        if (import)
+            addSector(sec.name, sec.points);
     }
-
-    GDALClose(data_set);
 
     if (import)
         emit manager().compass().dbContextManager().sectorsChangedSignal();
 
     if (dialog_)
         dialog_->updateParseMessage();
-}
-
-void ManageSectorsTask::addPolygon (const std::string& sector_name, OGRPolygon& polygon, bool import)
-{
-    logdbg << "sector_name '" << sector_name
-           << "' polygon '" << polygon.getGeometryName() << "'";
-
-    OGRLinearRing* ring = polygon.getExteriorRing();
-    traced_assert(ring);
-
-    if (import)
-    {
-        addLinearRing(sector_name+to_string(manager().compass().dbContextManager().maxSectorId()+1), *ring, import);
-
-         for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
-         {
-             ring = polygon.getInteriorRing(ring_cnt);
-             traced_assert(ring);
-             addLinearRing(sector_name+to_string(manager().compass().dbContextManager().maxSectorId()+1), *ring, import);
-         }
-    }
-    else // no eval man call during ctor
-    {
-        addLinearRing(sector_name, *ring, import);
-
-         for (int ring_cnt=0; ring_cnt < polygon.getNumInteriorRings(); ++ring_cnt) // OGRLinearRing
-         {
-             ring = polygon.getInteriorRing(ring_cnt);
-             traced_assert(ring);
-             addLinearRing(sector_name, *ring, import);
-         }
-    }
-}
-
-void ManageSectorsTask::addLinearRing (const std::string& sector_name, OGRLinearRing& ring, bool import)
-{
-    logdbg << "layer '" << layer_name_ << "' sector_name '" << sector_name;
-
-    vector<pair<double,double>> points;
-
-    OGRPoint point;
-
-    for (int point_cnt=0; point_cnt < ring.getNumPoints(); ++point_cnt)
-    {
-        ring.getPoint(point_cnt, &point);
-        traced_assert(!point.IsEmpty());
-
-        logdbg << "point lat " << point.getY()
-               << " lon " << point.getX() << " z " << point.getZ();
-
-        points.push_back({point.getY(), point.getX()});
-    }
-
-    if (points.size())
-    {
-
-        if (layer_name_.size())
-            parse_message_ += "Found layer '"+layer_name_+"' sector name '"+sector_name
-                    +"' num points "+to_string(points.size())+"\n";
-        else
-            parse_message_ += "Found sector name '"+sector_name
-                    +"' num points "+to_string(points.size())+"\n";
-
-        ++found_sectors_num_;
-
-        if (import)
-            addSector (sector_name, std::move(points));
-    }
 }
 
 void ManageSectorsTask::addSector (const std::string& sector_name, std::vector<std::pair<double,double>> points)

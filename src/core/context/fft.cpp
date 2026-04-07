@@ -27,7 +27,6 @@ using namespace nlohmann;
 namespace context
 {
 
-static const string position_key = "position";
 static const string latitude_key = "latitude";
 static const string longitude_key = "longitude";
 static const string altitude_key = "altitude";
@@ -36,45 +35,43 @@ FFT::FFT() = default;
 
 bool FFT::hasPosition() const
 {
-    return info_.contains(position_key)
-        && info_.at(position_key).contains(latitude_key)
-        && info_.at(position_key).contains(longitude_key);
+    return info_.contains(latitude_key)
+        && info_.contains(longitude_key);
 }
 
 double FFT::latitude() const
 {
-    return info_.at(position_key).at(latitude_key);
+    return info_.at(latitude_key);
 }
 
 void FFT::latitude(double value)
 {
-    info_[position_key][latitude_key] = value;
+    info_[latitude_key] = value;
 }
 
 double FFT::longitude() const
 {
-    return info_.at(position_key).at(longitude_key);
+    return info_.at(longitude_key);
 }
 
 void FFT::longitude(double value)
 {
-    info_[position_key][longitude_key] = value;
+    info_[longitude_key] = value;
 }
 
 bool FFT::hasAltitude() const
 {
-    return info_.contains(position_key)
-        && info_.at(position_key).contains(altitude_key);
+    return info_.contains(altitude_key);
 }
 
 double FFT::altitude() const
 {
-    return info_.at(position_key).at(altitude_key);
+    return info_.at(altitude_key);
 }
 
 void FFT::altitude(double value)
 {
-    info_[position_key][altitude_key] = value;
+    info_[altitude_key] = value;
 }
 
 json FFT::toJSON() const

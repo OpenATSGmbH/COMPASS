@@ -28,8 +28,6 @@
 class TaskManager;
 class ManageSectorsTaskDialog;
 class Sector;
-class OGRPolygon;
-class OGRLinearRing;
 
 class ManageSectorsTask : public Task, public Configurable
 {
@@ -74,9 +72,5 @@ protected:
     QColor color_;
 
     void parseCurrentFile (bool import);
-
-    void addPolygon (const std::string& sector_name, OGRPolygon& polygon, bool import);
-    void addLinearRing (const std::string& sector_name, OGRLinearRing& ring, bool import);
-
     void addSector (const std::string& sector_name, std::vector<std::pair<double,double>> points);
 };

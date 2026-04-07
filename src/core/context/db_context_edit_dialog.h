@@ -26,6 +26,8 @@ class QPushButton;
 class DataSourceEditWidget;
 class ASTERIXConfigWidget;
 
+namespace context { class SectorEditWidget; class FFTEditWidget; }
+
 namespace context
 {
 
@@ -82,6 +84,8 @@ private:
     // detail widgets (lazy, owned by stacked widget)
     DataSourceEditWidget* ds_edit_widget_{nullptr};
     ASTERIXConfigWidget* asterix_widget_{nullptr};
+    SectorEditWidget* sector_edit_widget_{nullptr};
+    FFTEditWidget* fft_edit_widget_{nullptr};
 };
 
 } // namespace context

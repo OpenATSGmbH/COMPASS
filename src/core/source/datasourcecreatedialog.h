@@ -20,7 +20,6 @@
 #include <QDialog>
 
 namespace context { class DBContextManager; }
-class DataSourcesConfigurationDialog;
 class DSTypeSelectionComboBox;
 
 class QLineEdit;
@@ -43,7 +42,7 @@ public slots:
     void doneClickedSlot();
 
 public:
-    DataSourceCreateDialog(DataSourcesConfigurationDialog& dialog, context::DBContextManager& ctx_man);
+    DataSourceCreateDialog(context::DBContextManager& ctx_man, QWidget* parent = nullptr);
     virtual ~DataSourceCreateDialog();
 
     unsigned int sac() const;

@@ -18,7 +18,6 @@
 #include "datasourcecreatedialog.h"
 #include "db_context_manager.h"
 #include "dstypeselectioncombobox.h"
-#include "datasourcesconfigurationdialog.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
 #include "util/number.h"
@@ -32,8 +31,8 @@
 using namespace std;
 using namespace Utils;
 
-DataSourceCreateDialog::DataSourceCreateDialog(DataSourcesConfigurationDialog& dialog, context::DBContextManager& ctx_man)
-    :  QDialog(&dialog), ctx_man_(ctx_man)
+DataSourceCreateDialog::DataSourceCreateDialog(context::DBContextManager& ctx_man, QWidget* parent)
+    :  QDialog(parent), ctx_man_(ctx_man)
 {
     setWindowTitle("Create New Data Source");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);

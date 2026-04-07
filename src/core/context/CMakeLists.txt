@@ -21,6 +21,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_dialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_item.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_model.h"
+        "${CMAKE_CURRENT_LIST_DIR}/fft_edit_widget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/data_source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fft.cpp"
@@ -36,4 +37,5 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_rename_dialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_dialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_model.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/fft_edit_widget.cpp"
 )
