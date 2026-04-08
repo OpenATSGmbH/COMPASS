@@ -21,7 +21,6 @@
 #include "compass.h"
 #include "createartasassociationstask.h"
 #include "jsonimporttask.h"
-#include "managesectorstask.h"
 #include "radarplotpositioncalculatortask.h"
 #include "viewpointsimporttask.h"
 #include "gpstrailimporttask.h"
@@ -120,13 +119,6 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     //     traced_assert(gps_import_csv_task_);
     //     addTask(class_name, gps_import_csv_task_.get());
     // }
-    else if (class_name == "ManageSectorsTask")
-    {
-        traced_assert(!manage_sectors_task_);
-        manage_sectors_task_.reset(new ManageSectorsTask(child_json, this));
-        traced_assert(manage_sectors_task_);
-        addTask(class_name, manage_sectors_task_.get());
-    }
     else if (class_name == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
@@ -208,12 +200,6 @@ void TaskManager::checkSubConfigurables()
     //     traced_assert(gps_import_csv_task_);
     // }
 
-    if (!manage_sectors_task_)
-    {
-        generateSubConfigurableFromConfig("ManageSectorsTask", "ManageSectorsTask0");
-        traced_assert(manage_sectors_task_);
-    }
-
     if (!radar_plot_position_calculator_task_)
     {
         generateSubConfigurableFromConfig("RadarPlotPositionCalculatorTask",
@@ -273,7 +259,6 @@ void TaskManager::shutdown()
     json_import_task_ = nullptr;
     gps_trail_import_task_ = nullptr;
     //gps_import_csv_task_ = nullptr;
-    manage_sectors_task_ = nullptr;
     radar_plot_position_calculator_task_ = nullptr;
     create_artas_associations_task_ = nullptr;
     reconstruct_references_task_ = nullptr;
@@ -289,14 +274,6 @@ void TaskManager::runTask(const std::string& task_name)
     traced_assert(tasks_.at(task_name)->canRun());
 
     tasks_.at(task_name)->run();
-}
-
-/**
- */
-ManageSectorsTask& TaskManager::manageSectorsTask() const
-{
-    traced_assert(manage_sectors_task_);
-    return *manage_sectors_task_;
 }
 
 /**

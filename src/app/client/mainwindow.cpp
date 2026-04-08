@@ -40,8 +40,6 @@
 #include "viewpointsimporttaskdialog.h"
 #include "gpstrailimporttask.h"
 #include "gpstrailimporttaskdialog.h"
-#include "managesectorstask.h"
-#include "managesectorstaskdialog.h"
 #include "evaluationmanager.h"
 #include "compass.h"
 #include "db_context_manager.h"
@@ -1045,7 +1043,8 @@ void MainWindow::configureSectorsSlot()
 {
     loginf;
 
-    compass_.taskManager().manageSectorsTask().dialog()->show();
+    context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
+    dialog.exec();
 }
 
 void MainWindow::quitRequestedSlot()

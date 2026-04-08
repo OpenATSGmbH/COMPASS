@@ -24,6 +24,7 @@
 #include "stringconv.h"
 #include "timeconv.h"
 #include "db_context_manager.h"
+#include "sector.h"
 #include "datasourcebase.h" // for dbContent::DataSourceType enum
 #include "evaluationmanager.h"
 #include "reconstructorassociatorbase.h"

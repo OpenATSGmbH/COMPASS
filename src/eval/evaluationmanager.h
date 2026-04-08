@@ -22,7 +22,6 @@
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
-#include "sector.h"
 #include "result.h"
 #include "util/timewindow.h"
 
@@ -35,7 +34,6 @@ class EvaluationStandard;
 class DBContent;
 class DBContentManager;
 class SectorLayer;
-class AirSpace;
 struct EvaluationSettings;
 class EvaluationTargetFilter;
 
@@ -85,17 +83,6 @@ public:
 
     Result canEvaluate() const;
     Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
-
-    // sectors (eval-specific wrappers that also clear calculator state)
-    void createNewSector (const std::string& name, const std::string& layer_name,
-                          bool exclude, QColor color, std::vector<std::pair<double,double>> points);
-    void moveSector(unsigned int id, const std::string& old_layer_name, const std::string& new_layer_name);
-    void deleteSector(std::shared_ptr<Sector> sector);
-    void deleteAllSectors();
-    void importSectors (const std::string& filename);
-
-    bool importAirSpace(const AirSpace& air_space,
-                        const boost::optional<std::set<std::string>>& sectors_to_import = {});
 
     //data loading
     bool needsAdditionalVariables() const;

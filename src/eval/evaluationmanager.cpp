@@ -27,7 +27,6 @@
 
 #include "sectorlayer.h"
 #include "sector.h"
-#include "airspace.h"
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -548,81 +547,6 @@ void EvaluationManager::updateSectorLayers()
             for (const auto& s : layer->sectors())
                 s->createFastInsideTest();
     }
-}
-
-/**
- */
-void EvaluationManager::createNewSector(const std::string& name,
-                                        const std::string& layer_name,
-                                        bool exclude,
-                                        QColor color,
-                                        std::vector<std::pair<double,double>> points)
-{
-    compass_.dbContextManager().createSector(name, layer_name, exclude, color, points);
-    // calculator cleanup handled by sectorsChangedSlot via DBContextManager signal
-}
-
-/**
- */
-void EvaluationManager::moveSector(unsigned int id, const std::string& old_layer_name, const std::string& new_layer_name)
-{
-    compass_.dbContextManager().moveSector(id, old_layer_name, new_layer_name);
-    // calculator cleanup handled by sectorsChangedSlot via DBContextManager signal
-}
-
-/**
- */
-void EvaluationManager::deleteSector(shared_ptr<Sector> sector)
-{
-    compass_.dbContextManager().deleteSector(sector);
-    // calculator cleanup handled by sectorsChangedSlot via DBContextManager signal
-}
-
-/**
- */
-void EvaluationManager::deleteAllSectors()
-{
-    compass_.dbContextManager().deleteAllSectors();
-    // calculator cleanup handled by sectorsChangedSlot via DBContextManager signal
-}
-
-/**
- */
-void EvaluationManager::importSectors(const std::string& filename)
-{
-    loginf << "filename '" << filename << "'";
-
-    compass_.dbContextManager().importSectors(filename);
-    // calculator cleanup handled by sectorsChangedSlot via DBContextManager signal
-}
-
-/**
- */
-bool EvaluationManager::importAirSpace(const AirSpace& air_space,
-                                       const boost::optional<std::set<std::string>>& sectors_to_import)
-{
-    // convert optional<set> to map<string,bool> for DBContextManager
-    map<string, bool> sectors_map;
-
-    if (sectors_to_import.has_value())
-    {
-        for (const auto& name : *sectors_to_import)
-            sectors_map[name] = true;
-    }
-    else
-    {
-        // import all — build map from all sector names in the airspace
-        for (const auto& l : air_space.layers())
-            for (const auto& s : l->sectors())
-                sectors_map[s->name()] = true;
-    }
-
-    if (sectors_map.empty())
-        return false;
-
-    compass_.dbContextManager().importAirSpace(air_space, sectors_map);
-
-    return true;
 }
 
 /**

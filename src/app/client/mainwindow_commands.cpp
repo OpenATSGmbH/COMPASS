@@ -38,6 +38,7 @@
 
 #include "mainwindow_commands_file.h"
 #include "mainwindow_commands_import.h"
+#include "context_commands.h"
 
 #include "event_log.h"
 
@@ -122,6 +123,8 @@ void init_commands()
     main_window::RTCommandGetEvents::init();
     main_window::RTCommandReconfigure::init();
     main_window::RTCommandClientInfo::init();
+
+    context_cmd::init_context_commands();
 }
 
 // import ds

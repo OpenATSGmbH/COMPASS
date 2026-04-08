@@ -1362,7 +1362,8 @@ void DBContextManager::moveSector(unsigned int id, const string& old_layer, cons
 }
 
 void DBContextManager::importAirSpace(const AirSpace& air_space,
-                                       const map<string, bool>& sectors_to_import)
+                                       const map<string, bool>& sectors_to_import,
+                                       const string& target_layer_name)
 {
     auto layers = air_space.layers();
     if (layers.empty())
@@ -1380,6 +1381,10 @@ void DBContextManager::importAirSpace(const AirSpace& air_space,
                 continue;
 
             s->serializeSector(true);
+
+            if (!target_layer_name.empty())
+                s->layerName(target_layer_name);
+
             ctx_sectors.push_back(s);
             added = true;
         }
@@ -1596,10 +1601,14 @@ void DBContextManager::importSectors(const string& filepath)
     }
 
     saveContext(active_context_name_);
+    if (compass_.dbOpened())
+        writeContextToDB();
+
+    rebuildSectorLayers();
 
     loginf << "imported " << data_arr.size() << " sectors";
 
-    emit activeContextChangedSignal();
+    emit sectorsChangedSignal();
 }
 
 void DBContextManager::exportSensors(const string& filepath)

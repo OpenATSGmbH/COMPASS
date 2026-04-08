@@ -248,7 +248,8 @@ public:
     void moveSector(unsigned int id, const std::string& old_layer, const std::string& new_layer);
 
     void importAirSpace(const AirSpace& air_space,
-                        const std::map<std::string, bool>& sectors_to_import);
+                        const std::map<std::string, bool>& sectors_to_import,
+                        const std::string& target_layer_name = "");
 
     // ================================================================
     // ASTERIX decoding config access

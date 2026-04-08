@@ -29,6 +29,8 @@
 #include "sector_import_utils.h"
 #include "fft_edit_widget.h"
 #include "importsectordialog.h"
+#include "airspace.h"
+#include "compass.h"
 #include "sector.h"
 #include "sectorlayer.h"
 #include "logger.h"
@@ -47,7 +49,9 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStyledItemDelegate>
+#include <QHeaderView>
 #include <QTreeView>
+#include <QTreeWidget>
 #include <QVBoxLayout>
 
 namespace context
@@ -532,6 +536,15 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
         rebuildTree();
     });
 
+    if (!manager_.compass().isAppImage())
+    {
+        menu.addAction("Import Air Space...", [this]()
+        {
+            importAirSpace();
+            rebuildTree();
+        });
+    }
+
     menu.addSeparator();
 
     menu.addAction("Import JSON...", [this]()
@@ -628,6 +641,139 @@ void DBContextEditDialog::showSectorItemMenu(unsigned int sector_id)
     });
 
     menu.exec(QCursor::pos());
+}
+
+// ============================================================
+// Air Space import
+// ============================================================
+
+void DBContextEditDialog::importAirSpace()
+{
+    loginf;
+
+    QString filename = QFileDialog::getOpenFileName(
+        this, "Import Air Space Sectors from JSON",
+        QString::fromStdString(manager_.compass().lastUsedPath()), "*.json");
+
+    if (filename.isEmpty())
+        return;
+
+    auto max_sector_id = manager_.maxSectorId();
+
+    AirSpace air_space;
+
+    if (!air_space.readJSON(filename.toStdString(), max_sector_id))
+    {
+        QMessageBox::critical(this, "Error", "Air space file could not be read.");
+        return;
+    }
+
+    // extract filename without extension as default layer name
+    QFileInfo fi(filename);
+    std::string default_layer = fi.baseName().toStdString();
+
+    QDialog dlg(this);
+    dlg.setWindowTitle("Import Air Space Sectors");
+
+    auto* layout = new QVBoxLayout;
+    dlg.setLayout(layout);
+
+    // layer name input
+    auto* layer_layout = new QHBoxLayout;
+    layer_layout->addWidget(new QLabel("Layer name:"));
+    auto* layer_edit = new QLineEdit(QString::fromStdString(default_layer));
+    layer_edit->setToolTip("All imported sectors will be placed into this layer");
+    layer_layout->addWidget(layer_edit);
+    layout->addLayout(layer_layout);
+
+    // sector selection tree
+    auto* list = new QTreeWidget(&dlg);
+    list->setHeaderLabels({ "", "Sector", "#Points", "Altitude min", "Altitude max" });
+    list->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    list->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    list->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    list->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    list->header()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+
+    layout->addWidget(list);
+
+    auto* button_layout = new QHBoxLayout;
+    auto* button_import = new QPushButton("Import");
+    button_import->setIcon(QIcon());
+    button_import->setToolTip("Import selected sectors");
+    auto* button_cancel = new QPushButton("Cancel");
+    button_cancel->setIcon(QIcon());
+    button_cancel->setToolTip("Cancel import");
+
+    connect(button_import, &QPushButton::pressed, &dlg, &QDialog::accept);
+    connect(button_cancel, &QPushButton::pressed, &dlg, &QDialog::reject);
+
+    button_layout->addStretch(1);
+    button_layout->addWidget(button_import);
+    button_layout->addWidget(button_cancel);
+
+    layout->addLayout(button_layout);
+
+    auto layers = air_space.layers();
+
+    for (const auto& l : layers)
+    {
+        for (const auto& s : l->sectors())
+        {
+            auto* item = new QTreeWidgetItem;
+            item->setCheckState(0, Qt::Checked);
+            item->setText(1, QString::fromStdString(s->name()));
+            item->setText(2, QString::number(s->points().size()));
+            item->setText(3, s->hasMinimumAltitude() ? QString::number(s->minimumAltitude()) : "-");
+            item->setText(4, s->hasMaximumAltitude() ? QString::number(s->maximumAltitude()) : "-");
+
+            list->addTopLevelItem(item);
+        }
+    }
+
+    dlg.resize(500, 800);
+
+    if (dlg.exec() == QDialog::Rejected)
+        return;
+
+    std::string layer_name = layer_edit->text().trimmed().toStdString();
+    if (layer_name.empty())
+    {
+        QMessageBox::warning(this, "Import Air Space", "Layer name must not be empty.");
+        return;
+    }
+
+    std::map<std::string, bool> sectors_to_import;
+    std::vector<std::string> duplicates;
+
+    for (int i = 0; i < list->topLevelItemCount(); ++i)
+    {
+        auto* item = list->topLevelItem(i);
+        if (item->checkState(0) != Qt::Checked)
+            continue;
+
+        std::string sec_name = item->text(1).toStdString();
+
+        if (manager_.hasSector(sec_name, layer_name))
+            duplicates.push_back(sec_name);
+        else
+            sectors_to_import[sec_name] = true;
+    }
+
+    if (!duplicates.empty())
+    {
+        QString msg = "The following sectors already exist in layer '" +
+                      QString::fromStdString(layer_name) + "' and will be skipped:\n\n";
+        for (const auto& d : duplicates)
+            msg += "  - " + QString::fromStdString(d) + "\n";
+
+        QMessageBox::information(this, "Duplicate Sectors", msg);
+    }
+
+    if (sectors_to_import.empty())
+        return;
+
+    manager_.importAirSpace(air_space, sectors_to_import, layer_name);
 }
 
 // ============================================================

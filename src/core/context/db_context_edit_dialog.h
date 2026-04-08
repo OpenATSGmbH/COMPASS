@@ -69,6 +69,8 @@ private:
     void showFFTsGroupMenu();
     void showFFTItemMenu(const std::string& fft_name);
 
+    void importAirSpace();
+
     DBContextManager& manager_;
 
     QComboBox* context_combo_{nullptr};

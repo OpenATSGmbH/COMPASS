@@ -22,6 +22,9 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_item.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_model.h"
         "${CMAKE_CURRENT_LIST_DIR}/fft_edit_widget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/importsectordialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asterixconfigwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/context_commands.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/data_source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fft.cpp"
@@ -38,4 +41,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_dialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/db_context_edit_tree_model.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fft_edit_widget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/importsectordialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/asterixconfigwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/context_commands.cpp"
 )
