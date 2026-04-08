@@ -100,6 +100,25 @@ bool DBContentItemProvider::isGroupingString(const std::string& str)
 }
 
 /**
+ */
+bool DBContentItemProvider::isTargetSpecific(Grouping grouping)
+{
+    return grouping == Grouping::AircraftAddress ||
+           grouping == Grouping::AircraftID      ||
+           grouping == Grouping::TrackNumber     ||
+           grouping == Grouping::UTN;
+}
+
+/**
+ */
+bool DBContentItemProvider::isNumeric(Grouping grouping)
+{
+    return grouping == Grouping::UTN         ||
+           grouping == Grouping::TrackNumber ||
+           grouping == Grouping::Mode3ACode;
+}
+
+/**
  * Sets the grouping mode used to partition buffer rows into items.
  * Triggers a full rebuild of all item groups if the grouping changes.
  */
@@ -123,6 +142,20 @@ std::string DBContentItemProvider::groupingAsString() const
 }
 
 /**
+ */
+bool DBContentItemProvider::groupingIsNumeric() const
+{
+    return DBContentItemProvider::isNumeric(grouping_);
+}
+
+/**
+ */
+bool DBContentItemProvider::groupingIsTargetSpecific() const
+{
+    return DBContentItemProvider::isTargetSpecific(grouping_);
+}
+
+/**
  * Clears all item groups and notifies subclasses via reset_impl().
  * Called when the data store signals a full data reset.
  */
@@ -131,6 +164,8 @@ void DBContentItemProvider::reset()
     item_groups_.clear();
 
     reset_impl();
+
+    emit dataResetSignal();
 }
 
 /**
@@ -288,6 +323,8 @@ void DBContentItemProvider::dataChanged(unsigned int dbc_id)
             item_groups_.push_back(std::move(group));
 
             dataChanged_impl(dbc_id, gidx);
+
+            emit dataChangedSignal(dbc_id, gidx);
         }
     }
 }
@@ -332,6 +369,8 @@ void DBContentItemProvider::dataRefreshed()
     dataRefreshed_impl();
 
     loginf << toString();
+
+    emit dataRefreshedSignal();
 }
 
 /**

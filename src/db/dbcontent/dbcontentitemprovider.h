@@ -40,6 +40,11 @@ class DBContentItemProvider : public QObject
 {
     Q_OBJECT
 
+signals:
+    void dataResetSignal();
+    void dataChangedSignal(unsigned int dbc_id, size_t group_idx);
+    void dataRefreshedSignal();
+
 public:
     /**
      * Item grouping mode.
@@ -57,15 +62,24 @@ public:
     DBContentItemProvider(DBContentDataStore& data_store, Grouping grouping = Grouping::None);
     virtual ~DBContentItemProvider();
 
+    void update();
+    void reset();
+
     void setGrouping(Grouping grouping, bool run_update = true);
     Grouping grouping() const { return grouping_; }
     std::string groupingAsString() const;
+    bool groupingIsNumeric() const;
+    bool groupingIsTargetSpecific() const;
 
     const std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() const { return item_groups_; }
+    const DBContentDataStore& dataStore() const { return data_store_; }
+    DBContentDataStore& dataStore() { return data_store_; }
 
     static std::string groupingToString(Grouping grouping);
     static Grouping groupingFromString(const std::string& str);
     static bool isGroupingString(const std::string& str);
+    static bool isTargetSpecific(Grouping grouping);
+    static bool isNumeric(Grouping grouping);
 
     static const std::string GroupingStrNone;
     static const std::string GroupingStrAircraftAddress;
@@ -75,7 +89,6 @@ public:
     static const std::string GroupingStrUTN;
 
 protected:
-    void update();
     std::string toString() const;
 
     virtual void reset_impl() {}
@@ -83,11 +96,9 @@ protected:
     virtual void dataChanged_impl(unsigned int dbc_id, size_t group_idx) {}
     virtual void dataRefreshed_impl() {}
 
-    DBContentDataStore& dataStore() { return data_store_; }
     std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() { return item_groups_; }
 
 private:
-    void reset();
     void dataChanged(unsigned int dbc_id);
     void dataRefreshed();
 
