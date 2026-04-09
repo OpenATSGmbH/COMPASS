@@ -68,7 +68,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::meta_var_rec_num_, true);
     add(dbcontent_vars::meta_var_ds_id_, true);
     add(dbcontent_vars::meta_var_line_id_, true);
-    add(DBContent::meta_var_utn_, true);
+    add(dbcontent_vars::meta_var_utn_, true);
 
     add(dbcontent_vars::meta_var_acad_, true);
     add(dbcontent_vars::meta_var_acid_, true);
@@ -133,10 +133,10 @@ void TargetReportAccessor::cacheVectors()
     meta_line_id_vec_   = metaVarVector<unsigned int>(dbcontent_vars::meta_var_line_id_);
     traced_assert(meta_line_id_vec_);
 
-    meta_utn_vec_       = metaVarVector<unsigned int>(DBContent::meta_var_utn_);
+    meta_utn_vec_       = metaVarVector<unsigned int>(dbcontent_vars::meta_var_utn_);
 
-    meta_acad_vec_      = metaVarVector<unsigned int>(DBContent::meta_var_acad_);
-    meta_acid_vec_      = metaVarVector<std::string>(DBContent::meta_var_acid_);
+    meta_acad_vec_      = metaVarVector<unsigned int>(dbcontent_vars::meta_var_acad_);
+    meta_acid_vec_      = metaVarVector<std::string>(dbcontent_vars::meta_var_acid_);
 
     //position
     meta_latitude_vec_      = metaVarVector<double>(dbcontent_vars::meta_var_latitude_);
