@@ -1301,11 +1301,17 @@ void MainWindow::loadingDoneSlot()
 
     traced_assert(load_button_);
 
-    double elapsed_s = (boost::posix_time::microsec_clock::local_time() - loading_start_time_)
-                           .total_milliseconds() / 1000.0;
+    // reconstructor uses different load meachnism, so might not be set
+    if (!loading_start_time_.is_not_a_date_time())
+    {
+        double elapsed_s = (boost::posix_time::microsec_clock::local_time() - loading_start_time_)
+                               .total_milliseconds() / 1000.0;
 
-    loginf << "MainWindow: loading took " << String::timeStringFromDouble(elapsed_s, true)
-           << ", used RAM " << String::doubleToStringPrecision(System::getProcessRAMinGB(),2) << " GB";
+        loginf << "MainWindow: loading took " << String::timeStringFromDouble(elapsed_s, true)
+               << ", used RAM " << String::doubleToStringPrecision(System::getProcessRAMinGB(),2) << " GB";
+
+        loading_start_time_ = boost::posix_time::ptime(); // reset
+    }
 
     loading_ = false;
     load_button_->setText("Load");

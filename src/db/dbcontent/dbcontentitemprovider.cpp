@@ -217,7 +217,9 @@ void DBContentItemProvider::dataChanged(unsigned int dbc_id)
 {
     auto dbc_name = data_store_.dbcManager().dbContentWithId(dbc_id);
 
-    traced_assert(data_store_.indices().count(dbc_id));
+    // queued signal may arrive after data store was reset — nothing to do
+    if (!data_store_.indices().count(dbc_id))
+        return;
 
     const auto& indices = data_store_.indices().at(dbc_id);
 
