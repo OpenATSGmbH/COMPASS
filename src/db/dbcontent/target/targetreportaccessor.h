@@ -50,6 +50,7 @@ public:
     virtual ~TargetReportAccessor() = default;
 
     // have to be always present, not optional
+    bool hasTimestamp(unsigned int index) const;
     boost::posix_time::ptime timestamp(unsigned int index) const;
     unsigned long recordNumber(unsigned int index) const;
     unsigned int dsID(unsigned int index) const;

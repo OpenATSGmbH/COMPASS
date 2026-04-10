@@ -191,6 +191,13 @@ void TargetReportAccessor::cacheVectors()
 
 /**
 */
+bool TargetReportAccessor::hasTimestamp(unsigned int index) const
+{
+    return meta_timestamp_vec_ && !meta_timestamp_vec_->isNull(index);
+}
+
+/**
+*/
 boost::posix_time::ptime TargetReportAccessor::timestamp(unsigned int index) const
 {
     return getNotOptional<boost::posix_time::ptime>(meta_timestamp_vec_, index);
