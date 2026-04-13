@@ -1,5 +1,5 @@
 {
-    "app_version": "0.9.2",
+    "app_version": "0.8.0",
     "category": "Default",
     "description": "Contains main variables to be displayed by default, as well as Track lifetime information (Begin,Confirmed,Coasting,End).",
     "deployed": true,
@@ -13,7 +13,7 @@
             {
                 "class_name": "TableViewDataSource",
                 "instance_name": "TableViewDataSource0",
-                "parameters": null,
+                "parameters": {},
                 "sub_configs": [
                     {
                         "class_name": "VariableOrderedSet",

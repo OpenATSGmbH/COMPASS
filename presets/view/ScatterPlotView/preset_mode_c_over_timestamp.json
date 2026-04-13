@@ -1,5 +1,5 @@
 {
-    "app_version": "0.9.2",
+    "app_version": "0.8.0",
     "category": "Default",
     "deployed": true,
     "description": "Displays baromatric altitude over time - giving a flight profile.",
@@ -9,16 +9,16 @@
     "view": "ScatterPlotView",
     "view_config": {
         "parameters": {
-            "data_var_x_dbcont": "Meta",
+            "data_var_x_dbo": "Meta",
             "data_var_x_name": "Timestamp",
-            "data_var_y_dbcont": "Meta",
+            "data_var_y_dbo": "Meta",
             "data_var_y_name": "Mode C Code"
         },
         "sub_configs": [
             {
                 "class_name": "ScatterPlotViewDataSource",
                 "instance_name": "ScatterPlotViewDataSource0",
-                "parameters": null,
+                "parameters": {},
                 "sub_configs": [
                     {
                         "class_name": "VariableOrderedSet",
@@ -28,6 +28,11 @@
                         }
                     }
                 ]
+            },
+            {
+                "class_name": "ScatterPlotViewWidget",
+                "instance_name": "ScatterPlotViewWidget0",
+                "parameters": {}
             }
         ]
     }
