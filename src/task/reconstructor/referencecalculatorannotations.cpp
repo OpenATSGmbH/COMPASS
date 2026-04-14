@@ -25,7 +25,7 @@
 #include "reconstructortask.h"
 #include "taskmanager.h"
 #include "dbcontentmanager.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "compass.h"
 
 #include "number.h"
@@ -349,10 +349,10 @@ void ReferenceCalculatorAnnotations::addAnnotationData(const std::string& name,
             auto rec_info = reconstructor_->getInfo(mm.source_id.value());
             if (rec_info)
             {
-                if (reconstructor_->task().manager().compass().dbContextManager().hasDataSource(rec_info->ds_id_))
+                if (reconstructor_->task().manager().compass().dataSourceManager().hasDBDataSource(rec_info->ds_id_))
                 {
-                    const auto* ds = reconstructor_->task().manager().compass().dbContextManager().dataSource(rec_info->ds_id_);
-                    sensor_info = ds->hasShortName() ? ds->shortName() : ds->name();
+                    const auto& ds = reconstructor_->task().manager().compass().dataSourceManager().dbDataSource(rec_info->ds_id_);
+                    sensor_info = ds.hasShortName() ? ds.shortName() : ds.name();
                 }
 
                 //get dbcontent string if not yet recovered from record number

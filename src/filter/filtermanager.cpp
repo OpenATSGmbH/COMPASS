@@ -21,7 +21,7 @@
 #include "dbfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "filtermanagerwidget.h"
 #include "logger.h"
 #include "viewpoint.h"
@@ -63,9 +63,9 @@ FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
     sortFilters();
 }
 
-context::DBContextManager& FilterManager::dbContextManager()
+DataSourceManager& FilterManager::dataSourceManager()
 {
-    return compass_.dbContextManager();
+    return compass_.dataSourceManager();
 }
 
 FilterManager::~FilterManager()
@@ -327,7 +327,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
     const json& data = vp->data();
 
-    auto& ctx_man = compass_.dbContextManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     // add all data source types that need loading
     if (data.contains(ViewPoint::VP_DS_TYPES_KEY)) // the listed ones should be loaded
@@ -338,13 +338,13 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         logdbg << "load " << ds_types.size() << " ds_types";
 
-        ctx_man.setLoadOnlyDSTypes(ds_types);
+        ds_man.setLoadOnlyDSTypes(ds_types);
     }
     else // all should be loaded
     {
         logdbg << "load all ds_types";
 
-        ctx_man.setLoadDSTypes(true);
+        ds_man.setLoadDSTypes(true);
     }
 
     if (data.contains(ViewPoint::VP_SELECTED_RECNUMS_KEY))
@@ -366,14 +366,14 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         logdbg << "load " << ds_ids.size() << " ds_ids";
 
-        ctx_man.setLoadOnlyDataSources(ds_ids);
+        ds_man.setLoadOnlyDataSources(ds_ids);
     }
     else // all should be loaded
     {
         logdbg << "load all ds_ids";
 
-        ctx_man.setLoadDataSources(true);
-        ctx_man.setLoadAllDataSourceLines();
+        ds_man.setLoadDataSources(true);
+        ds_man.setLoadAllDataSourceLines();
     }
 
     // add filters
@@ -415,13 +415,13 @@ void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
     loginf;
 
-    auto& ctx_man = compass_.dbContextManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
-    if (ctx_man.dsTypeFiltered()) // ds types filters active
-        data[ViewPoint::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading
+    if (ds_man.dsTypeFiltered()) // ds types filters active
+        data[ViewPoint::VP_DS_TYPES_KEY] = ds_man.wantedDSTypes(); // add all data sources that need loading
 
-    if (ctx_man.loadDataSourcesFiltered()) // ds filters active
-        data[ViewPoint::VP_DS_KEY] = ctx_man.getLoadDataSources(); // add all data sources that need loading
+    if (ds_man.loadDataSourcesFiltered()) // ds filters active
+        data[ViewPoint::VP_DS_KEY] = ds_man.getLoadDataSources(); // add all data sources that need loading
 
     // add filters
     if (use_filters_)
@@ -494,7 +494,7 @@ void FilterManager::dataSourcesChangedSlot()
 {
     loginf;
 
-    auto& ctx_man = dbContextManager();
+    DataSourceManager& ds_man = dataSourceManager();
 
     if (hasFilter("Tracker Track Number"))
     {
@@ -504,27 +504,12 @@ void FilterManager::dataSourcesChangedSlot()
         // build tracker lines map: ds_id -> line_id -> count
         std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
         std::map<unsigned int, std::string> ds_names;
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (auto& ds_it : ds_man.dbDataSources())
         {
-            if (ds.dsType() != "Tracker")
+            if (ds_it->dsType() != "Tracker" || !ds_it->hasNumInserted())
                 continue;
-
-            // aggregate inserted line counts across all dbcontents
-            std::map<unsigned int, unsigned int> line_counts;
-            // TODO: need a method to get aggregate numInsertedPerLine across all dbcontents
-            // for now use individual dbcontent queries
-            for (const auto& dbcont : std::vector<std::string>{"CAT001", "CAT048", "CAT062"})
-            {
-                auto per_line = ctx_man.numInsertedPerLine(ds.id(), dbcont);
-                for (const auto& [line, cnt] : per_line)
-                    line_counts[line] += cnt;
-            }
-
-            if (line_counts.empty())
-                continue;
-
-            tracker_lines[ds.id()] = line_counts;
-            ds_names[ds.id()] = ds.name();
+            tracker_lines[ds_it->id()] = ds_it->numInsertedLinesMap();
+            ds_names[ds_it->id()] = ds_it->name();
         }
         filter->updateTrackerDataSources(tracker_lines, ds_names);
     }
@@ -538,25 +523,12 @@ void FilterManager::dataSourcesChangedSlot()
         std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> mlat_ru_lookup;
         std::set<std::string> known_ru_names;
 
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (auto& db_src_it : ds_man.dbDataSources())
         {
-            if (ds.dsType() == "MLAT" && ds.hasRemoteUnits())
+            if (db_src_it && db_src_it->dsType() == "MLAT" && db_src_it->hasRemoteUnits())
             {
-                // build mlatRUNames equivalent from context::DataSource info
-                std::map<std::string, std::vector<unsigned int>> ru_names;
-                const auto& info = ds.info();
-                if (info.contains("remote_units"))
-                {
-                    for (auto& [key, val] : info.at("remote_units").items())
-                    {
-                        unsigned int idx = std::stoi(key);
-                        std::string name = ds.remoteUnitName(idx);
-                        ru_names[name].push_back(idx);
-                    }
-                }
-
-                mlat_ru_lookup[ds.id()] = ru_names;
-                for (const auto& pair : ru_names)
+                mlat_ru_lookup[db_src_it->id()] = db_src_it->mlatRUNames();
+                for (auto const& pair : db_src_it->mlatRUNames())
                     known_ru_names.insert(pair.first);
             }
         }

@@ -46,7 +46,6 @@ namespace colorscale
         Cubehelix, 
         HSV, 
         Green2Red,
-        Red2Green,
         Blue2Green2Red,
 
         Custom,
@@ -65,7 +64,6 @@ namespace colorscale
         ColorScale::Green,
         ColorScale::Blue,
         ColorScale::Green2Red,
-        ColorScale::Red2Green,
         ColorScale::Blue2Green2Red
     }; 
 

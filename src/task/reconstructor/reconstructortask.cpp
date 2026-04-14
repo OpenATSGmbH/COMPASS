@@ -19,7 +19,7 @@
 
 #include "compass.h"
 #include "reconstructortaskdialog.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableset.h"
@@ -271,7 +271,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        auto& ctx_man = manager().compass().dbContextManager();
+        DataSourceManager& ds_man = manager().compass().dataSourceManager();
         DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
         if (counts.size())
@@ -287,7 +287,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
                     unsigned int assoc_cnt = dbcont_it.second.first;
                     unsigned int unassoc_cnt = dbcont_it.second.second;
 
-                    std::string ds_name = ctx_man.dataSource(ds_it.first)->name();
+                    std::string ds_name = ds_man.dbDataSource(ds_it.first).name();
                     std::string dbcont_name = dbcont_man.dbContentWithId(dbcont_it.first);
 
                     string row_str;
@@ -406,10 +406,10 @@ std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 
     if (current_reconstructor_str_ == ScoringUMReconstructorName)
     {
-        for (const auto& ds : manager().compass().dbContextManager().activeContext().dataSources())
+        for (auto& ds_it : manager().compass().dataSourceManager().dbDataSources())
         {
-            if (ds.name() == "CalcRef")
-                disabled_ds.insert(ds.id());
+            if (ds_it->name() == "CalcRef")
+                disabled_ds.insert(ds_it->id());
         }
     }
 
@@ -634,7 +634,7 @@ void ReconstructorTask::loadDataSlice()
 
     if (use_sectors_extend_)
     {
-        auto& ctx = manager().compass().dbContextManager();
+        auto& eval_man = manager().compass().evaluationManager();
 
         bool first = true;
         double lat_min{0}, lat_max{0}, long_min{0}, long_max{0};
@@ -642,12 +642,12 @@ void ReconstructorTask::loadDataSlice()
 
         for (auto& sect_it : used_sectors_)
         {
-            traced_assert(ctx.hasSectorLayer(sect_it.first));
+            traced_assert(eval_man.hasSectorLayer(sect_it.first));
 
             if (!sect_it.second)
                 continue;
 
-            std::shared_ptr<SectorLayer> sect_lay = ctx.sectorLayer(sect_it.first);
+            std::shared_ptr<SectorLayer> sect_lay = eval_man.sectorLayer(sect_it.first);
 
             if (first)
             {
@@ -1066,8 +1066,8 @@ void ReconstructorTask::endReconstruction()
 
     currentReconstructor()->saveTargets();
 
-    manager().compass().dbContextManager().writeContextToDB();
-    emit manager().compass().dbContextManager().activeContextChangedSignal();
+    manager().compass().dataSourceManager().saveDBDataSources();
+    emit manager().compass().dataSourceManager().dataSourcesChangedSignal();
     manager().compass().dbInterface().saveProperties();
 
     done_ = true;
@@ -1122,7 +1122,7 @@ void ReconstructorTask::endReconstruction()
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        auto& ctx_man = manager().compass().dbContextManager();
+        DataSourceManager& ds_man = manager().compass().dataSourceManager();
         DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
         if (counts.size())
@@ -1138,7 +1138,7 @@ void ReconstructorTask::endReconstruction()
                     unsigned int assoc_cnt = dbcont_it.second.first;
                     unsigned int unassoc_cnt = dbcont_it.second.second;
 
-                    std::string ds_name = ctx_man.dataSource(ds_it.first)->name();
+                    std::string ds_name = ds_man.dbDataSource(ds_it.first).name();
                     std::string dbcont_name = dbcont_man.dbContentWithId(dbcont_it.first);
 
                     std::string assoc_perc_str;
@@ -1176,9 +1176,9 @@ void ReconstructorTask::sectorsChangedSlot()
 {
     used_sectors_.clear();
 
-    if (manager().compass().dbContextManager().sectorsLoaded())
+    if (manager().compass().evaluationManager().sectorsLoaded())
     {
-        auto& sectors_layers = manager().compass().dbContextManager().sectorLayers();
+        auto& sectors_layers = manager().compass().evaluationManager().sectorsLayers();
 
         use_sectors_extend_ = sectors_layers.size();
 
@@ -1328,13 +1328,13 @@ std::set<unsigned int> ReconstructorTask::unusedDSIDs() const
 {
     std::set<unsigned int> unused_ds = disabledDataSources();
 
-    for (const auto& ds : manager().compass().dbContextManager().activeContext().dataSources())
+    for (auto& ds_it : manager().compass().dataSourceManager().dbDataSources())
     {
-        if (unused_ds.count(ds.id()))
+        if (unused_ds.count(ds_it->id()))
             continue;
 
-        if (!useDStype(ds.dsType()) || !useDataSource(ds.id()))
-            unused_ds.insert(ds.id());
+        if (!useDStype(ds_it->dsType()) || !useDataSource(ds_it->id()))
+            unused_ds.insert(ds_it->id());
     }
 
     return unused_ds;
@@ -1346,15 +1346,15 @@ std::map<unsigned int, std::set<unsigned int>> ReconstructorTask::unusedDSIDLine
 
     std::map<unsigned int, std::set<unsigned int>> unused_lines;
 
-    for (const auto& ds : manager().compass().dbContextManager().activeContext().dataSources())
+    for (auto& ds_it : manager().compass().dataSourceManager().dbDataSources())
     {
-        if (unused_ds.count(ds.id()))
+        if (unused_ds.count(ds_it->id()))
             continue;
 
         for (unsigned int line_id = 0; line_id < 4; ++line_id)
         {
-            if (!useDataSourceLine(ds.id(), line_id))
-                unused_lines[ds.id()].insert(line_id);
+            if (!useDataSourceLine(ds_it->id(), line_id))
+                unused_lines[ds_it->id()].insert(line_id);
         }
     }
 
@@ -1527,19 +1527,20 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
         QThread::msleep(1000);
     }
 
-    auto& ctx_man_del = manager().compass().dbContextManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
     unsigned int ds_id = Number::dsIdFrom(currentReconstructor()->settings().ds_sac,
                                           currentReconstructor()->settings().ds_sic);
 
     // clear counts
-    if (ctx_man_del.hasDataSource(ds_id))
+    if (ds_man.hasDBDataSource(ds_id))
     {
+        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
+
         if (currentReconstructor()->settings().delete_all_calc_reftraj)
-            ctx_man_del.clearInsertedCounts(ds_id, "RefTraj");
+            ds.clearNumInserted("RefTraj");
         else
-            ctx_man_del.clearInsertedCounts(ds_id, "RefTraj",
-                {currentReconstructor()->settings().ds_line});
+            ds.clearNumInserted("RefTraj", currentReconstructor()->settings().ds_line);
     }
 
     // emit done in run

@@ -16,14 +16,14 @@
  */
 
 #include "datasourceswidget.h"
-#include "db_context_manager.h"
-#include "data_source.h"
+#include "datasourcemanager.h"
 #include "deletedatadialog.h"
 #include "dbcontentdeletedbjob.h"
 
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbdatasource.h"
 #include "jobmanager.h"
 
 #include "stringconv.h"
@@ -112,13 +112,10 @@ void DataSourceTypeItem::updateContent()
 
     bool has_sources = false;
 
-    auto& ctx_man = widget_->ctxManager();
-    if (ctx_man.hasActiveContext())
-    {
-        for (const auto& ds : ctx_man.activeContext().dataSources())
-            if (ds.dsType() == ds_type_)
-                has_sources = true;
-    }
+    auto& ds_man = widget_->dsManager();
+    for (const auto& ds_it : ds_man.dbDataSources())
+        if (ds_it->dsType() == ds_type_)
+            has_sources = true;
 
     if (has_sources)
     {
@@ -153,12 +150,13 @@ bool DataSourceItem::init(unsigned int ds_id)
     {
         ds_id_ = ds_id;
 
-        auto& ctx_man = widget_->ctxManager();
-        traced_assert(ctx_man.hasDataSource(ds_id));
+        auto& ds_man = widget_->dsManager();
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
-        ds_ = ctx_man.dataSource(ds_id);
+        const auto& data_source = ds_man.dbDataSource(ds_id);
+        ds_ = &data_source;
 
-        std::string ds_name = ds_->name();
+        std::string ds_name = data_source.name();
 
         setCheckState(0, Qt::Checked);
         setText(0, QString::fromStdString(ds_name));
@@ -244,10 +242,11 @@ bool DataSourceCountItem::init(unsigned int ds_id,
         ds_id_    = ds_id;
         dbc_name_ = dbc_name;
 
-        auto& ctx_man = widget_->ctxManager();
-        traced_assert(ctx_man.hasDataSource(ds_id));
+        auto& ds_man = widget_->dsManager();
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
-        ds_ = ctx_man.dataSource(ds_id);
+        const auto& data_source = ds_man.dbDataSource(ds_id);
+        ds_ = &data_source;
 
         setText(0, QString::fromStdString(dbc_name));
 
@@ -267,13 +266,12 @@ void DataSourceCountItem::updateContent()
     traced_assert(is_init_);
     traced_assert(!dbc_name_.empty());
 
-    auto& ctx_man = widget_->ctxManager();
+    auto num_inserted = ds_->numInsertedSummedLinesMap();
+    auto it = num_inserted.find(dbc_name_);
+    traced_assert(it != num_inserted.end());
 
-    unsigned int num_inserted = ctx_man.numInserted(ds_id_, dbc_name_);
-    unsigned int num_loaded = ctx_man.numLoaded(ds_id_, dbc_name_);
-
-    setText(2, QString::number(num_loaded));
-    setText(3, QString::number(num_inserted));
+    setText(2, QString::number(ds_->numLoaded(dbc_name_)));
+    setText(3, QString::number(it->second));
 }
 
 /**************************************************************************************************
@@ -297,7 +295,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
     setFixedSize(button_size_px, button_size_px);
     setCheckable(true);
 
-    bool dark_mode = widget_->ctxManager().compass().darkMode();
+    bool dark_mode = widget_->dsManager().compass().darkMode();
 
     if (dark_mode)
     {
@@ -328,10 +326,11 @@ bool DataSourceLineButton::init(unsigned int ds_id)
     {
         ds_id_ = ds_id;
 
-        auto& ctx_man = widget_->ctxManager();
-        traced_assert(ctx_man.hasDataSource(ds_id_));
+        auto& ds_man = widget_->dsManager();
+        traced_assert(ds_man.hasDBDataSource(ds_id_));
 
-        ds_ = ctx_man.dataSource(ds_id_);
+        auto& ds_src = ds_man.dbDataSource(ds_id_);
+        ds_ = &ds_src;
 
         is_init_ = true;
         changes  = true;
@@ -348,16 +347,16 @@ void DataSourceLineButton::updateContent()
 {
     traced_assert(is_init_);
 
-    auto& ctx_man = widget_->ctxManager();
-
-    AppMode app_mode = ctx_man.compass().appMode();
+    AppMode app_mode = widget_->dsManager().compass().appMode();
 
     bool live_mode = app_mode == AppMode::LivePaused || app_mode == AppMode::LiveRunning;
-    bool dark_mode = ctx_man.compass().darkMode();
+    bool dark_mode = widget_->dsManager().compass().darkMode();
+
+    auto& ds_man = widget_->dsManager();
 
     if (live_mode)
     {
-        auto net_lines = ctx_man.getNetworkLines();
+        std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>>> net_lines = ds_man.getNetworkLines();
 
         bool hidden = !net_lines.count(ds_id_) || !net_lines.at(ds_id_).count(line_str_); // hide if not defined
 
@@ -365,8 +364,7 @@ void DataSourceLineButton::updateContent()
 
         if (!hidden)
         {
-            bool disabled = app_mode == AppMode::LivePaused ?
-                (ctx_man.numInsertedPerLine(ds_id_, "").count(line_id_) == 0) : false;
+            bool disabled = app_mode == AppMode::LivePaused ? !ds_man.dbDataSource(ds_id_).hasNumInserted(line_id_) : false;
             setDisabled(disabled);
 
             if (disabled)
@@ -389,11 +387,7 @@ void DataSourceLineButton::updateContent()
 
                 boost::posix_time::ptime current_time = Utils::Time::currentUTCTime();
 
-                auto max_ts = ctx_man.maxTimestamp(ds_id_, line_id_);
-                bool has_live = !max_ts.is_not_a_date_time() &&
-                    Utils::Time::partialSeconds(current_time - max_ts) < 30.0;
-
-                if (has_live)
+                if (ds_->hasLiveData(line_id_, current_time))
                 {
                     QPalette pal = palette();
 
@@ -424,7 +418,7 @@ void DataSourceLineButton::updateContent()
     }
     else
     {
-        std::map<unsigned int, unsigned int> inserted_lines = ctx_man.numInsertedLinesMap(ds_id_);
+        std::map<unsigned int, unsigned int> inserted_lines = ds_->numInsertedLinesMap();
 
         setChecked(widget_->getUseDSLine(ds_id_, line_id_));
         setHidden(!inserted_lines.count(line_id_)); // hide if no data
@@ -439,8 +433,8 @@ const int DataSourcesWidget::LineButtonSize = 25;
 
 /**
  */
-DataSourcesWidget::DataSourcesWidget(bool can_show_counts, context::DBContextManager& ctx_man)
-:   can_show_counts_(can_show_counts), ctx_man_(ctx_man)
+DataSourcesWidget::DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man)
+:   can_show_counts_(can_show_counts), ds_man_(ds_man)
 {
     createUI();
 }
@@ -513,7 +507,7 @@ void DataSourcesWidget::addActionsToConfigMenu(QMenu* menu)
     QAction* sel_ds_action = select_ds->addAction("All");
     connect(sel_ds_action, &QAction::triggered, this, &DataSourcesWidget::selectAllDataSources);
 
-    for (const auto& ds_type_it : context::DataSource::dsTypeStrings())
+    for (const auto& ds_type_it : ds_man_.data_source_types_)
     {
         QAction* action = select_ds->addAction(("From "+ds_type_it).c_str());
         action->setProperty("ds_type", ds_type_it.c_str());
@@ -525,7 +519,7 @@ void DataSourcesWidget::addActionsToConfigMenu(QMenu* menu)
     QAction* desel_ds_action = deselect_ds->addAction("All");
     connect(desel_ds_action, &QAction::triggered, this, &DataSourcesWidget::deselectAllDataSources);
 
-    for (const auto& ds_type_it : context::DataSource::dsTypeStrings())
+    for (const auto& ds_type_it : ds_man_.data_source_types_)
     {
         QAction* action = deselect_ds->addAction(("From "+ds_type_it).c_str());
         action->setProperty("ds_type", ds_type_it.c_str());
@@ -576,7 +570,7 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
     if (force_rebuild)
         clear();
 
-    const auto& data_source_types = context::DataSource::dsTypeStrings();
+    const auto& data_source_types = DataSourceManager::data_source_types_;
 
     //create needed items
     int n    = (int)data_source_types.size();
@@ -634,15 +628,14 @@ int DataSourcesWidget::generateDataSourceType(DataSourceTypeItem* item,
     //init item
     int changes = item->init(ds_type_name) ? 1 : 0;
 
+    const auto& db_data_sources = ds_man_.dbDataSources();
+
     //create needed items
-    std::vector<const context::DataSource*> matching_ds;
-    if (ctx_man_.hasActiveContext())
+    std::vector<const dbContent::DBDataSource*> matching_ds;
+    for (const auto& ds_it : db_data_sources)
     {
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-        {
-            if (ds.dsType() == ds_type_name)
-                matching_ds.push_back(&ds);
-        }
+        if (ds_it->dsType() == ds_type_name)
+            matching_ds.push_back(ds_it.get());
     }
 
     int ncur = item->childCount();
@@ -683,10 +676,10 @@ int DataSourcesWidget::generateDataSourceType(DataSourceTypeItem* item,
 /**
  */
 int DataSourcesWidget::generateDataSource(DataSourceItem* item,
-                                          DataSourcesWidgetItem* parent_item,
-                                          const context::DataSource& data_source)
+                                          DataSourcesWidgetItem* parent_item, 
+                                          const dbContent::DBDataSource& data_source)
 {
-    unsigned int ds_id   = data_source.id();
+    unsigned int ds_id   = Utils::Number::dsIdFrom(data_source.sac(), data_source.sic());
     std::string  ds_name = data_source.name();
 
     logdbg << "create '" << data_source.dsType() << "' '" << ds_name << "'";
@@ -708,16 +701,8 @@ int DataSourcesWidget::generateDataSource(DataSourceItem* item,
     }
     else
     {
-        // counts shown => build dbcontent count map from context manager
-        auto& dbcont_man = ctx_man_.compass().dbContentManager();
-        std::map<std::string, unsigned int> count_map;
-        for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
-        {
-            unsigned int cnt_val = ctx_man_.numInserted(ds_id, it->first);
-            if (cnt_val > 0)
-                count_map[it->first] = cnt_val;
-        }
-
+        // counts shown => create needed items
+        auto count_map = data_source.numInsertedSummedLinesMap();
         int n    = (int)count_map.size();
         int ncur = item->childCount();
 
@@ -761,7 +746,7 @@ int DataSourcesWidget::generateDataSource(DataSourceItem* item,
  */
 int DataSourcesWidget::generateDataSourceCount(DataSourceCountItem* item,
                                                DataSourcesWidgetItem* parent_item,
-                                               const context::DataSource& data_source,
+                                               const dbContent::DBDataSource& data_source,
                                                const std::string& dbc_name)
 {
     //init item
@@ -774,7 +759,8 @@ int DataSourcesWidget::generateDataSourceCount(DataSourceCountItem* item,
  */
 void DataSourcesWidget::updateContent(bool recreate_required)
 {
-    logdbg << "recreate_required " << recreate_required;
+    logdbg << "recreate_required " << recreate_required
+           << " num data sources " << ds_man_.dbDataSources().size();
 
     int changes = generateContent(recreate_required);
 
@@ -887,56 +873,56 @@ void DataSourcesWidget::updateAllContent()
  */
 void DataSourcesWidget::setUseDSType(const std::string& ds_type_name, bool use)
 {
-    ctx_man_.dsTypeLoadingWanted(ds_type_name, use);
+    ds_man_.dsTypeLoadingWanted(ds_type_name, use);
 }
 
 /**
  */
 bool DataSourcesWidget::getUseDSType(const std::string& ds_type_name) const
 {
-    return ctx_man_.dsTypeLoadingWanted(ds_type_name);
+    return ds_man_.dsTypeLoadingWanted(ds_type_name);
 }
 
 /**
  */
 void DataSourcesWidget::setUseDS(unsigned int ds_id, bool use)
 {
-    ctx_man_.loadingWanted(ds_id, use);
+    ds_man_.dbDataSource(ds_id).loadingWanted(use);
 }
 
 /**
  */
 bool DataSourcesWidget::getUseDS(unsigned int ds_id) const
 {
-    return ctx_man_.loadingWanted(ds_id);
+    return ds_man_.dbDataSource(ds_id).loadingWanted();
 }
 
 /**
  */
 void DataSourcesWidget::setUseDSLine(unsigned int ds_id, unsigned int ds_line, bool use)
 {
-    ctx_man_.lineLoadingWanted(ds_id, ds_line, use);
+    ds_man_.dbDataSource(ds_id).lineLoadingWanted(ds_line, use);
 }
 
 /**
  */
 bool DataSourcesWidget::getUseDSLine(unsigned int ds_id, unsigned int ds_line) const
 {
-    return ctx_man_.lineLoadingWanted(ds_id, ds_line);
+    return ds_man_.dbDataSource(ds_id).lineLoadingWanted(ds_line);
 }
 
 /**
  */
 void DataSourcesWidget::setShowCounts(bool show) const
 {
-    ctx_man_.sensorConfig().load_widget_show_counts = show;
+    ds_man_.config().load_widget_show_counts_ = show;
 }
 
 /**
  */
 bool DataSourcesWidget::getShowCounts() const
 {
-    return ctx_man_.sensorConfig().load_widget_show_counts;
+    return ds_man_.config().load_widget_show_counts_;
 }
 
 /**
@@ -945,7 +931,7 @@ void DataSourcesWidget::selectAllDSTypes()
 {
     loginf;
 
-    for (auto& ds_type_name : context::DataSource::dsTypeStrings())
+    for (auto& ds_type_name : DataSourceManager::data_source_types_)
         setUseDSType(ds_type_name, true);
 
     updateContent();
@@ -957,7 +943,7 @@ void DataSourcesWidget::deselectAllDSTypes()
 {
     loginf;
 
-    for (auto& ds_type_name : context::DataSource::dsTypeStrings())
+    for (auto& ds_type_name : DataSourceManager::data_source_types_)
         setUseDSType(ds_type_name, false);
 
     updateContent();
@@ -969,9 +955,8 @@ void DataSourcesWidget::selectAllDataSources()
 {
     loginf;
 
-    if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-            setUseDS(ds.id(), true);
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        setUseDS(ds_it->id(), true);
 
     updateContent();
 }
@@ -982,9 +967,8 @@ void DataSourcesWidget::deselectAllDataSources()
 {
     loginf;
 
-    if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-            setUseDS(ds.id(), false);
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        setUseDS(ds_it->id(), false);
 
     updateContent();
 }
@@ -1000,10 +984,9 @@ void DataSourcesWidget::selectDSTypeSpecificDataSources()
 
     loginf << "ds_type '" << ds_type << "'";
 
-    if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-            if (ds.dsType() == ds_type)
-                setUseDS(ds.id(), true);
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        if (ds_it->dsType() == ds_type)
+            setUseDS(ds_it->id(), true);
 
     updateContent();
 }
@@ -1019,10 +1002,9 @@ void DataSourcesWidget::deselectDSTypeSpecificDataSources()
 
     loginf << "ds_type '" << ds_type << "'";
 
-    if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-            if (ds.dsType() == ds_type)
-                setUseDS(ds.id(), false);
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        if (ds_it->dsType() == ds_type)
+            setUseDS(ds_it->id(), false);
 
     updateContent();
 }
@@ -1033,10 +1015,9 @@ void DataSourcesWidget::deselectAllLines()
 {
     loginf;
 
-    if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-            for (int line = 0; line < 4; ++line)
-                setUseDSLine(ds.id(), line, false);
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        for (int line = 0; line < 4; ++line)
+            setUseDSLine(ds_it->id(), line, false);
 
     updateContent();
 }
@@ -1052,9 +1033,8 @@ void DataSourcesWidget::selectSpecificLines()
 
     loginf << "line_id " << line_id;
 
-    if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
-            setUseDSLine(ds.id(), line_id, true);
+    for (const auto& ds_it : ds_man_.dbDataSources())
+        setUseDSLine(ds_it->id(), line_id, true);
 
     updateContent();
 }
@@ -1082,7 +1062,7 @@ void DataSourcesWidget::deleteDataSlot()
         return;
     }
 
-    DeleteDataDialog dlg(ctx_man_, this);
+    DeleteDataDialog dlg(ds_man_, this);
 
     if (dlg.exec() != QDialog::Accepted)
         return;
@@ -1113,7 +1093,7 @@ void DataSourcesWidget::deleteDataSlot()
         return;
 
     // clear loaded dataset
-    ctx_man_.compass().dbContentManager().clearData();
+    ds_man_.compass().dbContentManager().clearData();
 
     // show blocking wait dialog
     delete_wait_dialog_ = new QMessageBox(this);
@@ -1124,14 +1104,14 @@ void DataSourcesWidget::deleteDataSlot()
     delete_wait_dialog_->show();
 
     // create and run delete job
-    delete_job_ = std::make_shared<DBContentDeleteDBJob>(ctx_man_.compass().dbInterface());
+    delete_job_ = std::make_shared<DBContentDeleteDBJob>(ds_man_.compass().dbInterface());
     delete_job_->setDeleteInfo(delete_info);
     delete_job_->cleanupDB(true);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
             this, &DataSourcesWidget::deleteJobDoneSlot, Qt::QueuedConnection);
 
-    ctx_man_.compass().jobManager().addDBJob(delete_job_);
+    ds_man_.compass().jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -1142,7 +1122,7 @@ void DataSourcesWidget::deleteJobDoneSlot()
 
     traced_assert(delete_job_);
 
-    ctx_man_.applyDeleteInfo(delete_job_->deleteInfo());
+    ds_man_.applyDeleteInfo(delete_job_->deleteInfo());
 
     delete_job_ = nullptr;
 

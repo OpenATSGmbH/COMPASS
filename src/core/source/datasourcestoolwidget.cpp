@@ -17,7 +17,7 @@
 
 #include "datasourcestoolwidget.h"
 #include "compass.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "datasourceswidget.h"
 #include "dbcontentmanager.h"
 
@@ -32,8 +32,8 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 
-DataSourcesToolWidget::DataSourcesToolWidget(context::DBContextManager& ctx_man)
-: ctx_man_(ctx_man)
+DataSourcesToolWidget::DataSourcesToolWidget(DataSourceManager& ds_man)
+: ds_man_(ds_man)
 {
     createUI();
 }
@@ -51,7 +51,7 @@ void DataSourcesToolWidget::createUI()
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
-    ds_widget_ = new DataSourcesWidget(true, ctx_man_);
+    ds_widget_ = new DataSourcesWidget(true, ds_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
 
     main_layout->addWidget(ds_widget_);
@@ -162,7 +162,7 @@ void DataSourcesToolWidget::updateContent(bool recreate_required)
  */
 void DataSourcesToolWidget::updateAdditionalInfo()
 {
-    DBContentManager& dbcont_man = ctx_man_.compass().dbContentManager();
+    DBContentManager& dbcont_man = ds_man_.compass().dbContentManager();
 
     traced_assert(ts_min_label_);
     traced_assert(ts_max_label_);

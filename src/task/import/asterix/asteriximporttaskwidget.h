@@ -27,7 +27,6 @@
 class ASTERIXImportTask;
 class ASTERIXConfigWidget;
 class ASTERIXOverrideWidget;
-class ASTERIXFramingComboBox;
 
 class QHBoxLayout;
 class QPushButton;
@@ -57,9 +56,6 @@ public slots:
     void debugChangedSlot();
 
     void decodingStateChangedSlot();
-
-    void framingChangedSlot();
-    void framingEditSlot();
 
   public:
     ASTERIXImportTaskWidget(ASTERIXImportTask& task, QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
@@ -96,9 +92,6 @@ protected:
 
     ASTERIXConfigWidget* config_widget_{nullptr};
     ASTERIXOverrideWidget* override_widget_{nullptr};
-
-    ASTERIXFramingComboBox* framing_combo_{nullptr};
-    QPushButton* framing_edit_{nullptr};
 
     QCheckBox* reset_date_between_files_check_{nullptr};
     QCheckBox* ignore_timejumps_check_{nullptr};

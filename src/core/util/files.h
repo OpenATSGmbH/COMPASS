@@ -46,7 +46,6 @@ static const std::string HOME_DATA_DIRECTORY   = HOME_VERSION_SUBDIRECTORY + DAT
 static const std::string HOME_PRESET_DIRECTORY = HOME_VERSION_SUBDIRECTORY + PRESET_SUBDIRECTORY;
 
 static const std::string LICENSE_SUBDIRECTORY = HOME_SUBDIRECTORY + "license/";
-static const std::string DATA_CONTEXTS_SUBDIRECTORY = HOME_SUBDIRECTORY + "data_contexts/";
 
 #include "config_paths.h"
 

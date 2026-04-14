@@ -12,13 +12,15 @@ include("${CMAKE_CURRENT_LIST_DIR}/net/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/job/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/license/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/sector/CMakeLists.txt")
-include("${CMAKE_CURRENT_LIST_DIR}/context/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/source/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/gui/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/test/CMakeLists.txt")
 
 # DB layer (merged into compass_core)
 include("${CMAKE_SOURCE_DIR}/src/db/CMakeLists.txt")
+
+# FFT module (moved from import — no import-layer dependencies)
+include("${CMAKE_SOURCE_DIR}/src/import/fft/CMakeLists.txt")
 
 target_sources(compass_core
     PUBLIC

@@ -18,7 +18,7 @@
 #include "mainwindow_commands.h"
 #include "mainwindow.h"
 #include "compass.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "taskmanager.h"
 #include "taskresult.h"
 #include "evaluationmanager.h"
@@ -38,7 +38,6 @@
 
 #include "mainwindow_commands_file.h"
 #include "mainwindow_commands_import.h"
-#include "context_commands.h"
 
 #include "event_log.h"
 
@@ -123,8 +122,6 @@ void init_commands()
     main_window::RTCommandGetEvents::init();
     main_window::RTCommandReconfigure::init();
     main_window::RTCommandClientInfo::init();
-
-    context_cmd::init_context_commands();
 }
 
 // import ds
@@ -163,7 +160,7 @@ bool RTCommandImportDataSourcesFile::run_impl()
         return false;
     }
 
-    compass_->dbContextManager().importSensors(filename_);
+    compass_->dataSourceManager().importDataSources(filename_);
 
     return true;
 }
@@ -192,9 +189,7 @@ bool RTCommandDeleteAllDataSources::run_impl()
         return false;
     }
 
-    // clear all data sources from active context
-    if (compass_->dbContextManager().hasActiveContext())
-        compass_->dbContextManager().activeContext().dataSources().clear();
+    compass_->dataSourceManager().deleteAllConfigDataSources();
 
     return true;
 }
@@ -236,7 +231,7 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     try
     {
-        compass_->dbContextManager().importSectors(filename_);
+        compass_->evaluationManager().importSectors(filename_);
     }
     catch(const std::exception& e)
     {
@@ -251,8 +246,8 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     size_t num_sectors = 0;
 
-    traced_assert(compass_->dbContextManager().sectorsLoaded());
-    const auto& sector_layers = compass_->dbContextManager().sectorLayers();
+    traced_assert(compass_->evaluationManager().sectorsLoaded());
+    const auto& sector_layers = compass_->evaluationManager().sectorsLayers();
 
     for (const auto& sl : sector_layers)
         num_sectors += sl->size();
@@ -388,7 +383,7 @@ bool RTCommandReconstructReferences::run_impl()
 
     if (!disabled_sensors_.empty())
     {
-        auto& ctx_man = compass_->dbContextManager();
+        auto& ds_manager = compass_->dataSourceManager();
 
         std::vector<std::string> sensors_to_disable = Utils::String::split(disabled_sensors_, ';');
         for (const auto& sensor_name : sensors_to_disable)
@@ -399,13 +394,13 @@ bool RTCommandReconstructReferences::run_impl()
                 return false;
             }
 
-            if (!ctx_man.hasDataSource(sensor_name))
+            if (!ds_manager.hasDBDataSource(sensor_name))
             {
                 setResultMessage("Invalid sensor '" + sensor_name + "'");
                 return false;
             }
 
-            auto ds_id = ctx_man.getDataSourceId(sensor_name);
+            auto ds_id = ds_manager.getDBDataSourceDSID(sensor_name);
 
             //deactivate sensor
             task.useDataSource(ds_id, false);

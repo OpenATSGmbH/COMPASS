@@ -22,6 +22,8 @@
 #include "dimension.h"
 #include "unit.h"
 #include "unitmanager.h"
+#include "fftmanager.h"
+#include "configurationfft.h"
 #include "json.hpp"
 
 using nlohmann::json;
@@ -214,6 +216,66 @@ TEST_CASE("UnitManager construction", "[interior][unitmanager]")
         REQUIRE(um.hasDimension("Height"));
         REQUIRE(um.hasDimension("Time"));
         REQUIRE(um.hasDimension("Speed"));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// FFTManager (interior: owns ConfigurationFFT children)
+// ---------------------------------------------------------------------------
+
+static json makeConfigFFT(const std::string& name, const std::string& info = "")
+{
+    return {{"parameters", {{"name", name}, {"info", info}}}};
+}
+
+TEST_CASE("FFTManager construction", "[interior][fftmanager]")
+{
+    SECTION("creates ConfigurationFFT children from sub_configs")
+    {
+        json cfg = makeConfig("FFTManager", "FFTManager0");
+        cfg["sub_configs"] = {{"ConfigurationFFT", {
+            {"fft0", makeConfigFFT("TestFFT1")},
+            {"fft1", makeConfigFFT("TestFFT2", "some info")}
+        }}};
+
+        FFTManager mgr(cfg, nullptr);
+
+        REQUIRE(mgr.hasConfigFFT("TestFFT1"));
+        REQUIRE(mgr.hasConfigFFT("TestFFT2"));
+        REQUIRE(mgr.configFFTs().size() == 2);
+    }
+
+    SECTION("children are json-backed too")
+    {
+        json cfg = makeConfig("FFTManager", "FFTManager0");
+        cfg["sub_configs"] = {{"ConfigurationFFT", {
+            {"fft0", makeConfigFFT("MyFFT")}
+        }}};
+
+        FFTManager mgr(cfg, nullptr);
+
+        REQUIRE(mgr.configFFTs().size() == 1);
+    }
+
+    SECTION("child paths derive from parent")
+    {
+        json cfg = makeConfig("FFTManager", "FFTManager0");
+        cfg["sub_configs"] = {{"ConfigurationFFT", {
+            {"fft0", makeConfigFFT("PathFFT")}
+        }}};
+
+        FFTManager mgr(cfg, nullptr);
+
+        REQUIRE(mgr.getPath() == "FFTManager0");
+        REQUIRE(mgr.configFFTs().front()->getPath() == "FFTManager0.fft0");
+    }
+
+    SECTION("empty config creates no children")
+    {
+        json cfg = makeConfig("FFTManager", "FFTManager0");
+        FFTManager mgr(cfg, nullptr);
+
+        REQUIRE(mgr.configFFTs().empty());
     }
 }
 

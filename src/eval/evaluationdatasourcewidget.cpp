@@ -18,7 +18,7 @@
 #include "evaluationdatasourcewidget.h"
 #include "logger.h"
 #include "dbcontent/dbcontentcombobox.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
 #include "compass.h"
@@ -98,7 +98,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     setLayout(main_layout);
 
-    connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
+    connect(&calculator_.manager().compass().dataSourceManager(), &DataSourceManager::dataSourcesChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot); // update if data sources changed
 }
 
@@ -126,7 +126,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
     unsigned int col, row;
     unsigned int cnt = 0;
 
-    auto& ctx_man = calculator_.manager().compass().dbContextManager();
+    DataSourceManager& ds_man = calculator_.manager().compass().dataSourceManager();
 
     map<string, bool> data_sources;
 
@@ -141,19 +141,18 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
     {
         ds_id = stoul(it.first);
 
-        if (!ctx_man.hasDataSource(ds_id))
+        if (!ds_man.hasDBDataSource(ds_id))
             continue;
 
-        auto* ds = ctx_man.dataSource(ds_id);
-        traced_assert(ds);
+        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
 
-        QCheckBox* checkbox = new QCheckBox(tr(ds->name().c_str()));
+        QCheckBox* checkbox = new QCheckBox(tr(ds.name().c_str()));
         checkbox->setChecked(it.second);
         checkbox->setProperty("id", ds_id);
         connect(checkbox, SIGNAL(clicked()), this, SLOT(toggleDataSourceSlot()));
 
         loginf << "got sensor " << it.first << " name "
-               << ds->name() << " active " << checkbox->isChecked();
+               << ds.name() << " active " << checkbox->isChecked();
 
         data_sources_checkboxes_[ds_id] = checkbox;
 

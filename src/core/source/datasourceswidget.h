@@ -24,12 +24,16 @@
 
 #include <memory>
 
-namespace context { class DBContextManager; class DataSource; }
-
+class DataSourceManager;
 class DBContentDeleteDBJob;
 class QMessageBox;
 
 class QTreeWidget;
+
+namespace dbContent
+{
+    class DBDataSource;
+}
 
 class DataSourcesWidget;
 
@@ -55,7 +59,7 @@ private:
     std::string        line_str_;
     bool               is_init_ = false;
 
-    const context::DataSource* ds_ = nullptr;
+    const dbContent::DBDataSource* ds_ = nullptr;
 };
 
 /**
@@ -123,13 +127,13 @@ public:
     void updateContent() override final;
 
     unsigned int dsID() const { return ds_id_; }
-    const context::DataSource* dataSource() const { return ds_; }
+    const dbContent::DBDataSource* dataSource() const { return ds_; }
 
 private:
     QWidget* createLinesWidget();
 
     unsigned int                   ds_id_;
-    const context::DataSource* ds_         = nullptr;
+    const dbContent::DBDataSource* ds_         = nullptr;
     bool                           has_widget_ = false;
 
     std::vector<DataSourceLineButton*> line_buttons_;
@@ -157,7 +161,7 @@ private:
 
     unsigned int                   ds_id_;
     std::string                    dbc_name_;
-    const context::DataSource* ds_ = nullptr;
+    const dbContent::DBDataSource* ds_ = nullptr;
 };
 
 class QHBoxLayout;
@@ -176,7 +180,7 @@ signals:
     void dataSourceSelectedSignal(unsigned int ds_id);
 
 public:
-    DataSourcesWidget(bool can_show_counts, context::DBContextManager& ctx_man);
+    DataSourcesWidget(bool can_show_counts, DataSourceManager& ds_man);
     virtual ~DataSourcesWidget();
 
     void updateContent(bool recreate_required = false);
@@ -190,7 +194,7 @@ public:
     virtual void setShowCounts(bool show) const;
     virtual bool getShowCounts() const;
 
-    context::DBContextManager& ctxManager() { return ctx_man_; }
+    DataSourceManager& dsManager() { return ds_man_; }
 
     void addActionsToConfigMenu(QMenu* menu);
 
@@ -198,7 +202,7 @@ public:
 
 protected:
     bool can_show_counts_;
-    context::DBContextManager& ctx_man_;
+    DataSourceManager& ds_man_;
 
     QHBoxLayout* top_layout_ {nullptr};
     QTreeWidget* tree_widget_ {nullptr};
@@ -227,11 +231,11 @@ private:
     int generateDataSourceType(DataSourceTypeItem* item,
                                const std::string& ds_type_name);
     int generateDataSource(DataSourceItem* item,
-                           DataSourcesWidgetItem* parent_item,
-                           const context::DataSource& data_source);
+                           DataSourcesWidgetItem* parent_item, 
+                           const dbContent::DBDataSource& data_source);
     int generateDataSourceCount(DataSourceCountItem* item,
                                 DataSourcesWidgetItem* parent_item,
-                                const context::DataSource& data_source,
+                                const dbContent::DBDataSource& data_source,
                                 const std::string& dbc_name);
 
     void itemChanged(QTreeWidgetItem *item, int column);

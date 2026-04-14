@@ -23,9 +23,7 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "timeconv.h"
-#include "db_context_manager.h"
-#include "sector.h"
-#include "datasourcebase.h" // for dbContent::DataSourceType enum
+#include "datasourcemanager.h"
 #include "evaluationmanager.h"
 #include "reconstructorassociatorbase.h"
 
@@ -902,7 +900,7 @@ void ReconstructorBase::processSlice()
     {
         const auto& counts = assocCounts();
 
-        auto& ctx_man = task_.manager().compass().dbContextManager();
+        DataSourceManager& ds_man = task_.manager().compass().dataSourceManager();
         DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
         for (auto& ds_it : counts)
@@ -912,7 +910,7 @@ void ReconstructorBase::processSlice()
                 unsigned int a_cnt = dbcont_it.second.first;
                 unsigned int u_cnt = dbcont_it.second.second;
 
-                std::string ds_n = ctx_man.dataSource(ds_it.first)->name();
+                std::string ds_n = ds_man.dbDataSource(ds_it.first).name();
                 std::string dbc_n = dbcont_man.dbContentWithId(dbcont_it.first);
 
                 std::string perc_str;
@@ -1043,33 +1041,29 @@ void ReconstructorBase::createTargetReports()
     std::set<unsigned int> unused_ds_ids = task_.unusedDSIDs();
     std::map<unsigned int, std::set<unsigned int>> unused_lines = task_.unusedDSIDLines();
 
-    auto& ctx_man = task_.manager().compass().dbContextManager();
+    auto& ds_man = task_.manager().compass().dataSourceManager();
 
-    std::set<unsigned int> ground_only_ds_ids = ctx_man.groundOnlyDataSources();
-
-    // build ds_types map from string type to enum
-    std::map<unsigned int, dbContent::DataSourceType> ds_types;
-    for (const auto& [ds_id, type_str] : ctx_man.dsTypes())
-        ds_types[ds_id] = dbContent::DataSourceBase::dsTypeFromString(type_str);
+    std::set<unsigned int> ground_only_ds_ids = ds_man.groundOnlyDBDataSources();
+    std::map<unsigned int, dbContent::DataSourceType> ds_types = ds_man.dsTypes();
 
     std::vector<std::shared_ptr<SectorLayer>> used_sector_layers;
     //bool inside_any;
 
     if (task_.useSectorsExtend())
     {
-        auto& ctx = task_.manager().compass().dbContextManager();
+        auto& eval_man = task_.manager().compass().evaluationManager();
 
         for (auto& sect_it : task_.usedSectors())
         {
-            traced_assert(ctx.hasSectorLayer(sect_it.first));
+            traced_assert(eval_man.hasSectorLayer(sect_it.first));
 
             if (!sect_it.second)
                 continue;
 
-            for (const auto& s : ctx.sectorLayer(sect_it.first)->sectors())
+            for (const auto& s : eval_man.sectorLayer(sect_it.first)->sectors())
                 s->createFastInsideTest();
 
-            used_sector_layers.push_back(ctx.sectorLayer(sect_it.first));
+            used_sector_layers.push_back(eval_man.sectorLayer(sect_it.first));
         }
     }
 
@@ -1175,9 +1169,9 @@ void ReconstructorBase::createTargetReports()
                 info.in_current_slice_ = true;
 
                 info.is_calculated_reference_ =
-                    ctx_man.hasDataSource(info.ds_id_)
-                    && ctx_man.dataSource(info.ds_id_)->sac() == ReconstructorBaseSettings::REC_DS_SAC
-                    && ctx_man.dataSource(info.ds_id_)->sic() == ReconstructorBaseSettings::REC_DS_SIC;
+                    ds_man.hasDBDataSource(info.ds_id_)
+                    && ds_man.dbDataSource(info.ds_id_).sac() == ReconstructorBaseSettings::REC_DS_SAC
+                    && ds_man.dbDataSource(info.ds_id_).sic() == ReconstructorBaseSettings::REC_DS_SIC;
 
                 info.acad_ = tgt_acc.acad(cnt);
                 info.acid_ = tgt_acc.acid(cnt);
@@ -1261,7 +1255,7 @@ void ReconstructorBase::createTargetReportBatches()
 
     std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "Tracker", "MLAT", "Radar", "Other"};
 
-    auto& ctx_man2 = task_.manager().compass().dbContextManager();
+    DataSourceManager& ds_man = task_.manager().compass().dataSourceManager();
 
     size_t num_truncated_noinfo = 0;
     size_t num_truncated_oor    = 0;
@@ -1277,10 +1271,10 @@ void ReconstructorBase::createTargetReportBatches()
 
             for (auto& ds_it : dbcont_it.second)
             {
-                if (ctx_man2.dataSource(ds_it.first)->dsType() != ds_type)
+                if (ds_man.dbDataSource(ds_it.first).dsType() != ds_type)
                     continue;
 
-                logdbg << "ds_type " << ds_type << " dbcont " << dbcont_it.first << " ds " << ctx_man2.dataSource(ds_it.first)->name();
+                logdbg << "ds_type " << ds_type << " dbcont " << dbcont_it.first << " ds " << ds_man.dbDataSource(ds_it.first).name();
 
                 for (auto& line_it : ds_it.second)
                 {
@@ -1565,22 +1559,22 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
                 << " ts min " << Time::toString(ts_vec.get(0))
                 << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
 
-            auto& ctx_man3 = task_.manager().compass().dbContextManager();
+            DataSourceManager& src_man = task_.manager().compass().dataSourceManager();
 
             unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
 
-            if (!ctx_man3.hasDataSource(ds_id))
+            if (!src_man.hasConfigDataSource(ds_id))
             {
                 logdbg << "creating data source";
 
-                ctx_man3.createDataSource(settings().ds_sac, settings().ds_sic);
-                traced_assert(ctx_man3.hasDataSource(ds_id));
+                src_man.createConfigDataSource(ds_id);
+                traced_assert(src_man.hasConfigDataSource(ds_id));
             }
 
-            auto* src = ctx_man3.dataSource(ds_id);
+            dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
 
-            src->name(settings().ds_name);
-            src->dsType("RefTraj"); // same as dstype
+            src.name(settings().ds_name);
+            src.dsType("RefTraj"); // same as dstype
         }
     };
 

@@ -20,7 +20,6 @@
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/optional.hpp>
 
-#include <map>
 #include <string>
 
 class ASTERIXImportTaskSettings
@@ -28,9 +27,9 @@ class ASTERIXImportTaskSettings
 public:
     ASTERIXImportTaskSettings(); // defines default param values
 
-    std::string activeFileFraming() const
-    {
-        return current_file_framing_override_.has_value() ? current_file_framing_override_.value() : current_file_framing_;
+    std::string activeFileFraming() const 
+    { 
+        return current_file_framing_override_.has_value() ? current_file_framing_override_.value() : current_file_framing_; 
     }
     void setActiveFileFraming(const std::string& file_framing)
     {
@@ -95,12 +94,6 @@ public:
     unsigned int chunk_size_insert;
 
     unsigned int max_packets_in_processing_{5};
-
-    // per-category decode flags (not persisted in context, task-local)
-    std::map<unsigned int, bool> decode_flags_;
-
-    bool decodeCategory(unsigned int category) const;
-    void decodeCategory(unsigned int category, bool decode);
 
 private:
     boost::optional<std::string> current_file_framing_override_;

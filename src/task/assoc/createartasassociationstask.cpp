@@ -26,7 +26,7 @@
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "jobmanager.h"
 #include "stringconv.h"
 #include "taskmanager.h"
@@ -81,7 +81,7 @@ void CreateARTASAssociationsTask::showDialog()
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
 {
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    auto& ctx_man = manager().compass().dbContextManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
     logdbg << "tracker " << dbcontent_man.existsDBContent("CAT062");
 
@@ -102,30 +102,29 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
 
     // no data sources
     logdbg << "num tracker data sources "
-           << ctx_man.hasDataSourcesOfDBContent("CAT062");
+           << ds_man.hasDataSourcesOfDBContent("CAT062");
 
-    if (!ctx_man.hasDataSourcesOfDBContent("CAT062"))
+    if (!ds_man.hasDataSourcesOfDBContent("CAT062"))
         return CreateARTASAssociationsTask::Error::NoDataSource;
 
     bool ds_found{false};
     unsigned int current_ds_id {0};
     unsigned int line_count = 0;
 
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (auto& ds_it : ds_man.dbDataSources())
     {
-        if (ctx_man.numInserted(ds.id(), "CAT062") == 0) // check if track data exists
+        if (!ds_it->numInsertedMap().count("CAT062")) // check if track data exists
             continue;
 
-        if ((ds.hasShortName() &&
-             ds.shortName() == settings_.current_data_source_name_) ||
-                (ds.name() == settings_.current_data_source_name_))
+        if ((ds_it->hasShortName() &&
+             ds_it->shortName() == settings_.current_data_source_name_) ||
+                (ds_it->name() == settings_.current_data_source_name_))
         {
             ds_found = true;
-            current_ds_id = ds.id();
+            current_ds_id = ds_it->id();
 
-            auto per_line = ctx_man.numInsertedPerLine(ds.id(), "CAT062");
-            line_count = per_line.count(settings_.current_data_source_line_id_) ?
-                per_line.at(settings_.current_data_source_line_id_) : 0;
+            line_count = ds_it->hasNumInserted("CAT062", settings_.current_data_source_line_id_) ? 
+                ds_it->numInsertedMap().at("CAT062").at(settings_.current_data_source_line_id_) : 0;
 
             break;
         }
@@ -205,7 +204,7 @@ void CreateARTASAssociationsTask::run()
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
     dbcontent_man.clearData();
 
-    auto& ctx_man = manager().compass().dbContextManager();
+    DataSourceManager& ds_man = manager().compass().dataSourceManager();
 
     manager().compass().viewManager().disableDataDistribution(true);
 
@@ -230,17 +229,17 @@ void CreateARTASAssociationsTask::run()
             bool ds_found{false};
             unsigned int current_ds_id;
 
-            for (const auto& ds : ctx_man.activeContext().dataSources())
+            for (auto& ds_it : ds_man.dbDataSources())
             {
-                if (ctx_man.numInserted(ds.id(), "CAT062") == 0) // check if track data exists
+                if (!ds_it->numInsertedMap().count("CAT062")) // check if track data exists
                     continue;
 
-                if ((ds.hasShortName() &&
-                     ds.shortName() == settings_.current_data_source_name_) ||
-                        (ds.name() == settings_.current_data_source_name_))
+                if ((ds_it->hasShortName() &&
+                     ds_it->shortName() == settings_.current_data_source_name_) ||
+                        (ds_it->name() == settings_.current_data_source_name_))
                 {
                     ds_found = true;
-                    current_ds_id = ds.id();
+                    current_ds_id = ds_it->id();
                     break;
                 }
             }

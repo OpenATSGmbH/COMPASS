@@ -5,7 +5,10 @@ target_include_directories(compass_core PUBLIC
 
 target_sources(compass_core
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcemanager.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcebase.h"
+        "${CMAKE_CURRENT_LIST_DIR}/configurationdatasource.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbdatasource.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasource_commands.h"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcelineinfo.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbdatasourcewidget.h"
@@ -28,7 +31,10 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/toolboxdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcemanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcebase.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/configurationdatasource.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbdatasource.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasource_commands.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datasourcelineinfo.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbdatasourcewidget.cpp"

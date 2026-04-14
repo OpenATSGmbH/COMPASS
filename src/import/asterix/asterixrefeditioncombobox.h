@@ -25,6 +25,8 @@
 #include <QComboBox>
 #include <memory>
 
+#include "asteriximporttask.h"
+
 class ASTERIXREFEditionComboBox : public QComboBox
 {
     Q_OBJECT
@@ -36,12 +38,15 @@ class ASTERIXREFEditionComboBox : public QComboBox
     }
 
   signals:
+    /// @brief Emitted if REF was changed
     void changedREFSignal(const std::string& cat_str, const std::string& ref_ed_str);
 
   public:
-    ASTERIXREFEditionComboBox(const std::shared_ptr<jASTERIX::Category> category,
+    /// @brief Constructor
+    ASTERIXREFEditionComboBox(ASTERIXImportTask& task,
+                              const std::shared_ptr<jASTERIX::Category> category,
                               QWidget* parent = nullptr)
-        : QComboBox(parent), category_(category)
+        : QComboBox(parent), task_(task), category_(category)
     {
         addItem("");
 
@@ -59,10 +64,13 @@ class ASTERIXREFEditionComboBox : public QComboBox
         else
             setDisabled(true);
     }
+    /// @brief Destructor
     virtual ~ASTERIXREFEditionComboBox() {}
 
+    /// @brief Returns the currently selected framing
     std::string getREFEdition() { return currentText().toStdString(); }
 
+    /// @brief Sets the currently selected edition
     void setREFEdition(const std::string& ref_ed_str)
     {
         int index = findText(QString(ref_ed_str.c_str()));
@@ -71,5 +79,6 @@ class ASTERIXREFEditionComboBox : public QComboBox
     }
 
   protected:
+    ASTERIXImportTask& task_;
     const std::shared_ptr<jASTERIX::Category> category_;
 };

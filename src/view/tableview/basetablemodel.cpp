@@ -23,7 +23,7 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "datasourceremoteunit.h"
 #include "global.h"
 #include "tableview.h"
@@ -288,11 +288,10 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
 
         auto ds_id = ds_vec.get(buffer_idx);
 
-        auto& ctx_man = compass.dbContextManager();
-        traced_assert(ctx_man.hasDataSource(ds_id));
+        auto& ds_man = compass.dataSourceManager();
+        traced_assert(ds_man.hasDBDataSource(ds_id));
 
-        auto* ds = ctx_man.dataSource(ds_id);
-        traced_assert(ds);
+        auto& ds = ds_man.dbDataSource(ds_id);
 
         repr = "[";
 
@@ -303,8 +302,8 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
             traced_assert(j_idx.is_number_integer());
             int idx = j_idx.get<int>();
 
-            if (ds->hasRemoteUnit(idx))
-                repr += ds->remoteUnitName(idx);
+            if (ds.hasRemoteUnit(idx))
+                repr += ds.remoteUnit(idx)->name();
             else
                 repr += std::to_string(idx);
 

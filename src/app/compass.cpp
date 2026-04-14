@@ -19,6 +19,7 @@
 #include "config.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "datasourcemanager.h"
 #include "filtermanager.h"
 #include "jobmanager.h"
 #include "unitmanager.h"
@@ -39,7 +40,7 @@
 #include "rtcommand_manager.h"
 #include "rtcommand.h"
 #include "util/timeconv.h"
-#include "db_context_manager.h"
+#include "fftmanager.h"
 #include "util/async.h"
 #include "licensemanager.h"
 #include "dbcontentmanagervariableresolver.h"
@@ -148,23 +149,17 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     traced_assert(db_interface_);
     traced_assert(dbcontent_manager_);
+    traced_assert(ds_manager_);
     traced_assert(filter_manager_);
     traced_assert(task_manager_);
     traced_assert(view_manager_);
     traced_assert(eval_manager_);
+    traced_assert(fft_manager_);
     traced_assert(license_manager_);
 
     rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*this));
 
-    // DBContextManager — not a Configurable, created directly
-    context_manager_.reset(new context::DBContextManager(*this));
-
-    // database opening & closing — DBContextManager connects FIRST
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     context_manager_.get(), &context::DBContextManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     context_manager_.get(), &context::DBContextManager::databaseClosedSlot);
+    // database opening & closing
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
                      dbcontent_manager_.get(), &DBContentManager::databaseOpenedSlot);
@@ -172,11 +167,16 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
                      dbcontent_manager_.get(), &DBContentManager::databaseClosedSlot);
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
+                     ds_manager_.get(), &DataSourceManager::databaseOpenedSlot);
+    QObject::connect(this, &COMPASS::databaseClosedSignal,
+                     ds_manager_.get(), &DataSourceManager::databaseClosedSlot);
+
+    QObject::connect(this, &COMPASS::databaseOpenedSignal,
                      filter_manager_.get(), &FilterManager::databaseOpenedSlot);
     QObject::connect(this, &COMPASS::databaseClosedSignal,
                      filter_manager_.get(), &FilterManager::databaseClosedSlot);
 
-    QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
+    QObject::connect(ds_manager_.get(), &DataSourceManager::dataSourcesChangedSignal,
                      filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
@@ -190,6 +190,11 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
                      eval_manager_.get(), &EvaluationManager::databaseClosedSlot);
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
+                     fft_manager_.get(), &FFTManager::databaseOpenedSlot);
+    QObject::connect(this, &COMPASS::databaseClosedSignal,
+                     fft_manager_.get(), &FFTManager::databaseClosedSlot);
+
+    QObject::connect(this, &COMPASS::databaseOpenedSignal,
                      task_manager_.get(), &TaskManager::databaseOpenedSlot);
     QObject::connect(this, &COMPASS::databaseClosedSignal,
                      task_manager_.get(), &TaskManager::databaseClosedSlot);
@@ -200,11 +205,11 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
                      &log_store_, &LogStore::databaseClosedSlot);
 
     // data sources changed
-    QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
-                     eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
+    QObject::connect(ds_manager_.get(), &DataSourceManager::dataSourcesChangedSignal,
+                     eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot); // update if data sources changed
 
     // sectors changed
-    connect (context_manager_.get(), &context::DBContextManager::sectorsChangedSignal,
+    connect (eval_manager_.get(), &EvaluationManager::sectorsChangedSignal, // this includes db open/close
              &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
 
     // data exchange
@@ -250,6 +255,7 @@ COMPASS::~COMPASS()
     traced_assert(!task_manager_);
     traced_assert(!view_manager_);
     traced_assert(!eval_manager_);
+    traced_assert(!fft_manager_);
     traced_assert(!license_manager_);
 
     logdbg << "end";
@@ -286,8 +292,9 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "DataSourceManager")
     {
-        // legacy — DataSourceManager replaced by DBContextManager, ignore config
-        loginf << "ignoring legacy DataSourceManager config";
+        traced_assert(!ds_manager_);
+        ds_manager_.reset(new DataSourceManager(child_json, *this));
+        traced_assert(ds_manager_);
     }
     else if (class_name == "FilterManager")
     {
@@ -315,8 +322,9 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "FFTManager")
     {
-        // legacy — FFTManager replaced by DBContextManager, ignore config
-        loginf << "ignoring legacy FFTManager config";
+        traced_assert(!fft_manager_);
+        fft_manager_.reset(new FFTManager(child_json, this));
+        traced_assert(fft_manager_);
     }
     else if (class_name == "LicenseManager")
     {
@@ -365,6 +373,11 @@ void COMPASS::checkSubConfigurables()
         generateSubConfigurableFromConfig("DBContentManager", "DBContentManager0");
         traced_assert(dbcontent_manager_);
     }
+    if (!ds_manager_)
+    {
+        generateSubConfigurableFromConfig("DataSourceManager", "DataSourceManager0");
+        traced_assert(dbcontent_manager_);
+    }
     if (!filter_manager_)
     {
         generateSubConfigurableFromConfig("FilterManager", "FilterManager0");
@@ -384,6 +397,11 @@ void COMPASS::checkSubConfigurables()
     {
         generateSubConfigurableFromConfig("EvaluationManager", "EvaluationManager0");
         traced_assert(eval_manager_);
+    }
+    if (!fft_manager_)
+    {
+        generateSubConfigurableFromConfig("FFTManager", "FFTManager0");
+        traced_assert(fft_manager_);
     }
     if (!job_manager_)
         generateSubConfigurableFromConfig("JobManager", "JobManager0");
@@ -741,6 +759,7 @@ Result COMPASS::closeDBInternal()
 
     try
     {
+        ds_manager_->saveDBDataSources();
         dbcontent_manager_->saveTargets();
 
         db_interface_->closeDB();
@@ -770,6 +789,12 @@ DBContentManager& COMPASS::dbContentManager()
 {
     traced_assert(dbcontent_manager_);
     return *dbcontent_manager_;
+}
+
+DataSourceManager& COMPASS::dataSourceManager()
+{
+    traced_assert(ds_manager_);
+    return *ds_manager_;
 }
 
 FilterManager& COMPASS::filterManager()
@@ -823,25 +848,10 @@ EvaluationManager& COMPASS::evaluationManager()
     return *eval_manager_;
 }
 
-context::DBContextManager& COMPASS::dbContextManager()
+FFTManager& COMPASS::fftManager()
 {
-    traced_assert(context_manager_);
-    return *context_manager_;
-}
-
-bool COMPASS::hasActiveContext() const
-{
-    return context_manager_ && context_manager_->hasActiveContext();
-}
-
-context::DBContext& COMPASS::context()
-{
-    return context_manager_->activeContext();
-}
-
-const context::DBContext& COMPASS::context() const
-{
-    return context_manager_->activeContext();
+    traced_assert(fft_manager_);
+    return *fft_manager_;
 }
 
 LicenseManager& COMPASS::licenseManager()
@@ -1009,7 +1019,15 @@ void COMPASS::shutdown()
 
     traced_assert(db_interface_);
 
-    context_manager_ = nullptr;
+    traced_assert(ds_manager_);
+    if (db_interface_->ready())
+        ds_manager_->saveDBDataSources();
+    ds_manager_ = nullptr;
+
+    traced_assert(fft_manager_);
+    if (db_interface_->ready())
+        fft_manager_->saveDBFFTs();
+    fft_manager_ = nullptr;
 
     traced_assert(dbcontent_manager_);
     if (db_interface_->ready())

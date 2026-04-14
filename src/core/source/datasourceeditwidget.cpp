@@ -17,8 +17,9 @@
 
 #include "datasourceeditwidget.h"
 #include "compass.h"
-#include "db_context_manager.h"
-#include "data_source.h"
+#include "datasourcemanager.h"
+#include "configurationdatasource.h"
+#include "dbdatasource.h"
 #include "dstypeselectioncombobox.h"
 #include "datasourcesconfigurationdialog.h"
 #include "logger.h"
@@ -54,9 +55,9 @@ const std::string DataSourceEditWidget::TabRadarAccuraciesName = "Accuracies";
 const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "MLAT Remote Units";
 const std::string DataSourceEditWidget::TabNetworkLinesName    = "Network";
 
-DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, context::DBContextManager& ctx_man,
+DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, DataSourceManager& ds_man, 
     std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func)
-    : show_network_lines_(show_network_lines), ctx_man_(ctx_man),
+    : show_network_lines_(show_network_lines), ds_man_(ds_man),
     update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func)
 {
     //setMaximumWidth(400);
@@ -123,29 +124,58 @@ void DataSourceEditWidget::createMainTab()
 {
     auto main_layout = createTab(TabMainName, true);
 
-    auto* form = new QFormLayout();
-    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+    QGridLayout* properties_layout_ = new QGridLayout();
 
-    // common fields (always visible)
+    unsigned int row = 0;
+
+    // "Name", "Short Name", "DSType", "SAC", "SIC"
+
+    //name_edit_
+    properties_layout_->addWidget(new QLabel("Name"), row, 0);
+
     name_edit_ = new QLineEdit();
     connect(name_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::nameEditedSlot);
-    form->addRow(new QLabel("Name"), name_edit_);
+    properties_layout_->addWidget(name_edit_, row, 1);
+    row++;
+
+    //short_name_edit_
+
+    properties_layout_->addWidget(new QLabel("Short Name"), row, 0);
 
     short_name_edit_ = new QLineEdit();
     connect(short_name_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::shortNameEditedSlot);
-    form->addRow(new QLabel("Short Name"), short_name_edit_);
+    properties_layout_->addWidget(short_name_edit_, row, 1);
+    row++;
+
+    // dstype_combo_
+
+    properties_layout_->addWidget(new QLabel("DSType"), row, 0);
 
     dstype_combo_ = new DSTypeSelectionComboBox();
     connect(dstype_combo_, &DSTypeSelectionComboBox::changedTypeSignal, this, &DataSourceEditWidget::dsTypeEditedSlot);
-    form->addRow(new QLabel("DSType"), dstype_combo_);
+    properties_layout_->addWidget(dstype_combo_, row, 1);
+    row++;
+
+    //QLabel* sac_label_{nullptr};
+
+    properties_layout_->addWidget(new QLabel("SAC/SIC    (DS ID)"), row, 0);
 
     sac_sic_id_label_ = new QLabel();
-    form->addRow(new QLabel("SAC/SIC  (DS ID)"), sac_sic_id_label_);
+    properties_layout_->addWidget(sac_sic_id_label_, row, 1);
+    row++;
+
+    // update interval
+
+    properties_layout_->addWidget(new QLabel("Update Interval [s]"), row, 0);
 
     update_interval_edit_ = new QLineEdit();
     update_interval_edit_->setValidator(new TextFieldDoubleValidator(0, 90, 3));
     connect(update_interval_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::updateIntervalEditedSlot);
-    form->addRow(new QLabel("Update Interval [s]"), update_interval_edit_);
+    properties_layout_->addWidget(update_interval_edit_, row, 1);
+
+    main_layout->addLayout(properties_layout_);
+
+    ++row;
 
     detection_type_combo_ = new QComboBox(this);
     detection_type_combo_->addItem("Undefined");
@@ -154,53 +184,104 @@ void DataSourceEditWidget::createMainTab()
     detection_type_combo_->addItem("Mode A/C Combined");
     detection_type_combo_->addItem("Mode S");
     detection_type_combo_->addItem("Mode S Combined");
+
+    properties_layout_->addWidget(new QLabel("Detection Type"), row, 0);
+    properties_layout_->addWidget(detection_type_combo_, row, 1);
+
     connect(detection_type_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourceEditWidget::detectionTypeChangedSlot);
-    form->addRow(new QLabel("Detection Type"), detection_type_combo_);
 
+    // ground_only_check_
+
+    ++row;
+    properties_layout_->addWidget(new QLabel("Ground Only"), row, 0);
+    
     ground_only_check_ = new QCheckBox();
     connect(ground_only_check_, &QCheckBox::clicked,
             this, &DataSourceEditWidget::groundOnlyCheckedSlot);
-    form->addRow(new QLabel("Ground Only"), ground_only_check_);
 
-    // radar-specific (hidden/shown via label + field visibility)
-    radar_ignore_label_ = new QLabel("Ignore Range/Azimuth");
+    properties_layout_->addWidget(ground_only_check_, row, 1);
+
+    //  radar_widget_
+    radar_widget_ = new QWidget();
+    radar_widget_->setContentsMargins(0, 0, 0, 0);
+
+    QGridLayout* radar_layout = new QGridLayout();
+    radar_layout->setContentsMargins(0, 0, 0, 0);
+
+    radar_layout->addWidget(new QLabel("Ignore Range/Azimuth Values"), 0, 0);
+
     radar_ignore_azmrng_check_ = new QCheckBox();
     connect(radar_ignore_azmrng_check_, &QCheckBox::clicked, this,
             &DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot);
-    form->addRow(radar_ignore_label_, radar_ignore_azmrng_check_);
 
-    // psr JPDA (hidden/shown via label + field visibility)
-    psr_pd_label_ = new QLabel("JPDA PD [1]");
-    psr_pd_edit_ = new QLineEdit();
-    psr_pd_edit_->setValidator(new TextFieldDoubleValidator(0.001, 1, 3));
-    connect(psr_pd_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
-    form->addRow(psr_pd_label_, psr_pd_edit_);
+    radar_layout->addWidget(radar_ignore_azmrng_check_, 0, 1);
 
-    psr_clutter_rate_label_ = new QLabel("Clutter Rate [1]");
-    psr_clutter_rate_edit_ = new QLineEdit();
-    psr_clutter_rate_edit_->setValidator(new TextFieldDoubleValidator(1, 10000, 0));
-    connect(psr_clutter_rate_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::clutterRateEditedSlot);
-    form->addRow(psr_clutter_rate_label_, psr_clutter_rate_edit_);
+    radar_widget_->setLayout(radar_layout);
 
-    // position (hidden/shown via label + field visibility)
-    latitude_label_ = new QLabel("Latitude");
+    main_layout->addWidget(radar_widget_);
+
+    // position_widget_
+
+    position_widget_ = new QWidget();
+    position_widget_->setContentsMargins(0, 0, 0, 0);
+
+    QGridLayout* position_layout = new QGridLayout();
+    position_layout->setContentsMargins(0, 0, 0, 0);
+
+    position_layout->addWidget(new QLabel("Latitude"), 0, 0);
+
     latitude_edit_ = new QLineEdit();
+    //latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 12));
     connect(latitude_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::latitudeEditedSlot);
-    form->addRow(latitude_label_, latitude_edit_);
+    position_layout->addWidget(latitude_edit_, 0, 1);
 
-    longitude_label_ = new QLabel("Longitude");
+    position_layout->addWidget(new QLabel("Longitude"), 1, 0);
+
     longitude_edit_ = new QLineEdit();
+    //longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 12));
     connect(longitude_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::longitudeEditedSlot);
-    form->addRow(longitude_label_, longitude_edit_);
+    position_layout->addWidget(longitude_edit_, 1, 1);
 
-    altitude_label_ = new QLabel("Altitude");
+    position_layout->addWidget(new QLabel("Altitude"), 2, 0);
+
     altitude_edit_ = new QLineEdit();
     altitude_edit_->setValidator(new TextFieldDoubleValidator(-10000, 10000, 12));
     connect(altitude_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::altitudeEditedSlot);
-    form->addRow(altitude_label_, altitude_edit_);
+    position_layout->addWidget(altitude_edit_, 2, 1);
 
-    main_layout->addLayout(form);
+    position_widget_->setLayout(position_layout);
+
+    main_layout->addWidget(position_widget_);
+
+    // psr settings
+    {
+        psr_jpda_widget_ = new QWidget();
+        psr_jpda_widget_->setContentsMargins(0, 0, 0, 0);
+
+        QGridLayout* jpda_layout = new QGridLayout();
+        unsigned int row_cnt = 0;
+
+        jpda_layout->addWidget(new QLabel("JPDA PD [1]"), row_cnt, 0);
+
+        psr_pd_edit_ = new QLineEdit();
+        psr_pd_edit_->setValidator(new TextFieldDoubleValidator(0.001, 1, 3));
+        connect(psr_pd_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::pdEditedSlot);
+        jpda_layout->addWidget(psr_pd_edit_, row_cnt, 1);
+
+        ++row_cnt;
+
+        jpda_layout->addWidget(new QLabel("Clutter Rate [1]"), row_cnt, 0);
+
+        psr_clutter_rate_edit_ = new QLineEdit();
+        psr_clutter_rate_edit_->setValidator(new TextFieldDoubleValidator(1, 10000, 0));
+        connect(psr_clutter_rate_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::clutterRateEditedSlot);
+        jpda_layout->addWidget(psr_clutter_rate_edit_, row_cnt, 1);
+
+        psr_jpda_widget_->setLayout(jpda_layout);
+
+        main_layout->addWidget(psr_jpda_widget_);
+    }
 
     delete_button_ = new QPushButton("Delete");
     delete_button_->setToolTip("Deletes the data source in configuration");
@@ -212,7 +293,6 @@ void DataSourceEditWidget::createMainTab()
 
     main_layout->addStretch();
 }
-
 
 void DataSourceEditWidget::createRadarRangesTab()
 {
@@ -551,11 +631,11 @@ void DataSourceEditWidget::showID(unsigned int ds_id)
 {
     has_current_ds_ = true;
     current_ds_id_ = ds_id;
-    
+    current_ds_in_db_ = ds_man_.hasDBDataSource(current_ds_id_);
 
-    loginf << "id " << ds_id;
+    loginf << "id " << ds_id << " in db " << current_ds_in_db_;
 
-    traced_assert(ctx_man_.hasDataSource(current_ds_id_));
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
 
     updateContent();
 }
@@ -566,7 +646,7 @@ void DataSourceEditWidget::clear()
 
     has_current_ds_ = false;
     current_ds_id_ = 0;
-    
+    current_ds_in_db_ = false;
 
     updateContent();
 }
@@ -590,8 +670,14 @@ void DataSourceEditWidget::nameEditedSlot(const QString& value)
 
     traced_assert(has_current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->name(text);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).name(text);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).name(text);
 
     update_ds_func_(current_ds_id_);
 }
@@ -604,8 +690,14 @@ void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
 
     traced_assert(has_current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->shortName(text);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).shortName(text);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).shortName(text);
 
     update_ds_func_(current_ds_id_);
 }
@@ -618,8 +710,14 @@ void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
 
     traced_assert(has_current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->dsType(text);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).dsType(text);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).dsType(text);
 
     update_ds_func_(current_ds_id_);
 
@@ -634,18 +732,32 @@ void DataSourceEditWidget::updateIntervalEditedSlot(const QString& value_str)
 
     if (!value_str.size()) // remove if empty
     {
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
+        if (current_ds_in_db_)
+        {
+            traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
 
-        if (currentDataSource()->hasUpdateInterval())
-            currentDataSource()->removeUpdateInterval();
+            if (ds_man_.dbDataSource(current_ds_id_).hasUpdateInterval())
+                ds_man_.dbDataSource(current_ds_id_).removeUpdateInterval();
+        }
+
+        traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+
+        if (ds_man_.configDataSource(current_ds_id_).hasUpdateInterval())
+            ds_man_.configDataSource(current_ds_id_).removeUpdateInterval();
 
         return;
     }
 
     float value = value_str.toFloat();
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->updateInterval(value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).updateInterval(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).updateInterval(value);
 }
 
 void DataSourceEditWidget::detectionTypeChangedSlot(int index)
@@ -653,8 +765,18 @@ void DataSourceEditWidget::detectionTypeChangedSlot(int index)
     if (!has_current_ds_)
         return;
 
-    // Detection type as int: 0=Undefined, 1=PrimaryOnly, 2=ModeAC, 3=ModeACCombined, 4=ModeS, 5=ModeSCombined
-    currentDataSource()->detectionTypeInt(index);
+    using DetectionType = dbContent::DataSourceBase::DetectionType;
+
+    DetectionType selected_type = static_cast<DetectionType>(index);
+
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).detectionType(selected_type);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).detectionType(selected_type);
 
     updateContent();
 }
@@ -667,8 +789,14 @@ void DataSourceEditWidget::groundOnlyCheckedSlot()
 
     bool checked = ground_only_check_->checkState() == Qt::Checked;
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->groundOnly(checked);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).groundOnly(checked);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).groundOnly(checked);
 }
 
 void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
@@ -679,8 +807,14 @@ void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
 
     bool checked = radar_ignore_azmrng_check_->checkState() == Qt::Checked;
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->ignoreRadarAzmRange(checked);    
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).ignoreRadarAzmRange(checked);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).ignoreRadarAzmRange(checked);    
 }
 
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
@@ -705,8 +839,14 @@ void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
     if (!ok)
         return;
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->latitude(value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).latitude(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).latitude(value);
 }
 
 void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
@@ -728,8 +868,14 @@ void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->longitude(value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).longitude(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).longitude(value);
 }
 
 void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
@@ -746,8 +892,14 @@ void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->probabilityOfDetection(value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).probabilityOfDetection(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).probabilityOfDetection(value);
 }
 
 void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
@@ -764,8 +916,14 @@ void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->clutterRate(value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).clutterRate(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).clutterRate(value);
 }
 
 void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
@@ -774,8 +932,14 @@ void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->altitude(value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).altitude(value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).altitude(value);
 }
 
 void DataSourceEditWidget::addRadarRangesSlot()
@@ -784,8 +948,14 @@ void DataSourceEditWidget::addRadarRangesSlot()
 
     traced_assert(has_current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->addRadarRangesIfMissing();
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).addRadarRangesIfMissing();
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).addRadarRangesIfMissing();
 
     updateContent();
 }
@@ -802,13 +972,14 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
         // remove key
         loginf << "removing key '" << key << "'";
 
-        if (has_current_ds_)
+        if (current_ds_in_db_)
         {
-            traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-            currentDataSource()->removeRadarRange(key);
+            traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+            ds_man_.dbDataSource(current_ds_id_).removeRadarRange(key);
         }
 
-        currentDataSource()->removeRadarRange(key);
+        traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+        ds_man_.configDataSource(current_ds_id_).removeRadarRange(key);
 
         return;
     }
@@ -817,8 +988,14 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
 
     loginf << "key '" << key << "' value '" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->radarRange(key, value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).radarRange(key, value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).radarRange(key, value);
 }
 
 void DataSourceEditWidget::addRadarAccuraciesSlot()
@@ -827,8 +1004,14 @@ void DataSourceEditWidget::addRadarAccuraciesSlot()
 
     traced_assert(has_current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->addRadarAccuraciesIfMissing();
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).addRadarAccuraciesIfMissing();
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).addRadarAccuraciesIfMissing();
 
     updateContent();
 }
@@ -844,22 +1027,31 @@ void DataSourceEditWidget::radarAccuraciesEditedSlot(const QString& value_str)
 
     loginf << "key '" << key << "' value '" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->radarAccuracy(key, value);
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).radarAccuracy(key, value);
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).radarAccuracy(key, value);
 }
 
 void DataSourceEditWidget::addMLATRemoteUnitsSlot()
 {
     loginf;
 
-    auto* ds = currentDataSource();
+    auto ds_db   = currentDBDataSource();
+    auto ds_conf = currentConfigDataSource();
 
-    traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    traced_assert(ds_conf || ds_db);
+    traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
+    traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
-    if (ds)
-        ds->addRemoteUnitsIfMissing();
+    if (ds_db)
+        ds_db->addRemoteUnitsIfMissing();
+    if (ds_conf)
+        ds_conf->addRemoteUnitsIfMissing();
 
     updateContent();
 }
@@ -868,29 +1060,22 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
 {
     bool add = idx < 0;
 
-    auto* ds = currentDataSource();
+    auto ds_db   = currentDBDataSource();
+    auto ds_conf = currentConfigDataSource();
+    auto ds      = currentDataSource();
 
     traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
+    traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
     RemoteUnitDefinition ru_def_in;
     if (!add)
     {
         traced_assert(ds->hasRemoteUnit(idx));
-        // read remote unit from info JSON
-        auto& ru_arr = ds->info()["remote_units"];
-        for (const auto& ruj : ru_arr) {
-            if (ruj.value("index", -1) == idx) {
-                ru_def_in.index = ruj.value("index", 0);
-                ru_def_in.name = ruj.value("name", "");
-                ru_def_in.comment = ruj.value("comment", "");
-                ru_def_in.latitude = ruj.value("latitude", 0.0);
-                ru_def_in.longitude = ruj.value("longitude", 0.0);
-                ru_def_in.altitude = ruj.value("altitude", 0.0);
-                break;
-            }
-        }
+        auto ru = ds->remoteUnit(idx);
+        traced_assert(ru);
+
+        ru_def_in = ru->toDefinition();
     }
 
     auto ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
@@ -956,8 +1141,8 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     {
         QString err;
 
-        if ((add && ds && ds->hasRemoteUnit(index_box->value())) ||
-            (add && ds && ds->hasRemoteUnit(index_box->value())))
+        if ((add && ds_db && ds_db->hasRemoteUnit(index_box->value())) ||
+            (add && ds_conf && ds_conf->hasRemoteUnit(index_box->value())))
         {
             err = "Please choose a unique index.";
         }
@@ -990,33 +1175,26 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
 
     if (add)
     {
-        //add using info JSON
-        if (ds) {
-            nlohmann::json ru_j;
-            ru_j["index"] = ru_def.index;
-            ru_j["name"] = ru_def.name;
-            ru_j["comment"] = ru_def.comment;
-            ru_j["latitude"] = ru_def.latitude;
-            ru_j["longitude"] = ru_def.longitude;
-            ru_j["altitude"] = ru_def.altitude;
-            ds->info()["remote_units"].push_back(ru_j);
-        }
+        //add using configuration
+        if (ds_db)
+            ds_db->createRemoteUnit(ru_def);
+        if (ds_conf)
+            ds_conf->createRemoteUnit(ru_def);
     }
     else
     {
-        //apply configuration via info JSON
-        if (ds) {
-            auto& ru_arr = ds->info()["remote_units"];
-            for (auto& ruj : ru_arr) {
-                if (ruj.value("index", -1) == idx) {
-                    ruj["name"] = ru_def.name;
-                    ruj["comment"] = ru_def.comment;
-                    ruj["latitude"] = ru_def.latitude;
-                    ruj["longitude"] = ru_def.longitude;
-                    ruj["altitude"] = ru_def.altitude;
-                    break;
-                }
-            }
+        //apply configuration
+        if (ds_db)
+        {
+            traced_assert(ds_db->hasRemoteUnit(idx));
+            traced_assert(ds_db->remoteUnit(idx));
+            ds_db->remoteUnit(idx)->configure(ru_def);
+        }
+        if (ds_conf)
+        {
+            traced_assert(ds_conf->hasRemoteUnit(idx));
+            traced_assert(ds_conf->remoteUnit(idx));
+            ds_conf->remoteUnit(idx)->configure(ru_def);
         }
     }
 
@@ -1032,15 +1210,17 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
 
 void DataSourceEditWidget::importMLATRemoteUnitsSlot()
 {
-    auto* ds = currentDataSource();
+    auto ds_db   = currentDBDataSource();
+    auto ds_conf = currentConfigDataSource();
+    auto ds      = currentDataSource();
 
     traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
+    traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
     auto    ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
     QString title   = QString::fromStdString("Select CSV File for Sensor '" + ds_name + "'");
-    QString path    = QString::fromStdString(ctx_man_.compass().lastUsedPath());
+    QString path    = QString::fromStdString(ds_man_.compass().lastUsedPath());
 
     QString fn = QFileDialog::getOpenFileName(this, title, path, "*.csv");
     if (fn.isEmpty())
@@ -1056,40 +1236,35 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
         return;
     }
 
-    auto addRUs = [ & ] (context::DataSource* ds)
+    auto addRUs = [ & ] (dbContent::DataSourceBase* ds)
     {
         if (!ds)
             return;
         
         ds->removeRemoteUnits();
-        // import remote units via info JSON
-        for (const auto& ru_pair : ru_defs) {
-            nlohmann::json ru_j;
-            ru_j["index"] = ru_pair.second.index;
-            ru_j["name"] = ru_pair.second.name;
-            ru_j["comment"] = ru_pair.second.comment;
-            ru_j["latitude"] = ru_pair.second.latitude;
-            ru_j["longitude"] = ru_pair.second.longitude;
-            ru_j["altitude"] = ru_pair.second.altitude;
-            ds->info()["remote_units"].push_back(ru_j);
-        }
+        ds->createRemoteUnits(ru_defs);
     };
 
-    addRUs(ds);
+    addRUs(ds_db);
+    addRUs(ds_conf);
     
     updateMLAT(ds);
 }
 
 void DataSourceEditWidget::clearMLATRemoteUnitsSlot()
 {
-    auto* ds = currentDataSource();
+    auto ds_db   = currentDBDataSource();
+    auto ds_conf = currentConfigDataSource();
+    auto ds      = currentDataSource();
 
     traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
+    traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
-    if (ds)
-        ds->removeRemoteUnits();
+    if (ds_db)
+        ds_db->removeRemoteUnits();
+    if (ds_conf)
+        ds_conf->removeRemoteUnits();
 
     updateMLAT(ds);
 }
@@ -1115,20 +1290,22 @@ void DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot()
     if (remote_units_list_->selectedItems().empty())
         return;
 
-    auto* ds = currentDataSource();
+    auto ds_db   = currentDBDataSource();
+    auto ds_conf = currentConfigDataSource();
+    auto ds      = currentDataSource();
 
     traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    traced_assert(!ds_conf || ds_conf->dsType() == "MLAT");
+    traced_assert(!ds_db || ds_db->dsType() == "MLAT");
 
     for (auto item : remote_units_list_->selectedItems())
     {
         int index = item->data(0, Qt::DisplayRole).toInt();
 
-        if (ds)
-            ds->removeRemoteUnit(index);
-        if (ds)
-            ds->removeRemoteUnit(index);
+        if (ds_db)
+            ds_db->removeRemoteUnit(index);
+        if (ds_conf)
+            ds_conf->removeRemoteUnit(index);
     }
 
     updateMLAT(ds);
@@ -1150,8 +1327,14 @@ void DataSourceEditWidget::addNetLinesSlot()
 
     traced_assert(has_current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->addNetworkLinesIfMissing();
+    if (current_ds_in_db_)
+    {
+        traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+        ds_man_.dbDataSource(current_ds_id_).addNetworkLinesIfMissing();
+    }
+
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    ds_man_.configDataSource(current_ds_id_).addNetworkLinesIfMissing();
 
     updateContent();
 }
@@ -1169,29 +1352,56 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
 
     traced_assert(has_current_ds_);
 
-    std::string line_key = line_id; // already "L1", "L2", etc.
-    auto* ds = currentDataSource();
-    if (!ds) return;
-
     if (item == "Listen IP" || item == "MCast IP" || item == "Sender IP")
     {
         string value = value_str.toStdString();
+
         loginf << "start" << line_id << " " << item << " ip '" << value << "'";
 
+        if (current_ds_in_db_)
+            traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+
+        traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+
         if (item == "Listen IP")
-            ds->info()["network_lines"][line_key]["listen_ip"] = value;
+        {
+            if (current_ds_in_db_)
+                ds_man_.dbDataSource(current_ds_id_).networkLine(line_id)->listenIP(value);
+
+            ds_man_.configDataSource(current_ds_id_).networkLine(line_id)->listenIP(value);
+        }
         else if (item == "MCast IP")
-            ds->info()["network_lines"][line_key]["mcast_ip"] = value;
+        {
+            if (current_ds_in_db_)
+                ds_man_.dbDataSource(current_ds_id_).networkLine(line_id)->mcastIP(value);
+
+            ds_man_.configDataSource(current_ds_id_).networkLine(line_id)->mcastIP(value);
+        }
         else // Sender IP
-            ds->info()["network_lines"][line_key]["listen_ip"] = value;
+        {
+            if (current_ds_in_db_)
+                ds_man_.dbDataSource(current_ds_id_).networkLine(line_id)->listenIP(value);
+
+            ds_man_.configDataSource(current_ds_id_).networkLine(line_id)->listenIP(value);
+        }
     }
     else // MCast Port
     {
         unsigned int value = value_str.toUInt();
+
         loginf << "start" << line_id << " " << item << " port '" << value << "'";
 
+        if (current_ds_in_db_)
+            traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+
+        traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+
         traced_assert(item == "MCast Port");
-        ds->info()["network_lines"][line_key]["mcast_port"] = value;
+
+            if (current_ds_in_db_)
+                ds_man_.dbDataSource(current_ds_id_).networkLine(line_id)->mcastPort(value);
+
+            ds_man_.configDataSource(current_ds_id_).networkLine(line_id)->mcastPort(value);
     }
 }
 
@@ -1200,24 +1410,68 @@ void DataSourceEditWidget::deleteSlot()
     loginf;
 
     traced_assert(has_current_ds_);
-    
+    traced_assert(!current_ds_in_db_);
 
     delete_ds_func_(current_ds_id_);
 
     clear();
 }
 
-context::DataSource* DataSourceEditWidget::currentDataSource()
+dbContent::DataSourceBase* DataSourceEditWidget::currentDataSource()
+{
+    if (!has_current_ds_)
+        return nullptr;
+    
+    dbContent::DataSourceBase* ds = nullptr;
+
+    if (current_ds_in_db_) // db && cfg
+        ds = currentDBDataSource();
+    else
+        ds = currentConfigDataSource();
+
+    traced_assert(ds);
+
+    return ds;
+}
+
+dbContent::DataSourceBase* DataSourceEditWidget::currentDBDataSource()
+{
+    if (!has_current_ds_ || !current_ds_in_db_)
+        return nullptr;
+
+    traced_assert(ds_man_.hasDBDataSource(current_ds_id_));
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    return dynamic_cast<dbContent::DataSourceBase*>(&ds_man_.dbDataSource(current_ds_id_));
+}
+
+dbContent::DataSourceBase* DataSourceEditWidget::currentConfigDataSource()
 {
     if (!has_current_ds_)
         return nullptr;
 
-    traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    return ctx_man_.dataSource(current_ds_id_);
+    traced_assert(ds_man_.hasConfigDataSource(current_ds_id_));
+    return dynamic_cast<dbContent::DataSourceBase*>(&ds_man_.configDataSource(current_ds_id_));
 }
 
 void DataSourceEditWidget::updateContent()
 {
+    traced_assert(name_edit_);
+    traced_assert(short_name_edit_);
+    traced_assert(dstype_combo_);
+    traced_assert(sac_sic_id_label_);
+    traced_assert(detection_type_combo_);
+    traced_assert(ground_only_check_);
+    traced_assert(position_widget_);
+    traced_assert(add_ranges_button_);
+    traced_assert(ranges_widget_);
+    traced_assert(accuracies_widget_);
+    traced_assert(add_accuracies_button_);
+    traced_assert(remote_units_widget_);
+    traced_assert(add_remote_units_button_);
+    traced_assert(add_remote_units_placeholder_);
+    traced_assert(net_widget_);
+    traced_assert(add_lines_button_);
+
     detection_type_combo_->blockSignals(true);
 
     auto ds = currentDataSource();
@@ -1229,18 +1483,23 @@ void DataSourceEditWidget::updateContent()
     else
     {
         updateMain(ds);
+
+        // position
         updatePosition(ds);
 
+        // radars
         if (ds->dsType() == "Radar")
             updateRadar(ds);
         else
             enableRadar(false);
 
+        // mlat
         if (ds->dsType() == "MLAT")
             updateMLAT(ds);
         else
             enableMLAT(false);
 
+        // lines
         if (show_network_lines_)
             updateNetwork(ds);
         else
@@ -1278,31 +1537,16 @@ void DataSourceEditWidget::enableCommon(bool enable)
     detection_type_combo_->setEnabled(enable);
 
     ground_only_check_->setVisible(enable);
-
-    // hide all optional rows when disabled
-    radar_ignore_label_->setVisible(false);
-    radar_ignore_azmrng_check_->setVisible(false);
-    psr_pd_label_->setVisible(false);
-    psr_pd_edit_->setVisible(false);
-    psr_clutter_rate_label_->setVisible(false);
-    psr_clutter_rate_edit_->setVisible(false);
-    latitude_label_->setVisible(false);
-    latitude_edit_->setVisible(false);
-    longitude_label_->setVisible(false);
-    longitude_edit_->setVisible(false);
-    altitude_label_->setVisible(false);
-    altitude_edit_->setVisible(false);
+    position_widget_->setVisible(enable);
 }
 
 void DataSourceEditWidget::enableRadar(bool enable)
 {
-    radar_ignore_label_->setVisible(enable);
-    radar_ignore_azmrng_check_->setVisible(enable);
-    psr_pd_label_->setVisible(false);
-    psr_pd_edit_->setVisible(false);
-    psr_clutter_rate_label_->setVisible(false);
-    psr_clutter_rate_edit_->setVisible(false);
+    radar_widget_->setVisible(enable);
+    psr_jpda_widget_->setVisible(enable);
 
+    // tab_widget_->setTabVisible(tabIndex(TabRadarAccuraciesName), enable);
+    // tab_widget_->setTabVisible(tabIndex(TabRadarRangesName), enable);
     setTabVisibleCompat(tabIndex(TabRadarAccuraciesName), enable);
     setTabVisibleCompat(tabIndex(TabRadarRangesName), enable);
 }
@@ -1319,7 +1563,7 @@ void DataSourceEditWidget::enableNetwork(bool enable)
     setTabVisibleCompat(tabIndex(TabNetworkLinesName), enable);
 }
 
-void DataSourceEditWidget::updateMain(context::DataSource* ds)
+void DataSourceEditWidget::updateMain(dbContent::DataSourceBase* ds)
 {
     name_edit_->setText(ds->name().c_str());
     name_edit_->setDisabled(false);
@@ -1344,8 +1588,8 @@ void DataSourceEditWidget::updateMain(context::DataSource* ds)
         update_interval_edit_->setText("");
 
     detection_type_combo_->setDisabled(false);
-    auto current_type = ds->detectionTypeInt();
-    detection_type_combo_->setCurrentIndex(current_type);
+    auto current_type = ds->detectionType();
+    detection_type_combo_->setCurrentIndex((int)current_type);
 
     traced_assert (ground_only_check_);
     ground_only_check_->setHidden(false);
@@ -1354,7 +1598,7 @@ void DataSourceEditWidget::updateMain(context::DataSource* ds)
     loginf << "ds_type " << ds->dsType() << " has pos " << ds->hasPosition();
 }
 
-void DataSourceEditWidget::updatePosition(context::DataSource* ds)
+void DataSourceEditWidget::updatePosition(dbContent::DataSourceBase* ds)
 {
     if (ds->hasPosition())
     {
@@ -1369,37 +1613,33 @@ void DataSourceEditWidget::updatePosition(context::DataSource* ds)
         altitude_edit_->setText("0");
     }
 
-    latitude_label_->setVisible(true);
-    latitude_edit_->setVisible(true);
-    longitude_label_->setVisible(true);
-    longitude_edit_->setVisible(true);
-    altitude_label_->setVisible(true);
-    altitude_edit_->setVisible(true);
+    position_widget_->setHidden(false);
 }
 
-void DataSourceEditWidget::updateRadar(context::DataSource* ds)
+void DataSourceEditWidget::updateRadar(dbContent::DataSourceBase* ds)
 {
-    radar_ignore_label_->setVisible(true);
-    radar_ignore_azmrng_check_->setVisible(true);
+    traced_assert (radar_widget_);
+    radar_widget_->setHidden(false);
+
     radar_ignore_azmrng_check_->setChecked(ds->ignoreRadarAzmRange());
 
-    bool show_jpda = (ds->detectionTypeInt() == 1); // PrimaryOnly
-    psr_pd_label_->setVisible(show_jpda);
-    psr_pd_edit_->setVisible(show_jpda);
-    psr_clutter_rate_label_->setVisible(show_jpda);
-    psr_clutter_rate_edit_->setVisible(show_jpda);
-
-    if (show_jpda)
+    if (ds->detectionType() == DataSourceBase::DetectionType::PrimaryOnly)
     {
-        if (ds->info().contains("pd"))
+        psr_jpda_widget_->setHidden(false);
+
+        if (ds->hasProbabilityOfDetection())
             psr_pd_edit_->setText(QString::number(ds->probabilityOfDetection()));
         else
             psr_pd_edit_->setText("");
 
-        if (ds->info().contains("clutter_rate"))
+        if (ds->hasClutterRate())
             psr_clutter_rate_edit_->setText(QString::number(ds->clutterRate()));
         else
-            psr_clutter_rate_edit_->setText("");
+            psr_clutter_rate_edit_->setText("");            
+    }
+    else
+    {
+        psr_jpda_widget_->setHidden(true);
     }
 
     if (ds->hasRadarRanges())
@@ -1504,7 +1744,7 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
     setTabVisibleCompat(tabIndex(TabRadarRangesName), true);
 }
 
-void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
+void DataSourceEditWidget::updateMLAT(dbContent::DataSourceBase* ds)
 {
     traced_assert(remote_units_widget_);
     traced_assert(remote_units_list_);
@@ -1517,15 +1757,17 @@ void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
         remote_units_list_->blockSignals(true);
         remote_units_list_->clear();
 
-        for (const auto& ru_json : ds->info().value("remote_units", nlohmann::json::array()))
+        for (const auto& ru : ds->remoteUnits())
         {
+            traced_assert(ru.second);
+
             auto item = new QTreeWidgetItem;
-            item->setData(0, Qt::DisplayRole, ru_json.value("index", -1));
-            item->setData(1, Qt::DisplayRole, QString::fromStdString(ru_json.value("name", "")));
-            item->setData(2, Qt::DisplayRole, QString::fromStdString(ru_json.value("comment", "")));
-            item->setData(3, Qt::DisplayRole, ru_json.value("latitude", 0.0));
-            item->setData(4, Qt::DisplayRole, ru_json.value("longitude", 0.0));
-            item->setData(5, Qt::DisplayRole, ru_json.value("altitude", 0.0));
+            item->setData(0, Qt::DisplayRole, ru.second->index());
+            item->setData(1, Qt::DisplayRole, QString::fromStdString(ru.second->name()));
+            item->setData(2, Qt::DisplayRole, QString::fromStdString(ru.second->comment()));
+            item->setData(3, Qt::DisplayRole, ru.second->latitude());
+            item->setData(4, Qt::DisplayRole, ru.second->longitude());
+            item->setData(5, Qt::DisplayRole, ru.second->altitude());
 
             remote_units_list_->addTopLevelItem(item);
         }
@@ -1543,7 +1785,7 @@ void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
     setTabVisibleCompat(tabIndex(TabMLATRemoteUnitsName), true);
 }
 
-void DataSourceEditWidget::updateNetwork(context::DataSource* ds)
+void DataSourceEditWidget::updateNetwork(dbContent::DataSourceBase* ds)
 {
     traced_assert(net_widget_);
 
@@ -1552,20 +1794,28 @@ void DataSourceEditWidget::updateNetwork(context::DataSource* ds)
         add_lines_button_->setHidden(true);
         net_widget_->setHidden(false);
 
-        nlohmann::json lines_json = ds->info()["network_lines"];
+        std::map<std::string, std::shared_ptr<DataSourceLineInfo>> lines = ds->networkLines();
 
         for (auto& edit_it : net_edits_)  // line -> edits
         {
             traced_assert(edit_it.second.size() == 4);
 
-            if (lines_json.contains(edit_it.first))  // exists, set
+            if (lines.count(edit_it.first))  // exists, set
             {
-                const auto& line_json = lines_json.at(edit_it.first);
+                std::shared_ptr<DataSourceLineInfo> line = lines.at(edit_it.first);
 
-                edit_it.second.at(0)->setText(QString::fromStdString(line_json.value("listen_ip", "")));
-                edit_it.second.at(1)->setText(QString::fromStdString(line_json.value("mcast_ip", "")));
-                edit_it.second.at(2)->setText(QString::number(line_json.value("mcast_port", 0u)));
-                edit_it.second.at(3)->setText(QString::fromStdString(line_json.value("sender_ip", "")));
+                if (line->hasListenIP())
+                    edit_it.second.at(0)->setText(line->listenIP().c_str());
+                else
+                    edit_it.second.at(0)->setText("");
+
+                edit_it.second.at(1)->setText(line->mcastIP().c_str());
+                edit_it.second.at(2)->setText(QString::number(line->mcastPort()));
+
+                if (line->hasSenderIP())
+                    edit_it.second.at(3)->setText(line->senderIP().c_str());
+                else
+                    edit_it.second.at(3)->setText("");
             }
             else  // nope, clear
             {

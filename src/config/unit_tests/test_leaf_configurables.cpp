@@ -19,6 +19,8 @@
 
 #include "unit.h"
 #include "dimension.h"
+#include "source/configurationdatasource.h"
+#include "configurationfft.h"
 #include "asterixcategoryconfig.h"
 #include "json.hpp"
 
@@ -99,6 +101,91 @@ TEST_CASE("Unit construction", "[leaf][unit]")
         Unit u(cfg, &length);
 
         REQUIRE(u.getPath() == "Length0.metre0");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ConfigurationDataSource
+// ---------------------------------------------------------------------------
+
+TEST_CASE("ConfigurationDataSource construction", "[leaf][datasource]")
+{
+    SECTION("reads parameters from json")
+    {
+        json cfg = makeConfig("ConfigurationDataSource", "DS0", {
+            {"ds_type", "Radar"}, {"sac", 1u}, {"sic", 2u},
+            {"name", "TestRadar"}, {"has_short_name", true},
+            {"short_name", "TR"}, {"info", nullptr}
+        });
+        dbContent::ConfigurationDataSource ds(cfg, nullptr);
+
+        REQUIRE(ds.name() == "TestRadar");
+        REQUIRE(ds.sac() == 1u);
+        REQUIRE(ds.sic() == 2u);
+        REQUIRE(ds.dsType() == "Radar");
+        REQUIRE(ds.hasShortName());
+        REQUIRE(ds.shortName() == "TR");
+    }
+
+    SECTION("write-back preserves values")
+    {
+        json cfg = makeConfig("ConfigurationDataSource", "DS1", {
+            {"ds_type", "ADSB"}, {"sac", 10u}, {"sic", 20u},
+            {"name", "ADS-B Sensor"}, {"has_short_name", false},
+            {"short_name", ""}, {"info", nullptr}
+        });
+        dbContent::ConfigurationDataSource ds(cfg, nullptr);
+
+        ds.writeBackConfig();
+
+        REQUIRE(cfg["parameters"]["ds_type"].get<std::string>() == "ADSB");
+        REQUIRE(cfg["parameters"]["name"].get<std::string>() == "ADS-B Sensor");
+    }
+
+    SECTION("getPath works")
+    {
+        json cfg = makeConfig("ConfigurationDataSource", "DS0", {
+            {"ds_type", "Radar"}, {"sac", 1u}, {"sic", 2u},
+            {"name", "R1"}, {"has_short_name", false},
+            {"short_name", ""}, {"info", nullptr}
+        });
+        dbContent::ConfigurationDataSource ds(cfg, nullptr);
+
+        REQUIRE(ds.getPath() == "DS0");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ConfigurationFFT
+// ---------------------------------------------------------------------------
+
+TEST_CASE("ConfigurationFFT construction", "[leaf][fft]")
+{
+    SECTION("reads parameters from json")
+    {
+        json cfg = makeConfig("ConfigurationFFT", "FFT0",
+                              {{"name", "FFT_Alpha"}, {"info", nullptr}});
+        ConfigurationFFT fft(cfg, nullptr);
+
+        REQUIRE(fft.name() == "FFT_Alpha");
+    }
+
+    SECTION("uses defaults for empty json")
+    {
+        json cfg = makeConfig("ConfigurationFFT", "FFT0");
+        ConfigurationFFT fft(cfg, nullptr);
+
+        REQUIRE(fft.name().empty());
+    }
+
+    SECTION("write-back updates json")
+    {
+        json cfg = makeConfig("ConfigurationFFT", "FFT0",
+                              {{"name", "FFT_Beta"}, {"info", nullptr}});
+        ConfigurationFFT fft(cfg, nullptr);
+
+        fft.writeBackConfig();
+        REQUIRE(cfg["parameters"]["name"].get<std::string>() == "FFT_Beta");
     }
 }
 

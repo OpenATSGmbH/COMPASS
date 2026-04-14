@@ -25,6 +25,8 @@
 #include "logmodel.h"
 #include "property.h"
 #include "propertylist.h"
+#include "source/dbdatasource.h"
+#include "dbfft.h"
 #include "util/timeconv.h"
 #include "dbinterface.h"
 
@@ -189,6 +191,92 @@ std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
         loginf << "sql '" << ss.str() << "'";
 
     return ss.str();
+}
+
+/**
+ */
+shared_ptr<DBCommand> SQLGenerator::getDataSourcesSelectCommand()
+{
+    using namespace dbContent;
+
+    PropertyList list;
+    list.addProperty(DBDataSource::id_column_);
+    list.addProperty(DBDataSource::ds_type_column_);
+    list.addProperty(DBDataSource::sac_column_);
+    list.addProperty(DBDataSource::sic_column_);
+    list.addProperty(DBDataSource::name_column_);
+    list.addProperty(DBDataSource::short_name_);
+    list.addProperty(DBDataSource::info_column_);
+    list.addProperty(DBDataSource::counts_column_);
+
+    shared_ptr<DBCommand> command = make_shared<DBCommand>(DBCommand());
+
+    stringstream ss;
+
+    ss << "SELECT ";
+
+    bool first = true;
+
+    for (const auto& prop_it : list.properties())
+    {
+        if (!first)
+            ss << ",";
+
+        ss << " " << prop_it.name();
+
+        first = false;
+    }
+
+    ss << " FROM ";
+
+    ss << DBDataSource::table_name_;
+
+    ss << ";";
+
+    command->set(ss.str());
+    command->list(list);
+
+    return command;
+}
+
+/**
+ */
+shared_ptr<DBCommand> SQLGenerator::getFFTSelectCommand()
+{
+    using namespace dbContent;
+
+    PropertyList list;
+    list.addProperty(DBDataSource::name_column_);
+    list.addProperty(DBDataSource::info_column_);
+
+    shared_ptr<DBCommand> command = make_shared<DBCommand>(DBCommand());
+
+    stringstream ss;
+
+    ss << "SELECT ";
+
+    bool first = true;
+
+    for (const auto& prop_it : list.properties())
+    {
+        if (!first)
+            ss << ",";
+
+        ss << " " << prop_it.name();
+
+        first = false;
+    }
+
+    ss << " FROM ";
+
+    ss << DBFFT::table_name_;
+
+    ss << ";";
+
+    command->set(ss.str());
+    command->list(list);
+
+    return command;
 }
 
 /**
@@ -612,6 +700,42 @@ string SQLGenerator::getTablePropertiesCreateStatement()
 
 /**
  */
+std::string SQLGenerator::getTableDataSourcesCreateStatement()
+{
+    stringstream ss;
+
+    ss << "CREATE TABLE " << DBDataSource::table_name_ << "("
+        << DBDataSource::id_column_.name() << " "  << DBDataSource::id_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::ds_type_column_.name() << " "  << DBDataSource::ds_type_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::sac_column_.name() << " "  << DBDataSource::sac_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::sic_column_.name() << " "  << DBDataSource::sic_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::name_column_.name() << " "  << DBDataSource::name_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::short_name_.name() << " "  << DBDataSource::short_name_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::info_column_.name() << " "  << DBDataSource::info_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBDataSource::counts_column_.name() << " "  << DBDataSource::counts_column_.dbDataTypeString(config_.precise_types) << ", " 
+        << "PRIMARY KEY (" << DBDataSource::id_column_.name() << ")"
+        << ");";
+    
+    return ss.str();
+}
+
+/**
+ */
+std::string SQLGenerator::getTableFFTsCreateStatement()
+{
+    stringstream ss;
+
+    ss << "CREATE TABLE " << DBFFT::table_name_ << "("
+        << DBFFT::name_column_.name() << " "  << DBFFT::name_column_.dbDataTypeString(config_.precise_types) << ", "
+        << DBFFT::info_column_.name() << " "  << DBFFT::info_column_.dbDataTypeString(config_.precise_types) << ", "
+        << "PRIMARY KEY (" << DBFFT::name_column_.name() << ")"
+        << ");";
+    
+    return ss.str();
+}
+
+/**
+ */
 string SQLGenerator::getTableSectorsCreateStatement()
 {
     stringstream ss;
@@ -644,60 +768,6 @@ std::string SQLGenerator::getTableTargetsCreateStatement()
 std::string SQLGenerator::getTableTaskLogCreateStatement()
 {
     return getCreateTableStatement(TABLE_NAME_TASK_LOG, LogStore::LogEntry::DBPropertyList, 0);
-}
-
-std::string SQLGenerator::getTableDBContextCreateStatement()
-{
-    stringstream ss;
-    ss << "CREATE TABLE " << TABLE_NAME_DB_CONTEXT
-       << "(section VARCHAR(64), json TEXT, PRIMARY KEY (section));";
-    return ss.str();
-}
-
-std::string SQLGenerator::getReplaceDBContextSectionStatement(const string& section, const string& json)
-{
-    return replaceStatement(TABLE_NAME_DB_CONTEXT, { section, json });
-}
-
-std::string SQLGenerator::getSelectDBContextSectionStatement(const string& section)
-{
-    stringstream ss;
-    ss << "SELECT json FROM " << TABLE_NAME_DB_CONTEXT << " WHERE section = '" << section << "';";
-    return ss.str();
-}
-
-std::string SQLGenerator::getSelectAllDBContextSectionsStatement()
-{
-    stringstream ss;
-    ss << "SELECT section, json FROM " << TABLE_NAME_DB_CONTEXT << ";";
-    return ss.str();
-}
-
-std::string SQLGenerator::getTableDBInfoCreateStatement()
-{
-    stringstream ss;
-    ss << "CREATE TABLE " << TABLE_NAME_DB_INFO
-       << "(name VARCHAR(256), json TEXT, PRIMARY KEY (name));";
-    return ss.str();
-}
-
-std::string SQLGenerator::getReplaceDBInfoStatement(const string& name, const string& json)
-{
-    return replaceStatement(TABLE_NAME_DB_INFO, { name, json });
-}
-
-std::string SQLGenerator::getSelectDBInfoStatement(const string& name)
-{
-    stringstream ss;
-    ss << "SELECT json FROM " << TABLE_NAME_DB_INFO << " WHERE name = '" << name << "';";
-    return ss.str();
-}
-
-std::string SQLGenerator::getDeleteDBInfoStatement(const string& name)
-{
-    stringstream ss;
-    ss << "DELETE FROM " << TABLE_NAME_DB_INFO << " WHERE name = '" << name << "';";
-    return ss.str();
 }
 
 /**

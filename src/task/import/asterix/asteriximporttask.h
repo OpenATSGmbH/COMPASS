@@ -40,6 +40,7 @@ class COMPASS;
 class DBContentManager;
 class TaskManager;
 
+class ASTERIXCategoryConfig;
 class ASTERIXStatusDialog;
 
 class QProgressDialog;
@@ -151,16 +152,13 @@ protected:
 
     void insertData(); // inserts queued job buffers
     void checkAllDone();
-    void logRAMUsage(const std::string& context);
 
     bool maxLoadReached();
     void updateFileProgressDialog(bool force=false);
 
     void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
-    void initjASTERIX() const;        // create decoder, validate framings — no context needed
-    void configurejASTERIX() const;   // apply context category configs to decoder — needs context
-    void refreshjASTERIX() const;     // init + configure
+    void refreshjASTERIX() const;
 
     void sourceChanged();
 
@@ -177,6 +175,7 @@ protected:
     ASTERIXPostProcess post_process_;
 
     //sub-configurables
+    std::map<unsigned int, ASTERIXCategoryConfig> category_configs_;
     std::shared_ptr<ASTERIXJSONParsingSchema>     schema_;
 
     std::unique_ptr<ASTERIXDecoderBase> decoder_;
@@ -214,6 +213,4 @@ protected:
 
     bool insert_slot_connected_ {false};
     bool all_done_{false};
-
-    float max_process_ram_gb_{0.0f};
 };

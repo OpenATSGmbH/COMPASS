@@ -2438,14 +2438,7 @@ namespace colorscale
         { 1.0, 0.0, 0.0 }
     };
 
-    static const double ScaleRed2Green[][3] =
-    {
-        { 1.0, 0.0, 0.0 },
-        { 1.0, 0.6, 0.0 },
-        { 0.0, 1.0, 0.0 }
-    };
-
-    static const double ScaleBlue2Green2Red[][3] =
+    static const double ScaleBlue2Green2Red[][3] = 
     {
         { 0.0, 0.0, 1.0 },
         { 0.0, 0.6, 1.0 },
@@ -2695,11 +2688,6 @@ namespace colorscale
         return interpColor(t, ScaleGreen2Red);
     }
 
-    inline Eigen::Vector3d sampleRed2Green(double t)
-    {
-        return interpColor(t, ScaleRed2Green);
-    }
-
     inline Eigen::Vector3d sampleBlue2Green2Red(double t)
     {
         return interpColor(t, ScaleBlue2Green2Red);
@@ -2757,8 +2745,6 @@ namespace colorscale
                 return sampleHSV(t);
             case ColorScale::Green2Red:
                 return sampleGreen2Red(t);
-            case ColorScale::Red2Green:
-                return sampleRed2Green(t);
             case ColorScale::Blue2Green2Red:
                 return sampleBlue2Green2Red(t);
             default:
@@ -2819,8 +2805,6 @@ namespace colorscale
                 return "HSV";
             case ColorScale::Green2Red:
                 return "Green2Red";
-            case ColorScale::Red2Green:
-                return "Red2Green";
             case ColorScale::Blue2Green2Red:
                 return "Blue2Green2Red";
             case ColorScale::Custom:

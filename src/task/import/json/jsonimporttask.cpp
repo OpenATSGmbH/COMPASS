@@ -30,7 +30,7 @@
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "asteriximporttask.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -1063,8 +1063,8 @@ void JSONImportTask::insertDoneSlot()
                    this, &JSONImportTask::insertDoneSlot);
         insert_slot_connected_ = false;
 
-        compass_.dbContextManager().writeContextToDB();
-        emit compass_.dbContextManager().activeContextChangedSignal();
+        compass_.dataSourceManager().saveDBDataSources();
+        emit compass_.dataSourceManager().dataSourcesChangedSignal();
 
         //emit doneSignal(name_); emitted in checkAllDone
     }

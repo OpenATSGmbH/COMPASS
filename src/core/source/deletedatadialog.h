@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace context { class DBContextManager; }
+class DataSourceManager;
 class QCheckBox;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -36,7 +36,7 @@ class DeleteDataDialog : public QDialog
     Q_OBJECT
 
 public:
-    DeleteDataDialog(context::DBContextManager& ctx_man, QWidget* parent = nullptr);
+    DeleteDataDialog(DataSourceManager& ds_man, QWidget* parent = nullptr);
     virtual ~DeleteDataDialog() = default;
 
     nlohmann::json selectedDeleteInfo() const;
@@ -45,10 +45,6 @@ public:
 private:
     void createUI();
     void populateDataSourcesTree();
-    void itemChangedSlot(QTreeWidgetItem* item, int column);
-    void showTreeContextMenu(const QPoint& pos);
-
-    static void setCheckRecursive(QTreeWidgetItem* item, Qt::CheckState state);
 
     struct SelectedDS
     {
@@ -61,7 +57,7 @@ private:
     void collectSelections(std::set<std::string>& dbcontents,
                            std::vector<SelectedDS>& data_sources) const;
 
-    context::DBContextManager& ctx_man_;
+    DataSourceManager& ds_man_;
 
     std::map<std::string, QCheckBox*> dbcontent_checks_;
     QTreeWidget* ds_tree_{nullptr};

@@ -83,10 +83,6 @@ public:
     bool itemHidden() const;
 
     const std::string& name() const { return name_; }
-    bool hasDataSeries() const { return data_series_ != nullptr; }
-    QColor color() const;
-    void setColor(const QColor& color);
-    void emitColorChanged();
 
     // void moveChildUp(OSGLayerTreeItem* child);
     // void moveChildDown(OSGLayerTreeItem* child);

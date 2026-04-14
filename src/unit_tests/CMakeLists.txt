@@ -10,7 +10,6 @@ set_target_properties(compass_tests PROPERTIES AUTOMOC OFF)
 # Include tests from library subfolders
 include("${CMAKE_SOURCE_DIR}/src/config/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/unit_tests/CMakeLists.txt")
-include("${CMAKE_SOURCE_DIR}/src/core/context/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 

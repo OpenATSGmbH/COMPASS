@@ -20,7 +20,7 @@
 #include "toolboxwidget.h"
 
 class DataSourcesStatusWidget;
-namespace context { class DBContextManager; }
+class DataSourceManager;
 
 class QComboBox;
 class QTextEdit;
@@ -38,7 +38,7 @@ class DataSourcesStatusToolWidget : public ToolBoxWidget
 public:
     typedef std::map<unsigned int, std::vector<unsigned int>> ActiveTrackerLines;
 
-    DataSourcesStatusToolWidget(context::DBContextManager& ctx_man);
+    DataSourcesStatusToolWidget(DataSourceManager& ds_man);
     virtual ~DataSourcesStatusToolWidget();
 
     //ToolBoxWidget
@@ -78,7 +78,7 @@ private:
     void eventBoxSliderChanged(int value);
     void eventFollowBoxToggled(bool ok);
 
-    context::DBContextManager& ctx_man_;
+    DataSourceManager&       ds_man_;
     DataSourcesStatusWidget* ds_widget_{nullptr};
 
     QSplitter*   main_splitter_          = nullptr;

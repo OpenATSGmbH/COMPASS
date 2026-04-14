@@ -23,7 +23,7 @@
 
 #include <memory>
 
-namespace context { class DBContextManager; }
+class DataSourceManager;
 class DataSourceTableModel;
 class DataSourceEditWidget;
 
@@ -50,10 +50,10 @@ public slots:
     void doneClickedSlot();
 
 public:
-    DataSourcesConfigurationDialog(context::DBContextManager& ctx_man);
+    DataSourcesConfigurationDialog(DataSourceManager& ds_man);
 
 protected:
-    context::DBContextManager& ctx_man_;
+    DataSourceManager& ds_man_;
 
     QTableView* table_view_{nullptr};
     QSortFilterProxyModel* proxy_model_{nullptr};

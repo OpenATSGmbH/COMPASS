@@ -25,7 +25,7 @@
 #include <set>
 #include <functional>
 
-namespace context { class DBContextManager; }
+class DataSourceManager;
 class DataSourceEditWidget;
 
 class QGridLayout;
@@ -49,7 +49,7 @@ class DataSourcesUseWidget : public DataSourcesWidget
     void dataSourceSelectedSlot(unsigned int ds_id);
 
   public:
-    DataSourcesUseWidget(context::DBContextManager& ctx_man,
+    DataSourcesUseWidget(DataSourceManager& ds_man,
                          std::function<bool(const std::string&)> get_use_dstype_func,
                          std::function<void(const std::string&,bool)> set_use_dstype_func,
                          std::function<bool(unsigned int)> get_use_ds_func,

@@ -29,9 +29,9 @@
 #include "util/timeconv.h"
 #include "global.h"
 #include "kalman_chain.h"
-#include "db_context_manager.h"
+#include "fftmanager.h"
 #include "timeddataseries.h"
-#include "datasourcebase.h" // for dbContent::DataSourceType enum
+#include "datasourcemanager.h"
 
 #include <boost/optional/optional_io.hpp>
 
@@ -83,7 +83,7 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
             other_age_ = 0.0;
             break;            
         default:
-            logerr << "unknown ds type " << dbContent::DataSourceBase::dsTypeToString(tr.ds_type_);
+            logerr << "unknown ds type " << DataSourceManager::stringFromType(tr.ds_type_);
             break;
     }    
 
@@ -503,7 +503,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     if (!ecat_ || *ecat_ == 0) // check for FFT
     {
-        auto& ctx_man = reconstructor_.task().manager().compass().dbContextManager();
+        FFTManager& fft_man = reconstructor_.task().manager().compass().fftManager();
 
         boost::optional<float> baro_altitude_ft;
 
@@ -520,7 +520,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         bool is_from_fft;
         float fft_altitude_ft;
 
-        std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
+        std::tie(is_from_fft, fft_altitude_ft) = fft_man.isFromFFT(
             tr.position_->latitude_, tr.position_->longitude_, tr.acad_, tr.dbcont_id_ == 1,
             mode_a_code, baro_altitude_ft);
 

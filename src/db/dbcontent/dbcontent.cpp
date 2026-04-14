@@ -22,8 +22,7 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentwidget.h"
-#include "db_context_manager.h"
-#include "util/number.h"
+#include "datasourcemanager.h"
 #include "dbcontentreaddbjob.h"
 #include "dbcontent/variable/variable.h"
 #include "filtermanager.h"
@@ -284,13 +283,13 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
     string filter_clause;
 
-    auto& ctx_man = compass_.dbContextManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     dbContent::VariableSet read_set_copy = read_set;
 
-    if (use_datasrc_filters && (ctx_man.hasDSFilter(name_) || ctx_man.lineSpecificLoadingRequired(name_)))
+    if (use_datasrc_filters && (ds_man.hasDSFilter(name_) || ds_man.lineSpecificLoadingRequired(name_)))
     {
-        vector<unsigned int> ds_ids_to_load = ctx_man.unfilteredDS(name_);
+        vector<unsigned int> ds_ids_to_load = ds_man.unfilteredDS(name_);
         traced_assert(ds_ids_to_load.size());
 
         traced_assert(hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
@@ -298,7 +297,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
         Variable& datasource_var = variable(dbcontent_vars::meta_var_ds_id_.name());
         traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
 
-        if (ctx_man.lineSpecificLoadingRequired(name_)) // ds specific line loading
+        if (ds_man.lineSpecificLoadingRequired(name_)) // ds specific line loading
         {
             logdbg << name_ << ": load: line specific loading wanted";
 
@@ -311,7 +310,9 @@ void DBContent::load(dbContent::VariableSet& read_set,
 
             for (auto ds_id_it : ds_ids_to_load)
             {
-                traced_assert(ctx_man.hasDataSource(ds_id_it));
+                traced_assert(ds_man.hasDBDataSource(ds_id_it));
+
+                DBDataSource& src = ds_man.dbDataSource(ds_id_it);
 
                 // prefix
                 if (filter_clause.size())
@@ -322,19 +323,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
                 // add data source specific part
                 filter_clause += " (" + datasource_var.dbColumnName() + " = " + to_string(ds_id_it);
 
-                // check if any lines should be loaded for this ds
-                bool any_lines_wanted = false;
-                std::vector<unsigned int> wanted_lines;
-                for (unsigned int line = 0; line < 4; ++line)
-                {
-                    if (ctx_man.lineLoadingWanted(ds_id_it, line))
-                    {
-                        any_lines_wanted = true;
-                        wanted_lines.push_back(line);
-                    }
-                }
-
-                if (!any_lines_wanted)
+                if (!src.anyLinesLoadingWanted()) // check if any lines should be loaded
                 {
                     filter_clause += " AND " + line_var.dbColumnName() + " IN ())"; // empty lines to load
 
@@ -345,7 +334,7 @@ void DBContent::load(dbContent::VariableSet& read_set,
                 filter_clause += " AND " + line_var.dbColumnName() + " IN (";
 
                 bool first = true;
-                for (auto line_it : wanted_lines)
+                for (auto line_it : src.getLoadingWantedLines())
                 {
                     if (!first)
                         filter_clause += ",";
@@ -519,7 +508,7 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 
     traced_assert(buffer->has<boost::posix_time::ptime>(timestamp_col_str));
 
-    auto& ctx_man = compass_.dbContextManager();
+    DataSourceManager& ds_man = compass_.dataSourceManager();
 
     NullableVector<unsigned int>& datasource_vec = buffer->get<unsigned int>(datasource_col_str);
     NullableVector<unsigned int>& line_vec = buffer->get<unsigned int>(line_col_str);
@@ -545,29 +534,27 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 
     for (auto& ds_id_it : line_counts) // ds_id -> line -> cnt
     {
-        // add data source if not yet known
-        if (!ctx_man.hasDataSource(ds_id_it.first))
+        // add s
+        if (!ds_man.hasDBDataSource(ds_id_it.first))
         {
-            unsigned int sac = Number::sacFromDsId(ds_id_it.first);
-            unsigned int sic = Number::sicFromDsId(ds_id_it.first);
-            ctx_man.createDataSource(sac, sic);
+            ds_man.addNewDataSource(ds_id_it.first, false);
             ds_added = true;
         }
 
-        traced_assert(ctx_man.hasDataSource(ds_id_it.first));
+        traced_assert(ds_man.hasDBDataSource(ds_id_it.first));
 
         for (auto& line_cnt_it : ds_id_it.second) // line -> cnt
-            ctx_man.addNumInserted(ds_id_it.first, name_, line_cnt_it.first, line_cnt_it.second);
+            ds_man.dbDataSource(ds_id_it.first).addNumInserted(name_, line_cnt_it.first, line_cnt_it.second);
 
         if (line_tods.count(ds_id_it.first))
         {
             for (auto& line_tod_it : line_tods.at(ds_id_it.first))
-                ctx_man.maxTimestamp(ds_id_it.first, line_tod_it.first, line_tod_it.second);
+                ds_man.dbDataSource(ds_id_it.first).maxTimestamp(line_tod_it.first, line_tod_it.second);
         }
     }
 
     if (ds_added)
-        emit ctx_man.activeContextChangedSignal();
+        emit ds_man.dataSourcesChangedSignal();
 }
 
 /**
@@ -714,8 +701,8 @@ void DBContent::deleteJobDoneSlot()
 
     delete_job_ = nullptr;
 
-    compass_.dbContextManager().writeContextToDB();
-    emit compass_.dbContextManager().activeContextChangedSignal();
+    compass_.dataSourceManager().saveDBDataSources();
+    emit compass_.dataSourceManager().dataSourcesChangedSignal();
 
     // remove from inserted count
     //compass_.dataSourceManager().clearInsertedCounts(name_);

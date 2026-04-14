@@ -44,6 +44,7 @@ class Job;
 class Sector;
 class SectorLayer;
 class Result;
+class DBFFT;
 class DBContent;
 
 class PropertyList;
@@ -52,6 +53,7 @@ class DBContentManager;
 
 namespace dbContent
 {
+    class DBDataSource;
     class Variable;
     class Target;
 }
@@ -71,9 +73,7 @@ static const std::string TABLE_NAME_PROPERTIES = "properties";
 static const std::string TABLE_NAME_SECTORS    = "sectors";
 static const std::string TABLE_NAME_VIEWPOINTS = "viewpoints";
 static const std::string TABLE_NAME_TARGETS    = "targets";
-static const std::string TABLE_NAME_TASK_LOG    = "task_log";
-static const std::string TABLE_NAME_DB_CONTEXT  = "db_context";
-static const std::string TABLE_NAME_DB_INFO     = "db_info";
+static const std::string TABLE_NAME_TASK_LOG   = "task_log";
 
 extern const std::string PROP_TIMESTAMP_MIN_NAME;
 extern const std::string PROP_TIMESTAMP_MAX_NAME;
@@ -111,6 +111,20 @@ public:
     bool ready() const;
 
     const DBInstance& dbInstance() const;
+
+    // data sources
+    bool existsDataSourcesTable();
+    void createDataSourcesTable();
+    std::vector<std::unique_ptr<dbContent::DBDataSource>> getDataSources();
+    void saveDataSources(const std::vector<std::unique_ptr<dbContent::DBDataSource>>& data_sources);
+    // clears previous and saves new ones
+
+    // ffts
+    bool existsFFTsTable();
+    void createFFTsTable();
+    std::vector<std::unique_ptr<DBFFT>> getFFTs();
+    void saveFFTs(const std::vector<std::unique_ptr<DBFFT>>& ffts);
+    // clears previous and saves new ones
 
     // insert data and create associated data sources
     void insertDBContent(DBContent& dbcontent, std::shared_ptr<Buffer> buffer);
@@ -179,22 +193,6 @@ public:
     void createTaskLogTable();
     std::vector<nlohmann::json> loadTaskLogInfo();
     void saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& info);
-
-    // db_context table — stores the active DBContext per DB
-    bool existsDBContextTable();
-    void createDBContextTable();
-    void saveDBContextSection(const std::string& section, const std::string& json_str);
-    std::string loadDBContextSection(const std::string& section);
-    std::map<std::string, std::string> loadAllDBContextSections();
-    void clearDBContextTable();
-
-    // db_info table — generic key-value metadata (runtime state, etc.)
-    bool existsDBInfoTable();
-    void createDBInfoTable();
-    void saveDBInfo(const std::string& name, const std::string& json_str);
-    std::string loadDBInfo(const std::string& name);
-    bool hasDBInfo(const std::string& name);
-    void removeDBInfo(const std::string& name);
 
     void clearAssociations(const DBContent& dbcontent);
 

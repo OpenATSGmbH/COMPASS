@@ -9,6 +9,7 @@
         "task_calc_artas_assoc.json",
         "task_import_gps.json",
         "task_import_json.json",
+        "task_manage_sectors.json",
         "task_calc_radar_pos.json",
         "task_reconstructor.json",
         "task_import_view_points.json"

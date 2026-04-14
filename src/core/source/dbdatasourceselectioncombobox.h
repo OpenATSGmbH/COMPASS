@@ -17,10 +17,8 @@
 
 #pragma once
 
-#include "db_context_manager.h"
-#include "data_source.h"
+#include "datasourcemanager.h"
 #include "logger.h"
-#include "traced_assert.h"
 
 #include <QComboBox>
 
@@ -35,8 +33,8 @@ class DBDataSourceComboBox : public QComboBox
     void changedSource();
 
   public:
-    DBDataSourceComboBox(context::DBContextManager& ctx_man, QWidget* parent = nullptr)
-        : QComboBox(parent), ctx_man_(ctx_man)
+    DBDataSourceComboBox(DataSourceManager& ds_man, QWidget* parent = nullptr)
+        : QComboBox(parent), ds_man_(ds_man)
     {
         updateBox();
 
@@ -88,7 +86,7 @@ class DBDataSourceComboBox : public QComboBox
     }
 
   protected:
-    context::DBContextManager& ctx_man_;
+    DataSourceManager& ds_man_;
 
     bool show_dstype_only_{false};
     std::string only_dstype_name_;
@@ -106,21 +104,21 @@ class DBDataSourceComboBox : public QComboBox
         if (show_dbcontent_only_)
             loginf << "show_dbcontent_only " << show_dbcontent_only_ << " only_dbcontent_name '" << only_dbcontent_name_ << "'";
 
-        for (const auto& ds_it : ctx_man_.activeContext().dataSources())
+        for (auto& ds_it : ds_man_.dbDataSources())
         {
-            if (show_dstype_only_ && ds_it.dsType() != only_dstype_name_)
+            if (show_dstype_only_ && ds_it->dsType() != only_dstype_name_)
             {
-                loginf << "skip " << ds_it.name() << " dsType " << ds_it.dsType();
+                loginf << "skip " << ds_it->name() << " dsType " << ds_it->dsType();
                 continue;
             }
 
-            if (show_dbcontent_only_ && ctx_man_.numInserted(ds_it.id(), only_dbcontent_name_) == 0)
+            if (show_dbcontent_only_ && !ds_it->hasNumInserted(only_dbcontent_name_))
             {
-                loginf << "skip " << ds_it.name() << " no data for " << only_dbcontent_name_;
+                loginf << "skip " << ds_it->name() << " hasNumInserted " << ds_it->hasNumInserted(only_dbcontent_name_);
                 continue;
             }
 
-            addItem(ds_it.name().c_str());
+            addItem(ds_it->name().c_str());
         }
 
         setCurrentIndex(0);

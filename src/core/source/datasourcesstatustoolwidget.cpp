@@ -17,9 +17,7 @@
 
 #include "datasourcesstatustoolwidget.h"
 #include "compass.h"
-#include "db_context_manager.h"
-#include "data_source.h"
-#include "datasourcebase.h"
+#include "datasourcemanager.h"
 #include "datasourcesstatuswidget.h"
 #include "dbcontentmanager.h"
 
@@ -44,8 +42,8 @@ const int DataSourcesStatusToolWidget::DefaultStretchEvents      = 1;
 
 /**
  */
-DataSourcesStatusToolWidget::DataSourcesStatusToolWidget(context::DBContextManager& ctx_man)
-: ctx_man_(ctx_man)
+DataSourcesStatusToolWidget::DataSourcesStatusToolWidget(DataSourceManager& ds_man)
+: ds_man_(ds_man)
 {
     createUI();
     updateTrackerSelection();
@@ -98,9 +96,9 @@ void DataSourcesStatusToolWidget::createUI()
     status_layout->setSpacing(1);
     ds_status_widget->setLayout(status_layout);
 
-    auto& dbc_man = ctx_man_.compass().dbContentManager();
+    auto& dbc_man = ds_man_.compass().dbContentManager();
 
-    ds_widget_ = new DataSourcesStatusWidget(ctx_man_, dbc_man);
+    ds_widget_ = new DataSourcesStatusWidget(ds_man_, dbc_man);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     ds_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -134,7 +132,7 @@ void DataSourcesStatusToolWidget::createUI()
     event_box_ = new QTextEdit;
     event_box_->setReadOnly(true);
     event_box_->setAcceptRichText(true);
-    event_box_->document()->setMaximumBlockCount(ctx_man_.sensorConfig().sensor_status_max_event_buf_size);
+    event_box_->document()->setMaximumBlockCount(ds_man_.config().sensor_status_max_event_buf_size_);
     event_box_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     event_box_->setPlaceholderText("No Events");
 
@@ -163,7 +161,7 @@ void DataSourcesStatusToolWidget::createUI()
     connect(ds_widget_, &DataSourcesStatusWidget::refreshed,
             this, &DataSourcesStatusToolWidget::updateInfos);
     
-    connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
+    connect(&ds_man_, &DataSourceManager::dataSourcesChangedSignal,
             this, &DataSourcesStatusToolWidget::onDataSourcesChanged);
 }
 
@@ -208,10 +206,10 @@ void DataSourcesStatusToolWidget::addToConfigMenu(QMenu* menu)
 {
     auto update_age_menu = menu->addMenu("Maximum Status Age");
 
-    const auto& max_status_age_options = ctx_man_.sensorConfig().sensor_status_max_status_age_options;
+    const auto& max_status_age_options = ds_man_.config().sensor_status_max_status_age_options_;
     traced_assert(max_status_age_options.is_array());
 
-    auto max_status_age_index = ctx_man_.sensorConfig().sensor_status_max_status_age_index;
+    auto max_status_age_index = ds_man_.config().sensor_status_max_status_age_index_;
 
     // Create an exclusive action group
     QActionGroup* group = new QActionGroup(this);
@@ -231,7 +229,7 @@ void DataSourcesStatusToolWidget::addToConfigMenu(QMenu* menu)
         connect(action, &QAction::triggered, 
             [ this, index ] () 
             { 
-                this->ctx_man_.sensorConfig().sensor_status_max_status_age_index = index; 
+                this->ds_man_.config().sensor_status_max_status_age_index_ = index; 
                 this->resetStatus();
             });
     };
@@ -241,7 +239,7 @@ void DataSourcesStatusToolWidget::addToConfigMenu(QMenu* menu)
 
     auto last_update_action = menu->addAction("Show Last Update ToD");
     last_update_action->setCheckable(true);
-    last_update_action->setChecked(ctx_man_.sensorConfig().sensor_status_show_last_updates);
+    last_update_action->setChecked(ds_man_.config().sensor_status_show_last_updates_);
 
     connect(last_update_action, &QAction::toggled, [ this ] (bool ok) { this->ds_widget_->showLastUpdates(ok); });
 }
@@ -300,28 +298,24 @@ DataSourcesStatusToolWidget::ActiveTrackerLines DataSourcesStatusToolWidget::act
 
     ActiveTrackerLines tracker_lines;
 
-    if (ctx_man_.hasActiveContext())
+    for (const auto& db_ds : ds_man_.dbDataSources())
     {
-        for (const auto& db_ds : ctx_man_.activeContext().dataSources())
+        if (dbContent::DataSourceBase::dsTypeFromString(db_ds->dsType()) != dbContent::DataSourceType::Tracker)
+            continue;
+
+        //no cat063 content?
+        if (!db_ds->hasNumInserted(DBCName))
+            continue;
+
+        auto& lines = tracker_lines[ db_ds->id() ];
+
+        for (unsigned int line_id = 0; line_id < 4; ++line_id)
         {
-            if (dbContent::DataSourceBase::dsTypeFromString(db_ds.dsType()) != dbContent::DataSourceType::Tracker)
+            //add if line has inserted data
+            if (!db_ds->hasNumInserted(DBCName, line_id))
                 continue;
-
-            //no cat063 content?
-            if (ctx_man_.numInserted(db_ds.id(), DBCName) == 0)
-                continue;
-
-            auto& lines = tracker_lines[ db_ds.id() ];
-
-            for (unsigned int line_id = 0; line_id < 4; ++line_id)
-            {
-                //add if line has inserted data
-                auto per_line = ctx_man_.numInsertedPerLine(db_ds.id(), DBCName);
-                if (!per_line.count(line_id) || per_line.at(line_id) == 0)
-                    continue;
-
-                lines.push_back(line_id);
-            }
+            
+            lines.push_back(line_id);
         }
     }
 
@@ -345,8 +339,8 @@ void DataSourcesStatusToolWidget::updateTrackerSelection()
 
     for (const auto& tl : tracker_lines)
     {
-        traced_assert(ctx_man_.hasDataSource(tl.first));
-        const auto& db_ds = *ctx_man_.dataSource(tl.first);
+        traced_assert(ds_man_.hasDBDataSource(tl.first));
+        const auto& db_ds = ds_man_.dbDataSource(tl.first);
 
         tracker_combo_->addItem(QString::fromStdString(db_ds.name()), QVariant(db_ds.id()));
     }
@@ -439,9 +433,9 @@ namespace
      */
     void addEventToTextEdit(QTextEdit* edit,
                             const sensor_status::Event& evt,
-                            context::DBContextManager& ctx_man)
+                            DataSourceManager& ds_man)
     {
-        auto txt  = evt.toString(ctx_man, false, true);
+        auto txt  = evt.toString(ds_man, false, true);
         auto col  = DataSourcesStatusWidget::colorFromEvent(evt);
         auto font = DataSourcesStatusWidget::fontFromEvent(evt);
 
@@ -467,7 +461,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
     event_box_->clear();
 
     for (const auto& evt : ds_widget_->currentEventQueue().queue())
-        addEventToTextEdit(event_box_, evt, ctx_man_);
+        addEventToTextEdit(event_box_, evt, ds_man_);
 }
 
 /**
@@ -475,7 +469,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
 void DataSourcesStatusToolWidget::addNewestEvents()
 {
     for (const auto& evt : ds_widget_->currentEventQueue().consumeNewEvents())
-        addEventToTextEdit(event_box_, *evt, ctx_man_);
+        addEventToTextEdit(event_box_, *evt, ds_man_);
 }
 
 /**

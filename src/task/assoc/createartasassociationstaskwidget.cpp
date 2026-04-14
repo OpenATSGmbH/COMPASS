@@ -20,7 +20,7 @@
 #include "dbdatasourceselectioncombobox.h"
 #include "compass.h"
 #include "taskmanager.h"
-#include "db_context_manager.h"
+#include "datasourcemanager.h"
 #include "dbcontent/dbcontentmanager.h"
 //#include "dbcontent/dbcontent.h"
 //#include "dbcontent/variable/variable.h"
@@ -60,7 +60,7 @@ CreateARTASAssociationsTaskWidget::CreateARTASAssociationsTaskWidget(
         COMPASS& compass = task_.manager().compass();
         traced_assert(compass.dbContentManager().existsDBContent("CAT062"));
 
-        ds_combo_ = new DBDataSourceComboBox(compass.dbContextManager());
+        ds_combo_ = new DBDataSourceComboBox(compass.dataSourceManager());
         ds_combo_->showDBContentOnly("CAT062");
         connect(ds_combo_, &DBDataSourceComboBox::changedSource, this,
                 &CreateARTASAssociationsTaskWidget::currentDataSourceChangedSlot);
