@@ -104,6 +104,10 @@ public:
     bool hasRemoteUnits() const;
     bool hasRemoteUnit(int index) const;
     std::string remoteUnitName(int index) const;
+    bool remoteUnitIsValid(int index) const;
+    double remoteUnitLatitude(int index) const;
+    double remoteUnitLongitude(int index) const;
+    double remoteUnitAltitude(int index) const;
     void addRemoteUnitsIfMissing();
     void removeRemoteUnits();
     void removeRemoteUnit(int index);

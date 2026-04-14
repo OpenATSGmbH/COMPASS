@@ -892,12 +892,6 @@ const DBContentManager& COMPASS::dbContentManager() const
     return *dbcontent_manager_;
 }
 
-const DataSourceManager& COMPASS::dataSourceManager() const
-{
-    traced_assert(ds_manager_);
-    return *ds_manager_;
-}
-
 const FilterManager& COMPASS::filterManager() const
 {
     traced_assert(filter_manager_);
@@ -932,12 +926,6 @@ const rtcommand::RTCommandRunner& COMPASS::rtCmdRunner() const
 {
     traced_assert(rt_cmd_runner_);
     return *rt_cmd_runner_;
-}
-
-const FFTManager& COMPASS::fftManager() const
-{
-    traced_assert(fft_manager_);
-    return *fft_manager_;
 }
 
 const LicenseManager& COMPASS::licenseManager() const

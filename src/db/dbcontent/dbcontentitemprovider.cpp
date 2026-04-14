@@ -23,7 +23,7 @@
 #include "targetreportdefs.h"
 
 #include "compass.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 
 #include "traced_assert.h"
 
@@ -339,17 +339,12 @@ void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
     group.dbc_name = data_store_.dbcManager().dbContentWithId(group.dbc_id);
 
     // ds name
-    const auto& ds_manager = data_store_.dbcManager().compass().dataSourceManager();
+    const auto& ctx_manager = data_store_.dbcManager().compass().dbContextManager();
 
-    if (ds_manager.hasDBDataSource(group.ds_id))
+    if (ctx_manager.hasDataSource(group.ds_id))
     {
-        const auto& ds = ds_manager.dbDataSource(group.ds_id);
-        group.ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
-    }
-    else if (ds_manager.hasConfigDataSource(group.ds_id))
-    {
-        const auto& ds = ds_manager.configDataSource(group.ds_id);
-        group.ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
+        const auto* ds = ctx_manager.dataSource(group.ds_id);
+        group.ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
     }
     else
     {
@@ -405,13 +400,11 @@ std::string DBContentItemProvider::toString() const
     {
         const auto dbc_name   = data_store_.dbcManager().dbContentWithId(group->dbc_id);
 
-        const auto& ds_manager = data_store_.dbcManager().compass().dataSourceManager();
+        const auto& ctx_manager = data_store_.dbcManager().compass().dbContextManager();
 
         std::string ds_name = "unknown";
-        if (ds_manager.hasDBDataSource(group->ds_id))
-            ds_name = ds_manager.dbDataSource(group->ds_id).name();
-        else if (ds_manager.hasConfigDataSource(group->ds_id))
-            ds_name = ds_manager.configDataSource(group->ds_id).name();
+        if (ctx_manager.hasDataSource(group->ds_id))
+            ds_name = ctx_manager.dataSource(group->ds_id)->name();
 
         size_t n_items   = group->items.size();
         size_t n_indices = group->indices.size();

@@ -114,6 +114,33 @@ string DataSource::remoteUnitName(int index) const
     return key;
 }
 
+bool DataSource::remoteUnitIsValid(int index) const
+{
+    if (!hasRemoteUnit(index))
+        return false;
+
+    const auto& ru = info_.at("remote_units").at(to_string(index));
+
+    return ru.contains("latitude")  && ru.at("latitude").is_number()
+        && ru.contains("longitude") && ru.at("longitude").is_number()
+        && ru.contains("altitude")  && ru.at("altitude").is_number();
+}
+
+double DataSource::remoteUnitLatitude(int index) const
+{
+    return info_.at("remote_units").at(to_string(index)).at("latitude").get<double>();
+}
+
+double DataSource::remoteUnitLongitude(int index) const
+{
+    return info_.at("remote_units").at(to_string(index)).at("longitude").get<double>();
+}
+
+double DataSource::remoteUnitAltitude(int index) const
+{
+    return info_.at("remote_units").at(to_string(index)).at("altitude").get<double>();
+}
+
 bool DataSource::isCalculatedReferenceSource() const
 {
     return info_.contains("calculated_reftraj") && info_.at("calculated_reftraj").get<bool>();

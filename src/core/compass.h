@@ -107,14 +107,12 @@ public:
 
     const DBInterface& dbInterface() const;
     const DBContentManager& dbContentManager() const;
-    const DataSourceManager& dataSourceManager() const;
     const FilterManager& filterManager() const;
     const TaskManager& taskManager() const;
     const ViewManager& viewManager() const;
     const SimpleConfig& config() const;
     const EvaluationManager& evaluationManager() const;
     const rtcommand::RTCommandRunner& rtCmdRunner() const;
-    const FFTManager& fftManager() const;
     const LicenseManager& licenseManager() const;
     const JobManager& jobManager() const;
     const UnitManager& unitManager() const;
