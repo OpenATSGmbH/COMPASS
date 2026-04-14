@@ -17,8 +17,9 @@
 
 #pragma once
 
-#include "datasourcemanager.h"
+#include "data_source.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QComboBox>
 
@@ -50,7 +51,7 @@ public:
     {
         addItem(""); // to show none
 
-        for (auto it : DataSourceManager::data_source_types_)
+        for (auto it : context::DataSource::dsTypeStrings())
             addItem(it.c_str());
 
         updateCurrentText();
@@ -63,9 +64,9 @@ public:
     std::string type()
     {
         if (ds_type_.size())
-            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
-                              DataSourceManager::data_source_types_.end(), ds_type_)
-                    != DataSourceManager::data_source_types_.end());
+            traced_assert(std::find(context::DataSource::dsTypeStrings().begin(),
+                              context::DataSource::dsTypeStrings().end(), ds_type_)
+                    != context::DataSource::dsTypeStrings().end());
 
         return ds_type_;
     }
@@ -75,9 +76,9 @@ public:
         ds_type_ = type;
 
         if (ds_type_.size())
-            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
-                              DataSourceManager::data_source_types_.end(), ds_type_)
-                    != DataSourceManager::data_source_types_.end());
+            traced_assert(std::find(context::DataSource::dsTypeStrings().begin(),
+                              context::DataSource::dsTypeStrings().end(), ds_type_)
+                    != context::DataSource::dsTypeStrings().end());
 
         updateCurrentText();
     }
@@ -91,9 +92,9 @@ protected:
         doing_update_ = true;
 
         if (ds_type_.size())
-            traced_assert(std::find(DataSourceManager::data_source_types_.begin(),
-                              DataSourceManager::data_source_types_.end(), ds_type_)
-                    != DataSourceManager::data_source_types_.end());
+            traced_assert(std::find(context::DataSource::dsTypeStrings().begin(),
+                              context::DataSource::dsTypeStrings().end(), ds_type_)
+                    != context::DataSource::dsTypeStrings().end());
 
         setCurrentText(ds_type_.c_str());
 

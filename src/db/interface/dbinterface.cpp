@@ -34,8 +34,6 @@
 
 #include "sector.h"
 #include "sectorlayer.h"
-#include "source/dbdatasource.h"
-#include "dbfft.h"
 
 #include "task/taskmanager.h"
 #include "task/result/taskresult.h"
@@ -261,8 +259,8 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
             setProperty("APP_VERSION", compass_.config().getString("version"));
             saveProperties();
 
-            traced_assert(!existsDataSourcesTable());
-            createDataSourcesTable();
+            if (!existsDBContextTable())
+                createDBContextTable();
 
             traced_assert(!existsSectorsTable());
             createSectorsTable();
@@ -288,7 +286,6 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
                 throw std::runtime_error ("Incorrect application version for database:\n "+reason);
             }
 
-            traced_assert(existsDataSourcesTable());
             traced_assert(existsSectorsTable());
         }
 
@@ -1003,290 +1000,6 @@ boost::optional<unsigned long> DBInterface::getMaxReportContentID()
 
 //    return data;
 //}
-
-/**
- */
-bool DBInterface::existsDataSourcesTable()
-{
-    return existsTable(dbContent::DBDataSource::table_name_);
-}
-
-/**
- */
-void DBInterface::createDataSourcesTable()
-{
-    traced_assert(ready());
-    traced_assert(!existsDataSourcesTable());
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        execute(sqlGenerator().getTableDataSourcesCreateStatement());
-        updateTableInfo();
-    }
-}
-
-/**
- */
-std::vector<std::unique_ptr<dbContent::DBDataSource>> DBInterface::getDataSources()
-{
-    logdbg;
-
-    traced_assert(ready());
-
-    using namespace dbContent;
-
-    std::vector<std::unique_ptr<DBDataSource>> sources;
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        shared_ptr<DBCommand> command = sqlGenerator().getDataSourcesSelectCommand();
-
-        loginf << "sql '" << command->get() << "'";
-
-        shared_ptr<DBResult> result = execute(*command);
-        traced_assert(result->containsData());
-        shared_ptr<Buffer> buffer = result->buffer();
-
-        logdbg << "json '" << buffer->asJSON().dump(4) << "'";
-
-        traced_assert(buffer->properties().hasProperty(DBDataSource::id_column_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::ds_type_column_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::sac_column_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::sic_column_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::name_column_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::short_name_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::info_column_));
-        traced_assert(buffer->properties().hasProperty(DBDataSource::counts_column_));
-
-        for (unsigned cnt = 0; cnt < buffer->size(); cnt++)
-        {
-            if (buffer->get<unsigned int>(DBDataSource::id_column_.name()).isNull(cnt))
-            {
-                logerr << "data source cnt " << cnt
-                    << " has NULL id, will be omitted";
-                continue;
-            }
-
-            if (buffer->get<string>(DBDataSource::ds_type_column_.name()).isNull(cnt))
-            {
-                logerr << "data source cnt " << cnt
-                    << " has NULL content type, will be omitted";
-                continue;
-            }
-
-            if (buffer->get<unsigned int>(DBDataSource::sac_column_.name()).isNull(cnt))
-            {
-                logerr << "data source cnt " << cnt
-                    << " has NULL sac, will be omitted";
-                continue;
-            }
-
-            if (buffer->get<unsigned int>(DBDataSource::sic_column_.name()).isNull(cnt))
-            {
-                logerr << "data source cnt " << cnt
-                    << " has NULL sic, will be omitted";
-                continue;
-            }
-
-            if (buffer->get<string>(DBDataSource::name_column_.name()).isNull(cnt))
-            {
-                logerr << "data source cnt " << cnt
-                    << " has NULL name, will be omitted";
-                continue;
-            }
-
-            std::unique_ptr<DBDataSource> src {new DBDataSource()};
-
-            src->id(buffer->get<unsigned int>(DBDataSource::id_column_.name()).get(cnt));
-            src->dsType(buffer->get<string>(DBDataSource::ds_type_column_.name()).get(cnt));
-            src->sac(buffer->get<unsigned int>(DBDataSource::sac_column_.name()).get(cnt));
-            src->sic(buffer->get<unsigned int>(DBDataSource::sic_column_.name()).get(cnt));
-            src->name(buffer->get<string>(DBDataSource::name_column_.name()).get(cnt));
-
-            if (!buffer->get<string>(DBDataSource::short_name_.name()).isNull(cnt))
-                src->shortName(buffer->get<string>(DBDataSource::short_name_.name()).get(cnt));
-
-            if (!buffer->get<string>(DBDataSource::info_column_.name()).isNull(cnt))
-                src->info(buffer->get<string>(DBDataSource::info_column_.name()).get(cnt));
-
-            if (!buffer->get<string>(DBDataSource::counts_column_.name()).isNull(cnt))
-                src->counts(buffer->get<string>(DBDataSource::counts_column_.name()).get(cnt));
-
-            sources.emplace_back(move(src));
-        }
-    }
-
-    return sources;
-}
-
-/**
- */
-void DBInterface::saveDataSources(const std::vector<std::unique_ptr<dbContent::DBDataSource>>& data_sources)
-{
-    loginf << "num " << data_sources.size();
-
-    using namespace dbContent;
-
-    traced_assert(ready());
-
-    clearTableContent(DBDataSource::table_name_);
-
-    PropertyList list;
-    list.addProperty(DBDataSource::id_column_);
-    list.addProperty(DBDataSource::ds_type_column_);
-    list.addProperty(DBDataSource::sac_column_);
-    list.addProperty(DBDataSource::sic_column_);
-    list.addProperty(DBDataSource::name_column_);
-    list.addProperty(DBDataSource::short_name_);
-    list.addProperty(DBDataSource::info_column_);
-    list.addProperty(DBDataSource::counts_column_);
-
-    shared_ptr<Buffer> buffer = make_shared<Buffer>(list);
-
-    unsigned int cnt = 0;
-    for (auto& ds_it : data_sources)
-    {
-        buffer->get<unsigned int>(DBDataSource::id_column_.name()).set(cnt, ds_it->id());
-        buffer->get<string>(DBDataSource::ds_type_column_.name()).set(cnt, ds_it->dsType());
-        buffer->get<unsigned int>(DBDataSource::sac_column_.name()).set(cnt, ds_it->sac());
-        buffer->get<unsigned int>(DBDataSource::sic_column_.name()).set(cnt, ds_it->sic());
-        buffer->get<string>(DBDataSource::name_column_.name()).set(cnt, ds_it->name());
-
-        if (ds_it->hasShortName())
-            buffer->get<string>(DBDataSource::short_name_.name()).set(cnt, ds_it->shortName());
-
-        buffer->get<string>(DBDataSource::info_column_.name()).set(cnt, ds_it->infoStr());
-        buffer->get<string>(DBDataSource::counts_column_.name()).set(cnt, ds_it->countsStr());
-
-        ++cnt;
-    }
-
-    logdbg << "buffer size " << buffer->size();
-
-    insertBuffer(DBDataSource::table_name_, buffer);
-
-    logdbg << "done";
-}
-
-/**
- */
-bool DBInterface::existsFFTsTable()
-{
-    return existsTable(DBFFT::table_name_);
-}
-
-/**
- */
-void DBInterface::createFFTsTable()
-{
-    traced_assert(ready());
-    traced_assert(!existsFFTsTable());
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        execute(sqlGenerator().getTableFFTsCreateStatement());
-        updateTableInfo();
-    }
-}
-
-/**
- */
-std::vector<std::unique_ptr<DBFFT>> DBInterface::getFFTs()
-{
-    logdbg;
-
-    traced_assert(ready());
-
-    using namespace dbContent;
-
-    std::vector<std::unique_ptr<DBFFT>> sources;
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        shared_ptr<DBCommand> command = sqlGenerator().getFFTSelectCommand();
-
-        logdbg << "sql '" << command->get() << "'";
-
-        shared_ptr<DBResult> result = execute(*command);
-        traced_assert(result->containsData());
-        shared_ptr<Buffer> buffer = result->buffer();
-
-        logdbg << "json '" << buffer->asJSON().dump(4) << "'";
-
-        traced_assert(buffer->properties().hasProperty(DBFFT::name_column_));
-        traced_assert(buffer->properties().hasProperty(DBFFT::info_column_));
-
-        for (unsigned cnt = 0; cnt < buffer->size(); cnt++)
-        {
-            if (buffer->get<string>(DBFFT::name_column_.name()).isNull(cnt))
-            {
-                logerr << "data source cnt " << cnt
-                    << " has NULL name, will be omitted";
-                continue;
-            }
-
-            std::unique_ptr<DBFFT> src {new DBFFT()};
-
-            src->name(buffer->get<string>(DBFFT::name_column_.name()).get(cnt));
-
-            if (!buffer->get<string>(DBFFT::info_column_.name()).isNull(cnt))
-                src->info(nlohmann::json::parse(buffer->get<string>(DBFFT::info_column_.name()).get(cnt)));
-
-            sources.emplace_back(std::move(src));
-        }
-    }
-
-    return sources;
-}
-
-/**
- */
-void DBInterface::saveFFTs(const std::vector<std::unique_ptr<DBFFT>>& ffts)
-{
-    logdbg << "num " << ffts.size();
-
-    using namespace dbContent;
-
-    traced_assert(ready());
-
-    if (existsFFTsTable())
-        clearTableContent(DBFFT::table_name_);
-    else
-        createFFTsTable();
-
-    PropertyList list;
-    list.addProperty(DBFFT::name_column_);
-    list.addProperty(DBFFT::info_column_);
-
-    shared_ptr<Buffer> buffer = make_shared<Buffer>(list);
-
-    unsigned int cnt = 0;
-    for (auto& ds_it : ffts)
-    {
-        buffer->get<string>(DBFFT::name_column_.name()).set(cnt, ds_it->name());
-        buffer->get<string>(DBFFT::info_column_.name()).set(cnt, ds_it->infoStr());
-
-        ++cnt;
-    }
-
-    logdbg << "buffer size " << buffer->size();
-
-    insertBuffer(DBFFT::table_name_, buffer);
-
-    logdbg << "done";
-}
 
 /**
  */
@@ -2102,6 +1815,185 @@ void DBInterface::saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& inf
         info_vec.set(0, info);
 
         insertBuffer(TABLE_NAME_TASK_LOG, buffer);
+    }
+}
+
+// ============================================================
+// db_context table
+// ============================================================
+
+bool DBInterface::existsDBContextTable()
+{
+    return existsTable(TABLE_NAME_DB_CONTEXT);
+}
+
+void DBInterface::createDBContextTable()
+{
+    traced_assert(ready());
+    traced_assert(!existsDBContextTable());
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        execute(sqlGenerator().getTableDBContextCreateStatement());
+        updateTableInfo();
+    }
+}
+
+void DBInterface::saveDBContextSection(const std::string& section, const std::string& json_str)
+{
+    traced_assert(ready());
+
+    if (!existsDBContextTable())
+        createDBContextTable();
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        execute(sqlGenerator().getReplaceDBContextSectionStatement(section, json_str));
+    }
+}
+
+std::string DBInterface::loadDBContextSection(const std::string& section)
+{
+    traced_assert(ready());
+
+    if (!existsDBContextTable())
+        return {};
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+
+        DBCommand command;
+        command.set(sqlGenerator().getSelectDBContextSectionStatement(section));
+
+        PropertyList list;
+        list.addProperty("json", PropertyDataType::STRING);
+        command.list(list);
+
+        auto result = execute(command);
+        auto buffer = result->buffer();
+
+        if (buffer->size() == 0)
+            return {};
+
+        return buffer->get<std::string>("json").get(0);
+    }
+}
+
+std::map<std::string, std::string> DBInterface::loadAllDBContextSections()
+{
+    traced_assert(ready());
+
+    std::map<std::string, std::string> sections;
+
+    if (!existsDBContextTable())
+        return sections;
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+
+        DBCommand command;
+        command.set(sqlGenerator().getSelectAllDBContextSectionsStatement());
+
+        PropertyList list;
+        list.addProperty("section", PropertyDataType::STRING);
+        list.addProperty("json", PropertyDataType::STRING);
+        command.list(list);
+
+        auto result = execute(command);
+        auto buffer = result->buffer();
+
+        auto& section_vec = buffer->get<std::string>("section");
+        auto& json_vec = buffer->get<std::string>("json");
+
+        for (size_t i = 0; i < buffer->size(); ++i)
+            sections[section_vec.get(i)] = json_vec.get(i);
+    }
+
+    return sections;
+}
+
+void DBInterface::clearDBContextTable()
+{
+    if (existsDBContextTable())
+        clearTableContent(TABLE_NAME_DB_CONTEXT);
+}
+
+// ============================================================
+// db_info table
+// ============================================================
+
+bool DBInterface::existsDBInfoTable()
+{
+    return existsTable(TABLE_NAME_DB_INFO);
+}
+
+void DBInterface::createDBInfoTable()
+{
+    traced_assert(ready());
+    traced_assert(!existsDBInfoTable());
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        execute(sqlGenerator().getTableDBInfoCreateStatement());
+        updateTableInfo();
+    }
+}
+
+void DBInterface::saveDBInfo(const std::string& name, const std::string& json_str)
+{
+    traced_assert(ready());
+
+    if (!existsDBInfoTable())
+        createDBInfoTable();
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        execute(sqlGenerator().getReplaceDBInfoStatement(name, json_str));
+    }
+}
+
+std::string DBInterface::loadDBInfo(const std::string& name)
+{
+    traced_assert(ready());
+
+    if (!existsDBInfoTable())
+        return {};
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+
+        DBCommand command;
+        command.set(sqlGenerator().getSelectDBInfoStatement(name));
+
+        PropertyList list;
+        list.addProperty("json", PropertyDataType::STRING);
+        command.list(list);
+
+        auto result = execute(command);
+        auto buffer = result->buffer();
+
+        if (buffer->size() == 0)
+            return {};
+
+        return buffer->get<std::string>("json").get(0);
+    }
+}
+
+bool DBInterface::hasDBInfo(const std::string& name)
+{
+    return !loadDBInfo(name).empty();
+}
+
+void DBInterface::removeDBInfo(const std::string& name)
+{
+    traced_assert(ready());
+
+    if (!existsDBInfoTable())
+        return;
+
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        execute(sqlGenerator().getDeleteDBInfoStatement(name));
     }
 }
 

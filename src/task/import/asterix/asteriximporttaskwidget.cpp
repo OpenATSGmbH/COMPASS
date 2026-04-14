@@ -17,9 +17,11 @@
 
 #include "asteriximporttaskwidget.h"
 #include "asterixconfigwidget.h"
+#include "asterixframingcombobox.h"
 #include "asteriximporttask.h"
 #include "compass.h"
 #include "asterixoverridewidget.h"
+#include "db_context_manager.h"
 #include "logger.h"
 #include "dbcontent/selectdialog.h"
 #include "util/timeconv.h"
@@ -29,6 +31,7 @@
 #include <QComboBox>
 #include <QFormLayout>
 #include <QFrame>
+#include <QGridLayout>
 #include <QInputDialog>
 #include <QLabel>
 #include <QListWidget>
@@ -39,7 +42,9 @@
 #include <QDateEdit>
 #include <QTreeWidgetItem>
 #include <QTreeWidget>
+#include <QDesktopServices>
 #include <QHeaderView>
+#include <QUrl>
 
 using namespace Utils;
 using namespace std;
@@ -158,8 +163,44 @@ void ASTERIXImportTaskWidget::addDecoderTab()
 {
     traced_assert(tab_widget_);
 
-    config_widget_ = new ASTERIXConfigWidget(task_, this);
-    tab_widget_->addTab(config_widget_, "Decoder");
+    QWidget* decoder_tab = new QWidget();
+    QVBoxLayout* decoder_layout = new QVBoxLayout();
+
+    // framing controls (import-specific)
+    {
+        QGridLayout* framing_grid = new QGridLayout();
+
+        QLabel* framing_label = new QLabel("Framing");
+        framing_grid->addWidget(framing_label, 0, 0);
+
+        framing_combo_ = new ASTERIXFramingComboBox(task_);
+        connect(framing_combo_, &ASTERIXFramingComboBox::changedFraming,
+                this, &ASTERIXImportTaskWidget::framingChangedSlot);
+        framing_grid->addWidget(framing_combo_, 0, 1);
+
+        framing_edit_ = new QPushButton("Edit");
+        connect(framing_edit_, &QPushButton::clicked,
+                this, &ASTERIXImportTaskWidget::framingEditSlot);
+        framing_grid->addWidget(framing_edit_, 0, 2);
+
+        if (task_.settings().activeFileFraming() == "")
+            framing_edit_->setDisabled(true);
+        else
+            framing_edit_->setDisabled(false);
+
+        decoder_layout->addLayout(framing_grid);
+    }
+
+    // ASTERIX category config (editions from DBContext, decode flags from import task)
+    config_widget_ = new ASTERIXConfigWidget(
+        task_.compass().dbContextManager(),
+        [this](unsigned int cat) { return task_.decodeCategory(cat); },
+        [this](unsigned int cat, bool decode) { task_.decodeCategory(cat, decode); },
+        this);
+    decoder_layout->addWidget(config_widget_);
+
+    decoder_tab->setLayout(decoder_layout);
+    tab_widget_->addTab(decoder_tab, "Decoder");
 }
 
 void ASTERIXImportTaskWidget::addOverrideTab()
@@ -514,4 +555,29 @@ void ASTERIXImportTaskWidget::sourceClicked(QTreeWidgetItem* item, int column)
         task_.source().setFileUsage(selected, (size_t)index.x(), index.y());
     }
 }
+
+void ASTERIXImportTaskWidget::framingChangedSlot()
+{
+    traced_assert(framing_combo_);
+    loginf << framing_combo_->getFraming();
+
+    task_.settings().setActiveFileFraming(framing_combo_->getFraming());
+
+    if (task_.settings().activeFileFraming() == "")
+        framing_edit_->setDisabled(true);
+    else
+        framing_edit_->setDisabled(false);
+
+    task_.testFileDecoding();
+}
+
+void ASTERIXImportTaskWidget::framingEditSlot()
+{
+    std::string framing_path = "file:///" + task_.jASTERIX()->framingsFolderPath() + "/" +
+            task_.settings().activeFileFraming() + ".json";
+    loginf << "path '" << framing_path << "'";
+    QDesktopServices::openUrl(QUrl(framing_path.c_str()));
+}
+
+
 

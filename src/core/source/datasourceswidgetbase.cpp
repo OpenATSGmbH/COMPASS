@@ -16,7 +16,8 @@
  */
 
 #include "datasourceswidgetbase.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
+#include "data_source.h"
 
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -257,11 +258,8 @@ void DataSourceCountItemBase::updateContentChanges_impl()
     traced_assert(is_init_);
     traced_assert(!dbc_name_.empty());
 
-    auto& ds_man = widget_->dsManager();
-    traced_assert(ds_man.hasDBDataSource(ds_id_));
-
-    const auto& data_source = ds_man.dbDataSource(ds_id_);
-    ds_ = &data_source;
+    auto& ctx_man = widget_->ctxManager();
+    traced_assert(ctx_man.hasDataSource(ds_id_));
 
     setText(0, QString::fromStdString(dbc_name_));
 }
@@ -273,13 +271,14 @@ void DataSourceCountItemBase::updateContent_impl()
     traced_assert(is_init_);
     traced_assert(!dbc_name_.empty());
 
-    //set current counts
-    auto num_inserted = ds_->numInsertedSummedLinesMap();
-    auto it = num_inserted.find(dbc_name_);
-    traced_assert(it != num_inserted.end());
+    auto& ctx_man = widget_->ctxManager();
 
-    setText(2, QString::number(ds_->numLoaded(dbc_name_)));
-    setText(3, QString::number(it->second));
+    //set current counts
+    unsigned int num_inserted = ctx_man.numInserted(ds_id_, dbc_name_);
+    unsigned int num_loaded = ctx_man.numLoaded(ds_id_, dbc_name_);
+
+    setText(2, QString::number(num_loaded));
+    setText(3, QString::number(num_inserted));
 }
 
 /**************************************************************************************************
@@ -288,11 +287,11 @@ void DataSourceCountItemBase::updateContent_impl()
 
 /**
  */
-DataSourcesWidgetBase::DataSourcesWidgetBase(DataSourceManager& ds_man,
+DataSourcesWidgetBase::DataSourcesWidgetBase(context::DBContextManager& ctx_man,
                                              Source source,
                                              bool can_show_counts,
                                              bool init_ui)
-:   ds_man_(ds_man)
+:   ctx_man_(ctx_man)
 ,   source_(source)
 ,   can_show_counts_(can_show_counts)
 {
@@ -318,104 +317,41 @@ void DataSourcesWidgetBase::init()
 
 /**
  */
-std::vector<const dbContent::DataSourceBase*> DataSourcesWidgetBase::dataSources(bool filter, 
-                                                                                 std::string* ds_type) const
+std::vector<const context::DataSource*> DataSourcesWidgetBase::dataSources(bool filter,
+                                                                           std::string* ds_type) const
 {
-    std::vector<const dbContent::DataSourceBase*> data_sources;
+    std::vector<const context::DataSource*> data_sources;
 
-    std::set<unsigned int> added;
+    if (!ctx_man_.hasActiveContext())
+        return data_sources;
 
-    if (source_ == Source::Database ||
-        source_ == Source::All)
+    for (const auto& ds : ctx_man_.activeContext().dataSources())
     {
-        //add all db data sources
-        for (const auto& ds : ds_man_.dbDataSources())
-        {
-            if (filter && !showDS(ds->id()))
-                continue;
-            if (ds_type && ds->dsType() != *ds_type)
-                continue;
+        if (filter && !showDS(ds.id()))
+            continue;
+        if (ds_type && ds.dsType() != *ds_type)
+            continue;
 
-            data_sources.push_back(ds.get());
-            added.insert(ds->id());
-        }
+        data_sources.push_back(&ds);
     }
 
-    if (source_ == Source::Config ||
-        source_ == Source::All)
-    {
-        for (const auto& ds : ds_man_.configDataSources())
-        {
-            if (filter && !showDS(ds->id()))
-                continue;
-            if (ds_type && ds->dsType() != *ds_type)
-                continue;
-
-            //add config data sources if not yet added as db data sources
-            if (added.count(ds->id()) == 0)
-                data_sources.push_back(ds.get());
-        }
-    }
-    
     return data_sources;
 }
 
 /**
  */
-const dbContent::DataSourceBase* DataSourcesWidgetBase::dataSource(unsigned int ds_id) const
+const context::DataSource* DataSourcesWidgetBase::dataSource(unsigned int ds_id) const
 {
-    if (source_ == Source::Config)
-    {
-        traced_assert(ds_man_.hasConfigDataSource(ds_id));
-        return &ds_man_.configDataSource(ds_id);
-    }
-    else if (source_ == Source::Database)
-    {
-        traced_assert(ds_man_.hasDBDataSource(ds_id));
-        return &ds_man_.dbDataSource(ds_id);
-    }
-    else //Source::All
-    {
-        bool has_config_ds = ds_man_.hasConfigDataSource(ds_id);
-        bool has_db_ds     = ds_man_.hasDBDataSource(ds_id);
-        traced_assert(has_config_ds || has_db_ds);
-
-        if (has_db_ds)
-            return &ds_man_.dbDataSource(ds_id);
-        else
-            return &ds_man_.configDataSource(ds_id);
-    }
-
-    return nullptr;
+    traced_assert(ctx_man_.hasDataSource(ds_id));
+    return ctx_man_.dataSource(ds_id);
 }
 
 /**
  */
-dbContent::DataSourceBase* DataSourcesWidgetBase::dataSource(unsigned int ds_id)
+context::DataSource* DataSourcesWidgetBase::dataSource(unsigned int ds_id)
 {
-    if (source_ == Source::Config)
-    {
-        traced_assert(ds_man_.hasConfigDataSource(ds_id));
-        return &ds_man_.configDataSource(ds_id);
-    }
-    else if (source_ == Source::Database)
-    {
-        traced_assert(ds_man_.hasDBDataSource(ds_id));
-        return &ds_man_.dbDataSource(ds_id);
-    }
-    else //Source::All
-    {
-        bool has_config_ds = ds_man_.hasConfigDataSource(ds_id);
-        bool has_db_ds     = ds_man_.hasDBDataSource(ds_id);
-        traced_assert(has_config_ds || has_db_ds);
-
-        if (has_db_ds)
-            return &ds_man_.dbDataSource(ds_id);
-        else
-            return &ds_man_.configDataSource(ds_id);
-    }
-
-    return nullptr;
+    traced_assert(ctx_man_.hasDataSource(ds_id));
+    return ctx_man_.dataSource(ds_id);
 }
 
 /**
@@ -528,7 +464,7 @@ int DataSourcesWidgetBase::generateContent(bool force_rebuild)
     if (force_rebuild)
         clear();
 
-    const auto& data_source_types = DataSourceManager::data_source_types_;
+    const auto& data_source_types = context::DataSource::dsTypeStrings();
 
     std::vector<std::string> filtered_types;
     for (const auto& ds_type : data_source_types)
@@ -638,10 +574,10 @@ int DataSourcesWidgetBase::generateDataSourceType(DataSourceTypeItemBase* item,
 /**
  */
 int DataSourcesWidgetBase::generateDataSource(DataSourceItemBase* item,
-                                              DataSourcesWidgetItemBase* parent_item, 
-                                              const dbContent::DataSourceBase& data_source)
+                                              DataSourcesWidgetItemBase* parent_item,
+                                              const context::DataSource& data_source)
 {
-    unsigned int ds_id   = Utils::Number::dsIdFrom(data_source.sac(), data_source.sic());
+    unsigned int ds_id   = data_source.id();
     std::string  ds_name = data_source.name();
 
     logdbg << "create '" << data_source.dsType() << "' '" << ds_name << "'";
@@ -651,7 +587,7 @@ int DataSourcesWidgetBase::generateDataSource(DataSourceItemBase* item,
     int changes = item->updateContent() ? 1 : 0;
 
     //handle count items
-    bool show_counts = showsCounts() && source_ == Source::Database;
+    bool show_counts = showsCounts();
     if (!show_counts)
     {
         //no counts shown => remove any existing children
@@ -664,11 +600,8 @@ int DataSourcesWidgetBase::generateDataSource(DataSourceItemBase* item,
     }
     else
     {
-        auto db_ds = dynamic_cast<const dbContent::DBDataSource*>(&data_source);
-        traced_assert(db_ds);
-
-        // counts shown => create needed items
-        auto count_map = db_ds->numInsertedSummedLinesMap();
+        // counts shown => create needed items using context manager's numInsertedLinesMap
+        auto count_map = ctx_man_.numInsertedLinesMap(ds_id);
         int n    = (int)count_map.size();
         int ncur = item->childCount();
 
@@ -693,8 +626,36 @@ int DataSourcesWidgetBase::generateDataSource(DataSourceItemBase* item,
         }
 
         //configure count items
+        // numInsertedLinesMap returns map<unsigned int, unsigned int> (line_id -> count)
+        // We need dbcontent names here - use the dbcontent manager to get dbcontent names with data
+        // Actually the old code used numInsertedSummedLinesMap which returns map<string, unsigned int> (dbcontent -> count)
+        // The new equivalent needs to be built from the context manager
+        // For now, iterate over dbcontent names that have inserts for this ds
+        auto& dbcont_man = ctx_man_.compass().dbContentManager();
+        std::map<std::string, unsigned int> dbc_counts;
+        for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
+        {
+            unsigned int cnt_val = ctx_man_.numInserted(ds_id, it->first);
+            if (cnt_val > 0)
+                dbc_counts[it->first] = cnt_val;
+        }
+
+        // adjust item count
+        n = (int)dbc_counts.size();
+        while (item->childCount() > n)
+        {
+            auto child = item->child(0);
+            item->removeChild(child);
+            delete child;
+        }
+        while (item->childCount() < n)
+        {
+            auto ds_cnt_item = createDSCountItem(item);
+            item->addChild(ds_cnt_item);
+        }
+
         int cnt = 0;
-        for (auto& cnt_it : count_map)
+        for (auto& cnt_it : dbc_counts)
         {
             auto ds_cnt_item = dynamic_cast<DataSourceCountItemBase*>(item->child(cnt));
             traced_assert(ds_cnt_item);
@@ -712,7 +673,7 @@ int DataSourcesWidgetBase::generateDataSource(DataSourceItemBase* item,
  */
 int DataSourcesWidgetBase::generateDataSourceCount(DataSourceCountItemBase* item,
                                                    DataSourcesWidgetItemBase* parent_item,
-                                                   const dbContent::DataSourceBase& data_source,
+                                                   const context::DataSource& data_source,
                                                    const std::string& dbc_name)
 {
     //init item
@@ -726,8 +687,7 @@ int DataSourcesWidgetBase::generateDataSourceCount(DataSourceCountItemBase* item
  */
 void DataSourcesWidgetBase::updateContent(bool recreate_required)
 {
-    logdbg << "recreate_required " << recreate_required
-           << " num data sources " << ds_man_.dbDataSources().size();
+    logdbg << "recreate_required " << recreate_required;
 
     int changes = generateContent(recreate_required);
 

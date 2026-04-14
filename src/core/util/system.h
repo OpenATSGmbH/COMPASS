@@ -27,6 +27,7 @@ namespace Utils
 {
 namespace System
 {
+extern float getTotalRAMinGB();
 extern float getFreeRAMinGB();
 extern float getProcessRAMinGB();
 

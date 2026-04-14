@@ -19,6 +19,7 @@
 
 #include "variableview.h"
 
+class QColor;
 class ViewContainer;
 class ScatterPlotViewWidget;
 class ScatterPlotViewDataSource;
@@ -39,6 +40,7 @@ public:
     struct Settings
     {
         bool use_connection_lines {false};
+        nlohmann::json ds_color_map;  // persisted data source colors: { "name": "#rrggbb", ... }
     };
 
     enum class Variable
@@ -73,6 +75,11 @@ public:
     void useConnectionLines(bool value, bool redraw = true);
 
     static const std::string ParamUseConnectionLines;
+    static const std::string ParamDsColorMap;
+
+    bool hasDataSourceColor(const std::string& ds_name) const;
+    QColor dataSourceColor(const std::string& ds_name) const;
+    void dataSourceColor(const std::string& ds_name, const QColor& color);
 
     ScatterPlotViewDataWidget* getDataWidget();
 

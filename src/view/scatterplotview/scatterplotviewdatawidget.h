@@ -18,6 +18,8 @@
 #pragma once
 
 #include "variableviewstashdatawidget.h"
+
+#include <set>
 #include "scatterseries.h"
 #include "scatterseriesmodel.h"
 #include "scatterplotviewchartview.h"
@@ -127,4 +129,6 @@ private:
     ScatterSeriesModel data_model_;
 
     boost::optional<QRectF> bounds_;
+
+    std::set<std::string> hidden_series_;  // transient: remember unchecked series across reloads
 };

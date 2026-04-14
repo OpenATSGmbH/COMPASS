@@ -26,7 +26,7 @@
 #include "dbcontent/variable/metavariable.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "stringconv.h"
 #include "number.h"
 
@@ -140,7 +140,7 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
     if (group_per_datasource_) // add by DS ID + Line ID
     {
         DBContentManager&  dbcontent_man = variableView()->compass().dbContentManager();
-        DataSourceManager& ds_man        = variableView()->compass().dataSourceManager();
+        auto& ds_man = variableView()->compass().dbContextManager();
 
         traced_assert(buffer.has<unsigned int>(
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_).name()));
@@ -187,10 +187,8 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
                     continue;
             }
 
-            if (ds_man.hasDBDataSource(ds_id))
-                group_name = ds_man.dbDataSource(ds_id).name();
-            else if (ds_man.hasConfigDataSource(ds_id))
-                group_name = ds_man.configDataSource(ds_id).name();
+            if (ds_man.hasDataSource(ds_id))
+                group_name = ds_man.dataSource(ds_id)->name();
             else
                 group_name = to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id));
 

@@ -32,14 +32,12 @@
 
 class DBInterface;
 class DBContentManager;
-class DataSourceManager;
 class FilterManager;
 class TaskManager;
 class ViewManager;
 class SimpleConfig;
 class EvaluationManager;
 class MainWindow;
-class FFTManager;
 class LicenseManager;
 class ConfigJSON;
 class ConfigurationManager;
@@ -49,6 +47,12 @@ class ProjectionManager;
 class RTCommandManager;
 class IDBVariableResolver;
 class QWidget;
+
+namespace context
+{
+    class DBContext;
+    class DBContextManager;
+}
 
 namespace rtcommand
 {
@@ -84,14 +88,16 @@ public:
 
     DBInterface& dbInterface();
     DBContentManager& dbContentManager();
-    DataSourceManager& dataSourceManager();
     FilterManager& filterManager();
     TaskManager& taskManager();
     ViewManager& viewManager();
     SimpleConfig& config();
     EvaluationManager& evaluationManager();
     rtcommand::RTCommandRunner& rtCmdRunner();
-    FFTManager& fftManager();
+    context::DBContextManager& dbContextManager();
+    bool hasActiveContext() const;
+    context::DBContext& context();
+    const context::DBContext& context() const;
     LicenseManager& licenseManager();
     JobManager& jobManager();
     UnitManager& unitManager();
@@ -249,12 +255,11 @@ protected:
     std::unique_ptr<SimpleConfig> simple_config_;
     std::unique_ptr<DBInterface> db_interface_;
     std::unique_ptr<DBContentManager> dbcontent_manager_;
-    std::unique_ptr<DataSourceManager> ds_manager_;
     std::unique_ptr<FilterManager> filter_manager_;
     std::unique_ptr<TaskManager> task_manager_;
     std::unique_ptr<ViewManager> view_manager_;
     std::unique_ptr<EvaluationManager> eval_manager_;
-    std::unique_ptr<FFTManager> fft_manager_;
+    std::unique_ptr<context::DBContextManager> context_manager_;
     std::unique_ptr<LicenseManager> license_manager_;
     std::unique_ptr<JobManager> job_manager_;
     std::unique_ptr<UnitManager> unit_manager_;

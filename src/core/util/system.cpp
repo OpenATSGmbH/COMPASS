@@ -47,6 +47,31 @@ namespace Utils
 {
 namespace System
 {
+float getTotalRAMinGB()
+{
+    std::string token;
+    std::ifstream file("/proc/meminfo");
+    while (file >> token)
+    {
+        if (token == "MemTotal:")
+        {
+            unsigned long mem;
+
+            if (file >> mem)  // returns in kB
+            {
+                return mem / megabyte;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        // ignore rest of the line
+        file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+    return 0;  // nothing found
+}
+
 float getFreeRAMinGB()
 {
     //    struct sysinfo info;

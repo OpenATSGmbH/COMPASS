@@ -21,8 +21,7 @@
 #include "projectionmanagerwidget.h"
 #include "rs2gprojection.h"
 #include "idbvariableresolver.h"
-#include "datasourcemanager.h"
-#include "fftmanager.h"
+#include "db_context_manager.h"
 #include "compass.h"
 #include "files.h"
 #include "number.h"
@@ -170,9 +169,8 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
 
     // do radar position projection
 
-    DataSourceManager& ds_man = compass_.dataSourceManager();
     auto& var_resolver = varResolver();
-    FFTManager& fft_man = compass_.fftManager();
+    auto& ctx_man = compass_.dbContextManager();
 
     unsigned int ds_id;
     double azimuth_deg;
@@ -260,11 +258,11 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
         {
             std::string ds_name;
 
-            if (ds_man.hasConfigDataSource(ds_id_it))
+            if (ctx_man.hasDataSource(ds_id_it))
             {
-                ds_name = ds_man.configDataSource(ds_id_it).name();
+                ds_name = ctx_man.dataSource(ds_id_it)->name();
 
-                if (ds_man.configDataSource(ds_id_it).dsType() != "Radar")
+                if (ctx_man.dataSource(ds_id_it)->dsType() != "Radar")
                     continue; // ok for non-radars
             }
 
@@ -352,7 +350,7 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
             mode_c_code =  boost::none;
 
 
-        std::tie(is_from_fft, fft_altitude_ft) = fft_man.isFromFFT(
+        std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
             lat, lon, acad, dbcontent_name == "CAT001",
             mode_a_code, mode_c_code);
 
@@ -376,7 +374,7 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
             }
 
             // test if still close enough
-            // std::tie(is_from_fft, fft_altitude_ft) = fft_man.isFromFFT(
+            // std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
             //     lat, lon, acad, dbcontent_name == "CAT001",
             //     mode_a_code, mode_c_code);
             //assert (is_from_fft);

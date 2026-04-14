@@ -22,14 +22,10 @@
 
 #include <functional>
 
-class DataSourceManager;
+namespace context { class DBContextManager; class DataSource; }
 class DataSourcesConfigurationDialog;
 class DSTypeSelectionComboBox;
 
-namespace dbContent
-{
-    class DataSourceBase;
-}
 
 class QTabWidget;
 class QLabel;
@@ -38,6 +34,7 @@ class QPushButton;
 class QGridLayout;
 class QComboBox;
 class QCheckBox;
+class QFormLayout;
 class QVBoxLayout;
 class QTreeWidget;
 
@@ -84,8 +81,8 @@ public slots:
     void deleteSlot();
 
 public:
-    DataSourceEditWidget(bool show_network_lines, 
-                         DataSourceManager& ds_man, 
+    DataSourceEditWidget(bool show_network_lines,
+                         context::DBContextManager& ctx_man,
                          std::function<void(unsigned int)> update_ds_func,
                          std::function<void(unsigned int)> delete_ds_func);
 
@@ -103,7 +100,7 @@ public:
 protected:
     bool show_network_lines_;
 
-    DataSourceManager& ds_man_;
+    context::DBContextManager& ctx_man_;
     std::function<void(unsigned int)> update_ds_func_;
     std::function<void(unsigned int)> delete_ds_func_;
 
@@ -126,19 +123,23 @@ protected:
     QComboBox* detection_type_combo_{nullptr};
     QCheckBox* ground_only_check_{nullptr}; 
     
-    QWidget* radar_widget_{nullptr};
-    QCheckBox* radar_ignore_azmrng_check_{nullptr}; 
+    // radar-specific (label + field hidden/shown together)
+    QLabel* radar_ignore_label_{nullptr};
+    QCheckBox* radar_ignore_azmrng_check_{nullptr};
 
-    // position
-    QWidget* position_widget_{nullptr};
+    // position (labels for show/hide)
+    QLabel* latitude_label_{nullptr};
     QLineEdit* latitude_edit_{nullptr};
+    QLabel* longitude_label_{nullptr};
     QLineEdit* longitude_edit_{nullptr};
+    QLabel* altitude_label_{nullptr};
     QLineEdit* altitude_edit_{nullptr};
 
-    // psr settings
-    QWidget* psr_jpda_widget_{nullptr};
+    // psr settings (labels for show/hide)
+    QLabel* psr_pd_label_{nullptr};
     QLineEdit* psr_pd_edit_{nullptr};
-    QLineEdit* psr_clutter_rate_edit_{nullptr};    
+    QLabel* psr_clutter_rate_label_{nullptr};
+    QLineEdit* psr_clutter_rate_edit_{nullptr};
 
     // radar ranges
     QWidget* ranges_widget_{nullptr};
@@ -182,9 +183,7 @@ protected:
 
     std::map<std::string, int> tab_map_;
 
-    dbContent::DataSourceBase* currentDataSource();
-    dbContent::DataSourceBase* currentDBDataSource();
-    dbContent::DataSourceBase* currentConfigDataSource();
+    context::DataSource* currentDataSource();
 
     QVBoxLayout* createTab(const std::string& name, bool has_scroll_area);
     int tabIndex(const std::string& name) const;
@@ -202,11 +201,11 @@ protected:
     void enableMLAT(bool enable);
     void enableNetwork(bool enable);
 
-    void updateMain(dbContent::DataSourceBase* ds);
-    void updatePosition(dbContent::DataSourceBase* ds);
-    void updateRadar(dbContent::DataSourceBase* ds);
-    void updateMLAT(dbContent::DataSourceBase* ds);
-    void updateNetwork(dbContent::DataSourceBase* ds);
+    void updateMain(context::DataSource* ds);
+    void updatePosition(context::DataSource* ds);
+    void updateRadar(context::DataSource* ds);
+    void updateMLAT(context::DataSource* ds);
+    void updateNetwork(context::DataSource* ds);
 
     bool editRemoteUnit(int idx);
 
