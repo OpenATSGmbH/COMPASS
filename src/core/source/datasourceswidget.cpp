@@ -778,6 +778,14 @@ void DataSourcesWidget::updateContent(bool recreate_required)
 
     int changes = generateContent(recreate_required);
 
+    // show/hide count columns based on toggle
+    if (can_show_counts_)
+    {
+        bool show = getShowCounts();
+        tree_widget_->setColumnHidden(2, !show);
+        tree_widget_->setColumnHidden(3, !show);
+    }
+
     logdbg << "update generated " << changes << " change(s)";
 }
 
@@ -929,14 +937,14 @@ bool DataSourcesWidget::getUseDSLine(unsigned int ds_id, unsigned int ds_line) c
  */
 void DataSourcesWidget::setShowCounts(bool show) const
 {
-    ctx_man_.sensorConfig().load_widget_show_counts = show;
+    ctx_man_.compass().dbContentManager().showDataCounts(show);
 }
 
 /**
  */
 bool DataSourcesWidget::getShowCounts() const
 {
-    return ctx_man_.sensorConfig().load_widget_show_counts;
+    return ctx_man_.compass().dbContentManager().showDataCounts();
 }
 
 /**

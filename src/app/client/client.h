@@ -98,6 +98,9 @@ private:
     std::string export_report_directory_;
     std::string export_report_mode_{"PDF"}; // 'DocX','JSON','Latex','PDF'
 
+    bool list_contexts_ {false};
+    std::string set_context_name_;
+
     bool no_config_save_ {false};
 
     bool open_rt_cmd_port_ {false};

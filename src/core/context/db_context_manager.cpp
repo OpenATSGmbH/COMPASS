@@ -363,6 +363,9 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
     activeContext().dataSources().push_back(std::move(ds));
     saveContext(active_context_name_);
 
+    if (compass_.dbOpened())
+        writeContextToDB();
+
     emit activeContextChangedSignal();
 
     return activeContext().dataSources().back();
@@ -670,12 +673,15 @@ void DBContextManager::setLoadedCounts(
     map<unsigned int, map<string, map<unsigned int, unsigned int>>> loaded_counts)
 {
     loaded_counts_ = std::move(loaded_counts);
+    emit countsChangedSignal();
 }
 
 void DBContextManager::clearInsertedCounts(const string& dbcontent_name)
 {
     for (auto& [ds_id, dbcont_map] : inserted_counts_)
         dbcont_map.erase(dbcontent_name);
+
+    emit countsChangedSignal();
 }
 
 void DBContextManager::clearInsertedCounts(unsigned int ds_id, const string& dbcontent_name,
@@ -694,6 +700,8 @@ void DBContextManager::clearInsertedCounts(unsigned int ds_id, const string& dbc
         for (auto lid : line_ids)
             dbc_it->second.erase(lid);
     }
+
+    emit countsChangedSignal();
 }
 
 void DBContextManager::applyDeleteInfo(const json& /*delete_info*/)
@@ -706,6 +714,10 @@ void DBContextManager::addNumInserted(unsigned int ds_id, const string& dbconten
                                       unsigned int line_id, unsigned int count)
 {
     inserted_counts_[ds_id][dbcontent_name][line_id] += count;
+
+    logdbg << "ds_id " << ds_id << " dbc " << dbcontent_name
+           << " line " << line_id << " cnt +" << count
+           << " total " << inserted_counts_[ds_id][dbcontent_name][line_id];
 }
 
 void DBContextManager::maxTimestamp(unsigned int ds_id, unsigned int line_id,
@@ -791,6 +803,70 @@ map<unsigned int, unsigned int> DBContextManager::numInsertedPerLine(
     if (dbc_it == ds_it->second.end()) return {};
 
     return dbc_it->second;
+}
+
+// ============================================================
+// Count persistence
+// ============================================================
+
+static const string DBInfoKeyInsertedCounts = "inserted_counts";
+
+void DBContextManager::saveCountsToDB()
+{
+    assert (compass_.dbOpened());
+    loginf << "saving " << inserted_counts_.size() << " data sources";
+
+    // serialize: { "ds_id": { "dbcontent": { "line_id": count } } }
+    json j;
+    for (const auto& [ds_id, dbc_map] : inserted_counts_)
+        for (const auto& [dbc, line_map] : dbc_map)
+            for (const auto& [line_id, cnt] : line_map)
+                j[to_string(ds_id)][dbc][to_string(line_id)] = cnt;
+
+    loginf << "json: " << j.dump().substr(0, 500);
+
+    compass_.dbInterface().saveDBInfo(DBInfoKeyInsertedCounts, j.dump());
+
+    loginf << "saved inserted counts to db_info";
+}
+
+void DBContextManager::loadCountsFromDB()
+{
+    inserted_counts_.clear();
+
+    if (!compass_.dbOpened())
+    {
+        loginf << "db not opened, skipping";
+        return;
+    }
+
+    string json_str = compass_.dbInterface().loadDBInfo(DBInfoKeyInsertedCounts);
+
+    if (json_str.empty())
+    {
+        loginf << "no inserted_counts in db_info";
+        return;
+    }
+
+    loginf << "raw json: " << json_str.substr(0, 500);
+
+    json j = json::parse(json_str);
+
+    for (auto& [ds_id_str, dbc_obj] : j.items())
+    {
+        unsigned int ds_id = stoul(ds_id_str);
+
+        for (auto& [dbc, line_obj] : dbc_obj.items())
+            for (auto& [line_str, cnt_val] : line_obj.items())
+                inserted_counts_[ds_id][dbc][stoul(line_str)] = cnt_val.get<unsigned int>();
+    }
+
+    loginf << "loaded inserted counts from db_info (" << inserted_counts_.size() << " data sources)";
+
+    for (const auto& [ds_id, dbc_map] : inserted_counts_)
+        for (const auto& [dbc, line_map] : dbc_map)
+            for (const auto& [line_id, cnt] : line_map)
+                loginf << "  ds_id " << ds_id << " dbc " << dbc << " line " << line_id << " cnt " << cnt;
 }
 
 // ============================================================
@@ -1131,30 +1207,64 @@ void DBContextManager::databaseOpenedSlot()
     }
     else
     {
-        // compare stored context with file context
         DBContext db_ctx = readContextFromDB();
-        auto d = DBContextDiff::compute(activeContext(), db_ctx);
 
-        if (d.hasDifferences())
+        if (db_ctx.name() != activeContext().name())
         {
-            logwrn << "context differs from DB:\n" << d.summary()
-                   << "using file context as source of truth";
+            // DB was saved with a different context — switch to it
+            loginf << "DB context '" << db_ctx.name() << "' differs from active '"
+                   << activeContext().name() << "' — switching to DB context";
 
-            // for now, file context wins — overwrite DB
-            writeContextToDB();
+            if (!hasContext(db_ctx.name()))
+            {
+                // context doesn't exist on disk — create from DB data
+                loginf << "context '" << db_ctx.name() << "' not found on disk, creating from DB";
+                db_ctx.modified(DBContext::currentTimestamp());
+                DBContextSerializer::save(db_ctx, basePath());
+                contexts_[db_ctx.name()] = std::move(db_ctx);
+            }
+
+            setActiveContext(db_ctx.name());
         }
         else
         {
-            loginf << "context matches DB — no action needed";
+            auto d = DBContextDiff::compute(activeContext(), db_ctx);
+
+            if (d.hasDifferences())
+            {
+                logwrn << "context differs from DB:\n" << d.summary()
+                       << "using file context as source of truth";
+
+                // same name, file context wins — overwrite DB
+                writeContextToDB();
+            }
+            else
+            {
+                loginf << "context matches DB — no action needed";
+            }
         }
     }
 
+    loadCountsFromDB();
+
+    loginf << "emitting activeContextChangedSignal and countsChangedSignal";
+
     emit activeContextChangedSignal();
+    emit countsChangedSignal();
 }
 
 void DBContextManager::databaseClosedSlot()
 {
     loginf << "database closed";
+
+    // counts already saved in COMPASS::closeDBInternal() before DB was closed
+
+    inserted_counts_.clear();
+    loaded_counts_.clear();
+
+    loginf << "emitting countsChangedSignal";
+
+    emit countsChangedSignal();
 }
 
 // ============================================================

@@ -63,6 +63,7 @@ signals:
     void activeContextChangedSignal();
     void contextsChangedSignal();
     void sectorsChangedSignal();
+    void countsChangedSignal();
 
 public:
     explicit DBContextManager(COMPASS& compass);
@@ -158,6 +159,7 @@ public:
 
     void addNumInserted(unsigned int ds_id, const std::string& dbcontent_name,
                         unsigned int line_id, unsigned int count);
+    void saveCountsToDB();
     void maxTimestamp(unsigned int ds_id, unsigned int line_id, boost::posix_time::ptime value);
     boost::posix_time::ptime maxTimestamp(unsigned int ds_id, unsigned int line_id) const;
 
@@ -188,8 +190,6 @@ public:
         double mode_s_azimuth_stddev{0.02};
         double mode_s_range_stddev{50.0};
 
-        bool load_widget_show_counts{false};
-        bool load_widget_show_lines{false};
         unsigned int ds_font_size{10};
 
         nlohmann::json sensor_status_max_status_age_options;
@@ -317,6 +317,7 @@ private:
     void saveActiveContextName();
     void loadActiveContextName();
     void rebuildSectorLayers();
+    void loadCountsFromDB();
 
     COMPASS& compass_;
     std::string active_context_name_;

@@ -213,6 +213,10 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
          "import GPS parameters as JSON string, e.g. ''{\"callsign\": \"ENTRPRSE\", \"ds_name\": \"GPS Trail\", \"ds_sac\": 0, \"ds_sic\": 0, \"mode_3a_code\": 961, \"set_callsign\": true, \"set_mode_3a_code\": true, \"set_target_address\": true, \"target_address\": 16702992, \"tod_offset\": 0.0}'' (including one pair of single quotes)")
         ("import_sectors_json", po::value<std::string>(&import_sectors_filename_),
          "imports exported sectors JSON with given filename, e.g. '/data/sectors.json'")
+        ("list_contexts", po::bool_switch(&list_contexts_),
+         "lists all available data contexts and exits")
+        ("set_context", po::value<std::string>(&set_context_name_),
+         "sets the active data context, e.g. 'Test'")
         ("calculate_radar_plot_positions", po::bool_switch(&calculate_radar_plot_positions_),
          "calculate radar plot positions")
         ("calculate_artas_tr_usage", po::bool_switch(&calculate_artas_tr_usage_), "associate target reports based on ARTAS usage")
@@ -499,6 +503,36 @@ bool Client::run ()
     {
         loginf << "no data context selected — exiting";
         return 0;
+    }
+
+    if (list_contexts_)
+    {
+        auto& ctx_man = compass_->dbContextManager();
+        string active = ctx_man.hasActiveContext() ? ctx_man.activeContextName() : "";
+
+        cout << "Available contexts:" << endl;
+        for (const auto& name : ctx_man.contextNames())
+        {
+            cout << "  " << name;
+            if (name == active)
+                cout << "  (active)";
+            cout << endl;
+        }
+        return 0;
+    }
+
+    if (set_context_name_.size())
+    {
+        auto& ctx_man = compass_->dbContextManager();
+
+        if (!ctx_man.hasContext(set_context_name_))
+        {
+            cerr << "Context '" << set_context_name_ << "' does not exist" << endl;
+            return 1;
+        }
+
+        ctx_man.setActiveContext(set_context_name_);
+        loginf << "set active context to '" << set_context_name_ << "'";
     }
 
     RTCommandManager& rt_man = compass_->rtCommandManager();

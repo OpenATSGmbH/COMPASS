@@ -44,6 +44,8 @@ Allowed options:
   --import_gps_trail arg                imports gps trail NMEA with given filename, e.g. '/data/file2.txt'
   --import_gps_parameters arg           import GPS parameters as JSON string, e.g. ''{"callsign": "ENTRPRSE", "ds_name": "GPS Trail", "ds_sac": 0, "ds_sic": 0, "mode_3a_code": 961, "set_callsign": true, "set_mode_3a_code": true, "set_target_address": true, "target_address": 16702992,"tod_offset": 0.0}'' (including one pair of single quotes)
   --import_sectors_json arg             imports exported sectors JSON with given filename, e.g. '/data/sectors.json'
+  --list_contexts                       lists all available data contexts and exits
+  --set_context arg                     sets the active data context, e.g. 'Test'
   --calculate_radar_plot_positions      calculate radar plot positions
   --calculate_artas_tr_usage            associate target reports based on ARTAS usage
   --reconstruct_references              reconstruct references from sensor and tracker data
@@ -68,6 +70,30 @@ Allowed options:
 If additional command line options are wanted please contact the author.
 
 \subsection{Options}
+
+\subsubsection{-{}-list\_contexts}
+
+Lists all available data contexts and indicates which one is currently active. The application exits immediately after printing the list.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --list_contexts
+\end{lstlisting}
+
+Example output:
+\begin{lstlisting}
+Available contexts:
+  Austria  (active)
+  Germany
+  Test
+\end{lstlisting}
+
+\subsubsection{-{}-set\_context name}
+
+Sets the active data context to the given name before any database or import operations are performed. If the context does not exist, the application exits with an error.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --set_context Test --open_db /data/file.db
+\end{lstlisting}
 
 \subsubsection{-{}-create\_db filename}
 

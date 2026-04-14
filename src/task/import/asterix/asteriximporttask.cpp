@@ -1661,8 +1661,7 @@ void ASTERIXImportTask::checkAllDone()
             logdbg << "deleting status widget";
         }
 
-        compass_.dbContextManager().writeContextToDB();
-        emit compass_.dbContextManager().activeContextChangedSignal();
+        compass_.dbContextManager().saveCountsToDB();
         emit dbcontent_man_.dbContentStatusChanged();
         compass_.dbInterface().saveProperties();
 
@@ -1710,11 +1709,11 @@ void ASTERIXImportTask::logRAMUsage(const std::string& context)
     int records_per_second = num_records_ / std::max(1.0, elapsed_s);
 
     loginf << "RAM [" << context << "]"
-           << " process=" << String::doubleToStringPrecision(process_ram, 2) << " GB"
-           << " max=" << String::doubleToStringPrecision(max_process_ram_gb_, 2) << " GB"
-           << " free=" << String::doubleToStringPrecision(Utils::System::getFreeRAMinGB(), 2) << " GB"
-           << " total=" << String::doubleToStringPrecision(Utils::System::getTotalRAMinGB(), 2) << " GB"
-           << " records=" << num_records_ << " rec/s=" << records_per_second;
+           << " process " << String::doubleToStringPrecision(process_ram, 2) << " GB"
+           << " max " << String::doubleToStringPrecision(max_process_ram_gb_, 2) << " GB"
+           << " free " << String::doubleToStringPrecision(Utils::System::getFreeRAMinGB(), 2) << " GB"
+           << " total " << String::doubleToStringPrecision(Utils::System::getTotalRAMinGB(), 2) << " GB"
+           << " records " << num_records_ << " rec/s " << records_per_second;
 }
 
 /**
@@ -1740,6 +1739,8 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
             new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100));
         file_progress_dialog_->setWindowTitle("Importing ASTERIX Recording(s)");
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
+        file_progress_dialog_->setAutoClose(false);
+        file_progress_dialog_->setAutoReset(false);
 
         force = true;
     }
@@ -1760,7 +1761,7 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
     }
     else
     {
-        file_progress_dialog_->setLabelText("Please wait...");
+        file_progress_dialog_->setLabelText("Writing to database...");
     }
 }
 

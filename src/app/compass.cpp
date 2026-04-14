@@ -742,6 +742,7 @@ Result COMPASS::closeDBInternal()
     try
     {
         dbcontent_manager_->saveTargets();
+        context_manager_->saveCountsToDB();
 
         db_interface_->closeDB();
         traced_assert(!db_interface_->ready());

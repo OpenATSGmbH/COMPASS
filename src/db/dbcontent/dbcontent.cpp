@@ -557,7 +557,11 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
         traced_assert(ctx_man.hasDataSource(ds_id_it.first));
 
         for (auto& line_cnt_it : ds_id_it.second) // line -> cnt
+        {
+            logdbg << "addNumInserted ds_id " << ds_id_it.first << " dbc " << name_
+                   << " line " << line_cnt_it.first << " cnt " << line_cnt_it.second;
             ctx_man.addNumInserted(ds_id_it.first, name_, line_cnt_it.first, line_cnt_it.second);
+        }
 
         if (line_tods.count(ds_id_it.first))
         {
@@ -568,6 +572,8 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 
     if (ds_added)
         emit ctx_man.activeContextChangedSignal();
+
+    emit ctx_man.countsChangedSignal();
 }
 
 /**

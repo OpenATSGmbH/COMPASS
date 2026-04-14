@@ -688,8 +688,7 @@ void GPSImportCSVTask::insertDoneSlot()
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &GPSImportCSVTask::insertDoneSlot);
 
-    manager().compass().dbContextManager().writeContextToDB();
-    emit manager().compass().dbContextManager().activeContextChangedSignal();
+    manager().compass().dbContextManager().saveCountsToDB();
 
     done_ = true;
 

@@ -61,6 +61,8 @@ using namespace dbContent;
 DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
 {
+    registerParameter("show_data_counts", &show_data_counts_, false);
+
     logdbg << "creating subconfigurables";
 
     createSubConfigurables();

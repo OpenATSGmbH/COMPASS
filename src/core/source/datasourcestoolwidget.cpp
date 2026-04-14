@@ -21,6 +21,7 @@
 #include "datasourceswidget.h"
 #include "dbcontentmanager.h"
 
+#include "logger.h"
 #include "stringconv.h"
 #include "number.h"
 #include "files.h"
@@ -53,6 +54,9 @@ void DataSourcesToolWidget::createUI()
 
     ds_widget_ = new DataSourcesWidget(true, ctx_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
+
+    connect(&ctx_man_, &context::DBContextManager::countsChangedSignal,
+            this, [this] { logdbg << "countsChangedSignal received"; updateContent(false); });
 
     main_layout->addWidget(ds_widget_);
 

@@ -933,8 +933,7 @@ void GPSTrailImportTask::insertDoneSlot()
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
             this, &GPSTrailImportTask::insertDoneSlot);
 
-    manager().compass().dbContextManager().writeContextToDB();
-    emit manager().compass().dbContextManager().activeContextChangedSignal();
+    manager().compass().dbContextManager().saveCountsToDB();
     emit manager().compass().dbContentManager().dbContentStatusChanged();
 
     manager().compass().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";

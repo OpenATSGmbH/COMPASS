@@ -1066,8 +1066,7 @@ void ReconstructorTask::endReconstruction()
 
     currentReconstructor()->saveTargets();
 
-    manager().compass().dbContextManager().writeContextToDB();
-    emit manager().compass().dbContextManager().activeContextChangedSignal();
+    manager().compass().dbContextManager().saveCountsToDB();
     manager().compass().dbInterface().saveProperties();
 
     done_ = true;
