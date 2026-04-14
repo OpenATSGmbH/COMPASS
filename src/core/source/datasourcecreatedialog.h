@@ -19,8 +19,7 @@
 
 #include <QDialog>
 
-class DataSourceManager;
-class DataSourcesConfigurationDialog;
+namespace context { class DBContextManager; }
 class DSTypeSelectionComboBox;
 
 class QLineEdit;
@@ -43,7 +42,7 @@ public slots:
     void doneClickedSlot();
 
 public:
-    DataSourceCreateDialog(DataSourcesConfigurationDialog& dialog, DataSourceManager& ds_man);
+    DataSourceCreateDialog(context::DBContextManager& ctx_man, QWidget* parent = nullptr);
     virtual ~DataSourceCreateDialog();
 
     unsigned int sac() const;
@@ -55,7 +54,7 @@ public:
     bool cancelled() const;
 
 protected:
-    DataSourceManager& ds_man_;
+    context::DBContextManager& ctx_man_;
 
     DSTypeSelectionComboBox* dstype_combo_{nullptr};
 

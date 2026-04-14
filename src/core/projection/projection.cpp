@@ -17,7 +17,7 @@
 
 #include "projection.h"
 #include "projectioncoordinatesystembase.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "logger.h"
 #include "projectionmanager.h"
 #include "compass.h"
@@ -55,29 +55,20 @@ void Projection::addAllCoordinateSystems()
         if (coordinate_systems_added_)
             return;
 
-        DataSourceManager& ds_man = proj_manager_.compass().dataSourceManager();
+        auto& ctx_man = proj_manager_.compass().dbContextManager();
 
-        for (const auto& ds_it : ds_man.dbDataSources())
+        if (!ctx_man.hasActiveContext())
+            return; // will be called again when context becomes available
+
+        for (const auto& ds : ctx_man.activeContext().dataSources())
         {
-            if (!hasCoordinateSystem(ds_it->id()))
+            if (!hasCoordinateSystem(ds.id()))
             {
-                if (!ds_it->hasPosition())
+                if (!ds.hasPosition())
                     continue;
 
-                logdbg << "adding " << ds_it->name();
-                addCoordinateSystem(ds_it->id(), ds_it->latitude(), ds_it->longitude(), ds_it->altitude());
-            }
-        }
-
-        for (const auto& ds_it : ds_man.configDataSources())
-        {
-            if (!hasCoordinateSystem(ds_it->id()))
-            {
-                if (!ds_it->hasPosition())
-                    continue;
-
-                logdbg << "adding " << ds_it->name();
-                addCoordinateSystem(ds_it->id(), ds_it->latitude(), ds_it->longitude(), ds_it->altitude());
+                logdbg << "adding " << ds.name();
+                addCoordinateSystem(ds.id(), ds.latitude(), ds.longitude(), ds.altitude());
             }
         }
 

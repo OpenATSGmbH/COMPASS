@@ -22,7 +22,6 @@
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
-#include "sector.h"
 #include "result.h"
 #include "util/timewindow.h"
 
@@ -35,7 +34,6 @@ class EvaluationStandard;
 class DBContent;
 class DBContentManager;
 class SectorLayer;
-class AirSpace;
 struct EvaluationSettings;
 class EvaluationTargetFilter;
 
@@ -66,6 +64,7 @@ public slots:
     void dataSourcesChangedSlot();
     void associationStatusChangedSlot();
 
+    void sectorsChangedSlot();
     void targetInfoChangedSlot();
     void partialResultsUpdateNeededSlot();
     void fullResultsUpdateNeededSlot();
@@ -84,32 +83,6 @@ public:
 
     Result canEvaluate() const;
     Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
-
-    // sectors
-    bool sectorsLoaded() const;
-
-    bool hasSectorLayer (const std::string& layer_name) const;
-    //void renameSectorLayer (const std::string& name, const std::string& new_name);
-    std::shared_ptr<SectorLayer> sectorLayer(const std::string& layer_name) const;
-
-    void createNewSector (const std::string& name, const std::string& layer_name,
-                          bool exclude, QColor color, std::vector<std::pair<double,double>> points);
-    bool hasSector (const std::string& name, const std::string& layer_name);
-    bool hasSector (unsigned int id);
-    std::shared_ptr<Sector> sector (const std::string& name, const std::string& layer_name);
-    std::shared_ptr<Sector> sector (unsigned int id);
-    void moveSector(unsigned int id, const std::string& old_layer_name, const std::string& new_layer_name); // moves sector to new layer, saves
-    void saveSector(unsigned int id); // write to db and add
-    void saveSector(std::shared_ptr<Sector> sector); // write to db and add
-    std::vector<std::shared_ptr<SectorLayer>>& sectorsLayers();
-    void deleteSector(std::shared_ptr<Sector> sector);
-    void deleteAllSectors();
-    void importSectors (const std::string& filename);
-    void exportSectors (const std::string& filename);
-    unsigned int getMaxSectorId ();
-
-    bool importAirSpace(const AirSpace& air_space, 
-                        const boost::optional<std::set<std::string>>& sectors_to_import = {});
 
     //data loading
     bool needsAdditionalVariables() const;
@@ -161,24 +134,16 @@ protected:
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
 private:
-    void loadSectors();
-    void clearSectors();
-    void updateMaxSectorID();
-
     void configureLoadFilters(const EvaluationCalculator& calculator);
     void loadingDone();
 
     COMPASS& compass_;
     DBContentManager& dbcontent_man_;
 
-    bool sectors_loaded_ {false};
     bool initialized_ {false};
     bool active_load_connection_ {false};
 
     bool needs_additional_variables_ {false}; // indicates if variables should be added during loading
-
-    std::vector<std::shared_ptr<SectorLayer>> sector_layers_;
-    unsigned int max_sector_id_ {0};
 
     std::unique_ptr<EvaluationTargetFilter> target_filter_;
     std::unique_ptr<EvaluationCalculator> calculator_; // sub-configurable

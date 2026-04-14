@@ -28,12 +28,14 @@ class QPushButton;
 class QGridLayout;
 class QVBoxLayout;
 
-class DataSourceManager;
+namespace context
+{
+class DBContextManager;
+class DataSource;
+}
 
 namespace dbContent
 {
-
-class DBDataSource;
 
 class DBDataSourceWidget : public QWidget
 {
@@ -46,8 +48,8 @@ class DBDataSourceWidget : public QWidget
 
   public:
     explicit DBDataSourceWidget(
-        DBDataSource& src,
-        DataSourceManager& ds_man,
+        context::DataSource& src,
+        context::DBContextManager& ctx_man,
         std::function<bool()> get_use_ds_func,
         std::function<void(bool)> set_use_ds_func,
         std::function<bool(unsigned int)> get_use_ds_line_func,
@@ -62,8 +64,8 @@ class DBDataSourceWidget : public QWidget
     void updateLabelMinWidth(unsigned int width);
 
   protected:
-    DBDataSource& src_;
-    DataSourceManager& ds_man_;
+    context::DataSource& src_;
+    context::DBContextManager& ctx_man_;
 
     std::function<bool()> get_use_ds_func_;
     std::function<void(bool)> set_use_ds_func_;
@@ -81,7 +83,6 @@ class DBDataSourceWidget : public QWidget
     std::map<std::string, QLabel*> loaded_cnt_labels_; // cont -> loaded count label
     std::map<std::string, QLabel*> total_cnt_labels_; // cont -> total count label
 
-            //bool last_net_lines_shown_ {false};
     bool last_show_counts_ {false}; // indicates if counts where added to layout last time
 
     bool needsRecreate();

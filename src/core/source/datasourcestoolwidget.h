@@ -20,7 +20,7 @@
 #include "toolboxwidget.h"
 
 class DataSourcesWidget;
-class DataSourceManager;
+namespace context { class DBContextManager; }
 
 
 class QLabel;
@@ -30,7 +30,7 @@ class DataSourcesToolWidget : public ToolBoxWidget
     Q_OBJECT
 
 public:
-    DataSourcesToolWidget(DataSourceManager& ds_man);
+    DataSourcesToolWidget(context::DBContextManager& ctx_man);
     virtual ~DataSourcesToolWidget();
 
         //ToolBoxWidget
@@ -47,7 +47,7 @@ public:
     void updateContent(bool recreate_required = false);
 
 private:
-    DataSourceManager& ds_man_;
+    context::DBContextManager& ctx_man_;
     DataSourcesWidget* ds_widget_{nullptr};
 
     QLabel* ts_min_label_{nullptr};

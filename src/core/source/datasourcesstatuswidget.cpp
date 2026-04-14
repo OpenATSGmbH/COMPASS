@@ -17,7 +17,8 @@
 
 #include "datasourcesstatuswidget.h"
 #include "datasourcebase.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
+#include "data_source.h"
 
 #include "dbcontent.h"
 #include "dbcontentmanager.h"
@@ -204,17 +205,17 @@ const int DataSourcesStatusWidget::LastUpdateColumn = 2;
 
 /**
  */
-DataSourcesStatusWidget::DataSourcesStatusWidget(DataSourceManager& ds_man, 
+DataSourcesStatusWidget::DataSourcesStatusWidget(context::DBContextManager& ctx_man,
                                                  DBContentManager& dbcontent_man,
                                                  bool init_ui)
-:   DataSourcesWidgetBase(ds_man, Source::All, false, false)
+:   DataSourcesWidgetBase(ctx_man, Source::All, false, false)
 ,   dbcontent_man_(dbcontent_man)
-,   general_events_(ds_man.config().sensor_status_max_event_buf_size_)
+,   general_events_(ctx_man.sensorConfig().sensor_status_max_event_buf_size)
 {
     if (init_ui)
         init();
 
-    showLastUpdates(ds_man.config().sensor_status_show_last_updates_);
+    showLastUpdates(ctx_man.sensorConfig().sensor_status_show_last_updates);
 
     connect(&dbcontent_man_, &DBContentManager::loadedDataSignal, this, &DataSourcesStatusWidget::dataLoaded, Qt::QueuedConnection);
 }
@@ -281,8 +282,8 @@ void DataSourcesStatusWidget::setActiveTracker(unsigned int ds_id, unsigned int 
         active_tracker_->second == line_id)
         return;
 
-    traced_assert(ds_man_.hasDBDataSource(ds_id));
-    const auto& ds = ds_man_.dbDataSource(ds_id);
+    traced_assert(ctx_man_.hasDataSource(ds_id));
+    const auto& ds = *ctx_man_.dataSource(ds_id);
 
     loginf << "setting active tracker to " << ds.name() << " L" << line_id + 1;
 
@@ -476,7 +477,7 @@ void DataSourcesStatusWidget::initTrackerStates(const sensor_status::TrackerKey&
  */
 void DataSourcesStatusWidget::dataLoaded()
 {
-    if (ds_man_.compass().appMode() != AppMode::LiveRunning)
+    if (ctx_man_.compass().appMode() != AppMode::LiveRunning)
         return;
 
 #ifdef DEBUG_SENSOR_STATUS_TIMING
@@ -554,7 +555,7 @@ void DataSourcesStatusWidget::dataLoaded()
 
         size_t n = buffer->size() - 1;
 
-        const double max_status_age = ds_man_.config().sensorStatusMaxStatusAgeValue();
+        const double max_status_age = ctx_man_.sensorConfig().sensorStatusMaxStatusAgeValue();
 
         //parse in reverse
         for (size_t i = n; i-- > 0; )
@@ -715,8 +716,8 @@ void DataSourcesStatusWidget::updateSensorStatus()
 {
     auto ts_cur = Utils::Time::currentUTCTime();
 
-    const double max_status_age           = ds_man_.config().sensorStatusMaxStatusAgeValue();
-    const double max_status_age_max_value = ds_man_.config().sensorStatusMaxStatusAgeMaxValue();
+    const double max_status_age           = ctx_man_.sensorConfig().sensorStatusMaxStatusAgeValue();
+    const double max_status_age_max_value = ctx_man_.sensorConfig().sensorStatusMaxStatusAgeMaxValue();
 
     //determine final sensor status and finalize scan
     for (auto& tracker_status : tracker_states_)
@@ -788,7 +789,7 @@ bool DataSourcesStatusWidget::showDSType(const std::string& ds_type_name) const
 bool DataSourcesStatusWidget::showDS(unsigned int ds_id) const
 {
     //no live mode => show nothing
-    if (ds_man_.compass().appMode() != AppMode::LiveRunning)
+    if (ctx_man_.compass().appMode() != AppMode::LiveRunning)
         return false;
 
     //no active tracker => show nothing
@@ -801,7 +802,7 @@ bool DataSourcesStatusWidget::showDS(unsigned int ds_id) const
         return false;
 
     //is db data source? => always show
-    if (ds_man_.hasDBDataSource(ds_id))
+    if (ctx_man_.hasDataSource(ds_id))
         return true;
 
     //config data source => has sensor status for given ds id?
@@ -819,7 +820,7 @@ DataSourceItemBase* DataSourcesStatusWidget::createDSItem(DataSourcesWidgetItemB
  */
 void DataSourcesStatusWidget::showLastUpdates(bool show)
 {
-    ds_man_.config().sensor_status_show_last_updates_ = show;
+    ctx_man_.sensorConfig().sensor_status_show_last_updates = show;
     showColumn(LastUpdateColumn, show);
 }
 

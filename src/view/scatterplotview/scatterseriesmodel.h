@@ -21,7 +21,10 @@
 #include "scatterseriestreeitem.h"
 
 
+#include <set>
+
 #include <QAbstractItemModel>
+#include <QColor>
 #include <QModelIndex>
 #include <QVariant>
 
@@ -32,6 +35,7 @@ class ScatterSeriesModel : public QAbstractItemModel
 
 signals:
     void visibilityChangedSignal();
+    void colorChangedSignal(const std::string& series_name, const QColor& color);
 
 public:
     ScatterSeriesModel();
@@ -55,6 +59,9 @@ public:
     };
 
     void deselectAll();
+
+    std::set<std::string> hiddenSeriesNames() const;
+    void applyHiddenSeriesNames(const std::set<std::string>& names);
 
 private:
     std::unique_ptr<ScatterSeriesTreeItem> root_item_;

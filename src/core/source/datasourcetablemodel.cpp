@@ -16,15 +16,17 @@
  */
 
 #include "datasourcetablemodel.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
+#include "data_source.h"
 #include "logger.h"
 #include "files.h"
+#include "traced_assert.h"
 
 using namespace Utils;
 using namespace std;
 
-DataSourceTableModel::DataSourceTableModel(DataSourceManager& ds_man, DataSourcesConfigurationDialog& dialog)
-    : ds_man_(ds_man), dialog_(dialog)
+DataSourceTableModel::DataSourceTableModel(context::DBContextManager& ctx_man, DataSourcesConfigurationDialog& dialog)
+    : ctx_man_(ctx_man), dialog_(dialog)
 {
     db_icon_ = Files::IconProvider::getIcon("db.png");
     config_icon_ = Files::IconProvider::getIcon("configuration.png");
@@ -32,7 +34,7 @@ DataSourceTableModel::DataSourceTableModel(DataSourceManager& ds_man, DataSource
 
 int DataSourceTableModel::rowCount(const QModelIndex& parent) const
 {
-    return ds_man_.getAllDsIDs().size();
+    return ctx_man_.allDataSourceIds().size();
 }
 
 int DataSourceTableModel::columnCount(const QModelIndex& parent) const
@@ -52,85 +54,45 @@ QVariant DataSourceTableModel::data(const QModelIndex& index, int role) const
         logdbg << "display role: row " << index.row() << " col " << index.column();
 
         traced_assert(index.row() >= 0);
-        traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+        traced_assert((unsigned int)index.row() < ctx_man_.allDataSourceIds().size());
 
-        unsigned int ds_id = ds_man_.getAllDsIDs().at(index.row());
+        unsigned int ds_id = ctx_man_.allDataSourceIds().at(index.row());
 
         logdbg << "got ds_id " << ds_id;
 
         traced_assert(index.column() < table_columns_.size());
         std::string col_name = table_columns_.at(index.column()).toStdString();
 
-        if (ds_man_.hasDBDataSource(ds_id))
+        if (ctx_man_.hasDataSource(ds_id))
         {
-            dbContent::DBDataSource& ds = ds_man_.dbDataSource(ds_id);
-            traced_assert(ds_man_.hasConfigDataSource(ds_id));
+            const auto* ds = ctx_man_.dataSource(ds_id);
 
             if (col_name == "Name")
-                return ds.name().c_str();
+                return ds->name().c_str();
             if (col_name == "Short Name")
             {
-                if (ds.hasShortName())
-                    return ds.shortName().c_str();
+                if (ds->hasShortName())
+                    return ds->shortName().c_str();
                 else
                     return QVariant();
             }
             if (col_name == "DSType")
-                return ds.dsType().c_str();
+                return ds->dsType().c_str();
             if (col_name == "SAC")
-                return ds.sac();
+                return ds->sac();
             if (col_name == "SIC")
-                return ds.sic();
+                return ds->sic();
             else
                 return QVariant();
         }
-        else // cfg only
+        else
         {
-            traced_assert(ds_man_.hasConfigDataSource(ds_id));
-
-            dbContent::ConfigurationDataSource& ds = ds_man_.configDataSource(ds_id);
-
-            if (col_name == "Name")
-                return ds.name().c_str();
-            if (col_name == "Short Name")
-            {
-                if (ds.hasShortName())
-                    return ds.shortName().c_str();
-                else
-                    return QVariant();
-            }
-            if (col_name == "DSType")
-                return ds.dsType().c_str();
-            if (col_name == "SAC")
-                return ds.sac();
-            if (col_name == "SIC")
-                return ds.sic();
-            else
-                return QVariant();
+            return QVariant();
         }
     }
     case Qt::DecorationRole:
     {
-        traced_assert(index.row() >= 0);
-        traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
-
-        unsigned int ds_id = ds_man_.getAllDsIDs().at(index.row());
-
-        logdbg << "got ds_id " << ds_id;
-
-        traced_assert(index.column() < table_columns_.size());
-        std::string col_name = table_columns_.at(index.column()).toStdString();
-
-        if (col_name != "In DB" && col_name != "In Cfg")
-            return QVariant();
-
-        if (col_name == "In DB" && ds_man_.hasDBDataSource(ds_id))
-            return db_icon_;
-        else if (col_name == "In Cfg" && ds_man_.hasConfigDataSource(ds_id))
-            return config_icon_;
-        else
-            return QVariant();
-
+        return QVariant();
     }
     default:
     {
@@ -179,16 +141,16 @@ unsigned int DataSourceTableModel::getIdOf (const QModelIndex& index)
     traced_assert(index.isValid());
 
     traced_assert(index.row() >= 0);
-    traced_assert((unsigned int)index.row() < ds_man_.getAllDsIDs().size());
+    traced_assert((unsigned int)index.row() < ctx_man_.allDataSourceIds().size());
 
-    return ds_man_.getAllDsIDs().at(index.row());
+    return ctx_man_.allDataSourceIds().at(index.row());
 }
 
 QModelIndex DataSourceTableModel::dataSourceIndex(unsigned int ds_id)
 {
     loginf << "ds_id " << ds_id;
 
-    auto ds_ids = ds_man_.getAllDsIDs();
+    auto ds_ids = ctx_man_.allDataSourceIds();
 
     auto itr = std::find(ds_ids.begin(), ds_ids.end(), ds_id);
     traced_assert(itr != ds_ids.end());
@@ -202,7 +164,7 @@ void DataSourceTableModel::updateDataSource(unsigned int ds_id)
 {
     loginf << "ds_id " << ds_id;
 
-    auto ds_ids = ds_man_.getAllDsIDs();
+    auto ds_ids = ctx_man_.allDataSourceIds();
 
     auto itr = std::find(ds_ids.begin(), ds_ids.end(), ds_id);
     traced_assert(itr != ds_ids.end());

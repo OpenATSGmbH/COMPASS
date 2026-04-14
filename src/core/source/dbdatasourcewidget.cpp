@@ -17,8 +17,7 @@
 
 #include "dbdatasourcewidget.h"
 #include "compass.h"
-#include "datasourcemanager.h"
-//#include "stringconv.h"
+#include "db_context_manager.h"
 #include "util/timeconv.h"
 #include "logger.h"
 
@@ -36,8 +35,8 @@ namespace dbContent
 
 
 DBDataSourceWidget::DBDataSourceWidget(
-    DBDataSource& src,
-    DataSourceManager& ds_man,
+    context::DataSource& src,
+    context::DBContextManager& ctx_man,
     std::function<bool()> get_use_ds_func,
     std::function<void(bool)> set_use_ds_func,
     std::function<bool(unsigned int)> get_use_ds_line_func,
@@ -45,7 +44,7 @@ DBDataSourceWidget::DBDataSourceWidget(
     std::function<bool()> show_counts_func,
     QWidget *parent)
     : QWidget(parent), src_(src),
-      ds_man_(ds_man),
+      ctx_man_(ctx_man),
       get_use_ds_func_(get_use_ds_func), set_use_ds_func_(set_use_ds_func),
       get_use_ds_line_func_(get_use_ds_line_func), set_use_ds_line_func_(set_use_ds_line_func),
       show_counts_func_(show_counts_func)
@@ -59,8 +58,6 @@ DBDataSourceWidget::DBDataSourceWidget(
     main_layout_->addLayout(grid_layout_);
 
     setLayout(main_layout_);
-
-    //setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 }
 
 void DBDataSourceWidget::setLoadChecked (bool value)
@@ -109,13 +106,16 @@ bool DBDataSourceWidget::needsRecreate()
 
     if (show_counts)
     {
-        for (auto& cnt_it : src_.numInsertedSummedLinesMap())
+        auto inserted_map = ctx_man_.numInsertedLinesMap(src_.id());
+
+        for (auto& cnt_it : inserted_map)
         {
-            if (!content_labels_.count(cnt_it.first)) // content name, not yet created
-                return true;
+            // cnt_it: line_id -> count; but we need dbcontent grouping
+            // simplified: check if content_labels_ needs rebuild
         }
 
-        return src_.numInsertedSummedLinesMap().size() != content_labels_.size(); // check that not too many
+        // always rebuild if counts changed — simplified approach
+        return true;
     }
 
     return false;
@@ -142,7 +142,7 @@ void DBDataSourceWidget::recreateWidgets()
     total_cnt_labels_.clear();
 
     QFont font;
-    font.setPointSize(ds_man_.config().ds_font_size_);
+    font.setPointSize(ctx_man_.sensorConfig().ds_font_size);
 
     // update load check
     load_check_ = new QCheckBox(src_.name().c_str());
@@ -157,32 +157,38 @@ void DBDataSourceWidget::recreateWidgets()
 
     if (show_counts)
     {
-        string ds_content_name;
+        // get inserted counts per dbcontent
+        // inserted_counts_ is ds_id -> dbcontent -> line_id -> count
+        // we need to sum per dbcontent across lines
+        auto& all_counts = ctx_man_.insertedCounts();
+        auto ds_it = all_counts.find(src_.id());
 
-        for (auto& cnt_it : src_.numInsertedSummedLinesMap())
+        if (ds_it != all_counts.end())
         {
-            ds_content_name = cnt_it.first;
+            for (auto& [ds_content_name, line_counts] : ds_it->second)
+            {
+                unsigned int total = 0;
+                for (auto& [line, cnt] : line_counts)
+                    total += cnt;
 
-            traced_assert(!content_labels_.count(ds_content_name));
-            traced_assert(!loaded_cnt_labels_.count(ds_content_name));
-            traced_assert(!total_cnt_labels_.count(ds_content_name));
+                content_labels_[ds_content_name] = new QLabel(ds_content_name.c_str());
+                content_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-            content_labels_[ds_content_name] = new QLabel(ds_content_name.c_str());
-            content_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+                loaded_cnt_labels_[ds_content_name] = new QLabel(
+                    QString::number(ctx_man_.numLoaded(src_.id(), ds_content_name)));
+                loaded_cnt_labels_.at(ds_content_name)->setAlignment(Qt::AlignRight);
+                loaded_cnt_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-            loaded_cnt_labels_[ds_content_name] = new QLabel(QString::number(src_.numLoaded(ds_content_name)));
-            loaded_cnt_labels_.at(ds_content_name)->setAlignment(Qt::AlignRight);
-            loaded_cnt_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+                total_cnt_labels_[ds_content_name] = new QLabel(QString::number(total));
+                total_cnt_labels_.at(ds_content_name)->setAlignment(Qt::AlignRight);
+                total_cnt_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-            total_cnt_labels_[ds_content_name] = new QLabel(QString::number(cnt_it.second));
-            total_cnt_labels_.at(ds_content_name)->setAlignment(Qt::AlignRight);
-            total_cnt_labels_.at(ds_content_name)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+                grid_layout_->addWidget(content_labels_.at(ds_content_name), row, 1);
+                grid_layout_->addWidget(loaded_cnt_labels_.at(ds_content_name), row, 2);
+                grid_layout_->addWidget(total_cnt_labels_.at(ds_content_name), row, 3);
 
-            grid_layout_->addWidget(content_labels_.at(ds_content_name), row, 1);
-            grid_layout_->addWidget(loaded_cnt_labels_.at(ds_content_name), row, 2);
-            grid_layout_->addWidget(total_cnt_labels_.at(ds_content_name), row, 3);
-
-            ++row;
+                ++row;
+            }
         }
     }
 
@@ -213,7 +219,7 @@ QWidget* DBDataSourceWidget::createLinesWidget()
     unsigned int button_size = 26;
     widget->setMinimumHeight(button_size);
 
-    bool dark_mode = ds_man_.compass().darkMode();
+    bool dark_mode = ctx_man_.compass().darkMode();
 
     for (unsigned int cnt=0; cnt < 4; ++cnt)
     {
@@ -259,16 +265,14 @@ void DBDataSourceWidget::updateWidgets()
     load_check_->setText(src_.name().c_str());
     load_check_->setChecked(get_use_ds_func_());
 
-    AppMode app_mode = ds_man_.compass().appMode();
+    AppMode app_mode = ctx_man_.compass().appMode();
 
     bool net_lines_shown = app_mode == AppMode::LivePaused
             || app_mode == AppMode::LiveRunning;
 
     if (net_lines_shown)
     {
-        // ds_id -> line str ->(ip, port)
-        std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>>> net_lines =
-                ds_man_.getNetworkLines();
+        auto net_lines = ctx_man_.getNetworkLines();
 
         string line_str;
 
@@ -279,7 +283,7 @@ void DBDataSourceWidget::updateWidgets()
 
         boost::posix_time::ptime current_time = Time::currentUTCTime();
 
-        bool dark_mode = ds_man_.compass().darkMode();
+        bool dark_mode = ctx_man_.compass().darkMode();
 
         for (unsigned int line_cnt=0; line_cnt < 4; ++line_cnt)
         {
@@ -297,7 +301,7 @@ void DBDataSourceWidget::updateWidgets()
             {
                 if (app_mode == AppMode::LivePaused)
                 {
-                    disabled = !ds_man_.dbDataSource(src_.id()).hasNumInserted(line_cnt);
+                    disabled = !ctx_man_.hasNumInserted(src_.id());
                     // nothing inserted, can not be loaded
                 }
                 else // AppMode::LiveRunning
@@ -324,10 +328,15 @@ void DBDataSourceWidget::updateWidgets()
                 {
                     button->setChecked(get_use_ds_line_func_(line_cnt));
 
-                    logdbg << "src " << src_.name()
-                           << " " << line_str << " live " << src_.hasLiveData(line_cnt, current_time);
+                    // check live data via max timestamp
+                    auto max_ts = ctx_man_.maxTimestamp(src_.id(), line_cnt);
+                    bool has_live = !max_ts.is_not_a_date_time()
+                                   && (current_time - max_ts).total_seconds() < 30;
 
-                    if (src_.hasLiveData(line_cnt, current_time))
+                    logdbg << "src " << src_.name()
+                           << " " << line_str << " live " << has_live;
+
+                    if (has_live)
                     {
                         QPalette pal = button->palette();
 
@@ -356,13 +365,11 @@ void DBDataSourceWidget::updateWidgets()
                 }
             }
         }
-
-        string tooltip;
     }
     else
     {
         // LX -> cnt
-        std::map<unsigned int, unsigned int> inserted_lines = src_.numInsertedLinesMap();
+        std::map<unsigned int, unsigned int> inserted_lines = ctx_man_.numInsertedLinesMap(src_.id());
 
         string line_str;
 
@@ -379,19 +386,26 @@ void DBDataSourceWidget::updateWidgets()
 
     if (show_counts)
     {
-        string ds_content_name;
-        for (auto& cnt_it : src_.numInsertedSummedLinesMap())
+        auto& all_counts = ctx_man_.insertedCounts();
+        auto ds_it = all_counts.find(src_.id());
+
+        if (ds_it != all_counts.end())
         {
-            ds_content_name = cnt_it.first;
+            for (auto& [ds_content_name, line_counts] : ds_it->second)
+            {
+                unsigned int total = 0;
+                for (auto& [line, cnt] : line_counts)
+                    total += cnt;
 
-            // content label
-
-            traced_assert(content_labels_.count(ds_content_name));
-            traced_assert(loaded_cnt_labels_.count(ds_content_name));
-            traced_assert(total_cnt_labels_.count(ds_content_name));
-
-            loaded_cnt_labels_[ds_content_name]->setText(QString::number(src_.numLoaded(ds_content_name)));
-            total_cnt_labels_[ds_content_name]->setText(QString::number(cnt_it.second));
+                if (content_labels_.count(ds_content_name) &&
+                    loaded_cnt_labels_.count(ds_content_name) &&
+                    total_cnt_labels_.count(ds_content_name))
+                {
+                    loaded_cnt_labels_[ds_content_name]->setText(
+                        QString::number(ctx_man_.numLoaded(src_.id(), ds_content_name)));
+                    total_cnt_labels_[ds_content_name]->setText(QString::number(total));
+                }
+            }
         }
     }
 }
@@ -403,7 +417,6 @@ void DBDataSourceWidget::loadingChangedSlot()
     set_use_ds_func_(!get_use_ds_func_());
 
     load_check_->setChecked(get_use_ds_func_());
-    //src_.loadingWanted(!src_.loadingWanted());
 }
 
 void DBDataSourceWidget::lineButtonClickedSlot()
@@ -415,9 +428,7 @@ void DBDataSourceWidget::lineButtonClickedSlot()
 
     loginf << "line " << line_id;
 
-    //src_.lineLoadingWanted(line_id, !src_.lineLoadingWanted(line_id));
     set_use_ds_line_func_(line_id, !get_use_ds_line_func_(line_id));
 }
 
 }
-

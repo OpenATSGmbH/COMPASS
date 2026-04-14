@@ -24,6 +24,7 @@
 #include "traced_assert.h"
 
 #include <QApplication>
+#include <QColorDialog>
 #include <QDialog>
 #include <QMenu>
 #include <QThread>
@@ -155,12 +156,18 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
 
         if (clickX > x && clickX < x + w && clickY > y && clickY < y + h)
         {
-            logdbg << "button";
-            if (item->hasMenu())
+            if (item->hasDataSeries())
             {
-                logdbg << "menu at x " << e->globalX() << " y "
-                       << e->globalY();
-
+                QColor color = QColorDialog::getColor(item->color(), nullptr,
+                                                       QString::fromStdString(item->name()));
+                if (color.isValid())
+                {
+                    item->setColor(color);
+                    item->emitColorChanged();
+                }
+            }
+            else if (item->hasMenu())
+            {
                 item->execMenu(QPoint(e->globalX(), e->globalY()));
             }
         }
@@ -350,6 +357,30 @@ int ScatterSeriesTreeItem::row() const
         return parent_item_->getIndexOf(const_cast<ScatterSeriesTreeItem*>(this));
 
     return 0;
+}
+
+QColor ScatterSeriesTreeItem::color() const
+{
+    if (data_series_)
+        return data_series_->color;
+    return QColor();
+}
+
+void ScatterSeriesTreeItem::setColor(const QColor& color)
+{
+    if (!data_series_)
+        return;
+
+    data_series_->color = color;
+
+    QPixmap pixmap(100, 100);
+    pixmap.fill(color);
+    color_icon_ = QIcon(pixmap);
+}
+
+void ScatterSeriesTreeItem::emitColorChanged()
+{
+    emit model_.colorChangedSignal(name_, data_series_ ? data_series_->color : QColor());
 }
 
 void ScatterSeriesTreeItem::hide(bool value)

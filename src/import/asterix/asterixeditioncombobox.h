@@ -26,8 +26,6 @@
 #include <memory>
 #include <string>
 
-#include "asteriximporttask.h"
-
 class ASTERIXEditionComboBox : public QComboBox
 {
     Q_OBJECT
@@ -43,11 +41,9 @@ class ASTERIXEditionComboBox : public QComboBox
     void changedEdition(const std::string& cat_str, const std::string& ed_str);
 
   public:
-    /// @brief Constructor
-    ASTERIXEditionComboBox(ASTERIXImportTask& task,
-                           const std::shared_ptr<jASTERIX::Category> category,
+    ASTERIXEditionComboBox(const std::shared_ptr<jASTERIX::Category> category,
                            QWidget* parent = nullptr)
-        : QComboBox(parent), task_(task), category_(category)
+        : QComboBox(parent), category_(category)
     {
         for (const auto& ed_it : category_->editions())
         {
@@ -60,13 +56,10 @@ class ASTERIXEditionComboBox : public QComboBox
         connect(this, SIGNAL(activated(const QString&)), this,
                 SLOT(changedEditionSlot(const QString&)));
     }
-    /// @brief Destructor
     virtual ~ASTERIXEditionComboBox() {}
 
-    /// @brief Returns the currently selected framing
     std::string getEdition() { return currentText().toStdString(); }
 
-    /// @brief Sets the currently selected edition
     void setEdition(const std::string& edition)
     {
         int index = findText(QString(edition.c_str()));
@@ -75,6 +68,5 @@ class ASTERIXEditionComboBox : public QComboBox
     }
 
   protected:
-    ASTERIXImportTask& task_;
     const std::shared_ptr<jASTERIX::Category> category_;
 };

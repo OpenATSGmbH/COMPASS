@@ -775,7 +775,7 @@ nlohmann::json TaskResult::toJSON() const
  */
 bool TaskResult::fromJSON(const nlohmann::json& j)
 {
-    loginf << "loading result JSON: " << j.dump();
+    //loginf << "loading result JSON: " << j.dump();
 
     if (!j.is_object()                    ||
         !j.contains(FieldType)            ||

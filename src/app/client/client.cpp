@@ -18,6 +18,7 @@
 #include "client.h"
 
 #include "compass.h"
+#include "db_context_manager.h"
 #include "config.h"
 #include "configurationmanager.h"
 #include "files.h"
@@ -204,7 +205,6 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
          " (including one pair of single quotes)")
         ("import_asterix_parameters", po::value<std::string>(&import_asterix_parameters_),
          "ASTERIX import parameters as JSON string, e.g. ''{\"filter_modec_active\": true,\"filter_modec_max\": 50000.0,\"filter_modec_min\": -10000.0}'' (including one pair of single quotes)")
-        
         ("import_json", po::value<std::string>(&import_json_filename_),
          "imports JSON file with given filename, e.g. '/data/file1.json'")
         ("import_gps_trail", po::value<std::string>(&import_gps_trail_filename_),
@@ -493,6 +493,13 @@ bool Client::run ()
     }
 
     splash.finish(&main_window);
+
+    // ensure a data context is active before proceeding
+    if (!compass_->dbContextManager().ensureActiveContext(&main_window))
+    {
+        loginf << "no data context selected — exiting";
+        return 0;
+    }
 
     RTCommandManager& rt_man = compass_->rtCommandManager();
 
@@ -854,6 +861,7 @@ void Client::checkAndSetupConfig()
                 throw e;
             }
         }
+
     }
     catch (exception& ex)
     {

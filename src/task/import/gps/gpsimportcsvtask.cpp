@@ -26,7 +26,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "buffer.h"
 //#include "dbcontent/variable/variableset.h"
 //#include "dbcontent/variable/metavariable.h"
@@ -595,17 +595,17 @@ void GPSImportCSVTask::run()
 
     // config data source
     {
-        DataSourceManager& src_man = manager().compass().dataSourceManager();
+        auto& ctx_man = manager().compass().dbContextManager();
 
-        if (!src_man.hasDBDataSource(ds_id))
-            src_man.addNewDataSource(ds_id);
+        if (!ctx_man.hasDataSource(ds_id))
+            ctx_man.createDataSource(ds_sac_, ds_sic_);
 
-        traced_assert(src_man.hasDBDataSource(ds_id));
+        traced_assert(ctx_man.hasDataSource(ds_id));
 
-        dbContent::DBDataSource& src = src_man.dbDataSource(ds_id);
+        auto* src = ctx_man.dataSource(ds_id);
 
-        src.name(ds_name_);
-        src.dsType(dbcontent_name); // same as dstype
+        src->name(ds_name_);
+        src->dsType(dbcontent_name); // same as dstype
 
     }
 
@@ -688,8 +688,8 @@ void GPSImportCSVTask::insertDoneSlot()
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &GPSImportCSVTask::insertDoneSlot);
 
-    manager().compass().dataSourceManager().saveDBDataSources();
-    emit manager().compass().dataSourceManager().dataSourcesChangedSignal();
+    manager().compass().dbContextManager().writeContextToDB();
+    emit manager().compass().dbContextManager().activeContextChangedSignal();
 
     done_ = true;
 
