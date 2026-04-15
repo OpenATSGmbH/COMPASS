@@ -347,7 +347,7 @@ void DataSource::addNetworkLinesIfMissing()
 void DataSource::addRemoteUnitsIfMissing()
 {
     if (!hasRemoteUnits())
-        info_["remote_units"] = json::array();
+        info_["remote_units"] = json::object();
 }
 
 void DataSource::removeRemoteUnits()
@@ -358,18 +358,11 @@ void DataSource::removeRemoteUnits()
 
 void DataSource::removeRemoteUnit(int index)
 {
-    if (!info_.contains("remote_units") || !info_["remote_units"].is_array())
+    if (!info_.contains("remote_units") || !info_["remote_units"].is_object())
         return;
 
-    auto& arr = info_["remote_units"];
-    for (auto it = arr.begin(); it != arr.end(); ++it)
-    {
-        if (it->contains("index") && (*it)["index"].get<int>() == index)
-        {
-            arr.erase(it);
-            return;
-        }
-    }
+    string key = to_string(index);
+    info_["remote_units"].erase(key);
 }
 
 // ============================================================

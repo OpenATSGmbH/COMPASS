@@ -878,18 +878,14 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     {
         traced_assert(ds.hasRemoteUnit(idx));
         // read remote unit from info JSON
-        auto& ru_arr = ds.info()["remote_units"];
-        for (const auto& ruj : ru_arr) {
-            if (ruj.value("index", -1) == idx) {
-                ru_def_in.index = ruj.value("index", 0);
-                ru_def_in.name = ruj.value("name", "");
-                ru_def_in.comment = ruj.value("comment", "");
-                ru_def_in.latitude = ruj.value("latitude", 0.0);
-                ru_def_in.longitude = ruj.value("longitude", 0.0);
-                ru_def_in.altitude = ruj.value("altitude", 0.0);
-                break;
-            }
-        }
+        auto key = std::to_string(idx);
+        const auto& ruj = ds.info().at("remote_units").at(key);
+        ru_def_in.index = idx;
+        ru_def_in.name = ruj.value("name", "");
+        ru_def_in.comment = ruj.value("comment", "");
+        ru_def_in.latitude = ruj.value("latitude", 0.0);
+        ru_def_in.longitude = ruj.value("longitude", 0.0);
+        ru_def_in.altitude = ruj.value("altitude", 0.0);
     }
 
     auto ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
@@ -986,36 +982,15 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     ru_def.longitude = lon_box->value();
     ru_def.altitude  = alt_box->value();
 
-    if (add)
     {
-        //add using info JSON
-        {
-            nlohmann::json ru_j;
-            ru_j["index"] = ru_def.index;
-            ru_j["name"] = ru_def.name;
-            ru_j["comment"] = ru_def.comment;
-            ru_j["latitude"] = ru_def.latitude;
-            ru_j["longitude"] = ru_def.longitude;
-            ru_j["altitude"] = ru_def.altitude;
-            ds.info()["remote_units"].push_back(ru_j);
-        }
-    }
-    else
-    {
-        //apply configuration via info JSON
-        {
-            auto& ru_arr = ds.info()["remote_units"];
-            for (auto& ruj : ru_arr) {
-                if (ruj.value("index", -1) == idx) {
-                    ruj["name"] = ru_def.name;
-                    ruj["comment"] = ru_def.comment;
-                    ruj["latitude"] = ru_def.latitude;
-                    ruj["longitude"] = ru_def.longitude;
-                    ruj["altitude"] = ru_def.altitude;
-                    break;
-                }
-            }
-        }
+        auto key = std::to_string(ru_def.index);
+        nlohmann::json ru_j;
+        ru_j["name"] = ru_def.name;
+        ru_j["comment"] = ru_def.comment;
+        ru_j["latitude"] = ru_def.latitude;
+        ru_j["longitude"] = ru_def.longitude;
+        ru_j["altitude"] = ru_def.altitude;
+        ds.info()["remote_units"][key] = ru_j;
     }
 
     updateMLAT(&ds);
@@ -1055,16 +1030,17 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
     }
 
     ds.removeRemoteUnits();
+    ds.addRemoteUnitsIfMissing();
     // import remote units via info JSON
     for (const auto& ru_pair : ru_defs) {
+        auto key = std::to_string(ru_pair.second.index);
         nlohmann::json ru_j;
-        ru_j["index"] = ru_pair.second.index;
         ru_j["name"] = ru_pair.second.name;
         ru_j["comment"] = ru_pair.second.comment;
         ru_j["latitude"] = ru_pair.second.latitude;
         ru_j["longitude"] = ru_pair.second.longitude;
         ru_j["altitude"] = ru_pair.second.altitude;
-        ds.info()["remote_units"].push_back(ru_j);
+        ds.info()["remote_units"][key] = ru_j;
     }
 
     updateMLAT(&ds);
@@ -1114,11 +1090,7 @@ void DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot()
     for (auto item : remote_units_list_->selectedItems())
     {
         int index = item->data(0, Qt::DisplayRole).toInt();
-
-        
-            ds.removeRemoteUnit(index);
-        
-            ds.removeRemoteUnit(index);
+        ds.removeRemoteUnit(index);
     }
 
     updateMLAT(&ds);
@@ -1503,10 +1475,11 @@ void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
         remote_units_list_->blockSignals(true);
         remote_units_list_->clear();
 
-        for (const auto& ru_json : ds->info().value("remote_units", nlohmann::json::array()))
+        auto ru_obj = ds->info().value("remote_units", nlohmann::json::object());
+        for (const auto& [key, ru_json] : ru_obj.items())
         {
             auto item = new QTreeWidgetItem;
-            item->setData(0, Qt::DisplayRole, ru_json.value("index", -1));
+            item->setData(0, Qt::DisplayRole, std::stoi(key));
             item->setData(1, Qt::DisplayRole, QString::fromStdString(ru_json.value("name", "")));
             item->setData(2, Qt::DisplayRole, QString::fromStdString(ru_json.value("comment", "")));
             item->setData(3, Qt::DisplayRole, ru_json.value("latitude", 0.0));
@@ -1516,6 +1489,7 @@ void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
             remote_units_list_->addTopLevelItem(item);
         }
 
+        remote_units_list_->sortItems(0, Qt::AscendingOrder);
         remote_units_list_->blockSignals(false);
     }
     else
