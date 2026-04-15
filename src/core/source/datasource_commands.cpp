@@ -120,7 +120,7 @@ bool RTCommandSetDataSources::run_impl()
         if (ds_json_.is_array())
         {
             for (const auto& ds_j : ds_json_)
-                ctx_man.activeContext().dataSources().push_back(context::DataSource::fromJSON(ds_j));
+                ctx_man.activeContext().addOrReplaceDataSource(context::DataSource::fromJSON(ds_j));
             ctx_man.saveContext(ctx_man.activeContextName());
         }
     }

@@ -61,6 +61,7 @@ public:
     // data sections
     std::vector<DataSource>& dataSources() { return data_sources_; }
     const std::vector<DataSource>& dataSources() const { return data_sources_; }
+    void addOrReplaceDataSource(DataSource ds);
 
     std::vector<FFT>& ffts() { return ffts_; }
     const std::vector<FFT>& ffts() const { return ffts_; }

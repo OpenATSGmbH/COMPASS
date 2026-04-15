@@ -29,6 +29,7 @@
 #include "datasourcesconfigurationdialog.h"
 #include "db_context_create_dialog.h"
 #include "db_context_select_dialog.h"
+#include "db_context_conflict_dialog.h"
 #include "files.h"
 #include "logger.h"
 #include "number.h"
@@ -37,6 +38,9 @@
 #include <json.hpp>
 
 #include <boost/filesystem.hpp>
+
+#include <QMessageBox>
+#include <QPushButton>
 
 #include <algorithm>
 #include <cmath>
@@ -129,6 +133,7 @@ DBContext& DBContextManager::context(const string& name)
 
 void DBContextManager::createContext(const string& name)
 {
+    traced_assert(!name.empty());
     traced_assert(!hasContext(name));
 
     DBContext ctx(name);
@@ -162,6 +167,7 @@ void DBContextManager::deleteContext(const string& name)
 
 void DBContextManager::renameContext(const string& old_name, const string& new_name)
 {
+    traced_assert(!new_name.empty());
     traced_assert(hasContext(old_name));
     traced_assert(!hasContext(new_name));
 
@@ -186,6 +192,7 @@ void DBContextManager::renameContext(const string& old_name, const string& new_n
 
 void DBContextManager::duplicateContext(const string& src, const string& dest)
 {
+    traced_assert(!dest.empty());
     traced_assert(hasContext(src));
     traced_assert(!hasContext(dest));
 
@@ -250,10 +257,36 @@ DBContext& DBContextManager::activeContext()
 
 void DBContextManager::setActiveContext(const string& name)
 {
+    traced_assert(!name.empty());
     traced_assert(hasContext(name));
 
     if (active_context_name_ == name)
         return;
+
+    // if DB is open and contains data, ask for confirmation before switching
+    if (compass_.dbOpened() && hasInsertedData())
+    {
+        QMessageBox msgbox;
+        msgbox.setWindowTitle("Switch Context");
+        msgbox.setText("The database contains imported data.\n\n"
+                       "Switching to context '" + QString::fromStdString(name) +
+                       "' will overwrite the context stored in the database.");
+        msgbox.setInformativeText("Do you want to continue?");
+
+        auto* ok_button = msgbox.addButton(QMessageBox::Ok);
+        ok_button->setIcon(QIcon());
+        auto* cancel_button = msgbox.addButton(QMessageBox::Cancel);
+        cancel_button->setIcon(QIcon());
+
+        msgbox.setDefaultButton(cancel_button);
+        msgbox.exec();
+
+        if (msgbox.clickedButton() != ok_button)
+        {
+            loginf << "context switch to '" << name << "' cancelled by user";
+            return;
+        }
+    }
 
     active_context_name_ = name;
     saveActiveContextName();
@@ -261,6 +294,9 @@ void DBContextManager::setActiveContext(const string& name)
     loginf << "active context set to '" << name << "', rebuilding sector layers";
 
     rebuildSectorLayers();
+
+    if (compass_.dbOpened())
+        writeContextToDB();
 
     loginf << "sector layers rebuilt, sectors_loaded_=" << sectors_loaded_;
 
@@ -704,10 +740,56 @@ void DBContextManager::clearInsertedCounts(unsigned int ds_id, const string& dbc
     emit countsChangedSignal();
 }
 
-void DBContextManager::applyDeleteInfo(const json& /*delete_info*/)
+void DBContextManager::applyDeleteInfo(const json& delete_info)
 {
-    // TODO: implement when wiring callers — adjust counts and remove empty DS
-    loginf << "applyDeleteInfo not yet implemented";
+    for (const auto& entry : delete_info)
+    {
+        string dbcontent_name = entry.at("dbcontent").get<string>();
+
+        if (!entry.contains("data_sources"))
+        {
+            // no data_sources key → all data for this dbcontent was deleted
+            loginf << "clearing all counts for dbcontent '" << dbcontent_name << "'";
+
+            for (auto& [ds_id, dbcont_map] : inserted_counts_)
+                dbcont_map.erase(dbcontent_name);
+        }
+        else
+        {
+            for (const auto& ds_entry : entry.at("data_sources"))
+            {
+                unsigned int ds_id = ds_entry.at("ds_id").get<unsigned int>();
+
+                auto ds_it = inserted_counts_.find(ds_id);
+                if (ds_it == inserted_counts_.end())
+                    continue;
+
+                auto dbc_it = ds_it->second.find(dbcontent_name);
+                if (dbc_it == ds_it->second.end())
+                    continue;
+
+                if (!ds_entry.contains("line_ids"))
+                {
+                    loginf << "clearing counts for ds_id " << ds_id
+                           << " dbcontent '" << dbcontent_name << "'";
+                    ds_it->second.erase(dbc_it);
+                }
+                else
+                {
+                    for (const auto& lid : ds_entry.at("line_ids"))
+                    {
+                        unsigned int line_id = lid.get<unsigned int>();
+                        loginf << "clearing counts for ds_id " << ds_id
+                               << " dbcontent '" << dbcontent_name << "'"
+                               << " line " << line_id;
+                        dbc_it->second.erase(line_id);
+                    }
+                }
+            }
+        }
+    }
+
+    emit countsChangedSignal();
 }
 
 void DBContextManager::addNumInserted(unsigned int ds_id, const string& dbcontent_name,
@@ -867,6 +949,17 @@ void DBContextManager::loadCountsFromDB()
         for (const auto& [dbc, line_map] : dbc_map)
             for (const auto& [line_id, cnt] : line_map)
                 loginf << "  ds_id " << ds_id << " dbc " << dbc << " line " << line_id << " cnt " << cnt;
+}
+
+bool DBContextManager::hasInsertedData() const
+{
+    for (const auto& [ds_id, dbc_map] : inserted_counts_)
+        for (const auto& [dbc, line_map] : dbc_map)
+            for (const auto& [line_id, cnt] : line_map)
+                if (cnt > 0)
+                    return true;
+
+    return false;
 }
 
 // ============================================================
@@ -1043,6 +1136,9 @@ void DBContextManager::writeContextToDB()
     traced_assert(hasActiveContext());
 
     auto& db = compass_.dbInterface();
+
+    if (!db.existsDBContextTable())
+        db.createDBContextTable();
     const auto& ctx = activeContext();
 
     // save each section
@@ -1121,8 +1217,23 @@ DBContext DBContextManager::readContextFromDB() const
         json j = json::parse(sections.at("sensors"));
         if (j.contains("data"))
         {
+            set<unsigned int> seen_ids;
             for (const auto& ds_j : j.at("data"))
-                ctx.dataSources().push_back(DataSource::fromJSON(ds_j));
+            {
+                auto ds = DataSource::fromJSON(ds_j);
+                unsigned int ds_id = ds.id();
+
+                if (seen_ids.count(ds_id))
+                {
+                    logerr << "duplicate data source SAC/SIC "
+                           << ds.sac() << "/" << ds.sic()
+                           << " in DB context '" << ctx.name() << "', skipping duplicate";
+                    continue;
+                }
+
+                seen_ids.insert(ds_id);
+                ctx.dataSources().push_back(std::move(ds));
+            }
         }
     }
 
@@ -1201,7 +1312,7 @@ void DBContextManager::databaseOpenedSlot()
 
     if (!db.existsDBContextTable())
     {
-        // first open — write the active context to DB
+        // new DB — write the active context
         loginf << "no db_context table — writing active context to DB";
         writeContextToDB();
     }
@@ -1232,11 +1343,32 @@ void DBContextManager::databaseOpenedSlot()
 
             if (d.hasDifferences())
             {
-                logwrn << "context differs from DB:\n" << d.summary()
-                       << "using file context as source of truth";
+                logwrn << "context differs from DB:\n" << d.summary();
 
-                // same name, file context wins — overwrite DB
-                writeContextToDB();
+                DBContextConflictDialog dlg(active_context_name_, d);
+                dlg.exec();
+
+                switch (dlg.resolution())
+                {
+                case DBContextConflictDialog::UseFile:
+                    loginf << "conflict resolved: using file definition";
+                    writeContextToDB();
+                    break;
+
+                case DBContextConflictDialog::UseDatabase:
+                    loginf << "conflict resolved: using database definition";
+                    db_ctx.modified(DBContext::currentTimestamp());
+                    contexts_[active_context_name_] = db_ctx;
+                    saveContext(active_context_name_);
+                    rebuildSectorLayers();
+                    break;
+
+                case DBContextConflictDialog::Merge:
+                    // TODO: open merge dialog, for now fall back to file
+                    loginf << "conflict resolved: merge (not yet implemented, using file)";
+                    writeContextToDB();
+                    break;
+                }
             }
             else
             {
@@ -1637,7 +1769,7 @@ void DBContextManager::importSensors(const string& filepath)
 
     auto& ctx = activeContext();
     for (const auto& ds_j : data_arr)
-        ctx.dataSources().push_back(DataSource::fromJSON(ds_j));
+        ctx.addOrReplaceDataSource(DataSource::fromJSON(ds_j));
 
     saveContext(active_context_name_);
 

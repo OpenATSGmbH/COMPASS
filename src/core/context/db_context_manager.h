@@ -318,6 +318,7 @@ private:
     void loadActiveContextName();
     void rebuildSectorLayers();
     void loadCountsFromDB();
+    bool hasInsertedData() const;
 
     COMPASS& compass_;
     std::string active_context_name_;

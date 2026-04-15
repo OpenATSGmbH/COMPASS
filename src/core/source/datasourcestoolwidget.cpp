@@ -55,6 +55,9 @@ void DataSourcesToolWidget::createUI()
     ds_widget_ = new DataSourcesWidget(true, ctx_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
 
+    connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
+            this, [this] { logdbg << "activeContextChangedSignal received"; updateContent(true); });
+
     connect(&ctx_man_, &context::DBContextManager::countsChangedSignal,
             this, [this] { logdbg << "countsChangedSignal received"; updateContent(false); });
 

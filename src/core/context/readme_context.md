@@ -51,6 +51,8 @@ class DBContext {
 };
 ```
 
+**Name invariants:** Context names must be non-empty and unique within the manager. Empty names are never valid — `DBContextManager` asserts `!name.empty()` on `createContext`, `renameContext`, `duplicateContext`, `setActiveContext`, and `importContext`. The `db_context` table is only created in the DB when first writing a context (not eagerly on DB creation), so `databaseOpenedSlot` can distinguish a new DB (no table) from an existing one.
+
 - `toJSON()` / `fromJSON()` serialize the full context as one JSON object.
 - `operator==` compares all fields.
 - `currentTimestamp()` returns ISO 8601 string for created/modified fields.
@@ -58,6 +60,12 @@ class DBContext {
 ## DataSource (sensor)
 
 Identified by SAC/SIC. ID computed via `Utils::Number::dsIdFrom(sac, sic)`.
+
+**SAC/SIC uniqueness invariant:** Each data source within a context must have a unique SAC/SIC pair. Same SAC/SIC always means the same data source. This is enforced at all entry points:
+- **Import/commands:** `DBContext::addOrReplaceDataSource()` overwrites an existing entry with the same SAC/SIC instead of creating a duplicate.
+- **File/DB loading:** `DBContextSerializer::load()` and `DBContextManager::readContextFromDB()` detect duplicates, log an error, and keep only the first occurrence.
+
+Never use `dataSources().push_back()` directly when adding from external input — always use `addOrReplaceDataSource()`.
 
 ```cpp
 class DataSource {

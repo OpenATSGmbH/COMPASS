@@ -137,6 +137,22 @@ DBContext DBContext::fromJSON(const json& j)
     return ctx;
 }
 
+void DBContext::addOrReplaceDataSource(DataSource ds)
+{
+    unsigned int ds_id = ds.id();
+
+    for (auto& existing : data_sources_)
+    {
+        if (existing.id() == ds_id)
+        {
+            existing = std::move(ds);
+            return;
+        }
+    }
+
+    data_sources_.push_back(std::move(ds));
+}
+
 bool DBContext::operator==(const DBContext& other) const
 {
     if (name_ != other.name_ || description_ != other.description_)

@@ -259,9 +259,6 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
             setProperty("APP_VERSION", compass_.config().getString("version"));
             saveProperties();
 
-            if (!existsDBContextTable())
-                createDBContextTable();
-
             traced_assert(!existsSectorsTable());
             createSectorsTable();
         }

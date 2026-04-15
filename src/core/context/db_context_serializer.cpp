@@ -27,6 +27,7 @@
 #include <json.hpp>
 
 #include <fstream>
+#include <set>
 
 #include <boost/filesystem.hpp>
 
@@ -181,8 +182,23 @@ DBContext DBContextSerializer::load(const string& context_dir)
 
             if (j.contains("data"))
             {
+                std::set<unsigned int> seen_ids;
                 for (const auto& ds_j : j.at("data"))
-                    ctx.dataSources().push_back(DataSource::fromJSON(ds_j));
+                {
+                    auto ds = DataSource::fromJSON(ds_j);
+                    unsigned int ds_id = ds.id();
+
+                    if (seen_ids.count(ds_id))
+                    {
+                        logerr << "duplicate data source SAC/SIC "
+                               << ds.sac() << "/" << ds.sic()
+                               << " in context '" << ctx.name() << "', skipping duplicate";
+                        continue;
+                    }
+
+                    seen_ids.insert(ds_id);
+                    ctx.dataSources().push_back(std::move(ds));
+                }
             }
         }
     }
