@@ -219,6 +219,9 @@ void DBContextManager::saveContext(const string& name)
     ctx.modified(DBContext::currentTimestamp());
     DBContextSerializer::save(ctx, basePath());
 
+    if (compass_.dbOpened())
+        writeContextToDB();
+
     loginf << "saved context '" << name << "'";
 }
 
@@ -1349,21 +1352,22 @@ void DBContextManager::databaseOpenedSlot()
 
                 QApplication::restoreOverrideCursor();
 
-                DBContextConflictDialog dlg(active_context_name_, d, QApplication::activeWindow());
+                DBContextConflictDialog dlg(active_context_name_, d,
+                                           activeContext().modified(), db_ctx.modified(),
+                                           QApplication::activeWindow());
                 dlg.exec();
 
                 switch (dlg.resolution())
                 {
                 case DBContextConflictDialog::UseFile:
-                    loginf << "conflict resolved: using file definition";
+                    loginf << "conflict resolved: using configuration";
                     writeContextToDB();
                     break;
 
                 case DBContextConflictDialog::UseDatabase:
                     loginf << "conflict resolved: using database definition";
-                    db_ctx.modified(DBContext::currentTimestamp());
                     contexts_[active_context_name_] = db_ctx;
-                    saveContext(active_context_name_);
+                    DBContextSerializer::save(db_ctx, basePath());
                     rebuildSectorLayers();
                     break;
 
@@ -1375,10 +1379,7 @@ void DBContextManager::databaseOpenedSlot()
                                                    QApplication::activeWindow());
                     merge_dlg.exec();
 
-                    auto merged = merge_dlg.mergedContext();
-                    merged.name(active_context_name_);
-                    merged.modified(DBContext::currentTimestamp());
-                    contexts_[active_context_name_] = merged;
+                    contexts_[active_context_name_] = merge_dlg.mergedContext();
                     saveContext(active_context_name_);
                     writeContextToDB();
                     rebuildSectorLayers();

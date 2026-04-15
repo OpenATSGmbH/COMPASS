@@ -19,13 +19,9 @@
 
 #include "sector.h"
 #include "traced_assert.h"
+#include "timeconv.h"
 
 #include <json.hpp>
-
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
 
 using namespace std;
 using namespace nlohmann;
@@ -181,14 +177,7 @@ bool DBContext::operator==(const DBContext& other) const
 
 string DBContext::currentTimestamp()
 {
-    auto now = chrono::system_clock::now();
-    auto time_t_now = chrono::system_clock::to_time_t(now);
-    struct tm tm_buf;
-    gmtime_r(&time_t_now, &tm_buf);
-
-    ostringstream oss;
-    oss << put_time(&tm_buf, "%Y-%m-%dT%H:%M:%SZ");
-    return oss.str();
+    return Utils::Time::toString(Utils::Time::currentUTCTime(), 0);
 }
 
 } // namespace context

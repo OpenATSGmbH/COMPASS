@@ -25,6 +25,7 @@
 #include <vector>
 
 class QGridLayout;
+class QLabel;
 
 namespace context
 {
@@ -53,7 +54,8 @@ signals:
 public:
     FieldMergeWidget(QWidget* parent = nullptr);
 
-    void show(const nlohmann::json& config_json,
+    void show(const std::string& item_name,
+              const nlohmann::json& config_json,
               const nlohmann::json& db_json,
               bool prefer_db);
 
@@ -68,9 +70,13 @@ private:
         std::string path;          // e.g. "name", "info.latitude"
         nlohmann::json config_val; // value in Configuration
         nlohmann::json db_val;     // value in Database
+        QString config_text;       // display text for config
+        QString db_text;           // display text for db
         QWidget* edit_widget{nullptr}; // QLineEdit or QPlainTextEdit
         bool is_multiline{false};
     };
+
+    void updateResultColor(FieldRow& row);
 
     void addRow(int row, const std::string& path,
                 const nlohmann::json& config_val,
@@ -81,6 +87,7 @@ private:
     static nlohmann::json displayToValue(const QString& text, const nlohmann::json& reference);
     static bool jsonEqual(const nlohmann::json& a, const nlohmann::json& b);
 
+    QLabel* title_label_{nullptr};
     QGridLayout* grid_{nullptr};
     std::vector<FieldRow> rows_;
 };

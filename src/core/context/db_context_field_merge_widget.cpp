@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
+#include <QTextBlock>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QVBoxLayout>
@@ -59,12 +60,16 @@ bool jsonEqualNormalized(const json& a, const json& b)
     return normalize(a) == normalize(b);
 }
 
-/// Collect field diffs with 1-level descent into sub-objects.
-/// Top-level primitive keys get their own row.
-/// Top-level object keys have their children expanded one level.
-/// Deeper nesting is shown as JSON text.
-void collectShallowDiffs(const json& config_j, const json& db_j,
-                         std::vector<std::tuple<std::string, json, json>>& out)
+static const size_t MaxDumpLength = 200;
+static const int MaxDepth = 5;
+
+/// Recursively collect field diffs, descending into sub-objects when the
+/// dump size exceeds MaxDumpLength. One-sided values (only in config or db)
+/// are never split — shown as a single row regardless of size.
+void collectDiffs(const json& config_j, const json& db_j,
+                  const std::string& prefix,
+                  std::vector<std::tuple<std::string, json, json>>& out,
+                  int depth = 0)
 {
     // gather all keys from both sides
     std::set<std::string> all_keys;
@@ -77,30 +82,32 @@ void collectShallowDiffs(const json& config_j, const json& db_j,
 
     for (const auto& key : all_keys)
     {
+        std::string path = prefix.empty() ? key : prefix + "." + key;
+
         json cv = config_j.contains(key) ? config_j.at(key) : json();
         json dv = db_j.contains(key) ? db_j.at(key) : json();
 
-        // if both are objects, descend one level
-        if (cv.is_object() && dv.is_object())
+        if (jsonEqualNormalized(cv, dv))
+            continue;
+
+        // one-sided: never recurse, show as single row
+        if (cv.is_null() || dv.is_null())
         {
-            std::set<std::string> sub_keys;
-            for (auto it = cv.begin(); it != cv.end(); ++it)
-                sub_keys.insert(it.key());
-            for (auto it = dv.begin(); it != dv.end(); ++it)
-                sub_keys.insert(it.key());
-
-            for (const auto& sk : sub_keys)
-            {
-                json scv = cv.contains(sk) ? cv.at(sk) : json();
-                json sdv = dv.contains(sk) ? dv.at(sk) : json();
-
-                if (!jsonEqualNormalized(scv, sdv))
-                    out.emplace_back(key + "." + sk, scv, sdv);
-            }
+            out.emplace_back(path, cv, dv);
+            continue;
         }
-        else if (!jsonEqualNormalized(cv, dv))
+
+        // both sides exist and differ — check if we should recurse
+        bool both_objects = cv.is_object() && dv.is_object();
+        bool too_large = cv.dump().size() > MaxDumpLength || dv.dump().size() > MaxDumpLength;
+
+        if (both_objects && too_large && depth < MaxDepth)
         {
-            out.emplace_back(key, cv, dv);
+            collectDiffs(cv, dv, path, out, depth + 1);
+        }
+        else
+        {
+            out.emplace_back(path, cv, dv);
         }
     }
 }
@@ -113,6 +120,12 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
 
+    title_label_ = new QLabel();
+    QFont title_font = title_label_->font();
+    title_font.setBold(true);
+    title_label_->setFont(title_font);
+    outer->addWidget(title_label_);
+
     auto* scroll = new QScrollArea();
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -122,12 +135,11 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
     inner_layout->setContentsMargins(0, 0, 0, 0);
 
     grid_ = new QGridLayout();
-    grid_->setColumnStretch(0, 1); // field name
-    grid_->setColumnStretch(1, 2); // config value
-    grid_->setColumnStretch(2, 0); // arrow button
-    grid_->setColumnStretch(3, 2); // editable
-    grid_->setColumnStretch(4, 0); // arrow button
-    grid_->setColumnStretch(5, 2); // db value
+    grid_->setColumnStretch(0, 1); // config value
+    grid_->setColumnStretch(1, 0); // arrow button
+    grid_->setColumnStretch(2, 1); // editable
+    grid_->setColumnStretch(3, 0); // arrow button
+    grid_->setColumnStretch(4, 1); // db value
 
     // header row
     auto makeBoldLabel = [](const QString& text)
@@ -139,12 +151,11 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
         return label;
     };
 
-    grid_->addWidget(makeBoldLabel("Field"), 0, 0);
-    grid_->addWidget(makeBoldLabel("Configuration"), 0, 1);
-    grid_->addWidget(new QLabel(), 0, 2); // arrow column
-    grid_->addWidget(makeBoldLabel("Result"), 0, 3);
-    grid_->addWidget(new QLabel(), 0, 4); // arrow column
-    grid_->addWidget(makeBoldLabel("Database"), 0, 5);
+    grid_->addWidget(makeBoldLabel("Configuration"), 0, 0);
+    grid_->addWidget(new QLabel(), 0, 1); // arrow column
+    grid_->addWidget(makeBoldLabel("Result"), 0, 2);
+    grid_->addWidget(new QLabel(), 0, 3); // arrow column
+    grid_->addWidget(makeBoldLabel("Database"), 0, 4);
 
     inner_layout->addLayout(grid_);
     inner_layout->addStretch();
@@ -153,41 +164,53 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
     outer->addWidget(scroll);
 }
 
-void FieldMergeWidget::show(const json& config_json, const json& db_json, bool prefer_db)
+void FieldMergeWidget::show(const std::string& item_name,
+                            const json& config_json, const json& db_json, bool prefer_db)
 {
+    loginf << "showing item '" << item_name << "' prefer_db " << prefer_db;
+
     clear();
 
+    title_label_->setText(QString::fromStdString(item_name));
+
     std::vector<std::tuple<std::string, json, json>> diffs;
-    collectShallowDiffs(config_json, db_json, diffs);
+    collectDiffs(config_json, db_json, "", diffs);
 
     int row = 1; // row 0 is header
     for (const auto& [path, cv, dv] : diffs)
-        addRow(row++, path, cv, dv, prefer_db);
+    {
+        addRow(row, path, cv, dv, prefer_db);
+        row += 2; // each field takes 2 rows: name + values
+    }
 }
 
 void FieldMergeWidget::clear()
 {
-    // remove all rows except the header (row 0)
-    for (auto& r : rows_)
-    {
-        // widgets are owned by the grid layout, no manual delete needed
-    }
+    loginf << "clearing " << rows_.size() << " rows";
+
     rows_.clear();
 
-    // remove all items from row 1 onwards
-    while (grid_->rowCount() > 1)
+    // remove all widgets from row 1 onwards (row 0 is header)
+    int total_rows = grid_->rowCount();
+    int total_cols = grid_->columnCount();
+
+    logdbg << "grid has " << total_rows << " rows, " << total_cols << " cols";
+
+    for (int row = 1; row < total_rows; ++row)
     {
-        int row = grid_->rowCount() - 1;
-        for (int col = 0; col < grid_->columnCount(); ++col)
+        for (int col = 0; col < total_cols; ++col)
         {
             auto* item = grid_->itemAtPosition(row, col);
             if (item && item->widget())
             {
-                item->widget()->setParent(nullptr);
-                delete item->widget();
+                QWidget* w = item->widget();
+                grid_->removeWidget(w);
+                delete w;
             }
         }
     }
+
+    loginf << "clear done";
 }
 
 void FieldMergeWidget::addRow(int row, const std::string& path,
@@ -199,33 +222,128 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
     fr.config_val = config_val;
     fr.db_val = db_val;
 
-    // field name
-    auto* name_label = new QLabel(QString::fromStdString(path));
-    name_label->setToolTip(QString::fromStdString(path));
-    grid_->addWidget(name_label, row, 0);
+    QFont mono_font("monospace");
+    mono_font.setStyleHint(QFont::Monospace);
 
-    // config value (read-only)
-    QString config_text = valueToDisplay(config_val);
-    auto* config_label = new QLabel(config_text);
-    config_label->setWordWrap(true);
-    config_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    grid_->addWidget(config_label, row, 1);
-
-    // determine if we need a multiline editor
     bool is_complex = (config_val.is_object() || config_val.is_array() ||
                        db_val.is_object() || db_val.is_array());
     fr.is_multiline = is_complex;
 
-    // editable value — default to preferred side
+    // field name — spans all columns, italic
+    auto* name_label = new QLabel(QString::fromStdString(path));
+    QFont italic_font = name_label->font();
+    italic_font.setItalic(true);
+    name_label->setFont(italic_font);
+    name_label->setToolTip(QString::fromStdString(path));
+    grid_->addWidget(name_label, row, 0, 1, 5); // span all 5 columns
+
+    int val_row = row + 1;
+
+    // full text for editable column
+    QString config_text = valueToDisplay(config_val);
+    QString db_text = valueToDisplay(db_val);
     const json& default_val = prefer_db ? db_val : config_val;
     QString default_text = valueToDisplay(default_val);
 
+    // for read-only columns: truncate one-sided large values
+    auto truncate = [](const QString& text, const json& this_val, const json& other_val) -> QString
+    {
+        // only truncate if other side is null (one-sided) and value is large
+        if (!other_val.is_null())
+            return text;
+        if (!this_val.is_object() && !this_val.is_array())
+            return text;
+
+        if (this_val.is_object())
+            return QString("{object, %1 keys}").arg(this_val.size());
+        else
+            return QString("[array, %1 items]").arg(this_val.size());
+    };
+
+    QString config_display = truncate(config_text, config_val, db_val);
+    QString db_display = truncate(db_text, db_val, config_val);
+
+    // helper: create a read-only QPlainTextEdit
+    auto makeReadOnly = [&mono_font](const QString& text)
+    {
+        auto* te = new QPlainTextEdit();
+        te->setPlainText(text);
+        te->setReadOnly(true);
+        te->setFont(mono_font);
+        te->setFrameShape(QFrame::NoFrame);
+
+        // size to content
+        QFontMetrics fm(mono_font);
+        int line_count = std::max(1, text.count('\n') + 1);
+        int height = fm.lineSpacing() * line_count + 10;
+        te->setFixedHeight(height);
+
+        return te;
+    };
+
+    // helper: highlight differing lines between two text edits
+    auto highlightDiffs = [](QPlainTextEdit* config_te, QPlainTextEdit* db_te)
+    {
+        QStringList config_lines = config_te->toPlainText().split('\n');
+        QStringList db_lines = db_te->toPlainText().split('\n');
+
+        int max_lines = std::max(config_lines.size(), db_lines.size());
+
+        QColor config_color(200, 255, 200); // light green
+        QColor db_color(200, 220, 255);     // light blue
+
+        auto selectBlock = [](QPlainTextEdit* te, int line, QColor color) -> QTextEdit::ExtraSelection
+        {
+            QTextBlock block = te->document()->findBlockByLineNumber(line);
+            QTextCursor cursor(block);
+            cursor.movePosition(QTextCursor::StartOfBlock);
+            cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+
+            QTextEdit::ExtraSelection sel;
+            sel.format.setBackground(color);
+            sel.format.setProperty(QTextFormat::FullWidthSelection, true);
+            sel.cursor = cursor;
+            return sel;
+        };
+
+        QList<QTextEdit::ExtraSelection> config_sels, db_sels;
+
+        for (int i = 0; i < max_lines; ++i)
+        {
+            QString cl = i < config_lines.size() ? config_lines[i] : QString();
+            QString dl = i < db_lines.size() ? db_lines[i] : QString();
+
+            if (cl == dl)
+                continue;
+
+            if (i < config_lines.size())
+                config_sels.append(selectBlock(config_te, i, config_color));
+
+            if (i < db_lines.size())
+                db_sels.append(selectBlock(db_te, i, db_color));
+        }
+
+        config_te->setExtraSelections(config_sels);
+        db_te->setExtraSelections(db_sels);
+    };
+
+    // config value (read-only)
+    auto* config_edit = makeReadOnly(config_display);
+    grid_->addWidget(config_edit, val_row, 0);
+
+    // editable result
     QWidget* edit_widget = nullptr;
     if (is_complex)
     {
         auto* te = new QPlainTextEdit();
         te->setPlainText(default_text);
-        te->setMaximumHeight(120);
+        te->setFont(mono_font);
+
+        QFontMetrics fm(mono_font);
+        int line_count = std::max(1, default_text.count('\n') + 1);
+        int height = fm.lineSpacing() * line_count + 10;
+        te->setFixedHeight(height);
+
         edit_widget = te;
     }
     else
@@ -236,72 +354,101 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
     }
     fr.edit_widget = edit_widget;
 
-    // connect edit signals to emit valueEditedSignal
+    // connect edit signals — update color + emit signal
+    size_t row_idx = rows_.size(); // index this row will have after push_back
     if (is_complex)
     {
         connect(static_cast<QPlainTextEdit*>(edit_widget), &QPlainTextEdit::textChanged,
-                this, &FieldMergeWidget::valueEditedSignal);
+                this, [this, row_idx]()
+        {
+            if (row_idx < rows_.size())
+                updateResultColor(rows_[row_idx]);
+            emit valueEditedSignal();
+        });
     }
     else
     {
         connect(static_cast<QLineEdit*>(edit_widget), &QLineEdit::textEdited,
-                this, &FieldMergeWidget::valueEditedSignal);
+                this, [this, row_idx]()
+        {
+            if (row_idx < rows_.size())
+                updateResultColor(rows_[row_idx]);
+            emit valueEditedSignal();
+        });
     }
 
     // [→] button: copy config value to editable
     auto* to_right = new QPushButton(QString::fromUtf8("\u2192"));
     to_right->setFixedWidth(30);
     to_right->setToolTip("Use Configuration value");
-    connect(to_right, &QPushButton::clicked, this, [this, edit_widget, config_text, is_complex]()
+    connect(to_right, &QPushButton::clicked, this, [this, edit_widget, config_text, is_complex, row_idx]()
     {
+        edit_widget->blockSignals(true);
         if (is_complex)
-        {
-            edit_widget->blockSignals(true);
             static_cast<QPlainTextEdit*>(edit_widget)->setPlainText(config_text);
-            edit_widget->blockSignals(false);
-        }
         else
-        {
-            edit_widget->blockSignals(true);
             static_cast<QLineEdit*>(edit_widget)->setText(config_text);
-            edit_widget->blockSignals(false);
-        }
+        edit_widget->blockSignals(false);
+        if (row_idx < rows_.size())
+            updateResultColor(rows_[row_idx]);
         emit configChosenSignal();
     });
 
     // [←] button: copy db value to editable
-    QString db_text = valueToDisplay(db_val);
     auto* to_left = new QPushButton(QString::fromUtf8("\u2190"));
     to_left->setFixedWidth(30);
     to_left->setToolTip("Use Database value");
-    connect(to_left, &QPushButton::clicked, this, [this, edit_widget, db_text, is_complex]()
+    connect(to_left, &QPushButton::clicked, this, [this, edit_widget, db_text, is_complex, row_idx]()
     {
+        edit_widget->blockSignals(true);
         if (is_complex)
-        {
-            edit_widget->blockSignals(true);
             static_cast<QPlainTextEdit*>(edit_widget)->setPlainText(db_text);
-            edit_widget->blockSignals(false);
-        }
         else
-        {
-            edit_widget->blockSignals(true);
             static_cast<QLineEdit*>(edit_widget)->setText(db_text);
-            edit_widget->blockSignals(false);
-        }
+        edit_widget->blockSignals(false);
+        if (row_idx < rows_.size())
+            updateResultColor(rows_[row_idx]);
         emit dbChosenSignal();
     });
 
-    grid_->addWidget(to_right, row, 2);
-    grid_->addWidget(edit_widget, row, 3);
-    grid_->addWidget(to_left, row, 4);
+    grid_->addWidget(to_right, val_row, 1);
+    grid_->addWidget(edit_widget, val_row, 2);
+    grid_->addWidget(to_left, val_row, 3);
 
     // db value (read-only)
-    auto* db_label = new QLabel(db_text);
-    db_label->setWordWrap(true);
-    db_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    grid_->addWidget(db_label, row, 5);
+    auto* db_edit = makeReadOnly(db_display);
+    grid_->addWidget(db_edit, val_row, 4);
+
+    // highlight differing lines
+    highlightDiffs(config_edit, db_edit);
+
+    // store display texts for color comparison
+    fr.config_text = config_text;
+    fr.db_text = db_text;
 
     rows_.push_back(fr);
+
+    // set initial color
+    updateResultColor(rows_.back());
+}
+
+void FieldMergeWidget::updateResultColor(FieldRow& row)
+{
+    QString current_text;
+    if (row.is_multiline)
+        current_text = static_cast<QPlainTextEdit*>(row.edit_widget)->toPlainText();
+    else
+        current_text = static_cast<QLineEdit*>(row.edit_widget)->text();
+
+    QString bg;
+    if (current_text == row.config_text)
+        bg = "background-color: rgb(200, 255, 200);"; // green — matches config
+    else if (current_text == row.db_text)
+        bg = "background-color: rgb(200, 220, 255);"; // blue — matches db
+    else
+        bg = "background-color: rgb(255, 210, 210);"; // red — custom
+
+    row.edit_widget->setStyleSheet(bg);
 }
 
 QString FieldMergeWidget::valueToDisplay(const json& val)

@@ -18,6 +18,7 @@
 #include "db_context_conflict_dialog.h"
 #include "db_context_diff.h"
 #include "logger.h"
+#include "timeconv.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -29,6 +30,8 @@ namespace context
 
 DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name,
                                                  const DBContextDiff& diff,
+                                                 const std::string& config_modified,
+                                                 const std::string& db_modified,
                                                  QWidget* parent)
     : QDialog(parent)
 {
@@ -54,30 +57,51 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
 
     main_layout->addSpacing(10);
 
-    // buttons
-    auto* button_layout = new QHBoxLayout();
-    button_layout->addStretch();
+    // buttons + timestamps in a grid so columns align
+    bool config_newer = config_modified >= db_modified;
+
+    auto* grid = new QGridLayout();
+    grid->setColumnStretch(0, 1); // left stretch
 
     auto* use_config_button = new QPushButton("Use Configuration");
     use_config_button->setIcon(QIcon());
     use_config_button->setToolTip("Use the Configuration and overwrite the Database");
     connect(use_config_button, &QPushButton::clicked, this, &DBContextConflictDialog::useFileSlot);
-    button_layout->addWidget(use_config_button);
+    grid->addWidget(use_config_button, 0, 1);
 
     auto* use_db_button = new QPushButton("Use Database");
     use_db_button->setIcon(QIcon());
     use_db_button->setToolTip("Use the Database and overwrite the Configuration");
     connect(use_db_button, &QPushButton::clicked, this, &DBContextConflictDialog::useDatabaseSlot);
-    button_layout->addWidget(use_db_button);
+    grid->addWidget(use_db_button, 0, 2);
 
     auto* merge_button = new QPushButton("Merge...");
     merge_button->setIcon(QIcon());
     merge_button->setToolTip("Open a merge dialog to resolve conflicts individually");
-    merge_button->setToolTip("Open a merge dialog to resolve conflicts individually");
     connect(merge_button, &QPushButton::clicked, this, &DBContextConflictDialog::mergeSlot);
-    button_layout->addWidget(merge_button);
+    grid->addWidget(merge_button, 0, 3);
 
-    main_layout->addLayout(button_layout);
+    auto* config_ts = new QLabel("Modified:\n" + QString::fromStdString(config_modified));
+    config_ts->setAlignment(Qt::AlignCenter);
+    if (config_newer)
+    {
+        QFont f = config_ts->font();
+        f.setBold(true);
+        config_ts->setFont(f);
+    }
+    grid->addWidget(config_ts, 1, 1);
+
+    auto* db_ts = new QLabel("Modified:\n" + QString::fromStdString(db_modified));
+    db_ts->setAlignment(Qt::AlignCenter);
+    if (!config_newer)
+    {
+        QFont f = db_ts->font();
+        f.setBold(true);
+        db_ts->setFont(f);
+    }
+    grid->addWidget(db_ts, 1, 2);
+
+    main_layout->addLayout(grid);
 }
 
 void DBContextConflictDialog::useFileSlot()

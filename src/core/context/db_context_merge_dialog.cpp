@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <sstream>
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -58,7 +59,7 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
 {
     setWindowTitle("Merge Context");
     setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
-    setMinimumSize(1100, 700);
+    setMinimumSize(1300, 700);
     setModal(true);
 
     auto* main_layout = new QVBoxLayout(this);
@@ -77,10 +78,10 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
     tree_widget_ = new QTreeWidget();
     tree_widget_->setColumnCount(3);
     tree_widget_->setHeaderLabels({"Item", "Status", "Use"});
-    tree_widget_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    tree_widget_->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     tree_widget_->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    tree_widget_->header()->setSectionResizeMode(2, QHeaderView::Fixed);
-    tree_widget_->header()->resizeSection(2, 120);
+    tree_widget_->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    tree_widget_->header()->setStretchLastSection(false);
     tree_widget_->setRootIsDecorated(true);
 
     connect(tree_widget_, &QTreeWidget::itemClicked,
@@ -150,7 +151,9 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
     detail_stack_->setCurrentWidget(placeholder);
 
     splitter->addWidget(scroll);
-    splitter->setSizes({550, 550});
+    splitter->setStretchFactor(0, 0); // left side doesn't stretch
+    splitter->setStretchFactor(1, 1); // right side gets extra space
+    splitter->setSizes({400, 900});
 
     main_layout->addWidget(splitter, 1);
 
@@ -285,6 +288,8 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
 
 void DBContextMergeDialog::itemClickedSlot(QTreeWidgetItem* item, int /*column*/)
 {
+    loginf << "item clicked";
+
     // find the MergeItem for this tree item
     for (const auto& mi : merge_items_)
     {
@@ -298,9 +303,14 @@ void DBContextMergeDialog::itemClickedSlot(QTreeWidgetItem* item, int /*column*/
 
 void DBContextMergeDialog::showDetail(const MergeItem& mi)
 {
+    const std::string& name = mi.diff->display_key.empty() ? mi.diff->key : mi.diff->display_key;
+    loginf << "section '" << mi.section << "' item '" << name
+           << "' type " << mi.diff->type;
+
     // save any in-progress field edits before switching
     if (current_field_merge_idx_ >= 0)
     {
+        loginf << "saving field overrides for idx " << current_field_merge_idx_;
         field_overrides_[current_field_merge_idx_] = field_merge_widget_->mergedJSON();
         current_field_merge_idx_ = -1;
     }
@@ -337,7 +347,8 @@ void DBContextMergeDialog::showDetail(const MergeItem& mi)
         // determine which side is newer
         bool prefer_db = db_ctx_.modified() > config_ctx_.modified();
 
-        field_merge_widget_->show(mi.diff->item_a, mi.diff->item_b, prefer_db);
+        const std::string& display_name = mi.diff->display_key.empty() ? mi.diff->key : mi.diff->display_key;
+        field_merge_widget_->show(display_name, mi.diff->item_a, mi.diff->item_b, prefer_db);
 
         current_field_merge_idx_ = mi_idx;
 
@@ -495,29 +506,40 @@ nlohmann::json DBContextMergeDialog::buildMergedItemJSON(const MergeItem& mi) co
             const std::string& path = it.key();
             const auto& val = it.value();
 
-            // path is either "key" or "key.subkey"
-            auto dot = path.find('.');
-            if (dot == std::string::npos)
+            // walk the dotted path to find the target location
+            // e.g. "info.network_lines.L2.mcast_ip"
+            std::vector<std::string> parts;
+            std::istringstream ss(path);
+            std::string part;
+            while (std::getline(ss, part, '.'))
+                parts.push_back(part);
+
+            if (parts.empty())
+                continue;
+
+            if (parts.size() == 1)
             {
-                // top-level field
                 if (val.is_null())
-                    result.erase(path);
+                    result.erase(parts[0]);
                 else
-                    result[path] = val;
+                    result[parts[0]] = val;
             }
             else
             {
-                // nested: e.g. "info.latitude"
-                std::string parent = path.substr(0, dot);
-                std::string child = path.substr(dot + 1);
+                // navigate to parent, creating objects as needed
+                nlohmann::json* node = &result;
+                for (size_t i = 0; i < parts.size() - 1; ++i)
+                {
+                    if (!node->contains(parts[i]) || !(*node)[parts[i]].is_object())
+                        (*node)[parts[i]] = nlohmann::json::object();
+                    node = &(*node)[parts[i]];
+                }
 
-                if (!result.contains(parent) || !result[parent].is_object())
-                    result[parent] = nlohmann::json::object();
-
+                const std::string& leaf = parts.back();
                 if (val.is_null())
-                    result[parent].erase(child);
+                    node->erase(leaf);
                 else
-                    result[parent][child] = val;
+                    (*node)[leaf] = val;
             }
         }
     }

@@ -1113,8 +1113,14 @@ void DBInterface::loadProperties()
         }
 
         for (auto& prop_it : properties_)
+        {
+            std::string value_str = prop_it.second;
+            if (value_str.size() > 200)
+                value_str = value_str.substr(0, 200) + "...";
+
             loginf << "id '" << prop_it.first << "' value '"
-                << prop_it.second << "'";
+                << value_str << "'";
+        }
 
         // column with content
         if (properties_.count(dbcolumn_content_property_name_))

@@ -42,6 +42,8 @@ public:
 
     explicit DBContextConflictDialog(const std::string& context_name,
                                      const DBContextDiff& diff,
+                                     const std::string& config_modified,
+                                     const std::string& db_modified,
                                      QWidget* parent = nullptr);
 
     Resolution resolution() const { return resolution_; }
