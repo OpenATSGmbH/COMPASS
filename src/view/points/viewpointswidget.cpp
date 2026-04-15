@@ -35,6 +35,8 @@
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QFileDialog>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QShortcut>
 #include <QToolBar>
@@ -619,11 +621,7 @@ void ViewPointsWidget::deleteAllSlot()
 {
     loginf;
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(nullptr, "Delete All", "Delete All Viewpoints?",
-    QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes)
+    if (QuestionDialog::ask(nullptr, "Delete All", "Delete All Viewpoints?"))
     {
         traced_assert(table_model_);
         table_model_->deleteAllViewPoints();

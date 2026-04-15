@@ -35,6 +35,8 @@
 #include <QCoreApplication>
 #include <QApplication>
 #include <QThread>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -154,14 +156,9 @@ void ViewPointsImportTask::run()
     // check and clear existing ones
     if(db_interface.existsViewPointsTable() && db_interface.viewPoints().size() && allow_user_interactions_)
     {
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(
-                    nullptr, "Clear Existing View Points",
-                    "There are already view points defined in the database.\n\n"
-                    "Do you agree to delete all view points?",
-                    QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::Yes)
+        if (QuestionDialog::ask(nullptr, "Clear Existing View Points",
+                "There are already view points defined in the database.\n\n"
+                "Do you agree to delete all view points?"))
         {
             loginf << "deleting all view points";
         }

@@ -32,6 +32,8 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QPushButton>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QApplication>
 #include <QCheckBox>
@@ -62,8 +64,7 @@ namespace
             return true;
 
         QString msg = "Do you really want to modify default preset '" + QString::fromStdString(preset.name) + "'?";
-        auto ret = QMessageBox::question(parent, "Modify Default Preset", msg, QMessageBox::Yes, QMessageBox::No);
-        if (ret == QMessageBox::No)
+        if (!QuestionDialog::ask(parent, "Modify Default Preset", msg))
             return false;
 
         return true;
@@ -970,8 +971,7 @@ void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
     if (p.isDeployed())
     {
         QString msg = "Do you really want to permanently delete default preset '" + QString::fromStdString(p.name) + "'?";
-        auto ret = QMessageBox::question(this, "Delete Default Preset", msg, QMessageBox::Yes, QMessageBox::No);
-        if (ret == QMessageBox::No)
+        if (!QuestionDialog::ask(this, "Delete Default Preset", msg))
             return;
     }
 

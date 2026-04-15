@@ -34,6 +34,8 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 using namespace std;
@@ -204,18 +206,13 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     {
         QApplication::restoreOverrideCursor();
 
-        QMessageBox::StandardButton reply;
-
         std::string question =
                 "There were " + std::to_string(transformation_errors) +
                 " skipped coordinates with transformation errors, " +
                 std::to_string(buffers_size) +
                 " coordinates were projected correctly. Do you want to insert the data?";
 
-        reply = QMessageBox::question(nullptr, "Insert Data", question.c_str(),
-                                      QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::No)
+        if (!QuestionDialog::ask(nullptr, "Insert Data", question.c_str()))
         {
             loginf << "aborted by user because of "
                       "transformation errors";

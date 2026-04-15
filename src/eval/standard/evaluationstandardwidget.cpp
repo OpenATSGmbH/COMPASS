@@ -30,6 +30,8 @@
 #include <QSplitter>
 #include <QSettings>
 #include <QInputDialog>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QFormLayout>
 
@@ -306,10 +308,8 @@ void EvaluationStandardWidget::deleteRequirementSlot(Group& group, EvaluationReq
     //string name = data.toString().toStdString();
     string name = req.name();
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(nullptr, "Delete Requirement", ("Confirm to delete requirement '"+name+"'").c_str(),
-                                  QMessageBox::Yes|QMessageBox::No);
-    if (reply == QMessageBox::Yes)
+    if (QuestionDialog::ask(nullptr, "Delete Requirement",
+            ("Confirm to delete requirement '" + name + "'").c_str()))
     {
         model().beginReset();
 

@@ -33,6 +33,8 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QFileDialog>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 using namespace std;
@@ -242,14 +244,9 @@ void DataSourcesConfigurationDialog::importClickedSlot()
 
 void DataSourcesConfigurationDialog::deleteAllClickedSlot()
 {
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(
-                nullptr, "Delete All Data Sources",
-                "This will delete all data sources existing in the configuration,"
-                         " but not those (also) defined in the database. Do you want to continue?",
-                QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes)
+    if (QuestionDialog::ask(nullptr, "Delete All Data Sources",
+            "This will delete all data sources existing in the configuration,"
+            " but not those (also) defined in the database. Do you want to continue?"))
     {
         loginf << "deletion confirmed";
 

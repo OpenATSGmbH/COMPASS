@@ -33,6 +33,8 @@
 #include "viewmanager.h"
 
 #include <QApplication>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 using namespace std;
@@ -571,11 +573,7 @@ void CreateARTASAssociationsTask::saveAssociationsQuestionSlot(QString question_
     status_dialog_->setDubiousAssociations(create_job_->dubiousAssociations());
     status_dialog_->setFoundDuplicates(create_job_->foundHashDuplicates());
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(nullptr, "Malformed Associations", question_str,
-                                  QMessageBox::Yes | QMessageBox::No);
-
-    save_associations_ = reply == QMessageBox::Yes;
+    save_associations_ = QuestionDialog::ask(nullptr, "Malformed Associations", question_str);
 
     create_job_->setSaveQuestionAnswer(save_associations_);
 }

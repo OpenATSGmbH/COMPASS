@@ -36,6 +36,8 @@
 #include <QFormLayout>
 #include <QGroupBox>
 
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 /**
@@ -231,12 +233,7 @@ void LicenseManagerDialog::addLicense()
     {
         //overwrite existing license?
         QString txt = "License '" + QString::fromStdString(l->id) + "' already exists. Do you want to update the existing license?";
-        auto b = QMessageBox::question(this, 
-                                       "Update License",
-                                       txt,
-                                       QMessageBox::StandardButton::Yes,
-                                       QMessageBox::StandardButton::No);
-        if (b == QMessageBox::StandardButton::No)
+        if (!QuestionDialog::ask(this, "Update License", txt))
             return;
 
         license_manager.setLicense(*l, false);
@@ -277,12 +274,8 @@ void LicenseManagerDialog::removeCurrentLicense()
 
     auto id = items.front()->text(idx_id_).toStdString();
 
-    auto b = QMessageBox::question(this, 
-                                   "Remove License",
-                                   "Do you really want to remove license '" + QString::fromStdString(id) + "'?",
-                                   QMessageBox::StandardButton::Yes,
-                                   QMessageBox::StandardButton::No);
-    if (b == QMessageBox::StandardButton::No)
+    if (!QuestionDialog::ask(this, "Remove License",
+            "Do you really want to remove license '" + QString::fromStdString(id) + "'?"))
         return;
     
     license_manager.removeLicense(id, false);

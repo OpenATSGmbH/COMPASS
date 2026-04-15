@@ -85,6 +85,8 @@
 #include <QLocale>
 #include <QInputDialog>
 #include <QLineEdit>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QPushButton>
 #include <QMenu>
@@ -1065,70 +1067,56 @@ void MainWindow::resetViewsMenuSlot()
 {
     loginf;
 
-    QMessageBox::StandardButton reply;
+    if (!compass_.disableConfirmResetViews()
+        && !QuestionDialog::ask(this, "Reset Views",
+                "Confirm to enable all data sources, reset labels,\n"
+                "disable all filters and reset Views to startup configuration?"))
+        return;
 
-    if (compass_.disableConfirmResetViews())
-        reply = QMessageBox::Yes;
-    else
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+    traced_assert(tab_widget_);
+
     {
+        QMessageBox msg_box;
+        msg_box.setWindowTitle("Resetting");
+        msg_box.setText( "Please wait...");
+        msg_box.setStandardButtons(QMessageBox::NoButton);
+        msg_box.setWindowModality(Qt::ApplicationModal);
+        msg_box.show();
 
-        reply = QMessageBox::question(
-            this, "Reset Views",
-            "Confirm to enable all data sources, reset labels,\n"
-            "disable all filters and reset Views to startup configuration?",
-            QMessageBox::Yes|QMessageBox::No);
-    }
+        setVisible(false);
 
-    if (reply == QMessageBox::Yes)
-    {
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        Async::waitAndProcessEventsFor(50);
 
-        traced_assert(tab_widget_);
-        //int index = tab_widget_->currentIndex();
+        // reset stuff
+        compass_.dbContentManager().resetToStartupConfiguration();
 
-        {
-            QMessageBox msg_box;
-            msg_box.setWindowTitle("Resetting");
-            msg_box.setText( "Please wait...");
-            msg_box.setStandardButtons(QMessageBox::NoButton);
-            msg_box.setWindowModality(Qt::ApplicationModal);
-            msg_box.show();
+        // context reset handled by DBContextManager — loading state is per-session
 
-            setVisible(false);
-
-            Async::waitAndProcessEventsFor(50);
-
-                    // reset stuff
-            compass_.dbContentManager().resetToStartupConfiguration();
-
-            // context reset handled by DBContextManager — loading state is per-session
-
-            compass_.filterManager().resetToStartupConfiguration();
+        compass_.filterManager().resetToStartupConfiguration();
 
 #if USE_EXPERIMENTAL_SOURCE == true
-            geo_view::clearHiddenLayers();
+        geo_view::clearHiddenLayers();
 #endif
 
-            compass_.viewManager().resetToStartupConfiguration();
+        compass_.viewManager().resetToStartupConfiguration();
 
-                    // set AppMode
-            if (compass_.appMode() == AppMode::LivePaused)
-                compass_.appMode(AppMode::LiveRunning);
-            else
-            {
-                compass_.viewManager().appModeSwitchSlot(
-                    compass_.appMode(), compass_.appMode());
-            }
-
-            msg_box.hide();
+        // set AppMode
+        if (compass_.appMode() == AppMode::LivePaused)
+            compass_.appMode(AppMode::LiveRunning);
+        else
+        {
+            compass_.viewManager().appModeSwitchSlot(
+                compass_.appMode(), compass_.appMode());
         }
 
-        //tab_widget_->setCurrentIndex(index);
-
-        setVisible(true);
-
-        QApplication::restoreOverrideCursor();
+        msg_box.hide();
     }
+
+    setVisible(true);
+
+    QApplication::restoreOverrideCursor();
 }
 
 void MainWindow::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
