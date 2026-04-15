@@ -95,7 +95,7 @@ DataSourcesConfigurationDialog::DataSourcesConfigurationDialog(context::DBContex
         table_model_->endModelReset();
     };
 
-    edit_widget_ = new DataSourceEditWidget (true, ctx_man_, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (true, update_ds_func, delete_ds_func);
     top_layout->addWidget(edit_widget_);
 
     main_layout->addLayout(top_layout);
@@ -166,7 +166,9 @@ void DataSourcesConfigurationDialog::currentRowChanged(const QModelIndex& curren
 
     loginf << "current id " << id;
 
-    edit_widget_->showID(id);
+    auto* ds = ctx_man_.dataSource(id);
+    if (ds)
+        edit_widget_->show(*ds, ctx_man_.compass().lastUsedPath());
 }
 
 void DataSourcesConfigurationDialog::newDSClickedSlot()

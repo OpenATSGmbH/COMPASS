@@ -16,11 +16,8 @@
  */
 
 #include "sector_edit_widget.h"
-#include "db_context_manager.h"
 #include "sector.h"
-#include "sectorlayer.h"
 #include "logger.h"
-#include "traced_assert.h"
 #include "textfielddoublevalidator.h"
 
 #include <QCheckBox>
@@ -35,12 +32,12 @@
 namespace context
 {
 
-SectorEditWidget::SectorEditWidget(DBContextManager& manager,
-                                   std::function<void()> on_changed,
+SectorEditWidget::SectorEditWidget(std::function<void()> on_changed,
+                                   LayerNamesFunc layer_names_func,
                                    QWidget* parent)
     : QWidget(parent)
-    , manager_(manager)
     , on_changed_(std::move(on_changed))
+    , layer_names_func_(std::move(layer_names_func))
 {
     auto* layout = new QVBoxLayout();
 
@@ -86,53 +83,47 @@ SectorEditWidget::SectorEditWidget(DBContextManager& manager,
     setLayout(layout);
 }
 
-void SectorEditWidget::showSector(unsigned int sector_id)
+void SectorEditWidget::show(Sector& sector)
 {
-    loginf << "showing sector id " << sector_id;
+    loginf << "showing sector '" << sector.name() << "' id " << sector.id();
 
-    if (!manager_.hasSector(sector_id))
-    {
-        clear();
-        return;
-    }
-
-    has_current_ = true;
-    current_sector_id_ = sector_id;
-
-    auto sector = manager_.sector(sector_id);
+    current_sector_ = &sector;
 
     // block signals during population
     name_edit_->blockSignals(true);
     layer_combo_->blockSignals(true);
     exclude_check_->blockSignals(true);
 
-    name_edit_->setText(QString::fromStdString(sector->name()));
+    name_edit_->setText(QString::fromStdString(sector.name()));
 
     // populate layer combo with existing layers
     layer_combo_->clear();
-    for (const auto& layer : manager_.sectorLayers())
-        layer_combo_->addItem(QString::fromStdString(layer->name()));
-    layer_combo_->setCurrentText(QString::fromStdString(sector->layerName()));
+    if (layer_names_func_)
+    {
+        for (const auto& name : layer_names_func_())
+            layer_combo_->addItem(QString::fromStdString(name));
+    }
+    layer_combo_->setCurrentText(QString::fromStdString(sector.layerName()));
 
-    exclude_check_->setChecked(sector->isExclusionSector());
+    exclude_check_->setChecked(sector.isExclusionSector());
 
     // color button
-    QColor color(QString::fromStdString(sector->colorStr()));
+    QColor color(QString::fromStdString(sector.colorStr()));
     color_button_->setStyleSheet("background-color: " + color.name() + ";");
     color_button_->setText(color.name());
 
     // altitude
-    if (sector->hasMinimumAltitude())
-        alt_min_edit_->setText(QString::number(sector->minimumAltitude(), 'f', 1));
+    if (sector.hasMinimumAltitude())
+        alt_min_edit_->setText(QString::number(sector.minimumAltitude(), 'f', 1));
     else
         alt_min_edit_->setText("");
 
-    if (sector->hasMaximumAltitude())
-        alt_max_edit_->setText(QString::number(sector->maximumAltitude(), 'f', 1));
+    if (sector.hasMaximumAltitude())
+        alt_max_edit_->setText(QString::number(sector.maximumAltitude(), 'f', 1));
     else
         alt_max_edit_->setText("");
 
-    points_label_->setText(QString::number(sector->size()) + " points");
+    points_label_->setText(QString::number(sector.size()) + " points");
 
     name_edit_->blockSignals(false);
     layer_combo_->blockSignals(false);
@@ -141,8 +132,7 @@ void SectorEditWidget::showSector(unsigned int sector_id)
 
 void SectorEditWidget::clear()
 {
-    has_current_ = false;
-    current_sector_id_ = 0;
+    current_sector_ = nullptr;
 
     name_edit_->blockSignals(true);
     layer_combo_->blockSignals(true);
@@ -160,31 +150,30 @@ void SectorEditWidget::clear()
     layer_combo_->blockSignals(false);
 }
 
-void SectorEditWidget::saveCurrent()
+void SectorEditWidget::setReadOnly(bool read_only)
 {
-    if (!has_current_)
-        return;
+    read_only_ = read_only;
 
-    manager_.saveSector(current_sector_id_);
+    name_edit_->setReadOnly(read_only);
+    layer_combo_->setEnabled(!read_only);
+    exclude_check_->setEnabled(!read_only);
+    color_button_->setEnabled(!read_only);
+    alt_min_edit_->setReadOnly(read_only);
+    alt_max_edit_->setReadOnly(read_only);
 }
 
 void SectorEditWidget::nameEditedSlot()
 {
-    if (!has_current_)
-        return;
-
-    auto sector = manager_.sector(current_sector_id_);
-    if (!sector)
+    if (!current_sector_ || read_only_)
         return;
 
     std::string new_name = name_edit_->text().trimmed().toStdString();
-    if (new_name.empty() || new_name == sector->name())
+    if (new_name.empty() || new_name == current_sector_->name())
         return;
 
-    loginf << "renaming sector " << current_sector_id_ << " to '" << new_name << "'";
+    loginf << "renaming sector " << current_sector_->id() << " to '" << new_name << "'";
 
-    sector->name(new_name);
-    saveCurrent();
+    current_sector_->name(new_name);
 
     if (on_changed_)
         on_changed_();
@@ -192,24 +181,16 @@ void SectorEditWidget::nameEditedSlot()
 
 void SectorEditWidget::layerChangedSlot()
 {
-    if (!has_current_)
-        return;
-
-    auto sector = manager_.sector(current_sector_id_);
-    if (!sector)
+    if (!current_sector_ || read_only_)
         return;
 
     std::string new_layer = layer_combo_->currentText().trimmed().toStdString();
-    if (new_layer.empty() || new_layer == sector->layerName())
+    if (new_layer.empty() || new_layer == current_sector_->layerName())
         return;
 
-    loginf << "moving sector " << current_sector_id_ << " to layer '" << new_layer << "'";
+    loginf << "moving sector " << current_sector_->id() << " to layer '" << new_layer << "'";
 
-    std::string old_layer = sector->layerName();
-    manager_.moveSector(current_sector_id_, old_layer, new_layer);
-
-    // re-show to update layer combo entries
-    showSector(current_sector_id_);
+    current_sector_->layerName(new_layer);
 
     if (on_changed_)
         on_changed_();
@@ -217,17 +198,12 @@ void SectorEditWidget::layerChangedSlot()
 
 void SectorEditWidget::excludeChangedSlot()
 {
-    if (!has_current_)
+    if (!current_sector_ || read_only_)
         return;
 
-    auto sector = manager_.sector(current_sector_id_);
-    if (!sector)
-        return;
+    loginf << "setting sector " << current_sector_->id() << " exclude=" << exclude_check_->isChecked();
 
-    loginf << "setting sector " << current_sector_id_ << " exclude=" << exclude_check_->isChecked();
-
-    sector->exclude(exclude_check_->isChecked());
-    saveCurrent();
+    current_sector_->exclude(exclude_check_->isChecked());
 
     if (on_changed_)
         on_changed_();
@@ -235,44 +211,39 @@ void SectorEditWidget::excludeChangedSlot()
 
 void SectorEditWidget::colorClickedSlot()
 {
-    if (!has_current_)
+    if (!current_sector_ || read_only_)
         return;
 
-    auto sector = manager_.sector(current_sector_id_);
-    if (!sector)
-        return;
-
-    QColor current(QString::fromStdString(sector->colorStr()));
+    QColor current(QString::fromStdString(current_sector_->colorStr()));
     QColor color = QColorDialog::getColor(current, this, "Sector Color");
 
     if (!color.isValid())
         return;
 
-    loginf << "setting sector " << current_sector_id_ << " color=" << color.name().toStdString();
+    loginf << "setting sector " << current_sector_->id() << " color=" << color.name().toStdString();
 
-    sector->colorStr(color.name().toStdString());
-    saveCurrent();
+    current_sector_->colorStr(color.name().toStdString());
 
     color_button_->setStyleSheet("background-color: " + color.name() + ";");
     color_button_->setText(color.name());
+
+    if (on_changed_)
+        on_changed_();
 }
 
 void SectorEditWidget::altMinEditedSlot()
 {
-    if (!has_current_)
-        return;
-
-    auto sector = manager_.sector(current_sector_id_);
-    if (!sector)
+    if (!current_sector_ || read_only_)
         return;
 
     QString text = alt_min_edit_->text().trimmed();
     if (text.isEmpty())
     {
-        if (sector->hasMinimumAltitude())
+        if (current_sector_->hasMinimumAltitude())
         {
-            sector->removeMinimumAltitude();
-            saveCurrent();
+            current_sector_->removeMinimumAltitude();
+            if (on_changed_)
+                on_changed_();
         }
     }
     else
@@ -281,28 +252,26 @@ void SectorEditWidget::altMinEditedSlot()
         double val = text.toDouble(&ok);
         if (ok)
         {
-            sector->setMinimumAltitude(val);
-            saveCurrent();
+            current_sector_->setMinimumAltitude(val);
+            if (on_changed_)
+                on_changed_();
         }
     }
 }
 
 void SectorEditWidget::altMaxEditedSlot()
 {
-    if (!has_current_)
-        return;
-
-    auto sector = manager_.sector(current_sector_id_);
-    if (!sector)
+    if (!current_sector_ || read_only_)
         return;
 
     QString text = alt_max_edit_->text().trimmed();
     if (text.isEmpty())
     {
-        if (sector->hasMaximumAltitude())
+        if (current_sector_->hasMaximumAltitude())
         {
-            sector->removeMaximumAltitude();
-            saveCurrent();
+            current_sector_->removeMaximumAltitude();
+            if (on_changed_)
+                on_changed_();
         }
     }
     else
@@ -311,8 +280,9 @@ void SectorEditWidget::altMaxEditedSlot()
         double val = text.toDouble(&ok);
         if (ok)
         {
-            sector->setMaximumAltitude(val);
-            saveCurrent();
+            current_sector_->setMaximumAltitude(val);
+            if (on_changed_)
+                on_changed_();
         }
     }
 }

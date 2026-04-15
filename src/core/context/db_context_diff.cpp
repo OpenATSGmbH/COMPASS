@@ -72,13 +72,23 @@ void diffJSON(const json& a, const json& b, const string& prefix, vector<FieldDi
 }
 
 /// Generic diff for a section: items keyed by a string key, serialized to JSON.
-template<typename T, typename KeyFunc, typename ToJSONFunc>
+/// Optional display_fn provides a human-readable key for the summary.
+template<typename T, typename KeyFunc, typename ToJSONFunc, typename DisplayFunc = nullptr_t>
 vector<ItemDiff> diffSection(const vector<T>& items_a,
                              const vector<T>& items_b,
                              KeyFunc key_fn,
-                             ToJSONFunc to_json_fn)
+                             ToJSONFunc to_json_fn,
+                             DisplayFunc display_fn = nullptr)
 {
     vector<ItemDiff> diffs;
+
+    auto display_key = [&](const T& item)
+    {
+        if constexpr (!std::is_same_v<DisplayFunc, nullptr_t>)
+            return display_fn(item);
+        else
+            return key_fn(item);
+    };
 
     // build maps
     map<string, size_t> map_a, map_b;
@@ -95,6 +105,7 @@ vector<ItemDiff> diffSection(const vector<T>& items_a,
             ItemDiff d;
             d.type = ItemDiff::Removed;
             d.key = key;
+            d.display_key = display_key(items_a[idx]);
             d.item_a = to_json_fn(items_a[idx]);
             diffs.push_back(d);
         }
@@ -108,6 +119,7 @@ vector<ItemDiff> diffSection(const vector<T>& items_a,
             ItemDiff d;
             d.type = ItemDiff::Added;
             d.key = key;
+            d.display_key = display_key(items_b[idx]);
             d.item_b = to_json_fn(items_b[idx]);
             diffs.push_back(d);
         }
@@ -127,6 +139,7 @@ vector<ItemDiff> diffSection(const vector<T>& items_a,
                 ItemDiff d;
                 d.type = ItemDiff::Modified;
                 d.key = key;
+                d.display_key = display_key(items_a[idx_a]);
                 d.item_a = ja;
                 d.item_b = jb;
                 diffJSON(ja, jb, "", d.fields);
@@ -150,27 +163,35 @@ bool DBContextDiff::hasDifferences() const
 
 string DBContextDiff::summary() const
 {
+    // In the diff, A = Configuration, B = Database.
+    // "Added" = only in Database, "Removed" = only in Configuration.
+
     ostringstream oss;
 
-    auto summarize = [&](const string& name, const vector<ItemDiff>& diffs)
+    auto summarize = [&](const string& section_name, const vector<ItemDiff>& diffs)
     {
         if (diffs.empty())
             return;
 
-        int added = 0, removed = 0, modified = 0;
+        oss << section_name << ":\n";
+
         for (const auto& d : diffs)
         {
-            if (d.type == ItemDiff::Added) ++added;
-            else if (d.type == ItemDiff::Removed) ++removed;
-            else ++modified;
-        }
+            const string& name = d.display_key.empty() ? d.key : d.display_key;
 
-        oss << name << ": ";
-        bool first = true;
-        if (added)    { oss << added << " added"; first = false; }
-        if (removed)  { if (!first) oss << ", "; oss << removed << " removed"; first = false; }
-        if (modified) { if (!first) oss << ", "; oss << modified << " modified"; }
-        oss << "\n";
+            switch (d.type)
+            {
+            case ItemDiff::Added:
+                oss << "  + " << name << " (only in Database)\n";
+                break;
+            case ItemDiff::Removed:
+                oss << "  - " << name << " (only in Configuration)\n";
+                break;
+            case ItemDiff::Modified:
+                oss << "  ~ " << name << " (modified)\n";
+                break;
+            }
+        }
     };
 
     summarize("Sensors", sensor_diffs);
@@ -185,11 +206,12 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
 {
     DBContextDiff result;
 
-    // sensors — keyed by sac/sic
+    // sensors — keyed by sac/sic, display includes name
     result.sensor_diffs = diffSection(
         a.dataSources(), b.dataSources(),
         [](const DataSource& ds) { return to_string(ds.sac()) + "/" + to_string(ds.sic()); },
-        [](const DataSource& ds) { return ds.toJSON(); }
+        [](const DataSource& ds) { return ds.toJSON(); },
+        [](const DataSource& ds) { return ds.name() + " " + to_string(ds.sac()) + "/" + to_string(ds.sic()); }
     );
 
     // ffts — keyed by name
@@ -206,11 +228,12 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
         [](const ASTERIXDecodingConfig& c) { return c.toJSON(); }
     );
 
-    // sectors — keyed by id
+    // sectors — keyed by id, display includes name
     result.sector_diffs = diffSection(
         a.sectors(), b.sectors(),
         [](const shared_ptr<Sector>& s) { return to_string(s->id()); },
-        [](const shared_ptr<Sector>& s) { return s->jsonData(); }
+        [](const shared_ptr<Sector>& s) { return s->jsonData(); },
+        [](const shared_ptr<Sector>& s) { return s->name(); }
     );
 
     return result;

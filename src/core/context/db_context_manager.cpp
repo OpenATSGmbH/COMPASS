@@ -30,6 +30,7 @@
 #include "db_context_create_dialog.h"
 #include "db_context_select_dialog.h"
 #include "db_context_conflict_dialog.h"
+#include "db_context_merge_dialog.h"
 #include "files.h"
 #include "logger.h"
 #include "number.h"
@@ -39,6 +40,7 @@
 
 #include <boost/filesystem.hpp>
 
+#include <QApplication>
 #include <QMessageBox>
 #include <QPushButton>
 
@@ -266,7 +268,7 @@ void DBContextManager::setActiveContext(const string& name)
     // if DB is open and contains data, ask for confirmation before switching
     if (compass_.dbOpened() && hasInsertedData())
     {
-        QMessageBox msgbox;
+        QMessageBox msgbox(QApplication::activeWindow());
         msgbox.setWindowTitle("Switch Context");
         msgbox.setText("The database contains imported data.\n\n"
                        "Switching to context '" + QString::fromStdString(name) +
@@ -1345,7 +1347,9 @@ void DBContextManager::databaseOpenedSlot()
             {
                 logwrn << "context differs from DB:\n" << d.summary();
 
-                DBContextConflictDialog dlg(active_context_name_, d);
+                QApplication::restoreOverrideCursor();
+
+                DBContextConflictDialog dlg(active_context_name_, d, QApplication::activeWindow());
                 dlg.exec();
 
                 switch (dlg.resolution())
@@ -1364,11 +1368,25 @@ void DBContextManager::databaseOpenedSlot()
                     break;
 
                 case DBContextConflictDialog::Merge:
-                    // TODO: open merge dialog, for now fall back to file
-                    loginf << "conflict resolved: merge (not yet implemented, using file)";
+                {
+                    loginf << "conflict resolved: opening merge dialog";
+
+                    DBContextMergeDialog merge_dlg(activeContext(), db_ctx, d,
+                                                   QApplication::activeWindow());
+                    merge_dlg.exec();
+
+                    auto merged = merge_dlg.mergedContext();
+                    merged.name(active_context_name_);
+                    merged.modified(DBContext::currentTimestamp());
+                    contexts_[active_context_name_] = merged;
+                    saveContext(active_context_name_);
                     writeContextToDB();
+                    rebuildSectorLayers();
                     break;
                 }
+                }
+
+                QApplication::setOverrideCursor(Qt::WaitCursor);
             }
             else
             {

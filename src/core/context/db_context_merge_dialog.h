@@ -18,35 +18,99 @@
 #pragma once
 
 #include "db_context.h"
+#include "db_context_diff.h"
 
 #include <QDialog>
+
+#include <memory>
+#include <vector>
+
+class QTreeWidget;
+class QTreeWidgetItem;
+class QPushButton;
+class QStackedWidget;
+class Sector;
+
+class DataSourceEditWidget;
 
 namespace context
 {
 
-class DBContextDiff;
+class FFTEditWidget;
+class SectorEditWidget;
 
 /**
  * Dialog for interactively merging two versions of a context.
- * Shows per-item diffs and lets the user pick which side wins for each.
- * The result overwrites both the file and DB definitions.
  *
- * TODO: implement UI and merge logic.
+ * Shows a tree with sections (Sensors, FFTs, ASTERIX Decoding, Sectors),
+ * each containing the diff items. For each item the user picks
+ * "Configuration" or "Database" via a combo box.
+ *
+ * Clicking an item shows its details in a read-only panel on the right.
+ * Added/Removed items show one widget; Modified items show two side-by-side
+ * (stub for now).
+ *
+ * OK is disabled until all modified items have a selection.
  */
 class DBContextMergeDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit DBContextMergeDialog(const DBContext& file_context,
+    explicit DBContextMergeDialog(const DBContext& config_context,
                                   const DBContext& db_context,
                                   const DBContextDiff& diff,
                                   QWidget* parent = nullptr);
 
-    /// Returns the merged context after the dialog is accepted.
     const DBContext& mergedContext() const { return merged_; }
 
+protected:
+    void reject() override;
+
+private slots:
+    void choiceChangedSlot();
+    void acceptSlot();
+    void itemClickedSlot(QTreeWidgetItem* item, int column);
+
 private:
+    enum Choice { Undecided, UseConfiguration, UseDatabase };
+
+    struct MergeItem
+    {
+        const ItemDiff* diff;
+        std::string section;      // "sensors", "ffts", "asterix", "sectors"
+        QTreeWidgetItem* tree_item{nullptr};
+        Choice choice{Undecided};
+    };
+
+    void addSection(const std::string& section_name,
+                    const std::string& section_key,
+                    const std::vector<ItemDiff>& diffs);
+    void buildMergedContext();
+    bool allDecided() const;
+
+    void showDetail(const MergeItem& mi);
+    void showDetailWidget(QWidget* widget);
+    QWidget* createPlaceholderLabel(const QString& text);
+
+    const DBContext& config_ctx_;
+    const DBContext& db_ctx_;
+
+    QTreeWidget* tree_widget_{nullptr};
+    QStackedWidget* detail_stack_{nullptr};
+    QPushButton* ok_button_{nullptr};
+
+    // edit widgets (read-only, for detail panel)
+    DataSourceEditWidget* ds_widget_{nullptr};
+    FFTEditWidget* fft_widget_{nullptr};
+    SectorEditWidget* sector_widget_{nullptr};
+
+    // temporary objects for display (kept alive while widget shows them)
+    std::unique_ptr<DataSource> temp_ds_;
+    std::unique_ptr<FFT> temp_fft_;
+    std::shared_ptr<Sector> temp_sector_;
+
+    std::vector<MergeItem> merge_items_;
     DBContext merged_;
 };
 

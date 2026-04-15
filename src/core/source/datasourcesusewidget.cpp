@@ -60,7 +60,7 @@ DataSourcesUseWidget::DataSourcesUseWidget(context::DBContextManager& ctx_man,
     { this->updateContent(true); };
 
     assert (top_layout_);
-    edit_widget_ = new DataSourceEditWidget (false, ctx_man_, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (false, update_ds_func, delete_ds_func);
     edit_widget_->setContentsMargins(0, 0, 0, 0);
     
     top_layout_->addWidget(edit_widget_);    
@@ -111,7 +111,9 @@ void DataSourcesUseWidget::dataSourceSelectedSlot(unsigned int ds_id)
     loginf << " ds_id " << ds_id;
 
     assert (edit_widget_);
-    edit_widget_->showID(ds_id);
+    auto* ds = ctx_man_.dataSource(ds_id);
+    if (ds)
+        edit_widget_->show(*ds);
 }
 
 void DataSourcesUseWidget::setUseDSType(const std::string& ds_type_name, bool use)

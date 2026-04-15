@@ -16,8 +16,6 @@
  */
 
 #include "datasourceeditwidget.h"
-#include "compass.h"
-#include "db_context_manager.h"
 #include "data_source.h"
 #include "dstypeselectioncombobox.h"
 #include "datasourcesconfigurationdialog.h"
@@ -25,7 +23,6 @@
 #include "textfielddoublevalidator.h"
 #include "datasourcebase.h"
 #include "number.h"
-#include "files.h"
 #include "datasourceremoteunit.h"
 
 #include <QComboBox>
@@ -54,9 +51,9 @@ const std::string DataSourceEditWidget::TabRadarAccuraciesName = "Accuracies";
 const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "MLAT Remote Units";
 const std::string DataSourceEditWidget::TabNetworkLinesName    = "Network";
 
-DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines, context::DBContextManager& ctx_man,
+DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines,
     std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func)
-    : show_network_lines_(show_network_lines), ctx_man_(ctx_man),
+    : show_network_lines_(show_network_lines),
     update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func)
 {
     //setMaximumWidth(400);
@@ -547,15 +544,12 @@ void DataSourceEditWidget::createNetworkTab()
     main_layout->addStretch();
 }
 
-void DataSourceEditWidget::showID(unsigned int ds_id)
+void DataSourceEditWidget::show(context::DataSource& ds, const std::string& last_used_path)
 {
-    has_current_ds_ = true;
-    current_ds_id_ = ds_id;
-    
+    current_ds_ = &ds;
+    last_used_path_ = last_used_path;
 
-    loginf << "id " << ds_id;
-
-    traced_assert(ctx_man_.hasDataSource(current_ds_id_));
+    loginf << "id " << ds.id();
 
     updateContent();
 }
@@ -564,10 +558,15 @@ void DataSourceEditWidget::clear()
 {
     loginf;
 
-    has_current_ds_ = false;
-    current_ds_id_ = 0;
-    
+    current_ds_ = nullptr;
+    last_used_path_.clear();
 
+    updateContent();
+}
+
+void DataSourceEditWidget::setReadOnly(bool read_only)
+{
+    read_only_ = read_only;
     updateContent();
 }
 
@@ -588,12 +587,12 @@ void DataSourceEditWidget::nameEditedSlot(const QString& value)
         return;
     }
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->name(text);
+traced_assert(current_ds_);
+    currentDataSource().name(text);
 
-    update_ds_func_(current_ds_id_);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
@@ -602,12 +601,12 @@ void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
 
     loginf << "'" << text << "'";
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->shortName(text);
+traced_assert(current_ds_);
+    currentDataSource().shortName(text);
 
-    update_ds_func_(current_ds_id_);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
@@ -616,12 +615,12 @@ void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
 
     loginf << "'" << text << "'";
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->dsType(text);
+traced_assert(current_ds_);
+    currentDataSource().dsType(text);
 
-    update_ds_func_(current_ds_id_);
+    update_ds_func_(currentDataSource().id());
 
     updateContent();
 }
@@ -634,27 +633,27 @@ void DataSourceEditWidget::updateIntervalEditedSlot(const QString& value_str)
 
     if (!value_str.size()) // remove if empty
     {
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
+traced_assert(current_ds_);
 
-        if (currentDataSource()->hasUpdateInterval())
-            currentDataSource()->removeUpdateInterval();
+        if (currentDataSource().hasUpdateInterval())
+            currentDataSource().removeUpdateInterval();
 
         return;
     }
 
     float value = value_str.toFloat();
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->updateInterval(value);
+traced_assert(current_ds_);
+    currentDataSource().updateInterval(value);
 }
 
 void DataSourceEditWidget::detectionTypeChangedSlot(int index)
 {
-    if (!has_current_ds_)
+    if (!current_ds_)
         return;
 
     // Detection type as int: 0=Undefined, 1=PrimaryOnly, 2=ModeAC, 3=ModeACCombined, 4=ModeS, 5=ModeSCombined
-    currentDataSource()->detectionTypeInt(index);
+    currentDataSource().detectionTypeInt(index);
 
     updateContent();
 }
@@ -667,8 +666,8 @@ void DataSourceEditWidget::groundOnlyCheckedSlot()
 
     bool checked = ground_only_check_->checkState() == Qt::Checked;
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->groundOnly(checked);
+traced_assert(current_ds_);
+    currentDataSource().groundOnly(checked);
 }
 
 void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
@@ -679,8 +678,8 @@ void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
 
     bool checked = radar_ignore_azmrng_check_->checkState() == Qt::Checked;
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->ignoreRadarAzmRange(checked);    
+traced_assert(current_ds_);
+    currentDataSource().ignoreRadarAzmRange(checked);    
 }
 
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
@@ -705,8 +704,8 @@ void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
     if (!ok)
         return;
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->latitude(value);
+traced_assert(current_ds_);
+    currentDataSource().latitude(value);
 }
 
 void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
@@ -728,8 +727,8 @@ void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->longitude(value);
+traced_assert(current_ds_);
+    currentDataSource().longitude(value);
 }
 
 void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
@@ -746,8 +745,8 @@ void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->probabilityOfDetection(value);
+traced_assert(current_ds_);
+    currentDataSource().probabilityOfDetection(value);
 }
 
 void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
@@ -764,8 +763,8 @@ void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->clutterRate(value);
+traced_assert(current_ds_);
+    currentDataSource().clutterRate(value);
 }
 
 void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
@@ -774,18 +773,18 @@ void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 
     loginf << "'" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->altitude(value);
+traced_assert(current_ds_);
+    currentDataSource().altitude(value);
 }
 
 void DataSourceEditWidget::addRadarRangesSlot()
 {
     loginf;
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->addRadarRangesIfMissing();
+traced_assert(current_ds_);
+    currentDataSource().addRadarRangesIfMissing();
 
     updateContent();
 }
@@ -802,13 +801,13 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
         // remove key
         loginf << "removing key '" << key << "'";
 
-        if (has_current_ds_)
+        if (current_ds_)
         {
-            traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-            currentDataSource()->removeRadarRange(key);
+            traced_assert(current_ds_);
+            currentDataSource().removeRadarRange(key);
         }
 
-        currentDataSource()->removeRadarRange(key);
+        currentDataSource().removeRadarRange(key);
 
         return;
     }
@@ -817,18 +816,18 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
 
     loginf << "key '" << key << "' value '" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->radarRange(key, value);
+traced_assert(current_ds_);
+    currentDataSource().radarRange(key, value);
 }
 
 void DataSourceEditWidget::addRadarAccuraciesSlot()
 {
     loginf;
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->addRadarAccuraciesIfMissing();
+traced_assert(current_ds_);
+    currentDataSource().addRadarAccuraciesIfMissing();
 
     updateContent();
 }
@@ -844,22 +843,22 @@ void DataSourceEditWidget::radarAccuraciesEditedSlot(const QString& value_str)
 
     loginf << "key '" << key << "' value '" << value << "'";
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->radarAccuracy(key, value);
+traced_assert(current_ds_);
+    currentDataSource().radarAccuracy(key, value);
 }
 
 void DataSourceEditWidget::addMLATRemoteUnitsSlot()
 {
     loginf;
 
-    auto* ds = currentDataSource();
+    auto& ds = currentDataSource();
 
-    traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    // assert already in currentDataSource()
+    traced_assert(ds.dsType() == "MLAT");
+    traced_assert(ds.dsType() == "MLAT");
 
-    if (ds)
-        ds->addRemoteUnitsIfMissing();
+    
+        ds.addRemoteUnitsIfMissing();
 
     updateContent();
 }
@@ -868,18 +867,18 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
 {
     bool add = idx < 0;
 
-    auto* ds = currentDataSource();
+    auto& ds = currentDataSource();
 
-    traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    // assert already in currentDataSource()
+    traced_assert(ds.dsType() == "MLAT");
+    traced_assert(ds.dsType() == "MLAT");
 
     RemoteUnitDefinition ru_def_in;
     if (!add)
     {
-        traced_assert(ds->hasRemoteUnit(idx));
+        traced_assert(ds.hasRemoteUnit(idx));
         // read remote unit from info JSON
-        auto& ru_arr = ds->info()["remote_units"];
+        auto& ru_arr = ds.info()["remote_units"];
         for (const auto& ruj : ru_arr) {
             if (ruj.value("index", -1) == idx) {
                 ru_def_in.index = ruj.value("index", 0);
@@ -893,7 +892,7 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
         }
     }
 
-    auto ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+    auto ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
     QString title = add ? QString::fromStdString("Add Remote Unit for Sensor '" + ds_name + "'") :
                           QString::fromStdString("Edit Remote Unit " + std::to_string(idx) + " for Sensor '" + ds_name + "'");
     QDialog dlg;
@@ -956,8 +955,7 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     {
         QString err;
 
-        if ((add && ds && ds->hasRemoteUnit(index_box->value())) ||
-            (add && ds && ds->hasRemoteUnit(index_box->value())))
+        if (add && ds.hasRemoteUnit(index_box->value()))
         {
             err = "Please choose a unique index.";
         }
@@ -991,7 +989,7 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     if (add)
     {
         //add using info JSON
-        if (ds) {
+        {
             nlohmann::json ru_j;
             ru_j["index"] = ru_def.index;
             ru_j["name"] = ru_def.name;
@@ -999,14 +997,14 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
             ru_j["latitude"] = ru_def.latitude;
             ru_j["longitude"] = ru_def.longitude;
             ru_j["altitude"] = ru_def.altitude;
-            ds->info()["remote_units"].push_back(ru_j);
+            ds.info()["remote_units"].push_back(ru_j);
         }
     }
     else
     {
         //apply configuration via info JSON
-        if (ds) {
-            auto& ru_arr = ds->info()["remote_units"];
+        {
+            auto& ru_arr = ds.info()["remote_units"];
             for (auto& ruj : ru_arr) {
                 if (ruj.value("index", -1) == idx) {
                     ruj["name"] = ru_def.name;
@@ -1020,7 +1018,7 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
         }
     }
 
-    updateMLAT(ds);
+    updateMLAT(&ds);
 
     return true;
 }
@@ -1032,15 +1030,15 @@ void DataSourceEditWidget::addMLATRemoteUnitSlot()
 
 void DataSourceEditWidget::importMLATRemoteUnitsSlot()
 {
-    auto* ds = currentDataSource();
+    auto& ds = currentDataSource();
 
-    traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    // assert already in currentDataSource()
+    traced_assert(ds.dsType() == "MLAT");
+    traced_assert(ds.dsType() == "MLAT");
 
-    auto    ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+    auto    ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
     QString title   = QString::fromStdString("Select CSV File for Sensor '" + ds_name + "'");
-    QString path    = QString::fromStdString(ctx_man_.compass().lastUsedPath());
+    QString path    = QString::fromStdString(last_used_path_);
 
     QString fn = QFileDialog::getOpenFileName(this, title, path, "*.csv");
     if (fn.isEmpty())
@@ -1056,42 +1054,34 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
         return;
     }
 
-    auto addRUs = [ & ] (context::DataSource* ds)
-    {
-        if (!ds)
-            return;
-        
-        ds->removeRemoteUnits();
-        // import remote units via info JSON
-        for (const auto& ru_pair : ru_defs) {
-            nlohmann::json ru_j;
-            ru_j["index"] = ru_pair.second.index;
-            ru_j["name"] = ru_pair.second.name;
-            ru_j["comment"] = ru_pair.second.comment;
-            ru_j["latitude"] = ru_pair.second.latitude;
-            ru_j["longitude"] = ru_pair.second.longitude;
-            ru_j["altitude"] = ru_pair.second.altitude;
-            ds->info()["remote_units"].push_back(ru_j);
-        }
-    };
+    ds.removeRemoteUnits();
+    // import remote units via info JSON
+    for (const auto& ru_pair : ru_defs) {
+        nlohmann::json ru_j;
+        ru_j["index"] = ru_pair.second.index;
+        ru_j["name"] = ru_pair.second.name;
+        ru_j["comment"] = ru_pair.second.comment;
+        ru_j["latitude"] = ru_pair.second.latitude;
+        ru_j["longitude"] = ru_pair.second.longitude;
+        ru_j["altitude"] = ru_pair.second.altitude;
+        ds.info()["remote_units"].push_back(ru_j);
+    }
 
-    addRUs(ds);
-    
-    updateMLAT(ds);
+    updateMLAT(&ds);
 }
 
 void DataSourceEditWidget::clearMLATRemoteUnitsSlot()
 {
-    auto* ds = currentDataSource();
+    auto& ds = currentDataSource();
 
-    traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    // assert already in currentDataSource()
+    traced_assert(ds.dsType() == "MLAT");
+    traced_assert(ds.dsType() == "MLAT");
 
-    if (ds)
-        ds->removeRemoteUnits();
+    
+        ds.removeRemoteUnits();
 
-    updateMLAT(ds);
+    updateMLAT(&ds);
 }
 
 void DataSourceEditWidget::showRemoteUnitContextMenuSlot(const QPoint& pos)
@@ -1115,23 +1105,23 @@ void DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot()
     if (remote_units_list_->selectedItems().empty())
         return;
 
-    auto* ds = currentDataSource();
+    auto& ds = currentDataSource();
 
-    traced_assert(ds);
-    traced_assert(!ds || ds->dsType() == "MLAT");
-    traced_assert(!ds || ds->dsType() == "MLAT");
+    // assert already in currentDataSource()
+    traced_assert(ds.dsType() == "MLAT");
+    traced_assert(ds.dsType() == "MLAT");
 
     for (auto item : remote_units_list_->selectedItems())
     {
         int index = item->data(0, Qt::DisplayRole).toInt();
 
-        if (ds)
-            ds->removeRemoteUnit(index);
-        if (ds)
-            ds->removeRemoteUnit(index);
+        
+            ds.removeRemoteUnit(index);
+        
+            ds.removeRemoteUnit(index);
     }
 
-    updateMLAT(ds);
+    updateMLAT(&ds);
 }
 
 void DataSourceEditWidget::editMLATRemoteUnitSlot()
@@ -1148,10 +1138,10 @@ void DataSourceEditWidget::addNetLinesSlot()
 {
     loginf;
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
-traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    currentDataSource()->addNetworkLinesIfMissing();
+traced_assert(current_ds_);
+    currentDataSource().addNetworkLinesIfMissing();
 
     updateContent();
 }
@@ -1167,11 +1157,10 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
     traced_assert(line_id == "L1" || line_id == "L2" || line_id == "L3" || line_id == "L4");
     traced_assert(item == "Listen IP" || item == "MCast IP" || item == "MCast Port" || item == "Sender IP");
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
 
     std::string line_key = line_id; // already "L1", "L2", etc.
-    auto* ds = currentDataSource();
-    if (!ds) return;
+    auto& ds = currentDataSource();
 
     if (item == "Listen IP" || item == "MCast IP" || item == "Sender IP")
     {
@@ -1179,11 +1168,11 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
         loginf << "start" << line_id << " " << item << " ip '" << value << "'";
 
         if (item == "Listen IP")
-            ds->info()["network_lines"][line_key]["listen_ip"] = value;
+            ds.info()["network_lines"][line_key]["listen_ip"] = value;
         else if (item == "MCast IP")
-            ds->info()["network_lines"][line_key]["mcast_ip"] = value;
+            ds.info()["network_lines"][line_key]["mcast_ip"] = value;
         else // Sender IP
-            ds->info()["network_lines"][line_key]["listen_ip"] = value;
+            ds.info()["network_lines"][line_key]["listen_ip"] = value;
     }
     else // MCast Port
     {
@@ -1191,7 +1180,7 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
         loginf << "start" << line_id << " " << item << " port '" << value << "'";
 
         traced_assert(item == "MCast Port");
-        ds->info()["network_lines"][line_key]["mcast_port"] = value;
+        ds.info()["network_lines"][line_key]["mcast_port"] = value;
     }
 }
 
@@ -1199,28 +1188,25 @@ void DataSourceEditWidget::deleteSlot()
 {
     loginf;
 
-    traced_assert(has_current_ds_);
+    traced_assert(current_ds_);
     
 
-    delete_ds_func_(current_ds_id_);
+    delete_ds_func_(currentDataSource().id());
 
     clear();
 }
 
-context::DataSource* DataSourceEditWidget::currentDataSource()
+context::DataSource& DataSourceEditWidget::currentDataSource()
 {
-    if (!has_current_ds_)
-        return nullptr;
-
-    traced_assert(ctx_man_.hasDataSource(current_ds_id_));
-    return ctx_man_.dataSource(current_ds_id_);
+    traced_assert(current_ds_);
+    return *current_ds_;
 }
 
 void DataSourceEditWidget::updateContent()
 {
     detection_type_combo_->blockSignals(true);
 
-    auto ds = currentDataSource();
+    auto* ds = current_ds_;
 
     if (!ds)
     {

@@ -27,10 +27,10 @@ namespace context
 class DBContextDiff;
 
 /**
- * Shown on DB open when the file context and DB context differ.
+ * Shown on DB open when the Configuration and Database context differ.
  * Offers three resolution options:
- *   - Use File: overwrite DB with file definition
- *   - Use Database: overwrite file with DB definition
+ *   - Use Configuration: overwrite Database with Configuration
+ *   - Use Database: overwrite Configuration with Database
  *   - Merge: open a merge dialog (not yet implemented)
  */
 class DBContextConflictDialog : public QDialog
@@ -45,6 +45,9 @@ public:
                                      QWidget* parent = nullptr);
 
     Resolution resolution() const { return resolution_; }
+
+protected:
+    void reject() override {} // prevent closing via Escape
 
 private slots:
     void useFileSlot();

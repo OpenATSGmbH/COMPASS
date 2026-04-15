@@ -27,19 +27,19 @@ class QLineEdit;
 namespace context
 {
 
-class DBContextManager;
+class FFT;
 
 class FFTEditWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    FFTEditWidget(DBContextManager& manager,
-                  std::function<void()> on_changed,
+    FFTEditWidget(std::function<void()> on_changed,
                   QWidget* parent = nullptr);
 
-    void showFFT(const std::string& name);
+    void show(FFT& fft);
     void clear();
+    void setReadOnly(bool read_only);
 
 private slots:
     void nameEditedSlot();
@@ -49,13 +49,10 @@ private slots:
     void modeCEditedSlot();
 
 private:
-    void saveCurrent();
-
-    DBContextManager& manager_;
     std::function<void()> on_changed_;
 
-    std::string current_name_;
-    bool has_current_{false};
+    FFT* current_fft_{nullptr};
+    bool read_only_{false};
 
     QLineEdit* name_edit_{nullptr};
     QLineEdit* latitude_edit_{nullptr};

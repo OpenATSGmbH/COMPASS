@@ -199,9 +199,9 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
 
     // create data source edit widget
     ds_edit_widget_ = new DataSourceEditWidget(
-        false, manager_,
-        [this](unsigned int) { rebuildTree(); },
-        [this](unsigned int) { rebuildTree(); });
+        false,
+        [this](unsigned int) { manager_.saveContext(manager_.activeContextName()); rebuildTree(); },
+        [this](unsigned int id) { manager_.deleteDataSource(id); rebuildTree(); });
     detail_stack_->addWidget(ds_edit_widget_);
 
     // create ASTERIX config widget
@@ -209,11 +209,26 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     detail_stack_->addWidget(asterix_widget_);
 
     // create sector edit widget
-    sector_edit_widget_ = new SectorEditWidget(manager_, [this]() { rebuildTree(); }, this);
+    sector_edit_widget_ = new SectorEditWidget(
+        [this]() {
+            manager_.saveContext(manager_.activeContextName());
+            manager_.rebuildSectorLayers();
+            rebuildTree();
+        },
+        [this]() -> std::vector<std::string> {
+            std::vector<std::string> names;
+            for (const auto& layer : manager_.sectorLayers())
+                names.push_back(layer->name());
+            return names;
+        },
+        this);
     detail_stack_->addWidget(sector_edit_widget_);
 
     // create FFT edit widget
-    fft_edit_widget_ = new FFTEditWidget(manager_, [this]() { rebuildTree(); }, this);
+    fft_edit_widget_ = new FFTEditWidget([this]() {
+        manager_.saveContext(manager_.activeContextName());
+        rebuildTree();
+    }, this);
     detail_stack_->addWidget(fft_edit_widget_);
 
     // initial empty placeholder
@@ -295,7 +310,9 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
     {
         loginf << "clicked data source id " << ds_item->dsId();
 
-        ds_edit_widget_->showID(ds_item->dsId());
+        auto* ds = manager_.dataSource(ds_item->dsId());
+        if (ds)
+            ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
         showDetailWidget(ds_edit_widget_);
     }
     else if (dynamic_cast<ASTERIXConfigLeafItem*>(item))
@@ -339,14 +356,18 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
     {
         loginf << "clicked sector id " << sec_item->sectorId();
 
-        sector_edit_widget_->showSector(sec_item->sectorId());
+        auto sec = manager_.sector(sec_item->sectorId());
+        if (sec)
+            sector_edit_widget_->show(*sec);
         showDetailWidget(sector_edit_widget_);
     }
     else if (auto* fft_item = dynamic_cast<FFTItem*>(item))
     {
         loginf << "clicked FFT '" << fft_item->fftName() << "'";
 
-        fft_edit_widget_->showFFT(fft_item->fftName());
+        auto* fft = manager_.fft(fft_item->fftName());
+        if (fft)
+            fft_edit_widget_->show(*fft);
         showDetailWidget(fft_edit_widget_);
     }
 }

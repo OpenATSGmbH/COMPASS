@@ -82,12 +82,12 @@ public slots:
 
 public:
     DataSourceEditWidget(bool show_network_lines,
-                         context::DBContextManager& ctx_man,
                          std::function<void(unsigned int)> update_ds_func,
                          std::function<void(unsigned int)> delete_ds_func);
 
-    void showID(unsigned int ds_id);
+    void show(context::DataSource& ds, const std::string& last_used_path = {});
     void clear();
+    void setReadOnly(bool read_only);
 
     void updateContent();
 
@@ -100,13 +100,12 @@ public:
 protected:
     bool show_network_lines_;
 
-    context::DBContextManager& ctx_man_;
     std::function<void(unsigned int)> update_ds_func_;
     std::function<void(unsigned int)> delete_ds_func_;
 
-    bool has_current_ds_ {false};
-    unsigned int current_ds_id_ {0};
-    bool current_ds_in_db_ {false};
+    context::DataSource* current_ds_ {nullptr};
+    std::string last_used_path_;
+    bool read_only_ {false};
 
     QTabWidget* tab_widget_ {nullptr};
 
@@ -183,7 +182,7 @@ protected:
 
     std::map<std::string, int> tab_map_;
 
-    context::DataSource* currentDataSource();
+    context::DataSource& currentDataSource();
 
     QVBoxLayout* createTab(const std::string& name, bool has_scroll_area);
     int tabIndex(const std::string& name) const;

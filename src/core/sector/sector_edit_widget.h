@@ -20,29 +20,33 @@
 #include <QWidget>
 
 #include <functional>
+#include <string>
+#include <vector>
 
 class QLineEdit;
 class QComboBox;
 class QCheckBox;
 class QPushButton;
 class QLabel;
+class Sector;
 
 namespace context
 {
-
-class DBContextManager;
 
 class SectorEditWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    SectorEditWidget(DBContextManager& manager,
-                     std::function<void()> on_changed,
+    using LayerNamesFunc = std::function<std::vector<std::string>()>;
+
+    SectorEditWidget(std::function<void()> on_changed,
+                     LayerNamesFunc layer_names_func,
                      QWidget* parent = nullptr);
 
-    void showSector(unsigned int sector_id);
+    void show(Sector& sector);
     void clear();
+    void setReadOnly(bool read_only);
 
 private slots:
     void nameEditedSlot();
@@ -53,13 +57,11 @@ private slots:
     void altMaxEditedSlot();
 
 private:
-    void saveCurrent();
-
-    DBContextManager& manager_;
     std::function<void()> on_changed_;
+    LayerNamesFunc layer_names_func_;
 
-    unsigned int current_sector_id_{0};
-    bool has_current_{false};
+    Sector* current_sector_{nullptr};
+    bool read_only_{false};
 
     QLineEdit* name_edit_{nullptr};
     QComboBox* layer_combo_{nullptr};

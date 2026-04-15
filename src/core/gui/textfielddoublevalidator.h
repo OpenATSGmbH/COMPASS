@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "traced_assert.h"
+
 #include <QDoubleValidator>
 #include <QLineEdit>
 

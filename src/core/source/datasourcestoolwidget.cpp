@@ -61,6 +61,14 @@ void DataSourcesToolWidget::createUI()
     connect(&ctx_man_, &context::DBContextManager::countsChangedSignal,
             this, [this] { logdbg << "countsChangedSignal received"; updateContent(false); });
 
+    auto& dbcont_man = ctx_man_.compass().dbContentManager();
+
+    connect(&dbcont_man, &DBContentManager::associationStatusChangedSignal,
+            this, [this] { logdbg << "associationStatusChangedSignal received"; updateAdditionalInfo(); });
+
+    connect(&dbcont_man, &DBContentManager::dbContentStatusChanged,
+            this, [this] { logdbg << "dbContentStatusChanged received"; updateAdditionalInfo(); });
+
     main_layout->addWidget(ds_widget_);
 
     QHBoxLayout* assoc_layout = new QHBoxLayout();

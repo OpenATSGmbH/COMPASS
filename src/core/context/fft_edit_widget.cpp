@@ -16,10 +16,8 @@
  */
 
 #include "fft_edit_widget.h"
-#include "db_context_manager.h"
 #include "fft.h"
 #include "logger.h"
-#include "traced_assert.h"
 #include "textfielddoublevalidator.h"
 
 #include <QFormLayout>
@@ -30,11 +28,9 @@
 namespace context
 {
 
-FFTEditWidget::FFTEditWidget(DBContextManager& manager,
-                             std::function<void()> on_changed,
+FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
                              QWidget* parent)
     : QWidget(parent)
-    , manager_(manager)
     , on_changed_(std::move(on_changed))
 {
     auto* layout = new QVBoxLayout();
@@ -86,31 +82,23 @@ FFTEditWidget::FFTEditWidget(DBContextManager& manager,
     setLayout(layout);
 }
 
-void FFTEditWidget::showFFT(const std::string& name)
+void FFTEditWidget::show(FFT& fft)
 {
-    loginf << "showing FFT '" << name << "'";
+    loginf << "showing FFT '" << fft.name() << "'";
 
-    if (!manager_.hasFFT(name))
-    {
-        clear();
-        return;
-    }
-
-    has_current_ = true;
-    current_name_ = name;
-
-    auto* fft = manager_.fft(name);
-    const auto& info = fft->info();
+    current_fft_ = &fft;
 
     name_edit_->blockSignals(true);
 
-    name_edit_->setText(QString::fromStdString(fft->name()));
+    name_edit_->setText(QString::fromStdString(fft.name()));
+
+    const auto& info = fft.info();
 
     // position
-    if (fft->hasPosition())
+    if (fft.hasPosition())
     {
-        latitude_edit_->setText(QString::number(fft->latitude(), 'g', 12));
-        longitude_edit_->setText(QString::number(fft->longitude(), 'g', 12));
+        latitude_edit_->setText(QString::number(fft.latitude(), 'g', 12));
+        longitude_edit_->setText(QString::number(fft.longitude(), 'g', 12));
     }
     else
     {
@@ -118,8 +106,8 @@ void FFTEditWidget::showFFT(const std::string& name)
         longitude_edit_->setText("");
     }
 
-    if (fft->hasAltitude())
-        altitude_edit_->setText(QString::number(fft->altitude(), 'f', 1));
+    if (fft.hasAltitude())
+        altitude_edit_->setText(QString::number(fft.altitude(), 'f', 1));
     else
         altitude_edit_->setText("");
 
@@ -144,8 +132,7 @@ void FFTEditWidget::showFFT(const std::string& name)
 
 void FFTEditWidget::clear()
 {
-    has_current_ = false;
-    current_name_.clear();
+    current_fft_ = nullptr;
 
     name_edit_->blockSignals(true);
 
@@ -160,39 +147,31 @@ void FFTEditWidget::clear()
     name_edit_->blockSignals(false);
 }
 
-void FFTEditWidget::saveCurrent()
+void FFTEditWidget::setReadOnly(bool read_only)
 {
-    if (!has_current_)
-        return;
+    read_only_ = read_only;
 
-    manager_.saveContext(manager_.activeContextName());
+    name_edit_->setReadOnly(read_only);
+    latitude_edit_->setReadOnly(read_only);
+    longitude_edit_->setReadOnly(read_only);
+    altitude_edit_->setReadOnly(read_only);
+    mode_s_edit_->setReadOnly(read_only);
+    mode_3a_edit_->setReadOnly(read_only);
+    mode_c_edit_->setReadOnly(read_only);
 }
 
 void FFTEditWidget::nameEditedSlot()
 {
-    if (!has_current_)
-        return;
-
-    auto* fft = manager_.fft(current_name_);
-    if (!fft)
+    if (!current_fft_ || read_only_)
         return;
 
     std::string new_name = name_edit_->text().trimmed().toStdString();
-    if (new_name.empty() || new_name == current_name_)
+    if (new_name.empty() || new_name == current_fft_->name())
         return;
 
-    if (manager_.hasFFT(new_name))
-    {
-        // revert to current name
-        name_edit_->setText(QString::fromStdString(current_name_));
-        return;
-    }
+    loginf << "renaming FFT '" << current_fft_->name() << "' to '" << new_name << "'";
 
-    loginf << "renaming FFT '" << current_name_ << "' to '" << new_name << "'";
-
-    fft->name(new_name);
-    current_name_ = new_name;
-    saveCurrent();
+    current_fft_->name(new_name);
 
     if (on_changed_)
         on_changed_();
@@ -200,14 +179,10 @@ void FFTEditWidget::nameEditedSlot()
 
 void FFTEditWidget::positionEditedSlot()
 {
-    if (!has_current_)
+    if (!current_fft_ || read_only_)
         return;
 
-    auto* fft = manager_.fft(current_name_);
-    if (!fft)
-        return;
-
-    auto& info = fft->info();
+    auto& info = current_fft_->info();
 
     QString lat_text = latitude_edit_->text().trimmed();
     QString lon_text = longitude_edit_->text().trimmed();
@@ -243,19 +218,16 @@ void FFTEditWidget::positionEditedSlot()
         info.erase("altitude");
     }
 
-    saveCurrent();
+    if (on_changed_)
+        on_changed_();
 }
 
 void FFTEditWidget::modeSEditedSlot()
 {
-    if (!has_current_)
+    if (!current_fft_ || read_only_)
         return;
 
-    auto* fft = manager_.fft(current_name_);
-    if (!fft)
-        return;
-
-    auto& info = fft->info();
+    auto& info = current_fft_->info();
     QString text = mode_s_edit_->text().trimmed();
 
     if (text.isEmpty())
@@ -268,19 +240,16 @@ void FFTEditWidget::modeSEditedSlot()
             info["mode_s_address"] = val;
     }
 
-    saveCurrent();
+    if (on_changed_)
+        on_changed_();
 }
 
 void FFTEditWidget::mode3AEditedSlot()
 {
-    if (!has_current_)
+    if (!current_fft_ || read_only_)
         return;
 
-    auto* fft = manager_.fft(current_name_);
-    if (!fft)
-        return;
-
-    auto& info = fft->info();
+    auto& info = current_fft_->info();
     QString text = mode_3a_edit_->text().trimmed();
 
     if (text.isEmpty())
@@ -293,19 +262,16 @@ void FFTEditWidget::mode3AEditedSlot()
             info["mode_3a_code"] = val;
     }
 
-    saveCurrent();
+    if (on_changed_)
+        on_changed_();
 }
 
 void FFTEditWidget::modeCEditedSlot()
 {
-    if (!has_current_)
+    if (!current_fft_ || read_only_)
         return;
 
-    auto* fft = manager_.fft(current_name_);
-    if (!fft)
-        return;
-
-    auto& info = fft->info();
+    auto& info = current_fft_->info();
     QString text = mode_c_edit_->text().trimmed();
 
     if (text.isEmpty())
@@ -318,7 +284,8 @@ void FFTEditWidget::modeCEditedSlot()
             info["mode_c_code"] = val;
     }
 
-    saveCurrent();
+    if (on_changed_)
+        on_changed_();
 }
 
 } // namespace context

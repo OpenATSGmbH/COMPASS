@@ -33,6 +33,7 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
     : QDialog(parent)
 {
     setWindowTitle("Context Conflict");
+    setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
     setMinimumWidth(450);
 
     auto* main_layout = new QVBoxLayout(this);
@@ -40,8 +41,8 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
     // description
     auto* desc_label = new QLabel(
         "The context '" + QString::fromStdString(context_name) +
-        "' on disk differs from the version stored in the database.\n\n"
-        "Choose how to resolve the conflict:");
+        "' differs between Configuration and Database.\n\n"
+        "Choose which version to use:");
     desc_label->setWordWrap(true);
     main_layout->addWidget(desc_label);
 
@@ -57,22 +58,22 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
     auto* button_layout = new QHBoxLayout();
     button_layout->addStretch();
 
-    auto* use_file_button = new QPushButton("Use File");
-    use_file_button->setIcon(QIcon());
-    use_file_button->setToolTip("Overwrite the database context with the file definition");
-    connect(use_file_button, &QPushButton::clicked, this, &DBContextConflictDialog::useFileSlot);
-    button_layout->addWidget(use_file_button);
+    auto* use_config_button = new QPushButton("Use Configuration");
+    use_config_button->setIcon(QIcon());
+    use_config_button->setToolTip("Use the Configuration and overwrite the Database");
+    connect(use_config_button, &QPushButton::clicked, this, &DBContextConflictDialog::useFileSlot);
+    button_layout->addWidget(use_config_button);
 
     auto* use_db_button = new QPushButton("Use Database");
     use_db_button->setIcon(QIcon());
-    use_db_button->setToolTip("Overwrite the file definition with the database context");
+    use_db_button->setToolTip("Use the Database and overwrite the Configuration");
     connect(use_db_button, &QPushButton::clicked, this, &DBContextConflictDialog::useDatabaseSlot);
     button_layout->addWidget(use_db_button);
 
     auto* merge_button = new QPushButton("Merge...");
     merge_button->setIcon(QIcon());
     merge_button->setToolTip("Open a merge dialog to resolve conflicts individually");
-    merge_button->setEnabled(false); // stub — not yet implemented
+    merge_button->setToolTip("Open a merge dialog to resolve conflicts individually");
     connect(merge_button, &QPushButton::clicked, this, &DBContextConflictDialog::mergeSlot);
     button_layout->addWidget(merge_button);
 
@@ -81,7 +82,7 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
 
 void DBContextConflictDialog::useFileSlot()
 {
-    loginf << "user chose: use file definition";
+    loginf << "user chose: use configuration";
     resolution_ = UseFile;
     accept();
 }

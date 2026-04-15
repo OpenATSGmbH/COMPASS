@@ -46,6 +46,7 @@ struct ItemDiff
 
     Type type;
     std::string key;                   // identifying key (e.g. "12/1" for sac/sic, "FFT_01" for name)
+    std::string display_key;           // human-readable key (e.g. "Radar_A 12/1"); empty = use key
     std::vector<FieldDiff> fields;     // only for Modified
     nlohmann::json item_a;             // full item from context A (null for Added)
     nlohmann::json item_b;             // full item from context B (null for Removed)

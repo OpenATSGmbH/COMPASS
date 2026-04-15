@@ -305,6 +305,7 @@ public:
     // ================================================================
     // Utility
     // ================================================================
+    void rebuildSectorLayers();
     static std::string basePath();
     COMPASS& compass() { return compass_; }
 
@@ -316,7 +317,6 @@ private:
     void loadContextList();
     void saveActiveContextName();
     void loadActiveContextName();
-    void rebuildSectorLayers();
     void loadCountsFromDB();
     bool hasInsertedData() const;
 
