@@ -1573,14 +1573,10 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             {
                 logdbg << "creating data source";
 
-                ctx_man3.createDataSource(settings().ds_sac, settings().ds_sic);
+                ctx_man3.createDataSource(settings().ds_sac, settings().ds_sic,
+                                          settings().ds_name, "RefTraj");
                 traced_assert(ctx_man3.hasDataSource(ds_id));
             }
-
-            auto* src = ctx_man3.dataSource(ds_id);
-
-            src->name(settings().ds_name);
-            src->dsType("RefTraj"); // same as dstype
         }
     };
 

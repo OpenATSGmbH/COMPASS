@@ -745,14 +745,10 @@ void GPSTrailImportTask::run()
         {
             loginf << "creating data source";
 
-            ctx_man.createDataSource(settings_.ds_sac, settings_.ds_sic);
+            ctx_man.createDataSource(settings_.ds_sac, settings_.ds_sic,
+                                     settings_.ds_name, "RefTraj");
             traced_assert(ctx_man.hasDataSource(ds_id));
         }
-
-        auto* src = ctx_man.dataSource(ds_id);
-
-        src->name(settings_.ds_name);
-        src->dsType(dbcontent_name); // same as dstype
 
     }
 

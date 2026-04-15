@@ -44,6 +44,7 @@ public:
                                      const DBContextDiff& diff,
                                      const std::string& config_modified,
                                      const std::string& db_modified,
+                                     bool db_has_sensor_data,
                                      QWidget* parent = nullptr);
 
     Resolution resolution() const { return resolution_; }

@@ -449,9 +449,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
         if (dialog.cancelled())
             return;
 
-        auto& ds = manager_.createDataSource(dialog.sac(), dialog.sic());
-        ds.dsType(dialog.dsType());
-        manager_.saveContext(manager_.activeContextName());
+        auto& ds = manager_.createDataSource(dialog.sac(), dialog.sic(), "", dialog.dsType());
         rebuildTree();
     });
 

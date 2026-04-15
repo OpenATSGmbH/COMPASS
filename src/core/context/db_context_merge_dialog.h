@@ -23,6 +23,7 @@
 #include <QDialog>
 
 #include <memory>
+#include <set>
 #include <vector>
 
 class QTreeWidget;
@@ -61,6 +62,7 @@ public:
     explicit DBContextMergeDialog(const DBContext& config_context,
                                   const DBContext& db_context,
                                   const DBContextDiff& diff,
+                                  const std::set<unsigned int>& ds_ids_with_data,
                                   QWidget* parent = nullptr);
 
     const DBContext& mergedContext() const { return merged_; }
@@ -97,6 +99,7 @@ private:
 
     const DBContext& config_ctx_;
     const DBContext& db_ctx_;
+    std::set<unsigned int> ds_ids_with_data_;
 
     QTreeWidget* tree_widget_{nullptr};
     QStackedWidget* detail_stack_{nullptr};

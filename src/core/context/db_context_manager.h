@@ -108,7 +108,9 @@ public:
     std::map<unsigned int, std::string> dsTypes() const; // ds_id -> type string
 
     // data source CRUD in active context
-    DataSource& createDataSource(unsigned int sac, unsigned int sic);
+    DataSource& createDataSource(unsigned int sac, unsigned int sic,
+                                     const std::string& name = "",
+                                     const std::string& ds_type = "Other");
     void deleteDataSource(unsigned int ds_id);
 
     // ================================================================

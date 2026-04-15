@@ -204,8 +204,7 @@ void DataSourcesConfigurationDialog::newDSDoneSlot()
 
         table_model_->beginModelReset();
 
-        auto& new_ds = ctx_man_.createDataSource(sac, sic);
-        new_ds.dsType(ds_type);
+        auto& new_ds = ctx_man_.createDataSource(sac, sic, "", ds_type);
 
         table_model_->endModelReset();
 

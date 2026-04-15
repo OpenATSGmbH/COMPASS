@@ -391,15 +391,17 @@ map<unsigned int, string> DBContextManager::dsTypes() const
     return result;
 }
 
-DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int sic)
+DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int sic,
+                                                const std::string& name,
+                                                const std::string& ds_type)
 {
     traced_assert(hasActiveContext());
 
     DataSource ds;
     ds.sac(sac);
     ds.sic(sic);
-    ds.dsType("Other");
-    ds.name("New " + to_string(sac) + "/" + to_string(sic));
+    ds.dsType(ds_type);
+    ds.name(name.empty() ? "New " + to_string(sac) + "/" + to_string(sic) : name);
 
     activeContext().dataSources().push_back(std::move(ds));
     saveContext(active_context_name_);
@@ -1315,6 +1317,8 @@ void DBContextManager::databaseOpenedSlot()
 
     auto& db = compass_.dbInterface();
 
+    loadCountsFromDB();
+
     if (!db.existsDBContextTable())
     {
         // new DB — write the active context
@@ -1352,8 +1356,29 @@ void DBContextManager::databaseOpenedSlot()
 
                 QApplication::restoreOverrideCursor();
 
+                // check if any DB-only sensor has data that would be lost
+                bool db_has_sensor_data = false;
+                for (const auto& sd : d.sensor_diffs)
+                {
+                    if (sd.type != ItemDiff::Added)
+                        continue;
+                    if (!sd.item_b.contains("sac") || !sd.item_b.contains("sic"))
+                        continue;
+
+                    unsigned int ds_id = Utils::Number::dsIdFrom(
+                        sd.item_b.at("sac").get<unsigned int>(),
+                        sd.item_b.at("sic").get<unsigned int>());
+
+                    if (inserted_counts_.count(ds_id))
+                    {
+                        db_has_sensor_data = true;
+                        break;
+                    }
+                }
+
                 DBContextConflictDialog dlg(active_context_name_, d,
                                            activeContext().modified(), db_ctx.modified(),
+                                           db_has_sensor_data,
                                            QApplication::activeWindow());
                 dlg.exec();
 
@@ -1375,7 +1400,12 @@ void DBContextManager::databaseOpenedSlot()
                 {
                     loginf << "conflict resolved: opening merge dialog";
 
+                    std::set<unsigned int> ds_ids_with_data;
+                    for (const auto& ds_entry : inserted_counts_)
+                        ds_ids_with_data.insert(ds_entry.first);
+
                     DBContextMergeDialog merge_dlg(activeContext(), db_ctx, d,
+                                                   ds_ids_with_data,
                                                    QApplication::activeWindow());
                     merge_dlg.exec();
 
@@ -1395,8 +1425,6 @@ void DBContextManager::databaseOpenedSlot()
             }
         }
     }
-
-    loadCountsFromDB();
 
     loginf << "emitting activeContextChangedSignal and countsChangedSignal";
 
