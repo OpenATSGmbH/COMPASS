@@ -16,6 +16,7 @@
  */
 
 #include "db_context_merge_dialog.h"
+#include "db_context_field_merge_widget.h"
 #include "datasourceeditwidget.h"
 #include "fft_edit_widget.h"
 #include "sector_edit_widget.h"
@@ -107,6 +108,41 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
     sector_widget_->setReadOnly(true);
     detail_stack_->addWidget(sector_widget_);
 
+    // field merge widget for Modified items
+    field_merge_widget_ = new FieldMergeWidget();
+    detail_stack_->addWidget(field_merge_widget_);
+
+    auto setComboForCurrent = [this](int combo_idx)
+    {
+        if (current_field_merge_idx_ < 0)
+            return;
+        auto& mi = merge_items_[current_field_merge_idx_];
+        auto* combo = dynamic_cast<QComboBox*>(
+            tree_widget_->itemWidget(mi.tree_item, 2));
+        if (combo)
+        {
+            combo->blockSignals(true);
+            combo->setCurrentIndex(combo_idx);
+            combo->blockSignals(false);
+        }
+        if (combo_idx == 1)
+            mi.choice = UseConfiguration;
+        else if (combo_idx == 2)
+            mi.choice = UseDatabase;
+        else if (combo_idx == 3)
+            mi.choice = ManuallyEdited;
+
+        mi.tree_item->setIcon(0, QIcon());
+        choiceChangedSlot();
+    };
+
+    connect(field_merge_widget_, &FieldMergeWidget::configChosenSignal,
+            this, [setComboForCurrent]() { setComboForCurrent(1); });
+    connect(field_merge_widget_, &FieldMergeWidget::dbChosenSignal,
+            this, [setComboForCurrent]() { setComboForCurrent(2); });
+    connect(field_merge_widget_, &FieldMergeWidget::valueEditedSignal,
+            this, [setComboForCurrent]() { setComboForCurrent(3); });
+
     // placeholder for items without a detail widget
     auto* placeholder = new QLabel("Select an item to view its details.");
     placeholder->setAlignment(Qt::AlignCenter);
@@ -193,6 +229,7 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
         combo->addItem(""); // index 0 = undecided
         combo->addItem("Configuration"); // index 1
         combo->addItem("Database");      // index 2
+        combo->addItem("New");           // index 3 = manually edited
 
         // set defaults: Added -> Database, Removed -> Configuration, Modified -> undecided
         switch (diff.type)
@@ -221,6 +258,8 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
                 merge_items_[idx].choice = UseConfiguration;
             else if (combo_idx == 2)
                 merge_items_[idx].choice = UseDatabase;
+            else if (combo_idx == 3)
+                merge_items_[idx].choice = ManuallyEdited;
             else
                 merge_items_[idx].choice = Undecided;
 
@@ -259,9 +298,27 @@ void DBContextMergeDialog::itemClickedSlot(QTreeWidgetItem* item, int /*column*/
 
 void DBContextMergeDialog::showDetail(const MergeItem& mi)
 {
+    // save any in-progress field edits before switching
+    if (current_field_merge_idx_ >= 0)
+    {
+        field_overrides_[current_field_merge_idx_] = field_merge_widget_->mergedJSON();
+        current_field_merge_idx_ = -1;
+    }
+
+    // find this item's index
+    int mi_idx = -1;
+    for (size_t i = 0; i < merge_items_.size(); ++i)
+    {
+        if (merge_items_[i].tree_item == mi.tree_item)
+        {
+            mi_idx = static_cast<int>(i);
+            break;
+        }
+    }
+
     // pick which JSON to display:
     // Added = item_b (Database), Removed = item_a (Configuration)
-    // Modified = stub for now
+    // Modified = field merge widget
     const nlohmann::json* item_json = nullptr;
     QString source_label;
 
@@ -276,11 +333,36 @@ void DBContextMergeDialog::showDetail(const MergeItem& mi)
         source_label = "Configuration";
         break;
     case ItemDiff::Modified:
-        // TODO: show two widgets side-by-side
-        showDetailWidget(createPlaceholderLabel(
-            "Modified item — side-by-side comparison not yet implemented.\n\n"
-            "Configuration and Database versions differ."));
+    {
+        // determine which side is newer
+        bool prefer_db = db_ctx_.modified() > config_ctx_.modified();
+
+        field_merge_widget_->show(mi.diff->item_a, mi.diff->item_b, prefer_db);
+
+        current_field_merge_idx_ = mi_idx;
+
+        // auto-resolve as decided once the user inspects the fields
+        if (mi_idx >= 0 && merge_items_[mi_idx].choice == Undecided)
+        {
+            merge_items_[mi_idx].choice = prefer_db ? UseDatabase : UseConfiguration;
+            merge_items_[mi_idx].tree_item->setIcon(0, QIcon()); // remove hint
+
+            // update combo to reflect
+            auto* combo = dynamic_cast<QComboBox*>(
+                tree_widget_->itemWidget(merge_items_[mi_idx].tree_item, 2));
+            if (combo)
+            {
+                combo->blockSignals(true);
+                combo->setCurrentIndex(prefer_db ? 2 : 1);
+                combo->blockSignals(false);
+            }
+
+            choiceChangedSlot();
+        }
+
+        showDetailWidget(field_merge_widget_);
         return;
+    }
     }
 
     if (!item_json || item_json->is_null())
@@ -371,6 +453,13 @@ void DBContextMergeDialog::choiceChangedSlot()
 
 void DBContextMergeDialog::acceptSlot()
 {
+    // save any in-progress field edits
+    if (current_field_merge_idx_ >= 0)
+    {
+        field_overrides_[current_field_merge_idx_] = field_merge_widget_->mergedJSON();
+        current_field_merge_idx_ = -1;
+    }
+
     buildMergedContext();
     accept();
 }
@@ -379,131 +468,181 @@ void DBContextMergeDialog::acceptSlot()
 // Merge logic
 // ============================================================
 
+nlohmann::json DBContextMergeDialog::buildMergedItemJSON(const MergeItem& mi) const
+{
+    // find this item's index
+    int mi_idx = -1;
+    for (size_t i = 0; i < merge_items_.size(); ++i)
+    {
+        if (&merge_items_[i] == &mi)
+        {
+            mi_idx = static_cast<int>(i);
+            break;
+        }
+    }
+
+    // start from whichever side is newer as base
+    bool prefer_db = db_ctx_.modified() > config_ctx_.modified();
+    nlohmann::json result = prefer_db ? mi.diff->item_b : mi.diff->item_a;
+
+    // apply field overrides if user edited this item
+    if (mi_idx >= 0 && field_overrides_.count(mi_idx))
+    {
+        const auto& overrides = field_overrides_.at(mi_idx);
+
+        for (auto it = overrides.begin(); it != overrides.end(); ++it)
+        {
+            const std::string& path = it.key();
+            const auto& val = it.value();
+
+            // path is either "key" or "key.subkey"
+            auto dot = path.find('.');
+            if (dot == std::string::npos)
+            {
+                // top-level field
+                if (val.is_null())
+                    result.erase(path);
+                else
+                    result[path] = val;
+            }
+            else
+            {
+                // nested: e.g. "info.latitude"
+                std::string parent = path.substr(0, dot);
+                std::string child = path.substr(dot + 1);
+
+                if (!result.contains(parent) || !result[parent].is_object())
+                    result[parent] = nlohmann::json::object();
+
+                if (val.is_null())
+                    result[parent].erase(child);
+                else
+                    result[parent][child] = val;
+            }
+        }
+    }
+
+    return result;
+}
+
 void DBContextMergeDialog::buildMergedContext()
 {
     // start from configuration as base
     merged_ = config_ctx_;
 
-    // --- Sensors ---
     for (const auto& mi : merge_items_)
     {
-        if (mi.section != "sensors" || mi.choice != UseDatabase)
+        // for Modified items, always build from field overrides
+        if (mi.diff->type == ItemDiff::Modified)
+        {
+            nlohmann::json merged_j = buildMergedItemJSON(mi);
+
+            if (mi.section == "sensors")
+            {
+                merged_.addOrReplaceDataSource(DataSource::fromJSON(merged_j));
+            }
+            else if (mi.section == "ffts")
+            {
+                auto fft = FFT::fromJSON(merged_j);
+                std::string name = fft.name();
+                auto& vec = merged_.ffts();
+                auto it = std::find_if(vec.begin(), vec.end(),
+                    [&name](const FFT& f) { return f.name() == name; });
+                if (it != vec.end())
+                    *it = std::move(fft);
+                else
+                    vec.push_back(std::move(fft));
+            }
+            else if (mi.section == "asterix")
+            {
+                auto cfg = ASTERIXDecodingConfig::fromJSON(merged_j);
+                unsigned int cat = cfg.category();
+                auto& vec = merged_.asterixDecoding();
+                auto it = std::find_if(vec.begin(), vec.end(),
+                    [cat](const ASTERIXDecodingConfig& c) { return c.category() == cat; });
+                if (it != vec.end())
+                    *it = std::move(cfg);
+                else
+                    vec.push_back(std::move(cfg));
+            }
+            else if (mi.section == "sectors")
+            {
+                unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                auto sector = std::make_shared<Sector>(
+                    sec_id, merged_j.at("name"), merged_j.at("layer_name"), false);
+                sector->readJSON(merged_j);
+                auto& vec = merged_.sectors();
+                auto it = std::find_if(vec.begin(), vec.end(),
+                    [sec_id](const std::shared_ptr<Sector>& s) { return s->id() == sec_id; });
+                if (it != vec.end())
+                    *it = sector;
+                else
+                    vec.push_back(sector);
+            }
+            continue;
+        }
+
+        // for Added/Removed: only act if user chose UseDatabase
+        if (mi.choice != UseDatabase)
             continue;
 
-        if (mi.diff->type == ItemDiff::Added || mi.diff->type == ItemDiff::Modified)
+        if (mi.diff->type == ItemDiff::Added)
         {
-            auto ds = DataSource::fromJSON(mi.diff->item_b);
-            merged_.addOrReplaceDataSource(std::move(ds));
+            // exists only in DB — add it
+            if (mi.section == "sensors")
+                merged_.addOrReplaceDataSource(DataSource::fromJSON(mi.diff->item_b));
+            else if (mi.section == "ffts")
+                merged_.ffts().push_back(FFT::fromJSON(mi.diff->item_b));
+            else if (mi.section == "asterix")
+                merged_.asterixDecoding().push_back(ASTERIXDecodingConfig::fromJSON(mi.diff->item_b));
+            else if (mi.section == "sectors")
+            {
+                unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                auto sector = std::make_shared<Sector>(
+                    sec_id, mi.diff->item_b.at("name"), mi.diff->item_b.at("layer_name"), false);
+                sector->readJSON(mi.diff->item_b);
+                merged_.sectors().push_back(sector);
+            }
         }
         else if (mi.diff->type == ItemDiff::Removed)
         {
             // only in config, user wants DB (doesn't have it) — remove
-            unsigned int ds_id = 0;
-            for (const auto& ds : merged_.dataSources())
+            if (mi.section == "sensors")
             {
-                std::string key = std::to_string(ds.sac()) + "/" + std::to_string(ds.sic());
-                if (key == mi.diff->key)
+                unsigned int ds_id = 0;
+                for (const auto& ds : merged_.dataSources())
                 {
-                    ds_id = ds.id();
-                    break;
+                    std::string key = std::to_string(ds.sac()) + "/" + std::to_string(ds.sic());
+                    if (key == mi.diff->key)
+                    { ds_id = ds.id(); break; }
+                }
+                if (ds_id > 0)
+                {
+                    auto& vec = merged_.dataSources();
+                    vec.erase(std::remove_if(vec.begin(), vec.end(),
+                        [ds_id](const DataSource& ds) { return ds.id() == ds_id; }), vec.end());
                 }
             }
-            if (ds_id > 0)
+            else if (mi.section == "ffts")
             {
-                auto& vec = merged_.dataSources();
+                auto& vec = merged_.ffts();
                 vec.erase(std::remove_if(vec.begin(), vec.end(),
-                    [ds_id](const DataSource& ds) { return ds.id() == ds_id; }), vec.end());
+                    [&mi](const FFT& f) { return f.name() == mi.diff->key; }), vec.end());
             }
-        }
-    }
-
-    // --- FFTs ---
-    for (const auto& mi : merge_items_)
-    {
-        if (mi.section != "ffts" || mi.choice != UseDatabase)
-            continue;
-
-        if (mi.diff->type == ItemDiff::Added || mi.diff->type == ItemDiff::Modified)
-        {
-            auto fft = FFT::fromJSON(mi.diff->item_b);
-            std::string name = fft.name();
-
-            auto& vec = merged_.ffts();
-            auto it = std::find_if(vec.begin(), vec.end(),
-                [&name](const FFT& f) { return f.name() == name; });
-
-            if (it != vec.end())
-                *it = std::move(fft);
-            else
-                vec.push_back(std::move(fft));
-        }
-        else if (mi.diff->type == ItemDiff::Removed)
-        {
-            auto& vec = merged_.ffts();
-            vec.erase(std::remove_if(vec.begin(), vec.end(),
-                [&mi](const FFT& f) { return f.name() == mi.diff->key; }), vec.end());
-        }
-    }
-
-    // --- ASTERIX Decoding ---
-    for (const auto& mi : merge_items_)
-    {
-        if (mi.section != "asterix" || mi.choice != UseDatabase)
-            continue;
-
-        if (mi.diff->type == ItemDiff::Added || mi.diff->type == ItemDiff::Modified)
-        {
-            auto cfg = ASTERIXDecodingConfig::fromJSON(mi.diff->item_b);
-            unsigned int cat = cfg.category();
-
-            auto& vec = merged_.asterixDecoding();
-            auto it = std::find_if(vec.begin(), vec.end(),
-                [cat](const ASTERIXDecodingConfig& c) { return c.category() == cat; });
-
-            if (it != vec.end())
-                *it = std::move(cfg);
-            else
-                vec.push_back(std::move(cfg));
-        }
-        else if (mi.diff->type == ItemDiff::Removed)
-        {
-            unsigned int cat = static_cast<unsigned int>(std::stoul(mi.diff->key));
-            auto& vec = merged_.asterixDecoding();
-            vec.erase(std::remove_if(vec.begin(), vec.end(),
-                [cat](const ASTERIXDecodingConfig& c) { return c.category() == cat; }), vec.end());
-        }
-    }
-
-    // --- Sectors ---
-    for (const auto& mi : merge_items_)
-    {
-        if (mi.section != "sectors" || mi.choice != UseDatabase)
-            continue;
-
-        if (mi.diff->type == ItemDiff::Added || mi.diff->type == ItemDiff::Modified)
-        {
-            unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
-            const auto& sec_j = mi.diff->item_b;
-
-            auto sector = std::make_shared<Sector>(
-                sec_id, sec_j.at("name"), sec_j.at("layer_name"), false);
-            sector->readJSON(sec_j);
-
-            auto& vec = merged_.sectors();
-            auto it = std::find_if(vec.begin(), vec.end(),
-                [sec_id](const std::shared_ptr<Sector>& s) { return s->id() == sec_id; });
-
-            if (it != vec.end())
-                *it = sector;
-            else
-                vec.push_back(sector);
-        }
-        else if (mi.diff->type == ItemDiff::Removed)
-        {
-            unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
-            auto& vec = merged_.sectors();
-            vec.erase(std::remove_if(vec.begin(), vec.end(),
-                [sec_id](const std::shared_ptr<Sector>& s) { return s->id() == sec_id; }), vec.end());
+            else if (mi.section == "asterix")
+            {
+                unsigned int cat = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                auto& vec = merged_.asterixDecoding();
+                vec.erase(std::remove_if(vec.begin(), vec.end(),
+                    [cat](const ASTERIXDecodingConfig& c) { return c.category() == cat; }), vec.end());
+            }
+            else if (mi.section == "sectors")
+            {
+                unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                auto& vec = merged_.sectors();
+                vec.erase(std::remove_if(vec.begin(), vec.end(),
+                    [sec_id](const std::shared_ptr<Sector>& s) { return s->id() == sec_id; }), vec.end());
+            }
         }
     }
 

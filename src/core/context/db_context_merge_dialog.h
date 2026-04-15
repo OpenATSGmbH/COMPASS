@@ -38,6 +38,7 @@ namespace context
 
 class FFTEditWidget;
 class SectorEditWidget;
+class FieldMergeWidget;
 
 /**
  * Dialog for interactively merging two versions of a context.
@@ -73,7 +74,7 @@ private slots:
     void itemClickedSlot(QTreeWidgetItem* item, int column);
 
 private:
-    enum Choice { Undecided, UseConfiguration, UseDatabase };
+    enum Choice { Undecided, UseConfiguration, UseDatabase, ManuallyEdited };
 
     struct MergeItem
     {
@@ -87,6 +88,7 @@ private:
                     const std::string& section_key,
                     const std::vector<ItemDiff>& diffs);
     void buildMergedContext();
+    nlohmann::json buildMergedItemJSON(const MergeItem& mi) const;
     bool allDecided() const;
 
     void showDetail(const MergeItem& mi);
@@ -105,12 +107,18 @@ private:
     FFTEditWidget* fft_widget_{nullptr};
     SectorEditWidget* sector_widget_{nullptr};
 
+    // field merge widget for Modified items
+    FieldMergeWidget* field_merge_widget_{nullptr};
+
     // temporary objects for display (kept alive while widget shows them)
     std::unique_ptr<DataSource> temp_ds_;
     std::unique_ptr<FFT> temp_fft_;
     std::shared_ptr<Sector> temp_sector_;
 
     std::vector<MergeItem> merge_items_;
+    int current_field_merge_idx_{-1};  // index into merge_items_ currently shown in field merge widget
+    std::map<int, nlohmann::json> field_overrides_;  // merge item idx -> edited field values
+
     DBContext merged_;
 };
 
