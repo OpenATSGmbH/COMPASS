@@ -72,9 +72,6 @@ public:
                                                 bool use_order = false, 
                                                 const std::string& order_variable = "");
 
-    std::shared_ptr<DBCommand> getDataSourcesSelectCommand();
-    std::shared_ptr<DBCommand> getFFTSelectCommand();
-
     std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent, boost::posix_time::ptime before_timestamp);
     std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent);
     std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent, unsigned int sac, unsigned int sic);
@@ -95,8 +92,6 @@ public:
 
     //std::string getTableMinMaxCreateStatement();
     std::string getTablePropertiesCreateStatement();
-    std::string getTableDataSourcesCreateStatement();
-    std::string getTableFFTsCreateStatement();
     std::string getTableSectorsCreateStatement();
     std::string getTableViewPointsCreateStatement();
     std::string getTableTargetsCreateStatement();
@@ -131,6 +126,18 @@ public:
     std::string getSelectAllSectorsStatement();
     std::string getSelectAllTargetsStatement();
     std::string getSelectAllTaslLogMessagesStatement();
+
+    // db_context table
+    std::string getTableDBContextCreateStatement();
+    std::string getReplaceDBContextSectionStatement(const std::string& section, const std::string& json);
+    std::string getSelectDBContextSectionStatement(const std::string& section);
+    std::string getSelectAllDBContextSectionsStatement();
+
+    // db_info table
+    std::string getTableDBInfoCreateStatement();
+    std::string getReplaceDBInfoStatement(const std::string& name, const std::string& json);
+    std::string getSelectDBInfoStatement(const std::string& name);
+    std::string getDeleteDBInfoStatement(const std::string& name);
 
     std::shared_ptr<DBCommand> getTableSelectMinMaxNormalStatement(const DBContent& object);
 

@@ -16,9 +16,8 @@
  */
 
 #include "datasourcecreatedialog.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "dstypeselectioncombobox.h"
-#include "datasourcesconfigurationdialog.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
 #include "util/number.h"
@@ -32,8 +31,8 @@
 using namespace std;
 using namespace Utils;
 
-DataSourceCreateDialog::DataSourceCreateDialog(DataSourcesConfigurationDialog& dialog, DataSourceManager& ds_man)
-    :  QDialog(&dialog), ds_man_(ds_man)
+DataSourceCreateDialog::DataSourceCreateDialog(context::DBContextManager& ctx_man, QWidget* parent)
+    :  QDialog(parent), ctx_man_(ctx_man)
 {
     setWindowTitle("Create New Data Source");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
@@ -136,7 +135,7 @@ void DataSourceCreateDialog::checkInput()
         done_button_->setDisabled(true);
         done_button_->setToolTip("Please set a data source type");
     }
-    else if (ds_man_.hasConfigDataSource(Number::dsIdFrom(sac_, sic_)))
+    else if (ctx_man_.hasDataSource(Number::dsIdFrom(sac_, sic_)))
     {
         done_button_->setDisabled(true);
         done_button_->setToolTip("Data Source with SAC/SIC already exists");

@@ -213,6 +213,9 @@ public:
     DBContentDataStore& dataStore() { return *data_store_; }
     const DBContentDataStore& dataStore() const { return *data_store_; }
 
+    bool showDataCounts() const { return show_data_counts_; }
+    void showDataCounts(bool show) { show_data_counts_ = show; }
+
 protected:
     void finishLoading();
     void finishInserting();
@@ -264,6 +267,8 @@ protected:
     bool load_in_progress_{false};
     bool insert_in_progress_{false};
     bool loading_done_{false};
+
+    bool show_data_counts_{false};
 
     /// Container with all DBContent (DBContent name -> dbcont pointer)
     std::map<std::string, DBContent*> dbcontent_;

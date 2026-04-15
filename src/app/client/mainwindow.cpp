@@ -19,7 +19,10 @@
 #include "mainwindow_commands.h"
 #include "compass.h"
 #include "configurationmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_copy_dialog.h"
+#include "db_context_create_dialog.h"
+#include "db_context_delete_dialog.h"
+#include "db_context_edit_dialog.h"
 #include "datasourcesconfigurationdialog.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetlistwidget.h"
@@ -37,12 +40,9 @@
 #include "viewpointsimporttaskdialog.h"
 #include "gpstrailimporttask.h"
 #include "gpstrailimporttaskdialog.h"
-#include "managesectorstask.h"
-#include "managesectorstaskdialog.h"
 #include "evaluationmanager.h"
 #include "compass.h"
-#include "fftmanager.h"
-#include "fftsconfigurationdialog.h"
+#include "db_context_manager.h"
 #include "ui_test_common.h"
 #include "ui_test_cmd.h"
 #include "rtcommand_shell.h"
@@ -83,6 +83,8 @@
 #include <QStackedWidget>
 #include <QTabWidget>
 #include <QLocale>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QMenu>
@@ -199,10 +201,10 @@ void MainWindow::createUI()
     // initialize toolbox
     tool_box_ = new ToolBox(this);
     
-    tool_ds_      = tool_box_->addTool(compass_.dataSourceManager().loadWidget()); // 0
+    tool_ds_      = tool_box_->addTool(compass_.dbContextManager().loadWidget()); // 0
     tool_filters_ = tool_box_->addTool(compass_.filterManager().widget()); // 1
     tool_targets_ = tool_box_->addTool(compass_.dbContentManager().targetListWidget()); // 2
-    tool_sstatus_ = tool_box_->addTool(compass_.dataSourceManager().statusWidget()); // 3
+    tool_sstatus_ = tool_box_->addTool(compass_.dbContextManager().statusWidget()); // 3
     tool_reports_ = tool_box_->addTool(compass_.taskManager().widget()); // 4
     tool_vp_      = tool_box_->addTool(compass_.viewManager().viewPointsWidget()); // 5
     tool_log_     = tool_box_->addTool(new LogWidget(compass_.logStore())); // 6
@@ -365,6 +367,9 @@ void MainWindow::createMenus ()
     quit_act->setToolTip("Quit the application");
     connect(quit_act, &QAction::triggered, this, &MainWindow::quitSlot);
     file_menu->addAction(quit_act);
+
+    // context menu — shows current context name as menu title
+    createContextMenu();
 
     // import menu
 
@@ -1015,14 +1020,15 @@ void MainWindow::configureDataSourcesSlot()
 {
     loginf;
 
-    compass_.dataSourceManager().configurationDialog()->show();
+    compass_.dbContextManager().configurationDialog()->show();
 }
 
 void MainWindow::configureFFTsSlot()
 {
     loginf;
 
-    compass_.fftManager().configurationDialog()->show();
+    // TODO: FFT configuration now managed via DBContext — dialog to be reimplemented
+    loginf << "FFT configuration dialog not yet migrated to DBContext";
 }
 
 
@@ -1037,7 +1043,8 @@ void MainWindow::configureSectorsSlot()
 {
     loginf;
 
-    compass_.taskManager().manageSectorsTask().dialog()->show();
+    context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
+    dialog.exec();
 }
 
 void MainWindow::quitRequestedSlot()
@@ -1094,7 +1101,7 @@ void MainWindow::resetViewsMenuSlot()
                     // reset stuff
             compass_.dbContentManager().resetToStartupConfiguration();
 
-            compass_.dataSourceManager().resetToStartupConfiguration();
+            // context reset handled by DBContextManager — loading state is per-session
 
             compass_.filterManager().resetToStartupConfiguration();
 
@@ -1382,6 +1389,137 @@ void MainWindow::shutdown()
 //{
 //    logdbg << "'" << event->text().toStdString() << "'";
 //}
+
+void MainWindow::createContextMenu()
+{
+    auto& ctx_mgr = compass_.dbContextManager();
+
+    // menu title is the active context name (or "No Context")
+    QString title = ctx_mgr.hasActiveContext()
+                        ? QString::fromStdString(ctx_mgr.activeContextName())
+                        : "No Context";
+
+    context_menu_ = menuBar()->addMenu(title);
+    context_menu_->setToolTipsVisible(true);
+
+    // Edit
+    QAction* edit_act = new QAction("Edit...", context_menu_);
+    edit_act->setToolTip("Edit the current context");
+    connect(edit_act, &QAction::triggered, this, [this]()
+    {
+        context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
+        dialog.exec();
+    });
+    context_menu_->addAction(edit_act);
+
+    // Switch submenu
+    context_switch_menu_ = context_menu_->addMenu("Switch");
+    context_switch_menu_->setToolTip("Switch to another context");
+
+    for (const auto& name : ctx_mgr.contextNames())
+    {
+        if (name == ctx_mgr.activeContextName())
+            continue;
+
+        QAction* act = new QAction(QString::fromStdString(name), context_switch_menu_);
+        connect(act, &QAction::triggered, this, [this, name]()
+        {
+            compass_.dbContextManager().setActiveContext(name);
+        });
+        context_switch_menu_->addAction(act);
+    }
+
+    bool can_switch = !context_switch_menu_->isEmpty();
+    context_switch_menu_->setEnabled(can_switch);
+    context_switch_menu_->setToolTip(can_switch ? "Switch to another context"
+                                                : "No other contexts available");
+
+    // Compare
+    QAction* compare_act = new QAction("Compare...", context_menu_);
+    compare_act->setToolTip("Compare contexts");
+    compare_act->setEnabled(false); // deferred
+    context_menu_->addAction(compare_act);
+
+    context_menu_->addSeparator();
+
+    // New
+    QAction* new_act = new QAction("New...", context_menu_);
+    new_act->setToolTip("Create a new empty context");
+    connect(new_act, &QAction::triggered, this, [this]()
+    {
+        context::DBContextCreateDialog dialog(compass_.dbContextManager(), this);
+        if (dialog.exec() == QDialog::Accepted)
+            compass_.dbContextManager().setActiveContext(dialog.createdContextName());
+    });
+    context_menu_->addAction(new_act);
+
+    // Copy
+    QAction* copy_act = new QAction("Copy...", context_menu_);
+    copy_act->setToolTip("Copy a context under a new name");
+    connect(copy_act, &QAction::triggered, this, [this]()
+    {
+        context::DBContextCopyDialog dialog(compass_.dbContextManager(), this);
+        dialog.exec();
+    });
+    context_menu_->addAction(copy_act);
+
+    // Delete
+    context_delete_action_ = new QAction("Delete...", context_menu_);
+    bool can_delete = ctx_mgr.contextNames().size() > 1;
+    context_delete_action_->setEnabled(can_delete);
+    context_delete_action_->setToolTip(can_delete ? "Delete one or more contexts"
+                                                  : "Cannot delete the last remaining context");
+    connect(context_delete_action_, &QAction::triggered, this, [this]()
+    {
+        context::DBContextDeleteDialog dialog(compass_.dbContextManager(), this);
+        dialog.exec();
+    });
+    context_menu_->addAction(context_delete_action_);
+
+    // update menu when context changes
+    connect(&ctx_mgr, &context::DBContextManager::activeContextChangedSignal,
+            this, &MainWindow::updateContextMenuTitle);
+    connect(&ctx_mgr, &context::DBContextManager::contextsChangedSignal,
+            this, &MainWindow::updateContextMenuTitle);
+}
+
+void MainWindow::updateContextMenuTitle()
+{
+    if (!context_menu_)
+        return;
+
+    auto& ctx_mgr = compass_.dbContextManager();
+    QString title = ctx_mgr.hasActiveContext()
+                        ? QString::fromStdString(ctx_mgr.activeContextName())
+                        : "No Context";
+    context_menu_->setTitle(title);
+
+    // rebuild switch submenu
+    context_switch_menu_->clear();
+    for (const auto& name : ctx_mgr.contextNames())
+    {
+        if (name == ctx_mgr.activeContextName())
+            continue;
+
+        QAction* act = new QAction(QString::fromStdString(name), context_switch_menu_);
+        connect(act, &QAction::triggered, this, [this, name]()
+        {
+            compass_.dbContextManager().setActiveContext(name);
+        });
+        context_switch_menu_->addAction(act);
+    }
+
+    bool can_switch = !context_switch_menu_->isEmpty();
+    context_switch_menu_->setEnabled(can_switch);
+    context_switch_menu_->setToolTip(can_switch ? "Switch to another context"
+                                                : "No other contexts available");
+
+    // update delete action
+    bool can_delete = ctx_mgr.contextNames().size() > 1;
+    context_delete_action_->setEnabled(can_delete);
+    context_delete_action_->setToolTip(can_delete ? "Delete one or more contexts"
+                                                  : "Cannot delete the last remaining context");
+}
 
 void MainWindow::createDebugMenu()
 {

@@ -51,7 +51,9 @@ class ASTERIXFramingComboBox : public QComboBox
         for (std::string frame_it : task_.jASTERIX()->framings())
             addItem(displayNameForFraming(frame_it).c_str(), QVariant(QString::fromStdString(frame_it)));
 
-        setCurrentIndex(0);
+        // restore persisted framing if available, otherwise default to first entry
+        int index = findData(QVariant(QString::fromStdString(task_.settings().activeFileFraming())));
+        setCurrentIndex(index >= 0 ? index : 0);
     }
 
     /// @brief Returns the currently selected framing

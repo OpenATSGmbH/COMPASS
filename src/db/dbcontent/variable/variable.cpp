@@ -19,7 +19,7 @@
 #include "compass.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "dbcontent/variable/variablewidget.h"
 #include "stringconv.h"
 #include "global.h"
@@ -471,10 +471,10 @@ std::string Variable::getValueStringFromRepresentation(
     }
     else if (representation_ == Variable::Representation::DATA_SRC_NAME)
     {
-        DataSourceManager& ds_man = dbcontent_->compass().dataSourceManager();
+        auto& ctx_man = dbcontent_->compass().dbContextManager();
 
-        if (ds_man.hasDBDataSource(representation_str))
-            return std::to_string(ds_man.getDBDataSourceDSID(representation_str));
+        if (ctx_man.hasDataSource(representation_str))
+            return std::to_string(ctx_man.getDataSourceId(representation_str));
 
         // not found, return original
 
@@ -832,18 +832,18 @@ std::string Variable::getDataSourcesAsString(const std::string& value) const
 {
     traced_assert(dbcontent_);
 
-    DataSourceManager& ds_man = dbcontent_->compass().dataSourceManager();
+    auto& ctx_man = dbcontent_->compass().dbContextManager();
 
     unsigned int ds_id = stoi(value);
 
-    if (ds_man.hasDBDataSource(ds_id))
+    if (ctx_man.hasDataSource(ds_id))
     {
-        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
+        const auto* ds = ctx_man.dataSource(ds_id);
 
-        if (ds.hasShortName())
-            return ds.shortName();
+        if (ds->hasShortName())
+            return ds->shortName();
         else
-            return ds.name();
+            return ds->name();
     }
 
     // has no datasources, return original

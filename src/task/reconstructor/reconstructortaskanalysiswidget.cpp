@@ -22,7 +22,6 @@
 #include "logger.h"
 #include "compass.h"
 #include "taskmanager.h"
-#include "datasourcemanager.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>

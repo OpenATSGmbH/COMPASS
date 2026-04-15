@@ -25,7 +25,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "buffer.h"
 #include "util/number.h"
 #include "util/timeconv.h"
@@ -739,20 +739,20 @@ void GPSTrailImportTask::run()
 
     // config data source
     {
-        DataSourceManager& src_man = manager().compass().dataSourceManager();
+        auto& ctx_man = manager().compass().dbContextManager();
 
-        if (!src_man.hasConfigDataSource(ds_id))
+        if (!ctx_man.hasDataSource(ds_id))
         {
             loginf << "creating data source";
 
-            src_man.createConfigDataSource(ds_id);
-            traced_assert(src_man.hasConfigDataSource(ds_id));
+            ctx_man.createDataSource(settings_.ds_sac, settings_.ds_sic);
+            traced_assert(ctx_man.hasDataSource(ds_id));
         }
 
-        dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
+        auto* src = ctx_man.dataSource(ds_id);
 
-        src.name(settings_.ds_name);
-        src.dsType(dbcontent_name); // same as dstype
+        src->name(settings_.ds_name);
+        src->dsType(dbcontent_name); // same as dstype
 
     }
 
@@ -933,8 +933,7 @@ void GPSTrailImportTask::insertDoneSlot()
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
             this, &GPSTrailImportTask::insertDoneSlot);
 
-    manager().compass().dataSourceManager().saveDBDataSources();
-    emit manager().compass().dataSourceManager().dataSourcesChangedSignal();
+    manager().compass().dbContextManager().saveCountsToDB();
     emit manager().compass().dbContentManager().dbContentStatusChanged();
 
     manager().compass().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";

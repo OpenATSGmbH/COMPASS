@@ -1,8 +1,0 @@
-{
-    "class_name": "ManageSectorsTask",
-    "instance_name": "ManageSectorsTask0",
-    "parameters": {
-        "current_filename": "",
-        "db_file_list": []
-    }
-}

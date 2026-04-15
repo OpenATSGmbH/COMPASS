@@ -85,6 +85,17 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     updateChart();
 
     connect (&data_model_, &ScatterSeriesModel::visibilityChangedSignal, this, &ScatterPlotViewDataWidget::updateChartSlot);
+    connect (&data_model_, &ScatterSeriesModel::colorChangedSignal, this, [this](const std::string& name, const QColor& color)
+    {
+        // extract ds name (strip " L<n>" suffix) and persist
+        std::string ds_name = name;
+        auto line_pos = ds_name.rfind(" L");
+        if (line_pos != std::string::npos)
+            ds_name = ds_name.substr(0, line_pos);
+
+        view_->dataSourceColor(ds_name, color);
+        updateChartSlot();
+    });
 }
 
 /**
@@ -237,7 +248,34 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
         {
             std::string name = dbc_stash.first;
 
-            scatter_series_.addDataSeries(dbc_series, name, colorForGroupName(dbc_stash.first), MarkerSizePx);
+            // extract data source name and line index
+            std::string ds_name = name;
+            int line_index = 0;
+            auto line_pos = ds_name.rfind(" L");
+            if (line_pos != std::string::npos)
+            {
+                line_index = std::stoi(ds_name.substr(line_pos + 2)) - 1; // L1->0, L2->1, ...
+                ds_name = ds_name.substr(0, line_pos);
+            }
+
+            // load persisted base color or generate and persist a new one
+            QColor base_color;
+            if (view_->hasDataSourceColor(ds_name))
+            {
+                base_color = view_->dataSourceColor(ds_name);
+            }
+            else
+            {
+                base_color = colorForGroupName(ds_name);
+                view_->dataSourceColor(ds_name, base_color);
+            }
+
+            // shift lightness per line: L1=base, L2=darker, L3=lighter, L4=even darker
+            static const int lightness_offsets[] = {0, -40, 40, -70};
+            int l = std::clamp(base_color.lightness() + lightness_offsets[line_index], 30, 230);
+            QColor line_color = QColor::fromHsl(base_color.hslHue(), base_color.hslSaturation(), l);
+
+            scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx);
         }
     }
 
@@ -261,6 +299,8 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
     correctSeriesDateTime(scatter_series_);
 
     data_model_.updateFrom(scatter_series_);
+    loginf << "applying " << hidden_series_.size() << " hidden series after processStash";
+    data_model_.applyHiddenSeriesNames(hidden_series_);
 
     bounds_ = scatter_series_.getDataBounds();
 
@@ -307,6 +347,7 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
         correctSeriesDateTime(scatter_series_);
 
         data_model_.updateFrom(scatter_series_);
+        data_model_.applyHiddenSeriesNames(hidden_series_);
 
         bounds_ = scatter_series_.getDataBounds();
 
@@ -574,6 +615,10 @@ void ScatterPlotViewDataWidget::resetZoomSlot()
 */
 void ScatterPlotViewDataWidget::updateChartSlot()
 {
+    // remember which series are hidden so we can restore after reload
+    hidden_series_ = data_model_.hiddenSeriesNames();
+    loginf << "captured " << hidden_series_.size() << " hidden series";
+
     //remember current axis ranges if available
     bool has_axes0 = chart_view_ && 
                      chart_view_->chart() &&

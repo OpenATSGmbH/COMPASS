@@ -19,7 +19,7 @@
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "source/dbdatasourcewidget.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "datasourceeditwidget.h"
 #include "global.h"
 #include "stringconv.h"
@@ -38,14 +38,14 @@
 using namespace std;
 using namespace Utils;
 
-DataSourcesUseWidget::DataSourcesUseWidget(DataSourceManager& ds_man,
+DataSourcesUseWidget::DataSourcesUseWidget(context::DBContextManager& ctx_man,
                          std::function<bool(const std::string&)> get_use_dstype_func,
                          std::function<void(const std::string&,bool)> set_use_dstype_func,
                          std::function<bool(unsigned int)> get_use_ds_func,
                          std::function<void(unsigned int,bool)> set_use_ds_func,
                          std::function<bool(unsigned int,unsigned int)> get_use_ds_line_func,
                          std::function<void(unsigned int,unsigned int, bool)> set_use_ds_line_func)
-    : DataSourcesWidget(false, ds_man),
+    : DataSourcesWidget(false, ctx_man),
     get_use_dstype_func_(get_use_dstype_func), set_use_dstype_func_(set_use_dstype_func),
     get_use_ds_func_(get_use_ds_func), set_use_ds_func_(set_use_ds_func),
     get_use_ds_line_func_(get_use_ds_line_func), set_use_ds_line_func_(set_use_ds_line_func)
@@ -60,7 +60,7 @@ DataSourcesUseWidget::DataSourcesUseWidget(DataSourceManager& ds_man,
     { this->updateContent(true); };
 
     assert (top_layout_);
-    edit_widget_ = new DataSourceEditWidget (false, ds_man_, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (false, update_ds_func, delete_ds_func);
     edit_widget_->setContentsMargins(0, 0, 0, 0);
     
     top_layout_->addWidget(edit_widget_);    
@@ -111,7 +111,9 @@ void DataSourcesUseWidget::dataSourceSelectedSlot(unsigned int ds_id)
     loginf << " ds_id " << ds_id;
 
     assert (edit_widget_);
-    edit_widget_->showID(ds_id);
+    auto* ds = ctx_man_.dataSource(ds_id);
+    if (ds)
+        edit_widget_->show(*ds);
 }
 
 void DataSourcesUseWidget::setUseDSType(const std::string& ds_type_name, bool use)
