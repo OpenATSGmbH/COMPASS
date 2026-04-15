@@ -1431,15 +1431,15 @@ void MainWindow::createContextMenu()
     context_menu_->addSeparator();
 
     // New
-    QAction* new_act = new QAction("New...", context_menu_);
-    new_act->setToolTip("Create a new empty context");
-    connect(new_act, &QAction::triggered, this, [this]()
+    context_new_action_ = new QAction("New...", context_menu_);
+    context_new_action_->setToolTip("Create a new empty context");
+    connect(context_new_action_, &QAction::triggered, this, [this]()
     {
         context::DBContextCreateDialog dialog(compass_.dbContextManager(), this);
         if (dialog.exec() == QDialog::Accepted)
             compass_.dbContextManager().setActiveContext(dialog.createdContextName());
     });
-    context_menu_->addAction(new_act);
+    context_menu_->addAction(context_new_action_);
 
     // Copy
     QAction* copy_act = new QAction("Copy...", context_menu_);
@@ -1464,10 +1464,12 @@ void MainWindow::createContextMenu()
     });
     context_menu_->addAction(context_delete_action_);
 
-    // update menu when context changes
+    // update menu when context or DB state changes
     connect(&ctx_mgr, &context::DBContextManager::activeContextChangedSignal,
             this, &MainWindow::updateContextMenuTitle);
     connect(&ctx_mgr, &context::DBContextManager::contextsChangedSignal,
+            this, &MainWindow::updateContextMenuTitle);
+    connect(&ctx_mgr, &context::DBContextManager::countsChangedSignal,
             this, &MainWindow::updateContextMenuTitle);
 }
 
@@ -1497,16 +1499,25 @@ void MainWindow::updateContextMenuTitle()
         context_switch_menu_->addAction(act);
     }
 
-    bool can_switch = !context_switch_menu_->isEmpty();
+    bool db_has_data = compass_.dbOpened() && ctx_mgr.hasInsertedData();
+
+    bool can_switch = !context_switch_menu_->isEmpty() && !db_has_data;
     context_switch_menu_->setEnabled(can_switch);
-    context_switch_menu_->setToolTip(can_switch ? "Switch to another context"
-                                                : "No other contexts available");
+    context_switch_menu_->setToolTip(db_has_data  ? "Cannot switch context while a database with imported data is open"
+                                   : can_switch   ? "Switch to another context"
+                                                  : "No other contexts available");
+
+    // update new action
+    context_new_action_->setEnabled(!db_has_data);
+    context_new_action_->setToolTip(db_has_data ? "Cannot create contexts while a database with imported data is open"
+                                                : "Create a new empty context");
 
     // update delete action
-    bool can_delete = ctx_mgr.contextNames().size() > 1;
+    bool can_delete = ctx_mgr.contextNames().size() > 1 && !db_has_data;
     context_delete_action_->setEnabled(can_delete);
-    context_delete_action_->setToolTip(can_delete ? "Delete one or more contexts"
-                                                  : "Cannot delete the last remaining context");
+    context_delete_action_->setToolTip(db_has_data  ? "Cannot delete contexts while a database with imported data is open"
+                                     : can_delete   ? "Delete one or more contexts"
+                                                    : "Cannot delete the last remaining context");
 }
 
 void MainWindow::createDebugMenu()

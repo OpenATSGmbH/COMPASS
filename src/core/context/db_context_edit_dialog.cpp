@@ -266,10 +266,16 @@ void DBContextEditDialog::rebuildContextCombo()
     if (manager_.hasActiveContext())
         context_combo_->setCurrentText(QString::fromStdString(manager_.activeContextName()));
 
-    bool can_delete = manager_.contextNames().size() > 1;
+    bool db_has_data = manager_.compass().dbOpened() && manager_.hasInsertedData();
+
+    // disable context switching when a DB with imported data is open
+    context_combo_->setEnabled(!db_has_data);
+
+    bool can_delete = manager_.contextNames().size() > 1 && !db_has_data;
     delete_button_->setEnabled(can_delete);
-    delete_button_->setToolTip(can_delete ? "Delete one or more contexts"
-                                          : "Cannot delete the last remaining context");
+    delete_button_->setToolTip(db_has_data ? "Cannot delete contexts while a database with imported data is open"
+                             : can_delete  ? "Delete one or more contexts"
+                                           : "Cannot delete the last remaining context");
 }
 
 void DBContextEditDialog::rebuildTree()

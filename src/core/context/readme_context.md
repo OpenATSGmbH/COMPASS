@@ -25,6 +25,12 @@ All classes live in `namespace context`.
 | `db_context_rename_dialog.h/.cpp` | Rename context |
 | `db_context_delete_dialog.h/.cpp` | Delete contexts (multi-select) |
 | `db_context_copy_dialog.h/.cpp` | Duplicate a context |
+| `db_context_conflict_dialog.h/.cpp` | Conflict resolution on DB open (UseFile / UseDatabase / Merge) |
+| `db_context_merge_dialog.h/.cpp` | Field-level merge UI for resolving config vs DB differences |
+| `db_context_field_merge_widget.h/.cpp` | Per-field merge widget used inside merge dialog |
+| `asterixconfigwidget.h/.cpp` | Widget to edit ASTERIX decoding configuration |
+| `importsectordialog.h/.cpp` | Dialog for importing sectors (name, layer, color, exclude) |
+| `context_commands.h/.cpp` | Runtime commands for context management |
 
 Related files outside this directory:
 - `src/core/sector/sector_edit_widget.h/.cpp` -- widget to edit a single sector
@@ -166,7 +172,10 @@ GDAL-based sector import: `sector_utils::parseGDALFile(filepath)` returns `vecto
 
 On DB open (`databaseOpenedSlot`):
 1. If no `db_context` table: write active context to DB.
-2. If table exists: compare file vs DB context via `DBContextDiff`. File is source of truth; overwrites DB on mismatch.
+2. If table exists: compare file vs DB context via `DBContextDiff`. If differences exist, `DBContextConflictDialog` is shown with three options:
+   - **UseFile**: overwrite DB with the configuration file version.
+   - **UseDatabase**: overwrite the configuration file with the DB version.
+   - **Merge**: open `DBContextMergeDialog` for field-level resolution (pick file or DB value per field).
 
 On save: `writeContextToDB()` writes to DB if open.
 
@@ -209,9 +218,11 @@ Tree structure (via `DBContextEditTreeItem` hierarchy):
 - **FFTs** (GroupItem) -> FFTItem
 - **ASTERIX Configuration** (ASTERIXConfigLeafItem)
 
-Detail widgets: `SectorEditWidget`, `FFTEditWidget` (and DataSource editing in the dialog itself).
+Detail widgets: `DataSourceEditWidget`, `SectorEditWidget`, `FFTEditWidget`, `ASTERIXConfigWidget`.
 
 Context management dialogs: `Create`, `Select`, `Rename`, `Delete`, `Copy`.
+
+**Deletion guards:** Data sources that have data in the current database (`hasNumInserted`) cannot be deleted — the context menu "Delete" action is disabled with a tooltip. "Delete All" is also disabled if any data source has DB data.
 
 ## Accessing from code
 
@@ -232,7 +243,26 @@ connect(&ctx_mgr, &DBContextManager::activeContextChangedSignal, this, &MyClass:
 ## Key patterns
 
 - **Guard with `hasActiveContext()`** before calling `activeContext()`.
-- **File is source of truth** -- DB copy is synced from file, not vice versa.
+- **Conflict resolution on DB open** -- when file and DB contexts differ, a dialog lets the user choose file, DB, or field-level merge.
 - **Sectors are cached** as `SectorLayer` objects, rebuilt via `rebuildSectorLayers()`.
 - **`info_` JSON field** in `DataSource` and `FFT` provides extensible metadata without schema changes.
 - **IDataSourceProvider** decouples widgets from the full manager.
+- **Deletion guard** -- data sources with DB data cannot be deleted from the edit dialog.
+
+## Runtime commands
+
+Registered via `init_context_commands()` in `context_commands.h/.cpp`:
+
+| Command | Purpose |
+|---------|---------|
+| `create_context` | Create a new context |
+| `set_context` | Switch active context |
+| `delete_context` | Delete a context |
+| `list_contexts` | List all context names |
+| `get_context_info` | Get active context details |
+| `import_ffts_json` | Import FFTs from JSON file |
+| `delete_all_sectors` | Delete all sectors from active context |
+| `delete_all_ffts` | Delete all FFTs from active context |
+| `import_sectors_gdal` | Import sectors from GDAL-supported file |
+| `export_sectors_json` | Export sectors to JSON file |
+| `export_data_sources_json` | Export data sources to JSON file |

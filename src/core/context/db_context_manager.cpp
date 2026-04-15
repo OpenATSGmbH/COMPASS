@@ -19,7 +19,11 @@
 #include "db_context_serializer.h"
 #include "db_context_diff.h"
 
+#include "asterix_decoding_config.h"
 #include "compass.h"
+
+#include <jasterix/jasterix.h>
+#include <jasterix/category.h>
 #include "dbinterface.h"
 #include "sector.h"
 #include "sectorlayer.h"
@@ -41,7 +45,7 @@
 #include <boost/filesystem.hpp>
 
 #include <QApplication>
-#include <QMessageBox>
+
 #include <QPushButton>
 
 #include <algorithm>
@@ -139,6 +143,26 @@ void DBContextManager::createContext(const string& name)
     traced_assert(!hasContext(name));
 
     DBContext ctx(name);
+
+    // populate default ASTERIX decoding configs from jASTERIX definitions
+    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+
+    if (Utils::Files::directoryExists(jasterix_definition_path))
+    {
+        auto jasterix = std::make_shared<jASTERIX::jASTERIX>(jasterix_definition_path, false, false, true);
+
+        for (auto& cat_it : jasterix->categories())
+        {
+            unsigned int category = cat_it.first;
+            const auto& cat = cat_it.second;
+
+            ctx.asterixDecoding().emplace_back(
+                category, cat->defaultEdition(), cat->defaultREFEdition(), cat->defaultSPFEdition());
+        }
+
+        loginf << "populated " << ctx.asterixDecoding().size() << " default ASTERIX decoding configs";
+    }
+
     DBContextSerializer::save(ctx, basePath());
 
     contexts_[name] = std::move(ctx);
@@ -268,30 +292,9 @@ void DBContextManager::setActiveContext(const string& name)
     if (active_context_name_ == name)
         return;
 
-    // if DB is open and contains data, ask for confirmation before switching
-    if (compass_.dbOpened() && hasInsertedData())
-    {
-        QMessageBox msgbox(QApplication::activeWindow());
-        msgbox.setWindowTitle("Switch Context");
-        msgbox.setText("The database contains imported data.\n\n"
-                       "Switching to context '" + QString::fromStdString(name) +
-                       "' will overwrite the context stored in the database.");
-        msgbox.setInformativeText("Do you want to continue?");
-
-        auto* ok_button = msgbox.addButton(QMessageBox::Ok);
-        ok_button->setIcon(QIcon());
-        auto* cancel_button = msgbox.addButton(QMessageBox::Cancel);
-        cancel_button->setIcon(QIcon());
-
-        msgbox.setDefaultButton(cancel_button);
-        msgbox.exec();
-
-        if (msgbox.clickedButton() != ok_button)
-        {
-            loginf << "context switch to '" << name << "' cancelled by user";
-            return;
-        }
-    }
+    // switching context while a DB with imported data is open is not allowed —
+    // callers (GUI, RT commands) must prevent this
+    traced_assert(!compass_.dbOpened() || !hasInsertedData());
 
     active_context_name_ = name;
     saveActiveContextName();
@@ -1317,13 +1320,12 @@ void DBContextManager::databaseOpenedSlot()
 
     auto& db = compass_.dbInterface();
 
-    loadCountsFromDB();
-
     if (!db.existsDBContextTable())
     {
         // new DB — write the active context
         loginf << "no db_context table — writing active context to DB";
         writeContextToDB();
+        loadCountsFromDB();
     }
     else
     {
@@ -1331,7 +1333,7 @@ void DBContextManager::databaseOpenedSlot()
 
         if (db_ctx.name() != activeContext().name())
         {
-            // DB was saved with a different context — switch to it
+            // DB was saved with a different context — align to it before loading counts
             loginf << "DB context '" << db_ctx.name() << "' differs from active '"
                    << activeContext().name() << "' — switching to DB context";
 
@@ -1345,9 +1347,13 @@ void DBContextManager::databaseOpenedSlot()
             }
 
             setActiveContext(db_ctx.name());
+            loadCountsFromDB();
         }
         else
         {
+            // counts needed for conflict dialog (sensors with DB data)
+            loadCountsFromDB();
+
             auto d = DBContextDiff::compute(activeContext(), db_ctx);
 
             if (d.hasDifferences())

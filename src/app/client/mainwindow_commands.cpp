@@ -39,6 +39,7 @@
 #include "mainwindow_commands_file.h"
 #include "mainwindow_commands_import.h"
 #include "context_commands.h"
+#include "datasource_commands.h"
 
 #include "event_log.h"
 
@@ -125,6 +126,7 @@ void init_commands()
     main_window::RTCommandClientInfo::init();
 
     context_cmd::init_context_commands();
+    dbContent::init_data_source_commands();
 }
 
 // import ds
@@ -219,18 +221,6 @@ bool RTCommandImportSectorsJSON::run_impl()
     if (!Files::fileExists(filename_))
     {
         setResultMessage("File '"+filename_+"' does not exist");
-        return false;
-    }
-
-    if (!compass_->dbOpened())
-    {
-        setResultMessage("Database not opened");
-        return false;
-    }
-
-    if (compass_->appMode() != AppMode::Offline) // to be sure
-    {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
 

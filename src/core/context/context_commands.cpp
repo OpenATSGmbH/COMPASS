@@ -118,6 +118,12 @@ bool RTCommandSetContext::run_impl()
         return false;
     }
 
+    if (compass_->dbOpened() && ctx_man.hasInsertedData())
+    {
+        setResultMessage("Cannot switch context while a database with imported data is open");
+        return false;
+    }
+
     ctx_man.setActiveContext(name_);
 
     loginf << "set active context to '" << name_ << "'";
