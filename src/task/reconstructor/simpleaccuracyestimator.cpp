@@ -24,10 +24,12 @@
 #include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
+#include "datasourcebase.h"
 #include "projectionmanager.h"
 #include "taskmanager.h"
 #include "number.h"
 #include "timeconv.h"
+#include "global.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -53,12 +55,20 @@ void SimpleAccuracyEstimator::init(ReconstructorBase* reconstructor_ptr)
             continue;
 
         const context::DataSource* ds = ctx_man.dataSource(ds_id);
-        if (!ds || !ds->hasRadarBias() || !ds->hasPosition())
+        if (!ds || !ds->hasPosition())
             continue;
 
-        RadarBiasInfo bias = ds->radarBiasInfo();
+        bool has_bias = ds->hasRadarBias();
+        bool has_acc  = ds->hasRadarAccuracies();
 
-        if (!bias.azimuth_bias_valid_ && !bias.range_bias_valid_)
+        if (!has_bias && !has_acc)
+            continue;
+
+        RadarBiasInfo bias;
+        if (has_bias)
+            bias = ds->radarBiasInfo();
+
+        if (!bias.azimuth_bias_valid_ && !bias.range_bias_valid_ && !has_acc)
             continue;
 
         RadarSourceInfo info;
@@ -67,16 +77,50 @@ void SimpleAccuracyEstimator::init(ReconstructorBase* reconstructor_ptr)
         info.ground_altitude_m = ds->altitude();
         info.ignore_range_azimuth = ds->ignoreRadarAzmRange();
 
+        // load per-channel accuracies if configured
+        if (ds->hasRadarAccuracies())
+        {
+            using DSB = dbContent::DataSourceBase;
+
+            auto acc = ds->radarAccuracies();
+
+            auto loadChannel = [&](ChannelAccuracy& ch, const std::string& azm_key, const std::string& rng_key)
+            {
+                if (acc.count(azm_key) && acc.count(rng_key))
+                {
+                    ch.azimuth_stddev_deg = acc.at(azm_key);
+                    ch.range_stddev_m = acc.at(rng_key);
+                    ch.valid = true;
+                }
+            };
+
+            loadChannel(info.primary,   DSB::PSRAzmSDKey,   DSB::PSRRngSDKey);
+            loadChannel(info.secondary, DSB::SSRAzmSDKey,   DSB::SSRRngSDKey);
+            loadChannel(info.mode_s,    DSB::ModeSAzmSDKey, DSB::ModeSRngSDKey);
+        }
+
         radar_sources_[ds_id] = info;
 
-        loginf << "SimpleAccuracyEstimator: loaded radar bias for ds " << ds_id
-               << " azm " << String::doubleToStringPrecision(bias.azimuth_bias_deg_, 4)
+        loginf << "SimpleAccuracyEstimator: loaded radar ds " << ds_id
+               << " bias azm " << String::doubleToStringPrecision(bias.azimuth_bias_deg_, 4)
                << " rng " << String::doubleToStringPrecision(bias.range_bias_m_, 1)
-               << " gain " << String::doubleToStringPrecision(bias.range_gain_, 5);
+               << " gain " << String::doubleToStringPrecision(bias.range_gain_, 5)
+               << " acc PSR " << (info.primary.valid
+                    ? String::doubleToStringPrecision(info.primary.azimuth_stddev_deg, 4) + "/"
+                      + String::doubleToStringPrecision(info.primary.range_stddev_m, 1)
+                    : "n/a")
+               << " SSR " << (info.secondary.valid
+                    ? String::doubleToStringPrecision(info.secondary.azimuth_stddev_deg, 4) + "/"
+                      + String::doubleToStringPrecision(info.secondary.range_stddev_m, 1)
+                    : "n/a")
+               << " ModeS " << (info.mode_s.valid
+                    ? String::doubleToStringPrecision(info.mode_s.azimuth_stddev_deg, 4) + "/"
+                      + String::doubleToStringPrecision(info.mode_s.range_stddev_m, 1)
+                    : "n/a");
     }
 
     if (radar_sources_.size())
-        loginf << "SimpleAccuracyEstimator: loaded bias for " << radar_sources_.size() << " radar source(s)";
+        loginf << "SimpleAccuracyEstimator: loaded " << radar_sources_.size() << " radar source(s)";
 }
 
 void SimpleAccuracyEstimator::postProccessNewSlice()
@@ -191,10 +235,51 @@ dbContent::targetReport::PositionAccuracy SimpleAccuracyEstimator::positionAccur
         return *tr.position_accuracy_;
     }
 
+    // no reported accuracy — try polar model from data source radar accuracies
     if (tr.position_)
+    {
+        auto it = radar_sources_.find(tr.ds_id_);
+        if (it != radar_sources_.end())
+        {
+            const auto& ch = bestChannelForTR(it->second, tr);
+
+            if (ch.valid)
+            {
+                boost::optional<double> range_nm = reconstructor_->accessor(tr).radarRange(tr.buffer_index_);
+                boost::optional<double> azimuth_deg = reconstructor_->accessor(tr).radarAzimuth(tr.buffer_index_);
+
+                if (range_nm && azimuth_deg)
+                {
+                    double range_m = *range_nm * NM2M;
+                    double bearing_rad = *azimuth_deg * DEG2RAD;
+
+                    // bias-correct range/azimuth if available
+                    if (it->second.bias_info.azimuth_bias_valid_
+                        && it->second.bias_info.range_bias_valid_)
+                    {
+                        range_m = (range_m - it->second.bias_info.range_bias_m_)
+                                  / (1.0 + it->second.bias_info.range_gain_);
+                        bearing_rad = (*azimuth_deg - it->second.bias_info.azimuth_bias_deg_) * DEG2RAD;
+                    }
+
+                    // for combined detections, use the channel with smaller azimuth stddev
+                    double azm_sd = ch.azimuth_stddev_deg;
+                    double rng_sd = ch.range_stddev_m;
+
+                    auto acc = polarToCartesianAccuracy(azm_sd, rng_sd, range_m, bearing_rad);
+
+                    if (acc.minStdDev() < reconstructor_->settings().numerical_min_std_dev_)
+                        return acc.getScaledToMinStdDev(reconstructor_->settings().numerical_min_std_dev_);
+
+                    return acc;
+                }
+            }
+        }
+
         return unspecific_pos_acc_fallback_;
-    else
-        return no_pos_acc_fallback_;
+    }
+
+    return no_pos_acc_fallback_;
 }
 
 dbContent::targetReport::VelocityAccuracy SimpleAccuracyEstimator::velocityAccuracy (
@@ -218,4 +303,53 @@ dbContent::targetReport::AccelerationAccuracy SimpleAccuracyEstimator::accelerat
     const dbContent::targetReport::ReconstructorInfo& tr)
 {
     return no_acc_acc_fallback_;
+}
+
+const SimpleAccuracyEstimator::ChannelAccuracy& SimpleAccuracyEstimator::bestChannelForTR(
+    const RadarSourceInfo& src,
+    const dbContent::targetReport::ReconstructorInfo& tr) const
+{
+    if (tr.isModeSDetection())
+    {
+        // Mode S combined: prefer channel with smaller azimuth stddev
+        if (src.mode_s.valid && src.primary.valid)
+            return src.primary.azimuth_stddev_deg < src.mode_s.azimuth_stddev_deg
+                ? src.primary : src.mode_s;
+        return src.mode_s.valid ? src.mode_s : src.primary;
+    }
+
+    if (tr.isModeACDetection())
+    {
+        // Mode AC combined: prefer channel with smaller azimuth stddev
+        if (src.secondary.valid && src.primary.valid)
+            return src.primary.azimuth_stddev_deg < src.secondary.azimuth_stddev_deg
+                ? src.primary : src.secondary;
+        return src.secondary.valid ? src.secondary : src.primary;
+    }
+
+    // primary only
+    return src.primary;
+}
+
+dbContent::targetReport::PositionAccuracy SimpleAccuracyEstimator::polarToCartesianAccuracy(
+    double azimuth_stddev_deg, double range_stddev_m,
+    double range_m, double bearing_rad)
+{
+    // convert azimuth stddev from degrees to meters at this range
+    double azm_stddev_m = azimuth_stddev_deg * 2.0 * M_PI * range_m / 360.0;
+
+    // polar covariance -> Cartesian via rotation
+    double rng_var = range_stddev_m * range_stddev_m;
+    double azm_var = azm_stddev_m * azm_stddev_m;
+
+    double sin_b = sin(bearing_rad);
+    double cos_b = cos(bearing_rad);
+
+    // rotation matrix A = [sin(b) cos(b); cos(b) -sin(b)]
+    // C_cart = A * diag(rng_var, azm_var) * A^T
+    double xx = rng_var * sin_b * sin_b + azm_var * cos_b * cos_b;
+    double yy = rng_var * cos_b * cos_b + azm_var * sin_b * sin_b;
+    double xy = (rng_var - azm_var) * sin_b * cos_b;
+
+    return dbContent::targetReport::PositionAccuracy(sqrt(xx), sqrt(yy), xy);
 }

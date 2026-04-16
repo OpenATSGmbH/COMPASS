@@ -46,13 +46,35 @@ public:
         const dbContent::targetReport::ReconstructorInfo& tr) override;
 
 private:
+
+    /// Per-channel radar accuracy (polar model).
+    struct ChannelAccuracy
+    {
+        bool valid {false};
+        double azimuth_stddev_deg {0};
+        double range_stddev_m {0};
+    };
+
     struct RadarSourceInfo
     {
         RadarBiasInfo bias_info;
+
+        ChannelAccuracy primary;   // PSR
+        ChannelAccuracy secondary; // SSR
+        ChannelAccuracy mode_s;    // Mode S
+
         bool ground_only {false};
         double ground_altitude_m {0};
         bool ignore_range_azimuth {false};
     };
+
+    const ChannelAccuracy& bestChannelForTR(
+        const RadarSourceInfo& src,
+        const dbContent::targetReport::ReconstructorInfo& tr) const;
+
+    static dbContent::targetReport::PositionAccuracy polarToCartesianAccuracy(
+        double azimuth_stddev_deg, double range_stddev_m,
+        double range_m, double bearing_rad);
 
     std::map<unsigned int, RadarSourceInfo> radar_sources_; // ds_id -> info
 };

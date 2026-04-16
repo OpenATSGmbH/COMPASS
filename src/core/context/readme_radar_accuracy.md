@@ -158,6 +158,24 @@ For reference, EUROCONTROL specifies these quality thresholds for en-route radar
 
 Positional errors exceeding 1° in azimuth or 700 m in range are classified as "jumps" (required ratio < 0.05%).
 
+## Usage in reconstruction
+
+Both reconstructors load per-data-source radar parameters from the context system at initialization and apply them during processing.
+
+### Bias correction (both reconstructors)
+
+Both `SimpleAccuracyEstimator` and `RadarAccuracyEstimator` (ProbIMM) load `radar_bias` from each radar data source via `DataSource::radarBiasInfo()` and apply bias correction through the shared `radar_bias::correctPosition()` utility. The correction converts measured azimuth/range to Cartesian, applies the bias formula (see "Bias correction" above), and reprojects to WGS-84.
+
+### Position accuracy from data source parameters
+
+When a target report has no reported position accuracy and the data source is a radar with configured per-channel stddevs (`radar_accuracy`), both reconstructors compute accuracy using the polar-to-Cartesian covariance model (see "Polar-to-Cartesian covariance conversion" above):
+
+- **SimpleAccuracyEstimator**: Loads per-channel accuracies (PSR/SSR/Mode S azimuth + range stddevs) at init. In `positionAccuracy()`, reads the TR's radar range and azimuth, bias-corrects them if available, selects the best channel for the detection type, and converts to Cartesian stddevs. Falls back to unspecific accuracy if no channel info or no range/azimuth available.
+
+- **RadarAccuracyEstimator** (ProbIMM): Uses the same polar model as tier 2 (when no accuracy grid cell exists). Additionally estimates and blends per-channel accuracies from observed errors across slices, and provides a spatial accuracy grid (tier 1) when rescaling is enabled.
+
+For combined detection types (SSR+PSR, Mode S+PSR), both select the channel with the smaller azimuth stddev.
+
 ## Key source files
 
 | File | Purpose |
@@ -167,7 +185,9 @@ Positional errors exceeding 1° in azimuth or 700 m in range are classified as "
 | `src/core/projection/radarbiasinfo.h` | `RadarBiasInfo` struct used during projection |
 | `src/core/projection/rs2g/rs2gcoordinatesystem.cpp` | Bias correction in `radarSlant2LocalCart()` |
 | `src/core/util/number.h/.cpp` | `estimateAzimuthBias()`, `estimateRangeBiasGain()` |
-| `experimental_src/reconstruction/complex/radaraccuracyestimator.h/.cpp` | Per-radar accuracy estimation and bias correction |
+| `src/task/reconstructor/simpleaccuracyestimator.h/.cpp` | Simple reconstructor: loads per-source biases + accuracies, polar-to-Cartesian accuracy model |
+| `src/task/reconstructor/radarbiascorrection.h/.cpp` | Shared bias correction utility used by both reconstructors |
+| `experimental_src/reconstruction/complex/radaraccuracyestimator.h/.cpp` | ProbIMM: per-radar accuracy estimation, bias estimation, and correction |
 | `experimental_src/view/geographicview/geometry/geometryitemgrouppositionaccuracyellipses.cpp` | Error ellipse rendering |
 
 ## References
