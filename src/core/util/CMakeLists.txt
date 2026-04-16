@@ -36,6 +36,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/rng.h"
         "${CMAKE_CURRENT_LIST_DIR}/csvimport.h"
         "${CMAKE_CURRENT_LIST_DIR}/osgtools.h"
+        "${CMAKE_CURRENT_LIST_DIR}/render.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/config.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/files.cpp"

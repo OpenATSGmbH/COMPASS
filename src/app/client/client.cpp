@@ -31,6 +31,7 @@
 #include "asteriximporttask.h"
 #include "mainwindow.h"
 #include "util/system.h"
+#include "render.h"
 
 #include "json.hpp"
 #include "util/tbbhack.h"
@@ -56,6 +57,7 @@
 
 #include <osgEarth/Capabilities>
 #include <osgEarth/Registry>
+#include <osgEarth/ScreenSpaceLayout>
 
 #include <string>
 #include <locale.h>
@@ -159,6 +161,12 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
 
         std::cout << "GLSL Version: " << caps.getGLSLVersion() << std::endl;
     }
+
+    //set screenspace render bin to a high number, so it does not collide with our other used render bins,
+    //otherwise the screen space layer bleeds transforms into our own shaders
+    osgEarth::ScreenSpaceLayoutOptions sso = osgEarth::ScreenSpaceLayout::getOptions();
+    sso.renderOrder() = SCREEN_SPACE_LAYOUT_RENDER_BIN;
+    osgEarth::ScreenSpaceLayout::setOptions(sso);
 
     po::options_description desc("Allowed options");
     po::options_description hidden_options("Hidden options");
