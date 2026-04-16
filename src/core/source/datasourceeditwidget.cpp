@@ -334,6 +334,15 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     connect(acc_psr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
     accuracies_layout->addWidget(acc_psr_rng_edit_, row_cnt, 1);
 
+    ++row_cnt;
+    accuracies_layout->addWidget(new QLabel("PSR Range StdDev Gain"), row_cnt, 0);
+
+    acc_psr_rng_gain_edit_ = new QLineEdit();
+    acc_psr_rng_gain_edit_->setValidator(new TextFieldDoubleValidator(0, 1, 6));
+    acc_psr_rng_gain_edit_->setProperty("key", DataSourceBase::PSRRngSDGainKey.c_str());
+    connect(acc_psr_rng_gain_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+    accuracies_layout->addWidget(acc_psr_rng_gain_edit_, row_cnt, 1);
+
     // ssr
     ++row_cnt;
     accuracies_layout->addWidget(new QLabel("SSR Azimuth StdDev [deg]"), row_cnt, 0);
@@ -352,6 +361,15 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     acc_ssr_rng_edit_->setProperty("key", DataSourceBase::SSRRngSDKey.c_str());
     connect(acc_ssr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
     accuracies_layout->addWidget(acc_ssr_rng_edit_, row_cnt, 1);
+
+    ++row_cnt;
+    accuracies_layout->addWidget(new QLabel("SSR Range StdDev Gain"), row_cnt, 0);
+
+    acc_ssr_rng_gain_edit_ = new QLineEdit();
+    acc_ssr_rng_gain_edit_->setValidator(new TextFieldDoubleValidator(0, 1, 6));
+    acc_ssr_rng_gain_edit_->setProperty("key", DataSourceBase::SSRRngSDGainKey.c_str());
+    connect(acc_ssr_rng_gain_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+    accuracies_layout->addWidget(acc_ssr_rng_gain_edit_, row_cnt, 1);
 
     // mode s
     ++row_cnt;
@@ -372,15 +390,99 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     connect(acc_mode_s_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
     accuracies_layout->addWidget(acc_mode_s_rng_edit_, row_cnt, 1);
 
+    ++row_cnt;
+    accuracies_layout->addWidget(new QLabel("Mode S Range StdDev Gain"), row_cnt, 0);
+
+    acc_mode_s_rng_gain_edit_ = new QLineEdit();
+    acc_mode_s_rng_gain_edit_->setValidator(new TextFieldDoubleValidator(0, 1, 6));
+    acc_mode_s_rng_gain_edit_->setProperty("key", DataSourceBase::ModeSRngSDGainKey.c_str());
+    connect(acc_mode_s_rng_gain_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
+    accuracies_layout->addWidget(acc_mode_s_rng_gain_edit_, row_cnt, 1);
+
     accuracies_widget_->setLayout(accuracies_layout);
-    //accuracies_widget_->setMinimumHeight(300);
 
     main_layout->addWidget(accuracies_widget_);
 
     add_accuracies_button_ = new QPushButton("Add Radar Accuracies");
     add_accuracies_button_->setToolTip("Adds Radar accuracy information");
+    add_accuracies_button_->setIcon(QIcon());
     connect(add_accuracies_button_, &QPushButton::clicked, this, &DataSourceEditWidget::addRadarAccuraciesSlot);
     main_layout->addWidget(add_accuracies_button_);
+
+    // radar bias
+    auto bias_header_label = new QLabel("Radar Bias");
+    bias_header_label->setFont(font_bold);
+
+    bias_widget_ = new QWidget();
+    bias_widget_->setContentsMargins(0, 0, 0, 0);
+
+    QGridLayout* bias_layout = new QGridLayout();
+    unsigned int bias_row = 0;
+    bias_layout->addWidget(bias_header_label, bias_row, 0, 1, 2);
+
+    ++bias_row;
+    bias_layout->addWidget(new QLabel("Range Bias [m]"), bias_row, 0);
+
+    bias_range_edit_ = new QLineEdit();
+    bias_range_edit_->setValidator(new TextFieldDoubleValidator(-10000, 10000, 2));
+    bias_range_edit_->setProperty("key", DataSourceBase::RangeBiasKey.c_str());
+    connect(bias_range_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
+    bias_layout->addWidget(bias_range_edit_, bias_row, 1);
+
+    ++bias_row;
+    bias_layout->addWidget(new QLabel("Range Bias StdDev [m]"), bias_row, 0);
+
+    bias_range_stddev_edit_ = new QLineEdit();
+    bias_range_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+    bias_range_stddev_edit_->setProperty("key", DataSourceBase::RangeBiasSDKey.c_str());
+    connect(bias_range_stddev_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
+    bias_layout->addWidget(bias_range_stddev_edit_, bias_row, 1);
+
+    ++bias_row;
+    bias_layout->addWidget(new QLabel("Range Gain"), bias_row, 0);
+
+    bias_range_gain_edit_ = new QLineEdit();
+    bias_range_gain_edit_->setValidator(new TextFieldDoubleValidator(-1, 1, 6));
+    bias_range_gain_edit_->setProperty("key", DataSourceBase::RangeGainKey.c_str());
+    connect(bias_range_gain_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
+    bias_layout->addWidget(bias_range_gain_edit_, bias_row, 1);
+
+    ++bias_row;
+    bias_layout->addWidget(new QLabel("Range Gain StdDev"), bias_row, 0);
+
+    bias_range_gain_stddev_edit_ = new QLineEdit();
+    bias_range_gain_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 1, 6));
+    bias_range_gain_stddev_edit_->setProperty("key", DataSourceBase::RangeGainSDKey.c_str());
+    connect(bias_range_gain_stddev_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
+    bias_layout->addWidget(bias_range_gain_stddev_edit_, bias_row, 1);
+
+    ++bias_row;
+    bias_layout->addWidget(new QLabel("Azimuth Bias [deg]"), bias_row, 0);
+
+    bias_azimuth_edit_ = new QLineEdit();
+    bias_azimuth_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 6));
+    bias_azimuth_edit_->setProperty("key", DataSourceBase::AzimuthBiasKey.c_str());
+    connect(bias_azimuth_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
+    bias_layout->addWidget(bias_azimuth_edit_, bias_row, 1);
+
+    ++bias_row;
+    bias_layout->addWidget(new QLabel("Azimuth Bias StdDev [deg]"), bias_row, 0);
+
+    bias_azimuth_stddev_edit_ = new QLineEdit();
+    bias_azimuth_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 180, 6));
+    bias_azimuth_stddev_edit_->setProperty("key", DataSourceBase::AzimuthBiasSDKey.c_str());
+    connect(bias_azimuth_stddev_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
+    bias_layout->addWidget(bias_azimuth_stddev_edit_, bias_row, 1);
+
+    bias_widget_->setLayout(bias_layout);
+
+    main_layout->addWidget(bias_widget_);
+
+    add_bias_button_ = new QPushButton("Add Radar Biases");
+    add_bias_button_->setToolTip("Adds Radar bias information");
+    add_bias_button_->setIcon(QIcon());
+    connect(add_bias_button_, &QPushButton::clicked, this, &DataSourceEditWidget::addRadarBiasSlot);
+    main_layout->addWidget(add_bias_button_);
 
     main_layout->addStretch();
 }
@@ -860,6 +962,31 @@ void DataSourceEditWidget::radarAccuraciesEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().radarAccuracy(key, value);
+}
+
+void DataSourceEditWidget::addRadarBiasSlot()
+{
+    loginf;
+
+    traced_assert(current_ds_);
+    currentDataSource().addRadarBiasIfMissing();
+
+    updateContent();
+}
+
+void DataSourceEditWidget::radarBiasEditedSlot(const QString& value_str)
+{
+    double value = value_str.toDouble();
+
+    QLineEdit* line_edit = dynamic_cast<QLineEdit*> (QObject::sender());
+    traced_assert(line_edit);
+
+    string key = line_edit->property("key").toString().toStdString();
+
+    loginf << "key '" << key << "' value '" << value << "'";
+
+    traced_assert(current_ds_);
+    currentDataSource().radarBias(key, value);
 }
 
 void DataSourceEditWidget::addMLATRemoteUnitsSlot()
@@ -1457,6 +1584,11 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
         else
             acc_psr_rng_edit_->setText("");
 
+        if (ranges.count(DataSourceBase::PSRRngSDGainKey))
+            acc_psr_rng_gain_edit_->setText(QString::number(ranges.at(DataSourceBase::PSRRngSDGainKey)));
+        else
+            acc_psr_rng_gain_edit_->setText("");
+
         // ssr
         if (ranges.count(DataSourceBase::SSRAzmSDKey))
             acc_ssr_azm_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRAzmSDKey)));
@@ -1467,6 +1599,11 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
             acc_ssr_rng_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRRngSDKey)));
         else
             acc_ssr_rng_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::SSRRngSDGainKey))
+            acc_ssr_rng_gain_edit_->setText(QString::number(ranges.at(DataSourceBase::SSRRngSDGainKey)));
+        else
+            acc_ssr_rng_gain_edit_->setText("");
 
         // mode s
         if (ranges.count(DataSourceBase::ModeSAzmSDKey))
@@ -1480,11 +1617,61 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
                 QString::number(ranges.at(DataSourceBase::ModeSRngSDKey)));
         else
             acc_mode_s_rng_edit_->setText("");
+
+        if (ranges.count(DataSourceBase::ModeSRngSDGainKey))
+            acc_mode_s_rng_gain_edit_->setText(
+                QString::number(ranges.at(DataSourceBase::ModeSRngSDGainKey)));
+        else
+            acc_mode_s_rng_gain_edit_->setText("");
     }
     else
     {
         accuracies_widget_->setHidden(true);
         add_accuracies_button_->setHidden(false);
+    }
+
+    // radar bias
+    if (ds->hasRadarBias())
+    {
+        bias_widget_->setHidden(false);
+        add_bias_button_->setHidden(true);
+
+        std::map<std::string, double> bias = ds->radarBias();
+
+        if (bias.count(DataSourceBase::RangeBiasKey))
+            bias_range_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasKey)));
+        else
+            bias_range_edit_->setText("");
+
+        if (bias.count(DataSourceBase::RangeBiasSDKey))
+            bias_range_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasSDKey)));
+        else
+            bias_range_stddev_edit_->setText("");
+
+        if (bias.count(DataSourceBase::RangeGainKey))
+            bias_range_gain_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainKey)));
+        else
+            bias_range_gain_edit_->setText("");
+
+        if (bias.count(DataSourceBase::RangeGainSDKey))
+            bias_range_gain_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainSDKey)));
+        else
+            bias_range_gain_stddev_edit_->setText("");
+
+        if (bias.count(DataSourceBase::AzimuthBiasKey))
+            bias_azimuth_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasKey)));
+        else
+            bias_azimuth_edit_->setText("");
+
+        if (bias.count(DataSourceBase::AzimuthBiasSDKey))
+            bias_azimuth_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasSDKey)));
+        else
+            bias_azimuth_stddev_edit_->setText("");
+    }
+    else
+    {
+        bias_widget_->setHidden(true);
+        add_bias_button_->setHidden(false);
     }
 
     //reshow tab(s)

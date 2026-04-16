@@ -69,6 +69,16 @@ public:
                               const std::string& old_name,
                               const std::string& new_name);
 
+    /// Export a context directory as a zip archive
+    static void exportContextZip(const std::string& base_path,
+                                 const std::string& name,
+                                 const std::string& zip_filepath);
+
+    /// Import a context from a zip archive, returns the context name found inside.
+    /// Overwrites the context folder if it already exists.
+    static std::string importContextZip(const std::string& base_path,
+                                        const std::string& zip_filepath);
+
 private:
     /// Get the directory path for a named context
     static std::string contextDir(const std::string& base_path, const std::string& name);

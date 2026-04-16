@@ -28,8 +28,12 @@
 
 #include <fstream>
 #include <set>
+#include <vector>
 
 #include <boost/filesystem.hpp>
+
+#include <archive.h>
+#include <archive_entry.h>
 
 using namespace std;
 using namespace nlohmann;
@@ -318,6 +322,122 @@ void DBContextSerializer::renameContext(const string& base_path,
     writeJSONFile(meta_path, meta);
 
     loginf << "renamed context '" << old_name << "' to '" << new_name << "'";
+}
+
+void DBContextSerializer::exportContextZip(const string& base_path,
+                                           const string& name,
+                                           const string& zip_filepath)
+{
+    string ctx_dir = contextDir(base_path, name);
+    traced_assert(fs::exists(ctx_dir));
+
+    // collect all files in the context directory
+    vector<string> files;
+    for (const auto& entry : fs::recursive_directory_iterator(ctx_dir))
+    {
+        if (fs::is_regular_file(entry.status()))
+            files.push_back(entry.path().string());
+    }
+
+    struct archive* a = archive_write_new();
+    archive_write_set_format_zip(a);
+    int r = archive_write_open_filename(a, zip_filepath.c_str());
+    traced_assert(r == ARCHIVE_OK);
+
+    for (const auto& file_path : files)
+    {
+        // archive entry path: <context_name>/<filename>
+        string rel_path = name + "/" + fs::path(file_path).filename().string();
+
+        // read file contents
+        ifstream ifs(file_path, ios::binary | ios::ate);
+        traced_assert(ifs.is_open());
+        auto size = ifs.tellg();
+        ifs.seekg(0);
+        vector<char> buf(size);
+        ifs.read(buf.data(), size);
+
+        struct archive_entry* entry = archive_entry_new();
+        archive_entry_set_pathname(entry, rel_path.c_str());
+        archive_entry_set_size(entry, size);
+        archive_entry_set_filetype(entry, AE_IFREG);
+        archive_entry_set_perm(entry, 0644);
+
+        archive_write_header(a, entry);
+        archive_write_data(a, buf.data(), buf.size());
+        archive_entry_free(entry);
+    }
+
+    archive_write_close(a);
+    archive_write_free(a);
+
+    loginf << "exported context '" << name << "' to " << zip_filepath
+           << " (" << files.size() << " files)";
+}
+
+string DBContextSerializer::importContextZip(const string& base_path,
+                                             const string& zip_filepath)
+{
+    traced_assert(fs::exists(zip_filepath));
+
+    struct archive* a = archive_read_new();
+    archive_read_support_format_zip(a);
+    archive_read_support_filter_all(a);
+
+    int r = archive_read_open_filename(a, zip_filepath.c_str(), 10240);
+    traced_assert(r == ARCHIVE_OK);
+
+    // determine context name from first entry (should be "<name>/something")
+    string context_name;
+
+    // extract all entries
+    struct archive_entry* entry;
+    while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
+    {
+        string entry_path = archive_entry_pathname(entry);
+
+        // skip directory entries
+        if (archive_entry_filetype(entry) == AE_IFDIR)
+            continue;
+
+        // extract context name from first path component
+        auto slash_pos = entry_path.find('/');
+        if (slash_pos == string::npos)
+        {
+            logwrn << "skipping entry without directory prefix: " << entry_path;
+            archive_read_data_skip(a);
+            continue;
+        }
+
+        string dir_name = entry_path.substr(0, slash_pos);
+        string file_name = entry_path.substr(slash_pos + 1);
+
+        if (context_name.empty())
+            context_name = dir_name;
+
+        // write to base_path/<context_name>/<filename>
+        string out_dir = base_path + "/" + context_name;
+        fs::create_directories(out_dir);
+
+        string out_path = out_dir + "/" + file_name;
+        ofstream ofs(out_path, ios::binary);
+        traced_assert(ofs.is_open());
+
+        const void* buff;
+        size_t size;
+        la_int64_t offset;
+        while (archive_read_data_block(a, &buff, &size, &offset) == ARCHIVE_OK)
+            ofs.write(static_cast<const char*>(buff), size);
+    }
+
+    archive_read_close(a);
+    archive_read_free(a);
+
+    traced_assert(!context_name.empty());
+
+    loginf << "imported context '" << context_name << "' from " << zip_filepath;
+
+    return context_name;
 }
 
 } // namespace context

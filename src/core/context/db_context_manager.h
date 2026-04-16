@@ -291,6 +291,10 @@ public:
     void exportContext(const std::string& name, const std::string& filepath);
     void importContext(const std::string& filepath);
 
+    // zip-based full context export/import
+    void exportContextZip(const std::string& name, const std::string& zip_filepath);
+    void importContextZip(const std::string& zip_filepath);
+
     // ================================================================
     // Widgets (lazy creation, owned by this manager)
     // ================================================================

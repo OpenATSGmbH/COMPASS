@@ -7,8 +7,8 @@ OpenATS COMPASS is a C++ application for air traffic surveillance data inspectio
 - **OS**: Linux 64-bit (x86_64) only — no Windows or macOS support
 - **Tested distributions**: Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+
 - **Distribution format**: AppImage — single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
-- **No plugin system**: Extensions require source code modification. The Geographic View is a proprietary closed-source module included only in the AppImage binary, not in source builds.
-- **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is proprietary (AppImage only). Free for all use including commercial.
+- **No plugin system**: Extensions require source code modification. The Geographic View lives in a separate closed-source repository (`experimental_src/`) and is only published in the AppImage binary, not in source builds.
+- **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is closed-source (AppImage only). Free for all use including commercial.
 - **Hardware requirements**: Minimum 2+ physical CPU cores, dedicated NVidia or ATI GPU (native drivers, OpenGL 3.0+), 8 GB RAM. Recommended: Intel i5+, 16 GB+ RAM. Large datasets (>1M reports/hour): 32 GB RAM.
 
 ## Application architecture

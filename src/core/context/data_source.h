@@ -98,6 +98,11 @@ public:
     void radarAccuracy(const std::string& key, double value);
     void addRadarAccuraciesIfMissing();
 
+    bool hasRadarBias() const;
+    std::map<std::string, double> radarBias() const;
+    void radarBias(const std::string& key, double value);
+    void addRadarBiasIfMissing();
+
     bool hasNetworkLines() const;
     void addNetworkLinesIfMissing();
 

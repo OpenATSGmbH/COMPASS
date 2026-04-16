@@ -67,10 +67,20 @@ public:
 
     static const std::string PSRAzmSDKey;
     static const std::string PSRRngSDKey;
+    static const std::string PSRRngSDGainKey;
     static const std::string SSRAzmSDKey;
     static const std::string SSRRngSDKey;
+    static const std::string SSRRngSDGainKey;
     static const std::string ModeSAzmSDKey;
     static const std::string ModeSRngSDKey;
+    static const std::string ModeSRngSDGainKey;
+
+    static const std::string RangeBiasKey;
+    static const std::string RangeBiasSDKey;
+    static const std::string RangeGainKey;
+    static const std::string RangeGainSDKey;
+    static const std::string AzimuthBiasKey;
+    static const std::string AzimuthBiasSDKey;
 
     DataSourceBase();
 
@@ -149,6 +159,12 @@ public:
     void addRadarAccuraciesIfMissing();
     std::map<std::string, double> radarAccuracies() const;
     void radarAccuracy (const std::string& key, const double value);
+
+    bool hasRadarBias() const;
+    void addRadarBias();
+    void addRadarBiasIfMissing();
+    std::map<std::string, double> radarBias() const;
+    void radarBias(const std::string& key, const double value);
 
     // network stuff
     bool hasNetworkLines() const;

@@ -53,6 +53,8 @@ private slots:
     void copySlot();
     void renameSlot();
     void deleteSlot();
+    void exportZipSlot();
+    void importZipSlot();
 
 private:
     void rebuildTree();

@@ -338,6 +338,28 @@ void DataSource::addRadarAccuraciesIfMissing()
         info_["radar_accuracy"] = json::object();
 }
 
+bool DataSource::hasRadarBias() const
+{
+    return info_.contains("radar_bias");
+}
+
+map<string, double> DataSource::radarBias() const
+{
+    if (!hasRadarBias()) return {};
+    return info_.at("radar_bias").get<map<string, double>>();
+}
+
+void DataSource::radarBias(const string& key, double value)
+{
+    info_["radar_bias"][key] = value;
+}
+
+void DataSource::addRadarBiasIfMissing()
+{
+    if (!hasRadarBias())
+        info_["radar_bias"] = json::object();
+}
+
 void DataSource::addNetworkLinesIfMissing()
 {
     if (!hasNetworkLines())
