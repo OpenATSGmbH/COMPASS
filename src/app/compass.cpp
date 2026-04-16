@@ -203,8 +203,11 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
                      eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
 
-    // sectors changed
+    // sectors changed (direct edits within active context)
     connect (context_manager_.get(), &context::DBContextManager::sectorsChangedSignal,
+             &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
+    // context changed (DB open, context switch — sectors come with the new context)
+    connect (context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
              &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
 
     // data exchange
