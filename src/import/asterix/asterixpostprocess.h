@@ -33,11 +33,12 @@ class ASTERIXPostProcess
   protected:
     friend class ASTERIXImportTask;  // uses the members for config
 
-    std::map<std::pair<unsigned int, unsigned int>, double> cat002_last_tod_period_;
-    std::map<std::pair<unsigned int, unsigned int>, double> cat002_last_tod_;
+    // jASTERIX now handles CAT001 truncated time fix and writes "140.Time-of-Day" directly
+    // std::map<std::pair<unsigned int, unsigned int>, double> cat002_last_tod_period_;
+    // std::map<std::pair<unsigned int, unsigned int>, double> cat002_last_tod_;
 
-    void postProcessFlatCAT001(nlohmann::json& d, size_t num_records);
-    void postProcessFlatCAT002(nlohmann::json& d, size_t num_records);
+    // void postProcessFlatCAT001(nlohmann::json& d, size_t num_records);
+    // void postProcessFlatCAT002(nlohmann::json& d, size_t num_records);
     void postProcessFlatCAT020(nlohmann::json& d, size_t num_records);
     void postProcessFlatCAT062(nlohmann::json& d, size_t num_records);
 };
