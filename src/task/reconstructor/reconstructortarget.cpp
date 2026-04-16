@@ -1219,206 +1219,206 @@ ReconstructorTarget::ReferencePair ReconstructorTarget::refDataFor (ptime timest
 //    return {lower, upper};
 //}
 
-std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTime (
-    ptime timestamp, time_duration d_max) const
-{
-    dbContent::targetReport::ReconstructorInfo* lower, *upper;
+// std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTime (
+//     ptime timestamp, time_duration d_max) const
+// {
+//     dbContent::targetReport::ReconstructorInfo* lower, *upper;
 
-    tie(lower, upper) = dataFor(
-        timestamp, d_max,
-        [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
+//     tie(lower, upper) = dataFor(
+//         timestamp, d_max,
+//         [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
 
-    if (lower && !upper) // exact time
-    {
-        if (lower->position())
-            return {*lower->position(), true};
-        else
-            return {{}, false};
-    }
+//     if (lower && !upper) // exact time
+//     {
+//         if (lower->position())
+//             return {*lower->position(), true};
+//         else
+//             return {{}, false};
+//     }
 
-    if (!lower || !lower->position() || !upper || !upper->position())
-        return {{}, false};
+//     if (!lower || !lower->position() || !upper || !upper->position())
+//         return {{}, false};
 
-    dbContent::targetReport::Position& pos1 = *lower->position();
-    dbContent::targetReport::Position& pos2 = *upper->position();
-    float d_t = Time::partialSeconds(upper->timestamp_ - lower->timestamp_);
+//     dbContent::targetReport::Position& pos1 = *lower->position();
+//     dbContent::targetReport::Position& pos2 = *upper->position();
+//     float d_t = Time::partialSeconds(upper->timestamp_ - lower->timestamp_);
 
-    logdbg2 << "d_t " << d_t;
+//     logdbg2 << "d_t " << d_t;
 
-    traced_assert(d_t >= 0);
+//     traced_assert(d_t >= 0);
 
-    if (pos1.latitude_ == pos2.latitude_
-        && pos1.longitude_ == pos2.longitude_) // same pos
-        return {pos1, true};
+//     if (pos1.latitude_ == pos2.latitude_
+//         && pos1.longitude_ == pos2.longitude_) // same pos
+//         return {pos1, true};
 
-    if (lower == upper) // same time
-    {
-        logwrn << "ref has same time twice";
-        return {{}, false};
-    }
+//     if (lower == upper) // same time
+//     {
+//         logwrn << "ref has same time twice";
+//         return {{}, false};
+//     }
 
-    logdbg2 << "pos1 " << pos1.latitude_ << ", " << pos1.longitude_;
-    logdbg2 << "pos2 " << pos2.latitude_ << ", " << pos2.longitude_;
+//     logdbg2 << "pos1 " << pos1.latitude_ << ", " << pos1.longitude_;
+//     logdbg2 << "pos2 " << pos2.latitude_ << ", " << pos2.longitude_;
 
-    bool ok;
-    double x_pos, y_pos;
+//     bool ok;
+//     double x_pos, y_pos;
 
-    logdbg2 << "geo2cart";
+//     logdbg2 << "geo2cart";
 
-    tie(ok, x_pos, y_pos) = trafo_.distanceCart(
-        pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
+//     tie(ok, x_pos, y_pos) = trafo_.distanceCart(
+//         pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
 
-    if (!ok)
-    {
-        logerr << "error with latitude " << pos2.latitude_
-               << " longitude " << pos2.longitude_;
-        return {{}, false};
-    }
+//     if (!ok)
+//     {
+//         logerr << "error with latitude " << pos2.latitude_
+//                << " longitude " << pos2.longitude_;
+//         return {{}, false};
+//     }
 
-    logdbg2 << "offsets x " << fixed << x_pos
-           << " y " << fixed << y_pos << " dist " << fixed << sqrt(pow(x_pos,2)+pow(y_pos,2));
+//     logdbg2 << "offsets x " << fixed << x_pos
+//            << " y " << fixed << y_pos << " dist " << fixed << sqrt(pow(x_pos,2)+pow(y_pos,2));
 
-    double v_x = x_pos/d_t;
-    double v_y = y_pos/d_t;
-    logdbg2 << "v_x " << v_x << " v_y " << v_y;
+//     double v_x = x_pos/d_t;
+//     double v_y = y_pos/d_t;
+//     logdbg2 << "v_x " << v_x << " v_y " << v_y;
 
-    float d_t2 = Time::partialSeconds(timestamp - lower->timestamp_);
-    logdbg2 << "d_t2 " << d_t2;
+//     float d_t2 = Time::partialSeconds(timestamp - lower->timestamp_);
+//     logdbg2 << "d_t2 " << d_t2;
 
-    traced_assert(d_t2 >= 0);
+//     traced_assert(d_t2 >= 0);
 
-    x_pos = v_x * d_t2;
-    y_pos = v_y * d_t2;
+//     x_pos = v_x * d_t2;
+//     y_pos = v_y * d_t2;
 
-    logdbg2 << "interpolated offsets x " << x_pos << " y " << y_pos;
+//     logdbg2 << "interpolated offsets x " << x_pos << " y " << y_pos;
 
-    tie (ok, x_pos, y_pos) = trafo_.wgsAddCartOffset(pos1.latitude_, pos1.longitude_, x_pos, y_pos);
+//     tie (ok, x_pos, y_pos) = trafo_.wgsAddCartOffset(pos1.latitude_, pos1.longitude_, x_pos, y_pos);
 
-    //ret = ogr_cart2geo->Transform(1, &x_pos, &y_pos);
+//     //ret = ogr_cart2geo->Transform(1, &x_pos, &y_pos);
 
-    // x_pos long, y_pos lat
+//     // x_pos long, y_pos lat
 
-    logdbg2 << "interpolated lat " << x_pos << " long " << y_pos;
+//     logdbg2 << "interpolated lat " << x_pos << " long " << y_pos;
 
-    // calculate altitude
+//     // calculate altitude
 
-    // TODO no alt 4 u!
+//     // TODO no alt 4 u!
 
-    //    bool has_altitude = false;
-    //    float altitude = 0.0;
+//     //    bool has_altitude = false;
+//     //    float altitude = 0.0;
 
-    //    if (pos1.has_altitude_ && !pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_;
-    //    }
-    //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos2.altitude_;
-    //    }
-    //    else if (pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_ + v_alt*d_t2;
-    //    }
+//     //    if (pos1.has_altitude_ && !pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_;
+//     //    }
+//     //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos2.altitude_;
+//     //    }
+//     //    else if (pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_ + v_alt*d_t2;
+//     //    }
 
-    //    logdbg2 << "pos1 has alt "
-    //           << pos1.has_altitude_ << " alt " << pos1.altitude_
-    //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
-    //           << " interpolated has alt " << has_altitude << " alt " << altitude;
+//     //    logdbg2 << "pos1 has alt "
+//     //           << pos1.has_altitude_ << " alt " << pos1.altitude_
+//     //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
+//     //           << " interpolated has alt " << has_altitude << " alt " << altitude;
 
-    //            //        if (in_appimage_) // inside appimage
-    //            //            return {{y_pos, x_pos, has_altitude, true, altitude}, true};
-    //            //        else
-    //    return {{x_pos, y_pos, has_altitude, true, altitude}, true};
+//     //            //        if (in_appimage_) // inside appimage
+//     //            //            return {{y_pos, x_pos, has_altitude, true, altitude}, true};
+//     //            //        else
+//     //    return {{x_pos, y_pos, has_altitude, true, altitude}, true};
 
-    return {{x_pos, y_pos}, true};
-}
+//     return {{x_pos, y_pos}, true};
+// }
 
-std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTimeFast (
-    ptime timestamp, time_duration d_max) const
-{
-    dbContent::targetReport::ReconstructorInfo* lower_rec_num, *upper_rec_num;
+// std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTimeFast (
+//     ptime timestamp, time_duration d_max) const
+// {
+//     dbContent::targetReport::ReconstructorInfo* lower_rec_num, *upper_rec_num;
 
-    tie(lower_rec_num, upper_rec_num) = dataFor(
-        timestamp, d_max,
-        [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
+//     tie(lower_rec_num, upper_rec_num) = dataFor(
+//         timestamp, d_max,
+//         [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
 
-    if (lower_rec_num && !upper_rec_num) // exact time
-    {
-        if (lower_rec_num->position())
-            return {*lower_rec_num->position(), true};
-        else
-            return {{}, false};
-    }
+//     if (lower_rec_num && !upper_rec_num) // exact time
+//     {
+//         if (lower_rec_num->position())
+//             return {*lower_rec_num->position(), true};
+//         else
+//             return {{}, false};
+//     }
 
-    if (!lower_rec_num || !lower_rec_num->position() || !upper_rec_num || !upper_rec_num->position())
-        return {{}, false};
+//     if (!lower_rec_num || !lower_rec_num->position() || !upper_rec_num || !upper_rec_num->position())
+//         return {{}, false};
 
-    dbContent::targetReport::Position& pos1 = *lower_rec_num->position();
-    dbContent::targetReport::Position& pos2 = *upper_rec_num->position();
-    float d_t = Time::partialSeconds(upper_rec_num->timestamp_ - lower_rec_num->timestamp_);
+//     dbContent::targetReport::Position& pos1 = *lower_rec_num->position();
+//     dbContent::targetReport::Position& pos2 = *upper_rec_num->position();
+//     float d_t = Time::partialSeconds(upper_rec_num->timestamp_ - lower_rec_num->timestamp_);
 
-    logdbg2 << "d_t " << d_t;
+//     logdbg2 << "d_t " << d_t;
 
-    traced_assert(d_t >= 0);
+//     traced_assert(d_t >= 0);
 
-    if (pos1.latitude_ == pos2.latitude_
-        && pos1.longitude_ == pos2.longitude_) // same pos
-        return {pos1, true};
+//     if (pos1.latitude_ == pos2.latitude_
+//         && pos1.longitude_ == pos2.longitude_) // same pos
+//         return {pos1, true};
 
-    if (lower_rec_num == upper_rec_num) // same time
-    {
-        logwrn << "ref has same time twice";
-        return {{}, false};
-    }
+//     if (lower_rec_num == upper_rec_num) // same time
+//     {
+//         logwrn << "ref has same time twice";
+//         return {{}, false};
+//     }
 
-    double v_lat = (pos2.latitude_ - pos1.latitude_)/d_t;
-    double v_long = (pos2.longitude_ - pos1.longitude_)/d_t;
-    logdbg2 << "v_x " << v_lat << " v_y " << v_long;
+//     double v_lat = (pos2.latitude_ - pos1.latitude_)/d_t;
+//     double v_long = (pos2.longitude_ - pos1.longitude_)/d_t;
+//     logdbg2 << "v_x " << v_lat << " v_y " << v_long;
 
-    float d_t2 = Time::partialSeconds(timestamp - lower_rec_num->timestamp_);
-    logdbg2 << "d_t2 " << d_t2;
+//     float d_t2 = Time::partialSeconds(timestamp - lower_rec_num->timestamp_);
+//     logdbg2 << "d_t2 " << d_t2;
 
-    traced_assert(d_t2 >= 0);
+//     traced_assert(d_t2 >= 0);
 
-    double int_lat = pos1.latitude_ + v_lat * d_t2;
-    double int_long = pos1.longitude_ + v_long * d_t2;
+//     double int_lat = pos1.latitude_ + v_lat * d_t2;
+//     double int_long = pos1.longitude_ + v_long * d_t2;
 
-    logdbg2 << "interpolated lat " << int_lat << " long " << int_long;
+//     logdbg2 << "interpolated lat " << int_lat << " long " << int_long;
 
-    // calculate altitude
-    //    bool has_altitude = false;
-    //    float altitude = 0.0;
+//     // calculate altitude
+//     //    bool has_altitude = false;
+//     //    float altitude = 0.0;
 
-    //    if (pos1.has_altitude_ && !pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_;
-    //    }
-    //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos2.altitude_;
-    //    }
-    //    else if (pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_ + v_alt*d_t2;
-    //    }
+//     //    if (pos1.has_altitude_ && !pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_;
+//     //    }
+//     //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos2.altitude_;
+//     //    }
+//     //    else if (pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_ + v_alt*d_t2;
+//     //    }
 
-    //    logdbg2 << "pos1 has alt "
-    //           << pos1.has_altitude_ << " alt " << pos1.altitude_
-    //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
-    //           << " interpolated has alt " << has_altitude << " alt " << altitude;
+//     //    logdbg2 << "pos1 has alt "
+//     //           << pos1.has_altitude_ << " alt " << pos1.altitude_
+//     //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
+//     //           << " interpolated has alt " << has_altitude << " alt " << altitude;
 
-    //    return {{int_lat, int_long, has_altitude, true, altitude}, true};
+//     //    return {{int_lat, int_long, has_altitude, true, altitude}, true};
 
-    return {{int_lat, int_long}, true};
-}
+//     return {{int_lat, int_long}, true};
+// }
 
 std::pair<boost::optional<dbContent::targetReport::Position>,
           boost::optional<dbContent::targetReport::PositionAccuracy>> ReconstructorTarget::interpolatedRefPosForTime (
@@ -2668,13 +2668,22 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
             if (!ref_ts_prev.is_not_a_date_time())
                 traced_assert(ref_it.second.t > ref_ts_prev);
 
-            // final filtering using max stddev
+            // final filtering using max stddev (air/ground)
             if (ref_calc_settings.filter_references_max_stddev_ &&
-                ref_it.second.x_stddev.has_value() && 
+                ref_it.second.x_stddev.has_value() &&
                 ref_it.second.y_stddev.has_value())
             {
                 double stddev_max = std::max(ref_it.second.x_stddev.value(), ref_it.second.y_stddev.value());
-                if (stddev_max > ref_calc_settings.filter_references_max_stddev_m_)
+
+                bool is_ground = targetCategory() != TargetBase::Category::Unknown
+                              && TargetBase::isGroundOnly(targetCategory());
+                if (!is_ground && gbs_series.hasValueAt(ref_it.second.t))
+                    is_ground = gbs_series.getValueAt(ref_it.second.t);
+
+                double stddev_limit = is_ground
+                                    ? ref_calc_settings.filter_references_max_stddev_m_ground_
+                                    : ref_calc_settings.filter_references_max_stddev_m_air_;
+                if (stddev_max > stddev_limit)
                     continue;
             }
 

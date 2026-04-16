@@ -28,6 +28,7 @@
 #include "sector_edit_widget.h"
 #include "sector_import_utils.h"
 #include "fft_edit_widget.h"
+#include "questiondialog.h"
 #include "importsectordialog.h"
 #include "airspace.h"
 #include "compass.h"
@@ -265,10 +266,16 @@ void DBContextEditDialog::rebuildContextCombo()
     if (manager_.hasActiveContext())
         context_combo_->setCurrentText(QString::fromStdString(manager_.activeContextName()));
 
-    bool can_delete = manager_.contextNames().size() > 1;
+    bool db_has_data = manager_.compass().dbOpened() && manager_.hasInsertedData();
+
+    // disable context switching when a DB with imported data is open
+    context_combo_->setEnabled(!db_has_data);
+
+    bool can_delete = manager_.contextNames().size() > 1 && !db_has_data;
     delete_button_->setEnabled(can_delete);
-    delete_button_->setToolTip(can_delete ? "Delete one or more contexts"
-                                          : "Cannot delete the last remaining context");
+    delete_button_->setToolTip(db_has_data ? "Cannot delete contexts while a database with imported data is open"
+                             : can_delete  ? "Delete one or more contexts"
+                                           : "Cannot delete the last remaining context");
 }
 
 void DBContextEditDialog::rebuildTree()
@@ -449,9 +456,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
         if (dialog.cancelled())
             return;
 
-        auto& ds = manager_.createDataSource(dialog.sac(), dialog.sic());
-        ds.dsType(dialog.dsType());
-        manager_.saveContext(manager_.activeContextName());
+        auto& ds = manager_.createDataSource(dialog.sac(), dialog.sic(), "", dialog.dsType());
         rebuildTree();
     });
 
@@ -476,8 +481,8 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     auto* del_all = menu.addAction("Delete All", [this]()
     {
-        if (QMessageBox::question(this, "Delete All Data Sources",
-                "Delete all data sources from this context?") != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete All Data Sources",
+                "Delete all data sources from this context?"))
             return;
 
         auto& ctx = manager_.activeContext();
@@ -485,7 +490,20 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
         manager_.saveContext(manager_.activeContextName());
         rebuildTree();
     });
-    del_all->setEnabled(!manager_.activeContext().dataSources().empty());
+
+    // disable if empty or if any data source has data in the database
+    bool any_has_data = false;
+    for (const auto& ds : manager_.activeContext().dataSources())
+    {
+        if (manager_.hasNumInserted(ds.id()))
+        {
+            any_has_data = true;
+            break;
+        }
+    }
+    del_all->setEnabled(!manager_.activeContext().dataSources().empty() && !any_has_data);
+    if (any_has_data)
+        del_all->setToolTip("Cannot delete data sources that have data in the database");
 
     menu.exec(QCursor::pos());
 }
@@ -496,10 +514,12 @@ void DBContextEditDialog::showDataSourceItemMenu(unsigned int ds_id)
 
     QMenu menu;
 
-    menu.addAction("Delete", [this, ds_id]()
+    bool has_data = manager_.hasNumInserted(ds_id);
+
+    auto* del_action = menu.addAction("Delete", [this, ds_id]()
     {
-        if (QMessageBox::question(this, "Delete Data Source",
-                "Delete this data source?") != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete Data Source",
+                "Delete this data source?"))
             return;
 
         manager_.deleteDataSource(ds_id);
@@ -507,6 +527,12 @@ void DBContextEditDialog::showDataSourceItemMenu(unsigned int ds_id)
         ds_edit_widget_->clear();
         rebuildTree();
     });
+
+    if (has_data)
+    {
+        del_action->setEnabled(false);
+        del_action->setToolTip("Cannot delete a data source that has data in the database");
+    }
 
     menu.exec(QCursor::pos());
 }
@@ -587,8 +613,8 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     auto* del_all = menu.addAction("Delete All", [this]()
     {
-        if (QMessageBox::question(this, "Delete All Sectors",
-                "Delete all sectors from this context?") != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete All Sectors",
+                "Delete all sectors from this context?"))
             return;
 
         manager_.deleteAllSectors();
@@ -607,9 +633,8 @@ void DBContextEditDialog::showSectorLayerMenu(const std::string& layer_name)
 
     menu.addAction("Delete Layer", [this, layer_name]()
     {
-        if (QMessageBox::question(this, "Delete Sector Layer",
-                "Delete all sectors in layer '" + QString::fromStdString(layer_name) + "'?")
-                != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete Sector Layer",
+                "Delete all sectors in layer '" + QString::fromStdString(layer_name) + "'?"))
             return;
 
         auto layer = manager_.sectorLayer(layer_name);
@@ -651,8 +676,8 @@ void DBContextEditDialog::showSectorItemMenu(unsigned int sector_id)
 
     menu.addAction("Delete", [this, sector_id]()
     {
-        if (QMessageBox::question(this, "Delete Sector",
-                "Delete this sector?") != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete Sector",
+                "Delete this sector?"))
             return;
 
         auto sector = manager_.sector(sector_id);
@@ -847,8 +872,8 @@ void DBContextEditDialog::showFFTsGroupMenu()
 
     auto* del_all = menu.addAction("Delete All", [this]()
     {
-        if (QMessageBox::question(this, "Delete All FFTs",
-                "Delete all FFTs from this context?") != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete All FFTs",
+                "Delete all FFTs from this context?"))
             return;
 
         manager_.deleteAllFFTs();
@@ -867,8 +892,8 @@ void DBContextEditDialog::showFFTItemMenu(const std::string& fft_name)
 
     menu.addAction("Delete", [this, fft_name]()
     {
-        if (QMessageBox::question(this, "Delete FFT",
-                "Delete FFT '" + QString::fromStdString(fft_name) + "'?") != QMessageBox::Yes)
+        if (!QuestionDialog::ask(this, "Delete FFT",
+                "Delete FFT '" + QString::fromStdString(fft_name) + "'?"))
             return;
 
         manager_.deleteFFT(fft_name);

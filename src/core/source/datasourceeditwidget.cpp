@@ -573,6 +573,8 @@ void DataSourceEditWidget::setReadOnly(bool read_only)
 
 void DataSourceEditWidget::nameEditedSlot(const QString& value)
 {
+    if (read_only_) return;
+
     string text = value.toStdString();
 
     loginf << "'" << text << "'";
@@ -597,6 +599,8 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
 {
+    if (read_only_) return;
+
     string text = value.toStdString();
 
     loginf << "'" << text << "'";
@@ -611,6 +615,8 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
 {
+    if (read_only_) return;
+
     string text = value.toStdString();
 
     loginf << "'" << text << "'";
@@ -627,6 +633,8 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::updateIntervalEditedSlot(const QString& value_str)
 {
+    if (read_only_) return;
+
     string text = value_str.toStdString();
 
     loginf << "'" << text << "'";
@@ -649,7 +657,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::detectionTypeChangedSlot(int index)
 {
-    if (!current_ds_)
+    if (read_only_ || !current_ds_)
         return;
 
     // Detection type as int: 0=Undefined, 1=PrimaryOnly, 2=ModeAC, 3=ModeACCombined, 4=ModeS, 5=ModeSCombined
@@ -660,6 +668,7 @@ void DataSourceEditWidget::detectionTypeChangedSlot(int index)
 
 void DataSourceEditWidget::groundOnlyCheckedSlot()
 {
+    if (read_only_) return;
     loginf;
 
     traced_assert(ground_only_check_);
@@ -672,6 +681,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
 {
+    if (read_only_) return;
     loginf;
 
     traced_assert(radar_ignore_azmrng_check_);
@@ -684,6 +694,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
 {
+    if (read_only_) return;
     bool ok;
 
     double value = value_str.toDouble(&ok);
@@ -710,6 +721,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
 {
+    if (read_only_) return;
     bool ok;
 
     double value = value_str.toDouble(&ok);
@@ -733,6 +745,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
 {
+    if (read_only_) return;
     bool ok;
 
     double value = value_str.toDouble(&ok);
@@ -751,6 +764,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
 {
+    if (read_only_) return;
     bool ok;
 
     double value = value_str.toDouble(&ok);
@@ -769,6 +783,7 @@ traced_assert(current_ds_);
 
 void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 {
+    if (read_only_) return;
     double value = value_str.toDouble();
 
     loginf << "'" << value << "'";
@@ -1203,6 +1218,24 @@ void DataSourceEditWidget::updateContent()
             updateNetwork(ds);
         else
             enableNetwork(false);
+    }
+
+    if (read_only_ && ds)
+    {
+        // make inputs non-editable without graying out text
+        name_edit_->setReadOnly(true);
+        short_name_edit_->setReadOnly(true);
+        update_interval_edit_->setReadOnly(true);
+        psr_pd_edit_->setReadOnly(true);
+        psr_clutter_rate_edit_->setReadOnly(true);
+        latitude_edit_->setReadOnly(true);
+        longitude_edit_->setReadOnly(true);
+        altitude_edit_->setReadOnly(true);
+
+        dstype_combo_->setEnabled(false);
+        detection_type_combo_->setEnabled(false);
+        ground_only_check_->setEnabled(false);
+        radar_ignore_azmrng_check_->setEnabled(false);
     }
 
     detection_type_combo_->blockSignals(false);

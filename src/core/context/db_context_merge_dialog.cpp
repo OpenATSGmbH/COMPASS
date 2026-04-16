@@ -26,6 +26,7 @@
 #include "sector.h"
 #include "files.h"
 #include "logger.h"
+#include "number.h"
 
 #include <json.hpp>
 
@@ -52,10 +53,12 @@ namespace context
 DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
                                            const DBContext& db_context,
                                            const DBContextDiff& diff,
+                                           const std::set<unsigned int>& ds_ids_with_data,
                                            QWidget* parent)
     : QDialog(parent)
     , config_ctx_(config_context)
     , db_ctx_(db_context)
+    , ds_ids_with_data_(ds_ids_with_data)
 {
     setWindowTitle("Merge Context");
     setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
@@ -153,7 +156,7 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
     splitter->addWidget(scroll);
     splitter->setStretchFactor(0, 0); // left side doesn't stretch
     splitter->setStretchFactor(1, 1); // right side gets extra space
-    splitter->setSizes({400, 900});
+    splitter->setSizes({450, 850});
 
     main_layout->addWidget(splitter, 1);
 
@@ -238,9 +241,26 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
         switch (diff.type)
         {
         case ItemDiff::Added:
+        {
             combo->setCurrentIndex(2); // Database
             mi.choice = UseDatabase;
+
+            // sensors with data in the DB cannot be removed
+            if (section_key == "sensors" && !diff.item_b.is_null()
+                && diff.item_b.contains("sac") && diff.item_b.contains("sic"))
+            {
+                unsigned int ds_id = Utils::Number::dsIdFrom(
+                    diff.item_b.at("sac").get<unsigned int>(),
+                    diff.item_b.at("sic").get<unsigned int>());
+
+                if (ds_ids_with_data_.count(ds_id))
+                {
+                    combo->setEnabled(false);
+                    combo->setToolTip("This sensor has data in the database and cannot be removed");
+                }
+            }
             break;
+        }
         case ItemDiff::Removed:
             combo->setCurrentIndex(1); // Configuration
             mi.choice = UseConfiguration;

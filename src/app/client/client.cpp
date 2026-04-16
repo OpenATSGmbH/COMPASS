@@ -38,6 +38,8 @@
 #include "traced_assert.h"
 
 #include <QApplication>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QSurfaceFormat>
 #include <QSplashScreen>
@@ -992,14 +994,9 @@ void Client::performNeededActions()
 {
     if (home_subdir_deletion_wanted_)  // version so old it should be deleted before
     {
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(
-            nullptr, "Delete Previous Configuration & Data",
-            "Complete deletion of the previous configuration and data is required. This will delete"
-            " the folder '~/.compass'. Do you want to continue?",
-            QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::Yes)
+        if (QuestionDialog::ask(nullptr, "Delete Previous Configuration & Data",
+                "Complete deletion of the previous configuration and data is required. This will delete"
+                " the folder '~/.compass'. Do you want to continue?"))
         {
             cout << "COMPASSClient: config & data delete confirmed, deleting" << endl;
 

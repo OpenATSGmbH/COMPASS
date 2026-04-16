@@ -157,8 +157,7 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
     grid_->addWidget(new QLabel(), 0, 3); // arrow column
     grid_->addWidget(makeBoldLabel("Database"), 0, 4);
 
-    inner_layout->addLayout(grid_);
-    inner_layout->addStretch();
+    inner_layout->addLayout(grid_, 1);
 
     scroll->setWidget(inner);
     outer->addWidget(scroll);
@@ -251,13 +250,10 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
         // only truncate if other side is null (one-sided) and value is large
         if (!other_val.is_null())
             return text;
-        if (!this_val.is_object() && !this_val.is_array())
+        if (text.size() <= static_cast<int>(MaxDumpLength))
             return text;
 
-        if (this_val.is_object())
-            return QString("{object, %1 keys}").arg(this_val.size());
-        else
-            return QString("[array, %1 items]").arg(this_val.size());
+        return text.left(static_cast<int>(MaxDumpLength)) + "\n...";
     };
 
     QString config_display = truncate(config_text, config_val, db_val);
@@ -276,7 +272,7 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
         QFontMetrics fm(mono_font);
         int line_count = std::max(1, text.count('\n') + 1);
         int height = fm.lineSpacing() * line_count + 10;
-        te->setFixedHeight(height);
+        te->setMinimumHeight(height);
 
         return te;
     };
@@ -294,7 +290,7 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
 
         auto selectBlock = [](QPlainTextEdit* te, int line, QColor color) -> QTextEdit::ExtraSelection
         {
-            QTextBlock block = te->document()->findBlockByLineNumber(line);
+            QTextBlock block = te->document()->findBlockByNumber(line);
             QTextCursor cursor(block);
             cursor.movePosition(QTextCursor::StartOfBlock);
             cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
@@ -342,7 +338,7 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
         QFontMetrics fm(mono_font);
         int line_count = std::max(1, default_text.count('\n') + 1);
         int height = fm.lineSpacing() * line_count + 10;
-        te->setFixedHeight(height);
+        te->setMinimumHeight(height);
 
         edit_widget = te;
     }
@@ -434,21 +430,72 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
 
 void FieldMergeWidget::updateResultColor(FieldRow& row)
 {
-    QString current_text;
-    if (row.is_multiline)
-        current_text = static_cast<QPlainTextEdit*>(row.edit_widget)->toPlainText();
-    else
-        current_text = static_cast<QLineEdit*>(row.edit_widget)->text();
+    if (!row.is_multiline)
+    {
+        // single-line: color the whole widget
+        QString current_text = static_cast<QLineEdit*>(row.edit_widget)->text();
 
-    QString bg;
-    if (current_text == row.config_text)
-        bg = "background-color: rgb(200, 255, 200);"; // green — matches config
-    else if (current_text == row.db_text)
-        bg = "background-color: rgb(200, 220, 255);"; // blue — matches db
-    else
-        bg = "background-color: rgb(255, 210, 210);"; // red — custom
+        QString bg;
+        if (current_text == row.config_text)
+            bg = "background-color: rgb(200, 255, 200);"; // green — matches config
+        else if (current_text == row.db_text)
+            bg = "background-color: rgb(200, 220, 255);"; // blue — matches db
+        else
+            bg = "background-color: rgb(255, 210, 210);"; // red — custom
 
-    row.edit_widget->setStyleSheet(bg);
+        row.edit_widget->setStyleSheet(bg);
+        return;
+    }
+
+    // multiline: highlight only lines where config and db differ,
+    // colored by which side the result line matches
+    auto* te = static_cast<QPlainTextEdit*>(row.edit_widget);
+    te->setStyleSheet(""); // clear any whole-widget color
+
+    QStringList result_lines = te->toPlainText().split('\n');
+    QStringList config_lines = row.config_text.split('\n');
+    QStringList db_lines = row.db_text.split('\n');
+
+    QColor config_color(200, 255, 200); // green — matches config
+    QColor db_color(200, 220, 255);     // blue — matches db
+    QColor custom_color(255, 210, 210); // red — matches neither
+
+    QList<QTextEdit::ExtraSelection> sels;
+
+    for (int i = 0; i < result_lines.size(); ++i)
+    {
+        QString cl = i < config_lines.size() ? config_lines[i] : QString();
+        QString dl = i < db_lines.size() ? db_lines[i] : QString();
+
+        // skip lines that are identical on both sides — not a conflict
+        if (cl == dl)
+            continue;
+
+        QTextBlock block = te->document()->findBlockByNumber(i);
+        if (!block.isValid())
+            continue;
+
+        const QString& rl = result_lines[i];
+
+        QTextCursor cursor(block);
+        cursor.movePosition(QTextCursor::StartOfBlock);
+        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+
+        QTextEdit::ExtraSelection sel;
+        sel.format.setProperty(QTextFormat::FullWidthSelection, true);
+        sel.cursor = cursor;
+
+        if (rl == cl)
+            sel.format.setBackground(config_color);
+        else if (rl == dl)
+            sel.format.setBackground(db_color);
+        else
+            sel.format.setBackground(custom_color);
+
+        sels.append(sel);
+    }
+
+    te->setExtraSelections(sels);
 }
 
 QString FieldMergeWidget::valueToDisplay(const json& val)

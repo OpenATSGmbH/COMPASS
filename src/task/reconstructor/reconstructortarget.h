@@ -384,10 +384,10 @@ public:
     // lower/upper times, -1 if not existing
 
     // TODO lambda for selective data without do not use pos
-    std::pair<dbContent::targetReport::Position, bool> interpolatedPosForTime (
-        boost::posix_time::ptime timestamp, boost::posix_time::time_duration d_max) const;
-    std::pair<dbContent::targetReport::Position, bool> interpolatedPosForTimeFast (
-        boost::posix_time::ptime timestamp, boost::posix_time::time_duration d_max) const;
+    // std::pair<dbContent::targetReport::Position, bool> interpolatedPosForTime (
+    //     boost::posix_time::ptime timestamp, boost::posix_time::time_duration d_max) const;
+    // std::pair<dbContent::targetReport::Position, bool> interpolatedPosForTimeFast (
+    //     boost::posix_time::ptime timestamp, boost::posix_time::time_duration d_max) const;
 
     std::pair<boost::optional<dbContent::targetReport::Position>,
               boost::optional<dbContent::targetReport::PositionAccuracy>> interpolatedRefPosForTime (

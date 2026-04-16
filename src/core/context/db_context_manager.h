@@ -108,7 +108,9 @@ public:
     std::map<unsigned int, std::string> dsTypes() const; // ds_id -> type string
 
     // data source CRUD in active context
-    DataSource& createDataSource(unsigned int sac, unsigned int sic);
+    DataSource& createDataSource(unsigned int sac, unsigned int sic,
+                                     const std::string& name = "",
+                                     const std::string& ds_type = "Other");
     void deleteDataSource(unsigned int ds_id);
 
     // ================================================================
@@ -168,6 +170,7 @@ public:
 
     unsigned int numInserted(unsigned int ds_id, const std::string& dbcontent_name) const;
     bool hasNumInserted(unsigned int ds_id) const;
+    bool hasInsertedData() const;
     unsigned int numLoaded(unsigned int ds_id, const std::string& dbcontent_name) const;
     std::map<unsigned int, unsigned int> numInsertedPerLine(unsigned int ds_id, const std::string& dbcontent_name) const;
     std::map<unsigned int, unsigned int> numInsertedLinesMap(unsigned int ds_id) const;
@@ -318,7 +321,6 @@ private:
     void saveActiveContextName();
     void loadActiveContextName();
     void loadCountsFromDB();
-    bool hasInsertedData() const;
 
     COMPASS& compass_;
     std::string active_context_name_;

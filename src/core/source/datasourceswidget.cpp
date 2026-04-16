@@ -34,6 +34,8 @@
 
 #include <QLabel>
 #include <QCheckBox>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QTreeWidget>
@@ -1111,13 +1113,9 @@ void DataSourcesWidget::deleteDataSlot()
         return;
     }
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "Confirm Delete",
-        "The following data will be permanently deleted:\n\n" + description
-            + "\n\nThis cannot be undone. Continue?",
-        QMessageBox::Yes | QMessageBox::No);
-
-    if (reply != QMessageBox::Yes)
+    if (!QuestionDialog::ask(this, "Confirm Delete",
+            "The following data will be permanently deleted:\n\n" + description
+                + "\n\nThis cannot be undone. Continue?"))
         return;
 
     // clear loaded dataset

@@ -563,8 +563,10 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
 
         registerParameter("filter_references_max_stddev"  , &ref_calc_settings_.filter_references_max_stddev_,
                           ReferenceCalculatorSettings().filter_references_max_stddev_);
-        registerParameter("filter_references_max_stddev_m", &ref_calc_settings_.filter_references_max_stddev_m_,
-                          ReferenceCalculatorSettings().filter_references_max_stddev_m_);
+        registerParameter("filter_references_max_stddev_m_air", &ref_calc_settings_.filter_references_max_stddev_m_air_,
+                          ReferenceCalculatorSettings().filter_references_max_stddev_m_air_);
+        registerParameter("filter_references_max_stddev_m_ground", &ref_calc_settings_.filter_references_max_stddev_m_ground_,
+                          ReferenceCalculatorSettings().filter_references_max_stddev_m_ground_);
     }
 
     traced_assert(acc_estimator_);
@@ -1573,14 +1575,10 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             {
                 logdbg << "creating data source";
 
-                ctx_man3.createDataSource(settings().ds_sac, settings().ds_sic);
+                ctx_man3.createDataSource(settings().ds_sac, settings().ds_sic,
+                                          settings().ds_name, "RefTraj");
                 traced_assert(ctx_man3.hasDataSource(ds_id));
             }
-
-            auto* src = ctx_man3.dataSource(ds_id);
-
-            src->name(settings().ds_name);
-            src->dsType("RefTraj"); // same as dstype
         }
     };
 

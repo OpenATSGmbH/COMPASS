@@ -38,6 +38,8 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QComboBox>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
@@ -330,8 +332,7 @@ void TaskResultsWidget::removeCurrentResult()
     traced_assert(task_man_.hasResult(name));
 
     QString msg = "Do you really want to remove report '" + QString::fromStdString(name) + "'?";
-    auto answer = QMessageBox::question(this, "Remove Report", msg, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No);
-    if (answer == QMessageBox::StandardButton::No)
+    if (!QuestionDialog::ask(this, "Remove Report", msg))
         return;
 
     auto cb = [ this, name ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 

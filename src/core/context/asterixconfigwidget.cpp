@@ -143,8 +143,6 @@ void ASTERIXConfigWidget::updateCategories()
     ref_edit_buttons_.clear();
     spf_edit_buttons_.clear();
 
-    bool created_new_configs = false;
-
     for (auto& cat_it : jasterix_->categories())
     {
         unsigned int category = cat_it.first;
@@ -152,15 +150,9 @@ void ASTERIXConfigWidget::updateCategories()
 
         logdbg << "cat " << category;
 
-        // auto-create config for categories without one, latest editions
-        if (!ctx_mgr_.hasAsterixConfig(category))
-        {
-            ctx_mgr_.getOrCreateAsterixConfig(
-                category, cat->defaultEdition(), cat->defaultREFEdition(), cat->defaultSPFEdition());
-            created_new_configs = true;
-        }
-
         auto* cfg = ctx_mgr_.asterixConfig(category);
+        if (!cfg)
+            continue;
 
         QCheckBox* cat_check = new QCheckBox(String::categoryString(category).c_str());
         cat_check->setProperty("category", category);
@@ -248,8 +240,6 @@ void ASTERIXConfigWidget::updateCategories()
         row++;
     }
 
-    if (created_new_configs)
-        ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
 }
 
 void ASTERIXConfigWidget::categoryCheckedSlot()

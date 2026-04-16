@@ -156,7 +156,8 @@ struct ReferenceCalculatorSettings
 
     //final reference filter related
     bool   filter_references_max_stddev_ {true};
-    double filter_references_max_stddev_m_ {100.0};
+    double filter_references_max_stddev_m_air_ {250.0};
+    double filter_references_max_stddev_m_ground_ {50.0};
 
     //debug options
     bool compat_mode     = false;

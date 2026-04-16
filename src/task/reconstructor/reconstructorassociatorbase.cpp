@@ -21,6 +21,9 @@
 #include "timeconv.h"
 #include "util/tbbhack.h"
 #include "reconstructortask.h"
+#include "taskmanager.h"
+#include "compass.h"
+#include "db_context_manager.h"
 #include "number.h"
 
 #include <QApplication>
@@ -365,6 +368,47 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
 
     reconstructor().targets_container_.checkACADLookup();
 
+    // per ds_id diagnostic counters
+    struct AssocDiag
+    {
+        unsigned int total {0};
+        unsigned int has_acad {0};
+        unsigned int has_acid {0};
+        unsigned int has_tn {0};
+        unsigned int has_mode_a {0};
+        unsigned int has_mode_c {0};
+        unsigned int has_pos {0};
+        unsigned int associated {0};
+        unsigned int unassociated {0};
+
+        // association path counters
+        unsigned int assoc_has_id {0};     // had acad/acid/trusted tn
+        unsigned int assoc_no_id {0};      // associated via mode a/c + pos only
+        unsigned int unassoc_has_id {0};   // had acad/acid but findUTNFor returned -1 (shouldn't happen)
+        unsigned int unassoc_no_id {0};    // no id, mode a/c + pos failed
+
+        // findUTNByModeACPos failure reasons (accumulated over unassociated TRs without id)
+        unsigned int pos_search_cnt {0};           // how many TRs went through findUTNByModeACPos
+        unsigned int pos_search_with_ac {0};       // of those, how many had mode a/c
+        unsigned int pos_search_primary_only {0};  // of those, how many had no mode a/c
+        // failure reasons (from the TR that had the "best" target, i.e. most targets passing each stage)
+        unsigned long long sum_no_time_overlap {0};
+        unsigned long long sum_no_predict {0};
+        unsigned long long sum_mode_a_different {0};
+        unsigned long long sum_mode_c_different {0};
+        unsigned long long sum_no_pos_offset {0};
+        unsigned long long sum_pos_too_far {0};
+        unsigned long long sum_candidates {0};
+        // distance stats for successful position-based associations
+        double sum_assoc_distance {0};
+        unsigned int assoc_distance_cnt {0};
+        // histogram of best-match distance for unassociated TRs
+        // bins: <1x, <2x, <3x, <4x, <5x, >=5x threshold, no_pos_match
+        unsigned int dist_hist[7] {}; // [0]..<1x, [1]..<2x, ... [5]..>=5x, [6]..no_pos_match
+    };
+
+    std::map<unsigned int, AssocDiag> diag; // ds_id -> counters
+
     for (auto& batch_it : reconstructor().tr_batches_)
     {
         if (reconstructor().isCancelled())
@@ -395,7 +439,22 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
                 continue;
             }
 
-            utn = findUTNFor(tr);
+            unsigned int dbcont_id = tr.dbcont_id_;
+
+            auto& d = diag[tr.ds_id_];
+            d.total++;
+            if (tr.acad_) d.has_acad++;
+            if (tr.acid_) d.has_acid++;
+            if (tr.track_number_) d.has_tn++;
+            if (tr.mode_a_code_) d.has_mode_a++;
+            if (tr.barometric_altitude_) d.has_mode_c++;
+            if (tr.position_) d.has_pos++;
+
+            bool has_trustworthy_id = tr.acad_ || tr.acid_
+                || (tr.track_number_ && (dbcont_id == 62 || dbcont_id == 255));
+
+            FindByMACPosDiag mac_diag;
+            utn = findUTNFor(tr, has_trustworthy_id ? nullptr : &mac_diag);
 
             if (utn != -1)  // estimate accuracy and associate
             {
@@ -404,10 +463,134 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
                     loginf << "DBG associating (dbcont_ids) tr " << rec_num << " to UTN " << utn;
 
                 associate(tr, utn);
+
+                d.associated++;
+                if (has_trustworthy_id)
+                    d.assoc_has_id++;
+                else
+                {
+                    d.assoc_no_id++;
+                    d.sum_assoc_distance += mac_diag.best_distance_m;
+                    d.assoc_distance_cnt++;
+                }
             }
             else  // not associated
             {
                 unassoc_rec_nums_.push_back(rec_num);
+
+                d.unassociated++;
+                if (has_trustworthy_id)
+                    d.unassoc_has_id++;
+                else
+                    d.unassoc_no_id++;
+            }
+
+            // accumulate findUTNByModeACPos diagnostics for TRs without trustworthy id
+            if (!has_trustworthy_id)
+            {
+                d.pos_search_cnt++;
+                if (mac_diag.has_mode_ac)
+                    d.pos_search_with_ac++;
+                else
+                    d.pos_search_primary_only++;
+                d.sum_no_time_overlap += mac_diag.num_no_time_overlap;
+                d.sum_no_predict += mac_diag.num_no_predict;
+                d.sum_mode_a_different += mac_diag.num_mode_a_different;
+                d.sum_mode_c_different += mac_diag.num_mode_c_different;
+                d.sum_no_pos_offset += mac_diag.num_no_pos_offset;
+                d.sum_pos_too_far += mac_diag.num_pos_too_far;
+                d.sum_candidates += mac_diag.num_candidates;
+
+                // histogram of best-match distance (multiples of acceptable air threshold)
+                if (utn == -1) // unassociated
+                {
+                    double thresh = 1852.0; // 1nm
+
+                    if (mac_diag.min_distance_m >= std::numeric_limits<double>::max() * 0.5)
+                        d.dist_hist[6]++; // no target reached position check
+                    else
+                    {
+                        double ratio = mac_diag.min_distance_m / thresh;
+                        int bin = (int)ratio; // 0=<1x, 1=<2x, ...
+                        if (bin < 0) bin = 0;
+                        if (bin > 5) bin = 5;
+                        d.dist_hist[bin]++;
+                    }
+                }
+            }
+        }
+    }
+
+    // log diagnostic summary per data source
+    for (auto& diag_it : diag)
+    {
+        auto& d = diag_it.second;
+
+        if (!d.total)
+            continue;
+
+        std::string ds_name = std::to_string(diag_it.first);
+
+        try
+        {
+            ds_name = reconstructor().task().manager().compass().dbContextManager()
+                          .dataSource(diag_it.first)->name();
+        }
+        catch (...) {}
+
+        std::string perc_str = d.total ? String::percentToString(
+            100.0 * d.associated / (float)d.total) + "%" : "0%";
+
+        loginf << "assoc diag " << ds_name
+               << " total " << d.total << " associated " << d.associated << " " << perc_str
+               << " unassociated " << d.unassociated
+               << " | has_acad " << d.has_acad << " has_acid " << d.has_acid
+               << " has_tn " << d.has_tn << " has_mode_a " << d.has_mode_a
+               << " has_mode_c " << d.has_mode_c << " has_pos " << d.has_pos
+               << " | assoc_by_id " << d.assoc_has_id << " assoc_by_pos " << d.assoc_no_id
+               << " unassoc_with_id " << d.unassoc_has_id << " unassoc_no_id " << d.unassoc_no_id;
+
+        // log detailed position-search diagnostics if any TRs went through findUTNByModeACPos
+        if (d.pos_search_cnt)
+        {
+            std::string avg_dist_str = d.assoc_distance_cnt
+                ? String::doubleToStringPrecision(d.sum_assoc_distance / d.assoc_distance_cnt, 1) + "m"
+                : "n/a";
+
+            loginf << "assoc pos_search " << ds_name
+                   << " searched " << d.pos_search_cnt
+                   << " with_ac " << d.pos_search_with_ac
+                   << " primary_only " << d.pos_search_primary_only
+                   << " | avg_reasons_per_tr:"
+                   << " no_time " << String::doubleToStringPrecision(
+                          (double)d.sum_no_time_overlap / d.pos_search_cnt, 1)
+                   << " no_predict " << String::doubleToStringPrecision(
+                          (double)d.sum_no_predict / d.pos_search_cnt, 1)
+                   << " mode_a_diff " << String::doubleToStringPrecision(
+                          (double)d.sum_mode_a_different / d.pos_search_cnt, 1)
+                   << " mode_c_diff " << String::doubleToStringPrecision(
+                          (double)d.sum_mode_c_different / d.pos_search_cnt, 1)
+                   << " no_pos_offset " << String::doubleToStringPrecision(
+                          (double)d.sum_no_pos_offset / d.pos_search_cnt, 1)
+                   << " pos_too_far " << String::doubleToStringPrecision(
+                          (double)d.sum_pos_too_far / d.pos_search_cnt, 1)
+                   << " candidates " << String::doubleToStringPrecision(
+                          (double)d.sum_candidates / d.pos_search_cnt, 1)
+                   << " | avg_assoc_dist " << avg_dist_str;
+
+            unsigned int unassoc_with_pos = d.dist_hist[0] + d.dist_hist[1] + d.dist_hist[2]
+                                          + d.dist_hist[3] + d.dist_hist[4] + d.dist_hist[5];
+            if (unassoc_with_pos || d.dist_hist[6])
+            {
+                loginf << "assoc best_dist " << ds_name
+                       << " unassoc best-match histogram (xThreshold):"
+                       << " <1x " << d.dist_hist[0]
+                       << " <2x " << d.dist_hist[1]
+                       << " <3x " << d.dist_hist[2]
+                       << " <4x " << d.dist_hist[3]
+                       << " <5x " << d.dist_hist[4]
+                       << " >=5x " << d.dist_hist[5]
+                       << " no_pos " << d.dist_hist[6];
             }
         }
     }
@@ -746,7 +929,8 @@ void ReconstructorAssociatorBase::countUnAssociated()
     countUnAssociated(unassoc_rec_nums_);
 }
 
-int ReconstructorAssociatorBase::findUTNFor (dbContent::targetReport::ReconstructorInfo& tr)
+int ReconstructorAssociatorBase::findUTNFor (dbContent::targetReport::ReconstructorInfo& tr,
+                                             ReconstructorAssociatorBase::FindByMACPosDiag* diag)
 {
     int utn {-1};
 
@@ -865,7 +1049,7 @@ START_TR_ASSOC:
         if(do_debug)
             loginf << "DBG tr " << tr.record_num_ << " no utn by acad, doing mode a/c + pos";
 
-        utn = findUTNByModeACPos (tr);
+        utn = findUTNByModeACPos (tr, diag);
 
         if (utn != -1)
             traced_assert(reconstructor().targets_container_.targets_.count(utn));
@@ -875,7 +1059,8 @@ START_TR_ASSOC:
 }
 
 int ReconstructorAssociatorBase::findUTNByModeACPos (
-    const dbContent::targetReport::ReconstructorInfo& tr)
+    const dbContent::targetReport::ReconstructorInfo& tr,
+    ReconstructorAssociatorBase::FindByMACPosDiag* diag)
 {
     unsigned int num_targets = reconstructor().targets_container_.targets_.size();
     traced_assert(reconstructor().targets_container_.utn_vec_.size() == num_targets);
@@ -883,8 +1068,20 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     vector<tuple<bool, unsigned int, double>> results;
     vector<reconstruction::PredictionStats> prediction_stats;
 
+    // per-target diagnostic reason (for aggregation after parallel loop)
+    // 0=skipped(acad/tn), 1=no_time, 2=no_predict, 3=mode_a_diff, 4=mode_c_diff,
+    // 5=no_pos_offset, 6=pos_too_far, 7=candidate
+    vector<unsigned char> diag_reasons;
+    vector<double> diag_distances; // distance for reasons 6/7
+
     results.resize(num_targets);
     prediction_stats.resize(num_targets);
+    if (diag)
+    {
+        diag_reasons.resize(num_targets, 0);
+        diag_distances.resize(num_targets, std::numeric_limits<double>::max());
+    }
+
     boost::posix_time::ptime timestamp = tr.timestamp_;
 
     const float max_altitude_diff = reconstructor().settings().max_altitude_diff_;
@@ -894,6 +1091,9 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
     if (do_debug)
         loginf << "rn " << tr.record_num_;
+
+    if (diag)
+        diag->has_mode_ac = tr.mode_a_code_ || tr.barometric_altitude_;
 
     std::set<unsigned int> already_tracked_utns;
 
@@ -940,7 +1140,7 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                           // check already "covered" other track number, if yes do not associate here
                           if (tr.dbcont_id_ == 62 && tr.track_number_ && already_tracked_utns.count(other_utn))
-                          
+
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -949,6 +1149,7 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                           if (!other.isTimeInside(timestamp, max_time_diff_))
                           {
+                              if (diag) diag_reasons[target_cnt] = 1;
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -957,11 +1158,14 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                           }
 
                           if (!other.canPredict(timestamp))
+                          {
+                              if (diag) diag_reasons[target_cnt] = 2;
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
             continue;
 #endif
+                          }
 
                           bool mode_a_verified = false;
                           bool mode_c_verified = false;
@@ -975,6 +1179,7 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                                   if (ma_res == ComparisonResult::DIFFERENT)
                                   {
+                                      if (diag) diag_reasons[target_cnt] = 3;
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                                       return;
 #else
@@ -999,6 +1204,7 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                                   if (mc_res == ComparisonResult::DIFFERENT)
                                   {
+                                      if (diag) diag_reasons[target_cnt] = 4;
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                                       return;
 #else
@@ -1029,6 +1235,7 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                           if (!canGetPositionOffsetTR(tr, other))
                           {
+                              if (diag) diag_reasons[target_cnt] = 5;
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -1042,6 +1249,7 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
                               if (do_debug)
                                   loginf << "DBG tr " << tr.record_num_ << " other_utn " << other_utn
                                          << " no position offset";
+                              if (diag) diag_reasons[target_cnt] = 5;
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
                               return;
 #else
@@ -1056,8 +1264,13 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
 
                           if (check_ret && check_ret->first)
                           {
+                              if (diag) { diag_reasons[target_cnt] = 7; diag_distances[target_cnt] = distance_m; }
                               results[target_cnt] = tuple<bool, unsigned int, double> (
                                   true, other.utn_, check_ret->second);
+                          }
+                          else
+                          {
+                              if (diag) { diag_reasons[target_cnt] = 6; diag_distances[target_cnt] = distance_m; }
                           }
                       }
 #ifdef FIND_UTN_FOR_TARGET_REPORT_MT
@@ -1067,6 +1280,32 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     //log failed predictions
     for (const auto& s : prediction_stats)
         ReconstructorTarget::addPredictionToGlobalStats(s);
+
+    // aggregate diagnostics
+    if (diag)
+    {
+        diag->num_targets_checked = num_targets;
+        for (unsigned int i = 0; i < num_targets; ++i)
+        {
+            switch (diag_reasons[i])
+            {
+                case 1: diag->num_no_time_overlap++; break;
+                case 2: diag->num_no_predict++; break;
+                case 3: diag->num_mode_a_different++; break;
+                case 4: diag->num_mode_c_different++; break;
+                case 5: diag->num_no_pos_offset++; break;
+                case 6: diag->num_pos_too_far++;
+                        if (diag_distances[i] < diag->min_distance_m)
+                            diag->min_distance_m = diag_distances[i];
+                        break;
+                case 7: diag->num_candidates++;
+                        if (diag_distances[i] < diag->min_distance_m)
+                            diag->min_distance_m = diag_distances[i];
+                        break;
+                default: break;
+            }
+        }
+    }
 
     // find best match
     bool usable;
@@ -1103,6 +1342,9 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
             loginf << "DBG tr " << tr.record_num_ << " other_utn "
                    << other_utn << ": match with best_mahalanobis_dist " << best_mahalanobis_dist;
         }
+
+        if (diag)
+            diag->best_distance_m = best_mahalanobis_dist;
 
         return best_other_utn;
     }

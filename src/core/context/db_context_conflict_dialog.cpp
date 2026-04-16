@@ -32,6 +32,7 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
                                                  const DBContextDiff& diff,
                                                  const std::string& config_modified,
                                                  const std::string& db_modified,
+                                                 bool db_has_sensor_data,
                                                  QWidget* parent)
     : QDialog(parent)
 {
@@ -65,7 +66,15 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
 
     auto* use_config_button = new QPushButton("Use Configuration");
     use_config_button->setIcon(QIcon());
-    use_config_button->setToolTip("Use the Configuration and overwrite the Database");
+    if (db_has_sensor_data)
+    {
+        use_config_button->setEnabled(false);
+        use_config_button->setToolTip("Database contains sensors with data that would be lost");
+    }
+    else
+    {
+        use_config_button->setToolTip("Use the Configuration and overwrite the Database");
+    }
     connect(use_config_button, &QPushButton::clicked, this, &DBContextConflictDialog::useFileSlot);
     grid->addWidget(use_config_button, 0, 1);
 
