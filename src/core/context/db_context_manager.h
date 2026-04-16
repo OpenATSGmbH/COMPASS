@@ -19,6 +19,7 @@
 
 #include "db_context.h"
 #include "db_context_diff.h"
+#include "radar_accuracy_defs.h"
 #include "idatasourceprovider.h"
 
 #include <json.hpp>
@@ -193,6 +194,14 @@ public:
         double mode_s_azimuth_stddev{0.02};
         double mode_s_range_stddev{50.0};
 
+        RadarAccuracyDefaults radarAccuracyDefaults() const
+        {
+            return {primary_azimuth_stddev, primary_range_stddev,
+                    0.05, 7.5, // SMR defaults (ground-only PSR)
+                    secondary_azimuth_stddev, secondary_range_stddev,
+                    mode_s_azimuth_stddev, mode_s_range_stddev};
+        }
+
         unsigned int ds_font_size{10};
 
         nlohmann::json sensor_status_max_status_age_options;
@@ -290,6 +299,10 @@ public:
     // import/export a full context
     void exportContext(const std::string& name, const std::string& filepath);
     void importContext(const std::string& filepath);
+
+    // zip-based full context export/import
+    void exportContextZip(const std::string& name, const std::string& zip_filepath);
+    void importContextZip(const std::string& zip_filepath);
 
     // ================================================================
     // Widgets (lazy creation, owned by this manager)

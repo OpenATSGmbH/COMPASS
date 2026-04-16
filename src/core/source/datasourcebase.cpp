@@ -34,6 +34,7 @@ const string update_interval_key = "update_interval";
 const string position_key = "position";
 const std::string radar_range_key = "radar_range";
 const std::string radar_accuracy_key = "radar_accuracy";
+const std::string radar_bias_key = "radar_bias";
 const std::string network_lines_key = "network_lines";
 const std::string remote_units_key = "remote_units";
 
@@ -61,6 +62,13 @@ const std::string DataSourceBase::SSRAzmSDKey{"secondary_azimuth_stddev"};
 const std::string DataSourceBase::SSRRngSDKey{"secondary_range_stddev"};
 const std::string DataSourceBase::ModeSAzmSDKey{"mode_s_azimuth_stddev"};
 const std::string DataSourceBase::ModeSRngSDKey{"mode_s_range_stddev"};
+
+const std::string DataSourceBase::RangeBiasKey{"range_bias"};
+const std::string DataSourceBase::RangeBiasSDKey{"range_bias_stddev"};
+const std::string DataSourceBase::RangeGainKey{"range_gain"};
+const std::string DataSourceBase::RangeGainSDKey{"range_gain_stddev"};
+const std::string DataSourceBase::AzimuthBiasKey{"azimuth_bias"};
+const std::string DataSourceBase::AzimuthBiasSDKey{"azimuth_bias_stddev"};
 
 
 std::string DataSourceBase::detectionTypeToString(DetectionType type)
@@ -436,6 +444,33 @@ void DataSourceBase::radarAccuracy (const std::string& key, const double value)
     info_[radar_accuracy_key][key] = value;
 }
 
+bool DataSourceBase::hasRadarBias() const
+{
+    return info_.contains(radar_bias_key);
+}
+
+void DataSourceBase::addRadarBias()
+{
+    traced_assert(!hasRadarBias());
+    info_[radar_bias_key] = json::object();
+}
+
+void DataSourceBase::addRadarBiasIfMissing()
+{
+    if (!hasRadarBias())
+        addRadarBias();
+}
+
+std::map<std::string, double> DataSourceBase::radarBias() const
+{
+    traced_assert(hasRadarBias());
+    return info_.at(radar_bias_key).get<std::map<std::string, double>>();
+}
+
+void DataSourceBase::radarBias(const std::string& key, const double value)
+{
+    info_[radar_bias_key][key] = value;
+}
 
 bool DataSourceBase::hasNetworkLines() const
 {

@@ -22,6 +22,8 @@
 
 #include <json.hpp>
 
+#include <cmath>
+
 using namespace std;
 using namespace nlohmann;
 
@@ -338,6 +340,28 @@ void DataSource::addRadarAccuraciesIfMissing()
         info_["radar_accuracy"] = json::object();
 }
 
+bool DataSource::hasRadarBias() const
+{
+    return info_.contains("radar_bias");
+}
+
+map<string, double> DataSource::radarBias() const
+{
+    if (!hasRadarBias()) return {};
+    return info_.at("radar_bias").get<map<string, double>>();
+}
+
+void DataSource::radarBias(const string& key, double value)
+{
+    info_["radar_bias"][key] = value;
+}
+
+void DataSource::addRadarBiasIfMissing()
+{
+    if (!hasRadarBias())
+        info_["radar_bias"] = json::object();
+}
+
 void DataSource::addNetworkLinesIfMissing()
 {
     if (!hasNetworkLines())
@@ -363,6 +387,88 @@ void DataSource::removeRemoteUnit(int index)
 
     string key = to_string(index);
     info_["remote_units"].erase(key);
+}
+
+// ============================================================
+// Radar accuracy
+// ============================================================
+
+RadarPositionAccuracy DataSource::radarAccuracy(double range_m,
+                                                double bearing_rad,
+                                                DetectionType type,
+                                                const RadarAccuracyDefaults& defaults) const
+{
+    // per-channel values: use configured if available, otherwise defaults
+    // SMR (ground-only PSR) uses separate defaults
+    bool is_ground = groundOnly();
+    double psr_azm = is_ground ? defaults.primary_azimuth_stddev_ground : defaults.primary_azimuth_stddev;
+    double psr_rng = is_ground ? defaults.primary_range_stddev_ground   : defaults.primary_range_stddev;
+    double ssr_azm = defaults.secondary_azimuth_stddev;
+    double ssr_rng = defaults.secondary_range_stddev;
+    double ms_azm  = defaults.mode_s_azimuth_stddev;
+    double ms_rng  = defaults.mode_s_range_stddev;
+
+    if (hasRadarAccuracies())
+    {
+        auto acc = radarAccuracies();
+
+        if (acc.count("primary_azimuth_stddev"))   psr_azm = acc.at("primary_azimuth_stddev");
+        if (acc.count("primary_range_stddev"))      psr_rng = acc.at("primary_range_stddev");
+        if (acc.count("secondary_azimuth_stddev"))  ssr_azm = acc.at("secondary_azimuth_stddev");
+        if (acc.count("secondary_range_stddev"))    ssr_rng = acc.at("secondary_range_stddev");
+        if (acc.count("mode_s_azimuth_stddev"))     ms_azm  = acc.at("mode_s_azimuth_stddev");
+        if (acc.count("mode_s_range_stddev"))        ms_rng  = acc.at("mode_s_range_stddev");
+    }
+
+    // select channel based on detection type (min for combined)
+    double azm_stddev_deg, rng_stddev_m;
+
+    switch (type)
+    {
+        case DetectionType::PrimaryOnly:
+            azm_stddev_deg = psr_azm;
+            rng_stddev_m   = psr_rng;
+            break;
+        case DetectionType::ModeAC:
+            azm_stddev_deg = ssr_azm;
+            rng_stddev_m   = ssr_rng;
+            break;
+        case DetectionType::ModeACCombined:
+            azm_stddev_deg = min(psr_azm, ssr_azm);
+            rng_stddev_m   = min(psr_rng, ssr_rng);
+            break;
+        case DetectionType::ModeS:
+            azm_stddev_deg = ms_azm;
+            rng_stddev_m   = ms_rng;
+            break;
+        case DetectionType::ModeSCombined:
+            azm_stddev_deg = min(psr_azm, ms_azm);
+            rng_stddev_m   = min(psr_rng, ms_rng);
+            break;
+        case DetectionType::Undefined:
+        default:
+            azm_stddev_deg = psr_azm;
+            rng_stddev_m   = psr_rng;
+            break;
+    }
+
+    // convert azimuth stddev from degrees to meters at this range
+    double azm_stddev_m = azm_stddev_deg * 2.0 * M_PI * range_m / 360.0;
+
+    // polar covariance -> Cartesian via rotation
+    double rng_var = rng_stddev_m * rng_stddev_m;
+    double azm_var = azm_stddev_m * azm_stddev_m;
+
+    double sin_b = sin(bearing_rad);
+    double cos_b = cos(bearing_rad);
+
+    // rotation matrix A = [sin(b) cos(b); cos(b) -sin(b)]
+    // C_cart = A * diag(rng_var, azm_var) * A^T
+    double xx = rng_var * sin_b * sin_b + azm_var * cos_b * cos_b;
+    double yy = rng_var * cos_b * cos_b + azm_var * sin_b * sin_b;
+    double xy = (rng_var - azm_var) * sin_b * cos_b;
+
+    return {sqrt(xx), sqrt(yy), xy};
 }
 
 // ============================================================

@@ -64,8 +64,10 @@ public slots:
     void addRadarRangesSlot();
     void radarRangeEditedSlot(const QString& value_str);
 
-    void addRadarAccuraciesSlot();
     void radarAccuraciesEditedSlot(const QString& value_str);
+
+    void addRadarBiasSlot();
+    void radarBiasEditedSlot(const QString& value_str);
 
     void addMLATRemoteUnitsSlot(); 
     void addMLATRemoteUnitSlot();
@@ -160,7 +162,16 @@ protected:
     QLineEdit* acc_mode_s_azm_edit_{nullptr};
     QLineEdit* acc_mode_s_rng_edit_{nullptr};
 
-    QPushButton* add_accuracies_button_{nullptr};
+    // radar bias
+    QWidget* bias_widget_{nullptr};
+    QLineEdit* bias_range_edit_{nullptr};
+    QLineEdit* bias_range_stddev_edit_{nullptr};
+    QLineEdit* bias_range_gain_edit_{nullptr};
+    QLineEdit* bias_range_gain_stddev_edit_{nullptr};
+    QLineEdit* bias_azimuth_edit_{nullptr};
+    QLineEdit* bias_azimuth_stddev_edit_{nullptr};
+
+    QPushButton* add_bias_button_{nullptr};
 
     // net lines
     QWidget* net_widget_{nullptr};

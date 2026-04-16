@@ -1984,6 +1984,27 @@ void DBContextManager::importContext(const string& filepath)
     emit contextsChangedSignal();
 }
 
+void DBContextManager::exportContextZip(const string& name, const string& zip_filepath)
+{
+    traced_assert(hasContext(name));
+    DBContextSerializer::exportContextZip(basePath(), name, zip_filepath);
+}
+
+void DBContextManager::importContextZip(const string& zip_filepath)
+{
+    string name = DBContextSerializer::importContextZip(basePath(), zip_filepath);
+
+    // reload the context from disk
+    string ctx_dir = basePath() + "/" + name;
+    DBContext ctx = DBContextSerializer::load(ctx_dir);
+
+    contexts_[name] = std::move(ctx);
+
+    loginf << "imported context '" << name << "' from zip";
+
+    emit contextsChangedSignal();
+}
+
 // ============================================================
 // Storage
 // ============================================================

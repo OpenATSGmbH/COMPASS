@@ -19,6 +19,7 @@
 #include "db_context_edit_tree_item.h"
 #include "db_context_edit_tree_model.h"
 #include "db_context_manager.h"
+#include "db_context_serializer.h"
 #include "db_context_copy_dialog.h"
 #include "db_context_delete_dialog.h"
 #include "db_context_rename_dialog.h"
@@ -35,6 +36,8 @@
 #include "sector.h"
 #include "sectorlayer.h"
 #include "logger.h"
+
+#include <boost/filesystem.hpp>
 
 #include <QApplication>
 #include <QComboBox>
@@ -146,6 +149,18 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         delete_button_->setToolTip("Delete one or more contexts");
         connect(delete_button_, &QPushButton::clicked, this, &DBContextEditDialog::deleteSlot);
         top_layout->addWidget(delete_button_);
+
+        auto* export_button = new QPushButton("Export as ZIP");
+        export_button->setIcon(QIcon());
+        export_button->setToolTip("Export the current context as a zip archive");
+        connect(export_button, &QPushButton::clicked, this, &DBContextEditDialog::exportZipSlot);
+        top_layout->addWidget(export_button);
+
+        auto* import_button = new QPushButton("Import from ZIP");
+        import_button->setIcon(QIcon());
+        import_button->setToolTip("Import a context from a zip archive");
+        connect(import_button, &QPushButton::clicked, this, &DBContextEditDialog::importZipSlot);
+        top_layout->addWidget(import_button);
 
         main_layout->addLayout(top_layout);
     }
@@ -932,6 +947,73 @@ void DBContextEditDialog::deleteSlot()
 
     DBContextDeleteDialog dialog(manager_, this);
     dialog.exec();
+}
+
+void DBContextEditDialog::exportZipSlot()
+{
+    if (!manager_.hasActiveContext())
+        return;
+
+    const auto& name = manager_.activeContext().name();
+
+    QString filepath = QFileDialog::getSaveFileName(
+        this, "Export Context as Zip", QString::fromStdString(name + ".zip"),
+        "Zip Archives (*.zip)");
+
+    if (filepath.isEmpty())
+        return;
+
+    loginf << "exporting context '" << name << "' to " << filepath.toStdString();
+
+    manager_.exportContextZip(name, filepath.toStdString());
+}
+
+void DBContextEditDialog::importZipSlot()
+{
+    QString filepath = QFileDialog::getOpenFileName(
+        this, "Import Context from Zip", "",
+        "Zip Archives (*.zip)");
+
+    if (filepath.isEmpty())
+        return;
+
+    // peek at the zip to find the context name (first directory component)
+    // by attempting the import — but first check if a context of that name exists
+    // We need to read the name from the zip before extracting.
+    // Use a temporary extraction to read the name, then confirm overwrite.
+
+    // read context name from the zip meta file
+    std::string zip_path = filepath.toStdString();
+
+    // extract to a temp dir to read the name
+    std::string temp_base = "/tmp/compass_ctx_import_" +
+        std::to_string(QApplication::applicationPid());
+    boost::filesystem::create_directories(temp_base);
+
+    std::string ctx_name = DBContextSerializer::importContextZip(temp_base, zip_path);
+    boost::filesystem::remove_all(temp_base);
+
+    if (ctx_name.empty())
+    {
+        logerr << "could not determine context name from zip";
+        return;
+    }
+
+    // check if context already exists
+    if (manager_.hasContext(ctx_name))
+    {
+        if (!QuestionDialog::ask(this, "Overwrite Context",
+                "A context named '" + QString::fromStdString(ctx_name) +
+                "' already exists.\n\nOverwrite it with the imported version?"))
+            return;
+
+        // delete the existing context folder on disk
+        DBContextSerializer::deleteContext(manager_.basePath(), ctx_name);
+    }
+
+    loginf << "importing context from " << zip_path;
+
+    manager_.importContextZip(zip_path);
 }
 
 } // namespace context
