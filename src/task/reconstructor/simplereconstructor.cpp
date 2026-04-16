@@ -256,7 +256,7 @@ void SimpleReconstructor::processSlice_impl()
     if (cancelled_)
         return;
 
-    acc_estimator_->postProccessNewSlice(); // does nothing here
+    acc_estimator_->postProccessNewSlice();
 
     if (cancelled_)
         return;

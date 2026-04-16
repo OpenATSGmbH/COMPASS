@@ -19,6 +19,9 @@
 
 #include "targetreportdefs.h"
 #include "accuracyestimatorbase.h"
+#include "radarbiasinfo.h"
+
+#include <map>
 
 class SimpleReconstructor;
 
@@ -27,7 +30,13 @@ class SimpleAccuracyEstimator : public AccuracyEstimatorBase
 public:
     SimpleAccuracyEstimator();
 
+    virtual void init (ReconstructorBase* reconstructor_ptr) override;
+    virtual void postProccessNewSlice() override;
+
     virtual void validate (dbContent::targetReport::ReconstructorInfo& tr) override;
+
+    virtual bool canCorrectPosition(const dbContent::targetReport::ReconstructorInfo& tr) override;
+    virtual void correctPosition(dbContent::targetReport::ReconstructorInfo& tr) override;
 
     virtual dbContent::targetReport::PositionAccuracy positionAccuracy (
         const dbContent::targetReport::ReconstructorInfo& tr) override;
@@ -35,5 +44,16 @@ public:
         const dbContent::targetReport::ReconstructorInfo& tr) override;
     virtual dbContent::targetReport::AccelerationAccuracy accelerationAccuracy (
         const dbContent::targetReport::ReconstructorInfo& tr) override;
+
+private:
+    struct RadarSourceInfo
+    {
+        RadarBiasInfo bias_info;
+        bool ground_only {false};
+        double ground_altitude_m {0};
+        bool ignore_range_azimuth {false};
+    };
+
+    std::map<unsigned int, RadarSourceInfo> radar_sources_; // ds_id -> info
 };
 

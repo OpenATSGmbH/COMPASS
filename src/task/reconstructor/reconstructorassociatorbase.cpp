@@ -439,6 +439,14 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
                 continue;
             }
 
+            if (reconstructor().acc_estimator_->canCorrectPosition(tr))
+            {
+                if (do_debug)
+                    loginf << "DBG correcting position";
+
+                reconstructor().acc_estimator_->correctPosition(tr);
+            }
+
             unsigned int dbcont_id = tr.dbcont_id_;
 
             auto& d = diag[tr.ds_id_];
