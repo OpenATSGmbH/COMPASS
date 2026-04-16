@@ -5,6 +5,7 @@ target_include_directories(compass_core PUBLIC
 
 target_sources(compass_core
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/radar_accuracy_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/data_source.h"
         "${CMAKE_CURRENT_LIST_DIR}/fft.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterix_decoding_config.h"

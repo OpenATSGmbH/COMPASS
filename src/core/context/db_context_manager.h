@@ -19,6 +19,7 @@
 
 #include "db_context.h"
 #include "db_context_diff.h"
+#include "radar_accuracy_defs.h"
 #include "idatasourceprovider.h"
 
 #include <json.hpp>
@@ -192,6 +193,14 @@ public:
         double secondary_range_stddev{70.0};
         double mode_s_azimuth_stddev{0.02};
         double mode_s_range_stddev{50.0};
+
+        RadarAccuracyDefaults radarAccuracyDefaults() const
+        {
+            return {primary_azimuth_stddev, primary_range_stddev,
+                    0.05, 7.5, // SMR defaults (ground-only PSR)
+                    secondary_azimuth_stddev, secondary_range_stddev,
+                    mode_s_azimuth_stddev, mode_s_range_stddev};
+        }
 
         unsigned int ds_font_size{10};
 

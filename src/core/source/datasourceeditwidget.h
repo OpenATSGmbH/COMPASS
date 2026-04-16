@@ -64,7 +64,6 @@ public slots:
     void addRadarRangesSlot();
     void radarRangeEditedSlot(const QString& value_str);
 
-    void addRadarAccuraciesSlot();
     void radarAccuraciesEditedSlot(const QString& value_str);
 
     void addRadarBiasSlot();
@@ -158,15 +157,10 @@ protected:
     QWidget* accuracies_widget_{nullptr};
     QLineEdit* acc_psr_azm_edit_{nullptr};
     QLineEdit* acc_psr_rng_edit_{nullptr};
-    QLineEdit* acc_psr_rng_gain_edit_{nullptr};
     QLineEdit* acc_ssr_azm_edit_{nullptr};
     QLineEdit* acc_ssr_rng_edit_{nullptr};
-    QLineEdit* acc_ssr_rng_gain_edit_{nullptr};
     QLineEdit* acc_mode_s_azm_edit_{nullptr};
     QLineEdit* acc_mode_s_rng_edit_{nullptr};
-    QLineEdit* acc_mode_s_rng_gain_edit_{nullptr};
-
-    QPushButton* add_accuracies_button_{nullptr};
 
     // radar bias
     QWidget* bias_widget_{nullptr};

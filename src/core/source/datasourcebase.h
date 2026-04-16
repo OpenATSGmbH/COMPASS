@@ -67,13 +67,10 @@ public:
 
     static const std::string PSRAzmSDKey;
     static const std::string PSRRngSDKey;
-    static const std::string PSRRngSDGainKey;
     static const std::string SSRAzmSDKey;
     static const std::string SSRRngSDKey;
-    static const std::string SSRRngSDGainKey;
     static const std::string ModeSAzmSDKey;
     static const std::string ModeSRngSDKey;
-    static const std::string ModeSRngSDGainKey;
 
     static const std::string RangeBiasKey;
     static const std::string RangeBiasSDKey;

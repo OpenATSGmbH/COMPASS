@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "radar_accuracy_defs.h"
+
 #include <json.hpp>
 
 #include <map>
@@ -102,6 +104,11 @@ public:
     std::map<std::string, double> radarBias() const;
     void radarBias(const std::string& key, double value);
     void addRadarBiasIfMissing();
+
+    RadarPositionAccuracy radarAccuracy(double range_m,
+                                        double bearing_rad,
+                                        DetectionType type,
+                                        const RadarAccuracyDefaults& defaults) const;
 
     bool hasNetworkLines() const;
     void addNetworkLinesIfMissing();

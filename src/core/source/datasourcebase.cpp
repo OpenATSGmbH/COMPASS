@@ -58,13 +58,10 @@ const std::string DataSourceBase::ModeSIRMaxKey{"mode_s_ir_max"};
 
 const std::string DataSourceBase::PSRAzmSDKey{"primary_azimuth_stddev"};
 const std::string DataSourceBase::PSRRngSDKey{"primary_range_stddev"};
-const std::string DataSourceBase::PSRRngSDGainKey{"primary_range_stddev_gain"};
 const std::string DataSourceBase::SSRAzmSDKey{"secondary_azimuth_stddev"};
 const std::string DataSourceBase::SSRRngSDKey{"secondary_range_stddev"};
-const std::string DataSourceBase::SSRRngSDGainKey{"secondary_range_stddev_gain"};
 const std::string DataSourceBase::ModeSAzmSDKey{"mode_s_azimuth_stddev"};
 const std::string DataSourceBase::ModeSRngSDKey{"mode_s_range_stddev"};
-const std::string DataSourceBase::ModeSRngSDGainKey{"mode_s_range_stddev_gain"};
 
 const std::string DataSourceBase::RangeBiasKey{"range_bias"};
 const std::string DataSourceBase::RangeBiasSDKey{"range_bias_stddev"};
