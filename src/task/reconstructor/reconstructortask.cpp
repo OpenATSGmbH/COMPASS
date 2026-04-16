@@ -739,7 +739,7 @@ void ReconstructorTask::loadingDoneSlot()
 
     for (auto& buf_it : loading_slice_->data_)
     {
-        loginf << buf_it.first << " size " << buf_it.second->size() 
+        logdbg << buf_it.first << " size " << buf_it.second->size() 
         << " num prop " << buf_it.second->properties().size();
     }
 
