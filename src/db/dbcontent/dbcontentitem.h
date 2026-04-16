@@ -27,6 +27,19 @@ namespace dbContent
 class TargetReportAccessor;
 
 /**
+ * Item grouping mode.
+ */
+enum class Grouping
+{
+    None = 0,
+    AircraftAddress,
+    AircraftID,
+    TrackNumber,
+    Mode3ACode,
+    UTN
+};
+
+/**
  * DBContent item containing buffer data which is determined by a certain grouping (e.g. an UTN).
  */
 struct Item

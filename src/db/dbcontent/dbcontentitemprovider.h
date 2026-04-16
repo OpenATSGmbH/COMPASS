@@ -46,20 +46,11 @@ signals:
     void dataRefreshedSignal();
 
 public:
-    /**
-     * Item grouping mode.
-     */
-    enum class Grouping
-    {
-        None = 0,
-        AircraftAddress,
-        AircraftID,
-        TrackNumber,
-        Mode3ACode,
-        UTN
-    };
+    typedef dbContent::Grouping Grouping;
 
-    DBContentItemProvider(DBContentDataStore& data_store, Grouping grouping = Grouping::None);
+    DBContentItemProvider(DBContentDataStore& data_store, 
+                          Grouping grouping = Grouping::None,
+                          bool auto_update = true);
     virtual ~DBContentItemProvider();
 
     void update();

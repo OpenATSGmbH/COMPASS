@@ -39,13 +39,17 @@ const std::string DBContentItemProvider::GroupingStrUTN             = "UTN";
  * so that item groups are kept in sync with data store changes.
  */
 DBContentItemProvider::DBContentItemProvider(DBContentDataStore& data_store, 
-                                             Grouping grouping)
+                                             Grouping grouping,
+                                             bool auto_update)
 :   data_store_(data_store)
 ,   grouping_  (grouping  )
 {
-    connect(&data_store_, &DBContentDataStore::dataResetSignal, this, &DBContentItemProvider::reset, Qt::QueuedConnection);
-    connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged, Qt::QueuedConnection);
-    connect(&data_store_, &DBContentDataStore::dataRefreshedSignal, this, &DBContentItemProvider::dataRefreshed, Qt::QueuedConnection);
+    if (auto_update)
+    {
+        connect(&data_store_, &DBContentDataStore::dataResetSignal, this, &DBContentItemProvider::reset, Qt::QueuedConnection);
+        connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged, Qt::QueuedConnection);
+        connect(&data_store_, &DBContentDataStore::dataRefreshedSignal, this, &DBContentItemProvider::dataRefreshed, Qt::QueuedConnection);
+    }
 }
 
 /**
