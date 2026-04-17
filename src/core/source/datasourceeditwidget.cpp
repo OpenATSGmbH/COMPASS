@@ -1550,24 +1550,24 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
 
         // psr
         acc_psr_azm_edit_->setText(acc.count(DataSourceBase::PSRAzmSDKey)
-            ? QString::number(acc.at(DataSourceBase::PSRAzmSDKey), 'f', 3) : "");
+            ? QString::number(acc.at(DataSourceBase::PSRAzmSDKey), 'f', 5) : "");
 
         acc_psr_rng_edit_->setText(acc.count(DataSourceBase::PSRRngSDKey)
-            ? QString::number(acc.at(DataSourceBase::PSRRngSDKey), 'f', 1) : "");
+            ? QString::number(acc.at(DataSourceBase::PSRRngSDKey), 'f', 2) : "");
 
         // ssr
         acc_ssr_azm_edit_->setText(acc.count(DataSourceBase::SSRAzmSDKey)
-            ? QString::number(acc.at(DataSourceBase::SSRAzmSDKey), 'f', 3) : "");
+            ? QString::number(acc.at(DataSourceBase::SSRAzmSDKey), 'f', 5) : "");
 
         acc_ssr_rng_edit_->setText(acc.count(DataSourceBase::SSRRngSDKey)
-            ? QString::number(acc.at(DataSourceBase::SSRRngSDKey), 'f', 1) : "");
+            ? QString::number(acc.at(DataSourceBase::SSRRngSDKey), 'f', 2) : "");
 
         // mode s
         acc_mode_s_azm_edit_->setText(acc.count(DataSourceBase::ModeSAzmSDKey)
-            ? QString::number(acc.at(DataSourceBase::ModeSAzmSDKey), 'f', 3) : "");
+            ? QString::number(acc.at(DataSourceBase::ModeSAzmSDKey), 'f', 5) : "");
 
         acc_mode_s_rng_edit_->setText(acc.count(DataSourceBase::ModeSRngSDKey)
-            ? QString::number(acc.at(DataSourceBase::ModeSRngSDKey), 'f', 1) : "");
+            ? QString::number(acc.at(DataSourceBase::ModeSRngSDKey), 'f', 2) : "");
     }
 
     // radar bias
@@ -1579,32 +1579,32 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
         std::map<std::string, double> bias = ds->radarBias();
 
         if (bias.count(DataSourceBase::RangeBiasKey))
-            bias_range_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasKey), 'f', 1));
+            bias_range_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasKey), 'f', 3));
         else
             bias_range_edit_->setText("");
 
         if (bias.count(DataSourceBase::RangeBiasSDKey))
-            bias_range_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasSDKey), 'f', 1));
+            bias_range_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasSDKey), 'f', 3));
         else
             bias_range_stddev_edit_->setText("");
 
         if (bias.count(DataSourceBase::RangeGainKey))
-            bias_range_gain_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainKey), 'f', 5));
+            bias_range_gain_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainKey), 'f', 7));
         else
             bias_range_gain_edit_->setText("");
 
         if (bias.count(DataSourceBase::RangeGainSDKey))
-            bias_range_gain_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainSDKey), 'f', 5));
+            bias_range_gain_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainSDKey), 'f', 7));
         else
             bias_range_gain_stddev_edit_->setText("");
 
         if (bias.count(DataSourceBase::AzimuthBiasKey))
-            bias_azimuth_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasKey), 'f', 4));
+            bias_azimuth_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasKey), 'f', 5));
         else
             bias_azimuth_edit_->setText("");
 
         if (bias.count(DataSourceBase::AzimuthBiasSDKey))
-            bias_azimuth_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasSDKey), 'f', 4));
+            bias_azimuth_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasSDKey), 'f', 5));
         else
             bias_azimuth_stddev_edit_->setText("");
     }

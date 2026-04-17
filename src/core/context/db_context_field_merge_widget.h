@@ -57,7 +57,9 @@ public:
     void show(const std::string& item_name,
               const nlohmann::json& config_json,
               const nlohmann::json& db_json,
-              bool prefer_db);
+              bool prefer_db,
+              const QString& config_label = "Configuration",
+              const QString& db_label = "Database");
 
     void clear();
 
@@ -88,6 +90,8 @@ private:
     static bool jsonEqual(const nlohmann::json& a, const nlohmann::json& b);
 
     QLabel* title_label_{nullptr};
+    QLabel* config_header_label_{nullptr};
+    QLabel* db_header_label_{nullptr};
     QGridLayout* grid_{nullptr};
     std::vector<FieldRow> rows_;
 };

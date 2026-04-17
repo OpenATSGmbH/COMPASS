@@ -151,11 +151,14 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
         return label;
     };
 
-    grid_->addWidget(makeBoldLabel("Configuration"), 0, 0);
+    config_header_label_ = makeBoldLabel("Configuration");
+    db_header_label_     = makeBoldLabel("Database");
+
+    grid_->addWidget(config_header_label_, 0, 0);
     grid_->addWidget(new QLabel(), 0, 1); // arrow column
     grid_->addWidget(makeBoldLabel("Result"), 0, 2);
     grid_->addWidget(new QLabel(), 0, 3); // arrow column
-    grid_->addWidget(makeBoldLabel("Database"), 0, 4);
+    grid_->addWidget(db_header_label_, 0, 4);
 
     inner_layout->addLayout(grid_, 1);
 
@@ -164,13 +167,18 @@ FieldMergeWidget::FieldMergeWidget(QWidget* parent)
 }
 
 void FieldMergeWidget::show(const std::string& item_name,
-                            const json& config_json, const json& db_json, bool prefer_db)
+                            const json& config_json, const json& db_json, bool prefer_db,
+                            const QString& config_label, const QString& db_label)
 {
     loginf << "showing item '" << item_name << "' prefer_db " << prefer_db;
 
     clear();
 
     title_label_->setText(QString::fromStdString(item_name));
+    if (config_header_label_)
+        config_header_label_->setText(config_label);
+    if (db_header_label_)
+        db_header_label_->setText(db_label);
 
     std::vector<std::tuple<std::string, json, json>> diffs;
     collectDiffs(config_json, db_json, "", diffs);
@@ -509,7 +517,21 @@ QString FieldMergeWidget::valueToDisplay(const json& val)
     if (val.is_number_unsigned())
         return QString::number(val.get<uint64_t>());
     if (val.is_number_float())
-        return QString::number(val.get<double>(), 'g', 12);
+    {
+        // fixed-point only (never scientific). Use generous precision then
+        // strip trailing zeros; keep at least one decimal so it stays float-ish.
+        QString s = QString::number(val.get<double>(), 'f', 12);
+        if (s.contains('.'))
+        {
+            int end = s.size();
+            while (end > 1 && s[end - 1] == QChar('0'))
+                --end;
+            if (end > 1 && s[end - 1] == QChar('.'))
+                ++end; // keep one trailing zero after the dot
+            s.truncate(end);
+        }
+        return s;
+    }
     if (val.is_boolean())
         return val.get<bool>() ? "true" : "false";
 

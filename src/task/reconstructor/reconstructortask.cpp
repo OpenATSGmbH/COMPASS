@@ -1066,6 +1066,8 @@ void ReconstructorTask::endReconstruction()
 
     currentReconstructor()->saveTargets();
 
+    currentReconstructor()->finalizePersistence();
+
     manager().compass().dbContextManager().saveCountsToDB();
     manager().compass().dbInterface().saveProperties();
 
