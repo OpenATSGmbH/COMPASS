@@ -99,6 +99,8 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     registerParameter("dark_mode", &dark_mode_, false);
 
+    registerParameter("color_mode", &color_mode_, 0u);
+
     registerParameter("last_path", &last_path_, {});
 
     if (!Files::directoryExists(last_path_))
@@ -1081,6 +1083,11 @@ bool COMPASS::darkMode() const
 void COMPASS::darkMode(bool value)
 {
     dark_mode_ = value;
+}
+
+void COMPASS::colorMode(unsigned int value)
+{
+    color_mode_ = value;
 }
 
 const char* COMPASS::lineEditInvalidStyle()

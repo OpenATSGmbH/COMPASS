@@ -20,9 +20,7 @@
 #include "rtcommand_registry.h"
 #include "db_context_manager.h"
 #include "dbcontentmanager.h"
-#include "dbcontentdeletedbjob.h"
 #include "dbinterface.h"
-#include "jobmanager.h"
 #include "compass.h"
 #include "logger.h"
 #include "json.hpp"
@@ -120,7 +118,11 @@ bool RTCommandSetDataSources::run_impl()
         if (ds_json_.is_array())
         {
             for (const auto& ds_j : ds_json_)
-                ctx_man.activeContext().addOrReplaceDataSource(context::DataSource::fromJSON(ds_j));
+            {
+                auto ds = context::DataSource::fromJSON(ds_j);
+                ctx_man.autoAssignColors(ds);
+                ctx_man.activeContext().addOrReplaceDataSource(std::move(ds));
+            }
             ctx_man.saveContext(ctx_man.activeContextName());
         }
     }
@@ -194,23 +196,7 @@ bool RTCommandDeleteData::run_impl()
         return false;
     }
 
-    // clear loaded dataset
-    compass_->dbContentManager().clearData();
-
-    // create and submit delete job
-    auto job = make_shared<DBContentDeleteDBJob>(compass_->dbInterface());
-    job->setDeleteInfo(delete_info_);
-    job->cleanupDB(true);
-
-    auto& ctx_man = compass_->dbContextManager();
-
-    QObject::connect(job.get(), &DBContentDeleteDBJob::doneSignal,
-            &ctx_man, [&ctx_man, delete_info = delete_info_]()
-            {
-                ctx_man.applyDeleteInfo(delete_info);
-            }, Qt::QueuedConnection);
-
-    compass_->jobManager().addDBJob(job);
+    compass_->dbContentManager().deleteData(delete_info_);
 
     return true;
 }

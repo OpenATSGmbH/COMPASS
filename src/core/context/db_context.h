@@ -23,6 +23,9 @@
 
 #include "json_fwd.hpp"
 
+#include <QColor>
+
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +34,28 @@ class Sector;
 
 namespace context
 {
+
+/**
+ * User-editable color configuration attached to a DBContext.
+ * Preference drives the band used when auto-generating new DS base colors.
+ */
+struct ContextColors
+{
+    enum class Preference { Light, Dark };
+
+    Preference preference {Preference::Light};
+    std::map<std::string, QColor> ds_type_colors;    // populated with defaults at context creation
+    std::map<std::string, QColor> dbcontent_colors;  // populated with defaults at context creation
+
+    /// returns a ContextColors with the default DSType and DBContent palettes.
+    static ContextColors withDefaults();
+
+    nlohmann::json toJSON() const;
+    static ContextColors fromJSON(const nlohmann::json& j);
+
+    bool operator==(const ContextColors& other) const;
+    bool operator!=(const ContextColors& other) const { return !(*this == other); }
+};
 
 /**
  * Groups sensor definitions, FFTs, ASTERIX decoding configs, and sectors
@@ -72,6 +97,11 @@ public:
     std::vector<std::shared_ptr<Sector>>& sectors() { return sectors_; }
     const std::vector<std::shared_ptr<Sector>>& sectors() const { return sectors_; }
 
+    // colors
+    ContextColors& colors() { return colors_; }
+    const ContextColors& colors() const { return colors_; }
+    void colors(const ContextColors& colors) { colors_ = colors; }
+
     // serialization (full context as one json object)
     nlohmann::json toJSON() const;
     static DBContext fromJSON(const nlohmann::json& j);
@@ -92,6 +122,8 @@ private:
     std::vector<FFT> ffts_;
     std::vector<ASTERIXDecodingConfig> asterix_decoding_;
     std::vector<std::shared_ptr<Sector>> sectors_;
+
+    ContextColors colors_ {ContextColors::withDefaults()};
 };
 
 } // namespace context

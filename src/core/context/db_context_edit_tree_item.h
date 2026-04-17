@@ -75,12 +75,12 @@ public:
 };
 
 /**
- * Top-level group header (Data Sources, Sector Layers, FFTs).
+ * Top-level group header (Data Sources, Sector Layers, FFTs, Colors).
  */
 class GroupItem : public DBContextEditTreeItem
 {
 public:
-    enum GroupType { DataSources, SectorLayers, FFTs };
+    enum GroupType { DataSources, SectorLayers, FFTs, Colors };
 
     GroupItem(GroupType type, DBContextEditTreeItem* parent)
         : DBContextEditTreeItem(parent), type_(type) {}
@@ -92,6 +92,7 @@ public:
         case DataSources:  return "Data Sources";
         case SectorLayers: return "Sector Layers";
         case FFTs:         return "FFTs";
+        case Colors:       return "Colors";
         }
         return {};
     }
@@ -100,6 +101,38 @@ public:
 
 private:
     GroupType type_;
+};
+
+/**
+ * Colors sub-category leaf (Preference / DSType Colors / DBContent Colors).
+ * All three open the same detail widget; the sub-items exist so the tree
+ * matches the three-section layout.
+ */
+class ColorsSubItem : public DBContextEditTreeItem
+{
+public:
+    enum Kind { Preference, DSTypes, DBContents };
+
+    ColorsSubItem(Kind kind, DBContextEditTreeItem* parent)
+        : DBContextEditTreeItem(parent), kind_(kind) {}
+
+    int childCount() const override { return 0; }
+
+    QVariant data(int /*column*/) const override
+    {
+        switch (kind_)
+        {
+        case Preference:  return "Preference";
+        case DSTypes:     return "DSType Colors";
+        case DBContents:  return "DBContent Colors";
+        }
+        return {};
+    }
+
+    Kind kind() const { return kind_; }
+
+private:
+    Kind kind_;
 };
 
 /**

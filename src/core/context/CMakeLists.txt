@@ -6,6 +6,8 @@ target_include_directories(compass_core PUBLIC
 target_sources(compass_core
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/radar_accuracy_defs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/color_provider.h"
+        "${CMAKE_CURRENT_LIST_DIR}/colors_edit_widget.h"
         "${CMAKE_CURRENT_LIST_DIR}/data_source.h"
         "${CMAKE_CURRENT_LIST_DIR}/fft.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterix_decoding_config.h"
@@ -30,6 +32,8 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/asterixconfigwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/context_commands.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/color_provider.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/colors_edit_widget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/data_source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fft.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterix_decoding_config.cpp"

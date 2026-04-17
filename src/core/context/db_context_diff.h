@@ -62,12 +62,14 @@ struct DBContextDiff
     std::vector<ItemDiff> fft_diffs;
     std::vector<ItemDiff> asterix_diffs;
     std::vector<ItemDiff> sector_diffs;
+    std::vector<FieldDiff> color_diffs;
 
     bool hasDifferences() const;
     bool hasSensorDifferences() const { return !sensor_diffs.empty(); }
     bool hasFFTDifferences() const { return !fft_diffs.empty(); }
     bool hasASTERIXDifferences() const { return !asterix_diffs.empty(); }
     bool hasSectorDifferences() const { return !sector_diffs.empty(); }
+    bool hasColorDifferences() const { return !color_diffs.empty(); }
 
     std::string summary() const;
 

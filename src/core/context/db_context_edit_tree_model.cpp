@@ -95,6 +95,13 @@ void DBContextEditTreeModel::buildTree()
         fft_group->appendChild(std::make_unique<FFTItem>(fft.name(), fft_group.get()));
     }
     root_->appendChild(std::move(fft_group));
+
+    // Colors group
+    auto colors_group = std::make_unique<GroupItem>(GroupItem::Colors, root_.get());
+    colors_group->appendChild(std::make_unique<ColorsSubItem>(ColorsSubItem::Preference, colors_group.get()));
+    colors_group->appendChild(std::make_unique<ColorsSubItem>(ColorsSubItem::DSTypes, colors_group.get()));
+    colors_group->appendChild(std::make_unique<ColorsSubItem>(ColorsSubItem::DBContents, colors_group.get()));
+    root_->appendChild(std::move(colors_group));
 }
 
 QVariant DBContextEditTreeModel::data(const QModelIndex& index, int role) const

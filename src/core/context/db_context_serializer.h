@@ -46,8 +46,10 @@ public:
     static constexpr const char* FFTS_FILENAME            = "ffts.json";
     static constexpr const char* ASTERIX_DECODING_FILENAME = "asterix_decoding.json";
     static constexpr const char* SECTORS_FILENAME         = "sectors.json";
+    static constexpr const char* COLORS_FILENAME          = "colors.json";
 
-    static constexpr const char* CURRENT_VERSION = "1.0";
+    static constexpr const char* CURRENT_VERSION            = "1.0";
+    static constexpr const char* DATA_SOURCES_VERSION       = "1.1"; // bumped for base_color/line_colors
 
     /// Save a complete context to directory_path/<name>/
     static void save(const DBContext& ctx, const std::string& base_path);

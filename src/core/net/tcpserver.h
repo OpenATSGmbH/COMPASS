@@ -20,6 +20,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <atomic>
 #include <memory>
 
 class TCPSession : public std::enable_shared_from_this<TCPSession>
@@ -35,6 +36,8 @@ public:
 
     void sendStrData(const std::string& str);
 
+    bool isDisconnected() const { return disconnected_; }
+
 private:
     boost::asio::ip::tcp::socket socket_;
 
@@ -42,6 +45,8 @@ private:
 
     boost::mutex str_data_mutex_;
     std::vector<std::string> str_data_;
+
+    std::atomic<bool> disconnected_ {false};
 
     void do_read();
 };

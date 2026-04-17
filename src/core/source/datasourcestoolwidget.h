@@ -25,6 +25,8 @@ namespace context { class DBContextManager; }
 
 class QLabel;
 
+class QComboBox;
+
 class DataSourcesToolWidget : public ToolBoxWidget
 {
     Q_OBJECT
@@ -39,20 +41,25 @@ public:
     std::string toolInfo() const override final;
     std::vector<std::string> toolLabels() const override final;
     toolbox::ScreenRatio defaultScreenRatio() const override final;
-    void addToConfigMenu(QMenu* menu) override final; 
-    void addToToolBar(QToolBar* tool_bar) override final; 
+    void addToConfigMenu(QMenu* menu) override final;
+    void addToToolBar(QToolBar* tool_bar) override final;
     void loadingStarted() override final;
     void loadingDone() override final;
 
     void updateContent(bool recreate_required = false);
 
+private slots:
+    void colorModeChangedSlot(int index);
+
 private:
     context::DBContextManager& ctx_man_;
     DataSourcesWidget* ds_widget_{nullptr};
 
+    QComboBox* color_mode_combo_{nullptr};
+
     QLabel* ts_min_label_{nullptr};
     QLabel* ts_max_label_{nullptr};
-    QLabel* associations_label_{nullptr}; 
+    QLabel* associations_label_{nullptr};
 
     void createUI();
 

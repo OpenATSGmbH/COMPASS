@@ -192,6 +192,28 @@ void DBContentManager::deleteDBContent(const std::string& dbcontent_name)
 
 /**
  */
+void DBContentManager::deleteData(const nlohmann::json& delete_info)
+{
+    loginf;
+
+    traced_assert(!delete_job_);
+
+    clearData();
+
+    delete_info_ = delete_info;
+
+    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
+    delete_job_->setDeleteInfo(delete_info_);
+    delete_job_->cleanupDB(true);
+
+    connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContentManager::finishDeleting,
+            Qt::QueuedConnection);
+
+    compass_.jobManager().addDBJob(delete_job_);
+}
+
+/**
+ */
 void DBContentManager::deleteDBContentData(boost::posix_time::ptime before_timestamp)
 {
     loginf;
@@ -205,6 +227,22 @@ void DBContentManager::deleteDBContentData(boost::posix_time::ptime before_times
             Qt::QueuedConnection);
 
     compass_.jobManager().addDBJob(delete_job_);
+}
+
+/**
+ */
+void DBContentManager::finishDeleting()
+{
+    loginf;
+
+    traced_assert(delete_job_);
+
+    compass_.dbContextManager().applyDeleteInfo(delete_info_);
+
+    delete_job_ = nullptr;
+    delete_info_ = nlohmann::json{};
+
+    emit dataDeletedSignal();
 }
 
 /**

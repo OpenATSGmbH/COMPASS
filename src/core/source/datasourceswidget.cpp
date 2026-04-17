@@ -16,6 +16,7 @@
  */
 
 #include "datasourceswidget.h"
+#include "color_provider.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "deletedatadialog.h"
@@ -34,6 +35,9 @@
 
 #include <QLabel>
 #include <QCheckBox>
+#include <QPainter>
+#include <QPen>
+#include <QPixmap>
 #include "questiondialog.h"
 
 #include <QMessageBox>
@@ -41,6 +45,48 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QHeaderView>
+
+namespace
+{
+
+/// Builds a color icon matching the Geographic View's rounded square texture:
+/// a 14x14 rounded-square with a 1px darkGray border. An invalid color yields
+/// a "disabled-looking" swatch (muted gray fill, dashed lighter-gray border)
+/// to represent "no color" clearly distinct from white.
+QIcon makeColorIcon(const QColor& color)
+{
+    constexpr int w = 14;
+    constexpr int h = 14;
+    constexpr qreal radius = 3.0;
+
+    QPixmap pixmap(w, h);
+    pixmap.fill(Qt::transparent);
+
+    QPainter p(&pixmap);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    QRectF r(0.5, 0.5, w - 1.0, h - 1.0);
+
+    if (color.isValid())
+    {
+        p.setPen(QPen(Qt::darkGray, 1, Qt::SolidLine));
+        p.setBrush(QBrush(color));
+        p.drawRoundedRect(r, radius, radius);
+    }
+    else
+    {
+        // "disabled" look: muted gray fill + dashed lighter-gray border
+        QPen pen(QColor(160, 160, 160), 1, Qt::DashLine);
+        p.setPen(pen);
+        p.setBrush(QBrush(QColor(210, 210, 210)));
+        p.drawRoundedRect(r, radius, radius);
+    }
+
+    p.end();
+
+    return QIcon(pixmap);
+}
+
+} // anonymous
 
 /**************************************************************************************************
  * DataSourcesWidgetItem
@@ -132,6 +178,21 @@ void DataSourceTypeItem::updateContent()
         setCheckState(0, Qt::Unchecked);
         setFlags(flags() & ~Qt::ItemFlag::ItemIsEnabled);
     }
+
+    // color icon for DSType mode only — no icon in other modes
+    if (ctx_man.compass().colorMode() == 0 /*DSType*/ && ctx_man.hasActiveContext())
+    {
+        QColor color;
+        const auto& palette = ctx_man.activeContext().colors().ds_type_colors;
+        auto it = palette.find(ds_type_);
+        if (it != palette.end())
+            color = it->second;
+        setIcon(0, makeColorIcon(color));
+    }
+    else
+    {
+        setIcon(0, QIcon());
+    }
 }
 
 /**************************************************************************************************
@@ -193,6 +254,12 @@ void DataSourceItem::updateContent()
     traced_assert(has_widget_);
 
     setCheckState(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
+
+    // color icon for DataSource mode only — no icon in other modes
+    if (widget_->ctxManager().compass().colorMode() == 2 /*DataSource*/ && ds_)
+        setIcon(0, makeColorIcon(ds_->baseColor()));
+    else
+        setIcon(0, QIcon());
 
     for (auto lb : line_buttons_)
         lb->updateContent();
@@ -276,6 +343,21 @@ void DataSourceCountItem::updateContent()
 
     setText(2, QString::number(num_loaded));
     setText(3, QString::number(num_inserted));
+
+    // color icon for DBContent mode only — no icon in other modes
+    if (ctx_man.compass().colorMode() == 1 /*DBContent*/ && ctx_man.hasActiveContext())
+    {
+        QColor color;
+        const auto& palette = ctx_man.activeContext().colors().dbcontent_colors;
+        auto it = palette.find(dbc_name_);
+        if (it != palette.end())
+            color = it->second;
+        setIcon(0, makeColorIcon(color));
+    }
+    else
+    {
+        setIcon(0, QIcon());
+    }
 }
 
 /**************************************************************************************************
@@ -299,6 +381,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
     setFixedSize(button_size_px, button_size_px);
     setCheckable(true);
 
+    // initial style — updateContent() will re-apply once ds_ is known
     bool dark_mode = widget_->ctxManager().compass().darkMode();
 
     if (dark_mode)
@@ -356,6 +439,29 @@ void DataSourceLineButton::updateContent()
 
     bool live_mode = app_mode == AppMode::LivePaused || app_mode == AppMode::LiveRunning;
     bool dark_mode = ctx_man.compass().darkMode();
+
+    // Color Mode: DataSource + Line -> paint a 3px border in the corresponding line color
+    unsigned int color_mode = ctx_man.compass().colorMode();
+    if (color_mode == 3 /*DataSourceLine*/ && ds_ && ds_->lineColor(line_id_).isValid())
+    {
+        QString color_name = ds_->lineColor(line_id_).name();
+        setStyleSheet(QString(" QPushButton { border: 3px solid %1; } "
+                              " QPushButton:pressed { border: 3px outset %1; } "
+                              " QPushButton:checked { border: 3px outset %1; }").arg(color_name));
+    }
+    else
+    {
+        if (dark_mode)
+        {
+            setStyleSheet(" QPushButton:pressed { border: 3px outset white; } "
+                          " QPushButton:checked { border: 3px outset white; }");
+        }
+        else
+        {
+            setStyleSheet(" QPushButton:pressed { border: 3px outset; } "
+                          " QPushButton:checked { border: 3px outset; }");
+        }
+    }
 
     if (live_mode)
     {
