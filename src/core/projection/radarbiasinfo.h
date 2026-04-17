@@ -17,12 +17,22 @@
 
 #pragma once
 
+#include <map>
+#include <string>
+
 struct RadarBiasInfo
 {
     bool azimuth_bias_valid_ {false};
     double azimuth_bias_deg_ {0};
-    
+
     bool range_bias_valid_ {false};
     double range_bias_m_ {0};
     double range_gain_ {0.0};
+
+    bool has_bias_stddevs_ {false};
+    double azimuth_bias_stddev_deg_ {0};
+    double range_bias_stddev_m_ {0};
+    double range_gain_stddev_ {0};
+
+    static RadarBiasInfo fromMap(const std::map<std::string, double>& bias);
 };

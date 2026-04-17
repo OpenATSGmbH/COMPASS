@@ -26,6 +26,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/transformation.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/projector.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/coordconverter.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/radarbiasinfo.cpp"
 )
 
 

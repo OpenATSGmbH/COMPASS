@@ -766,7 +766,10 @@ nlohmann::json TaskResult::toJSON() const
     //derived content
     toJSON_impl(j);
 
-    loginf << "writing result '" << name_ << "' JSON: " << j.dump();
+    std::string dump_str = j.dump();
+    if (dump_str.size() > 200)
+        dump_str = dump_str.substr(0, 200) + "...";
+    loginf << "writing result '" << name_ << "' JSON: " << dump_str;
 
     return j;
 }

@@ -65,6 +65,24 @@ public:
                                   const std::set<unsigned int>& ds_ids_with_data,
                                   QWidget* parent = nullptr);
 
+    /// Overload with an optional Cancel button and customizable side labels.
+    /// When cancellable is true, the dialog shows a Cancel button (with the
+    /// given tooltip) and reject() closes normally instead of being blocked.
+    /// config_label / db_label substitute the "Configuration" / "Database"
+    /// wording shown in combo boxes, status strings, and field-merge headers.
+    /// When default_to_db is true, modified items default to the db side
+    /// regardless of the modified-timestamps.
+    explicit DBContextMergeDialog(const DBContext& config_context,
+                                  const DBContext& db_context,
+                                  const DBContextDiff& diff,
+                                  const std::set<unsigned int>& ds_ids_with_data,
+                                  bool cancellable,
+                                  const QString& cancel_tooltip,
+                                  const QString& config_label,
+                                  const QString& db_label,
+                                  bool default_to_db,
+                                  QWidget* parent = nullptr);
+
     const DBContext& mergedContext() const { return merged_; }
 
 protected:
@@ -97,9 +115,17 @@ private:
     void showDetailWidget(QWidget* widget);
     QWidget* createPlaceholderLabel(const QString& text);
 
+    void build(const DBContextDiff& diff,
+               bool cancellable,
+               const QString& cancel_tooltip);
+
     const DBContext& config_ctx_;
     const DBContext& db_ctx_;
     std::set<unsigned int> ds_ids_with_data_;
+    bool cancellable_ {false};
+    QString config_label_ {"Configuration"};
+    QString db_label_ {"Database"};
+    bool default_to_db_ {false};
 
     QTreeWidget* tree_widget_{nullptr};
     QStackedWidget* detail_stack_{nullptr};

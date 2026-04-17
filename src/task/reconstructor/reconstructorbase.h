@@ -323,6 +323,12 @@ public:
 
     virtual void createAdditionalAnnotations() {}
 
+    /// Main-thread hook called once at the end of a reconstruction run,
+    /// after all slices have been processed and written. Used for
+    /// persisting derived artifacts (e.g. estimated radar biases) that
+    /// may involve UI interaction.
+    virtual void finalizePersistence() {}
+
     virtual bool doFurtherSliceProcessing() { return false; }     // called for repeat checking
     virtual bool isLastRunInSlice() { return true; }      // called to check if another repeat run is planned
     virtual unsigned int currentSliceRepeatRun() { return currentSlice().run_count_; }    // current repeat run

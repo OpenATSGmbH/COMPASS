@@ -55,13 +55,42 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
                                            const DBContextDiff& diff,
                                            const std::set<unsigned int>& ds_ids_with_data,
                                            QWidget* parent)
+    : DBContextMergeDialog(config_context, db_context, diff, ds_ids_with_data,
+                           /*cancellable*/ false, QString(),
+                           QString("Configuration"), QString("Database"),
+                           /*default_to_db*/ false, parent)
+{
+}
+
+DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
+                                           const DBContext& db_context,
+                                           const DBContextDiff& diff,
+                                           const std::set<unsigned int>& ds_ids_with_data,
+                                           bool cancellable,
+                                           const QString& cancel_tooltip,
+                                           const QString& config_label,
+                                           const QString& db_label,
+                                           bool default_to_db,
+                                           QWidget* parent)
     : QDialog(parent)
     , config_ctx_(config_context)
     , db_ctx_(db_context)
     , ds_ids_with_data_(ds_ids_with_data)
+    , cancellable_(cancellable)
+    , config_label_(config_label)
+    , db_label_(db_label)
+    , default_to_db_(default_to_db)
+{
+    build(diff, cancellable, cancel_tooltip);
+}
+
+void DBContextMergeDialog::build(const DBContextDiff& diff,
+                                 bool cancellable,
+                                 const QString& cancel_tooltip)
 {
     setWindowTitle("Merge Context");
-    setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
+    if (!cancellable)
+        setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
     setMinimumSize(1300, 700);
     setModal(true);
 
@@ -172,6 +201,16 @@ DBContextMergeDialog::DBContextMergeDialog(const DBContext& config_context,
     auto* button_layout = new QHBoxLayout();
     button_layout->addStretch();
 
+    if (cancellable)
+    {
+        auto* cancel_button = new QPushButton("Cancel");
+        cancel_button->setIcon(QIcon());
+        if (!cancel_tooltip.isEmpty())
+            cancel_button->setToolTip(cancel_tooltip);
+        connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
+        button_layout->addWidget(cancel_button);
+    }
+
     ok_button_ = new QPushButton("OK");
     ok_button_->setIcon(QIcon());
     ok_button_->setToolTip("Accept the merge and apply");
@@ -214,28 +253,28 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
         item->setText(0, QString::fromStdString(name));
 
         // column 1: status
-        std::string status;
+        QString status;
         switch (diff.type)
         {
         case ItemDiff::Added:
-            status = "Only in Database";
+            status = "Only in " + db_label_;
             break;
         case ItemDiff::Removed:
-            status = "Only in Configuration";
+            status = "Only in " + config_label_;
             break;
         case ItemDiff::Modified:
             status = "Modified";
             item->setIcon(0, hint_icon);
             break;
         }
-        item->setText(1, QString::fromStdString(status));
+        item->setText(1, status);
 
         // column 2: combo box for choice
         auto* combo = new QComboBox();
-        combo->addItem(""); // index 0 = undecided
-        combo->addItem("Configuration"); // index 1
-        combo->addItem("Database");      // index 2
-        combo->addItem("New");           // index 3 = manually edited
+        combo->addItem("");           // index 0 = undecided
+        combo->addItem(config_label_); // index 1
+        combo->addItem(db_label_);     // index 2
+        combo->addItem("Edit");       // index 3 = manually edited
 
         // set defaults: Added -> Database, Removed -> Configuration, Modified -> undecided
         switch (diff.type)
@@ -266,8 +305,17 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
             mi.choice = UseConfiguration;
             break;
         case ItemDiff::Modified:
-            combo->setCurrentIndex(0); // undecided
-            mi.choice = Undecided;
+            if (default_to_db_)
+            {
+                combo->setCurrentIndex(2); // Database (the "new" side)
+                mi.choice = UseDatabase;
+                item->setIcon(0, QIcon()); // no hint — pre-decided
+            }
+            else
+            {
+                combo->setCurrentIndex(0); // undecided
+                mi.choice = Undecided;
+            }
             break;
         }
 
@@ -356,19 +404,21 @@ void DBContextMergeDialog::showDetail(const MergeItem& mi)
     {
     case ItemDiff::Added:
         item_json = &mi.diff->item_b;
-        source_label = "Database";
+        source_label = db_label_;
         break;
     case ItemDiff::Removed:
         item_json = &mi.diff->item_a;
-        source_label = "Configuration";
+        source_label = config_label_;
         break;
     case ItemDiff::Modified:
     {
-        // determine which side is newer
-        bool prefer_db = db_ctx_.modified() > config_ctx_.modified();
+        // determine which side is newer (or forced by caller)
+        bool prefer_db = default_to_db_
+                         || db_ctx_.modified() > config_ctx_.modified();
 
         const std::string& display_name = mi.diff->display_key.empty() ? mi.diff->key : mi.diff->display_key;
-        field_merge_widget_->show(display_name, mi.diff->item_a, mi.diff->item_b, prefer_db);
+        field_merge_widget_->show(display_name, mi.diff->item_a, mi.diff->item_b,
+                                  prefer_db, config_label_, db_label_);
 
         current_field_merge_idx_ = mi_idx;
 
@@ -474,7 +524,11 @@ bool DBContextMergeDialog::allDecided() const
 
 void DBContextMergeDialog::reject()
 {
-    // block close until all items are resolved
+    // block close when not cancellable (e.g. DB-open conflict flow)
+    if (!cancellable_)
+        return;
+
+    QDialog::reject();
 }
 
 void DBContextMergeDialog::choiceChangedSlot()
@@ -512,8 +566,9 @@ nlohmann::json DBContextMergeDialog::buildMergedItemJSON(const MergeItem& mi) co
         }
     }
 
-    // start from whichever side is newer as base
-    bool prefer_db = db_ctx_.modified() > config_ctx_.modified();
+    // start from whichever side is newer as base (or forced by caller)
+    bool prefer_db = default_to_db_
+                     || db_ctx_.modified() > config_ctx_.modified();
     nlohmann::json result = prefer_db ? mi.diff->item_b : mi.diff->item_a;
 
     // apply field overrides if user edited this item

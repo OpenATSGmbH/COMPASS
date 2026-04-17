@@ -369,7 +369,7 @@ void DBContentItemProvider::dataRefreshed()
 
     dataRefreshed_impl();
 
-    loginf << toString();
+    loginf << groupingAsString(); //toString();
 
     emit dataRefreshedSignal();
 }
@@ -398,7 +398,7 @@ std::string DBContentItemProvider::toString() const
 {
     std::stringstream ss;
 
-    ss << "Grouping: " << groupingAsString() << "\n\n";
+    ss << "Grouping: " << groupingAsString() << "\n";
 
     for (const auto& group : item_groups_)
     {

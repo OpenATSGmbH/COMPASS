@@ -362,6 +362,14 @@ void DataSource::addRadarBiasIfMissing()
         info_["radar_bias"] = json::object();
 }
 
+RadarBiasInfo DataSource::radarBiasInfo() const
+{
+    if (!hasRadarBias())
+        return {};
+
+    return RadarBiasInfo::fromMap(radarBias());
+}
+
 void DataSource::addNetworkLinesIfMissing()
 {
     if (!hasNetworkLines())

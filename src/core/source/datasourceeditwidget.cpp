@@ -322,7 +322,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     context::RadarAccuracyDefaults defs; // default values for placeholder text
 
     acc_psr_azm_edit_ = new QLineEdit();
-    acc_psr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
+    acc_psr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 3));
     acc_psr_azm_edit_->setProperty("key", DataSourceBase::PSRAzmSDKey.c_str());
     acc_psr_azm_edit_->setPlaceholderText(QString::number(defs.primary_azimuth_stddev));
     connect(acc_psr_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
@@ -332,7 +332,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     accuracies_layout->addWidget(new QLabel("PSR Range StdDev [m]"), row_cnt, 0);
 
     acc_psr_rng_edit_ = new QLineEdit();
-    acc_psr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
+    acc_psr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 1));
     acc_psr_rng_edit_->setProperty("key", DataSourceBase::PSRRngSDKey.c_str());
     acc_psr_rng_edit_->setPlaceholderText(QString::number(defs.primary_range_stddev));
     connect(acc_psr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
@@ -343,7 +343,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     accuracies_layout->addWidget(new QLabel("SSR Azimuth StdDev [deg]"), row_cnt, 0);
 
     acc_ssr_azm_edit_ = new QLineEdit();
-    acc_ssr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
+    acc_ssr_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 3));
     acc_ssr_azm_edit_->setProperty("key", DataSourceBase::SSRAzmSDKey.c_str());
     acc_ssr_azm_edit_->setPlaceholderText(QString::number(defs.secondary_azimuth_stddev));
     connect(acc_ssr_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
@@ -353,7 +353,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     accuracies_layout->addWidget(new QLabel("SSR Range StdDev [m]"), row_cnt, 0);
 
     acc_ssr_rng_edit_ = new QLineEdit();
-    acc_ssr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
+    acc_ssr_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 1));
     acc_ssr_rng_edit_->setProperty("key", DataSourceBase::SSRRngSDKey.c_str());
     acc_ssr_rng_edit_->setPlaceholderText(QString::number(defs.secondary_range_stddev));
     connect(acc_ssr_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
@@ -364,7 +364,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     accuracies_layout->addWidget(new QLabel("Mode S Azimuth StdDev [deg]"), row_cnt, 0);
 
     acc_mode_s_azm_edit_ = new QLineEdit();
-    acc_mode_s_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 2));
+    acc_mode_s_azm_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 3));
     acc_mode_s_azm_edit_->setProperty("key", DataSourceBase::ModeSAzmSDKey.c_str());
     acc_mode_s_azm_edit_->setPlaceholderText(QString::number(defs.mode_s_azimuth_stddev));
     connect(acc_mode_s_azm_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
@@ -374,7 +374,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     accuracies_layout->addWidget(new QLabel("Mode S Range StdDev [m]"), row_cnt, 0);
 
     acc_mode_s_rng_edit_ = new QLineEdit();
-    acc_mode_s_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 2));
+    acc_mode_s_rng_edit_->setValidator(new TextFieldDoubleValidator(-50000, 50000, 1));
     acc_mode_s_rng_edit_->setProperty("key", DataSourceBase::ModeSRngSDKey.c_str());
     acc_mode_s_rng_edit_->setPlaceholderText(QString::number(defs.mode_s_range_stddev));
     connect(acc_mode_s_rng_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarAccuraciesEditedSlot);
@@ -399,7 +399,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     bias_layout->addWidget(new QLabel("Range Bias [m]"), bias_row, 0);
 
     bias_range_edit_ = new QLineEdit();
-    bias_range_edit_->setValidator(new TextFieldDoubleValidator(-10000, 10000, 2));
+    bias_range_edit_->setValidator(new TextFieldDoubleValidator(-10000, 10000, 1));
     bias_range_edit_->setProperty("key", DataSourceBase::RangeBiasKey.c_str());
     connect(bias_range_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
     bias_layout->addWidget(bias_range_edit_, bias_row, 1);
@@ -408,7 +408,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     bias_layout->addWidget(new QLabel("Range Bias StdDev [m]"), bias_row, 0);
 
     bias_range_stddev_edit_ = new QLineEdit();
-    bias_range_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 2));
+    bias_range_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 10000, 1));
     bias_range_stddev_edit_->setProperty("key", DataSourceBase::RangeBiasSDKey.c_str());
     connect(bias_range_stddev_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
     bias_layout->addWidget(bias_range_stddev_edit_, bias_row, 1);
@@ -435,7 +435,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     bias_layout->addWidget(new QLabel("Azimuth Bias [deg]"), bias_row, 0);
 
     bias_azimuth_edit_ = new QLineEdit();
-    bias_azimuth_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 6));
+    bias_azimuth_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 4));
     bias_azimuth_edit_->setProperty("key", DataSourceBase::AzimuthBiasKey.c_str());
     connect(bias_azimuth_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
     bias_layout->addWidget(bias_azimuth_edit_, bias_row, 1);
@@ -444,7 +444,7 @@ void DataSourceEditWidget::createRadarAccuraciesTab()
     bias_layout->addWidget(new QLabel("Azimuth Bias StdDev [deg]"), bias_row, 0);
 
     bias_azimuth_stddev_edit_ = new QLineEdit();
-    bias_azimuth_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 180, 6));
+    bias_azimuth_stddev_edit_->setValidator(new TextFieldDoubleValidator(0, 180, 4));
     bias_azimuth_stddev_edit_->setProperty("key", DataSourceBase::AzimuthBiasSDKey.c_str());
     connect(bias_azimuth_stddev_edit_, &QLineEdit::textEdited, this, &DataSourceEditWidget::radarBiasEditedSlot);
     bias_layout->addWidget(bias_azimuth_stddev_edit_, bias_row, 1);
@@ -1550,24 +1550,24 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
 
         // psr
         acc_psr_azm_edit_->setText(acc.count(DataSourceBase::PSRAzmSDKey)
-            ? QString::number(acc.at(DataSourceBase::PSRAzmSDKey)) : "");
+            ? QString::number(acc.at(DataSourceBase::PSRAzmSDKey), 'f', 5) : "");
 
         acc_psr_rng_edit_->setText(acc.count(DataSourceBase::PSRRngSDKey)
-            ? QString::number(acc.at(DataSourceBase::PSRRngSDKey)) : "");
+            ? QString::number(acc.at(DataSourceBase::PSRRngSDKey), 'f', 2) : "");
 
         // ssr
         acc_ssr_azm_edit_->setText(acc.count(DataSourceBase::SSRAzmSDKey)
-            ? QString::number(acc.at(DataSourceBase::SSRAzmSDKey)) : "");
+            ? QString::number(acc.at(DataSourceBase::SSRAzmSDKey), 'f', 5) : "");
 
         acc_ssr_rng_edit_->setText(acc.count(DataSourceBase::SSRRngSDKey)
-            ? QString::number(acc.at(DataSourceBase::SSRRngSDKey)) : "");
+            ? QString::number(acc.at(DataSourceBase::SSRRngSDKey), 'f', 2) : "");
 
         // mode s
         acc_mode_s_azm_edit_->setText(acc.count(DataSourceBase::ModeSAzmSDKey)
-            ? QString::number(acc.at(DataSourceBase::ModeSAzmSDKey)) : "");
+            ? QString::number(acc.at(DataSourceBase::ModeSAzmSDKey), 'f', 5) : "");
 
         acc_mode_s_rng_edit_->setText(acc.count(DataSourceBase::ModeSRngSDKey)
-            ? QString::number(acc.at(DataSourceBase::ModeSRngSDKey)) : "");
+            ? QString::number(acc.at(DataSourceBase::ModeSRngSDKey), 'f', 2) : "");
     }
 
     // radar bias
@@ -1579,32 +1579,32 @@ void DataSourceEditWidget::updateRadar(context::DataSource* ds)
         std::map<std::string, double> bias = ds->radarBias();
 
         if (bias.count(DataSourceBase::RangeBiasKey))
-            bias_range_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasKey)));
+            bias_range_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasKey), 'f', 3));
         else
             bias_range_edit_->setText("");
 
         if (bias.count(DataSourceBase::RangeBiasSDKey))
-            bias_range_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasSDKey)));
+            bias_range_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeBiasSDKey), 'f', 3));
         else
             bias_range_stddev_edit_->setText("");
 
         if (bias.count(DataSourceBase::RangeGainKey))
-            bias_range_gain_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainKey)));
+            bias_range_gain_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainKey), 'f', 7));
         else
             bias_range_gain_edit_->setText("");
 
         if (bias.count(DataSourceBase::RangeGainSDKey))
-            bias_range_gain_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainSDKey)));
+            bias_range_gain_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::RangeGainSDKey), 'f', 7));
         else
             bias_range_gain_stddev_edit_->setText("");
 
         if (bias.count(DataSourceBase::AzimuthBiasKey))
-            bias_azimuth_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasKey)));
+            bias_azimuth_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasKey), 'f', 5));
         else
             bias_azimuth_edit_->setText("");
 
         if (bias.count(DataSourceBase::AzimuthBiasSDKey))
-            bias_azimuth_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasSDKey)));
+            bias_azimuth_stddev_edit_->setText(QString::number(bias.at(DataSourceBase::AzimuthBiasSDKey), 'f', 5));
         else
             bias_azimuth_stddev_edit_->setText("");
     }
