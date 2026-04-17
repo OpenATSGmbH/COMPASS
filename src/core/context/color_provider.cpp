@@ -72,11 +72,13 @@ const std::map<std::string, QColor>& ColorProvider::defaultDSTypeColors()
 
 const std::map<std::string, QColor>& ColorProvider::defaultDBContentColors()
 {
-    // mirror the Geographic View "Color By DBContent" palette verbatim
+    // mirror the Geographic View "Color By DBContent" palette, plus a light
+    // brown default for CAT010 (not present in the Geographic View palette).
     // (experimental_src/view/geographicview/style/rule/geometrystylerulegenerator.cpp)
     static const std::map<std::string, QColor> palette = {
         {"CAT001",  QColor(QStringLiteral("#00FF00"))},
         {"CAT048",  QColor(QStringLiteral("#00FF00"))},
+        {"CAT010",  QColor(QStringLiteral("#C19A6B"))}, // light brown (camel)
         {"CAT020",  QColor(QStringLiteral("#FF0000"))},
         {"CAT021",  QColor(QStringLiteral("#6666FF"))},
         {"RefTraj", QColor(QStringLiteral("#FFA500"))},

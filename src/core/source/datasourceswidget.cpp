@@ -51,8 +51,8 @@ namespace
 
 /// Builds a color icon matching the Geographic View's rounded square texture:
 /// a 14x14 rounded-square with a 1px darkGray border. An invalid color yields
-/// a "disabled-looking" swatch (muted gray fill, dashed lighter-gray border)
-/// to represent "no color" clearly distinct from white.
+/// a fully transparent 14x14 pixmap — the icon slot is reserved so rows stay
+/// aligned, but nothing is drawn.
 QIcon makeColorIcon(const QColor& color)
 {
     constexpr int w = 14;
@@ -62,26 +62,16 @@ QIcon makeColorIcon(const QColor& color)
     QPixmap pixmap(w, h);
     pixmap.fill(Qt::transparent);
 
-    QPainter p(&pixmap);
-    p.setRenderHint(QPainter::Antialiasing, true);
-    QRectF r(0.5, 0.5, w - 1.0, h - 1.0);
-
     if (color.isValid())
     {
+        QPainter p(&pixmap);
+        p.setRenderHint(QPainter::Antialiasing, true);
         p.setPen(QPen(Qt::darkGray, 1, Qt::SolidLine));
         p.setBrush(QBrush(color));
+        QRectF r(0.5, 0.5, w - 1.0, h - 1.0);
         p.drawRoundedRect(r, radius, radius);
+        p.end();
     }
-    else
-    {
-        // "disabled" look: muted gray fill + dashed lighter-gray border
-        QPen pen(QColor(160, 160, 160), 1, Qt::DashLine);
-        p.setPen(pen);
-        p.setBrush(QBrush(QColor(210, 210, 210)));
-        p.drawRoundedRect(r, radius, radius);
-    }
-
-    p.end();
 
     return QIcon(pixmap);
 }

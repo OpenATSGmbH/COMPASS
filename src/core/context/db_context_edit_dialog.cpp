@@ -377,12 +377,6 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
 
         showDetailWidget(createPlaceholderLabel(summary));
     }
-    else if (dynamic_cast<ColorsSubItem*>(item))
-    {
-        loginf << "clicked colors sub-item";
-        colors_edit_widget_->refresh();
-        showDetailWidget(colors_edit_widget_);
-    }
     else if (auto* sl_item = dynamic_cast<SectorLayerItem*>(item))
     {
         if (manager_.sectorsLoaded() && manager_.hasSectorLayer(sl_item->layerName()))

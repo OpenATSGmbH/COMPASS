@@ -96,12 +96,9 @@ void DBContextEditTreeModel::buildTree()
     }
     root_->appendChild(std::move(fft_group));
 
-    // Colors group
-    auto colors_group = std::make_unique<GroupItem>(GroupItem::Colors, root_.get());
-    colors_group->appendChild(std::make_unique<ColorsSubItem>(ColorsSubItem::Preference, colors_group.get()));
-    colors_group->appendChild(std::make_unique<ColorsSubItem>(ColorsSubItem::DSTypes, colors_group.get()));
-    colors_group->appendChild(std::make_unique<ColorsSubItem>(ColorsSubItem::DBContents, colors_group.get()));
-    root_->appendChild(std::move(colors_group));
+    // Colors group — leaf, no sub-items (the ColorsEditWidget covers all
+    // sub-sections inline with its own group boxes)
+    root_->appendChild(std::make_unique<GroupItem>(GroupItem::Colors, root_.get()));
 }
 
 QVariant DBContextEditTreeModel::data(const QModelIndex& index, int role) const

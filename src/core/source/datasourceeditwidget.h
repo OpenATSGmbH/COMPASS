@@ -18,10 +18,8 @@
 #pragma once
 
 #include <qcheckbox.h>
-#include <QColor>
 #include <QWidget>
 
-#include <array>
 #include <functional>
 
 namespace context { class DBContextManager; class DataSource; }
@@ -83,14 +81,6 @@ public slots:
     void netLineEditedSlot(const QString& value_str);
 
     void deleteSlot();
-
-    // color editing
-    void baseColorClickedSlot();
-    void autoLightClickedSlot();
-    void autoDarkClickedSlot();
-    void resetBaseColorClickedSlot();
-    void lineColorClickedSlot();
-    void lineColorResetClickedSlot();
 
 public:
     DataSourceEditWidget(bool show_network_lines,
@@ -204,14 +194,6 @@ protected:
 
     QPushButton* delete_button_{nullptr};
 
-    // colors
-    QPushButton* base_color_button_{nullptr};
-    QPushButton* auto_light_button_{nullptr};
-    QPushButton* auto_dark_button_{nullptr};
-    QPushButton* base_reset_button_{nullptr};
-    std::array<QPushButton*, 4> line_color_buttons_ {nullptr, nullptr, nullptr, nullptr};
-    std::array<QPushButton*, 4> line_reset_buttons_ {nullptr, nullptr, nullptr, nullptr};
-
     std::map<std::string, int> tab_map_;
 
     context::DataSource& currentDataSource();
@@ -237,9 +219,6 @@ protected:
     void updateRadar(context::DataSource* ds);
     void updateMLAT(context::DataSource* ds);
     void updateNetwork(context::DataSource* ds);
-    void updateColors(context::DataSource* ds);
-
-    void applyColorSwatch(QPushButton* button, const QColor& color);
 
     bool editRemoteUnit(int idx);
 

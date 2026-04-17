@@ -27,9 +27,11 @@
 #include "logger.h"
 
 #include <QColorDialog>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLayoutItem>
 #include <QPushButton>
 #include <QRadioButton>
 #include <QVBoxLayout>
@@ -86,8 +88,10 @@ void ColorsEditWidget::buildUI()
         auto* box = new QGroupBox("DSType Colors");
         auto* vbox = new QVBoxLayout(box);
 
-        ds_type_rows_layout_ = new QVBoxLayout();
-        vbox->addLayout(ds_type_rows_layout_);
+        ds_type_grid_ = new QGridLayout();
+        ds_type_grid_->setHorizontalSpacing(8);
+        ds_type_grid_->setColumnStretch(2, 1); // push name+button to the left
+        vbox->addLayout(ds_type_grid_);
 
         auto* reset = new QPushButton("Reset to defaults");
         reset->setIcon(QIcon());
@@ -108,8 +112,10 @@ void ColorsEditWidget::buildUI()
         auto* box = new QGroupBox("DBContent Colors");
         auto* vbox = new QVBoxLayout(box);
 
-        dbcontent_rows_layout_ = new QVBoxLayout();
-        vbox->addLayout(dbcontent_rows_layout_);
+        dbcontent_grid_ = new QGridLayout();
+        dbcontent_grid_->setHorizontalSpacing(8);
+        dbcontent_grid_->setColumnStretch(2, 1);
+        vbox->addLayout(dbcontent_grid_);
 
         auto* reset = new QPushButton("Reset to defaults");
         reset->setIcon(QIcon());
@@ -121,6 +127,45 @@ void ColorsEditWidget::buildUI()
         row->addStretch();
         row->addWidget(reset);
         vbox->addLayout(row);
+
+        main->addWidget(box);
+    }
+
+    // ==== Data Source Colors ====
+    {
+        auto* box = new QGroupBox("Data Source Colors");
+        auto* vbox = new QVBoxLayout(box);
+
+        // bulk actions — applied to every data source
+        auto* bulk_row = new QHBoxLayout();
+
+        auto* all_light = new QPushButton("Auto Light All");
+        all_light->setIcon(QIcon());
+        all_light->setToolTip("Regenerate light-band base colors for every data source");
+        connect(all_light, &QPushButton::clicked, this,
+                &ColorsEditWidget::autoLightAllClickedSlot);
+        bulk_row->addWidget(all_light);
+
+        auto* all_dark = new QPushButton("Auto Dark All");
+        all_dark->setIcon(QIcon());
+        all_dark->setToolTip("Regenerate dark-band base colors for every data source");
+        connect(all_dark, &QPushButton::clicked, this,
+                &ColorsEditWidget::autoDarkAllClickedSlot);
+        bulk_row->addWidget(all_dark);
+
+        auto* all_reset = new QPushButton("Reset All");
+        all_reset->setIcon(QIcon());
+        all_reset->setToolTip("Regenerate base colors for every data source using the context preference");
+        connect(all_reset, &QPushButton::clicked, this,
+                &ColorsEditWidget::resetAllClickedSlot);
+        bulk_row->addWidget(all_reset);
+
+        bulk_row->addStretch();
+        vbox->addLayout(bulk_row);
+
+        data_source_grid_ = new QGridLayout();
+        data_source_grid_->setHorizontalSpacing(8);
+        vbox->addLayout(data_source_grid_);
 
         main->addWidget(box);
     }
@@ -155,6 +200,16 @@ void ColorsEditWidget::clearLayout(QVBoxLayout* layout)
     }
 }
 
+static void clearGrid(QGridLayout* grid)
+{
+    while (QLayoutItem* item = grid->takeAt(0))
+    {
+        if (QWidget* w = item->widget())
+            w->deleteLater();
+        delete item;
+    }
+}
+
 void ColorsEditWidget::refresh()
 {
     if (!manager_.hasActiveContext())
@@ -174,85 +229,130 @@ void ColorsEditWidget::refresh()
     light_radio_->setChecked(colors.preference == ContextColors::Preference::Light);
     dark_radio_->setChecked(colors.preference == ContextColors::Preference::Dark);
 
-    // DSType rows
-    clearLayout(ds_type_rows_layout_);
+    // DSType rows (grid — label and button columns align across all rows)
+    clearGrid(ds_type_grid_);
     ds_type_buttons_.clear();
-    for (const auto& ds_type : DataSource::dsTypeStrings())
     {
-        auto* row = new QHBoxLayout();
-        row->addWidget(new QLabel(QString::fromStdString(ds_type)));
+        int row_idx = 0;
+        for (const auto& ds_type : DataSource::dsTypeStrings())
+        {
+            auto* name_lbl = new QLabel(QString::fromStdString(ds_type));
+            ds_type_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
-        auto* btn = new QPushButton();
-        btn->setIcon(QIcon());
-        btn->setToolTip(QString::fromStdString("Color for DSType " + ds_type));
-        btn->setProperty("ds_type", QString::fromStdString(ds_type));
-        btn->setMinimumWidth(120);
+            auto* btn = new QPushButton();
+            btn->setIcon(QIcon());
+            btn->setToolTip(QString::fromStdString("Color for DSType " + ds_type));
+            btn->setProperty("ds_type", QString::fromStdString(ds_type));
+            btn->setMinimumWidth(120);
 
-        QColor color;
-        auto it = colors.ds_type_colors.find(ds_type);
-        if (it != colors.ds_type_colors.end())
-            color = it->second;
-        applySwatch(btn, color);
-        if (!color.isValid())
-            btn->setText("—");
+            QColor color;
+            auto it = colors.ds_type_colors.find(ds_type);
+            if (it != colors.ds_type_colors.end())
+                color = it->second;
+            applySwatch(btn, color);
+            if (!color.isValid())
+                btn->setText("—");
 
-        connect(btn, &QPushButton::clicked, this,
-                &ColorsEditWidget::dsTypeColorClickedSlot);
+            connect(btn, &QPushButton::clicked, this,
+                    &ColorsEditWidget::dsTypeColorClickedSlot);
 
-        row->addWidget(btn);
-        row->addStretch();
-
-        ds_type_rows_layout_->addLayout(row);
-        ds_type_buttons_[ds_type] = btn;
+            ds_type_grid_->addWidget(btn, row_idx, 1);
+            ds_type_buttons_[ds_type] = btn;
+            ++row_idx;
+        }
     }
 
-    // DBContent rows — enumerate configured DBContents
-    clearLayout(dbcontent_rows_layout_);
+    // DBContent rows (grid)
+    clearGrid(dbcontent_grid_);
     dbcontent_buttons_.clear();
 
     std::vector<std::string> dbc_names;
     auto& dbcont_man = manager_.compass().dbContentManager();
     for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
-        dbc_names.push_back(it->first);
-
-    // Also include any entries already present in the saved palette (e.g. "RefTraj"
-    // which is not a DBContent but is used by the Geographic View palette).
-    for (const auto& [name, color] : colors.dbcontent_colors)
     {
-        if (std::find(dbc_names.begin(), dbc_names.end(), name) == dbc_names.end())
-            dbc_names.push_back(name);
+        if (it->second && it->second->containsTargetReports())
+            dbc_names.push_back(it->first);
     }
 
     std::sort(dbc_names.begin(), dbc_names.end());
 
-    for (const auto& name : dbc_names)
     {
-        auto* row = new QHBoxLayout();
-        row->addWidget(new QLabel(QString::fromStdString(name)));
+        int row_idx = 0;
+        for (const auto& name : dbc_names)
+        {
+            auto* name_lbl = new QLabel(QString::fromStdString(name));
+            dbcontent_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
-        auto* btn = new QPushButton();
-        btn->setIcon(QIcon());
-        btn->setToolTip(QString::fromStdString("Color for DBContent " + name));
-        btn->setProperty("dbcontent", QString::fromStdString(name));
-        btn->setMinimumWidth(120);
+            auto* btn = new QPushButton();
+            btn->setIcon(QIcon());
+            btn->setToolTip(QString::fromStdString("Color for DBContent " + name));
+            btn->setProperty("dbcontent", QString::fromStdString(name));
+            btn->setMinimumWidth(120);
 
-        QColor color;
-        auto cit = colors.dbcontent_colors.find(name);
-        if (cit != colors.dbcontent_colors.end())
-            color = cit->second;
-        applySwatch(btn, color);
-        if (!color.isValid())
-            btn->setText("—");
+            QColor color;
+            auto cit = colors.dbcontent_colors.find(name);
+            if (cit != colors.dbcontent_colors.end())
+                color = cit->second;
+            applySwatch(btn, color);
+            if (!color.isValid())
+                btn->setText("—");
 
-        connect(btn, &QPushButton::clicked, this,
-                &ColorsEditWidget::dbContentColorClickedSlot);
+            connect(btn, &QPushButton::clicked, this,
+                    &ColorsEditWidget::dbContentColorClickedSlot);
 
-        row->addWidget(btn);
-        row->addStretch();
-
-        dbcontent_rows_layout_->addLayout(row);
-        dbcontent_buttons_[name] = btn;
+            dbcontent_grid_->addWidget(btn, row_idx, 1);
+            dbcontent_buttons_[name] = btn;
+            ++row_idx;
+        }
     }
+
+    // Data Source rows — columns align across rows:
+    //   col 0: name   col 1: base   col 2: "Lines"   col 3..6: L1..L4   col 7: stretch
+    clearGrid(data_source_grid_);
+
+    int row_idx = 0;
+    const auto& ds_list = manager_.activeContext().dataSources();
+    for (const auto& ds : ds_list)
+    {
+        QString label = QString::fromStdString(ds.name()) +
+                        " (" + QString::number(ds.sac()) + "/" + QString::number(ds.sic()) + ")";
+        auto* name_lbl = new QLabel(label);
+        data_source_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);
+
+        auto* base_btn = new QPushButton();
+        base_btn->setIcon(QIcon());
+        base_btn->setToolTip("Base color for this data source");
+        base_btn->setProperty("ds_id", ds.id());
+        base_btn->setMinimumWidth(100);
+        applySwatch(base_btn, ds.baseColor());
+        if (!ds.baseColor().isValid())
+            base_btn->setText("—");
+        connect(base_btn, &QPushButton::clicked, this,
+                &ColorsEditWidget::dsBaseColorClickedSlot);
+        data_source_grid_->addWidget(base_btn, row_idx, 1);
+
+        auto* lines_lbl = new QLabel("Lines");
+        data_source_grid_->addWidget(lines_lbl, row_idx, 2, Qt::AlignRight | Qt::AlignVCenter);
+
+        for (unsigned int i = 0; i < 4; ++i)
+        {
+            auto* lb = new QPushButton(QString("L%1").arg(i + 1));
+            lb->setIcon(QIcon());
+            lb->setToolTip(QString("Color for line L%1 — click to edit").arg(i + 1));
+            lb->setProperty("ds_id", ds.id());
+            lb->setProperty("line_id", i);
+            lb->setMinimumWidth(56);
+            applySwatch(lb, ds.lineColor(i));
+            connect(lb, &QPushButton::clicked, this,
+                    &ColorsEditWidget::dsLineColorClickedSlot);
+            data_source_grid_->addWidget(lb, row_idx, 3 + (int)i);
+        }
+
+        ++row_idx;
+    }
+
+    // push all columns to the left by adding a stretch column on the right
+    data_source_grid_->setColumnStretch(7, 1);
 }
 
 void ColorsEditWidget::preferenceChangedSlot()
@@ -373,6 +473,117 @@ void ColorsEditWidget::resetDBContentDefaultsSlot()
 
     if (on_changed_)
         on_changed_();
+}
+
+// ============================================================
+// Data-source color editing
+// ============================================================
+
+namespace
+{
+DataSource* dsFromSender(DBContextManager& manager, QObject* sender)
+{
+    auto* btn = qobject_cast<QPushButton*>(sender);
+    if (!btn) return nullptr;
+    bool ok = false;
+    unsigned int ds_id = btn->property("ds_id").toUInt(&ok);
+    if (!ok) return nullptr;
+    return manager.dataSource(ds_id);
+}
+} // anonymous
+
+void ColorsEditWidget::dsBaseColorClickedSlot()
+{
+    auto* ds = dsFromSender(manager_, sender());
+    if (!ds) return;
+
+    QColor initial = ds->baseColor().isValid() ? ds->baseColor() : Qt::white;
+    QColor color = QColorDialog::getColor(initial, this, "Base Color");
+    if (!color.isValid()) return;
+
+    loginf << "ds " << ds->id() << " base color " << color.name().toStdString();
+
+    ds->baseColor(color);
+
+    refresh();
+    if (on_changed_) on_changed_();
+}
+
+namespace
+{
+void regenerateAllBaseColors(DBContextManager& manager, ColorProvider::Band band)
+{
+    // group by ds_type so same-type sources get hue-distance spacing
+    std::map<std::string, std::vector<QColor>> existing_by_type;
+    for (auto& ds : manager.activeContext().dataSources())
+    {
+        ds.baseColor(ColorProvider::generateBaseColor(
+            existing_by_type[ds.dsType()], band, ds.dsType()));
+        existing_by_type[ds.dsType()].push_back(ds.baseColor());
+    }
+}
+} // anonymous
+
+void ColorsEditWidget::autoLightAllClickedSlot()
+{
+    if (!manager_.hasActiveContext()) return;
+
+    loginf << "bulk regenerate all base colors (Light)";
+    regenerateAllBaseColors(manager_, ColorProvider::Band::Light);
+
+    refresh();
+    if (on_changed_) on_changed_();
+}
+
+void ColorsEditWidget::autoDarkAllClickedSlot()
+{
+    if (!manager_.hasActiveContext()) return;
+
+    loginf << "bulk regenerate all base colors (Dark)";
+    regenerateAllBaseColors(manager_, ColorProvider::Band::Dark);
+
+    refresh();
+    if (on_changed_) on_changed_();
+}
+
+void ColorsEditWidget::resetAllClickedSlot()
+{
+    if (!manager_.hasActiveContext()) return;
+
+    loginf << "bulk reset all base colors (using context preference)";
+    for (auto& ds : manager_.activeContext().dataSources())
+    {
+        ds.baseColor(QColor());
+        manager_.autoAssignColors(ds);
+    }
+
+    refresh();
+    if (on_changed_) on_changed_();
+}
+
+void ColorsEditWidget::dsLineColorClickedSlot()
+{
+    auto* btn = qobject_cast<QPushButton*>(sender());
+    if (!btn) return;
+    bool ok = false;
+    unsigned int line_id = btn->property("line_id").toUInt(&ok);
+    if (!ok || line_id >= 4) return;
+
+    auto* ds = dsFromSender(manager_, sender());
+    if (!ds) return;
+
+    QColor initial = ds->lineColor(line_id).isValid() ? ds->lineColor(line_id) : Qt::white;
+    QColor color = QColorDialog::getColor(initial, this,
+                                          QString("Line L%1 Color").arg(line_id + 1));
+    if (!color.isValid()) return;
+
+    loginf << "ds " << ds->id() << " line " << (line_id + 1) << " color "
+           << color.name().toStdString();
+
+    ds->setLineColor(line_id, color);
+
+    refresh();
+    if (on_changed_) on_changed_();
 }
 
 } // namespace context

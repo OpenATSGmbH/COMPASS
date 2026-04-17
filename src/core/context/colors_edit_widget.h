@@ -26,6 +26,7 @@
 class QRadioButton;
 class QPushButton;
 class QVBoxLayout;
+class QGridLayout;
 
 namespace context
 {
@@ -37,6 +38,8 @@ class DBContextManager;
  *  - Preference: Light / Dark (used when auto-generating new DS base colors)
  *  - DSType palette: one color button per DSType + reset-to-defaults
  *  - DBContent palette: one color button per DBContent + reset-to-defaults
+ *  - Data Source Colors: per-DS base color + Auto Light/Dark/Reset, four line
+ *    color buttons with per-line reset.
  *
  * on_changed is invoked after any edit so the dialog can persist the context.
  */
@@ -58,6 +61,15 @@ private slots:
     void resetDSTypeDefaultsSlot();
     void resetDBContentDefaultsSlot();
 
+    // per-data-source editing
+    void dsBaseColorClickedSlot();
+    void dsLineColorClickedSlot();
+
+    // bulk actions applied to every data source at once
+    void autoLightAllClickedSlot();
+    void autoDarkAllClickedSlot();
+    void resetAllClickedSlot();
+
 private:
     void buildUI();
     void applySwatch(QPushButton* button, const QColor& color);
@@ -69,8 +81,9 @@ private:
     QRadioButton* light_radio_ {nullptr};
     QRadioButton* dark_radio_ {nullptr};
 
-    QVBoxLayout* ds_type_rows_layout_ {nullptr};
-    QVBoxLayout* dbcontent_rows_layout_ {nullptr};
+    QGridLayout* ds_type_grid_ {nullptr};
+    QGridLayout* dbcontent_grid_ {nullptr};
+    QGridLayout* data_source_grid_ {nullptr};
 
     std::map<std::string, QPushButton*> ds_type_buttons_;
     std::map<std::string, QPushButton*> dbcontent_buttons_;
