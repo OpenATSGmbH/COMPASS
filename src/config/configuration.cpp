@@ -718,7 +718,7 @@ void Configuration::removeSubConfiguration(const std::string& class_name,
         {
             if ((*it)->contains(INSTANCE_NAME_KEY) && (**it)[INSTANCE_NAME_KEY] == instance_name)
             {
-                loginf << "this " << class_name_ << " " << instance_name_ << " other " << class_name << " " << instance_name;
+                logdbg << "this " << class_name_ << " " << instance_name_ << " other " << class_name << " " << instance_name;
 
                 vec.erase(it);
                 if (vec.empty())

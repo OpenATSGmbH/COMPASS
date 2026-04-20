@@ -82,7 +82,7 @@ Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
 
 Configurable::~Configurable()
 {
-    loginf << "class_name " << class_name_ << " instance_name " << instance_name_;
+    logdbg << "class_name " << class_name_ << " instance_name " << instance_name_;
 
     //@TODO: most likely destroying a connection will disconnect both parties automatically...
     changed_connection_.disconnect();
@@ -104,7 +104,7 @@ Configurable::~Configurable()
 
         if (parent_->configuration_->findSubConfig(class_name_, instance_name_))
         {
-            loginf << "removing sub-config " << class_name_ << "/" << instance_name_
+            logdbg << "removing sub-config " << class_name_ << "/" << instance_name_
                    << " from parent " << parent_->className() << "/" << parent_->instanceName();
             parent_->configuration_->removeSubConfiguration(class_name_, instance_name_);
         }
@@ -112,14 +112,14 @@ Configurable::~Configurable()
         {
             // Legitimate in e.g. Configuration::reconfigure() error recovery, which removes
             // the entry before the partially-constructed child's destructor runs.
-            loginf << "no sub-config entry for " << class_name_ << "/" << instance_name_
+            logdbg << "no sub-config entry for " << class_name_ << "/" << instance_name_
                    << " in parent " << parent_->className() << "/" << parent_->instanceName()
                    << " — already removed";
         }
     }
     else if (parent_ && tmp_disable_remove_config_on_delete_)
     {
-        loginf << "keeping sub-config " << class_name_ << "/" << instance_name_
+        logdbg << "keeping sub-config " << class_name_ << "/" << instance_name_
                << " in parent " << parent_->className() << "/" << parent_->instanceName()
                << " (tmp_disable_remove_config_on_delete_)";
     }
@@ -128,7 +128,7 @@ Configurable::~Configurable()
     delete configuration_;
     configuration_ = nullptr;
 
-    loginf << "done";
+    logdbg << "done";
 }
 
 std::string Configurable::keyID(const std::string& class_name,
