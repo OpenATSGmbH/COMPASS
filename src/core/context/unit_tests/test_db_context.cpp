@@ -345,10 +345,9 @@ TEST_CASE("DBContextDiff summary", "[context]")
 
     auto diff = DBContextDiff::compute(a, b);
     REQUIRE(diff.hasFFTDifferences());
-
-    std::string summary = diff.summary();
-    REQUIRE(summary.find("FFTs") != std::string::npos);
-    REQUIRE(summary.find("1 added") != std::string::npos);
+    REQUIRE(diff.fft_diffs.size() == 1);
+    REQUIRE(diff.fft_diffs[0].type == ItemDiff::Added);
+    REQUIRE(diff.fft_diffs[0].key == "FFT_01");
 }
 
 // ============================================================
