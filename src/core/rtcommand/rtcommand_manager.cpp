@@ -99,7 +99,7 @@ void RTCommandManager::run()
                 std::vector<std::string> cmds = server_->getStrData();
 
                 loginf << "got " << cmds.size() << " commands '"
-                  << String::compress(cmds, ';') << "'";
+                  << String::truncateForLog(String::compress(cmds, ';')) << "'";
 
                 // create commands from strings
                 for (const auto& cmd_str : cmds)
@@ -108,7 +108,8 @@ void RTCommandManager::run()
                     rtcommand::RTCommandResponse cmd_response(issue_info);
 
                     if (issue_info.issued)
-                        loginf << "added command " << cmd_str << " to queue, size " << command_queue_.size();
+                        loginf << "added command " << String::truncateForLog(cmd_str)
+                               << " to queue, size " << command_queue_.size();
 
                     server_->sendStrData(cmd_response.toJSONString());
                 }
@@ -150,8 +151,7 @@ void RTCommandManager::run()
                 rtcommand::RTCommandResponse cmd_response(cmd_result);
 
                 loginf << "result wait done, success " << cmd_response.isOk();
-                loginf << "response = ";
-                loginf << cmd_response.toJSONString();
+                loginf << "response = " << String::truncateForLog(cmd_response.toJSONString());
 
                 if (source == Source::Application)
                 {
