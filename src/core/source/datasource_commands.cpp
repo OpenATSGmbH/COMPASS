@@ -27,8 +27,7 @@
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(dbContent::RTCommandGetConfigDataSources)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetDBDataSources)
+REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandSetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandDeleteData)
 
@@ -39,51 +38,31 @@ namespace dbContent
 
 void init_data_source_commands()
 {
-    dbContent::RTCommandGetConfigDataSources::init();
-    dbContent::RTCommandGetDBDataSources::init();
+    dbContent::RTCommandGetDataSources::init();
     dbContent::RTCommandSetDataSources::init();
     dbContent::RTCommandDeleteData::init();
 }
 
-// get from config
+// get
 
-RTCommandGetConfigDataSources::RTCommandGetConfigDataSources()
+RTCommandGetDataSources::RTCommandGetDataSources()
     : rtcommand::RTCommand()
 {
     condition.setDelay(10);
 }
 
-bool RTCommandGetConfigDataSources::run_impl()
+bool RTCommandGetDataSources::run_impl()
 {
-    return true;
-}
-
-bool RTCommandGetConfigDataSources::checkResult_impl()
-{
-    auto& ctx_man = compass_->dbContextManager();
-
-    nlohmann::json j = nlohmann::json::array();
-    for (const auto& ds : ctx_man.activeContext().dataSources())
-        j.push_back(ds.toJSON());
-    setJSONReply(j);
+    if (!compass_->dbContextManager().hasActiveContext())
+    {
+        setResultMessage("No active context");
+        return false;
+    }
 
     return true;
 }
 
-// get from db
-
-RTCommandGetDBDataSources::RTCommandGetDBDataSources()
-    : rtcommand::RTCommand()
-{
-    condition.setDelay(10);
-}
-
-bool RTCommandGetDBDataSources::run_impl()
-{
-    return true;
-}
-
-bool RTCommandGetDBDataSources::checkResult_impl()
+bool RTCommandGetDataSources::checkResult_impl()
 {
     auto& ctx_man = compass_->dbContextManager();
 
@@ -109,6 +88,12 @@ bool RTCommandSetDataSources::run_impl()
     loginf << "ds_json_str_ '" << ds_json_str_ << "'";
 
     auto& ctx_man = compass_->dbContextManager();
+
+    if (!ctx_man.hasActiveContext())
+    {
+        setResultMessage("No active context");
+        return false;
+    }
 
     try
     {

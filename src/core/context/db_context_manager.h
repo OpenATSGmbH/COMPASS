@@ -316,13 +316,6 @@ public:
     DataSourcesConfigurationDialog* configurationDialog();
 
     // ================================================================
-    // Startup context check
-    // ================================================================
-    /// Ensures an active context is set. Shows create or select dialog if needed.
-    /// Returns true if a context is active after the call, false if user cancelled.
-    bool ensureActiveContext(QWidget* parent = nullptr);
-
-    // ================================================================
     // Utility
     // ================================================================
     void rebuildSectorLayers();

@@ -127,6 +127,22 @@ TEST_CASE("ASTERIXDecodingConfig JSON round-trip", "[context]")
 // DBContext
 // ============================================================
 
+// The "No Context" (None) startup state is represented by a default-constructed
+// DBContext with an empty name. DBContextManager treats an empty active-context
+// name as hasActiveContext() == false, so a default-constructed DBContext is
+// the data-level representation of that legal startup state.
+TEST_CASE("DBContext default-constructed represents No Context state", "[context]")
+{
+    DBContext ctx;
+
+    REQUIRE(ctx.name().empty());
+    REQUIRE(ctx.description().empty());
+    REQUIRE(ctx.dataSources().empty());
+    REQUIRE(ctx.ffts().empty());
+    REQUIRE(ctx.asterixDecoding().empty());
+    REQUIRE(ctx.sectors().empty());
+}
+
 TEST_CASE("DBContext JSON round-trip", "[context]")
 {
     DBContext ctx("test_context");

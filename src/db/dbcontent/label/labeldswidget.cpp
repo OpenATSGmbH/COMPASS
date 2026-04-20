@@ -80,6 +80,9 @@ void LabelDSWidget::updateListSlot()
 
     auto& ctx_man = label_generator_.dbContentManager().compass().dbContextManager();
 
+    if (!ctx_man.hasActiveContext())
+        return;
+
     std::map<std::string, std::string> current_sources;
     for (const auto& ds : ctx_man.activeContext().dataSources())
         current_sources[ds.name()] = String::lineStrFrom(label_generator_.labelLine(ds.id()))

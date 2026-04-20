@@ -32,8 +32,6 @@
 #include "datasourcestoolwidget.h"
 #include "datasourcesstatustoolwidget.h"
 #include "datasourcesconfigurationdialog.h"
-#include "db_context_create_dialog.h"
-#include "db_context_select_dialog.h"
 #include "db_context_conflict_dialog.h"
 #include "db_context_merge_dialog.h"
 #include "files.h"
@@ -1411,13 +1409,37 @@ void DBContextManager::databaseOpenedSlot()
 {
     loginf << "database opened";
 
+    auto& db = compass_.dbInterface();
+
     if (!hasActiveContext())
     {
-        logwrn << "no active context set — context must be created first";
+        if (!db.existsDBContextTable())
+        {
+            // no active context and DB has no stored context (legacy or new empty DB) — stay in "None" state
+            logwrn << "no active context and DB has no stored context — remaining in 'None' state";
+            return;
+        }
+
+        // no active context, but the DB carries one — adopt it silently
+        DBContext db_ctx = readContextFromDB();
+        const string db_name = db_ctx.name();
+
+        loginf << "no active context — adopting DB context '" << db_name << "'";
+
+        if (!hasContext(db_name))
+        {
+            db_ctx.modified(DBContext::currentTimestamp());
+            DBContextSerializer::save(db_ctx, basePath());
+            contexts_[db_name] = std::move(db_ctx);
+            emit contextsChangedSignal();
+        }
+
+        setActiveContext(db_name);
+        loadCountsFromDB();
+
+        emit countsChangedSignal();
         return;
     }
-
-    auto& db = compass_.dbInterface();
 
     if (!db.existsDBContextTable())
     {
@@ -2111,33 +2133,6 @@ void DBContextManager::importContextZip(const string& zip_filepath)
 // ============================================================
 // Storage
 // ============================================================
-
-// ============================================================
-// Startup context check
-// ============================================================
-
-bool DBContextManager::ensureActiveContext(QWidget* parent)
-{
-    if (hasActiveContext())
-        return true;
-
-    if (contexts_.empty())
-    {
-        // no contexts exist — force creation
-        DBContextCreateDialog dialog(*this, parent);
-        if (dialog.exec() != QDialog::Accepted)
-            return false;
-    }
-    else
-    {
-        // contexts exist but none is active — force selection
-        DBContextSelectDialog dialog(*this, parent);
-        if (dialog.exec() != QDialog::Accepted)
-            return false;
-    }
-
-    return hasActiveContext();
-}
 
 // ============================================================
 // Widgets

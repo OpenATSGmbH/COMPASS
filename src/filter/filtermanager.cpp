@@ -496,6 +496,9 @@ void FilterManager::dataSourcesChangedSlot()
 
     auto& ctx_man = dbContextManager();
 
+    if (!ctx_man.hasActiveContext())
+        return;
+
     if (hasFilter("Tracker Track Number"))
     {
         TrackerTrackNumberFilter* filter = dynamic_cast<TrackerTrackNumberFilter*>(getFilter("Tracker Track Number"));
