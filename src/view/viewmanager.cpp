@@ -189,7 +189,7 @@ void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
     if (class_name == "ViewContainer")
     {
         ViewContainer* container =
-                new ViewContainer(child_json, *this, main_tab_widget_, 0);
+                new ViewContainer(child_json, *this, this, main_tab_widget_, 0);
         traced_assert(containers_.count(instance_name) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(instance_name, container));
 

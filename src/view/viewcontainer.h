@@ -44,7 +44,7 @@ class ViewContainer : public QObject, public Configurable
 
   public:
     ViewContainer(nlohmann::json& config, ViewManager& view_manager,
-                  QTabWidget* tab_widget, int window_cnt);
+                  Configurable* parent, QTabWidget* tab_widget, int window_cnt);
     virtual ~ViewContainer();
 
     const std::vector<std::unique_ptr<View>>& getViews() const;

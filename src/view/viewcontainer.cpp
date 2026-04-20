@@ -63,10 +63,11 @@ using namespace std;
 
 ViewContainer::ViewContainer(nlohmann::json& config,
                              ViewManager& view_manager,
+                             Configurable* parent,
                              QTabWidget* tab_widget,
                              int window_cnt)
     : QObject(),
-      Configurable(config, &view_manager),
+      Configurable(config, parent),
       view_manager_(view_manager),
       tab_widget_(tab_widget),
       window_cnt_(window_cnt)
