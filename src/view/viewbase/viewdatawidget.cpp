@@ -447,3 +447,16 @@ void ViewDataWidget::addNanCount(size_t n)
     count_nan_.value() += n;
 }
 
+/**
+ */
+void ViewDataWidget::databaseOpened()
+{
+    databaseOpened_impl();
+}
+
+/**
+ */
+void ViewDataWidget::databaseClosed()
+{
+    databaseClosed_impl();
+}

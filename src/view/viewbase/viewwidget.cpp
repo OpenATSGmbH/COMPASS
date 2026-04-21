@@ -628,3 +628,18 @@ void ViewWidget::uiRefresh()
     refreshView();
 }
 
+/**
+ */
+void ViewWidget::databaseOpened()
+{
+    if (data_widget_)
+        data_widget_->databaseOpened();
+}
+
+/**
+ */
+void ViewWidget::databaseClosed()
+{
+    if (data_widget_)
+        data_widget_->databaseClosed();
+}

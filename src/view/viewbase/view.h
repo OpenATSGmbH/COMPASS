@@ -83,8 +83,8 @@ public:
     bool init();
     bool isInit() const { return init_; }
 
-    virtual void databaseOpened();
-    virtual void databaseClosed();
+    void databaseOpened();
+    void databaseClosed();
 
     virtual void loadingStarted();
     virtual void loadedData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
@@ -172,6 +172,9 @@ protected:
 
     virtual ViewInfos viewInfos_impl() const { return ViewInfos(); }
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
+
+    virtual void databaseOpened_impl() {}
+    virtual void databaseClosed_impl() {}
 
     void constructWidget();
     void setWidget(ViewWidget* widget);

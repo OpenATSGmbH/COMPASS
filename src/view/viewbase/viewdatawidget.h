@@ -74,6 +74,9 @@ public:
     bool isDrawn() const;
     bool isContentDrawn() const;
 
+    void databaseOpened();
+    void databaseClosed();
+
     virtual void isExporting(bool ok) { is_exporting_ = ok; }
     bool isExporting() const { return is_exporting_; }
 
@@ -128,6 +131,8 @@ protected:
     virtual DrawState redrawData_impl(bool recompute) = 0; //implements redrawing the display (and possibly needed computations), and returns the new draw state
     virtual void liveReload_impl() = 0;                    //implements data reload during live running mode
     virtual bool hasAnnotations_impl() const = 0;          //implements checking if the view has any annotations
+    virtual void databaseOpened_impl() {}                  //implements behavior on opening a database
+    virtual void databaseClosed_impl() {}                  //implements behavior on closing a database
 
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
 
