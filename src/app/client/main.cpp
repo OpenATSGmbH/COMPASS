@@ -32,8 +32,40 @@
 #include <signal.h>
 #include <unistd.h>
 #include <execinfo.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <limits.h>
 
 using namespace std;
+
+// Path where safeSignalHandler writes a crash backtrace on fatal signals.
+// Populated at startup (initCrashLogPath) from the APPIMAGE env var; empty
+// when not running from an AppImage, in which case file dump is skipped and
+// stderr stays the only channel. Accessed from a signal handler, so mutated
+// once at startup and read-only afterwards.
+static char crash_log_path[PATH_MAX] = {0};
+
+// Compute "<dirname(APPIMAGE)>/compass_crash_<pid>.log". Called once from
+// main() before any signal could fire — uses getenv/snprintf which are NOT
+// async-signal-safe and must not be reached from a handler.
+static void initCrashLogPath()
+{
+    const char* appimage = getenv("APPIMAGE");
+    if (!appimage) return;
+
+    const char* last_slash = strrchr(appimage, '/');
+    if (!last_slash) return;
+
+    size_t dir_len = static_cast<size_t>(last_slash - appimage);
+    //reserve room for "/compass_crash_<pid>.log\0"
+    if (dir_len + 32 >= sizeof(crash_log_path)) return;
+
+    memcpy(crash_log_path, appimage, dir_len);
+    snprintf(crash_log_path + dir_len,
+             sizeof(crash_log_path) - dir_len,
+             "/compass_crash_%d.log", static_cast<int>(getpid()));
+}
 
 // ---------------------------------------------------------------------------
 // Terminate handler — called by the runtime when an exception is uncaught
@@ -83,14 +115,21 @@ void terminateHandler()
 // Signal handlers
 // ---------------------------------------------------------------------------
 
-// async-signal-safe stacktrace for signals where the stack may be corrupted
+// async-signal-safe stacktrace for signals where allocation cannot be trusted
+// (e.g. SIGABRT from a glibc heap-corruption check — the allocator is exactly
+// the subsystem that just failed). Writes to stderr and, when running as an
+// AppImage, to <dirname(APPIMAGE)>/compass_crash_<pid>.log so the trace is
+// preserved even if the stdout/stderr pipe is lost on process teardown.
+//
+// Everything inside this function must use async-signal-safe primitives:
+// write/open/close/backtrace_symbols_fd are safe; printf/malloc/std::cerr
+// are not.
 void safeSignalHandler(int signum)
 {
     const char msg[] = "\nCaught signal: ";
     const char nl[] = "\n";
-    write(STDERR_FILENO, msg, sizeof(msg) - 1);
 
-    // print signum as decimal digits (async-signal-safe)
+    // format signum as decimal digits (async-signal-safe — no printf)
     char buf[16];
     int pos = sizeof(buf);
     int val = signum < 0 ? -signum : signum;
@@ -100,12 +139,29 @@ void safeSignalHandler(int signum)
     } while (val > 0);
     if (signum < 0)
         buf[--pos] = '-';
-    write(STDERR_FILENO, buf + pos, sizeof(buf) - pos);
-    write(STDERR_FILENO, nl, 1);
 
     void* frames[128];
     int count = backtrace(frames, 128);
+
+    // --- stderr (existing behaviour) ---
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    write(STDERR_FILENO, buf + pos, sizeof(buf) - pos);
+    write(STDERR_FILENO, nl, 1);
     backtrace_symbols_fd(frames, count, STDERR_FILENO);
+
+    // --- crash file (only if initCrashLogPath found an AppImage at startup) ---
+    if (crash_log_path[0] != '\0')
+    {
+        int fd = open(crash_log_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+        if (fd >= 0)
+        {
+            write(fd, msg, sizeof(msg) - 1);
+            write(fd, buf + pos, sizeof(buf) - pos);
+            write(fd, nl, 1);
+            backtrace_symbols_fd(frames, count, fd);
+            close(fd);
+        }
+    }
 
     signal(signum, SIG_DFL);
     raise(signum);
@@ -135,11 +191,17 @@ int main(int argc, char** argv)
     {
         std::set_terminate(terminateHandler);
 
+        //resolve crash-log path before installing handlers so a very early
+        //signal can still be written to disk
+        initCrashLogPath();
+        if (crash_log_path[0] != '\0')
+            std::cout << "COMPASSClient: crash log path " << crash_log_path << std::endl;
+
         signal(SIGSEGV, safeSignalHandler);  // stack likely corrupted
         signal(SIGBUS,  safeSignalHandler);  // stack likely corrupted
         signal(SIGFPE,  safeSignalHandler);  // arithmetic fault
-        signal(SIGABRT, signalHandler);      // stack likely intact
-        signal(SIGTERM, signalHandler);      // stack likely intact
+        signal(SIGABRT, safeSignalHandler);  // heap may be corrupted — allocator untrusted
+        signal(SIGTERM, signalHandler);      // external term — stack intact
         signal(SIGPIPE, SIG_IGN);           // prevent crash on broken socket
         
         const bool is_app_image = Utils::System::appDir() != nullptr;

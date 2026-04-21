@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+    }
+
     parameters {
         string(name: 'EXPERIMENTAL_SRC_BRANCH', defaultValue: '',  description: 'experimental_src branch (empty = same as pipeline branch, fallback to devel)')
         string(name: 'JASTERIX_BRANCH',         defaultValue: 'devel', description: 'jASTERIX branch')
@@ -32,6 +36,7 @@ pipeline {
         DOCKER_IMAGE    = 'compass/build_deb10'
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
+        PYTHONUNBUFFERED    = '1'
     }
 
     stages {
@@ -171,8 +176,12 @@ pipeline {
 
     post {
         always {
-            // Archive logs
-            archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
+            // Copy crash logs from the build artifact dir into the workspace
+            // so archiveArtifacts can pick them up (they live next to the
+            // AppImage, not under the Jenkins workspace).
+            sh "cp ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log . 2>/dev/null || true"
+            // Archive test and crash logs
+            archiveArtifacts artifacts: '**/test_*.log, compass_crash_*.log', allowEmptyArchive: true
             // Copy JUnit XML into workspace and publish per-test results
             sh "cp ${TEST_DATA_PATH}/results/junit_results.xml junit_results.xml || true"
             junit testResults: 'junit_results.xml', allowEmptyResults: true
