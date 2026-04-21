@@ -37,11 +37,6 @@ pipeline {
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
-        // glibc consistency checks on every malloc/free — diagnostic for the
-        // shutdown heap-corruption bug. Often aborts at the corrupting write
-        // instead of the unrelated free that detects it. Inherited by the
-        // AppImage child process from the python test harness env.
-        MALLOC_CHECK_       = '3'
     }
 
     stages {
@@ -111,6 +106,24 @@ pipeline {
         }
 
         stage('Integration Tests') {
+            // Heap-corruption diagnostics for the eval-shutdown SIGABRT bug
+            // (scoped to this stage so it does not affect docker host invocations
+            // in the build/unit-test/AppImage stages):
+            //   - LIBC_FATAL_STDERR_=1: route glibc fatal messages (e.g.
+            //     "free(): invalid next size") to stderr instead of the default
+            //     /dev/tty, so the test harness can capture them.
+            //   - LD_PRELOAD libc_malloc_debug.so.0: re-enables the debug malloc
+            //     allocator that glibc 2.34 disabled by default — required for
+            //     glibc.malloc.check below to take effect.
+            //   - GLIBC_TUNABLES glibc.malloc.check=3: extra consistency checks
+            //     on every malloc/free; aborts at the corrupting write instead
+            //     of an unrelated later free. Replaces deprecated MALLOC_CHECK_.
+            // Inherited by the AppImage child process via the python test harness.
+            environment {
+                LIBC_FATAL_STDERR_ = '1'
+                LD_PRELOAD         = '/usr/lib64/libc_malloc_debug.so.0'
+                GLIBC_TUNABLES     = 'glibc.malloc.check=3'
+            }
             when {
                 expression {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
