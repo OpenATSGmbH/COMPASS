@@ -37,6 +37,11 @@ pipeline {
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
+        // glibc consistency checks on every malloc/free — diagnostic for the
+        // shutdown heap-corruption bug. Often aborts at the corrupting write
+        // instead of the unrelated free that detects it. Inherited by the
+        // AppImage child process from the python test harness env.
+        MALLOC_CHECK_       = '3'
     }
 
     stages {
@@ -176,12 +181,14 @@ pipeline {
 
     post {
         always {
-            // Copy crash logs from the build artifact dir into the workspace
-            // so archiveArtifacts can pick them up (they live next to the
-            // AppImage, not under the Jenkins workspace).
-            sh "cp ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log . 2>/dev/null || true"
-            // Archive test and crash logs
-            archiveArtifacts artifacts: '**/test_*.log, compass_crash_*.log', allowEmptyArchive: true
+            // Crash logs are kept on the host under
+            // ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log
+            // so they're available per-build via SSH but don't clutter the
+            // Jenkins artifact list. Workspace cleanup of any leftover copies
+            // from earlier pipeline versions that did archive them.
+            sh "rm -f compass_crash_*.log"
+            // Archive test logs
+            archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
             // Copy JUnit XML into workspace and publish per-test results
             sh "cp ${TEST_DATA_PATH}/results/junit_results.xml junit_results.xml || true"
             junit testResults: 'junit_results.xml', allowEmptyResults: true
