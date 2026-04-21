@@ -16,6 +16,7 @@
  */
 
 #include "scatterplotviewconfigwidget.h"
+#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "scatterplotviewwidget.h"
@@ -50,6 +51,15 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
     traced_assert(view_);
 
     auto layout = configLayout();
+
+    {
+        color_mode_label_ = new QLabel(this);
+        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
+        layout->addWidget(color_mode_label_);
+
+        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+                this, &ScatterPlotViewConfigWidget::colorModeChangedSlot);
+    }
 
     {
         loginf << "creating lay view";
@@ -116,6 +126,28 @@ void ScatterPlotViewConfigWidget::updateToVisibilitySlot()
 void ScatterPlotViewConfigWidget::deselectAllSlot()
 {
     view_->getDataWidget()->dataModel().deselectAll();
+}
+
+/**
+*/
+void ScatterPlotViewConfigWidget::colorModeChangedSlot(unsigned int mode)
+{
+    traced_assert(color_mode_label_);
+    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+}
+
+/**
+*/
+QString ScatterPlotViewConfigWidget::colorModeText(unsigned int mode)
+{
+    switch (mode)
+    {
+        case 0: return "DSType";
+        case 1: return "DBContent";
+        case 2: return "Data Source";
+        case 3: return "Data Source + Line";
+        default: return "Unknown";
+    }
 }
 
 /**

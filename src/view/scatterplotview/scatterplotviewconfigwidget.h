@@ -23,6 +23,7 @@ class ScatterPlotViewWidget;
 class ScatterPlotView;
 
 class QCheckBox;
+class QLabel;
 class QLineEdit;
 class QTreeView;
 
@@ -40,6 +41,8 @@ public slots:
 
     void deselectAllSlot();
 
+    void colorModeChangedSlot(unsigned int mode);
+
 public:
     ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget, 
                                 QWidget* parent = nullptr);
@@ -53,8 +56,11 @@ protected:
 
     ScatterPlotView* view_ = nullptr;
 
+    QLabel* color_mode_label_{nullptr};
     QTreeView* layer_view_{nullptr};
 
     QCheckBox* use_connection_lines_ {nullptr};
+
+    static QString colorModeText(unsigned int mode);
 
 };

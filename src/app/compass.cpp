@@ -1087,7 +1087,11 @@ void COMPASS::darkMode(bool value)
 
 void COMPASS::colorMode(unsigned int value)
 {
+    if (color_mode_ == value)
+        return;
+
     color_mode_ = value;
+    emit colorModeChangedSignal(color_mode_);
 }
 
 const char* COMPASS::lineEditInvalidStyle()

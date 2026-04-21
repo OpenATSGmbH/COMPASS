@@ -23,6 +23,7 @@ pipeline {
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
+        booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
         booleanParam(name: 'DATASET_05H', defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
@@ -64,13 +65,14 @@ pipeline {
             steps {
                 script {
                     def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
+                    def asanFlag  = params.ASAN ? '--asan' : ''
                     sh """
                         docker run --rm \
                             -v \$(pwd):/workspace/compass \
                             -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
                             -w /workspace/compass/docker \
                             ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} && ./build_compass.sh ${cleanFlag}'
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} ${asanFlag} && ./build_compass.sh ${cleanFlag} ${asanFlag}'
                     """
                 }
             }
@@ -91,39 +93,24 @@ pipeline {
 
         stage('AppImage') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v \$(pwd):/workspace/compass \
-                        -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
-                        -v ${CI_DIR}:${CI_DIR} \
-                        -w /workspace/compass \
-                        ${DOCKER_IMAGE} \
-                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh'
-                """
-                // Collect artifacts
-                sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
+                script {
+                    def asanFlag = params.ASAN ? '--asan' : ''
+                    sh """
+                        docker run --rm \
+                            -v \$(pwd):/workspace/compass \
+                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -v ${CI_DIR}:${CI_DIR} \
+                            -w /workspace/compass \
+                            ${DOCKER_IMAGE} \
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
+                    """
+                    // Collect artifacts
+                    sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
+                }
             }
         }
 
         stage('Integration Tests') {
-            // Heap-corruption diagnostics for the eval-shutdown SIGABRT bug
-            // (scoped to this stage so it does not affect docker host invocations
-            // in the build/unit-test/AppImage stages):
-            //   - LIBC_FATAL_STDERR_=1: route glibc fatal messages (e.g.
-            //     "free(): invalid next size") to stderr instead of the default
-            //     /dev/tty, so the test harness can capture them.
-            //   - LD_PRELOAD libc_malloc_debug.so.0: re-enables the debug malloc
-            //     allocator that glibc 2.34 disabled by default — required for
-            //     glibc.malloc.check below to take effect.
-            //   - GLIBC_TUNABLES glibc.malloc.check=3: extra consistency checks
-            //     on every malloc/free; aborts at the corrupting write instead
-            //     of an unrelated later free. Replaces deprecated MALLOC_CHECK_.
-            // Inherited by the AppImage child process via the python test harness.
-            environment {
-                LIBC_FATAL_STDERR_ = '1'
-                LD_PRELOAD         = '/usr/lib64/libc_malloc_debug.so.0'
-                GLIBC_TUNABLES     = 'glibc.malloc.check=3'
-            }
             when {
                 expression {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
@@ -168,14 +155,23 @@ pipeline {
                     def scriptsDir = "${runDir}/scripts"
 
                     // Run tests for each selected dataset
+                    // When ASAN=true, set runtime options for the sanitized binary:
+                    //   abort_on_error=1 makes ASan SIGABRT on first error so the
+                    //     test framework's shutdown-crash flagging catches it.
+                    //   detect_leaks=0 disables LSan at exit (Qt/osg teardown
+                    //     produces noisy metadata leaks unrelated to the target bug).
+                    //   log_path writes per-process ASan reports to <runDir>/asan.<pid>,
+                    //     surviving pipe drops and archived with the build artifacts.
+                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:detect_leaks=0:log_path=${runDir}/asan' " : ''
+
                     for (dataset in datasets) {
                         def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"
 
-                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})"
+                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
 
                         sh """
                             cd '${scriptsDir}/test_infra' && \
-                            PYTHONPATH='${scriptsDir}' python3 test_suite.py \
+                            ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
                                 --manifest='${manifest}' \

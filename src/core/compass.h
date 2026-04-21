@@ -67,6 +67,7 @@ signals:
     void databaseOpenedSignal();
     void databaseClosedSignal();
     void appModeSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
+    void colorModeChangedSignal(unsigned int mode);
 
 public:
     explicit COMPASS(ConfigurationManager& config_manager);

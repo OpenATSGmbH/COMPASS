@@ -102,6 +102,11 @@ protected:
 private:
     void updateDateTimeInfoFromVariables();
 
+    QColor resolveSeriesColor(const std::string& ds_type,
+                              const std::string& ds_name,
+                              int line_index,
+                              const std::string& dbcontent_name);
+
     DrawState updateChart();
     DrawState updateDataSeries(QtCharts::QChart* chart);
 
