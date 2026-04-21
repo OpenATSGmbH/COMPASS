@@ -80,14 +80,21 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                sh """
-                    docker run --rm --init \
-                        -v \$(pwd):/workspace/compass \
-                        -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
-                        -w /workspace/compass \
-                        ${DOCKER_IMAGE} \
-                        bash -c 'MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
-                """
+                script {
+                    // When ASAN=true, LSan runs at process exit and returns its own
+                    // nonzero exitcode (default 23) when it finds leaks — that would
+                    // fail the stage even if all assertions passed. exitcode=0 keeps
+                    // leak output visible while letting the real test exit code stand.
+                    def lsanEnv = params.ASAN ? "LSAN_OPTIONS=exitcode=0 " : ''
+                    sh """
+                        docker run --rm --init \
+                            -v \$(pwd):/workspace/compass \
+                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -w /workspace/compass \
+                            ${DOCKER_IMAGE} \
+                            bash -c '${lsanEnv}MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
+                    """
+                }
             }
         }
 
@@ -160,10 +167,16 @@ pipeline {
                     //     test framework's shutdown-crash flagging catches it.
                     //   log_path writes per-process ASan reports to <runDir>/asan.<pid>,
                     //     surviving pipe drops and archived with the build artifacts.
-                    // LeakSanitizer output (framework-level leaks from Qt/fontconfig
-                    // teardown, etc.) is left enabled so any regression in our own
-                    // leaks shows up alongside the known framework noise.
-                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' " : ''
+                    // LSAN_OPTIONS exitcode=0 keeps leak output visible but prevents
+                    // LSan's default exit 23 (on detected leaks) from surfacing as a
+                    // returncode — without this, isCrashed() in the test framework
+                    // wrongly flags every clean shutdown with framework leaks as a crash.
+                    // Real ASan errors (heap-corruption etc.) still abort via
+                    // abort_on_error=1 → SIGABRT → watchdog relays 128+6=134.
+                    // COMPASS_QUIT_TIMEOUT_SEC=180: ASan's atexit leak scan adds
+                    // 10-30s to shutdown; the default 60s in closeCOMPASS would
+                    // force-kill slow shutdowns, spuriously flagging tests as crashed.
+                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
 
                     for (dataset in datasets) {
                         def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"
