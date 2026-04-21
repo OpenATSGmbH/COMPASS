@@ -48,7 +48,7 @@ TEST_CASE("ColorProvider default DSType palette", "[color_provider]")
     REQUIRE(ColorProvider::defaultDSTypeColor("Radar") == QColor(Qt::green));
     REQUIRE(ColorProvider::defaultDSTypeColor("ADSB") == QColor(Qt::blue));
     REQUIRE(ColorProvider::defaultDSTypeColor("MLAT") == QColor(Qt::red));
-    REQUIRE(ColorProvider::defaultDSTypeColor("Tracker") == QColor(Qt::white));
+    REQUIRE(ColorProvider::defaultDSTypeColor("Tracker").name() == QStringLiteral("#dddddd"));
     REQUIRE(ColorProvider::defaultDSTypeColor("RefTraj").name() == QStringLiteral("#ffa500"));
     REQUIRE(ColorProvider::defaultDSTypeColor("Other").name() == QStringLiteral("#800080"));
 

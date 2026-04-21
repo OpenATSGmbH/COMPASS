@@ -119,7 +119,7 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     bounds_ = {};
 
-    data_model_.updateFrom(scatter_series_);
+    data_model_.updateFrom(scatter_series_, view_->compass());
 }
 
 /**
@@ -306,7 +306,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    data_model_.updateFrom(scatter_series_);
+    data_model_.updateFrom(scatter_series_, view_->compass());
     loginf << "applying " << hidden_series_.size() << " hidden series after processStash";
     data_model_.applyHiddenSeriesNames(hidden_series_);
 
@@ -449,7 +449,7 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
 
         correctSeriesDateTime(scatter_series_);
 
-        data_model_.updateFrom(scatter_series_);
+        data_model_.updateFrom(scatter_series_, view_->compass());
         data_model_.applyHiddenSeriesNames(hidden_series_);
 
         bounds_ = scatter_series_.getDataBounds();

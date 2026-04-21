@@ -158,11 +158,12 @@ pipeline {
                     // When ASAN=true, set runtime options for the sanitized binary:
                     //   abort_on_error=1 makes ASan SIGABRT on first error so the
                     //     test framework's shutdown-crash flagging catches it.
-                    //   detect_leaks=0 disables LSan at exit (Qt/osg teardown
-                    //     produces noisy metadata leaks unrelated to the target bug).
                     //   log_path writes per-process ASan reports to <runDir>/asan.<pid>,
                     //     surviving pipe drops and archived with the build artifacts.
-                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:detect_leaks=0:log_path=${runDir}/asan' " : ''
+                    // LeakSanitizer output (framework-level leaks from Qt/fontconfig
+                    // teardown, etc.) is left enabled so any regression in our own
+                    // leaks shows up alongside the known framework noise.
+                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' " : ''
 
                     for (dataset in datasets) {
                         def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"

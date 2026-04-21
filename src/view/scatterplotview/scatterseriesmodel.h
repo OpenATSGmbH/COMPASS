@@ -28,6 +28,7 @@
 #include <QModelIndex>
 #include <QVariant>
 
+class COMPASS;
 
 class ScatterSeriesModel : public QAbstractItemModel
 {
@@ -51,7 +52,10 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
-    void updateFrom (ScatterSeriesCollection& collection);
+    /// builds the 4-level tree: DSType -> DS -> Line -> DBContent. Group-level
+    /// icon colors are resolved via `compass` (context palettes + DataSource
+    /// baseColor / lineColor). Leaf colors come from `DataSeries::color`.
+    void updateFrom(ScatterSeriesCollection& collection, COMPASS& compass);
 
     enum DataRole
     {

@@ -50,10 +50,19 @@ class ScatterSeriesTreeItem : public QObject
     Q_OBJECT
 
 public:
-    explicit ScatterSeriesTreeItem(const std::string& name,
-                                   ScatterSeriesModel& model,
-                                   ScatterSeriesCollection::DataSeries* data_series = nullptr,
-                                   ScatterSeriesTreeItem* parent_item = nullptr);
+    // leaf (DBContent level) — carries a DataSeries; its color is editable
+    ScatterSeriesTreeItem(const std::string& name,
+                          const QColor& color,
+                          ScatterSeriesModel& model,
+                          ScatterSeriesCollection::DataSeries* data_series,
+                          ScatterSeriesTreeItem* parent_item);
+
+    // group (DSType / DS / Line) — no data series, color used only for icon
+    ScatterSeriesTreeItem(const std::string& name,
+                          const QColor& color,
+                          ScatterSeriesModel& model,
+                          ScatterSeriesTreeItem* parent_item = nullptr);
+
     virtual ~ScatterSeriesTreeItem();
 
     virtual ScatterSeriesTreeItem* child(int row);
@@ -84,19 +93,13 @@ public:
 
     const std::string& name() const { return name_; }
     bool hasDataSeries() const { return data_series_ != nullptr; }
+    bool canEditColor() const { return data_series_ != nullptr; }
     QColor color() const;
     void setColor(const QColor& color);
     void emitColorChanged();
 
-    // void moveChildUp(OSGLayerTreeItem* child);
-    // void moveChildDown(OSGLayerTreeItem* child);
-    // void moveChildToBegin(OSGLayerTreeItem* child);
-    // void moveChildToEnd(OSGLayerTreeItem* child);
-
-    // void moveUp();
-    // void moveDown();
-    // void moveToBegin();
-    // void moveToEnd();
+    /// build a 14x14 rounded-square icon (mirrors DataSourcesWidget::makeColorIcon)
+    static QIcon makeColorIcon(const QColor& color);
 
     unsigned int getIndexOf(ScatterSeriesTreeItem* child);
 
@@ -112,9 +115,9 @@ protected:
     ScatterSeriesCollection::DataSeries* data_series_{nullptr};
     ScatterSeriesTreeItem* parent_item_{nullptr};
 
-    QIcon color_icon_;
+    QColor color_;
+    QIcon  color_icon_;
 
-    //void removeChild(ScatterSeriesTreeItem* child);
-
+    void rebuildColorIcon();
 };
 

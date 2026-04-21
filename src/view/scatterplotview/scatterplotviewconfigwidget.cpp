@@ -75,6 +75,10 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
         connect(&view_widget->getViewDataWidget()->dataModel(), &ScatterSeriesModel::visibilityChangedSignal,
                 this, &ScatterPlotViewConfigWidget::updateToVisibilitySlot);
 
+        // tree collapses on beginResetModel/endResetModel — re-expand after each refresh
+        connect(&view_widget->getViewDataWidget()->dataModel(), &QAbstractItemModel::modelReset,
+                this, &ScatterPlotViewConfigWidget::updateToVisibilitySlot);
+
         //getTabWidget()->addTab(layer_view_, "Layers");
         layout->addWidget(layer_view_);
 
