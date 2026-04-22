@@ -43,6 +43,9 @@ namespace rtcommand
     class  RTCommandShell;
 }
 
+// forward declaration keeps the heavy boost/asio header out of this .h
+namespace boost { namespace asio { class io_context; } }
+
 class TCPServer;
 class COMPASS;
 
@@ -97,6 +100,14 @@ protected:
     volatile bool stop_requested_ {false};
     volatile bool stopped_ {false};
 
+    // io_context_ must be declared BEFORE server_ so that on destruction
+    // members are torn down in the correct order: server_ (and its TCPSession
+    // sockets) first, then io_context_. Reversing this order caused a
+    // heap-use-after-free when ~TCPSession's basic_stream_socket destructor
+    // tried to touch the reactive_socket_service after its parent io_context
+    // had already been destroyed. held via unique_ptr + forward-decl so the
+    // heavy boost/asio header stays out of this public interface.
+    std::unique_ptr<boost::asio::io_context> io_context_;
     std::unique_ptr<TCPServer> server_;
     unsigned int port_num_ {27960};
 
