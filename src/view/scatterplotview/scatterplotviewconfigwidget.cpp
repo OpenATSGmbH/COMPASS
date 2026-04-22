@@ -121,7 +121,23 @@ void ScatterPlotViewConfigWidget::useConnectionLinesSlot()
 void ScatterPlotViewConfigWidget::updateToVisibilitySlot()
 {
     traced_assert(layer_view_);
-    layer_view_->expandToDepth(3);
+
+    // Expand default depth by the current color mode so that the level whose
+    // color is currently being distinguished is visible:
+    //   DSType mode        -> show only DSType rows (collapsed)
+    //   DataSource mode    -> expand DSType  (depth 0)
+    //   DataSourceLine mode-> expand DataSource (depth 1)
+    //   DBContent mode     -> expand Line (depth 2) = fully expanded
+    const unsigned int mode = view_->compass().colorMode();
+    switch (mode)
+    {
+        case 0: /* DSType         */ layer_view_->collapseAll(); break;
+        case 2: /* DataSource     */ layer_view_->expandToDepth(0); break;
+        case 3: /* DataSourceLine */ layer_view_->expandToDepth(1); break;
+        case 1: /* DBContent      */ layer_view_->expandToDepth(2); break;
+        default:                     layer_view_->expandToDepth(2); break;
+    }
+
     layer_view_->header()->resizeSection(0 /*column index*/, 300 /*width*/);
 }
 

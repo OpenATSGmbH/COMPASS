@@ -107,8 +107,8 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
     QFontMetrics fm(QApplication::font());
     const int row_h  = option.rect.height();
     const int cbox_w = fm.height();
-    const int icon_w = 14;
-    const int icon_h = 14;
+    // const int icon_w = 14; // only needed for the (disabled) color-pick hit test
+    // const int icon_h = 14;
     int x = option.rect.left();
     const int y = option.rect.top();
 
@@ -126,24 +126,27 @@ bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemMode
         x += cbox_w + space;
     }
 
-    const QRect icon_rect(x, y + (row_h - icon_h) / 2, icon_w, icon_h);
-    if (icon_rect.contains(clickX, clickY))
-    {
-        if (item->canEditColor())
-        {
-            QColor color = QColorDialog::getColor(item->color(), nullptr,
-                                                  QString::fromStdString(item->name()));
-            if (color.isValid())
-            {
-                item->setColor(color);
-                item->emitColorChanged();
-            }
-        }
-        else if (item->hasMenu())
-        {
-            item->execMenu(QPoint(e->globalX(), e->globalY()));
-        }
-    }
+    // Color picking disabled — colors are owned by the data context and must
+    // not be edited from the layers tree.
+    // const QRect icon_rect(x, y + (row_h - icon_h) / 2, icon_w, icon_h);
+    // if (icon_rect.contains(clickX, clickY))
+    // {
+    //     if (item->canEditColor())
+    //     {
+    //         QColor color = QColorDialog::getColor(item->color(), nullptr,
+    //                                               QString::fromStdString(item->name()));
+    //         if (color.isValid())
+    //         {
+    //             item->setColor(color);
+    //             item->emitColorChanged();
+    //         }
+    //     }
+    //     else if (item->hasMenu())
+    //     {
+    //         item->execMenu(QPoint(e->globalX(), e->globalY()));
+    //     }
+    // }
+    (void) x;
     return true;
 }
 
@@ -178,16 +181,19 @@ void ScatterSeriesTreeItem::rebuildColorIcon()
 ScatterSeriesTreeItem::ScatterSeriesTreeItem(
     const std::string& name, const QColor& color, ScatterSeriesModel& model,
     ScatterSeriesCollection::DataSeries* data_series,
-    ScatterSeriesTreeItem* parent_item)
-    : name_(name), model_(model), data_series_(data_series), parent_item_(parent_item), color_(color)
+    ScatterSeriesTreeItem* parent_item,
+    ScatterSeriesTreeItem::Level level)
+    : name_(name), model_(model), data_series_(data_series), parent_item_(parent_item),
+      level_(level), color_(color)
 {
     rebuildColorIcon();
 }
 
 ScatterSeriesTreeItem::ScatterSeriesTreeItem(
     const std::string& name, const QColor& color, ScatterSeriesModel& model,
-    ScatterSeriesTreeItem* parent_item)
-    : name_(name), model_(model), parent_item_(parent_item), color_(color)
+    ScatterSeriesTreeItem* parent_item,
+    ScatterSeriesTreeItem::Level level)
+    : name_(name), model_(model), parent_item_(parent_item), level_(level), color_(color)
 {
     rebuildColorIcon();
 }
@@ -332,18 +338,60 @@ QVariant ScatterSeriesTreeItem::data(int column) const
         return name_.c_str();
     else if (column == 1)
     {
-        if (data_series_)
-            return (unsigned int) data_series_->scatter_series.points.size();
-        else
+        if (level_ == Level::Root)
             return QVariant();
+        return totalCount();
     }
     else
         traced_assert(false);
 }
 
+unsigned int ScatterSeriesTreeItem::totalCount() const
+{
+    if (data_series_)
+        return (unsigned int) data_series_->scatter_series.points.size();
+
+    unsigned int sum = 0;
+    for (const auto& child_it : child_items_)
+        sum += child_it.second->totalCount();
+    return sum;
+}
+
 QVariant ScatterSeriesTreeItem::icon() const
 {
+    if (!color_.isValid())
+        return QVariant();
     return color_icon_;
+}
+
+void ScatterSeriesTreeItem::recomputeColorFromDirectChildren()
+{
+    QColor common;
+    bool first = true;
+    bool mixed = false;
+    for (auto& c : child_items_)
+    {
+        const QColor cc = c.second->color_;
+        if (first) { common = cc; first = false; continue; }
+        if (common != cc) { mixed = true; break; }
+    }
+    color_ = (mixed || !common.isValid()) ? QColor() : common;
+    rebuildColorIcon();
+}
+
+void ScatterSeriesTreeItem::recomputeEffectiveColorRecursive()
+{
+    if (data_series_)
+    {
+        // leaf — authoritative color is already in color_
+        rebuildColorIcon();
+        return;
+    }
+
+    for (auto& c : child_items_)
+        c.second->recomputeEffectiveColorRecursive();
+
+    recomputeColorFromDirectChildren();
 }
 
 ScatterSeriesTreeItem* ScatterSeriesTreeItem::parentItem() { return parent_item_; }
@@ -363,11 +411,26 @@ QColor ScatterSeriesTreeItem::color() const
 
 void ScatterSeriesTreeItem::setColor(const QColor& color)
 {
+    // Cascade down: self + every descendant gets this color, and each leaf's
+    // DataSeries is updated so the chart redraw picks it up.
+    applyColorSubtree(color);
+
+    // Propagate up: ancestors re-unify based on their direct children.
+    for (auto* p = parent_item_; p; p = p->parent_item_)
+        p->recomputeColorFromDirectChildren();
+
+    model_.notifyIconChangedSubtreeAndAncestors(this);
+}
+
+void ScatterSeriesTreeItem::applyColorSubtree(const QColor& color)
+{
     color_ = color;
     if (data_series_)
-        data_series_->color = color; // keep chart in sync until next redraw
-
+        data_series_->color = color;
     rebuildColorIcon();
+
+    for (auto& c : child_items_)
+        c.second->applyColorSubtree(color);
 }
 
 void ScatterSeriesTreeItem::emitColorChanged()

@@ -21,11 +21,8 @@
 #include "traced_assert.h"
 
 #include "compass.h"
-#include "color_provider.h"
-#include "data_source.h"
-#include "db_context.h"
-#include "db_context_manager.h"
 
+#include <functional>
 #include <vector>
 
 using namespace std;
@@ -33,7 +30,8 @@ using namespace std;
 ScatterSeriesModel::ScatterSeriesModel()
     : QAbstractItemModel(nullptr)
 {
-    root_item_.reset(new ScatterSeriesTreeItem("Data", QColor(), *this, nullptr));
+    root_item_.reset(new ScatterSeriesTreeItem("Data", QColor(), *this, nullptr,
+                                               ScatterSeriesTreeItem::Level::Root));
 }
 
 ScatterSeriesModel::~ScatterSeriesModel()
@@ -91,8 +89,9 @@ QVariant ScatterSeriesModel::headerData(int section, Qt::Orientation orientation
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     {
-        logdbg << "returning root data";
-        return root_item_->data(section);
+        if (section == 0) return QString("Name");
+        if (section == 1) return QString("Count");
+        return QVariant();
     }
 
     logdbg << "wrong role";
@@ -207,75 +206,11 @@ bool splitSeriesKey(const std::string& key,
     return true;
 }
 
-QColor dsTypeIconColor(const std::string& ds_type, COMPASS& compass)
-{
-    if (compass.dbContextManager().hasActiveContext())
-    {
-        const auto& palette = compass.dbContextManager().activeContext().colors().ds_type_colors;
-        auto it = palette.find(ds_type);
-        if (it != palette.end() && it->second.isValid())
-            return it->second;
-    }
-    return context::ColorProvider::defaultDSTypeColor(ds_type);
-}
-
-QColor dbContentIconColor(const std::string& dbcontent, COMPASS& compass)
-{
-    if (compass.dbContextManager().hasActiveContext())
-    {
-        const auto& palette = compass.dbContextManager().activeContext().colors().dbcontent_colors;
-        auto it = palette.find(dbcontent);
-        if (it != palette.end() && it->second.isValid())
-            return it->second;
-    }
-    return context::ColorProvider::defaultDBContentColor(dbcontent);
-}
-
-const context::DataSource* lookupDataSource(const std::string& ds_name, COMPASS& compass)
-{
-    auto& ctx_mgr = compass.dbContextManager();
-    if (!ctx_mgr.hasActiveContext() || !ctx_mgr.hasDataSource(ds_name))
-        return nullptr;
-    return ctx_mgr.dataSource(ctx_mgr.getDataSourceId(ds_name));
-}
-
-QColor dsIconColor(const context::DataSource* ds, const std::string& ds_name)
-{
-    if (ds && ds->baseColor().isValid())
-        return ds->baseColor();
-    return QColor(QString::fromStdString(std::string())); // invalid -> empty icon slot
-    (void)ds_name;
-}
-
-QColor lineIconColor(const context::DataSource* ds, unsigned int line_id)
-{
-    if (ds)
-    {
-        QColor c = ds->lineColor(line_id);
-        if (c.isValid())
-            return c;
-        if (ds->baseColor().isValid())
-        {
-            auto shades = context::ColorProvider::autoLineColors(ds->baseColor());
-            return shades[line_id];
-        }
-    }
-    return QColor(); // invalid -> empty icon slot
-}
-
-int lineIndexFromToken(const std::string& line_tok)
-{
-    if (line_tok.size() >= 2 && line_tok[0] == 'L')
-    {
-        try { return std::stoi(line_tok.substr(1)) - 1; } catch (...) {}
-    }
-    return 0;
-}
-
 ScatterSeriesTreeItem* findOrCreateGroup(ScatterSeriesTreeItem* parent,
                                         const std::string& name,
                                         const QColor& color,
-                                        ScatterSeriesModel& model)
+                                        ScatterSeriesModel& model,
+                                        ScatterSeriesTreeItem::Level level)
 {
     for (int i = 0; i < parent->childCount(); ++i)
     {
@@ -283,7 +218,7 @@ ScatterSeriesTreeItem* findOrCreateGroup(ScatterSeriesTreeItem* parent,
         if (c && c->name() == name)
             return c;
     }
-    auto* item = new ScatterSeriesTreeItem(name, color, model, parent);
+    auto* item = new ScatterSeriesTreeItem(name, color, model, parent, level);
     parent->appendChild(item);
     return item;
 }
@@ -292,9 +227,13 @@ ScatterSeriesTreeItem* findOrCreateGroup(ScatterSeriesTreeItem* parent,
 
 void ScatterSeriesModel::updateFrom(ScatterSeriesCollection& collection, COMPASS& compass)
 {
+    (void) compass; // kept for API stability; colors now come from the series themselves
+
     beginResetModel();
 
     root_item_->clear();
+
+    using L = ScatterSeriesTreeItem::Level;
 
     for (auto& col_it : collection.dataSeries())
     {
@@ -303,29 +242,58 @@ void ScatterSeriesModel::updateFrom(ScatterSeriesCollection& collection, COMPASS
         {
             // malformed key — drop flat under root so it's still visible
             auto* leaf = new ScatterSeriesTreeItem(col_it.first, col_it.second.color,
-                                                   *this, &col_it.second, root_item_.get());
+                                                   *this, &col_it.second, root_item_.get(),
+                                                   L::DBContent);
             root_item_->appendChild(leaf);
             continue;
         }
 
-        const int line_index   = lineIndexFromToken(line_tok);
-        const unsigned int lid = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
-        const context::DataSource* ds = lookupDataSource(ds_name, compass);
-
+        // groups start with invalid color; it gets derived from descendant
+        // leaves below. Only leaves carry an authoritative color (the chart
+        // color assigned via resolveSeriesColor).
         auto* ds_type_item = findOrCreateGroup(root_item_.get(), ds_type,
-                                               dsTypeIconColor(ds_type, compass), *this);
+                                               QColor(), *this, L::DSType);
         auto* ds_item      = findOrCreateGroup(ds_type_item, ds_name,
-                                               dsIconColor(ds, ds_name), *this);
+                                               QColor(), *this, L::DataSource);
         auto* line_item    = findOrCreateGroup(ds_item, line_tok,
-                                               lineIconColor(ds, lid), *this);
+                                               QColor(), *this, L::Line);
 
-        const QColor leaf_color = dbContentIconColor(dbcontent, compass);
-        auto* leaf = new ScatterSeriesTreeItem(dbcontent, leaf_color,
-                                               *this, &col_it.second, line_item);
+        auto* leaf = new ScatterSeriesTreeItem(dbcontent, col_it.second.color,
+                                               *this, &col_it.second, line_item,
+                                               L::DBContent);
         line_item->appendChild(leaf);
     }
 
+    // propagate leaf colors up: a group's icon shows the common color of its
+    // descendant leaves, or no icon if they disagree.
+    root_item_->recomputeEffectiveColorRecursive();
+
     endResetModel();
+}
+
+void ScatterSeriesModel::notifyIconChangedSubtreeAndAncestors(ScatterSeriesTreeItem* item)
+{
+    if (!item) return;
+
+    // self + descendants
+    std::function<void(ScatterSeriesTreeItem*)> walk = [&](ScatterSeriesTreeItem* it)
+    {
+        if (it != root_item_.get())
+        {
+            QModelIndex idx = createIndex(it->row(), 0, it);
+            emit dataChanged(idx, idx, {Qt::DecorationRole, IconRole});
+        }
+        for (int i = 0; i < it->childCount(); ++i)
+            walk(it->child(i));
+    };
+    walk(item);
+
+    // ancestors
+    for (auto* a = item->parentItem(); a && a != root_item_.get(); a = a->parentItem())
+    {
+        QModelIndex idx = createIndex(a->row(), 0, a);
+        emit dataChanged(idx, idx, {Qt::DecorationRole, IconRole});
+    }
 }
 
 void ScatterSeriesModel::deselectAll()
