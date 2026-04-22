@@ -63,12 +63,6 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
 
     QFormLayout* form_layout1 = new QFormLayout;
 
-    QCheckBox* auto_label_check = new QCheckBox();
-    auto_label_check->setChecked(label_generator_.autoLabel());
-    connect(auto_label_check, &QCheckBox::clicked,
-            this, &LabelGeneratorWidget::autoLabelChangedSlot);
-    form_layout1->addRow("Show Automatic Labels", auto_label_check);
-
     // lod
     QComboBox* lod_box = new QComboBox();
     lod_box->addItems({"Auto", "1", "2", "3"});
@@ -94,6 +88,13 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
              this, &LabelGeneratorWidget::opacitySliderChangedSlot);
 
     form_layout1->addRow(tr("Label Opacity"), opacity_slider);
+
+    //auto labels
+    QCheckBox* auto_label_check = new QCheckBox();
+    auto_label_check->setChecked(label_generator_.autoLabel());
+    connect(auto_label_check, &QCheckBox::clicked,
+            this, &LabelGeneratorWidget::autoLabelChangedSlot);
+    form_layout1->addRow("Show Automatic Labels", auto_label_check);
 
     // declutter
     QCheckBox* declutter_box = new QCheckBox();

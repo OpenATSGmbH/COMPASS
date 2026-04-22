@@ -165,9 +165,9 @@ bool DBContentItemProvider::groupingIsTargetSpecific() const
  */
 void DBContentItemProvider::reset()
 {
-    item_groups_.clear();
-
     reset_impl();
+
+    item_groups_.clear();
 
     emit dataResetSignal();
 }

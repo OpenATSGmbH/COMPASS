@@ -147,6 +147,9 @@ public:
 
     QImage renderContents();
 
+    void databaseOpened();
+    void databaseClosed();
+
     static QIcon getIcon(const std::string& fn);
 
     static const int DataWidgetStretch;

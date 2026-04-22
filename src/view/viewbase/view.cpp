@@ -139,12 +139,20 @@ bool View::init()
 */
 void View::databaseOpened()
 {
+    if (widget_)
+        widget_->databaseOpened();
+
+    databaseOpened_impl();
 }
 
 /**
 */
 void View::databaseClosed()
 {
+    if (widget_)
+        widget_->databaseClosed();
+
+    databaseClosed_impl();
 }
 
 /**
