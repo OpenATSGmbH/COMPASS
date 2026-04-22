@@ -17,6 +17,7 @@
 
 #include "db_context.h"
 
+#include "color_provider.h"
 #include "sector.h"
 #include "traced_assert.h"
 #include "timeconv.h"
@@ -28,6 +29,83 @@ using namespace nlohmann;
 
 namespace context
 {
+
+// ============================================================
+// ContextColors
+// ============================================================
+
+ContextColors ContextColors::withDefaults()
+{
+    ContextColors c;
+    c.preference = Preference::Light;
+    c.ds_type_colors = ColorProvider::defaultDSTypeColors();
+    c.dbcontent_colors = ColorProvider::defaultDBContentColors();
+    return c;
+}
+
+json ContextColors::toJSON() const
+{
+    json j;
+    j["preference"] = (preference == Preference::Dark) ? "Dark" : "Light";
+
+    json ds_types = json::object();
+    for (const auto& [name, color] : ds_type_colors)
+    {
+        if (color.isValid())
+            ds_types[name] = color.name().toStdString();
+    }
+    j["ds_type_colors"] = ds_types;
+
+    json dbc = json::object();
+    for (const auto& [name, color] : dbcontent_colors)
+    {
+        if (color.isValid())
+            dbc[name] = color.name().toStdString();
+    }
+    j["dbcontent_colors"] = dbc;
+
+    return j;
+}
+
+ContextColors ContextColors::fromJSON(const json& j)
+{
+    ContextColors c = withDefaults(); // start with defaults so missing keys still have a color
+
+    if (j.contains("preference"))
+    {
+        string p = j.at("preference").get<string>();
+        c.preference = (p == "Dark") ? Preference::Dark : Preference::Light;
+    }
+
+    if (j.contains("ds_type_colors") && j.at("ds_type_colors").is_object())
+    {
+        for (auto it = j.at("ds_type_colors").begin(); it != j.at("ds_type_colors").end(); ++it)
+        {
+            string name = it.key();
+            string hex = it.value().get<string>();
+            c.ds_type_colors[name] = QColor(QString::fromStdString(hex));
+        }
+    }
+
+    if (j.contains("dbcontent_colors") && j.at("dbcontent_colors").is_object())
+    {
+        for (auto it = j.at("dbcontent_colors").begin(); it != j.at("dbcontent_colors").end(); ++it)
+        {
+            string name = it.key();
+            string hex = it.value().get<string>();
+            c.dbcontent_colors[name] = QColor(QString::fromStdString(hex));
+        }
+    }
+
+    return c;
+}
+
+bool ContextColors::operator==(const ContextColors& other) const
+{
+    return preference == other.preference
+        && ds_type_colors == other.ds_type_colors
+        && dbcontent_colors == other.dbcontent_colors;
+}
 
 DBContext::DBContext() = default;
 
@@ -171,6 +249,9 @@ bool DBContext::operator==(const DBContext& other) const
         if (sectors_[i]->jsonData() != other.sectors_[i]->jsonData())
             return false;
     }
+
+    if (colors_ != other.colors_)
+        return false;
 
     return true;
 }

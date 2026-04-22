@@ -184,7 +184,6 @@ TEST_CASE("Filter edit round-trip: clearConditions and rebuild", "[filter][dialo
 
     // Simulate edit: clear and rebuild with different conditions
     filter.clearConditions();
-    filter.removeSubConfigurations("DBFilterCondition");
     CHECK(filter.getNumConditions() == 0);
 
     // Add two new conditions (simulating what accept() does)

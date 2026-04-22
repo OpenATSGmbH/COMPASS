@@ -106,6 +106,8 @@ public slots:
 
     void toggleFullscreenSlot();
 
+    void updateMenuEnabledState();
+
 public:
     explicit MainWindow(COMPASS& compass);
     virtual ~MainWindow();
@@ -159,6 +161,7 @@ protected:
     QMenu* open_recent_db_menu_ {nullptr};
     QAction* export_db_action_ {nullptr};
     QAction* close_db_action_ {nullptr};
+    QAction* save_config_action_ {nullptr};
     QAction* quit_wo_cfg_sav_action_ {nullptr};
 
     // configure sectors
@@ -167,7 +170,10 @@ protected:
     // context menu
     QMenu* context_menu_ {nullptr};
     QMenu* context_switch_menu_ {nullptr};
+    QAction* context_edit_action_ {nullptr};
+    QAction* context_compare_action_ {nullptr};
     QAction* context_new_action_ {nullptr};
+    QAction* context_copy_action_ {nullptr};
     QAction* context_delete_action_ {nullptr};
 
     // import menu

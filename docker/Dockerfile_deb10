@@ -116,11 +116,11 @@ RUN mkdir -p /usr/lib/x86_64-linux-gnu/cmake/libzip && \
     echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake && \
     echo ')' >> /usr/lib/x86_64-linux-gnu/cmake/libzip/libzip-config.cmake
 
-RUN git clone --branch osgearth-3.7.2 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.7.2
-RUN mkdir osgearth-3.7.2/build
-RUN cd osgearth-3.7.2/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release ..
-RUN cd osgearth-3.7.2/build && make -j$(nproc)
-RUN cd osgearth-3.7.2/build && make install
+RUN git clone --branch osgearth-3.8 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.8
+RUN mkdir osgearth-3.8/build
+RUN cd osgearth-3.8/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release ..
+RUN cd osgearth-3.8/build && make -j$(nproc)
+RUN cd osgearth-3.8/build && make install
 
 RUN wget https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip
 RUN unzip master.zip

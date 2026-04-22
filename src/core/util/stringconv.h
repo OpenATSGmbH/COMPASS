@@ -82,6 +82,8 @@ std::string getValueString(T value)
     return std::to_string(value);
 }
 
+extern std::string truncateForLog(const std::string& str, std::size_t max_len = 300);
+
 extern std::string compress(const std::vector<std::string>& values, char seperator);
 
 template <typename T>

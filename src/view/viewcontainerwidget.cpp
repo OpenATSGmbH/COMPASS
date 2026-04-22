@@ -109,7 +109,7 @@ void ViewContainerWidget::generateSubConfigurable(nlohmann::json& child_json)
     {
         traced_assert(tab_widget_);
         traced_assert(!view_container_);
-        view_container_ = new ViewContainer(child_json, view_manager_,
+        view_container_ = new ViewContainer(child_json, view_manager_, this,
                                             tab_widget_, String::getAppendedInt(instanceName()));
         traced_assert(view_container_);
     }

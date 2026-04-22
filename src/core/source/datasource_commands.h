@@ -28,30 +28,16 @@ extern void init_data_source_commands();
 
 
 // get_data_sources
-struct RTCommandGetConfigDataSources : public rtcommand::RTCommand
+struct RTCommandGetDataSources : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetConfigDataSources();
+    RTCommandGetDataSources();
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
 
-    DECLARE_RTCOMMAND(get_cfg_data_sources, "retrieves descriptions of data sources present in the configuration")
-    DECLARE_RTCOMMAND_NOOPTIONS
-};
-
-// get_data_sources_in_db
-struct RTCommandGetDBDataSources : public rtcommand::RTCommand
-{
-public:
-    RTCommandGetDBDataSources();
-
-protected:
-    virtual bool run_impl() override;
-    virtual bool checkResult_impl() override;
-
-    DECLARE_RTCOMMAND(get_db_data_sources, "retrieves descriptions of data sources present in the database")
+    DECLARE_RTCOMMAND(get_data_sources, "retrieves descriptions of data sources in the active context")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 

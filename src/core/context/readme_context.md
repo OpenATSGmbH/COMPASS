@@ -40,8 +40,9 @@ Related files outside this directory:
 
 - **NOT Configurable** -- uses own file-based persistence, not the `Configurable` JSON system.
 - **Owned by COMPASS** -- created in `COMPASS` constructor, accessed via `compass.dbContextManager()`.
-- **One active context at a time** -- all queries (data sources, FFTs, sectors) operate on the active context.
-- **Qt signals** for change notification: `activeContextChangedSignal()`, `contextsChangedSignal()`, `sectorsChangedSignal()`.
+- **"No Context" is a legal state** -- `hasActiveContext()` may be `false` at startup and at any time afterward (e.g. after deleting the active context). No startup dialog forces context selection; the main window disables everything except DB-open / context-create / exit while in this state. See [No Context state](#no-context-state).
+- **One active context at a time** -- when `hasActiveContext()` is true, all queries (data sources, FFTs, sectors) operate on the active context.
+- **Qt signals** for change notification: `activeContextChangedSignal()`, `contextsChangedSignal()`, `sectorsChangedSignal()`. These may fire with `hasActiveContext() == false` -- signal handlers must guard.
 
 ## DBContext (data container)
 
@@ -168,14 +169,39 @@ void importContext(const std::string& filepath);  // creates new context from fi
 
 GDAL-based sector import: `sector_utils::parseGDALFile(filepath)` returns `vector<ImportedSector>` with name and lat/lon polygon points.
 
+## No Context state
+
+COMPASS may legally run with no active context — `hasActiveContext()` returns `false`. This is the startup state when `~/.compass/data_contexts/active_context.json` is missing or names a context that no longer exists, and it is re-entered whenever the user deletes the active context.
+
+While in this state:
+
+- `activeContextName()` returns `""`, `activeContext()` returns a reference to a stable empty/reset `DBContext` (callers MUST guard with `hasActiveContext()` first -- the reference is only a safe fallback; treating its contents as meaningful is a bug).
+- The main menu is gated via `MainWindow::updateMenuEnabledState()`:
+  - **File**: only "Open", "Open Recent", and quit actions enabled.
+  - **Context**: only "New..." and (if any contexts exist) "Switch" enabled.
+  - **Import / Configuration / Process / UI**: entire menu disabled.
+- Runtime commands still work: `create_context`, `set_context`, `list_contexts`, and the import/export commands can bootstrap a context from scratch without any dialog.
+
+Leaving the state requires one of:
+1. `createContext(name)` followed by `setActiveContext(name)` (via GUI "New..." or `create_context` RT command).
+2. `setActiveContext(existing_name)` (via "Switch" or `set_context`).
+3. Opening a DB whose `db_context` table names a context -- `databaseOpenedSlot` adopts it silently (see below).
+
+`activeContextChangedSignal` fires both when entering and leaving "No Context". Signal handlers that dereference `activeContext()` MUST early-return when `!hasActiveContext()`.
+
 ## Database sync
 
 On DB open (`databaseOpenedSlot`):
-1. If no `db_context` table: write active context to DB.
-2. If table exists: compare file vs DB context via `DBContextDiff`. If differences exist, `DBContextConflictDialog` is shown with three options:
-   - **UseFile**: overwrite DB with the configuration file version.
-   - **UseDatabase**: overwrite the configuration file with the DB version.
-   - **Merge**: open `DBContextMergeDialog` for field-level resolution (pick file or DB value per field).
+1. **No active context + no `db_context` table**: stay in "No Context" state, log a warning (legacy DB with no stored context).
+2. **No active context + `db_context` table exists**: silently adopt the DB's stored context. If the context name is not yet known on disk, it is saved to `~/.compass/data_contexts/<name>/` and `setActiveContext()` is called. No conflict dialog.
+3. **Active context + no `db_context` table**: write active context to DB (new/empty DB).
+4. **Active context + `db_context` table exists**:
+   - Different context name -- align to DB by calling `setActiveContext(db_name)` (creating the context on disk if new).
+   - Same name, identical content -- no action.
+   - Same name, differing content -- `DBContextConflictDialog` is shown with three options:
+     - **UseFile**: overwrite DB with the configuration file version.
+     - **UseDatabase**: overwrite the configuration file with the DB version.
+     - **Merge**: open `DBContextMergeDialog` for field-level resolution (pick file or DB value per field).
 
 On save: `writeContextToDB()` writes to DB if open.
 
@@ -230,20 +256,35 @@ Context management dialogs: `Create`, `Select`, `Rename`, `Delete`, `Copy`.
 // From any manager that has COMPASS&
 auto& ctx_mgr = compass.dbContextManager();
 
-// Guard before using
+// Guard before using — "No Context" is a legal state, and activeContext()
+// asserts hasActiveContext() internally.
 if (ctx_mgr.hasActiveContext()) {
     auto& ctx = ctx_mgr.activeContext();
     // query data sources, FFTs, sectors...
 }
 
-// Connect to changes
-connect(&ctx_mgr, &DBContextManager::activeContextChangedSignal, this, &MyClass::onContextChanged);
+// Signal handlers MUST early-return when no context is active — the signal
+// fires both when entering and leaving the "No Context" state.
+void MyClass::onContextChanged() {
+    if (!ctx_mgr.hasActiveContext())
+        return;
+    // use ctx_mgr.activeContext() safely
+}
+
+connect(&ctx_mgr, &DBContextManager::activeContextChangedSignal,
+        this, &MyClass::onContextChanged);
 ```
+
+Many helper methods on `DBContextManager` (`hasDataSource`, `dataSource`, `hasDataSourcesOfDBContent`, `sectorsLoaded`, …) already perform the `hasActiveContext()` guard internally and return a safe default (`false`, `nullptr`, empty range) when no context is active. Prefer these over raw `activeContext()` access where applicable.
 
 ## Key patterns
 
-- **Guard with `hasActiveContext()`** before calling `activeContext()`.
-- **Conflict resolution on DB open** -- when file and DB contexts differ, a dialog lets the user choose file, DB, or field-level merge.
+- **"No Context" is legal** -- `hasActiveContext()` can be `false` at startup and any time afterward. Never assume a context is active.
+- **Guard with `hasActiveContext()`** before calling `activeContext()`. `activeContext()` asserts internally; the assert is intentional and stays.
+- **Signal handlers need early returns** -- `activeContextChangedSignal` fires both when entering and leaving "No Context". Example call sites with such guards: `FilterManager::dataSourcesChangedSlot`, `LabelGenerator::labelAllDSIDs`, `LabelDSWidget::updateListSlot`.
+- **UI gating replaces the old startup dialog** -- there is no `ensureActiveContext()` anymore. The main menu disables every action that requires a context (see [No Context state](#no-context-state)).
+- **DB auto-adoption** -- opening a DB that carries a `db_context` table automatically adopts it when no context is active, with no dialog.
+- **Conflict resolution on DB open** -- only shown when the active context and DB context have the same name but differing content.
 - **Sectors are cached** as `SectorLayer` objects, rebuilt via `rebuildSectorLayers()`.
 - **`info_` JSON field** in `DataSource` and `FFT` provides extensible metadata without schema changes.
 - **IDataSourceProvider** decouples widgets from the full manager.

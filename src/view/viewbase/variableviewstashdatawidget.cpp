@@ -187,12 +187,23 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
                     continue;
             }
 
-            if (ds_man.hasDataSource(ds_id))
-                group_name = ds_man.dataSource(ds_id)->name();
-            else
-                group_name = to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id));
+            std::string ds_type_str;
+            std::string ds_name_str;
 
-            group_name +=  " " + String::lineStrFrom(line_id);
+            if (ds_man.hasDataSource(ds_id))
+            {
+                const auto* ds = ds_man.dataSource(ds_id);
+                ds_type_str = ds->dsType();
+                ds_name_str = ds->name();
+            }
+            else
+            {
+                ds_type_str = "Other";
+                ds_name_str = to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id));
+            }
+
+            group_name = ds_type_str + ":" + ds_name_str + ":"
+                       + String::lineStrFrom(line_id) + ":" + dbcontent_name;
 
             grouped_indexes[group_name].push_back(index);
         }

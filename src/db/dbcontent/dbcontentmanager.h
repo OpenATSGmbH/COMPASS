@@ -128,6 +128,7 @@ public:
     void insertData(std::map<std::string, std::shared_ptr<Buffer>> data);
     bool insertInProgress() const;
 
+    void deleteData(const nlohmann::json& delete_info);
     void deleteDBContentData(boost::posix_time::ptime before_timestamp);
 
     DBContentManagerWidget* widget();
@@ -219,6 +220,7 @@ public:
 protected:
     void finishLoading();
     void finishInserting();
+    void finishDeleting();
 
     void addInsertedDataToChache();
     void filterDataSources();
@@ -282,6 +284,7 @@ protected:
     std::unique_ptr<dbContent::MetaVariableConfigurationDialog> meta_cfg_dialog_;
 
     std::shared_ptr<DBContentDeleteDBJob> delete_job_{nullptr};
+    nlohmann::json delete_info_;
     std::shared_ptr<DBContentInsertDBJob> insert_job_{nullptr};
 
     std::unique_ptr<ViewableDataConfig> viewable_data_cfg_;

@@ -20,17 +20,14 @@
 #include "rtcommand_registry.h"
 #include "db_context_manager.h"
 #include "dbcontentmanager.h"
-#include "dbcontentdeletedbjob.h"
 #include "dbinterface.h"
-#include "jobmanager.h"
 #include "compass.h"
 #include "logger.h"
 #include "json.hpp"
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(dbContent::RTCommandGetConfigDataSources)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetDBDataSources)
+REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandSetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandDeleteData)
 
@@ -41,51 +38,31 @@ namespace dbContent
 
 void init_data_source_commands()
 {
-    dbContent::RTCommandGetConfigDataSources::init();
-    dbContent::RTCommandGetDBDataSources::init();
+    dbContent::RTCommandGetDataSources::init();
     dbContent::RTCommandSetDataSources::init();
     dbContent::RTCommandDeleteData::init();
 }
 
-// get from config
+// get
 
-RTCommandGetConfigDataSources::RTCommandGetConfigDataSources()
+RTCommandGetDataSources::RTCommandGetDataSources()
     : rtcommand::RTCommand()
 {
     condition.setDelay(10);
 }
 
-bool RTCommandGetConfigDataSources::run_impl()
+bool RTCommandGetDataSources::run_impl()
 {
-    return true;
-}
-
-bool RTCommandGetConfigDataSources::checkResult_impl()
-{
-    auto& ctx_man = compass_->dbContextManager();
-
-    nlohmann::json j = nlohmann::json::array();
-    for (const auto& ds : ctx_man.activeContext().dataSources())
-        j.push_back(ds.toJSON());
-    setJSONReply(j);
+    if (!compass_->dbContextManager().hasActiveContext())
+    {
+        setResultMessage("No active context");
+        return false;
+    }
 
     return true;
 }
 
-// get from db
-
-RTCommandGetDBDataSources::RTCommandGetDBDataSources()
-    : rtcommand::RTCommand()
-{
-    condition.setDelay(10);
-}
-
-bool RTCommandGetDBDataSources::run_impl()
-{
-    return true;
-}
-
-bool RTCommandGetDBDataSources::checkResult_impl()
+bool RTCommandGetDataSources::checkResult_impl()
 {
     auto& ctx_man = compass_->dbContextManager();
 
@@ -112,6 +89,12 @@ bool RTCommandSetDataSources::run_impl()
 
     auto& ctx_man = compass_->dbContextManager();
 
+    if (!ctx_man.hasActiveContext())
+    {
+        setResultMessage("No active context");
+        return false;
+    }
+
     try
     {
         ds_json_ = nlohmann::json::parse(ds_json_str_);
@@ -120,7 +103,11 @@ bool RTCommandSetDataSources::run_impl()
         if (ds_json_.is_array())
         {
             for (const auto& ds_j : ds_json_)
-                ctx_man.activeContext().addOrReplaceDataSource(context::DataSource::fromJSON(ds_j));
+            {
+                auto ds = context::DataSource::fromJSON(ds_j);
+                ctx_man.autoAssignColors(ds);
+                ctx_man.activeContext().addOrReplaceDataSource(std::move(ds));
+            }
             ctx_man.saveContext(ctx_man.activeContextName());
         }
     }
@@ -194,23 +181,7 @@ bool RTCommandDeleteData::run_impl()
         return false;
     }
 
-    // clear loaded dataset
-    compass_->dbContentManager().clearData();
-
-    // create and submit delete job
-    auto job = make_shared<DBContentDeleteDBJob>(compass_->dbInterface());
-    job->setDeleteInfo(delete_info_);
-    job->cleanupDB(true);
-
-    auto& ctx_man = compass_->dbContextManager();
-
-    QObject::connect(job.get(), &DBContentDeleteDBJob::doneSignal,
-            &ctx_man, [&ctx_man, delete_info = delete_info_]()
-            {
-                ctx_man.applyDeleteInfo(delete_info);
-            }, Qt::QueuedConnection);
-
-    compass_->jobManager().addDBJob(job);
+    compass_->dbContentManager().deleteData(delete_info_);
 
     return true;
 }

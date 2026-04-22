@@ -91,9 +91,44 @@ Configurable::~Configurable()
     if (parent_)
         parent_->removeChild(this);
 
+    // Drop own sub-config entry from parent's sub_config_storage_ so it doesn't get
+    // re-emitted on the next saveConfiguration() as an orphan shell. Bulk teardown/rebuild
+    // flows opt out via setTmpDisableRemoveConfigOnDelete(true). At app shutdown
+    // saveConfiguration() has already written the JSON file before the Configurable tree
+    // is torn down, so this in-memory removal does not affect on-disk persistence.
+    if (parent_ && !tmp_disable_remove_config_on_delete_)
+    {
+        // parent_ must still have a live Configuration at this point — if not, a child is
+        // outliving its parent's base ~Configurable, which is a destruction-order bug.
+        traced_assert(parent_->configuration_);
+
+        if (parent_->configuration_->findSubConfig(class_name_, instance_name_))
+        {
+            logdbg << "removing sub-config " << class_name_ << "/" << instance_name_
+                   << " from parent " << parent_->className() << "/" << parent_->instanceName();
+            parent_->configuration_->removeSubConfiguration(class_name_, instance_name_);
+        }
+        else
+        {
+            // Legitimate in e.g. Configuration::reconfigure() error recovery, which removes
+            // the entry before the partially-constructed child's destructor runs.
+            logdbg << "no sub-config entry for " << class_name_ << "/" << instance_name_
+                   << " in parent " << parent_->className() << "/" << parent_->instanceName()
+                   << " — already removed";
+        }
+    }
+    else if (parent_ && tmp_disable_remove_config_on_delete_)
+    {
+        logdbg << "keeping sub-config " << class_name_ << "/" << instance_name_
+               << " in parent " << parent_->className() << "/" << parent_->instanceName()
+               << " (tmp_disable_remove_config_on_delete_)";
+    }
+
     // We own the Configuration, delete it
     delete configuration_;
     configuration_ = nullptr;
+
+    logdbg << "done";
 }
 
 std::string Configurable::keyID(const std::string& class_name,

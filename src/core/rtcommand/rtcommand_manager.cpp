@@ -29,6 +29,7 @@
 
 #include <QCoreApplication>
 
+#include <boost/asio/io_context.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
@@ -43,7 +44,8 @@ const std::string RTCommandManager::PingName = "ping";
 
 RTCommandManager::RTCommandManager(nlohmann::json& config, COMPASS* parent)
     : Configurable(config, parent),
-      compass_(*parent)
+      compass_(*parent),
+      io_context_(std::make_unique<boost::asio::io_context>())
 {
     logdbg;
 
@@ -64,18 +66,19 @@ void RTCommandManager::run()
 {
     loginf << "run";
 
-    boost::asio::io_context io_context;
-
+    // io_context is a class member (io_context_) so it outlives the TCPServer
+    // and its TCPSession sockets; previously a local stack io_context here
+    // caused a heap-use-after-free at shutdown (see rtcommand_manager.h).
     boost::thread t;
 
     if (open_port_)
     {
         loginf << "running io context for rt command port";
 
-        server_.reset(new TCPServer (io_context, port_num_));
+        server_.reset(new TCPServer (*io_context_, port_num_));
         server_->start();
 
-        t = boost::thread (boost::bind(&boost::asio::io_context::run, &io_context));
+        t = boost::thread (boost::bind(&boost::asio::io_context::run, io_context_.get()));
         t.detach();
     }
 
@@ -99,7 +102,7 @@ void RTCommandManager::run()
                 std::vector<std::string> cmds = server_->getStrData();
 
                 loginf << "got " << cmds.size() << " commands '"
-                  << String::compress(cmds, ';') << "'";
+                  << String::truncateForLog(String::compress(cmds, ';')) << "'";
 
                 // create commands from strings
                 for (const auto& cmd_str : cmds)
@@ -108,7 +111,8 @@ void RTCommandManager::run()
                     rtcommand::RTCommandResponse cmd_response(issue_info);
 
                     if (issue_info.issued)
-                        loginf << "added command " << cmd_str << " to queue, size " << command_queue_.size();
+                        loginf << "added command " << String::truncateForLog(cmd_str)
+                               << " to queue, size " << command_queue_.size();
 
                     server_->sendStrData(cmd_response.toJSONString());
                 }
@@ -150,8 +154,7 @@ void RTCommandManager::run()
                 rtcommand::RTCommandResponse cmd_response(cmd_result);
 
                 loginf << "result wait done, success " << cmd_response.isOk();
-                loginf << "response = ";
-                loginf << cmd_response.toJSONString();
+                loginf << "response = " << String::truncateForLog(cmd_response.toJSONString());
 
                 if (source == Source::Application)
                 {
@@ -184,8 +187,8 @@ void RTCommandManager::run()
 
     if (open_port_)
     {
-        io_context.stop();
-        traced_assert(io_context.stopped());
+        io_context_->stop();
+        traced_assert(io_context_->stopped());
 
         t.timed_join(100);
     }

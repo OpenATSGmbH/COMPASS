@@ -52,9 +52,11 @@ const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "MLAT Remote Un
 const std::string DataSourceEditWidget::TabNetworkLinesName    = "Network";
 
 DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines,
-    std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func)
+    std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func,
+    context::DBContextManager* ctx_man)
     : show_network_lines_(show_network_lines),
-    update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func)
+    update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func),
+    ctx_man_(ctx_man)
 {
     //setMaximumWidth(400);
 
@@ -200,6 +202,7 @@ void DataSourceEditWidget::createMainTab()
     main_layout->addLayout(form);
 
     delete_button_ = new QPushButton("Delete");
+    delete_button_->setIcon(QIcon());
     delete_button_->setToolTip("Deletes the data source in configuration");
     connect(delete_button_, &QPushButton::clicked, this, &DataSourceEditWidget::deleteSlot);
     main_layout->addWidget(delete_button_);
@@ -1715,4 +1718,5 @@ void DataSourceEditWidget::setTabVisibleCompat(int index, bool visible)
         tab_widget_->setCurrentIndex(0);
 #endif
 }
+
 

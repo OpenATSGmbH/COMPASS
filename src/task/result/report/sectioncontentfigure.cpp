@@ -138,7 +138,7 @@ bool SectionContentFigure::view(bool load_blocking) const
     }
 
     //view content
-    loginf << "content: " << nlohmann::json(*content).dump(4);
+    logdbg << "content: " << nlohmann::json(*content).dump(4);
     report_->setCurrentViewable(*content, load_blocking);
 
     return true;

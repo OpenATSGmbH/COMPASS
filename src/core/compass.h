@@ -67,6 +67,7 @@ signals:
     void databaseOpenedSignal();
     void databaseClosedSignal();
     void appModeSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
+    void colorModeChangedSignal(unsigned int mode);
 
 public:
     explicit COMPASS(ConfigurationManager& config_manager);
@@ -180,6 +181,10 @@ public:
     bool darkMode() const;
     void darkMode(bool value);
 
+    /// Color mode used by the Data Sources panel: 0=DSType, 1=DBContent, 2=DataSource, 3=DataSourceLine
+    unsigned int colorMode() const { return color_mode_; }
+    void colorMode(unsigned int value);
+
     const char* lineEditInvalidStyle();
 
     LogStream logInfo(const std::string& component,
@@ -225,6 +230,8 @@ protected:
     bool pdflatex_found_ {false};
 
     bool dark_mode_ {false};
+
+    unsigned int color_mode_ {0}; // 0=DSType, 1=DBContent, 2=DataSource, 3=DataSourceLine
 
     AppMode app_mode_ {AppMode::Offline};
     AppState app_state_ = AppState::Starting;

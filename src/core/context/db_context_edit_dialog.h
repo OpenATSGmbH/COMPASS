@@ -26,7 +26,7 @@ class QPushButton;
 class DataSourceEditWidget;
 class ASTERIXConfigWidget;
 
-namespace context { class SectorEditWidget; class FFTEditWidget; }
+namespace context { class SectorEditWidget; class FFTEditWidget; class ColorsEditWidget; }
 
 namespace context
 {
@@ -90,6 +90,7 @@ private:
     ASTERIXConfigWidget* asterix_widget_{nullptr};
     SectorEditWidget* sector_edit_widget_{nullptr};
     FFTEditWidget* fft_edit_widget_{nullptr};
+    ColorsEditWidget* colors_edit_widget_{nullptr};
 };
 
 } // namespace context

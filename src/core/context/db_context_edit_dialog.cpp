@@ -16,6 +16,7 @@
  */
 
 #include "db_context_edit_dialog.h"
+#include "colors_edit_widget.h"
 #include "db_context_edit_tree_item.h"
 #include "db_context_edit_tree_model.h"
 #include "db_context_manager.h"
@@ -217,7 +218,8 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     ds_edit_widget_ = new DataSourceEditWidget(
         false,
         [this](unsigned int) { manager_.saveContext(manager_.activeContextName()); rebuildTree(); },
-        [this](unsigned int id) { manager_.deleteDataSource(id); rebuildTree(); });
+        [this](unsigned int id) { manager_.deleteDataSource(id); rebuildTree(); },
+        &manager_);
     detail_stack_->addWidget(ds_edit_widget_);
 
     // create ASTERIX config widget
@@ -246,6 +248,12 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         rebuildTree();
     }, this);
     detail_stack_->addWidget(fft_edit_widget_);
+
+    // create colors edit widget
+    colors_edit_widget_ = new ColorsEditWidget(manager_, [this]() {
+        manager_.saveContext(manager_.activeContextName());
+    }, this);
+    detail_stack_->addWidget(colors_edit_widget_);
 
     // initial empty placeholder
     auto* empty_label = new QLabel("Select an item to view details.");
@@ -359,6 +367,11 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
         case GroupItem::FFTs:
             summary = QString::number(ctx.ffts().size()) + " FFT(s)";
             break;
+        case GroupItem::Colors:
+            loginf << "clicked Colors group";
+            colors_edit_widget_->refresh();
+            showDetailWidget(colors_edit_widget_);
+            return;
         }
         loginf << "clicked group: " << summary.toStdString();
 

@@ -75,12 +75,12 @@ public:
 };
 
 /**
- * Top-level group header (Data Sources, Sector Layers, FFTs).
+ * Top-level group header (Data Sources, Sector Layers, FFTs, Colors).
  */
 class GroupItem : public DBContextEditTreeItem
 {
 public:
-    enum GroupType { DataSources, SectorLayers, FFTs };
+    enum GroupType { DataSources, SectorLayers, FFTs, Colors };
 
     GroupItem(GroupType type, DBContextEditTreeItem* parent)
         : DBContextEditTreeItem(parent), type_(type) {}
@@ -92,6 +92,7 @@ public:
         case DataSources:  return "Data Sources";
         case SectorLayers: return "Sector Layers";
         case FFTs:         return "FFTs";
+        case Colors:       return "Colors";
         }
         return {};
     }

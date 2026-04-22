@@ -707,7 +707,6 @@ void FilterGeneratorDialog::accept()
         // edit mode: update logic and clear existing conditions
         edit_filter_->conditionLogic(logic);
         edit_filter_->clearConditions();
-        edit_filter_->removeSubConfigurations("DBFilterCondition");
 
         for (unsigned int cnt = 0; cnt < data_conditions_.size(); cnt++)
         {

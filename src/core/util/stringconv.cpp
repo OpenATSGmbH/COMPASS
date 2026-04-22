@@ -351,6 +351,14 @@ std::string getValueString(const boost::posix_time::ptime& value)
     return Time::toString(value);
 }
 
+std::string truncateForLog(const std::string& str, std::size_t max_len)
+{
+    if (str.size() <= max_len)
+        return str;
+
+    return str.substr(0, max_len) + "... (" + std::to_string(str.size()) + " bytes total)";
+}
+
 std::string compress(const std::vector<std::string>& values, char seperator)
 {
     std::ostringstream ss;

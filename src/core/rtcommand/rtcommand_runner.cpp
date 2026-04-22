@@ -186,16 +186,21 @@ bool RTCommandRunner::executeCommand(std::shared_ptr<RTCommand> cmd, RTCommandRu
     RTCommandMetaTypeWrapper wrapper;
     wrapper.command = cmd;
 
+    loginf << "executeCommand: posting to main thread, async " << cmd->execute_async
+           << " cmd " << cmd->name().toStdString();
+
     //execute command in main thread and block until finished
     //@TODO: handle thread cleanup
     bool ok      = true;
-    bool invoked = cmd->execute_async ? QMetaObject::invokeMethod(stash, "executeCommandAsync", 
+    bool invoked = cmd->execute_async ? QMetaObject::invokeMethod(stash, "executeCommandAsync",
                                                                   Qt::QueuedConnection,
                                                                   Q_ARG(RTCommandMetaTypeWrapper, wrapper)) :
                        QMetaObject::invokeMethod(stash, "executeCommand",
                                                  Qt::BlockingQueuedConnection,
                                                  Q_RETURN_ARG(bool, ok),
                                                  Q_ARG(RTCommandMetaTypeWrapper, wrapper));
+
+    loginf << "executeCommand: main thread returned invoked " << invoked << " ok " << ok;
     bool succeeded = (ok && invoked);
 
     //if invoking the execution failed, we set the commands state to failed

@@ -158,7 +158,8 @@ bool DBContextDiff::hasDifferences() const
     return hasSensorDifferences()
         || hasFFTDifferences()
         || hasASTERIXDifferences()
-        || hasSectorDifferences();
+        || hasSectorDifferences()
+        || hasColorDifferences();
 }
 
 string DBContextDiff::summary() const
@@ -199,6 +200,13 @@ string DBContextDiff::summary() const
     summarize("ASTERIX Decoding", asterix_diffs);
     summarize("Sectors", sector_diffs);
 
+    if (!color_diffs.empty())
+    {
+        oss << "Colors:\n";
+        for (const auto& f : color_diffs)
+            oss << "  ~ " << f.path << "\n";
+    }
+
     return oss.str();
 }
 
@@ -235,6 +243,9 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
         [](const shared_ptr<Sector>& s) { return s->jsonData(); },
         [](const shared_ptr<Sector>& s) { return s->name(); }
     );
+
+    // colors — preference + per-key entries in both palettes
+    diffJSON(a.colors().toJSON(), b.colors().toJSON(), "colors", result.color_diffs);
 
     return result;
 }

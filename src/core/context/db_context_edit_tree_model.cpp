@@ -95,6 +95,10 @@ void DBContextEditTreeModel::buildTree()
         fft_group->appendChild(std::make_unique<FFTItem>(fft.name(), fft_group.get()));
     }
     root_->appendChild(std::move(fft_group));
+
+    // Colors group — leaf, no sub-items (the ColorsEditWidget covers all
+    // sub-sections inline with its own group boxes)
+    root_->appendChild(std::make_unique<GroupItem>(GroupItem::Colors, root_.get()));
 }
 
 QVariant DBContextEditTreeModel::data(const QModelIndex& index, int role) const

@@ -23,6 +23,11 @@
 #include "viewpointgenerator.h"
 
 #include "buffer.h"
+#include "compass.h"
+#include "color_provider.h"
+#include "data_source.h"
+#include "db_context.h"
+#include "db_context_manager.h"
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
@@ -85,17 +90,11 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     updateChart();
 
     connect (&data_model_, &ScatterSeriesModel::visibilityChangedSignal, this, &ScatterPlotViewDataWidget::updateChartSlot);
-    connect (&data_model_, &ScatterSeriesModel::colorChangedSignal, this, [this](const std::string& name, const QColor& color)
-    {
-        // extract ds name (strip " L<n>" suffix) and persist
-        std::string ds_name = name;
-        auto line_pos = ds_name.rfind(" L");
-        if (line_pos != std::string::npos)
-            ds_name = ds_name.substr(0, line_pos);
+    connect (&data_model_, &ScatterSeriesModel::colorChangedSignal,
+             this, &ScatterPlotViewDataWidget::updateChartSlot);
 
-        view_->dataSourceColor(ds_name, color);
-        updateChartSlot();
-    });
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int /*mode*/) { redrawData(true); });
 }
 
 /**
@@ -120,7 +119,7 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     bounds_ = {};
 
-    data_model_.updateFrom(scatter_series_);
+    data_model_.updateFrom(scatter_series_, view_->compass());
 }
 
 /**
@@ -248,32 +247,41 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
         {
             std::string name = dbc_stash.first;
 
-            // extract data source name and line index
-            std::string ds_name = name;
+            // group key format: "<ds_type>:<ds_name>:L<n>:<dbcontent_name>"
+            std::string ds_type;
+            std::string ds_name;
             int line_index = 0;
-            auto line_pos = ds_name.rfind(" L");
-            if (line_pos != std::string::npos)
+            std::string dbcontent_name;
             {
-                line_index = std::stoi(ds_name.substr(line_pos + 2)) - 1; // L1->0, L2->1, ...
-                ds_name = ds_name.substr(0, line_pos);
+                std::vector<std::string> parts;
+                size_t start = 0;
+                for (size_t i = 0; i <= name.size(); ++i)
+                {
+                    if (i == name.size() || name[i] == ':')
+                    {
+                        parts.push_back(name.substr(start, i - start));
+                        start = i + 1;
+                    }
+                }
+                if (parts.size() == 4)
+                {
+                    ds_type        = parts[0];
+                    ds_name        = parts[1];
+                    const auto& lt = parts[2];
+                    dbcontent_name = parts[3];
+                    if (lt.size() >= 2 && lt[0] == 'L')
+                    {
+                        try { line_index = std::stoi(lt.substr(1)) - 1; } // L1->0
+                        catch (...) { line_index = 0; }
+                    }
+                }
+                else
+                {
+                    ds_name = name; // malformed key fallback
+                }
             }
 
-            // load persisted base color or generate and persist a new one
-            QColor base_color;
-            if (view_->hasDataSourceColor(ds_name))
-            {
-                base_color = view_->dataSourceColor(ds_name);
-            }
-            else
-            {
-                base_color = colorForGroupName(ds_name);
-                view_->dataSourceColor(ds_name, base_color);
-            }
-
-            // shift lightness per line: L1=base, L2=darker, L3=lighter, L4=even darker
-            static const int lightness_offsets[] = {0, -40, 40, -70};
-            int l = std::clamp(base_color.lightness() + lightness_offsets[line_index], 30, 230);
-            QColor line_color = QColor::fromHsl(base_color.hslHue(), base_color.hslSaturation(), l);
+            QColor line_color = resolveSeriesColor(ds_type, ds_name, line_index, dbcontent_name);
 
             scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx);
         }
@@ -298,13 +306,108 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    data_model_.updateFrom(scatter_series_);
+    data_model_.updateFrom(scatter_series_, view_->compass());
     loginf << "applying " << hidden_series_.size() << " hidden series after processStash";
     data_model_.applyHiddenSeriesNames(hidden_series_);
 
     bounds_ = scatter_series_.getDataBounds();
 
     loginf << "done, generated " << scatter_series_.numDataSeries() << " series";
+}
+
+/**
+*/
+QColor ScatterPlotViewDataWidget::resolveSeriesColor(const std::string& ds_type,
+                                                     const std::string& ds_name,
+                                                     int line_index,
+                                                     const std::string& dbcontent_name)
+{
+    // line_index is 0..3 (parsed from "L<n>" token)
+    const unsigned int line_id = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
+
+    auto& compass = view_->compass();
+    auto& ctx_mgr = compass.dbContextManager();
+
+    const auto mode = (context::ColorProvider::Mode)compass.colorMode();
+
+    auto derive_line_shade = [line_id](const QColor& base) {
+        auto shades = context::ColorProvider::autoLineColors(base);
+        return shades[line_id];
+    };
+
+    auto hashed_fallback = [this, ds_type, ds_name, dbcontent_name, derive_line_shade, mode]() {
+        std::string key;
+        switch (mode)
+        {
+            case context::ColorProvider::Mode::DSType:    key = ds_type;        break;
+            case context::ColorProvider::Mode::DBContent: key = dbcontent_name; break;
+            default:                                      key = ds_name;        break;
+        }
+        if (key.empty())
+            key = ds_name;
+        QColor base = colorForGroupName(key);
+        if (mode == context::ColorProvider::Mode::DataSourceLine)
+            return derive_line_shade(base);
+        return base;
+    };
+
+    if (!ctx_mgr.hasActiveContext())
+    {
+        // key carries ds_type / dbcontent_name directly — DSType & DBContent palettes still resolvable
+        if (mode == context::ColorProvider::Mode::DSType && !ds_type.empty())
+            return context::ColorProvider::defaultDSTypeColor(ds_type);
+        if (mode == context::ColorProvider::Mode::DBContent && !dbcontent_name.empty())
+            return context::ColorProvider::defaultDBContentColor(dbcontent_name);
+        return hashed_fallback();
+    }
+
+    const auto& ctx = ctx_mgr.activeContext();
+    const context::DataSource* ds = nullptr;
+    if (ctx_mgr.hasDataSource(ds_name))
+        ds = ctx_mgr.dataSource(ctx_mgr.getDataSourceId(ds_name));
+
+    switch (mode)
+    {
+        case context::ColorProvider::Mode::DSType:
+        {
+            if (ds_type.empty())
+                return hashed_fallback();
+            const auto& palette = ctx.colors().ds_type_colors;
+            auto it = palette.find(ds_type);
+            if (it != palette.end() && it->second.isValid())
+                return it->second;
+            return context::ColorProvider::defaultDSTypeColor(ds_type);
+        }
+        case context::ColorProvider::Mode::DBContent:
+        {
+            if (dbcontent_name.empty())
+                return hashed_fallback();
+            const auto& palette = ctx.colors().dbcontent_colors;
+            auto it = palette.find(dbcontent_name);
+            if (it != palette.end() && it->second.isValid())
+                return it->second;
+            return context::ColorProvider::defaultDBContentColor(dbcontent_name);
+        }
+        case context::ColorProvider::Mode::DataSource:
+        {
+            if (ds && ds->baseColor().isValid())
+                return ds->baseColor();
+            return hashed_fallback();
+        }
+        case context::ColorProvider::Mode::DataSourceLine:
+        {
+            if (ds)
+            {
+                QColor c = ds->lineColor(line_id);
+                if (c.isValid())
+                    return c;
+                if (ds->baseColor().isValid())
+                    return derive_line_shade(ds->baseColor());
+            }
+            return hashed_fallback();
+        }
+    }
+    return hashed_fallback();
 }
 
 /**
@@ -346,7 +449,7 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
 
         correctSeriesDateTime(scatter_series_);
 
-        data_model_.updateFrom(scatter_series_);
+        data_model_.updateFrom(scatter_series_, view_->compass());
         data_model_.applyHiddenSeriesNames(hidden_series_);
 
         bounds_ = scatter_series_.getDataBounds();

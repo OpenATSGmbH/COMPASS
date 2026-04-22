@@ -17,6 +17,7 @@
 
 #include "data_source.h"
 
+#include "color_provider.h"
 #include "number.h"
 #include "traced_assert.h"
 
@@ -154,6 +155,52 @@ void DataSource::setCalculatedReferenceSource()
 }
 
 // ============================================================
+// Colors
+// ============================================================
+
+void DataSource::baseColor(const QColor& color)
+{
+    base_color_ = color;
+
+    if (!color.isValid())
+    {
+        for (auto& lc : line_colors_)
+            lc = QColor();
+        return;
+    }
+
+    auto shades = ColorProvider::autoLineColors(color);
+    for (size_t i = 0; i < line_colors_.size() && i < shades.size(); ++i)
+        line_colors_[i] = shades[i];
+}
+
+QColor DataSource::lineColor(unsigned int line_id) const
+{
+    traced_assert(line_id < line_colors_.size());
+    return line_colors_[line_id];
+}
+
+void DataSource::setLineColor(unsigned int line_id, const QColor& color)
+{
+    traced_assert(line_id < line_colors_.size());
+    line_colors_[line_id] = color;
+}
+
+void DataSource::resetLineColor(unsigned int line_id)
+{
+    traced_assert(line_id < line_colors_.size());
+
+    if (!base_color_.isValid())
+    {
+        line_colors_[line_id] = QColor();
+        return;
+    }
+
+    auto shades = ColorProvider::autoLineColors(base_color_);
+    line_colors_[line_id] = shades[line_id];
+}
+
+// ============================================================
 // Serialization
 // ============================================================
 
@@ -171,6 +218,21 @@ json DataSource::toJSON() const
 
     if (!info_.is_null())
         j["info"] = info_;
+
+    if (base_color_.isValid())
+        j["base_color"] = base_color_.name().toStdString();
+
+    bool any_line_valid = false;
+    for (const auto& lc : line_colors_)
+        if (lc.isValid()) { any_line_valid = true; break; }
+
+    if (any_line_valid)
+    {
+        json arr = json::array();
+        for (const auto& lc : line_colors_)
+            arr.push_back(lc.isValid() ? lc.name().toStdString() : string{});
+        j["line_colors"] = arr;
+    }
 
     return j;
 }
@@ -200,6 +262,23 @@ DataSource DataSource::fromJSON(const json& j)
     if (j.contains("info"))
         ds.info_ = j.at("info");
 
+    if (j.contains("base_color"))
+    {
+        string hex = j.at("base_color").get<string>();
+        if (!hex.empty())
+            ds.base_color_ = QColor(QString::fromStdString(hex));
+    }
+
+    if (j.contains("line_colors") && j.at("line_colors").is_array())
+    {
+        const auto& arr = j.at("line_colors");
+        for (size_t i = 0; i < ds.line_colors_.size() && i < arr.size(); ++i)
+        {
+            string hex = arr.at(i).is_string() ? arr.at(i).get<string>() : string{};
+            ds.line_colors_[i] = hex.empty() ? QColor() : QColor(QString::fromStdString(hex));
+        }
+    }
+
     return ds;
 }
 
@@ -211,7 +290,9 @@ bool DataSource::operator==(const DataSource& other) const
         && name_ == other.name_
         && has_short_name_ == other.has_short_name_
         && short_name_ == other.short_name_
-        && info_ == other.info_;
+        && info_ == other.info_
+        && base_color_ == other.base_color_
+        && line_colors_ == other.line_colors_;
 }
 
 // ============================================================

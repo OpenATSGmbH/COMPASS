@@ -296,6 +296,14 @@ void MainWindow::createUI()
 
     connect(&compass_.evaluationManager(), &EvaluationManager::evaluationDoneSignal,
             this, &MainWindow::showEvaluationResult);
+
+    connect(&compass_.dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
+            this, &MainWindow::updateMenuEnabledState);
+    connect(&compass_.dbContextManager(), &context::DBContextManager::contextsChangedSignal,
+            this, &MainWindow::updateMenuEnabledState);
+
+    // ensure "No Context" gating is applied before the first user interaction
+    updateMenuEnabledState();
 }
 
 void MainWindow::createMenus ()
@@ -348,10 +356,10 @@ void MainWindow::createMenus ()
 
     if (!compass_.disableMenuConfigSave())
     {
-        QAction* save_act = new QAction("&Save Config");
-        save_act->setShortcut(tr("Ctrl+S"));
-        connect(save_act, &QAction::triggered, this, &MainWindow::saveConfigSlot);
-        file_menu->addAction(save_act);
+        save_config_action_ = new QAction("&Save Config");
+        save_config_action_->setShortcut(tr("Ctrl+S"));
+        connect(save_config_action_, &QAction::triggered, this, &MainWindow::saveConfigSlot);
+        file_menu->addAction(save_config_action_);
 
         file_menu->addSeparator();
     }
@@ -578,6 +586,77 @@ void MainWindow::updateMenus()
                       || a == auto_refresh_views_action_
                               || a == dark_mode_action_
                               || a == fullscreen_action_ ? true : db_open);
+
+    // context-state gating always wins — applied after DB/live-state logic above
+    updateMenuEnabledState();
+}
+
+void MainWindow::updateMenuEnabledState()
+{
+    // Applies "no active context" gating on top of the DB/live-state logic
+    // performed by updateMenus(). When no context is active, the only
+    // actions the user can take are: open a DB, create/switch/import a
+    // context, or exit the application.
+
+    const bool has_context = compass_.dbContextManager().hasActiveContext();
+    const bool any_contexts = !compass_.dbContextManager().contextNames().empty();
+
+    // File menu: only "Open", "Open Recent", and quit actions are enabled without a context.
+    if (!has_context)
+    {
+        if (new_db_action_)
+            new_db_action_->setDisabled(true);
+        if (export_db_action_)
+            export_db_action_->setDisabled(true);
+        if (close_db_action_)
+            close_db_action_->setDisabled(true);
+        if (save_config_action_)
+            save_config_action_->setDisabled(true);
+
+        // Import / Configuration / Process / UI: entire menus disabled.
+        if (import_menu_)
+            import_menu_->menuAction()->setEnabled(false);
+        if (config_menu_)
+            config_menu_->menuAction()->setEnabled(false);
+        if (process_menu_)
+            process_menu_->menuAction()->setEnabled(false);
+        if (ui_menu_)
+            ui_menu_->menuAction()->setEnabled(false);
+
+        // Context menu: only New / Switch (if any) remain enabled.
+        if (context_edit_action_)
+            context_edit_action_->setEnabled(false);
+        if (context_copy_action_)
+            context_copy_action_->setEnabled(false);
+        if (context_delete_action_)
+            context_delete_action_->setEnabled(false);
+        if (context_compare_action_)
+            context_compare_action_->setEnabled(false);
+        if (context_switch_menu_)
+            context_switch_menu_->setEnabled(any_contexts && !context_switch_menu_->isEmpty());
+        // context_new_action_ stays enabled (updateContextMenuTitle manages its tooltip).
+    }
+    else
+    {
+        // Re-enable menu containers gated off above; their inner actions are
+        // managed by updateMenus() / updateContextMenuTitle().
+        if (import_menu_)
+            import_menu_->menuAction()->setEnabled(true);
+        if (config_menu_)
+            config_menu_->menuAction()->setEnabled(true);
+        if (process_menu_)
+            process_menu_->menuAction()->setEnabled(true);
+        if (ui_menu_)
+            ui_menu_->menuAction()->setEnabled(true);
+
+        if (context_edit_action_)
+            context_edit_action_->setEnabled(true);
+        if (context_copy_action_)
+            context_copy_action_->setEnabled(true);
+        // context_delete_action_ / context_switch_menu_ enabled state is
+        // managed by updateContextMenuTitle() — leave as-is.
+        // context_compare_action_ stays disabled (deferred feature).
+    }
 }
 
 void MainWindow::updateBottomWidget()
@@ -1391,14 +1470,14 @@ void MainWindow::createContextMenu()
     context_menu_->setToolTipsVisible(true);
 
     // Edit
-    QAction* edit_act = new QAction("Edit...", context_menu_);
-    edit_act->setToolTip("Edit the current context");
-    connect(edit_act, &QAction::triggered, this, [this]()
+    context_edit_action_ = new QAction("Edit...", context_menu_);
+    context_edit_action_->setToolTip("Edit the current context");
+    connect(context_edit_action_, &QAction::triggered, this, [this]()
     {
         context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
         dialog.exec();
     });
-    context_menu_->addAction(edit_act);
+    context_menu_->addAction(context_edit_action_);
 
     // Switch submenu
     context_switch_menu_ = context_menu_->addMenu("Switch");
@@ -1423,10 +1502,10 @@ void MainWindow::createContextMenu()
                                                 : "No other contexts available");
 
     // Compare
-    QAction* compare_act = new QAction("Compare...", context_menu_);
-    compare_act->setToolTip("Compare contexts");
-    compare_act->setEnabled(false); // deferred
-    context_menu_->addAction(compare_act);
+    context_compare_action_ = new QAction("Compare...", context_menu_);
+    context_compare_action_->setToolTip("Compare contexts");
+    context_compare_action_->setEnabled(false); // deferred
+    context_menu_->addAction(context_compare_action_);
 
     context_menu_->addSeparator();
 
@@ -1442,14 +1521,14 @@ void MainWindow::createContextMenu()
     context_menu_->addAction(context_new_action_);
 
     // Copy
-    QAction* copy_act = new QAction("Copy...", context_menu_);
-    copy_act->setToolTip("Copy a context under a new name");
-    connect(copy_act, &QAction::triggered, this, [this]()
+    context_copy_action_ = new QAction("Copy...", context_menu_);
+    context_copy_action_->setToolTip("Copy a context under a new name");
+    connect(context_copy_action_, &QAction::triggered, this, [this]()
     {
         context::DBContextCopyDialog dialog(compass_.dbContextManager(), this);
         dialog.exec();
     });
-    context_menu_->addAction(copy_act);
+    context_menu_->addAction(context_copy_action_);
 
     // Delete
     context_delete_action_ = new QAction("Delete...", context_menu_);

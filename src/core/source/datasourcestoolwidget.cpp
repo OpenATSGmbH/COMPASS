@@ -27,6 +27,7 @@
 #include "files.h"
 #include "timeconv.h"
 
+#include <QComboBox>
 #include <QLabel>
 #include <QMenu>
 #include <QAction>
@@ -70,6 +71,34 @@ void DataSourcesToolWidget::createUI()
             this, [this] { logdbg << "dbContentStatusChanged received"; updateAdditionalInfo(); });
 
     main_layout->addWidget(ds_widget_);
+
+    // Color Mode row (persisted per-user on the COMPASS instance)
+    {
+        QHBoxLayout* mode_layout = new QHBoxLayout();
+
+        QLabel* mode_label = new QLabel("Color Mode:");
+        mode_label->setFont(font_bold);
+        mode_layout->addWidget(mode_label);
+
+        color_mode_combo_ = new QComboBox();
+        color_mode_combo_->addItem("DSType");
+        color_mode_combo_->addItem("DBContent");
+        color_mode_combo_->addItem("Data Source");
+        color_mode_combo_->addItem("Data Source + Line");
+
+        unsigned int current = ctx_man_.compass().colorMode();
+        if (current >= (unsigned int)color_mode_combo_->count())
+            current = 0;
+        color_mode_combo_->setCurrentIndex((int)current);
+
+        connect(color_mode_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, &DataSourcesToolWidget::colorModeChangedSlot);
+
+        mode_layout->addWidget(color_mode_combo_);
+        mode_layout->addStretch();
+
+        main_layout->addLayout(mode_layout);
+    }
 
     QHBoxLayout* assoc_layout = new QHBoxLayout();
 
@@ -203,6 +232,18 @@ void DataSourcesToolWidget::updateAdditionalInfo()
     {
         associations_label_->setText("None");
     }
+}
+
+void DataSourcesToolWidget::colorModeChangedSlot(int index)
+{
+    if (index < 0)
+        return;
+
+    loginf << "color mode " << index;
+
+    ctx_man_.compass().colorMode((unsigned int)index);
+    if (ds_widget_)
+        ds_widget_->updateContent();
 }
 
 

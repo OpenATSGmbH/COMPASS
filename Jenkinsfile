@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+    }
+
     parameters {
         string(name: 'EXPERIMENTAL_SRC_BRANCH', defaultValue: '',  description: 'experimental_src branch (empty = same as pipeline branch, fallback to devel)')
         string(name: 'JASTERIX_BRANCH',         defaultValue: 'devel', description: 'jASTERIX branch')
@@ -19,6 +23,7 @@ pipeline {
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
+        booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
         booleanParam(name: 'DATASET_05H', defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
@@ -32,6 +37,7 @@ pipeline {
         DOCKER_IMAGE    = 'compass/build_deb10'
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
+        PYTHONUNBUFFERED    = '1'
     }
 
     stages {
@@ -59,13 +65,14 @@ pipeline {
             steps {
                 script {
                     def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
+                    def asanFlag  = params.ASAN ? '--asan' : ''
                     sh """
                         docker run --rm \
                             -v \$(pwd):/workspace/compass \
                             -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
                             -w /workspace/compass/docker \
                             ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} && ./build_compass.sh ${cleanFlag}'
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} ${asanFlag} && ./build_compass.sh ${cleanFlag} ${asanFlag}'
                     """
                 }
             }
@@ -73,30 +80,40 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                sh """
-                    docker run --rm --init \
-                        -v \$(pwd):/workspace/compass \
-                        -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
-                        -w /workspace/compass \
-                        ${DOCKER_IMAGE} \
-                        bash -c 'MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
-                """
+                script {
+                    // When ASAN=true, LSan runs at process exit and returns its own
+                    // nonzero exitcode (default 23) when it finds leaks — that would
+                    // fail the stage even if all assertions passed. exitcode=0 keeps
+                    // leak output visible while letting the real test exit code stand.
+                    def lsanEnv = params.ASAN ? "LSAN_OPTIONS=exitcode=0 " : ''
+                    sh """
+                        docker run --rm --init \
+                            -v \$(pwd):/workspace/compass \
+                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -w /workspace/compass \
+                            ${DOCKER_IMAGE} \
+                            bash -c '${lsanEnv}MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
+                    """
+                }
             }
         }
 
         stage('AppImage') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v \$(pwd):/workspace/compass \
-                        -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
-                        -v ${CI_DIR}:${CI_DIR} \
-                        -w /workspace/compass \
-                        ${DOCKER_IMAGE} \
-                        bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh'
-                """
-                // Collect artifacts
-                sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
+                script {
+                    def asanFlag = params.ASAN ? '--asan' : ''
+                    sh """
+                        docker run --rm \
+                            -v \$(pwd):/workspace/compass \
+                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -v ${CI_DIR}:${CI_DIR} \
+                            -w /workspace/compass \
+                            ${DOCKER_IMAGE} \
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
+                    """
+                    // Collect artifacts
+                    sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
+                }
             }
         }
 
@@ -145,14 +162,30 @@ pipeline {
                     def scriptsDir = "${runDir}/scripts"
 
                     // Run tests for each selected dataset
+                    // When ASAN=true, set runtime options for the sanitized binary:
+                    //   abort_on_error=1 makes ASan SIGABRT on first error so the
+                    //     test framework's shutdown-crash flagging catches it.
+                    //   log_path writes per-process ASan reports to <runDir>/asan.<pid>,
+                    //     surviving pipe drops and archived with the build artifacts.
+                    // LSAN_OPTIONS exitcode=0 keeps leak output visible but prevents
+                    // LSan's default exit 23 (on detected leaks) from surfacing as a
+                    // returncode — without this, isCrashed() in the test framework
+                    // wrongly flags every clean shutdown with framework leaks as a crash.
+                    // Real ASan errors (heap-corruption etc.) still abort via
+                    // abort_on_error=1 → SIGABRT → watchdog relays 128+6=134.
+                    // COMPASS_QUIT_TIMEOUT_SEC=180: ASan's atexit leak scan adds
+                    // 10-30s to shutdown; the default 60s in closeCOMPASS would
+                    // force-kill slow shutdowns, spuriously flagging tests as crashed.
+                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
+
                     for (dataset in datasets) {
                         def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"
 
-                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})"
+                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
 
                         sh """
                             cd '${scriptsDir}/test_infra' && \
-                            PYTHONPATH='${scriptsDir}' python3 test_suite.py \
+                            ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
                                 --manifest='${manifest}' \
@@ -171,7 +204,13 @@ pipeline {
 
     post {
         always {
-            // Archive logs
+            // Crash logs are kept on the host under
+            // ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log
+            // so they're available per-build via SSH but don't clutter the
+            // Jenkins artifact list. Workspace cleanup of any leftover copies
+            // from earlier pipeline versions that did archive them.
+            sh "rm -f compass_crash_*.log"
+            // Archive test logs
             archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
             // Copy JUnit XML into workspace and publish per-test results
             sh "cp ${TEST_DATA_PATH}/results/junit_results.xml junit_results.xml || true"

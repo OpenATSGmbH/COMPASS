@@ -85,7 +85,8 @@ public slots:
 public:
     DataSourceEditWidget(bool show_network_lines,
                          std::function<void(unsigned int)> update_ds_func,
-                         std::function<void(unsigned int)> delete_ds_func);
+                         std::function<void(unsigned int)> delete_ds_func,
+                         context::DBContextManager* ctx_man = nullptr);
 
     void show(context::DataSource& ds, const std::string& last_used_path = {});
     void clear();
@@ -104,6 +105,8 @@ protected:
 
     std::function<void(unsigned int)> update_ds_func_;
     std::function<void(unsigned int)> delete_ds_func_;
+
+    context::DBContextManager* ctx_man_ {nullptr};
 
     context::DataSource* current_ds_ {nullptr};
     std::string last_used_path_;

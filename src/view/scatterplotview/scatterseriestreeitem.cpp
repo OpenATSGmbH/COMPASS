@@ -24,9 +24,13 @@
 #include "traced_assert.h"
 
 #include <QApplication>
+#include <QBrush>
 #include <QColorDialog>
 #include <QDialog>
 #include <QMenu>
+#include <QPainter>
+#include <QPen>
+#include <QPixmap>
 #include <QThread>
 #include <QtGui>
 
@@ -46,7 +50,6 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
     }
 
     QFont font = QApplication::font();
-    font.setStyleHint(QFont::TypeWriter);
     QFontMetrics fm(font);
 
     painter->save();
@@ -55,141 +58,138 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
     ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
     traced_assert(item);
 
-    QRect r = option.rect;  // getting the rect of the cell
-    int x, y, w, h;
-    x = r.left();     // the X coordinate
-    y = r.top();      // the Y coordinate
-    w = fm.height();  // button width
-    h = fm.height();  // button height
+    const int row_h  = option.rect.height();
+    const int cbox_w = fm.height();
+    const int icon_w = 14; // matches makeColorIcon
+    const int icon_h = 14;
+    int x = option.rect.left();
+    const int y = option.rect.top();
 
     if (item->canHide())
     {
         QStyleOptionButton cbOpt;
-        cbOpt.rect = QRect(x, y, w, h);
-
-        if (item->hidden())
-        {
-            cbOpt.state |= QStyle::State_Off;
-        }
-        else
-        {
-            cbOpt.state |= QStyle::State_On;
-        }
-
+        cbOpt.rect  = QRect(x, y + (row_h - cbox_w) / 2, cbox_w, cbox_w);
+        cbOpt.state = item->hidden() ? QStyle::State_Off : QStyle::State_On;
         QApplication::style()->drawControl(QStyle::CE_CheckBox, &cbOpt, painter);
-        x += w + space;
+        x += cbox_w + space;
     }
 
-    QStyleOptionButton button;
-    button.rect = QRect(x, y, w, h);
-    button.state = QStyle::State_Enabled;
-    button.features = QStyleOptionButton::None;
-
     QIcon icon = qvariant_cast<QIcon>(index.data(ScatterSeriesModel::DataRole::IconRole));
-    button.icon = icon;
-    button.iconSize = QSize(w - space, h - space);
-
-    QApplication::style()->drawControl(QStyle::CE_PushButton, &button, painter);
-
-    QString headerText = qvariant_cast<QString>(index.data(0));
-
-    QSize iconsize(w, h);
-
-    QRect headerRect = option.rect;
-    QRect iconRect(0, 0, w, h);
-
-    iconRect.setRight(iconsize.width() + w);
-    iconRect.setTop(iconRect.top());
-
-    headerRect.setLeft(x + w + space);
-    headerRect.setTop(headerRect.top());
+    if (!icon.isNull())
+    {
+        const QRect iconRect(x, y + (row_h - icon_h) / 2, icon_w, icon_h);
+        icon.paint(painter, iconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
+    }
+    x += icon_w + space;
 
     painter->setFont(font);
-    QTextOption text_option;
-    text_option.setWrapMode(QTextOption::WordWrap);
-    painter->drawText(headerRect, headerText, text_option);
+    const QString headerText = qvariant_cast<QString>(index.data(0));
+    QRect textRect = option.rect;
+    textRect.setLeft(x);
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, headerText);
 
     painter->restore();
-
-    logdbg << "done";
 }
 
 bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
                                       const QStyleOptionViewItem& option, const QModelIndex& index)
 {
-    if (index.column() == 1)  // only process events for col 0
+    if (index.column() == 1)
         return true;
 
-    if (event->type() == QEvent::MouseButtonRelease)
+    if (event->type() != QEvent::MouseButtonRelease)
+        return true;
+
+    QMouseEvent* e = (QMouseEvent*)event;
+    const int clickX = e->x();
+    const int clickY = e->y();
+
+    QFontMetrics fm(QApplication::font());
+    const int row_h  = option.rect.height();
+    const int cbox_w = fm.height();
+    const int icon_w = 14;
+    const int icon_h = 14;
+    int x = option.rect.left();
+    const int y = option.rect.top();
+
+    ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
+    traced_assert(item);
+
+    if (item->canHide())
     {
-        logdbg << "release";
-
-        QMouseEvent* e = (QMouseEvent*)event;
-        int clickX = e->x();
-        int clickY = e->y();
-
-        QFont font = QApplication::font();
-        QFontMetrics fm(font);
-
-        QRect r = option.rect;  // getting the rect of the cell
-        int x, y, w, h;
-        x = r.left();     // the X coordinate
-        y = r.top();      // the Y coordinate
-        w = fm.height();  // button width
-        h = fm.height();  // button height
-
-        ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
-        traced_assert(item);
-
-        if (item->canHide())
+        const QRect cbox_rect(x, y + (row_h - cbox_w) / 2, cbox_w, cbox_w);
+        if (cbox_rect.contains(clickX, clickY))
         {
-            if (clickX > x && clickX < x + w && clickY > y && clickY < y + h)
-            {
-                logdbg << "checkbox";
-                item->hide(!item->hidden()); // , true
-
-                return true;
-            }
-            else  // not in checkbox, shift x for button detection
-                x += w + space;
+            item->hide(!item->hidden());
+            return true;
         }
-
-        if (clickX > x && clickX < x + w && clickY > y && clickY < y + h)
-        {
-            if (item->hasDataSeries())
-            {
-                QColor color = QColorDialog::getColor(item->color(), nullptr,
-                                                       QString::fromStdString(item->name()));
-                if (color.isValid())
-                {
-                    item->setColor(color);
-                    item->emitColorChanged();
-                }
-            }
-            else if (item->hasMenu())
-            {
-                item->execMenu(QPoint(e->globalX(), e->globalY()));
-            }
-        }
+        x += cbox_w + space;
     }
 
+    const QRect icon_rect(x, y + (row_h - icon_h) / 2, icon_w, icon_h);
+    if (icon_rect.contains(clickX, clickY))
+    {
+        if (item->canEditColor())
+        {
+            QColor color = QColorDialog::getColor(item->color(), nullptr,
+                                                  QString::fromStdString(item->name()));
+            if (color.isValid())
+            {
+                item->setColor(color);
+                item->emitColorChanged();
+            }
+        }
+        else if (item->hasMenu())
+        {
+            item->execMenu(QPoint(e->globalX(), e->globalY()));
+        }
+    }
     return true;
 }
 
 
+QIcon ScatterSeriesTreeItem::makeColorIcon(const QColor& color)
+{
+    constexpr int w = 14;
+    constexpr int h = 14;
+    constexpr qreal radius = 3.0;
+
+    QPixmap pixmap(w, h);
+    pixmap.fill(Qt::transparent);
+
+    if (color.isValid())
+    {
+        QPainter p(&pixmap);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(QPen(Qt::darkGray, 1, Qt::SolidLine));
+        p.setBrush(QBrush(color));
+        QRectF r(0.5, 0.5, w - 1.0, h - 1.0);
+        p.drawRoundedRect(r, radius, radius);
+        p.end();
+    }
+    return QIcon(pixmap);
+}
+
+void ScatterSeriesTreeItem::rebuildColorIcon()
+{
+    color_icon_ = makeColorIcon(color_);
+}
+
 ScatterSeriesTreeItem::ScatterSeriesTreeItem(
-    const std::string& name, ScatterSeriesModel& model,
+    const std::string& name, const QColor& color, ScatterSeriesModel& model,
     ScatterSeriesCollection::DataSeries* data_series,
     ScatterSeriesTreeItem* parent_item)
-    : name_(name), model_(model), data_series_(data_series), parent_item_(parent_item)
+    : name_(name), model_(model), data_series_(data_series), parent_item_(parent_item), color_(color)
 {
-    if (data_series_)
-    {
-        QPixmap pixmap(100,100);
-        pixmap.fill(data_series_->color);
-        color_icon_ = QIcon(pixmap);
-    }
+    rebuildColorIcon();
+}
 
+ScatterSeriesTreeItem::ScatterSeriesTreeItem(
+    const std::string& name, const QColor& color, ScatterSeriesModel& model,
+    ScatterSeriesTreeItem* parent_item)
+    : name_(name), model_(model), parent_item_(parent_item), color_(color)
+{
+    rebuildColorIcon();
 }
 
 ScatterSeriesTreeItem::~ScatterSeriesTreeItem()
@@ -343,10 +343,7 @@ QVariant ScatterSeriesTreeItem::data(int column) const
 
 QVariant ScatterSeriesTreeItem::icon() const
 {
-    if (data_series_)
-        return color_icon_;
-    else
-        return QVariant();
+    return color_icon_;
 }
 
 ScatterSeriesTreeItem* ScatterSeriesTreeItem::parentItem() { return parent_item_; }
@@ -361,21 +358,16 @@ int ScatterSeriesTreeItem::row() const
 
 QColor ScatterSeriesTreeItem::color() const
 {
-    if (data_series_)
-        return data_series_->color;
-    return QColor();
+    return color_;
 }
 
 void ScatterSeriesTreeItem::setColor(const QColor& color)
 {
-    if (!data_series_)
-        return;
+    color_ = color;
+    if (data_series_)
+        data_series_->color = color; // keep chart in sync until next redraw
 
-    data_series_->color = color;
-
-    QPixmap pixmap(100, 100);
-    pixmap.fill(color);
-    color_icon_ = QIcon(pixmap);
+    rebuildColorIcon();
 }
 
 void ScatterSeriesTreeItem::emitColorChanged()

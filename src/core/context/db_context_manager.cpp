@@ -20,6 +20,7 @@
 #include "db_context_diff.h"
 
 #include "asterix_decoding_config.h"
+#include "color_provider.h"
 #include "compass.h"
 
 #include <jasterix/jasterix.h>
@@ -31,8 +32,6 @@
 #include "datasourcestoolwidget.h"
 #include "datasourcesstatustoolwidget.h"
 #include "datasourcesconfigurationdialog.h"
-#include "db_context_create_dialog.h"
-#include "db_context_select_dialog.h"
 #include "db_context_conflict_dialog.h"
 #include "db_context_merge_dialog.h"
 #include "files.h"
@@ -406,6 +405,8 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
     ds.dsType(ds_type);
     ds.name(name.empty() ? "New " + to_string(sac) + "/" + to_string(sic) : name);
 
+    autoAssignColors(ds);
+
     activeContext().dataSources().push_back(std::move(ds));
     saveContext(active_context_name_);
 
@@ -415,6 +416,34 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
     emit activeContextChangedSignal();
 
     return activeContext().dataSources().back();
+}
+
+void DBContextManager::autoAssignColors(DataSource& ds) const
+{
+    if (ds.baseColor().isValid())
+        return;
+
+    ColorProvider::Band band = ColorProvider::Band::Light;
+
+    std::vector<QColor> existing; // only same-DSType neighbours — cross-type
+                                  // spacing is handled by the per-DSType hue range.
+    if (hasActiveContext())
+    {
+        if (activeContext().colors().preference == ContextColors::Preference::Dark)
+            band = ColorProvider::Band::Dark;
+
+        for (const auto& other : activeContext().dataSources())
+        {
+            if (other.id() == ds.id())
+                continue;
+            if (other.dsType() != ds.dsType())
+                continue;
+            if (other.baseColor().isValid())
+                existing.push_back(other.baseColor());
+        }
+    }
+
+    ds.baseColor(ColorProvider::generateBaseColor(existing, band, ds.dsType()));
 }
 
 void DBContextManager::deleteDataSource(unsigned int ds_id)
@@ -752,17 +781,72 @@ void DBContextManager::clearInsertedCounts(unsigned int ds_id, const string& dbc
 
 void DBContextManager::applyDeleteInfo(const json& delete_info)
 {
+    auto clearDbcontent = [&] (unsigned int ds_id, const string& dbcontent_name)
+    {
+        auto ds_it = inserted_counts_.find(ds_id);
+        if (ds_it == inserted_counts_.end())
+            return;
+
+        if (dbcontent_name.empty())
+        {
+            loginf << "clearing all counts for ds_id " << ds_id;
+            ds_it->second.clear();
+            return;
+        }
+
+        auto dbc_it = ds_it->second.find(dbcontent_name);
+        if (dbc_it == ds_it->second.end())
+            return;
+
+        loginf << "clearing counts for ds_id " << ds_id
+               << " dbcontent '" << dbcontent_name << "'";
+        ds_it->second.erase(dbc_it);
+    };
+
+    auto clearLine = [&] (unsigned int ds_id, const string& dbcontent_name, unsigned int line_id)
+    {
+        auto ds_it = inserted_counts_.find(ds_id);
+        if (ds_it == inserted_counts_.end())
+            return;
+
+        if (dbcontent_name.empty())
+        {
+            loginf << "clearing counts for ds_id " << ds_id << " line " << line_id << " (all dbcontents)";
+            for (auto& [dbc_name, line_map] : ds_it->second)
+                line_map.erase(line_id);
+            return;
+        }
+
+        auto dbc_it = ds_it->second.find(dbcontent_name);
+        if (dbc_it == ds_it->second.end())
+            return;
+
+        loginf << "clearing counts for ds_id " << ds_id
+               << " dbcontent '" << dbcontent_name << "'"
+               << " line " << line_id;
+        dbc_it->second.erase(line_id);
+    };
+
     for (const auto& entry : delete_info)
     {
-        string dbcontent_name = entry.at("dbcontent").get<string>();
+        string dbcontent_name = entry.contains("dbcontent")
+                ? entry.at("dbcontent").get<string>()
+                : string{};
 
         if (!entry.contains("data_sources"))
         {
-            // no data_sources key → all data for this dbcontent was deleted
-            loginf << "clearing all counts for dbcontent '" << dbcontent_name << "'";
-
-            for (auto& [ds_id, dbcont_map] : inserted_counts_)
-                dbcont_map.erase(dbcontent_name);
+            // no data_sources key → all data (for the given dbcontent, or all) was deleted
+            if (dbcontent_name.empty())
+            {
+                loginf << "clearing all counts";
+                inserted_counts_.clear();
+            }
+            else
+            {
+                loginf << "clearing all counts for dbcontent '" << dbcontent_name << "'";
+                for (auto& [ds_id, dbcont_map] : inserted_counts_)
+                    dbcont_map.erase(dbcontent_name);
+            }
         }
         else
         {
@@ -770,30 +854,14 @@ void DBContextManager::applyDeleteInfo(const json& delete_info)
             {
                 unsigned int ds_id = ds_entry.at("ds_id").get<unsigned int>();
 
-                auto ds_it = inserted_counts_.find(ds_id);
-                if (ds_it == inserted_counts_.end())
-                    continue;
-
-                auto dbc_it = ds_it->second.find(dbcontent_name);
-                if (dbc_it == ds_it->second.end())
-                    continue;
-
                 if (!ds_entry.contains("line_ids"))
                 {
-                    loginf << "clearing counts for ds_id " << ds_id
-                           << " dbcontent '" << dbcontent_name << "'";
-                    ds_it->second.erase(dbc_it);
+                    clearDbcontent(ds_id, dbcontent_name);
                 }
                 else
                 {
                     for (const auto& lid : ds_entry.at("line_ids"))
-                    {
-                        unsigned int line_id = lid.get<unsigned int>();
-                        loginf << "clearing counts for ds_id " << ds_id
-                               << " dbcontent '" << dbcontent_name << "'"
-                               << " line " << line_id;
-                        dbc_it->second.erase(line_id);
-                    }
+                        clearLine(ds_id, dbcontent_name, lid.get<unsigned int>());
                 }
             }
         }
@@ -1195,6 +1263,12 @@ void DBContextManager::writeContextToDB()
     sec["data"] = sec_arr;
     db.saveDBContextSection("sectors", sec.dump());
 
+    // colors
+    json colors;
+    colors["version"] = DBContextSerializer::CURRENT_VERSION;
+    colors["data"] = ctx.colors().toJSON();
+    db.saveDBContextSection("colors", colors.dump());
+
     loginf << "wrote active context to DB";
 }
 
@@ -1221,13 +1295,29 @@ DBContext DBContextManager::readContextFromDB() const
         ctx.modified(meta.value("modified", ""));
     }
 
+    // colors (read before sensors so the preference is available for legacy DBs
+    // lacking per-data-source color fields)
+    if (sections.count("colors"))
+    {
+        json j = json::parse(sections.at("colors"));
+        if (j.contains("data"))
+            ctx.colors(ContextColors::fromJSON(j.at("data")));
+    }
+
     // sensors
     if (sections.count("sensors"))
     {
         json j = json::parse(sections.at("sensors"));
         if (j.contains("data"))
         {
+            ColorProvider::Band band =
+                (ctx.colors().preference == ContextColors::Preference::Dark)
+                    ? ColorProvider::Band::Dark
+                    : ColorProvider::Band::Light;
+
             set<unsigned int> seen_ids;
+            map<std::string, vector<QColor>> existing_by_type;
+
             for (const auto& ds_j : j.at("data"))
             {
                 auto ds = DataSource::fromJSON(ds_j);
@@ -1240,6 +1330,13 @@ DBContext DBContextManager::readContextFromDB() const
                            << " in DB context '" << ctx.name() << "', skipping duplicate";
                     continue;
                 }
+
+                if (!ds.baseColor().isValid())
+                {
+                    const auto& same_type = existing_by_type[ds.dsType()];
+                    ds.baseColor(ColorProvider::generateBaseColor(same_type, band, ds.dsType()));
+                }
+                existing_by_type[ds.dsType()].push_back(ds.baseColor());
 
                 seen_ids.insert(ds_id);
                 ctx.dataSources().push_back(std::move(ds));
@@ -1312,13 +1409,37 @@ void DBContextManager::databaseOpenedSlot()
 {
     loginf << "database opened";
 
+    auto& db = compass_.dbInterface();
+
     if (!hasActiveContext())
     {
-        logwrn << "no active context set — context must be created first";
+        if (!db.existsDBContextTable())
+        {
+            // no active context and DB has no stored context (legacy or new empty DB) — stay in "None" state
+            logwrn << "no active context and DB has no stored context — remaining in 'None' state";
+            return;
+        }
+
+        // no active context, but the DB carries one — adopt it silently
+        DBContext db_ctx = readContextFromDB();
+        const string db_name = db_ctx.name();
+
+        loginf << "no active context — adopting DB context '" << db_name << "'";
+
+        if (!hasContext(db_name))
+        {
+            db_ctx.modified(DBContext::currentTimestamp());
+            DBContextSerializer::save(db_ctx, basePath());
+            contexts_[db_name] = std::move(db_ctx);
+            emit contextsChangedSignal();
+        }
+
+        setActiveContext(db_name);
+        loadCountsFromDB();
+
+        emit countsChangedSignal();
         return;
     }
-
-    auto& db = compass_.dbInterface();
 
     if (!db.existsDBContextTable())
     {
@@ -1822,7 +1943,11 @@ void DBContextManager::importSensors(const string& filepath)
 
     auto& ctx = activeContext();
     for (const auto& ds_j : data_arr)
-        ctx.addOrReplaceDataSource(DataSource::fromJSON(ds_j));
+    {
+        auto ds = DataSource::fromJSON(ds_j);
+        autoAssignColors(ds);
+        ctx.addOrReplaceDataSource(std::move(ds));
+    }
 
     saveContext(active_context_name_);
 
@@ -2008,33 +2133,6 @@ void DBContextManager::importContextZip(const string& zip_filepath)
 // ============================================================
 // Storage
 // ============================================================
-
-// ============================================================
-// Startup context check
-// ============================================================
-
-bool DBContextManager::ensureActiveContext(QWidget* parent)
-{
-    if (hasActiveContext())
-        return true;
-
-    if (contexts_.empty())
-    {
-        // no contexts exist — force creation
-        DBContextCreateDialog dialog(*this, parent);
-        if (dialog.exec() != QDialog::Accepted)
-            return false;
-    }
-    else
-    {
-        // contexts exist but none is active — force selection
-        DBContextSelectDialog dialog(*this, parent);
-        if (dialog.exec() != QDialog::Accepted)
-            return false;
-    }
-
-    return hasActiveContext();
-}
 
 // ============================================================
 // Widgets

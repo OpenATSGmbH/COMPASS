@@ -37,7 +37,6 @@ using namespace std;
 using namespace dbContent;
 
 const std::string ScatterPlotView::ParamUseConnectionLines = "use_connection_lines";
-const std::string ScatterPlotView::ParamDsColorMap = "ds_color_map";
 
 /**
 */
@@ -51,7 +50,6 @@ ScatterPlotView::ScatterPlotView(nlohmann::json& config, ViewContainer* parent)
 :   VariableView(config, parent)
 {
     registerParameter(ParamUseConnectionLines, &settings_.use_connection_lines, Settings().use_connection_lines);
-    registerParameter(ParamDsColorMap, &settings_.ds_color_map, nlohmann::json::object());
 
     const std::vector<PropertyDataType> valid_types = { PropertyDataType::BOOL,
                                                         PropertyDataType::CHAR,
@@ -212,28 +210,6 @@ void ScatterPlotView::useConnectionLines(bool value, bool redraw)
 
     if (redraw)
         updateView(VU_Redraw);
-}
-
-/**
-*/
-bool ScatterPlotView::hasDataSourceColor(const std::string& ds_name) const
-{
-    return settings_.ds_color_map.contains(ds_name);
-}
-
-/**
-*/
-QColor ScatterPlotView::dataSourceColor(const std::string& ds_name) const
-{
-    return QColor(QString::fromStdString(settings_.ds_color_map.at(ds_name).get<std::string>()));
-}
-
-/**
-*/
-void ScatterPlotView::dataSourceColor(const std::string& ds_name, const QColor& color)
-{
-    settings_.ds_color_map[ds_name] = color.name().toStdString();
-    setParameter(settings_.ds_color_map, settings_.ds_color_map);
 }
 
 /**

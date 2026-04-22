@@ -114,6 +114,10 @@ public:
                                      const std::string& ds_type = "Other");
     void deleteDataSource(unsigned int ds_id);
 
+    /// if ds.baseColor() is invalid, pick a hue-distant base color (using the
+    /// active context's preference) and derive line_colors_. No-op otherwise.
+    void autoAssignColors(DataSource& ds) const;
+
     // ================================================================
     // Data source loading/filtering (replaces DataSourceManager)
     // ================================================================
@@ -310,13 +314,6 @@ public:
     DataSourcesToolWidget* loadWidget();
     DataSourcesStatusToolWidget* statusWidget();
     DataSourcesConfigurationDialog* configurationDialog();
-
-    // ================================================================
-    // Startup context check
-    // ================================================================
-    /// Ensures an active context is set. Shows create or select dialog if needed.
-    /// Returns true if a context is active after the call, false if user cancelled.
-    bool ensureActiveContext(QWidget* parent = nullptr);
 
     // ================================================================
     // Utility
