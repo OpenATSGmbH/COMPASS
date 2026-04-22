@@ -366,16 +366,21 @@ QVariant ScatterSeriesTreeItem::icon() const
 
 void ScatterSeriesTreeItem::recomputeColorFromDirectChildren()
 {
+    // Children with an invalid color (colorless — e.g. non-target DBContents)
+    // are ignored: they neither contribute a color nor block propagation.
+    // Only a conflict between two valid colors, or the total absence of any
+    // valid colored child, yields an invalid group color.
     QColor common;
-    bool first = true;
-    bool mixed = false;
     for (auto& c : child_items_)
     {
         const QColor cc = c.second->color_;
-        if (first) { common = cc; first = false; continue; }
-        if (common != cc) { mixed = true; break; }
+        if (!cc.isValid())
+            continue;
+        if (!common.isValid())
+            common = cc;
+        else if (common != cc) { color_ = QColor(); rebuildColorIcon(); return; }
     }
-    color_ = (mixed || !common.isValid()) ? QColor() : common;
+    color_ = common;
     rebuildColorIcon();
 }
 

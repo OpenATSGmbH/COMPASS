@@ -18,6 +18,7 @@
 #pragma once
 
 
+#include <QColor>
 #include <QMenu>
 #include <QPushButton>
 #include <QTreeWidgetItem>
@@ -80,6 +81,14 @@ public:
 
     virtual void updateContent() = 0;
 
+    /// Color this item currently represents. For leaves (DataSourceCountItem)
+    /// this is derived from the active ColorProvider::Mode and the data
+    /// context palettes. For groups (DataSourceItem, DataSourceTypeItem) it is
+    /// the common color of the descendants, or invalid if they disagree — so
+    /// colors propagate up only when every leaf below agrees. DataSourceLine
+    /// mode carries no tree-icon color (the color is on the line buttons).
+    virtual QColor effectiveColor() const { return QColor(); }
+
 protected:
     void setItemWidget(int column, QWidget* w);
 
@@ -101,6 +110,7 @@ public:
 
     bool init(const std::string& ds_type);
     void updateContent() override final;
+    QColor effectiveColor() const override;
 
     const std::string& dsType() const { return ds_type_; }
 
@@ -121,6 +131,7 @@ public:
 
     bool init(unsigned int ds_id);
     void updateContent() override final;
+    QColor effectiveColor() const override;
 
     unsigned int dsID() const { return ds_id_; }
     const context::DataSource* dataSource() const { return ds_; }
@@ -148,6 +159,7 @@ public:
     bool init(unsigned int ds_id,
               const std::string& dbc_name);
     void updateContent() override final;
+    QColor effectiveColor() const override;
 
     unsigned int dsID() const { return ds_id_; }
     const std::string& dbContentName() const { return dbc_name_; }

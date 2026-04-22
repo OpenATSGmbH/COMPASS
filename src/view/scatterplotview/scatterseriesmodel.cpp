@@ -21,6 +21,8 @@
 #include "traced_assert.h"
 
 #include "compass.h"
+#include "dbcontent/dbcontent.h"
+#include "dbcontent/dbcontentmanager.h"
 
 #include <functional>
 #include <vector>
@@ -227,13 +229,24 @@ ScatterSeriesTreeItem* findOrCreateGroup(ScatterSeriesTreeItem* parent,
 
 void ScatterSeriesModel::updateFrom(ScatterSeriesCollection& collection, COMPASS& compass)
 {
-    (void) compass; // kept for API stability; colors now come from the series themselves
-
     beginResetModel();
 
     root_item_->clear();
 
     using L = ScatterSeriesTreeItem::Level;
+
+    auto& dbcont_man = compass.dbContentManager();
+
+    // Leaves whose DBContent is not a target report never carry an icon color
+    // — they shouldn't "steal" the group's color either (see
+    // recomputeColorFromDirectChildren, which ignores colorless children).
+    auto leafColorFor = [&](const std::string& dbcontent, const QColor& series_color) -> QColor
+    {
+        if (!dbcont_man.existsDBContent(dbcontent) ||
+            !dbcont_man.dbContent(dbcontent).containsTargetReports())
+            return QColor();
+        return series_color;
+    };
 
     for (auto& col_it : collection.dataSeries())
     {
@@ -258,7 +271,8 @@ void ScatterSeriesModel::updateFrom(ScatterSeriesCollection& collection, COMPASS
         auto* line_item    = findOrCreateGroup(ds_item, line_tok,
                                                QColor(), *this, L::Line);
 
-        auto* leaf = new ScatterSeriesTreeItem(dbcontent, col_it.second.color,
+        const QColor leaf_color = leafColorFor(dbcontent, col_it.second.color);
+        auto* leaf = new ScatterSeriesTreeItem(dbcontent, leaf_color,
                                                *this, &col_it.second, line_item,
                                                L::DBContent);
         line_item->appendChild(leaf);

@@ -76,6 +76,31 @@ QIcon makeColorIcon(const QColor& color)
     return QIcon(pixmap);
 }
 
+/// Return the common effective color of `item`'s direct children. Children
+/// with an invalid (no-color) effectiveColor are ignored; the result is
+/// invalid only if the children with valid colors disagree, or if no child
+/// has a valid color at all. This lets a subtree with some "colorless"
+/// members (e.g. non-target-report DBContents) still propagate the shared
+/// color of the rest up to the parent.
+QColor commonChildEffectiveColor(const QTreeWidgetItem* item)
+{
+    QColor common;
+    for (int i = 0; i < item->childCount(); ++i)
+    {
+        auto* child = dynamic_cast<const DataSourcesWidgetItem*>(item->child(i));
+        if (!child)
+            continue;
+        const QColor cc = child->effectiveColor();
+        if (!cc.isValid())
+            continue; // colorless child — ignored
+        if (!common.isValid())
+            common = cc;
+        else if (common != cc)
+            return QColor(); // conflicting valid colors
+    }
+    return common; // invalid if no child contributed a color
+}
+
 } // anonymous
 
 /**************************************************************************************************
@@ -169,20 +194,16 @@ void DataSourceTypeItem::updateContent()
         setFlags(flags() & ~Qt::ItemFlag::ItemIsEnabled);
     }
 
-    // color icon for DSType mode only — no icon in other modes
-    if (ctx_man.compass().colorMode() == 0 /*DSType*/ && ctx_man.hasActiveContext())
-    {
-        QColor color;
-        const auto& palette = ctx_man.activeContext().colors().ds_type_colors;
-        auto it = palette.find(ds_type_);
-        if (it != palette.end())
-            color = it->second;
-        setIcon(0, makeColorIcon(color));
-    }
-    else
-    {
-        setIcon(0, QIcon());
-    }
+    // Icon color propagates up from descendants — painted only when every
+    // leaf under this DSType agrees on a single color (see effectiveColor).
+    // makeColorIcon with an invalid color yields a transparent 14x14 pixmap,
+    // so the icon slot stays reserved and rows remain aligned.
+    setIcon(0, makeColorIcon(effectiveColor()));
+}
+
+QColor DataSourceTypeItem::effectiveColor() const
+{
+    return commonChildEffectiveColor(this);
 }
 
 /**************************************************************************************************
@@ -245,14 +266,17 @@ void DataSourceItem::updateContent()
 
     setCheckState(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
 
-    // color icon for DataSource mode only — no icon in other modes
-    if (widget_->ctxManager().compass().colorMode() == 2 /*DataSource*/ && ds_)
-        setIcon(0, makeColorIcon(ds_->baseColor()));
-    else
-        setIcon(0, QIcon());
+    // Icon color propagates up from the DBContent children; a mixed subtree
+    // yields a transparent icon so rows still line up.
+    setIcon(0, makeColorIcon(effectiveColor()));
 
     for (auto lb : line_buttons_)
         lb->updateContent();
+}
+
+QColor DataSourceItem::effectiveColor() const
+{
+    return commonChildEffectiveColor(this);
 }
 
 /**
@@ -334,19 +358,52 @@ void DataSourceCountItem::updateContent()
     setText(2, QString::number(num_loaded));
     setText(3, QString::number(num_inserted));
 
-    // color icon for DBContent mode only — no icon in other modes
-    if (ctx_man.compass().colorMode() == 1 /*DBContent*/ && ctx_man.hasActiveContext())
+    // Leaf color depends on the active color mode; the group items above
+    // propagate it up when every DBContent under a DS/DSType agrees. An
+    // invalid color yields a transparent 14x14 placeholder that keeps rows
+    // aligned.
+    setIcon(0, makeColorIcon(effectiveColor()));
+}
+
+QColor DataSourceCountItem::effectiveColor() const
+{
+    auto& ctx_man = widget_->ctxManager();
+    if (!ctx_man.hasActiveContext())
+        return QColor();
+
+    // Non-target DBContents (status/service messages, etc.) never contribute
+    // an icon color; they are also ignored by the parent's propagation rule.
+    auto& dbcont_man = ctx_man.compass().dbContentManager();
+    if (!dbcont_man.existsDBContent(dbc_name_) ||
+        !dbcont_man.dbContent(dbc_name_).containsTargetReports())
+        return QColor();
+
+    const unsigned int mode = ctx_man.compass().colorMode();
+    const auto& colors = ctx_man.activeContext().colors();
+
+    switch (mode)
     {
-        QColor color;
-        const auto& palette = ctx_man.activeContext().colors().dbcontent_colors;
-        auto it = palette.find(dbc_name_);
-        if (it != palette.end())
-            color = it->second;
-        setIcon(0, makeColorIcon(color));
-    }
-    else
-    {
-        setIcon(0, QIcon());
+        case 0: /* DSType */
+        {
+            if (!ds_) return QColor();
+            const auto& palette = colors.ds_type_colors;
+            auto it = palette.find(ds_->dsType());
+            return (it != palette.end()) ? it->second : QColor();
+        }
+        case 1: /* DBContent */
+        {
+            const auto& palette = colors.dbcontent_colors;
+            auto it = palette.find(dbc_name_);
+            return (it != palette.end()) ? it->second : QColor();
+        }
+        case 2: /* DataSource */
+        {
+            return ds_ ? ds_->baseColor() : QColor();
+        }
+        case 3: /* DataSourceLine */
+        default:
+            // Line color is rendered on the line buttons, not as a tree icon.
+            return QColor();
     }
 }
 
