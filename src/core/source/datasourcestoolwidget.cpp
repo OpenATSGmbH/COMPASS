@@ -55,6 +55,9 @@ void DataSourcesToolWidget::createUI()
 
     ds_widget_ = new DataSourcesWidget(true, ctx_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
+    // Flight-Deck panel doesn't use row selection — silence the blue
+    // highlight and current-item marker.
+    ds_widget_->disableSelection();
 
     connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
             this, [this] { logdbg << "activeContextChangedSignal received"; updateContent(true); });

@@ -199,11 +199,14 @@ void DeleteDataDialog::populateDataSourcesTree()
 void DeleteDataDialog::collectSelections(set<string>& dbcontents,
                                          vector<DeleteDataDialog::SelectedDS>& data_sources) const
 {
-    // collect selected dbcontents
+    // collect selected dbcontents (restricted set, if any)
     for (const auto& cb_it : dbcontent_checks_)
     {
-        if (cb_it.second->isChecked())
-            dbcontents.insert(cb_it.first);
+        if (!cb_it.second->isChecked())
+            continue;
+        if (!restricted_dbcontents_.empty() && !restricted_dbcontents_.count(cb_it.first))
+            continue;
+        dbcontents.insert(cb_it.first);
     }
 
     // collect selected data sources + lines from tree
@@ -284,6 +287,11 @@ nlohmann::json DeleteDataDialog::selectedDeleteInfo() const
 
             // already fully deleted by dbcontent selection
             if (sel_dbcontents.count(dbcontent_name))
+                continue;
+
+            // honour the caller's restriction set (scoped delete)
+            if (!restricted_dbcontents_.empty() &&
+                !restricted_dbcontents_.count(dbcontent_name))
                 continue;
 
             if (!it->second->hasData())
@@ -464,5 +472,53 @@ QString DeleteDataDialog::deleteDescription() const
     }
 
     return lines.join("\n");
+}
+
+void DeleteDataDialog::preselectDSTypes(const std::set<std::string>& names)
+{
+    if (!ds_tree_) return;
+    for (int t = 0; t < ds_tree_->topLevelItemCount(); ++t)
+    {
+        QTreeWidgetItem* dstype_item = ds_tree_->topLevelItem(t);
+        if (names.count(dstype_item->text(0).toStdString()))
+            setCheckRecursive(dstype_item, Qt::Checked);
+    }
+}
+
+void DeleteDataDialog::preselectDataSources(const std::set<unsigned int>& ds_ids)
+{
+    if (!ds_tree_) return;
+    for (int t = 0; t < ds_tree_->topLevelItemCount(); ++t)
+    {
+        QTreeWidgetItem* dstype_item = ds_tree_->topLevelItem(t);
+        bool any_ds_checked = false;
+        for (int d = 0; d < dstype_item->childCount(); ++d)
+        {
+            QTreeWidgetItem* ds_item = dstype_item->child(d);
+            unsigned int ds_id = ds_item->data(0, Qt::UserRole).toUInt();
+            if (ds_ids.count(ds_id))
+            {
+                setCheckRecursive(ds_item, Qt::Checked);
+                any_ds_checked = true;
+            }
+        }
+        if (any_ds_checked)
+            dstype_item->setCheckState(0, Qt::Checked);
+    }
+}
+
+void DeleteDataDialog::preselectDBContents(const std::set<std::string>& names)
+{
+    for (const auto& name : names)
+    {
+        auto it = dbcontent_checks_.find(name);
+        if (it != dbcontent_checks_.end())
+            it->second->setChecked(true);
+    }
+}
+
+void DeleteDataDialog::setRestrictedDBContents(const std::set<std::string>& names)
+{
+    restricted_dbcontents_ = names;
 }
 

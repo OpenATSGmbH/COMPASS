@@ -23,7 +23,9 @@
 #include <QPushButton>
 #include <QTreeWidgetItem>
 
+#include <functional>
 #include <memory>
+#include <string>
 
 namespace context { class DBContextManager; class DataSource; }
 
@@ -184,6 +186,11 @@ public slots:
     // Add this slot
     void onItemSelectionChanged();
 
+    /// Context-menu handler — dispatches the menu based on the item under
+    /// `pos` (DSType row, DataSource row, DBContent count row, or blank
+    /// background).
+    void showContextMenuSlot(const QPoint& pos);
+
 signals:
     void dataSourceSelectedSignal(unsigned int ds_id);
 
@@ -206,6 +213,11 @@ public:
 
     void addActionsToConfigMenu(QMenu* menu);
 
+    /// Turn row selection off (no highlight, no current-item marker, no
+    /// focus). Use in embeddings that don't listen to
+    /// `dataSourceSelectedSignal`.
+    void disableSelection();
+
     static const int LineButtonSize;
 
 protected:
@@ -227,6 +239,18 @@ protected:
 
     void deleteDataSlot();
     void deleteJobDoneSlot();
+
+    // Context-menu helpers
+    void setAllCheckboxes(bool select);
+    void deselectOtherDSTypes(const std::string& keep);
+    void setAllChildrenOfDSType(const std::string& ds_type, bool select);
+    void deselectOtherDataSources(unsigned int keep_ds_id);
+    void expandSubtree(QTreeWidgetItem* item, bool expand);
+
+    // Delete dialog with optional preselection applied before exec().
+    void runDeleteDialog(std::function<void(class DeleteDataDialog&)> preselect);
+    void deleteForDSType(const std::string& ds_type);
+    void deleteForDataSource(unsigned int ds_id);
 
 private:
     friend class DataSourcesWidgetItem;
