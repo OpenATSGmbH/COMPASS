@@ -47,6 +47,8 @@
 #include <QTabWidget>
 
 #include <QtCharts/QChartView>
+#include <QtCharts/QAbstractBarSeries>
+#include <QtCharts/QStackedBarSeries>
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QLegend>
@@ -64,6 +66,39 @@ QT_CHARTS_USE_NAMESPACE
 
 using namespace EvaluationRequirementResult;
 using namespace std;
+
+namespace
+{
+    /// Group key derived from a full layer id ("<ds_type>:<ds_name>:L<n>:
+    /// <dbcontent>") for the given color mode — this is what the chart
+    /// actually stacks on (one bar set per group). Matches the semantics of
+    /// COMPASS::colorMode():
+    ///   0 DSType, 1 DBContent, 2 Data Source, 3 Data Source + Line.
+    std::string groupKeyFor(const std::string& layer_id, unsigned int color_mode)
+    {
+        std::vector<std::string> parts;
+        size_t start = 0;
+        for (size_t i = 0; i <= layer_id.size(); ++i)
+        {
+            if (i == layer_id.size() || layer_id[i] == ':')
+            {
+                parts.push_back(layer_id.substr(start, i - start));
+                start = i + 1;
+            }
+        }
+        if (parts.size() != 4)
+            return layer_id;
+
+        switch (color_mode)
+        {
+            case 0: return parts[0];                                        // DSType
+            case 1: return parts[3];                                        // DBContent
+            case 2: return parts[0] + ":" + parts[1];                       // Data Source
+            case 3: return parts[0] + ":" + parts[1] + ":" + parts[2];      // Data Source + Line
+            default: return layer_id;
+        }
+    }
+}
 
 /**
  */
@@ -110,10 +145,15 @@ void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
             });
 
     // Color-mode change -> resolveSeriesColor outputs differ -> rebuild
-    // payloads so leaf icon colors and group-level aggregation reflect the
-    // new mode.
+    // payloads (leaf icon + panel group colors) AND redraw the chart so
+    // the stacked bar colors match. The histogram values are unchanged —
+    // redrawData(true) does recompute, but rebuilding the histogram on a
+    // color-mode toggle is cheap compared to a buffer reload.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-            this, [this](unsigned int) { rebuildLayerTree(); });
+            this, [this](unsigned int) {
+                rebuildLayerTree();
+                redrawData(true);
+            });
 
     rebuildLayerTree();
 }
@@ -273,25 +313,44 @@ void HistogramViewDataWidget::updateFromVariables()
 
     traced_assert(histogram_generator_);
 
-    // Build per-buffer row allow masks from current hidden_layer_ids_ and
-    // push them into the generator as a row filter. A hidden leaf => its
-    // rows are excluded from both min/max scan and bin counting.
-    computeAllowMasks();
-    if (!allow_masks_.empty())
+    // Build per-buffer row-layer ids once (covers every row). The row filter
+    // uses the full layer id (panel visibility is per-layer). The layer
+    // lookup fed to the generator returns the color-mode *group key* — that
+    // way the generator produces one bucket per visible group (e.g. 5 in
+    // DSType mode) rather than per full-layer, and no merge step is needed
+    // downstream.
+    computeRowLayerIds();
+
+    HistogramGeneratorBuffer* buf_gen =
+        dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
+    traced_assert(buf_gen);
+
+    const unsigned int color_mode = view_->compass().colorMode();
+
+    buf_gen->setRowLayerLookup(
+        [this, color_mode](const std::string& dbc, unsigned int i) -> std::string
+        {
+            auto it = row_layer_ids_.find(dbc);
+            if (it == row_layer_ids_.end() || i >= it->second.size())
+                return {};
+            const std::string& full_id = it->second[i];
+            if (full_id.empty())
+                return {};
+            return groupKeyFor(full_id, color_mode);
+        });
+
+    if (!hidden_layer_ids_.empty())
     {
-        HistogramGeneratorBuffer* buf_gen =
-            dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
-        traced_assert(buf_gen);
         buf_gen->setRowFilter(
             [this](const std::string& dbc, unsigned int i) -> bool
             {
-                auto it = allow_masks_.find(dbc);
-                if (it == allow_masks_.end())
-                    return true;   // no mask for this dbcontent -> unfiltered
-                const auto& mask = it->second;
-                if (i >= mask.size())
-                    return true;
-                return mask[i];
+                auto it = row_layer_ids_.find(dbc);
+                if (it == row_layer_ids_.end() || i >= it->second.size())
+                    return true;   // no lookup -> allow (can't match a hidden id)
+                const std::string& lid = it->second[i];
+                if (lid.empty())
+                    return true;   // unmappable rows still contribute to scan nulls
+                return hidden_layer_ids_.count(lid) == 0;
             });
     }
 
@@ -324,8 +383,21 @@ void HistogramViewDataWidget::compileRawDataFromGenerator()
     if (!histogram_generator_ || !variablesOk() || !histogram_generator_->hasValidResult())
         return;
 
-    //convert results to raw data
-    histogram_generator_->getResults().toRaw(histogram_raw_, dbContentColors(), ColorSelected);
+    // Color map keyed by the generator's group key (DSType / DBContent /
+    // Data Source / Data Source + Line — determined by color mode). All
+    // full-layer payloads that collapse to the same group share the same
+    // color by construction, so "first wins" is safe.
+    const unsigned int color_mode = view_->compass().colorMode();
+
+    std::map<std::string, QColor> group_colors;
+    for (const auto& p : payloads_)
+    {
+        if (!p) continue;
+        group_colors.try_emplace(groupKeyFor(p->persistenceId(), color_mode),
+                                 p->color());
+    }
+
+    histogram_generator_->getResults().toRaw(histogram_raw_, group_colors, ColorSelected);
 }
 
 /**
@@ -394,10 +466,13 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     QString x_axis_name = QString::fromStdString(x_axis_name_);
     QString y_axis_name = "Count";
 
+    // Legend visibility is decided later based on series count (see
+    // MaxLegendEntries below) — at a few layers it's still useful, but with
+    // many layers the layer panel is the better reference.
     chart->legend()->setAlignment(Qt::AlignBottom);
 
-    //create bar series
-    QBarSeries* chart_series = new QBarSeries();
+    //create stacked bar series (per-layer segments share each bin)
+    QStackedBarSeries* chart_series = new QStackedBarSeries();
     chart->addSeries(chart_series);
 
     //create x axis; use setTitleText(" ") to reserve layout space for the axis
@@ -443,23 +518,28 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
     if (has_data)
     {
-        //data available
-        chart->legend()->setVisible(true);
-
         unsigned int max_count = 0;
 
-        auto addCount = [ & ] (QBarSet* set, unsigned int count) 
+        // Log scale disallows zero, so zero-count bins need a tiny positive
+        // fallback to silence QLogValueAxis warnings. With stacked bars this
+        // fallback accumulates across all layers in a bin — at 10e-3 per
+        // layer the cumulative (N * 0.01) crossed the log axis min (0.1) and
+        // produced a visible "floor". 1e-12 keeps the cumulative well below
+        // any realistic axis min even for thousands of layers.
+        constexpr double LogZeroFallback = 1e-12;
+
+        auto addCount = [ & ] (QBarSet* set, unsigned int count)
         {
             if (count > max_count)
                 max_count = count;
 
             if (use_log_scale && count == 0)
-                *set << 10e-3; // Logarithms of zero and negative values are undefined.
+                *set << LogZeroFallback;
             else
                 *set << count;
         };
 
-        //generate a bar set for each DBContent
+        //generate a bar set for each layer
 
         for (const auto& data_series : histogram_raw_.dataSeries())
         {
@@ -471,8 +551,14 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
             for (const auto& bin : histogram.getBins())
                 addCount(set, bin.count);
-            
+
             set->setColor(data_series.color);
+            // Remove the bar outline so adjacent same-colored stack segments
+            // (same DSType / DBContent under a coarse color mode) read as one
+            // solid block instead of a striped column.
+            QPen pen(data_series.color);
+            pen.setWidth(0);
+            set->setPen(pen);
             chart_series->append(set);
         }
 
@@ -490,11 +576,9 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
         draw_state = ViewDataWidget::DrawState::DrawnContent;
     }
-    else 
+    else
     {
         //no data, generate empty display
-
-        chart->legend()->setVisible(false);
 
         //we need some bogus category in order to make the bar plot work
         chart_x_axis->append("Category"); 
@@ -520,6 +604,19 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     chart_view_.reset(new HistogramViewChartView(this, chart));
     chart_view_->setObjectName("chart_view");
     chart_view_->setXAxisLabel(x_axis_name);
+
+    // Must run AFTER chart-view construction: the ChartView base constructor
+    // auto-sets legend visibility from marker labels (non-empty -> visible),
+    // which would otherwise override whatever we set earlier. Hide the
+    // legend when there are too many entries to be useful — the layer panel
+    // carries per-layer identity in that case.
+    {
+        constexpr int MaxLegendEntries = 8;
+        const bool show_legend = has_data
+                              && chart_series->count() > 0
+                              && chart_series->count() <= MaxLegendEntries;
+        chart->legend()->setVisible(show_legend);
+    }
 
     //    connect (chart_series_, &QBarSeries::clicked,
     //             chart_view_, &HistogramViewChartView::seriesPressedSlot);
@@ -743,7 +840,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
             auto series = chart_view_->chart()->series();
             for (auto s : series)
             {
-                QBarSeries* bar_series = dynamic_cast<QBarSeries*>(s);
+                QAbstractBarSeries* bar_series = dynamic_cast<QAbstractBarSeries*>(s);
                 traced_assert(bar_series);
 
                 nlohmann::json series_info;
@@ -917,12 +1014,9 @@ void HistogramViewDataWidget::rebuildLayerTree()
     emit layerTreeRebuiltSignal();
 }
 
-void HistogramViewDataWidget::computeAllowMasks()
+void HistogramViewDataWidget::computeRowLayerIds()
 {
-    allow_masks_.clear();
-
-    if (hidden_layer_ids_.empty())
-        return;  // nothing hidden -> no filtering -> no mask needed
+    row_layer_ids_.clear();
 
     auto& compass    = view_->compass();
     auto& dbcont_man = compass.dbContentManager();
@@ -936,9 +1030,9 @@ void HistogramViewDataWidget::computeAllowMasks()
         if (n == 0)
             continue;
 
-        // If a dbcontent has no ds_id/line_id, we can't map rows to layers —
-        // the layer panel won't list leaves for it either, so none of its
-        // rows belong to a hidden layer. Leave unfiltered.
+        // If a dbcontent has no ds_id/line_id we leave row_layer_ids_ with
+        // no entry for it — the generator falls back to the bare dbcontent
+        // as the group key (one bar per such dbcontent).
         if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
             !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
             continue;
@@ -955,16 +1049,27 @@ void HistogramViewDataWidget::computeAllowMasks()
         const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
         const auto& line_ids = buffer.get<unsigned int>(line_id_name);
 
-        std::vector<bool> mask(n, true);
-        bool any_hidden = false;
+        std::vector<std::string> per_row(n);
+
+        // Cache (ds_id, line_id) -> layer id to avoid a DataSourceManager
+        // lookup per row.
+        std::map<std::pair<unsigned int, unsigned int>, std::string> layer_id_cache;
 
         for (unsigned int i = 0; i < n; ++i)
         {
             if (ds_ids.isNull(i) || line_ids.isNull(i))
-                continue;   // unmappable -> leave allowed
+                continue;   // leave empty -> unmappable
 
             const unsigned int ds_id   = ds_ids.get(i);
             const unsigned int line_id = line_ids.get(i);
+
+            const auto cache_key = std::make_pair(ds_id, line_id);
+            auto cache_it = layer_id_cache.find(cache_key);
+            if (cache_it != layer_id_cache.end())
+            {
+                per_row[i] = cache_it->second;
+                continue;
+            }
 
             std::string ds_type, ds_name;
             if (ctx_mgr.hasDataSource(ds_id))
@@ -980,19 +1085,15 @@ void HistogramViewDataWidget::computeAllowMasks()
                         + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
             }
 
-            const std::string line_str = Utils::String::lineStrFrom(line_id);
-            const std::string full_key = ds_type + ":" + ds_name + ":"
-                                       + line_str + ":" + dbcontent_name;
+            std::string lid = ds_type + ":" + ds_name + ":"
+                            + Utils::String::lineStrFrom(line_id) + ":"
+                            + dbcontent_name;
 
-            if (hidden_layer_ids_.count(full_key))
-            {
-                mask[i]    = false;
-                any_hidden = true;
-            }
+            layer_id_cache.emplace(cache_key, lid);
+            per_row[i] = std::move(lid);
         }
 
-        if (any_hidden)
-            allow_masks_.emplace(dbcontent_name, std::move(mask));
+        row_layer_ids_.emplace(dbcontent_name, std::move(per_row));
     }
 }
 

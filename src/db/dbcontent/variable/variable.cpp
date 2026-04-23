@@ -237,8 +237,6 @@ std::string Variable::info() const
     ss << "Description: " << description() << endl;
     ss << "Data Type: " << dataTypeString() << endl;
     ss << "Unit: " << dimensionUnitStr() << endl;
-    ss << "Representation: " << representationString() << endl;
-    ss << "DB Column: " << dbColumnName() << endl;
 
 //    QTextEdit* description_edit_ {nullptr};
 //    VariableDataTypeComboBox* type_combo_ {nullptr};

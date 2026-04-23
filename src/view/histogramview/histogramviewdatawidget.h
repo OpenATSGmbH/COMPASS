@@ -155,17 +155,18 @@ protected:
 
     std::set<std::string> hidden_layer_ids_;  // persisted hidden layer ids from the layer panel
 
-    /// Per-dbcontent per-row allow mask, recomputed each updateFromVariables
-    /// when any layer is hidden. Referenced via a closure passed as the
-    /// HistogramGeneratorBuffer row filter, so must outlive the generator.
-    std::map<std::string, std::vector<bool>> allow_masks_;
+    /// Per-dbcontent per-row layer id, recomputed each updateFromVariables.
+    /// Rows whose (ds_id, line_id) can't be mapped get an empty string.
+    /// Referenced via closures passed as the HistogramGeneratorBuffer row
+    /// filter + layer lookup, so this must outlive the generator.
+    std::map<std::string, std::vector<std::string>> row_layer_ids_;
 
 private:
     /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
     /// subtree. Emits layerTreeRebuiltSignal.
     void rebuildLayerTree();
 
-    /// Populate allow_masks_ from current viewData() + hidden_layer_ids_.
-    /// Leaves allow_masks_ empty when no layer is hidden.
-    void computeAllowMasks();
+    /// Populate row_layer_ids_ from current viewData(). Empty string for
+    /// rows without ds_id/line_id (unmappable).
+    void computeRowLayerIds();
 };

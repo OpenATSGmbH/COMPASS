@@ -65,6 +65,15 @@ using namespace Utils;
 
 const int ScatterPlotViewDataWidget::ConnectLinesDataCountMax = 100000;
 
+namespace
+{
+    // Series key used for the pooled selection overlay. It is intentionally
+    // outside the "<ds_type>:<ds_name>:L<n>:<dbcontent>" scheme so the layer
+    // tree can render it as a dedicated top-level leaf instead of bucketing
+    // it into the DBContent subtree.
+    const std::string kSelectedSeriesKey = "Selected";
+}
+
 /**
 */
 ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view_widget,
@@ -141,16 +150,28 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
         return;
 
     // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
-    // :L<n>:<dbcontent>" key convention.
+    // :L<n>:<dbcontent>" key convention. The pooled "Selected" overlay series
+    // does not fit that scheme — it is kept aside and injected as a dedicated
+    // top-level leaf after the DBContent subtree is built.
     std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
     std::vector<DBContentRootItem::LeafEntry>        entries;
     new_payloads.reserve(scatter_series_.numDataSeries());
     entries.reserve(scatter_series_.numDataSeries());
 
+    ScatterLeafPayload* selected_payload = nullptr;
+
     for (auto& kv : scatter_series_.dataSeries())
     {
         const std::string& full_key = kv.first;
         auto& data_series           = kv.second;
+
+        if (full_key == kSelectedSeriesKey)
+        {
+            new_payloads.emplace_back(
+                std::make_unique<ScatterLeafPayload>(full_key, &data_series));
+            selected_payload = new_payloads.back().get();
+            continue;
+        }
 
         std::string ds_type, ds_name, line_tok, dbcontent;
         {
@@ -193,7 +214,16 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
     // modelReset that would make QHeaderView drop its section widths.
     layer_model_->refreshSubtree(db_content_root_, [&]() {
         payloads_ = std::move(new_payloads);
-        return db_content_root_->buildChildrenFrom(entries);
+        auto children = db_content_root_->buildChildrenFrom(entries);
+        if (selected_payload)
+        {
+            // Place the Selected overlay at the top of the tree so it is
+            // always visible regardless of how the DBContent subtree expands.
+            auto leaf = std::make_unique<DBContentLeafItem>(
+                kSelectedSeriesKey, selected_payload);
+            children.insert(children.begin(), std::move(leaf));
+        }
+        return children;
     });
     db_content_root_->recomputeColorsRecursive();
 
@@ -379,9 +409,8 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
     //add selected dataset as the last one (important for render order)
     if (!selected_series.points.empty())
     {
-        std::string name = "Selected";
-
-        scatter_series_.addDataSeries(selected_series, name, ColorSelected, MarkerSizeSelectedPx);
+        scatter_series_.addDataSeries(selected_series, kSelectedSeriesKey,
+                                      ColorSelected, MarkerSizeSelectedPx);
     }
 
     x_axis_name_ = view_->variable(0).description();
