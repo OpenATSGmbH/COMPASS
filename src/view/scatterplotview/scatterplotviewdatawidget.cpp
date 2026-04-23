@@ -254,18 +254,52 @@ bool ScatterPlotViewDataWidget::postLoadTrigger()
 void ScatterPlotViewDataWidget::resetVariableDisplay()
 {
     chart_view_.reset(nullptr);
+    prior_draw_had_content_ = false;
 }
 
 /**
 */
-ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay() 
+ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 {
     loginf;
 
+    // Remember the current axis ranges so a redraw caused by e.g. a selection
+    // change does not throw away the user's zoom. Only do this if the prior
+    // render actually drew content — otherwise the "captured" range is the
+    // meaningless default of an empty chart.
+    bool capture_zoom = prior_draw_had_content_ &&
+                        chart_view_ &&
+                        chart_view_->chart() &&
+                       !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
+                       !chart_view_->chart()->axes(Qt::Vertical).empty();
+
+    boost::optional<std::pair<double, double>> x_range, y_range;
+    if (capture_zoom)
+    {
+        x_range = getAxisRange(chart_view_->chart()->axes(Qt::Horizontal).first());
+        y_range = getAxisRange(chart_view_->chart()->axes(Qt::Vertical).first());
+    }
+
     auto draw_state = updateChart();
 
-    //reset zoom after update
-    resetZoomSlot();
+    bool has_axes_now = chart_view_ &&
+                        chart_view_->chart() &&
+                       !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
+                       !chart_view_->chart()->axes(Qt::Vertical).empty();
+
+    if (capture_zoom && has_axes_now && x_range.has_value() && y_range.has_value())
+    {
+        setAxisRange(chart_view_->chart()->axes(Qt::Horizontal).first(),
+                     x_range->first, x_range->second);
+        setAxisRange(chart_view_->chart()->axes(Qt::Vertical).first(),
+                     y_range->first, y_range->second);
+    }
+    else
+    {
+        resetZoomSlot();
+    }
+
+    prior_draw_had_content_ = (draw_state == DrawState::DrawnContent);
 
     return draw_state;
 }

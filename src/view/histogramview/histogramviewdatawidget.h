@@ -28,10 +28,13 @@
 
 #include <QVariant>
 
+#include <boost/optional.hpp>
+
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 class HistogramView;
@@ -154,6 +157,12 @@ protected:
     std::vector<std::unique_ptr<HistogramLeafPayload>> payloads_;
 
     std::set<std::string> hidden_layer_ids_;  // persisted hidden layer ids from the layer panel
+
+    /// Current zoom bin range [first, second], valid only while zoom is
+    /// active. Captured on zoomToSubrange and re-applied after a generator
+    /// regeneration (e.g. selection-triggered redrawData(true)) so the
+    /// user's zoom survives. Cleared on data reload and on resetZoomSlot.
+    boost::optional<std::pair<unsigned int, unsigned int>> saved_zoom_range_;
 
     /// Per-dbcontent per-row layer id, recomputed each updateFromVariables.
     /// Rows whose (ds_id, line_id) can't be mapped get an empty string.

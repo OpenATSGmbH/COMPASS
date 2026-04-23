@@ -176,6 +176,9 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
     //current generator makes no sense any more
     resetHistogram();
 
+    //new data -> old zoom bin indices are meaningless
+    saved_zoom_range_.reset();
+
     // Buffers have changed; repopulate the layer panel (empty if no data).
     rebuildLayerTree();
 }
@@ -357,9 +360,17 @@ void HistogramViewDataWidget::updateFromVariables()
     histogram_generator_->update();
     //histogram_generator_->print();
 
+    // Re-apply any zoom that was active before this regeneration, so a
+    // selection-triggered redrawData(true) doesn't reset the user's zoom.
+    // Cleared on data reload and on explicit resetZoomSlot, so this only
+    // fires for same-data redraws.
+    if (saved_zoom_range_.has_value())
+        histogram_generator_->zoom(saved_zoom_range_->first,
+                                   saved_zoom_range_->second);
+
     HistogramGeneratorBuffer* generator = dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
     traced_assert(generator);
-    
+
     //variable missing from buffer?
     if (generator->dataNotInBuffer())
         setVariableState(0, VariableState::MissingFromBuffer);
@@ -670,11 +681,15 @@ void HistogramViewDataWidget::zoomToSubrange(unsigned int index1, unsigned int i
         //zoom to bin range and refill with data
         histogram_generator_->zoom(index1, index2);
 
+        //remember the zoom so a subsequent recompute (e.g. selection-driven
+        //redrawData(true)) can re-apply it after the generator is rebuilt
+        saved_zoom_range_ = std::make_pair(index1, index2);
+
         //update raw data and chart
         compileRawDataFromGenerator();
-        
+
         redrawData(false);
-    } 
+    }
 }
 
 /**
@@ -738,6 +753,9 @@ void HistogramViewDataWidget::clearSelectionSlot()
 void HistogramViewDataWidget::resetZoomSlot()
 {
     loginf;
+
+    //reset the preserved zoom so the upcoming redraw uses the full range
+    saved_zoom_range_.reset();
 
     if (histogram_generator_ && histogram_generator_->subRangeActive())
     {

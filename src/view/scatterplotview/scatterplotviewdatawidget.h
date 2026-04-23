@@ -150,5 +150,12 @@ private:
 
     boost::optional<QRectF> bounds_;
 
+    // True iff the last updateChart() drew real content (i.e. axes reflect
+    // real data bounds). Gates zoom preservation in updateVariableDisplay() so
+    // the initial render — where the prior "chart" has no data and axes are
+    // default/empty — does not carry a meaningless range into the first real
+    // draw.
+    bool prior_draw_had_content_{false};
+
     std::set<std::string> hidden_series_;  // transient: remember unchecked series across reloads
 };
