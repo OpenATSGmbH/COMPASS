@@ -23,7 +23,6 @@
 #include <functional>
 
 namespace context { class DBContextManager; class DataSource; }
-class DataSourcesConfigurationDialog;
 class DSTypeSelectionComboBox;
 
 

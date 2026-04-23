@@ -18,7 +18,6 @@
 #include "datasourceeditwidget.h"
 #include "data_source.h"
 #include "dstypeselectioncombobox.h"
-#include "datasourcesconfigurationdialog.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
 #include "datasourcebase.h"

@@ -31,7 +31,6 @@
 #include "airspace.h"
 #include "datasourcestoolwidget.h"
 #include "datasourcesstatustoolwidget.h"
-#include "datasourcesconfigurationdialog.h"
 #include "db_context_conflict_dialog.h"
 #include "db_context_merge_dialog.h"
 #include "files.h"
@@ -2150,13 +2149,6 @@ DataSourcesStatusToolWidget* DBContextManager::statusWidget()
     if (!status_widget_)
         status_widget_.reset(new DataSourcesStatusToolWidget(*this));
     return status_widget_.get();
-}
-
-DataSourcesConfigurationDialog* DBContextManager::configurationDialog()
-{
-    if (!config_dialog_)
-        config_dialog_.reset(new DataSourcesConfigurationDialog(*this));
-    return config_dialog_.get();
 }
 
 string DBContextManager::basePath()

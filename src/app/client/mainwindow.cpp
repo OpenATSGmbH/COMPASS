@@ -23,7 +23,6 @@
 #include "db_context_create_dialog.h"
 #include "db_context_delete_dialog.h"
 #include "db_context_edit_dialog.h"
-#include "datasourcesconfigurationdialog.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetlistwidget.h"
 #include "datasourcestoolwidget.h"
@@ -426,16 +425,6 @@ void MainWindow::createMenus ()
     config_menu_->setToolTipsVisible(true);
 
             // configure operations
-    QAction* ds_action = new QAction("Data Sources");
-    ds_action->setToolTip("Configure Data Sources");
-    connect(ds_action, &QAction::triggered, this, &MainWindow::configureDataSourcesSlot);
-    config_menu_->addAction(ds_action);
-
-    QAction* ffts_action = new QAction("FFTs");
-    ffts_action->setToolTip("Configure FFTs");
-    connect(ffts_action, &QAction::triggered, this, &MainWindow::configureFFTsSlot);
-    config_menu_->addAction(ffts_action);
-
     QAction* meta_action = new QAction("Meta Variables");
 
     if (expert_mode)
@@ -445,12 +434,6 @@ void MainWindow::createMenus ()
 
     connect(meta_action, &QAction::triggered, this, &MainWindow::configureMetaVariablesSlot);
     config_menu_->addAction(meta_action);
-
-    sectors_action_ = new QAction("Sectors");
-    sectors_action_->setToolTip("Configure Sectors (stored in Database)");
-    connect(sectors_action_, &QAction::triggered, this, &MainWindow::configureSectorsSlot);
-    sectors_action_->setDisabled(true);
-    config_menu_->addAction(sectors_action_);
 
 #if USE_EXPERIMENTAL_SOURCE == true
     config_menu_->addSeparator();
@@ -527,8 +510,6 @@ void MainWindow::updateMenus()
     traced_assert(open_recent_db_menu_);
     traced_assert(close_db_action_);
 
-    traced_assert(sectors_action_);
-
     traced_assert(import_menu_);
 
     traced_assert(license_action_);
@@ -572,8 +553,6 @@ void MainWindow::updateMenus()
 
     export_db_action_->setDisabled(!db_open || in_live_running);
     close_db_action_->setDisabled(!db_open || in_live);
-
-    sectors_action_->setDisabled(!db_open || in_live_running);
 
     import_menu_->setDisabled(!db_open || asterix_import_running || in_live);
     process_menu_->setDisabled(!db_open || asterix_import_running || in_live);
@@ -1097,35 +1076,11 @@ void MainWindow::evaluateSlot()
     compass_.evaluationManager().evaluate(true);
 }
 
-void MainWindow::configureDataSourcesSlot()
-{
-    loginf;
-
-    compass_.dbContextManager().configurationDialog()->show();
-}
-
-void MainWindow::configureFFTsSlot()
-{
-    loginf;
-
-    // TODO: FFT configuration now managed via DBContext — dialog to be reimplemented
-    loginf << "FFT configuration dialog not yet migrated to DBContext";
-}
-
-
 void MainWindow::configureMetaVariablesSlot()
 {
     loginf;
 
     compass_.dbContentManager().metaVariableConfigdialog()->show();
-}
-
-void MainWindow::configureSectorsSlot()
-{
-    loginf;
-
-    context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
-    dialog.exec();
 }
 
 void MainWindow::quitRequestedSlot()
