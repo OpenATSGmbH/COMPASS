@@ -34,6 +34,9 @@
 #include "dbcontent/variable/metavariable.h"
 #include "scatterplotviewdatasource.h"
 #include "scatterplotviewchartview.h"
+#include "scatterleafpayload.h"
+#include "dbcontentlayer.h"
+#include "layertreemodel.h"
 #include "logger.h"
 #include "property_templates.h"
 #include "timeconv.h"
@@ -89,10 +92,8 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     updateDateTimeInfoFromVariables();
     updateChart();
 
-    connect (&data_model_, &ScatterSeriesModel::visibilityChangedSignal, this, &ScatterPlotViewDataWidget::updateChartSlot);
-    connect (&data_model_, &ScatterSeriesModel::colorChangedSignal,
-             this, &ScatterPlotViewDataWidget::updateChartSlot);
-
+    // Layer panel signals are wired by ScatterPlotViewConfigWidget via
+    // attachLayerPanel(); color-mode redraw is connected here independently.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
             this, [this](unsigned int /*mode*/) { redrawData(true); });
 }
@@ -119,7 +120,90 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     bounds_ = {};
 
-    data_model_.updateFrom(scatter_series_, view_->compass());
+    rebuildLayerTree();
+}
+
+/**
+*/
+void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
+                                                 LayerTreeModel* layer_model)
+{
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    // If scatter_series_ was already populated before the panel was attached,
+    // push it into the tree now so the UI matches reality.
+    rebuildLayerTree();
+}
+
+/**
+*/
+void ScatterPlotViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
+    // :L<n>:<dbcontent>" key convention.
+    std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
+    std::vector<DBContentRootItem::LeafEntry>        entries;
+    new_payloads.reserve(scatter_series_.numDataSeries());
+    entries.reserve(scatter_series_.numDataSeries());
+
+    for (auto& kv : scatter_series_.dataSeries())
+    {
+        const std::string& full_key = kv.first;
+        auto& data_series           = kv.second;
+
+        std::string ds_type, ds_name, line_tok, dbcontent;
+        {
+            std::vector<std::string> parts;
+            size_t start = 0;
+            for (size_t i = 0; i <= full_key.size(); ++i)
+            {
+                if (i == full_key.size() || full_key[i] == ':')
+                {
+                    parts.push_back(full_key.substr(start, i - start));
+                    start = i + 1;
+                }
+            }
+            if (parts.size() == 4)
+            {
+                ds_type   = parts[0];
+                ds_name   = parts[1];
+                line_tok  = parts[2];
+                dbcontent = parts[3];
+            }
+            else
+            {
+                // malformed key fallback — collapse to a single leaf under an
+                // "<unknown>" branch so it's still visible.
+                ds_type   = "<unknown>";
+                ds_name   = full_key;
+                line_tok  = "L1";
+                dbcontent = "<unknown>";
+            }
+        }
+
+        new_payloads.emplace_back(
+            std::make_unique<ScatterLeafPayload>(full_key, &data_series));
+        entries.push_back({ds_type, ds_name, line_tok, dbcontent,
+                           new_payloads.back().get()});
+    }
+
+    // Scoped subtree refresh: removes old children, swaps payloads while the
+    // DBContent root is empty, then attaches the new subtree. Avoids a full
+    // modelReset that would make QHeaderView drop its section widths.
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        payloads_ = std::move(new_payloads);
+        return db_content_root_->buildChildrenFrom(entries);
+    });
+    db_content_root_->recomputeColorsRecursive();
+
+    if (!hidden_series_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_series_);
+
+    emit layerTreeRebuiltSignal();
 }
 
 /**
@@ -309,9 +393,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    data_model_.updateFrom(scatter_series_, view_->compass());
-    loginf << "applying " << hidden_series_.size() << " hidden series after processStash";
-    data_model_.applyHiddenSeriesNames(hidden_series_);
+    rebuildLayerTree();
 
     bounds_ = scatter_series_.getDataBounds();
 
@@ -452,8 +534,7 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
 
         correctSeriesDateTime(scatter_series_);
 
-        data_model_.updateFrom(scatter_series_, view_->compass());
-        data_model_.applyHiddenSeriesNames(hidden_series_);
+        rebuildLayerTree();
 
         bounds_ = scatter_series_.getDataBounds();
 
@@ -658,13 +739,6 @@ boost::optional<std::pair<double, double>> ScatterPlotViewDataWidget::getAxisRan
 
 /**
 */
-ScatterSeriesModel& ScatterPlotViewDataWidget::dataModel()
-{
-    return data_model_;
-}
-
-/**
-*/
 void ScatterPlotViewDataWidget::resetZoomSlot()
 {
     loginf;
@@ -722,7 +796,8 @@ void ScatterPlotViewDataWidget::resetZoomSlot()
 void ScatterPlotViewDataWidget::updateChartSlot()
 {
     // remember which series are hidden so we can restore after reload
-    hidden_series_ = data_model_.hiddenSeriesNames();
+    if (layer_model_)
+        hidden_series_ = layer_model_->persistedHiddenIds();
     loginf << "captured " << hidden_series_.size() << " hidden series";
 
     //remember current axis ranges if available

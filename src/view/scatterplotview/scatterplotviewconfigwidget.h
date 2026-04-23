@@ -22,10 +22,12 @@
 class ScatterPlotViewWidget;
 class ScatterPlotView;
 
+class DBContentRootItem;
+class LayerPanelWidget;
+
 class QCheckBox;
 class QLabel;
 class QLineEdit;
-class QTreeView;
 
 /**
  * @brief Widget with configuration elements for a ScatterPlotView
@@ -37,14 +39,16 @@ class ScatterPlotViewConfigWidget : public VariableViewConfigWidget
 
 public slots:
     void useConnectionLinesSlot();
-    void updateToVisibilitySlot();
 
     void colorModeChangedSlot(unsigned int mode);
 
-    void showLayerContextMenuSlot(const QPoint& pos);
+    /// Re-apply the default expansion (driven by current color mode) to the
+    /// DBContent subtree. Connected to both the data widget's
+    /// layerTreeRebuiltSignal and COMPASS::colorModeChangedSignal.
+    void applyDefaultExpansionSlot();
 
 public:
-    ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget, 
+    ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget,
                                 QWidget* parent = nullptr);
     virtual ~ScatterPlotViewConfigWidget();
 
@@ -56,11 +60,11 @@ protected:
 
     ScatterPlotView* view_ = nullptr;
 
-    QLabel* color_mode_label_{nullptr};
-    QTreeView* layer_view_{nullptr};
+    QLabel*            color_mode_label_ {nullptr};
+    LayerPanelWidget*  layer_panel_      {nullptr};
+    DBContentRootItem* db_content_root_  {nullptr};
 
     QCheckBox* use_connection_lines_ {nullptr};
 
     static QString colorModeText(unsigned int mode);
-
 };

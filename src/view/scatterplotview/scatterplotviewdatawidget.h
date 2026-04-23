@@ -19,9 +19,11 @@
 
 #include "variableviewstashdatawidget.h"
 
+#include <memory>
 #include <set>
+#include <vector>
+
 #include "scatterseries.h"
-#include "scatterseriesmodel.h"
 #include "scatterplotviewchartview.h"
 
 class ScatterPlotView;
@@ -29,6 +31,9 @@ class ScatterPlotViewWidget;
 class ScatterPlotViewDataSource;
 
 class Buffer;
+class DBContentRootItem;
+class LayerTreeModel;
+class ScatterLeafPayload;
 
 namespace QtCharts 
 {
@@ -68,7 +73,15 @@ public:
 
     static const int ConnectLinesDataCountMax;
 
-    ScatterSeriesModel& dataModel();
+    /// Called by ScatterPlotViewConfigWidget once the LayerPanelWidget is
+    /// built. Provides the DBContent root item (owned by the panel's model)
+    /// and the layer tree model used for hidden-state round-tripping.
+    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+
+signals:
+    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
+    /// The config widget uses this to re-apply default expansion.
+    void layerTreeRebuiltSignal();
 
 public slots:
     void rectangleSelectedSlot(QPointF p1, QPointF p2);
@@ -115,6 +128,10 @@ private:
     void setAxisRange(QtCharts::QAbstractAxis* axis, double vmin, double vmax);
     boost::optional<std::pair<double, double>> getAxisRange(QtCharts::QAbstractAxis* axis) const;
 
+    /// Rebuild payloads_ from scatter_series_ and repopulate the DBContent
+    /// subtree. Re-applies hidden_series_. Emits layerTreeRebuiltSignal.
+    void rebuildLayerTree();
+
     ScatterPlotView*           view_       {nullptr};
     ScatterPlotViewDataSource* data_source_{nullptr};
 
@@ -131,7 +148,10 @@ private:
     bool x_axis_is_datetime_ = false;
     bool y_axis_is_datetime_ = false;
 
-    ScatterSeriesModel data_model_;
+    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
+    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
+
+    std::vector<std::unique_ptr<ScatterLeafPayload>> payloads_;
 
     boost::optional<QRectF> bounds_;
 
