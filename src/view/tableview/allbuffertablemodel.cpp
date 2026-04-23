@@ -208,22 +208,11 @@ QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const Row
             selected = true;
     }
 
-    // Look up slice key for this row. row_slice_keys_ is aligned with
-    // row_indexes_ via the caller (resolveRow gives us the same row index).
-    // We don't have the row index directly here; re-resolve via a search is
-    // wasteful. The base model's data() resolves row before calling us, so
-    // the row index is already consumed. Instead look up by (buffer, idx)
-    // via a short linear-ish scan is too slow; rebuild access by index.
-    //
-    // Simpler: expose row via an overload. For now, walk row_indexes_ isn't
-    // needed — we plumb the slice key through a mutable per-call argument
-    // set by data() via an overridden path. Since we don't have that hook,
-    // accept the O(1) vector index via the row the base model already knows:
-    // we return the icon for the RowData only by resolving the slice key
-    // directly from the buffer (ds_id + line_id + dbcontent), at render time.
-    // Cost: one null-check per cell paint, which is fast.
+    // Resolve this row's layer id from the buffer (ds_id + line_id +
+    // dbcontent) at render time. Cost: a handful of null-checks per cell
+    // paint, which is fast enough for the icon column.
 
-    std::string slice_key;
+    std::string layer_id;
     if (row_data.buffer)
     {
         DBContentManager& dbcont_man = view_.compass().dbContentManager();
@@ -246,29 +235,8 @@ QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const Row
                 if (!ds_ids.isNull(row_data.buffer_index) &&
                     !line_ids.isNull(row_data.buffer_index))
                 {
-                    unsigned int ds_id = ds_ids.get(row_data.buffer_index);
+                    const unsigned int ds_id   = ds_ids.get(row_data.buffer_index);
                     const unsigned int line_id = line_ids.get(row_data.buffer_index);
-
-                    // CAT063 special case (same as grouping logic elsewhere).
-                    if (row_data.dbcontent_name == "CAT063")
-                    {
-                        const std::string sac_name = dbcont_man.getVariable(
-                            row_data.dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name();
-                        const std::string sic_name = dbcont_man.getVariable(
-                            row_data.dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name();
-                        if (row_data.buffer->has<unsigned char>(sac_name) &&
-                            row_data.buffer->has<unsigned char>(sic_name))
-                        {
-                            const auto& sacs = row_data.buffer->get<unsigned char>(sac_name);
-                            const auto& sics = row_data.buffer->get<unsigned char>(sic_name);
-                            if (!sacs.isNull(row_data.buffer_index) &&
-                                !sics.isNull(row_data.buffer_index))
-                            {
-                                ds_id = Utils::Number::dsIdFrom(sacs.get(row_data.buffer_index),
-                                                                sics.get(row_data.buffer_index));
-                            }
-                        }
-                    }
 
                     std::string ds_type, ds_name;
                     if (ctx_mgr.hasDataSource(ds_id))
@@ -284,7 +252,7 @@ QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const Row
                                 + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
                     }
 
-                    slice_key = ds_type + ":" + ds_name + ":"
+                    layer_id = ds_type + ":" + ds_name + ":"
                               + Utils::String::lineStrFrom(line_id) + ":"
                               + row_data.dbcontent_name;
                 }
@@ -292,7 +260,7 @@ QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const Row
         }
     }
 
-    QIcon icon = iconFor(slice_key, selected);
+    QIcon icon = iconFor(layer_id, selected);
     if (icon.isNull())
         return QVariant();
     return icon;
@@ -308,9 +276,9 @@ QVariant AllBufferTableModel::prefixColumnHeader(unsigned int col) const
     return QVariant();
 }
 
-QIcon AllBufferTableModel::iconFor(const std::string& slice_key, bool selected) const
+QIcon AllBufferTableModel::iconFor(const std::string& layer_id, bool selected) const
 {
-    auto cache_key = std::make_pair(slice_key, selected);
+    auto cache_key = std::make_pair(layer_id, selected);
     auto it = icon_cache_.find(cache_key);
     if (it != icon_cache_.end())
         return it->second;
@@ -318,16 +286,16 @@ QIcon AllBufferTableModel::iconFor(const std::string& slice_key, bool selected) 
     QColor color;
     if (selected)
     {
-        // Selection yellow wins over slice color, even for slices that would
-        // otherwise render blank (non-target-report) — so selection is always
-        // visible.
+        // Selection yellow wins over the layer's own color, even for layers
+        // that would otherwise render blank (non-target-report) — so
+        // selection is always visible.
         color = ViewDataWidget::ColorSelected;
     }
     else
     {
-        auto slice_it = slice_colors_.find(slice_key);
-        if (slice_it != slice_colors_.end())
-            color = slice_it->second;
+        auto layer_it = layer_colors_.find(layer_id);
+        if (layer_it != layer_colors_.end())
+            color = layer_it->second;
     }
 
     constexpr int w = 14;
@@ -447,7 +415,7 @@ void AllBufferTableModel::buildRowIndexes()
 
     DBContentManager& dbcont_man = view_.compass().dbContentManager();
     auto& ctx_mgr = view_.compass().dbContextManager();
-    const bool filter_enabled = allowed_slice_keys_.has_value();
+    const bool filter_enabled = allowed_layer_ids_.has_value();
 
     for (auto& buf_it : buffers_)
     {
@@ -474,12 +442,10 @@ void AllBufferTableModel::buildRowIndexes()
         traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
-        // Per-row slice key resolution — only wire these up if the filter is
+        // Per-row layer id resolution — only wire these up if the filter is
         // active, to keep the non-filtered fast path untouched.
-        const NullableVector<unsigned int>* ds_ids_vec  = nullptr;
+        const NullableVector<unsigned int>* ds_ids_vec   = nullptr;
         const NullableVector<unsigned int>* line_ids_vec = nullptr;
-        const NullableVector<unsigned char>* sensor_sacs = nullptr;
-        const NullableVector<unsigned char>* sensor_sics = nullptr;
 
         if (filter_enabled)
         {
@@ -494,31 +460,15 @@ void AllBufferTableModel::buildRowIndexes()
                 if (buf_it.second->has<unsigned int>(ds_id_name) &&
                     buf_it.second->has<unsigned int>(line_id_name))
                 {
-                    ds_ids_vec  = &buf_it.second->get<unsigned int>(ds_id_name);
+                    ds_ids_vec   = &buf_it.second->get<unsigned int>(ds_id_name);
                     line_ids_vec = &buf_it.second->get<unsigned int>(line_id_name);
-                }
-            }
-
-            // CAT063 uses sensor SAC/SIC in place of ds_id (matches stash
-            // grouping logic in VariableViewStashDataWidget).
-            if (dbcontent_name == "CAT063")
-            {
-                const std::string sac_name = dbcont_man.getVariable(
-                    dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name();
-                const std::string sic_name = dbcont_man.getVariable(
-                    dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name();
-                if (buf_it.second->has<unsigned char>(sac_name) &&
-                    buf_it.second->has<unsigned char>(sic_name))
-                {
-                    sensor_sacs = &buf_it.second->get<unsigned char>(sac_name);
-                    sensor_sics = &buf_it.second->get<unsigned char>(sic_name);
                 }
             }
         }
 
-        // Cache ds_id -> slice key (without the Line component) to avoid a
-        // DataSourceManager lookup per row.
-        std::map<std::pair<unsigned int, unsigned int>, std::string> slice_key_cache;  // (ds_id, line_id) -> key
+        // Cache (ds_id, line_id) -> layer id to avoid a DataSourceManager
+        // lookup per row.
+        std::map<std::pair<unsigned int, unsigned int>, std::string> layer_id_cache;
 
         unsigned int num_time_none = 0;
 
@@ -532,36 +482,19 @@ void AllBufferTableModel::buildRowIndexes()
 
             if (filter_enabled)
             {
-                unsigned int ds_id  = 0;
-                unsigned int line_id = 0;
-                bool have_keys = false;
+                if (!ds_ids_vec || !line_ids_vec ||
+                    ds_ids_vec->isNull(buffer_index) ||
+                    line_ids_vec->isNull(buffer_index))
+                    continue;   // no ds/line -> can't match any layer
 
-                if (ds_ids_vec && line_ids_vec &&
-                    !ds_ids_vec->isNull(buffer_index) &&
-                    !line_ids_vec->isNull(buffer_index))
-                {
-                    ds_id   = ds_ids_vec->get(buffer_index);
-                    line_id = line_ids_vec->get(buffer_index);
-                    have_keys = true;
-                }
-
-                if (sensor_sacs && sensor_sics &&
-                    !sensor_sacs->isNull(buffer_index) &&
-                    !sensor_sics->isNull(buffer_index))
-                {
-                    ds_id = Utils::Number::dsIdFrom(sensor_sacs->get(buffer_index),
-                                                    sensor_sics->get(buffer_index));
-                    have_keys = true;
-                }
-
-                if (!have_keys)
-                    continue;   // no ds/line -> can't match any slice
+                const unsigned int ds_id   = ds_ids_vec->get(buffer_index);
+                const unsigned int line_id = line_ids_vec->get(buffer_index);
 
                 const auto cache_key = std::make_pair(ds_id, line_id);
-                auto cache_it = slice_key_cache.find(cache_key);
-                std::string slice_key;
+                auto cache_it = layer_id_cache.find(cache_key);
+                std::string layer_id;
 
-                if (cache_it == slice_key_cache.end())
+                if (cache_it == layer_id_cache.end())
                 {
                     std::string ds_type, ds_name;
                     if (ctx_mgr.hasDataSource(ds_id))
@@ -576,16 +509,16 @@ void AllBufferTableModel::buildRowIndexes()
                         ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
                                 + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
                     }
-                    slice_key = ds_type + ":" + ds_name + ":"
+                    layer_id = ds_type + ":" + ds_name + ":"
                               + Utils::String::lineStrFrom(line_id) + ":" + dbcontent_name;
-                    slice_key_cache[cache_key] = slice_key;
+                    layer_id_cache[cache_key] = layer_id;
                 }
                 else
                 {
-                    slice_key = cache_it->second;
+                    layer_id = cache_it->second;
                 }
 
-                if (!allowed_slice_keys_->count(slice_key))
+                if (!allowed_layer_ids_->count(layer_id))
                     continue;
             }
 
@@ -634,14 +567,14 @@ void AllBufferTableModel::rebuild()
     endCustomResetModel();
 }
 
-void AllBufferTableModel::setAllowedSliceKeys(std::optional<std::set<std::string>> keys)
+void AllBufferTableModel::setAllowedLayerIds(std::optional<std::set<std::string>> keys)
 {
-    allowed_slice_keys_ = std::move(keys);
+    allowed_layer_ids_ = std::move(keys);
 }
 
-void AllBufferTableModel::setSliceColors(std::map<std::string, QColor> slice_colors)
+void AllBufferTableModel::setLayerColors(std::map<std::string, QColor> layer_colors)
 {
-    slice_colors_ = std::move(slice_colors);
+    layer_colors_ = std::move(layer_colors);
     icon_cache_.clear();
 
     // Refresh the icon column so color-mode changes / palette tweaks show up

@@ -88,6 +88,13 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
                 this, &TableViewConfigWidget::toggleIgnoreNonTargetReports);
         cfg_layout->addWidget(ignore_non_target_reports_check_);
 
+        color_mode_label_ = new QLabel(this);
+        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
+        cfg_layout->addWidget(color_mode_label_);
+
+        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+                this, &TableViewConfigWidget::colorModeChangedSlot);
+
         // Layer panel — fills remaining vertical space below the checkboxes.
         // No addStretch() anymore: the panel's tree view is the stretchy child.
         layer_panel_ = new LayerPanelWidget(this);
@@ -167,12 +174,32 @@ void TableViewConfigWidget::exportDoneSlot(bool cancelled)
     }
 }
 
+void TableViewConfigWidget::colorModeChangedSlot(unsigned int mode)
+{
+    traced_assert(color_mode_label_);
+    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+
+    applyDefaultExpansionSlot();
+}
+
 void TableViewConfigWidget::applyDefaultExpansionSlot()
 {
     if (!db_content_root_ || !layer_panel_)
         return;
     db_content_root_->applyDefaultExpansionForColorMode(
         layer_panel_->treeView(), view_->compass().colorMode());
+}
+
+QString TableViewConfigWidget::colorModeText(unsigned int mode)
+{
+    switch (mode)
+    {
+        case 0: return "DSType";
+        case 1: return "DBContent";
+        case 2: return "Data Source";
+        case 3: return "Data Source + Line";
+        default: return "Unknown";
+    }
 }
 
 void TableViewConfigWidget::configChanged()

@@ -16,6 +16,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/histogramgenerator.h"
         "${CMAKE_CURRENT_LIST_DIR}/histogramgeneratorbuffer.h"
         "${CMAKE_CURRENT_LIST_DIR}/histograminitializer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/histogramleafpayload.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/histogramview.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/histogramviewdatasource.cpp"

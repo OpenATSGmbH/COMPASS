@@ -24,24 +24,24 @@
 #include <string>
 
 /**
- * DBContentLeafPayload adapter for Table View.
+ * DBContentLeafPayload adapter for Histogram View.
  *
- * Unlike scatter, table view has no per-layer data object — layers are
- * derived by scanning buffers at rebuild time. A payload holds just the
- * layer identity, its row count, and its chart color. Visibility flips are
- * tracked on the payload itself; the data widget reacts to the model's
- * hiddenChangedSignal once per user action to refilter + redraw.
+ * At this stage the histogram chart still groups bars per DBContent; the layer
+ * panel exposes the finer-grained layers that *would* feed the histogram if
+ * per-layer grouping were enabled. A payload holds just the layer identity,
+ * its row count, and the color resolved for the current color mode. Visibility
+ * flips are stored locally but not yet acted on by the chart.
  *
- * Persisted id matches scatter's key convention
- * ("<ds_type>:<ds_name>:L<n>:<dbcontent>") so hidden state round-trips
- * across reloads and view-point restores.
+ * Persisted id uses the same key convention as scatter/table
+ * ("<ds_type>:<ds_name>:L<n>:<dbcontent>") so hidden state will round-trip
+ * across reloads and view-point restores once per-layer filtering is wired up.
  */
-class TableLeafPayload : public DBContentLeafPayload
+class HistogramLeafPayload : public DBContentLeafPayload
 {
 public:
-    TableLeafPayload(const std::string& full_key,
-                     unsigned int count,
-                     const QColor& color)
+    HistogramLeafPayload(const std::string& full_key,
+                         unsigned int count,
+                         const QColor& color)
         : full_key_(full_key)
         , count_(count)
         , color_(color)

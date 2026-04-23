@@ -81,7 +81,71 @@ public:
     }
 
     /**
-     * Scans a buffer.
+     * Scans a buffer, restricted to the rows for which `allow_row(i)` is true.
+     * Rows rejected by `allow_row` are ignored for min/max, null/nan counting,
+     * and distinct-value collection.
+     */
+    bool scanFiltered(NullableVector<T>& data,
+                      const std::function<bool(size_t)>& allow_row)
+    {
+        traced_assert(allow_row);
+
+        size_t data_size = data.contentSize();
+
+        boost::optional<T> data_min;
+        boost::optional<T> data_max;
+        std::set<T>        distinct_values;
+        bool               collect_distinct = collectDistinctValues();
+
+        for (size_t i = 0; i < data_size; ++i)
+        {
+            if (!allow_row(i))
+                continue;
+
+            if (data.isNull(i))
+            {
+                ++num_null_values_;
+                continue;
+            }
+
+            const T& v = data.get(i);
+            if (!isFinite(v))
+            {
+                ++num_nan_values_;
+                continue;
+            }
+
+            if (!data_min.has_value() || v < data_min.value()) data_min = v;
+            if (!data_max.has_value() || v > data_max.value()) data_max = v;
+
+            if (collect_distinct)
+                distinct_values.insert(v);
+        }
+
+        if (data_min.has_value() && data_max.has_value())
+        {
+            if (!data_min_.has_value() || data_min.value() < data_min_.value())
+                data_min_ = data_min;
+            if (!data_max_.has_value() || data_max.value() > data_max_.value())
+                data_max_ = data_max;
+
+            if (collect_distinct && !distinct_values.empty())
+            {
+                if (distinct_values_.has_value())
+                    distinct_values_.value().insert(distinct_values.begin(), distinct_values.end());
+                else
+                    distinct_values_ = distinct_values;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Scans a buffer. Returns true if the scan ran; an all-null column is a
+     * valid outcome — the null count was already incremented in the loop
+     * above, the dbcontent still needs to appear in the result (as a NULL
+     * bar), and other buffers can establish the range.
      */
     bool scan(NullableVector<T>& data)
     {
@@ -101,27 +165,27 @@ public:
 
         std::tie(min_max_set, data_min, data_max) = data.minMaxValues();
 
-        if (!min_max_set)
-            return false;
-            
-        if (!data_min_.has_value() || data_min < data_min_.value())
-            data_min_ = data_min;
-        if (!data_max_.has_value() || data_max > data_max_.value())
-            data_max_ = data_max;
-
-        //collect distinct values if supported/desired for template type
-        if (collectDistinctValues())
+        if (min_max_set)
         {
-            auto distinct_values = distinctValues(data);
-            if (!distinct_values.empty())
+            if (!data_min_.has_value() || data_min < data_min_.value())
+                data_min_ = data_min;
+            if (!data_max_.has_value() || data_max > data_max_.value())
+                data_max_ = data_max;
+
+            //collect distinct values if supported/desired for template type
+            if (collectDistinctValues())
             {
-                if (distinct_values_.has_value())
-                    distinct_values_.value().insert(distinct_values.begin(), distinct_values.end());
-                else
-                    distinct_values_ = distinct_values;
+                auto distinct_values = distinctValues(data);
+                if (!distinct_values.empty())
+                {
+                    if (distinct_values_.has_value())
+                        distinct_values_.value().insert(distinct_values.begin(), distinct_values.end());
+                    else
+                        distinct_values_ = distinct_values;
+                }
             }
         }
-        
+
         return true;
     }
 

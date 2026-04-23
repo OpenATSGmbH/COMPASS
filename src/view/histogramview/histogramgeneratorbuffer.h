@@ -21,12 +21,14 @@
 #include "histograminitializer.h"
 #include "dbcontent.h"
 
+#include <functional>
+
 namespace dbContent
 {
     class Variable;
     class MetaVariable;
 }
- 
+
 /**
  * Buffer data based histogram generator.
  * Completely hides the concrete buffer data type.
@@ -36,7 +38,12 @@ class HistogramGeneratorBuffer : public HistogramGenerator
 public:
     typedef std::map<std::string, std::shared_ptr<Buffer>> Data;
 
-    HistogramGeneratorBuffer(Data* buffer_data, 
+    /// Per-row allow predicate. If set, rows for which the predicate returns
+    /// false are skipped both during min/max scanning and during bin counting.
+    /// Called as (dbcontent_name, row_index). An unset filter admits every row.
+    typedef std::function<bool(const std::string&, unsigned int)> RowFilter;
+
+    HistogramGeneratorBuffer(Data* buffer_data,
                              dbContent::Variable* variable,
                              dbContent::MetaVariable* meta_variable);
     virtual ~HistogramGeneratorBuffer() = default;
@@ -44,6 +51,13 @@ public:
     virtual bool hasData() const override;
 
     bool dataNotInBuffer() const { return data_not_in_buffer_; }
+
+    void setRowFilter(RowFilter f) { row_filter_ = std::move(f); }
+    bool hasRowFilter() const { return static_cast<bool>(row_filter_); }
+    bool rowAllowed(const std::string& dbc, unsigned int i) const
+    {
+        return !row_filter_ || row_filter_(dbc, i);
+    }
 
 protected:
     dbContent::Variable* currentVariable(const std::string& db_content) const;
@@ -66,6 +80,8 @@ private:
     dbContent::Variable*     variable_           = nullptr; //governed variable
     dbContent::MetaVariable* meta_variable_      = nullptr; //governed meta-variable
     bool                     data_not_in_buffer_ = false;
+
+    RowFilter                row_filter_;
 };
 
 /**
@@ -204,8 +220,13 @@ protected:
 
         unsigned int select_cnt = 0;
 
+        const bool has_filter = hasRowFilter();
+
         for (unsigned int cnt=0; cnt < data_size; ++cnt)
         {
+            if (has_filter && !rowAllowed(db_content, cnt))
+                continue;
+
             //check null case
             if (data.isNull(cnt))
             {
@@ -371,9 +392,19 @@ private:
         NullableVector<T>& data = buffer.get<T>(current_var_name);
 
         //loginf << "Scanning buffer of dbc " << db_content << " size = " << data.size();
-        
-        if (!histogram_init_.scan(data))
-            return false;
+
+        if (hasRowFilter())
+        {
+            const std::string dbc = db_content;
+            if (!histogram_init_.scanFiltered(data,
+                    [this, dbc](size_t i) { return rowAllowed(dbc, (unsigned int)i); }))
+                return false;
+        }
+        else
+        {
+            if (!histogram_init_.scan(data))
+                return false;
+        }
 
         return true;
     }
@@ -418,9 +449,14 @@ private:
 
         auto& interm_data = intermediate_data_.content_data[ db_content ];
 
+        const bool has_filter = hasRowFilter();
+
         //add variable content
         for (unsigned int cnt=0; cnt < data_size; ++cnt)
         {
+            if (has_filter && !rowAllowed(db_content, cnt))
+                continue;
+
             bool selected = !selected_vec.isNull(cnt) && selected_vec.get(cnt);
             bool is_null  = data.isNull(cnt);
 

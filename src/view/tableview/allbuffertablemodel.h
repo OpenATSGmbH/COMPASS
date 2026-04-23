@@ -51,16 +51,16 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     std::pair<int,int> getSelectedRows(); // min, max selected row
 
-    /// Installs a slice-level filter keyed by "<ds_type>:<ds_name>:L<n>:<dbcont>".
+    /// Installs a layer-level filter keyed by "<ds_type>:<ds_name>:L<n>:<dbcont>".
     /// nullopt = no filter (all rows shown). An empty set filters everything out.
     /// The filter is consulted inside buildRowIndexes(); callers must trigger a
     /// rebuild() (or setData()) after changing this to refresh the view.
-    void setAllowedSliceKeys(std::optional<std::set<std::string>> keys);
+    void setAllowedLayerIds(std::optional<std::set<std::string>> ids);
 
-    /// Per-slice color map used to render the icon prefix column. Invalid
-    /// QColor entries render as empty space (for non-target-report slices).
+    /// Per-layer color map used to render the icon prefix column. Invalid
+    /// QColor entries render as empty space (for non-target-report layers).
     /// Keys not present in the map render empty too.
-    void setSliceColors(std::map<std::string, QColor> slice_colors);
+    void setLayerColors(std::map<std::string, QColor> layer_colors);
 
   protected:
     unsigned int dataRowCount() const override;
@@ -86,14 +86,14 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> [dbcont num, buffer index]
 
-    std::optional<std::set<std::string>> allowed_slice_keys_;
-    std::map<std::string, QColor>        slice_colors_;
+    std::optional<std::set<std::string>> allowed_layer_ids_;
+    std::map<std::string, QColor>        layer_colors_;
 
-    /// Cache: (slice_key, is_selected) -> QIcon. Cleared whenever slice_colors_
-    /// changes. "" key is used for rows without a known slice color.
+    /// Cache: (layer_id, is_selected) -> QIcon. Cleared whenever layer_colors_
+    /// changes. "" key is used for rows without a known layer color.
     mutable std::map<std::pair<std::string, bool>, QIcon> icon_cache_;
 
-    QIcon iconFor(const std::string& slice_key, bool selected) const;
+    QIcon iconFor(const std::string& layer_id, bool selected) const;
 
     void buildRowIndexes();
 };

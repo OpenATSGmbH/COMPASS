@@ -20,12 +20,21 @@
 #include "histogramview.h"
 #include "compass.h"
 #include "buffer.h"
+#include "color_provider.h"
+#include "data_source.h"
+#include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontentlayer.h"
+#include "histogramleafpayload.h"
 #include "histogramviewdatasource.h"
 #include "histogramviewchartview.h"
+#include "layertreemodel.h"
 #include "logger.h"
+#include "number.h"
+#include "stringconv.h"
 #include "evaluationmanager.h"
 #include "histogramgenerator.h"
 #include "histogramgeneratorbuffer.h"
@@ -85,9 +94,35 @@ HistogramViewDataWidget::~HistogramViewDataWidget() = default;
 
 /**
  */
+void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
+                                               LayerTreeModel* layer_model)
+{
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    // Visibility toggle -> capture the new hidden set, then trigger a full
+    // redraw so the histogram is rebuilt without the hidden layers.
+    connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
+            this, [this]() {
+                if (layer_model_)
+                    hidden_layer_ids_ = layer_model_->persistedHiddenIds();
+                redrawData(true);
+            });
+
+    // Color-mode change -> resolveSeriesColor outputs differ -> rebuild
+    // payloads so leaf icon colors and group-level aggregation reflect the
+    // new mode.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int) { rebuildLayerTree(); });
+
+    rebuildLayerTree();
+}
+
+/**
+ */
 void HistogramViewDataWidget::resetHistogram()
 {
-    histogram_generator_.reset(); 
+    histogram_generator_.reset();
     histogram_raw_.clear();
 
     x_axis_name_ = "";
@@ -100,6 +135,9 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
 {
     //current generator makes no sense any more
     resetHistogram();
+
+    // Buffers have changed; repopulate the layer panel (empty if no data).
+    rebuildLayerTree();
 }
 
 /**
@@ -134,7 +172,8 @@ void HistogramViewDataWidget::preUpdateVariableDataEvent()
  */
 void HistogramViewDataWidget::postUpdateVariableDataEvent()
 {
-    //nothing to do
+    //nothing to do — panel is refreshed from updateDataEvent on data arrival,
+    //and the per-redraw filter is rebuilt inside updateFromVariables().
 }
 
 /**
@@ -233,7 +272,29 @@ void HistogramViewDataWidget::updateFromVariables()
     SwitchPropertyDataTypeNumeric(data_type, UpdateFunc, UnsupportedFunc, UnsupportedFunc, NotFoundFunc)
 
     traced_assert(histogram_generator_);
-    
+
+    // Build per-buffer row allow masks from current hidden_layer_ids_ and
+    // push them into the generator as a row filter. A hidden leaf => its
+    // rows are excluded from both min/max scan and bin counting.
+    computeAllowMasks();
+    if (!allow_masks_.empty())
+    {
+        HistogramGeneratorBuffer* buf_gen =
+            dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
+        traced_assert(buf_gen);
+        buf_gen->setRowFilter(
+            [this](const std::string& dbc, unsigned int i) -> bool
+            {
+                auto it = allow_masks_.find(dbc);
+                if (it == allow_masks_.end())
+                    return true;   // no mask for this dbcontent -> unfiltered
+                const auto& mask = it->second;
+                if (i >= mask.size())
+                    return true;
+                return mask[i];
+            });
+    }
+
     histogram_generator_->update();
     //histogram_generator_->print();
 
@@ -723,6 +784,215 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
             info[ "chart" ] = chart_info;
         }
+    }
+}
+
+namespace
+{
+    /// Aggregate a single loaded buffer into per-layer row counts, keyed by
+    /// "<ds_type>:<ds_name>:L<n>:<dbcontent>". Mirrors the grouping logic used
+    /// by the table view layer panel.
+    struct LayerAgg
+    {
+        std::string  ds_type;
+        std::string  ds_name;
+        std::string  line;
+        std::string  dbcontent;
+        unsigned int count      = 0;
+        int          line_index = 0;
+    };
+}
+
+void HistogramViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    auto& compass    = view_->compass();
+    auto& dbcont_man = compass.dbContentManager();
+    auto& ctx_mgr    = compass.dbContextManager();
+
+    std::map<std::string, LayerAgg> agg;
+
+    for (auto& buf_it : viewData())
+    {
+        const std::string& dbcontent_name = buf_it.first;
+        Buffer&            buffer         = *buf_it.second;
+        if (buffer.size() == 0)
+            continue;
+
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
+            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            continue;
+
+        const std::string ds_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+        const std::string line_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+
+        if (!buffer.has<unsigned int>(ds_id_name) ||
+            !buffer.has<unsigned int>(line_id_name))
+            continue;
+
+        const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
+        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
+
+        const unsigned int n = buffer.size();
+        for (unsigned int i = 0; i < n; ++i)
+        {
+            if (ds_ids.isNull(i) || line_ids.isNull(i))
+                continue;
+
+            const unsigned int ds_id   = ds_ids.get(i);
+            const unsigned int line_id = line_ids.get(i);
+
+            std::string ds_type, ds_name;
+            if (ctx_mgr.hasDataSource(ds_id))
+            {
+                const auto* ds = ctx_mgr.dataSource(ds_id);
+                ds_type = ds->dsType();
+                ds_name = ds->name();
+            }
+            else
+            {
+                ds_type = "Other";
+                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+            }
+
+            const std::string line_str = Utils::String::lineStrFrom(line_id);
+            const std::string full_key = ds_type + ":" + ds_name + ":"
+                                       + line_str + ":" + dbcontent_name;
+
+            auto it = agg.find(full_key);
+            if (it == agg.end())
+            {
+                LayerAgg a;
+                a.ds_type    = ds_type;
+                a.ds_name    = ds_name;
+                a.line       = line_str;
+                a.dbcontent  = dbcontent_name;
+                a.count      = 1;
+                a.line_index = (line_str.size() >= 2 && line_str[0] == 'L')
+                             ? std::max(0, std::atoi(line_str.c_str() + 1) - 1)
+                             : 0;
+                agg.emplace(full_key, std::move(a));
+            }
+            else
+            {
+                it->second.count++;
+            }
+        }
+    }
+
+    std::vector<std::unique_ptr<HistogramLeafPayload>> new_payloads;
+    std::vector<DBContentRootItem::LeafEntry>          entries;
+    new_payloads.reserve(agg.size());
+    entries.reserve(agg.size());
+
+    for (const auto& kv : agg)
+    {
+        const std::string& full_key = kv.first;
+        const LayerAgg&    a        = kv.second;
+
+        QColor color = context::resolveSeriesColor(
+            a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
+
+        new_payloads.emplace_back(std::make_unique<HistogramLeafPayload>(
+            full_key, a.count, color));
+
+        entries.push_back({a.ds_type, a.ds_name, a.line, a.dbcontent,
+                           new_payloads.back().get()});
+    }
+
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        payloads_ = std::move(new_payloads);
+        return db_content_root_->buildChildrenFrom(entries);
+    });
+    db_content_root_->recomputeColorsRecursive();
+
+    if (!hidden_layer_ids_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_layer_ids_);
+
+    emit layerTreeRebuiltSignal();
+}
+
+void HistogramViewDataWidget::computeAllowMasks()
+{
+    allow_masks_.clear();
+
+    if (hidden_layer_ids_.empty())
+        return;  // nothing hidden -> no filtering -> no mask needed
+
+    auto& compass    = view_->compass();
+    auto& dbcont_man = compass.dbContentManager();
+    auto& ctx_mgr    = compass.dbContextManager();
+
+    for (auto& buf_it : viewData())
+    {
+        const std::string& dbcontent_name = buf_it.first;
+        Buffer&            buffer         = *buf_it.second;
+        const unsigned int n              = buffer.size();
+        if (n == 0)
+            continue;
+
+        // If a dbcontent has no ds_id/line_id, we can't map rows to layers —
+        // the layer panel won't list leaves for it either, so none of its
+        // rows belong to a hidden layer. Leave unfiltered.
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
+            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            continue;
+
+        const std::string ds_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+        const std::string line_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+
+        if (!buffer.has<unsigned int>(ds_id_name) ||
+            !buffer.has<unsigned int>(line_id_name))
+            continue;
+
+        const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
+        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
+
+        std::vector<bool> mask(n, true);
+        bool any_hidden = false;
+
+        for (unsigned int i = 0; i < n; ++i)
+        {
+            if (ds_ids.isNull(i) || line_ids.isNull(i))
+                continue;   // unmappable -> leave allowed
+
+            const unsigned int ds_id   = ds_ids.get(i);
+            const unsigned int line_id = line_ids.get(i);
+
+            std::string ds_type, ds_name;
+            if (ctx_mgr.hasDataSource(ds_id))
+            {
+                const auto* ds = ctx_mgr.dataSource(ds_id);
+                ds_type = ds->dsType();
+                ds_name = ds->name();
+            }
+            else
+            {
+                ds_type = "Other";
+                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+            }
+
+            const std::string line_str = Utils::String::lineStrFrom(line_id);
+            const std::string full_key = ds_type + ":" + ds_name + ":"
+                                       + line_str + ":" + dbcontent_name;
+
+            if (hidden_layer_ids_.count(full_key))
+            {
+                mask[i]    = false;
+                any_hidden = true;
+            }
+        }
+
+        if (any_hidden)
+            allow_masks_.emplace(dbcontent_name, std::move(mask));
     }
 }
 

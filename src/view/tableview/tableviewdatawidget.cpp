@@ -77,13 +77,13 @@ void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, LayerTreeMod
     // through multiple leaves but emit hiddenChangedSignal once).
     connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
             this, [this]() {
-                pushAllowedSliceKeysToModel();
+                pushLayerStateToModel();
                 redrawData(true);
             });
 
     // Color-mode change (from the data source widget) → resolveSeriesColor
     // outputs differ → rebuild payloads + icons. AllBufferTableModel::
-    // setSliceColors emits dataChanged so the icon column refreshes without
+    // setLayerColors emits dataChanged so the icon column refreshes without
     // a full redraw.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
             this, [this](unsigned int) { rebuildLayerTree(); });
@@ -132,7 +132,7 @@ void TableViewDataWidget::loadingDone_impl()
     loginf << "begin with " << num_records << " records";
 
     // Rebuild the layer tree first so the panel reflects current data; the
-    // base redraw below will then consult the allowed-slice-keys set we push
+    // base redraw below will then consult the allowed-layer-ids set we push
     // into the model from rebuildLayerTree.
     rebuildLayerTree();
 
@@ -290,10 +290,10 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
 namespace
 {
-    /// Aggregate a single loaded buffer into per-slice row counts, keyed by
+    /// Aggregate a single loaded buffer into per-layer row counts, keyed by
     /// "<ds_type>:<ds_name>:L<n>:<dbcontent>". Mirrors the grouping logic
     /// used by VariableViewStashDataWidget and AllBufferTableModel's filter.
-    struct SliceAgg
+    struct LayerAgg
     {
         std::string ds_type;
         std::string ds_name;
@@ -313,9 +313,9 @@ void TableViewDataWidget::rebuildLayerTree()
     auto& dbcont_man = compass.dbContentManager();
     auto& ctx_mgr = compass.dbContextManager();
 
-    // Count records per (ds_type, ds_name, line, dbcontent) slice by scanning
+    // Count records per (ds_type, ds_name, line, dbcontent) layer by scanning
     // ds_id + line_id columns on each loaded buffer. Lookups cached.
-    std::map<std::string, SliceAgg> agg;  // full_key -> aggregate
+    std::map<std::string, LayerAgg> agg;  // full_key -> aggregate
 
     for (auto& buf_it : viewData())
     {
@@ -340,37 +340,14 @@ void TableViewDataWidget::rebuildLayerTree()
         const auto& ds_ids  = buffer.get<unsigned int>(ds_id_name);
         const auto& line_ids = buffer.get<unsigned int>(line_id_name);
 
-        const NullableVector<unsigned char>* sensor_sacs = nullptr;
-        const NullableVector<unsigned char>* sensor_sics = nullptr;
-        if (dbcontent_name == "CAT063")
-        {
-            const std::string sac_name = dbcont_man.getVariable(
-                dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name();
-            const std::string sic_name = dbcont_man.getVariable(
-                dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name();
-            if (buffer.has<unsigned char>(sac_name) &&
-                buffer.has<unsigned char>(sic_name))
-            {
-                sensor_sacs = &buffer.get<unsigned char>(sac_name);
-                sensor_sics = &buffer.get<unsigned char>(sic_name);
-            }
-        }
-
         const unsigned int n = buffer.size();
         for (unsigned int i = 0; i < n; ++i)
         {
             if (ds_ids.isNull(i) || line_ids.isNull(i))
                 continue;
 
-            unsigned int ds_id = ds_ids.get(i);
+            const unsigned int ds_id   = ds_ids.get(i);
             const unsigned int line_id = line_ids.get(i);
-
-            if (sensor_sacs && sensor_sics)
-            {
-                if (sensor_sacs->isNull(i) || sensor_sics->isNull(i))
-                    continue;
-                ds_id = Utils::Number::dsIdFrom(sensor_sacs->get(i), sensor_sics->get(i));
-            }
 
             std::string ds_type, ds_name;
             if (ctx_mgr.hasDataSource(ds_id))
@@ -393,7 +370,7 @@ void TableViewDataWidget::rebuildLayerTree()
             auto it = agg.find(full_key);
             if (it == agg.end())
             {
-                SliceAgg a;
+                LayerAgg a;
                 a.ds_type    = ds_type;
                 a.ds_name    = ds_name;
                 a.line       = line_str;
@@ -420,7 +397,7 @@ void TableViewDataWidget::rebuildLayerTree()
     for (const auto& kv : agg)
     {
         const std::string& full_key = kv.first;
-        const SliceAgg&    a        = kv.second;
+        const LayerAgg&    a        = kv.second;
 
         QColor color = context::resolveSeriesColor(
             a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
@@ -439,23 +416,23 @@ void TableViewDataWidget::rebuildLayerTree()
     });
     db_content_root_->recomputeColorsRecursive();
 
-    if (!hidden_slice_keys_.empty())
-        layer_model_->applyPersistedHiddenIds(hidden_slice_keys_);
+    if (!hidden_layer_ids_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_layer_ids_);
 
     // Push initial allowed set to the model so the first redraw filters correctly.
-    pushAllowedSliceKeysToModel();
+    pushLayerStateToModel();
 
     emit layerTreeRebuiltSignal();
 }
 
-void TableViewDataWidget::pushAllowedSliceKeysToModel()
+void TableViewDataWidget::pushLayerStateToModel()
 {
     if (!all_buffer_table_widget_)
         return;
 
     // Capture hidden keys snapshot for viewpoint round-trip across reloads.
     if (layer_model_)
-        hidden_slice_keys_ = layer_model_->persistedHiddenIds();
+        hidden_layer_ids_ = layer_model_->persistedHiddenIds();
 
     auto* model = all_buffer_table_widget_->allBufferTableModel();
     if (!model)
@@ -463,13 +440,13 @@ void TableViewDataWidget::pushAllowedSliceKeysToModel()
 
     if (payloads_.empty())
     {
-        model->setAllowedSliceKeys(std::nullopt);
-        model->setSliceColors({});
+        model->setAllowedLayerIds(std::nullopt);
+        model->setLayerColors({});
         return;
     }
 
     std::set<std::string> allowed;
-    std::map<std::string, QColor> slice_colors;
+    std::map<std::string, QColor> layer_colors;
 
     auto& dbcont_man = view_->compass().dbContentManager();
     for (const auto& payload : payloads_)
@@ -491,9 +468,9 @@ void TableViewDataWidget::pushAllowedSliceKeysToModel()
             dbcont_man.dbContent(dbcontent).containsTargetReports())
             color = payload->color();
 
-        slice_colors.emplace(payload->persistenceId(), color);
+        layer_colors.emplace(payload->persistenceId(), color);
     }
 
-    model->setAllowedSliceKeys(std::move(allowed));
-    model->setSliceColors(std::move(slice_colors));
+    model->setAllowedLayerIds(std::move(allowed));
+    model->setLayerColors(std::move(layer_colors));
 }

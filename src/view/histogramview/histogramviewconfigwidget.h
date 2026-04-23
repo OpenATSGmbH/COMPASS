@@ -22,6 +22,9 @@
 class HistogramView;
 class HistogramViewWidget;
 
+class DBContentRootItem;
+class LayerPanelWidget;
+
 namespace dbContent {
 class VariableOrderedSetWidget;
 class VariableSelectionWidget;
@@ -40,6 +43,16 @@ class GroupBox;
  */
 class HistogramViewConfigWidget : public VariableViewConfigWidget
 {
+    Q_OBJECT
+
+public slots:
+    void colorModeChangedSlot(unsigned int mode);
+
+    /// Re-apply default expansion after the data widget rebuilt the DBContent
+    /// subtree. Connected to HistogramViewDataWidget::layerTreeRebuiltSignal
+    /// and COMPASS::colorModeChangedSignal.
+    void applyDefaultExpansionSlot();
+
 public:
     HistogramViewConfigWidget(HistogramViewWidget* view_widget, QWidget* parent = nullptr);
     virtual ~HistogramViewConfigWidget();
@@ -58,4 +71,10 @@ protected:
 
     // general
     QCheckBox* log_check_{nullptr};
+
+    QLabel*            color_mode_label_ {nullptr};
+    LayerPanelWidget*  layer_panel_      {nullptr};
+    DBContentRootItem* db_content_root_  {nullptr};
+
+    static QString colorModeText(unsigned int mode);
 };

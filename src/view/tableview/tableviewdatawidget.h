@@ -92,15 +92,16 @@ protected:
 
     std::vector<std::unique_ptr<TableLeafPayload>> payloads_;
 
-    std::set<std::string> hidden_slice_keys_;  // transient: remember unchecked slices across reloads
+    std::set<std::string> hidden_layer_ids_;  // transient: remember unchecked layers across reloads
 
 private:
     /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
     /// subtree. Emits layerTreeRebuiltSignal.
     void rebuildLayerTree();
 
-    /// Compute the allowed-slice-keys set from current panel state and push it
-    /// onto the AllBufferTableModel. Empty layer panel (no payloads) = no
-    /// filter (std::nullopt); otherwise the set of currently-visible keys.
-    void pushAllowedSliceKeysToModel();
+    /// Compute the allowed-layer-ids set + per-layer icon colors from current
+    /// panel state and push them onto the AllBufferTableModel. Empty layer
+    /// panel (no payloads) = no filter (std::nullopt); otherwise the set of
+    /// currently-visible layer ids.
+    void pushLayerStateToModel();
 };

@@ -18,7 +18,7 @@
 #include "histogramviewconfigwidget.h"
 #include "histogramviewwidget.h"
 #include "histogramviewdatawidget.h"
-//#include "compass.h"
+#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "histogramview.h"
@@ -29,11 +29,17 @@
 #include "ui_test_common.h"
 #include "metavariable.h"
 
+#include "dbcontentlayer.h"
+#include "layerpanelwidget.h"
+#include "layertreemodel.h"
+
 #include <QCheckBox>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QTabWidget>
@@ -63,6 +69,33 @@ HistogramViewConfigWidget::HistogramViewConfigWidget(HistogramViewWidget* view_w
                 &HistogramViewConfigWidget::toggleLogScale);
 
         config_layout->addWidget(log_check_);
+    }
+
+    {
+        auto config_layout = configLayout();
+
+        color_mode_label_ = new QLabel(this);
+        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
+        config_layout->addWidget(color_mode_label_);
+
+        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+                this, &HistogramViewConfigWidget::colorModeChangedSlot);
+
+        layer_panel_ = new LayerPanelWidget(this);
+        layer_panel_->model()->applyHeaderSettings(
+            layer_panel_->treeView()->header());
+
+        auto root_uptr = std::make_unique<DBContentRootItem>();
+        db_content_root_ = static_cast<DBContentRootItem*>(
+            layer_panel_->addRootItem(std::move(root_uptr)));
+
+        auto* data_widget = view_widget->getViewDataWidget();
+        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
+
+        connect(data_widget, &HistogramViewDataWidget::layerTreeRebuiltSignal,
+                this, &HistogramViewConfigWidget::applyDefaultExpansionSlot);
+
+        config_layout->addWidget(layer_panel_);
     }
 }
 
@@ -99,6 +132,40 @@ void HistogramViewConfigWidget::configChanged_impl()
 void HistogramViewConfigWidget::updateLogScale()
 {
     log_check_->setChecked(view_->useLogScale());
+}
+
+/**
+ */
+void HistogramViewConfigWidget::colorModeChangedSlot(unsigned int mode)
+{
+    traced_assert(color_mode_label_);
+    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+
+    applyDefaultExpansionSlot();
+}
+
+/**
+ */
+void HistogramViewConfigWidget::applyDefaultExpansionSlot()
+{
+    if (!db_content_root_ || !layer_panel_)
+        return;
+    db_content_root_->applyDefaultExpansionForColorMode(
+        layer_panel_->treeView(), view_->compass().colorMode());
+}
+
+/**
+ */
+QString HistogramViewConfigWidget::colorModeText(unsigned int mode)
+{
+    switch (mode)
+    {
+        case 0: return "DSType";
+        case 1: return "DBContent";
+        case 2: return "Data Source";
+        case 3: return "Data Source + Line";
+        default: return "Unknown";
+    }
 }
 
 /**
