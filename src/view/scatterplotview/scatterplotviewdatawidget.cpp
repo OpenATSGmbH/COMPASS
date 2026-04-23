@@ -225,12 +225,15 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
         size_t n = x_values.size();
 
+        size_t dbc_null_count = 0;
+
         for (size_t i = 0; i < n; ++i)
         {
             if (dbc_stash.second.nan_values[ i ])
             {
                 //nan = null, each value of the triplet must not be null
                 ++num_null_values;
+                ++dbc_null_count;
                 continue;
             }
             else if (dbc_stash.second.selected_values[ i ])
@@ -283,7 +286,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
             QColor line_color = resolveSeriesColor(ds_type, ds_name, line_index, dbcontent_name);
 
-            scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx);
+            scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);
         }
     }
 

@@ -43,9 +43,14 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
 {
     logdbg << "r " << index.row() << " c " << index.column();
 
-    if (index.column() == 1)  // only do custom painting in column 0
+    if (index.column() != 0)  // only do custom painting in column 0
     {
-        QStyledItemDelegate::paint(painter, option, index);
+        // right-align numeric columns (Count, # NULL). Set the alignment on a
+        // local copy so the base-class paint path picks it up reliably,
+        // regardless of whether Qt::TextAlignmentRole is consulted.
+        QStyleOptionViewItem opt = option;
+        opt.displayAlignment = Qt::AlignRight | Qt::AlignVCenter;
+        QStyledItemDelegate::paint(painter, opt, index);
         return;
     }
 
@@ -94,7 +99,7 @@ void ScatterSeriesTreeItemDelegate::paint(QPainter* painter, const QStyleOptionV
 bool ScatterSeriesTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
                                       const QStyleOptionViewItem& option, const QModelIndex& index)
 {
-    if (index.column() == 1)
+    if (index.column() != 0)
         return true;
 
     if (event->type() != QEvent::MouseButtonRelease)
@@ -329,7 +334,7 @@ int ScatterSeriesTreeItem::childCount() const
 
 int ScatterSeriesTreeItem::columnCount() const
 {
-    return 2;
+    return 3;
 }
 
 QVariant ScatterSeriesTreeItem::data(int column) const
@@ -341,6 +346,15 @@ QVariant ScatterSeriesTreeItem::data(int column) const
         if (level_ == Level::Root)
             return QVariant();
         return totalCount();
+    }
+    else if (column == 2)
+    {
+        if (level_ == Level::Root)
+            return QVariant();
+        const unsigned int n = totalNullCount();
+        if (n == 0)
+            return QVariant();
+        return n;
     }
     else
         traced_assert(false);
@@ -354,6 +368,17 @@ unsigned int ScatterSeriesTreeItem::totalCount() const
     unsigned int sum = 0;
     for (const auto& child_it : child_items_)
         sum += child_it.second->totalCount();
+    return sum;
+}
+
+unsigned int ScatterSeriesTreeItem::totalNullCount() const
+{
+    if (data_series_)
+        return (unsigned int) data_series_->null_count;
+
+    unsigned int sum = 0;
+    for (const auto& child_it : child_items_)
+        sum += child_it.second->totalNullCount();
     return sum;
 }
 
@@ -460,6 +485,19 @@ void ScatterSeriesTreeItem::hideAll(bool emit_signal)
 
     for (auto& child_it : child_items_)
         child_it.second->hideAll(false);
+
+    updateHidden();
+
+    if (emit_signal)
+        emit model_.visibilityChangedSignal();
+}
+
+void ScatterSeriesTreeItem::showAll(bool emit_signal)
+{
+    hidden_ = false;
+
+    for (auto& child_it : child_items_)
+        child_it.second->showAll(false);
 
     updateHidden();
 

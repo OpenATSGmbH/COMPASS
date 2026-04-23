@@ -257,7 +257,9 @@ void MainWindow::createUI()
     bottom_layout->addStretch();
 
     // load button
-    load_button_ = new QPushButton("Load");
+    load_button_ = new QPushButton("&Load");
+    load_button_->setShortcut(QKeySequence("Ctrl+L"));
+    load_button_->setToolTip("Load data (Ctrl+L)");
     connect(load_button_, &QPushButton::clicked, this, &MainWindow::loadButtonSlot);
     bottom_layout->addWidget(load_button_);
 

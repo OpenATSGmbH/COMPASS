@@ -92,6 +92,10 @@ public:
     /// all descendant leaves' point counts.
     unsigned int totalCount() const;
 
+    /// recursive null-value count — for leaves: own DataSeries null_count, for
+    /// groups: sum of all descendant leaves' null_counts.
+    unsigned int totalNullCount() const;
+
     /// Recompute `color_` bottom-up so groups reflect the common color of
     /// their descendants (or become invalid if descendants disagree). Leaves
     /// keep whatever color they were constructed with.
@@ -111,6 +115,7 @@ public:
     virtual void hide(bool value);
 
     void hideAll(bool emit_signal=true);
+    void showAll(bool emit_signal=true);
 
     void updateHidden();
 

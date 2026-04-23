@@ -53,7 +53,7 @@ QVariant ScatterSeriesModel::data(const QModelIndex& index, int role) const
     {
     case IconRole:
     {
-        if (index.column() == 1)  // only col 0 have icons
+        if (index.column() != 0)  // only col 0 has an icon
             return QVariant();
 
         logdbg << "icon role";
@@ -65,6 +65,14 @@ QVariant ScatterSeriesModel::data(const QModelIndex& index, int role) const
         logdbg << "display role";
         ScatterSeriesTreeItem* item = static_cast<ScatterSeriesTreeItem*>(index.internalPointer());
         return item->data(index.column());
+    }
+    case Qt::TextAlignmentRole:
+    {
+        // right-align numeric columns; the custom delegate for column 0 paints
+        // its own text so this role only affects columns 1 and 2.
+        if (index.column() == 1 || index.column() == 2)
+            return int(Qt::AlignRight | Qt::AlignVCenter);
+        return QVariant();
     }
     //    case Qt::BackgroundRole:
     //    {
@@ -93,6 +101,7 @@ QVariant ScatterSeriesModel::headerData(int section, Qt::Orientation orientation
     {
         if (section == 0) return QString("Name");
         if (section == 1) return QString("Count");
+        if (section == 2) return QString("# NULL");
         return QVariant();
     }
 
@@ -315,6 +324,12 @@ void ScatterSeriesModel::deselectAll()
     traced_assert(root_item_);
     root_item_->hideAll();
     root_item_->hide(false);
+}
+
+void ScatterSeriesModel::selectAll()
+{
+    traced_assert(root_item_);
+    root_item_->showAll();
 }
 
 namespace

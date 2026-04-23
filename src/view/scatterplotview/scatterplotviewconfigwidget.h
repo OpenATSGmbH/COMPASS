@@ -39,9 +39,9 @@ public slots:
     void useConnectionLinesSlot();
     void updateToVisibilitySlot();
 
-    void deselectAllSlot();
-
     void colorModeChangedSlot(unsigned int mode);
+
+    void showLayerContextMenuSlot(const QPoint& pos);
 
 public:
     ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget, 

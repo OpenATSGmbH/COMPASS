@@ -125,6 +125,7 @@ public:
     };
 
     void deselectAll();
+    void selectAll();
 
     std::set<std::string> hiddenSeriesNames() const;
     void applyHiddenSeriesNames(const std::set<std::string>& names);
