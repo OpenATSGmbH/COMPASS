@@ -20,6 +20,8 @@
 #include "allbuffercsvexportjob.h"
 #include "buffer.h"
 #include "compass.h"
+#include "data_source.h"
+#include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
@@ -27,9 +29,16 @@
 #include "global.h"
 #include "jobmanager.h"
 #include "logger.h"
+#include "number.h"
 #include "stringconv.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
+#include "viewdatawidget.h"
+
+#include <QBrush>
+#include <QPainter>
+#include <QPen>
+#include <QPixmap>
 
 #include "json.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -164,7 +173,7 @@ BaseBufferTableModel::RowData AllBufferTableModel::resolveRow(int row) const
 
 unsigned int AllBufferTableModel::prefixColumnCount() const
 {
-    return 2;  // checkbox + DBContent name
+    return 2;  // checkbox+icon (same cell) + DBContent name
 }
 
 unsigned int AllBufferTableModel::dataColumnCount() const
@@ -174,12 +183,119 @@ unsigned int AllBufferTableModel::dataColumnCount() const
 
 QVariant AllBufferTableModel::prefixColumnData(unsigned int col, const RowData& row_data) const
 {
-    if (col == 0)  // checkbox column returns empty for DisplayRole
+    if (col == 0)  // checkbox+icon cell — checkbox via CheckStateRole, icon via
+                   // DecorationRole; no DisplayRole text.
         return QVariant();
     if (col == 1)  // DBContent name column
         return QVariant(row_data.dbcontent_name.c_str());
 
     return QVariant();
+}
+
+QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const RowData& row_data) const
+{
+    if (col != 0)
+        return QVariant();
+
+    // Is the row selected? A null selected_var_ counts as not selected.
+    bool selected = false;
+    if (row_data.buffer &&
+        row_data.buffer->has<bool>(dbcontent_vars::selected_var_.name()))
+    {
+        const auto& selected_vec = row_data.buffer->get<bool>(dbcontent_vars::selected_var_.name());
+        if (!selected_vec.isNull(row_data.buffer_index) &&
+            selected_vec.get(row_data.buffer_index))
+            selected = true;
+    }
+
+    // Look up slice key for this row. row_slice_keys_ is aligned with
+    // row_indexes_ via the caller (resolveRow gives us the same row index).
+    // We don't have the row index directly here; re-resolve via a search is
+    // wasteful. The base model's data() resolves row before calling us, so
+    // the row index is already consumed. Instead look up by (buffer, idx)
+    // via a short linear-ish scan is too slow; rebuild access by index.
+    //
+    // Simpler: expose row via an overload. For now, walk row_indexes_ isn't
+    // needed — we plumb the slice key through a mutable per-call argument
+    // set by data() via an overridden path. Since we don't have that hook,
+    // accept the O(1) vector index via the row the base model already knows:
+    // we return the icon for the RowData only by resolving the slice key
+    // directly from the buffer (ds_id + line_id + dbcontent), at render time.
+    // Cost: one null-check per cell paint, which is fast.
+
+    std::string slice_key;
+    if (row_data.buffer)
+    {
+        DBContentManager& dbcont_man = view_.compass().dbContentManager();
+        auto& ctx_mgr = view_.compass().dbContextManager();
+
+        if (dbcont_man.metaCanGetVariable(row_data.dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+            dbcont_man.metaCanGetVariable(row_data.dbcontent_name, dbcontent_vars::meta_var_line_id_))
+        {
+            const std::string ds_id_name = dbcont_man.metaGetVariable(
+                row_data.dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+            const std::string line_id_name = dbcont_man.metaGetVariable(
+                row_data.dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+
+            if (row_data.buffer->has<unsigned int>(ds_id_name) &&
+                row_data.buffer->has<unsigned int>(line_id_name))
+            {
+                const auto& ds_ids   = row_data.buffer->get<unsigned int>(ds_id_name);
+                const auto& line_ids = row_data.buffer->get<unsigned int>(line_id_name);
+
+                if (!ds_ids.isNull(row_data.buffer_index) &&
+                    !line_ids.isNull(row_data.buffer_index))
+                {
+                    unsigned int ds_id = ds_ids.get(row_data.buffer_index);
+                    const unsigned int line_id = line_ids.get(row_data.buffer_index);
+
+                    // CAT063 special case (same as grouping logic elsewhere).
+                    if (row_data.dbcontent_name == "CAT063")
+                    {
+                        const std::string sac_name = dbcont_man.getVariable(
+                            row_data.dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name();
+                        const std::string sic_name = dbcont_man.getVariable(
+                            row_data.dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name();
+                        if (row_data.buffer->has<unsigned char>(sac_name) &&
+                            row_data.buffer->has<unsigned char>(sic_name))
+                        {
+                            const auto& sacs = row_data.buffer->get<unsigned char>(sac_name);
+                            const auto& sics = row_data.buffer->get<unsigned char>(sic_name);
+                            if (!sacs.isNull(row_data.buffer_index) &&
+                                !sics.isNull(row_data.buffer_index))
+                            {
+                                ds_id = Utils::Number::dsIdFrom(sacs.get(row_data.buffer_index),
+                                                                sics.get(row_data.buffer_index));
+                            }
+                        }
+                    }
+
+                    std::string ds_type, ds_name;
+                    if (ctx_mgr.hasDataSource(ds_id))
+                    {
+                        const auto* ds = ctx_mgr.dataSource(ds_id);
+                        ds_type = ds->dsType();
+                        ds_name = ds->name();
+                    }
+                    else
+                    {
+                        ds_type = "Other";
+                        ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                                + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+                    }
+
+                    slice_key = ds_type + ":" + ds_name + ":"
+                              + Utils::String::lineStrFrom(line_id) + ":"
+                              + row_data.dbcontent_name;
+                }
+            }
+        }
+    }
+
+    QIcon icon = iconFor(slice_key, selected);
+    if (icon.isNull())
+        return QVariant();
+    return icon;
 }
 
 QVariant AllBufferTableModel::prefixColumnHeader(unsigned int col) const
@@ -190,6 +306,50 @@ QVariant AllBufferTableModel::prefixColumnHeader(unsigned int col) const
         return QString("DBContent");
 
     return QVariant();
+}
+
+QIcon AllBufferTableModel::iconFor(const std::string& slice_key, bool selected) const
+{
+    auto cache_key = std::make_pair(slice_key, selected);
+    auto it = icon_cache_.find(cache_key);
+    if (it != icon_cache_.end())
+        return it->second;
+
+    QColor color;
+    if (selected)
+    {
+        // Selection yellow wins over slice color, even for slices that would
+        // otherwise render blank (non-target-report) — so selection is always
+        // visible.
+        color = ViewDataWidget::ColorSelected;
+    }
+    else
+    {
+        auto slice_it = slice_colors_.find(slice_key);
+        if (slice_it != slice_colors_.end())
+            color = slice_it->second;
+    }
+
+    constexpr int w = 14;
+    constexpr int h = 14;
+    constexpr qreal radius = 3.0;
+
+    QPixmap pixmap(w, h);
+    pixmap.fill(Qt::transparent);
+
+    if (color.isValid())
+    {
+        QPainter p(&pixmap);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(QPen(Qt::darkGray, 1, Qt::SolidLine));
+        p.setBrush(QBrush(color));
+        QRectF r(0.5, 0.5, w - 1.0, h - 1.0);
+        p.drawRoundedRect(r, radius, radius);
+    }
+
+    QIcon icon = color.isValid() ? QIcon(pixmap) : QIcon();
+    icon_cache_[cache_key] = icon;
+    return icon;
 }
 
 bool AllBufferTableModel::resolveVariable(unsigned int data_col,
@@ -286,6 +446,8 @@ void AllBufferTableModel::buildRowIndexes()
     timed_entries.reserve(total_size);
 
     DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    auto& ctx_mgr = view_.compass().dbContextManager();
+    const bool filter_enabled = allowed_slice_keys_.has_value();
 
     for (auto& buf_it : buffers_)
     {
@@ -312,6 +474,52 @@ void AllBufferTableModel::buildRowIndexes()
         traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
+        // Per-row slice key resolution — only wire these up if the filter is
+        // active, to keep the non-filtered fast path untouched.
+        const NullableVector<unsigned int>* ds_ids_vec  = nullptr;
+        const NullableVector<unsigned int>* line_ids_vec = nullptr;
+        const NullableVector<unsigned char>* sensor_sacs = nullptr;
+        const NullableVector<unsigned char>* sensor_sics = nullptr;
+
+        if (filter_enabled)
+        {
+            if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+                dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            {
+                const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+                    dbcontent_vars::meta_var_ds_id_).name();
+                const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+                    dbcontent_vars::meta_var_line_id_).name();
+
+                if (buf_it.second->has<unsigned int>(ds_id_name) &&
+                    buf_it.second->has<unsigned int>(line_id_name))
+                {
+                    ds_ids_vec  = &buf_it.second->get<unsigned int>(ds_id_name);
+                    line_ids_vec = &buf_it.second->get<unsigned int>(line_id_name);
+                }
+            }
+
+            // CAT063 uses sensor SAC/SIC in place of ds_id (matches stash
+            // grouping logic in VariableViewStashDataWidget).
+            if (dbcontent_name == "CAT063")
+            {
+                const std::string sac_name = dbcont_man.getVariable(
+                    dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_).name();
+                const std::string sic_name = dbcont_man.getVariable(
+                    dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name();
+                if (buf_it.second->has<unsigned char>(sac_name) &&
+                    buf_it.second->has<unsigned char>(sic_name))
+                {
+                    sensor_sacs = &buf_it.second->get<unsigned char>(sac_name);
+                    sensor_sics = &buf_it.second->get<unsigned char>(sic_name);
+                }
+            }
+        }
+
+        // Cache ds_id -> slice key (without the Line component) to avoid a
+        // DataSourceManager lookup per row.
+        std::map<std::pair<unsigned int, unsigned int>, std::string> slice_key_cache;  // (ds_id, line_id) -> key
+
         unsigned int num_time_none = 0;
 
         for (unsigned int buffer_index = 0; buffer_index < buffer_size; ++buffer_index)
@@ -319,6 +527,65 @@ void AllBufferTableModel::buildRowIndexes()
             if (view_.settings().show_only_selected_)
             {
                 if (selected_vec.isNull(buffer_index) || !selected_vec.get(buffer_index))
+                    continue;
+            }
+
+            if (filter_enabled)
+            {
+                unsigned int ds_id  = 0;
+                unsigned int line_id = 0;
+                bool have_keys = false;
+
+                if (ds_ids_vec && line_ids_vec &&
+                    !ds_ids_vec->isNull(buffer_index) &&
+                    !line_ids_vec->isNull(buffer_index))
+                {
+                    ds_id   = ds_ids_vec->get(buffer_index);
+                    line_id = line_ids_vec->get(buffer_index);
+                    have_keys = true;
+                }
+
+                if (sensor_sacs && sensor_sics &&
+                    !sensor_sacs->isNull(buffer_index) &&
+                    !sensor_sics->isNull(buffer_index))
+                {
+                    ds_id = Utils::Number::dsIdFrom(sensor_sacs->get(buffer_index),
+                                                    sensor_sics->get(buffer_index));
+                    have_keys = true;
+                }
+
+                if (!have_keys)
+                    continue;   // no ds/line -> can't match any slice
+
+                const auto cache_key = std::make_pair(ds_id, line_id);
+                auto cache_it = slice_key_cache.find(cache_key);
+                std::string slice_key;
+
+                if (cache_it == slice_key_cache.end())
+                {
+                    std::string ds_type, ds_name;
+                    if (ctx_mgr.hasDataSource(ds_id))
+                    {
+                        const auto* ds = ctx_mgr.dataSource(ds_id);
+                        ds_type = ds->dsType();
+                        ds_name = ds->name();
+                    }
+                    else
+                    {
+                        ds_type = "Other";
+                        ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                                + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+                    }
+                    slice_key = ds_type + ":" + ds_name + ":"
+                              + Utils::String::lineStrFrom(line_id) + ":" + dbcontent_name;
+                    slice_key_cache[cache_key] = slice_key;
+                }
+                else
+                {
+                    slice_key = cache_it->second;
+                }
+
+                if (!allowed_slice_keys_->count(slice_key))
                     continue;
             }
 
@@ -367,6 +634,17 @@ void AllBufferTableModel::rebuild()
     endCustomResetModel();
 }
 
+void AllBufferTableModel::setAllowedSliceKeys(std::optional<std::set<std::string>> keys)
+{
+    allowed_slice_keys_ = std::move(keys);
+}
+
+void AllBufferTableModel::setSliceColors(std::map<std::string, QColor> slice_colors)
+{
+    slice_colors_ = std::move(slice_colors);
+    icon_cache_.clear();
+}
+
 void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)
 {
     std::vector<std::pair<unsigned int, unsigned int>> new_indexes(perm.size());
@@ -383,15 +661,8 @@ void AllBufferTableModel::sortRowIndexes()
     unsigned int col = static_cast<unsigned int>(sort_column_);
     bool ascending = (sort_order_ == Qt::AscendingOrder);
 
-    if (col == 0)  // checkbox column
-    {
-        std::map<unsigned int, std::string> var_names;
-        for (const auto& p : number_to_dbcont_)
-            var_names[p.first] = dbcontent_vars::selected_var_.name();
-
-        typedSortPairs<bool>(row_indexes_, number_to_dbcont_, buffers_, var_names, ascending);
+    if (col == 0)  // checkbox+icon column — not sortable
         return;
-    }
 
     if (col == 1)  // DBContent name column
     {

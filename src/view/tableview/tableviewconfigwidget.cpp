@@ -17,19 +17,26 @@
 
 #include "tableviewconfigwidget.h"
 #include "tableviewwidget.h"
+#include "tableviewdatawidget.h"
 #include "tableview.h"
 //#include "tableviewsetconfigwidget.h"
 
 #include "ui_test_common.h"
 
+#include "compass.h"
 #include "logger.h"
 #include "viewwidget.h"
 #include "dbcontent/variable/variableorderedsetwidget.h"
+
+#include "dbcontentlayer.h"
+#include "layerpanelwidget.h"
+#include "layertreemodel.h"
 
 #include <QCheckBox>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <QTabWidget>
 #include <QListWidget>
@@ -81,8 +88,24 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
                 this, &TableViewConfigWidget::toggleIgnoreNonTargetReports);
         cfg_layout->addWidget(ignore_non_target_reports_check_);
 
-        cfg_layout->addStretch();
-        
+        // Layer panel — fills remaining vertical space below the checkboxes.
+        // No addStretch() anymore: the panel's tree view is the stretchy child.
+        layer_panel_ = new LayerPanelWidget(this);
+        layer_panel_->model()->applyHeaderSettings(
+            layer_panel_->treeView()->header());
+
+        auto root_uptr = std::make_unique<DBContentRootItem>();
+        db_content_root_ = static_cast<DBContentRootItem*>(
+            layer_panel_->addRootItem(std::move(root_uptr)));
+
+        auto* data_widget = view_widget->getViewDataWidget();
+        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
+
+        connect(data_widget, &TableViewDataWidget::layerTreeRebuiltSignal,
+                this, &TableViewConfigWidget::applyDefaultExpansionSlot);
+
+        cfg_layout->addWidget(layer_panel_);
+
         cfg_widget->setLayout(cfg_layout);
 
         getTabWidget()->addTab(cfg_widget, "Config");
@@ -142,6 +165,14 @@ void TableViewConfigWidget::exportDoneSlot(bool cancelled)
         msgBox.setText("Export complete.");
         msgBox.exec();
     }
+}
+
+void TableViewConfigWidget::applyDefaultExpansionSlot()
+{
+    if (!db_content_root_ || !layer_panel_)
+        return;
+    db_content_root_->applyDefaultExpansionForColorMode(
+        layer_panel_->treeView(), view_->compass().colorMode());
 }
 
 void TableViewConfigWidget::configChanged()

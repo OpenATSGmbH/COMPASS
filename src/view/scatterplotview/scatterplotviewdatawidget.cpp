@@ -25,9 +25,6 @@
 #include "buffer.h"
 #include "compass.h"
 #include "color_provider.h"
-#include "data_source.h"
-#include "db_context.h"
-#include "db_context_manager.h"
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
@@ -368,7 +365,9 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
                 }
             }
 
-            QColor line_color = resolveSeriesColor(ds_type, ds_name, line_index, dbcontent_name);
+            QColor line_color = context::resolveSeriesColor(
+                ds_type, ds_name, line_index, dbcontent_name, view_->compass(),
+                [this](const std::string& key) { return colorForGroupName(key); });
 
             scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);
         }
@@ -398,101 +397,6 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
     bounds_ = scatter_series_.getDataBounds();
 
     loginf << "done, generated " << scatter_series_.numDataSeries() << " series";
-}
-
-/**
-*/
-QColor ScatterPlotViewDataWidget::resolveSeriesColor(const std::string& ds_type,
-                                                     const std::string& ds_name,
-                                                     int line_index,
-                                                     const std::string& dbcontent_name)
-{
-    // line_index is 0..3 (parsed from "L<n>" token)
-    const unsigned int line_id = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
-
-    auto& compass = view_->compass();
-    auto& ctx_mgr = compass.dbContextManager();
-
-    const auto mode = (context::ColorProvider::Mode)compass.colorMode();
-
-    auto derive_line_shade = [line_id](const QColor& base) {
-        auto shades = context::ColorProvider::autoLineColors(base);
-        return shades[line_id];
-    };
-
-    auto hashed_fallback = [this, ds_type, ds_name, dbcontent_name, derive_line_shade, mode]() {
-        std::string key;
-        switch (mode)
-        {
-            case context::ColorProvider::Mode::DSType:    key = ds_type;        break;
-            case context::ColorProvider::Mode::DBContent: key = dbcontent_name; break;
-            default:                                      key = ds_name;        break;
-        }
-        if (key.empty())
-            key = ds_name;
-        QColor base = colorForGroupName(key);
-        if (mode == context::ColorProvider::Mode::DataSourceLine)
-            return derive_line_shade(base);
-        return base;
-    };
-
-    if (!ctx_mgr.hasActiveContext())
-    {
-        // key carries ds_type / dbcontent_name directly — DSType & DBContent palettes still resolvable
-        if (mode == context::ColorProvider::Mode::DSType && !ds_type.empty())
-            return context::ColorProvider::defaultDSTypeColor(ds_type);
-        if (mode == context::ColorProvider::Mode::DBContent && !dbcontent_name.empty())
-            return context::ColorProvider::defaultDBContentColor(dbcontent_name);
-        return hashed_fallback();
-    }
-
-    const auto& ctx = ctx_mgr.activeContext();
-    const context::DataSource* ds = nullptr;
-    if (ctx_mgr.hasDataSource(ds_name))
-        ds = ctx_mgr.dataSource(ctx_mgr.getDataSourceId(ds_name));
-
-    switch (mode)
-    {
-        case context::ColorProvider::Mode::DSType:
-        {
-            if (ds_type.empty())
-                return hashed_fallback();
-            const auto& palette = ctx.colors().ds_type_colors;
-            auto it = palette.find(ds_type);
-            if (it != palette.end() && it->second.isValid())
-                return it->second;
-            return context::ColorProvider::defaultDSTypeColor(ds_type);
-        }
-        case context::ColorProvider::Mode::DBContent:
-        {
-            if (dbcontent_name.empty())
-                return hashed_fallback();
-            const auto& palette = ctx.colors().dbcontent_colors;
-            auto it = palette.find(dbcontent_name);
-            if (it != palette.end() && it->second.isValid())
-                return it->second;
-            return context::ColorProvider::defaultDBContentColor(dbcontent_name);
-        }
-        case context::ColorProvider::Mode::DataSource:
-        {
-            if (ds && ds->baseColor().isValid())
-                return ds->baseColor();
-            return hashed_fallback();
-        }
-        case context::ColorProvider::Mode::DataSourceLine:
-        {
-            if (ds)
-            {
-                QColor c = ds->lineColor(line_id);
-                if (c.isValid())
-                    return c;
-                if (ds->baseColor().isValid())
-                    return derive_line_shade(ds->baseColor());
-            }
-            return hashed_fallback();
-        }
-    }
-    return hashed_fallback();
 }
 
 /**

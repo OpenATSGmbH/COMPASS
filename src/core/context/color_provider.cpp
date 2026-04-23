@@ -17,6 +17,11 @@
 
 #include "color_provider.h"
 
+#include "compass.h"
+#include "data_source.h"
+#include "db_context.h"
+#include "db_context_manager.h"
+
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -289,6 +294,101 @@ QColor ColorProvider::generateBaseColor(const std::vector<QColor>& existing, Ban
     return QColor::fromHsvF(clamp01(best_hue / 360.0),
                             clamp01(best_sat),
                             clamp01(best_val)).toRgb();
+}
+
+QColor resolveSeriesColor(const std::string& ds_type,
+                          const std::string& ds_name,
+                          int line_index,
+                          const std::string& dbcontent_name,
+                          COMPASS& compass,
+                          std::function<QColor(const std::string&)> hashed_fallback)
+{
+    const unsigned int line_id = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
+
+    auto& ctx_mgr = compass.dbContextManager();
+    const auto mode = (ColorProvider::Mode)compass.colorMode();
+
+    auto derive_line_shade = [line_id](const QColor& base) {
+        auto shades = ColorProvider::autoLineColors(base);
+        return shades[line_id];
+    };
+
+    auto fallback = [&hashed_fallback, &ds_type, &ds_name, &dbcontent_name,
+                     derive_line_shade, mode]() -> QColor {
+        std::string key;
+        switch (mode)
+        {
+            case ColorProvider::Mode::DSType:    key = ds_type;        break;
+            case ColorProvider::Mode::DBContent: key = dbcontent_name; break;
+            default:                             key = ds_name;        break;
+        }
+        if (key.empty())
+            key = ds_name;
+
+        QColor base = hashed_fallback ? hashed_fallback(key)
+                                      : ColorProvider::hashedColor(key);
+        if (mode == ColorProvider::Mode::DataSourceLine)
+            return derive_line_shade(base);
+        return base;
+    };
+
+    if (!ctx_mgr.hasActiveContext())
+    {
+        // key carries ds_type / dbcontent_name directly — DSType & DBContent palettes still resolvable
+        if (mode == ColorProvider::Mode::DSType && !ds_type.empty())
+            return ColorProvider::defaultDSTypeColor(ds_type);
+        if (mode == ColorProvider::Mode::DBContent && !dbcontent_name.empty())
+            return ColorProvider::defaultDBContentColor(dbcontent_name);
+        return fallback();
+    }
+
+    const auto& ctx = ctx_mgr.activeContext();
+    const DataSource* ds = nullptr;
+    if (ctx_mgr.hasDataSource(ds_name))
+        ds = ctx_mgr.dataSource(ctx_mgr.getDataSourceId(ds_name));
+
+    switch (mode)
+    {
+        case ColorProvider::Mode::DSType:
+        {
+            if (ds_type.empty())
+                return fallback();
+            const auto& palette = ctx.colors().ds_type_colors;
+            auto it = palette.find(ds_type);
+            if (it != palette.end() && it->second.isValid())
+                return it->second;
+            return ColorProvider::defaultDSTypeColor(ds_type);
+        }
+        case ColorProvider::Mode::DBContent:
+        {
+            if (dbcontent_name.empty())
+                return fallback();
+            const auto& palette = ctx.colors().dbcontent_colors;
+            auto it = palette.find(dbcontent_name);
+            if (it != palette.end() && it->second.isValid())
+                return it->second;
+            return ColorProvider::defaultDBContentColor(dbcontent_name);
+        }
+        case ColorProvider::Mode::DataSource:
+        {
+            if (ds && ds->baseColor().isValid())
+                return ds->baseColor();
+            return fallback();
+        }
+        case ColorProvider::Mode::DataSourceLine:
+        {
+            if (ds)
+            {
+                QColor c = ds->lineColor(line_id);
+                if (c.isValid())
+                    return c;
+                if (ds->baseColor().isValid())
+                    return derive_line_shade(ds->baseColor());
+            }
+            return fallback();
+        }
+    }
+    return fallback();
 }
 
 } // namespace context

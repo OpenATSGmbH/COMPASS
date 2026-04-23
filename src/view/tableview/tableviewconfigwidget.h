@@ -28,6 +28,9 @@ namespace dbContent {
 class TableView;
 class TableViewWidget;
 
+class DBContentRootItem;
+class LayerPanelWidget;
+
 class QCheckBox;
 class QPushButton;
 
@@ -51,6 +54,10 @@ public slots:
     void exportSlot();
     void exportDoneSlot(bool cancelled);
 
+    /// Re-apply default expansion after the data widget rebuilt the DBContent
+    /// subtree. Connected to TableViewDataWidget::layerTreeRebuiltSignal.
+    void applyDefaultExpansionSlot();
+
 signals:
     void exportSignal();
 
@@ -64,6 +71,9 @@ protected:
     QCheckBox*      ignore_non_target_reports_check_{nullptr};
 
     QPushButton*    export_button_{nullptr};
+
+    LayerPanelWidget*  layer_panel_      {nullptr};
+    DBContentRootItem* db_content_root_  {nullptr};
 
     dbContent::VariableOrderedSetWidget* set_config_widget_ {nullptr};
 };
