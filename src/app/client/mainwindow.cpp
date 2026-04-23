@@ -1345,7 +1345,7 @@ void MainWindow::loadingDoneSlot()
     }
 
     loading_ = false;
-    load_button_->setText("Load");
+    load_button_->setText("&Load");
     load_button_->setDisabled(false);
 
     emit dataLoaded();

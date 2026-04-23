@@ -85,11 +85,21 @@ void DBContentGroupItem::buildContextMenu(QMenu& menu)
     }
 
     add("Select All Children",
-        "Show every descendant of this entry",
-        [this]{ showSubtree(); });
+        "Show every direct child of this entry (this entry and grandchildren untouched)",
+        [this]{
+            for (int i = 0; i < childCount(); ++i)
+                child(i)->setHidden(false, /*emit_signal=*/false);
+            if (model())
+                emit model()->hiddenChangedSignal();
+        });
     add("Deselect All Children",
-        "Hide every descendant of this entry",
-        [this]{ hideSubtree(); });
+        "Hide every direct child of this entry (this entry and grandchildren untouched)",
+        [this]{
+            for (int i = 0; i < childCount(); ++i)
+                child(i)->setHidden(true, /*emit_signal=*/false);
+            if (model())
+                emit model()->hiddenChangedSignal();
+        });
 }
 
 // ---- DBContentLeafItem ---------------------------------------------------

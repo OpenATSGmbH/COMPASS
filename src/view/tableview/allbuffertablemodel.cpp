@@ -643,6 +643,15 @@ void AllBufferTableModel::setSliceColors(std::map<std::string, QColor> slice_col
 {
     slice_colors_ = std::move(slice_colors);
     icon_cache_.clear();
+
+    // Refresh the icon column so color-mode changes / palette tweaks show up
+    // without waiting for a full reload.
+    if (!row_indexes_.empty())
+    {
+        QModelIndex tl = index(0, 0);
+        QModelIndex br = index((int)row_indexes_.size() - 1, 0);
+        emit dataChanged(tl, br, {Qt::DecorationRole});
+    }
 }
 
 void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)

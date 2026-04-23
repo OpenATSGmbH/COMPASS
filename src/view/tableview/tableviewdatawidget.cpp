@@ -81,6 +81,13 @@ void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, LayerTreeMod
                 redrawData(true);
             });
 
+    // Color-mode change (from the data source widget) → resolveSeriesColor
+    // outputs differ → rebuild payloads + icons. AllBufferTableModel::
+    // setSliceColors emits dataChanged so the icon column refreshes without
+    // a full redraw.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int) { rebuildLayerTree(); });
+
     rebuildLayerTree();
 }
 
