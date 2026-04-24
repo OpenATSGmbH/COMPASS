@@ -57,7 +57,9 @@ public:
     LabelGenerator(DBContentManager& manager);
     virtual ~LabelGenerator();
 
-    std::vector<std::string> getLabelTexts(const std::string& dbcontent_name, unsigned int buffer_index);
+    std::vector<std::string> getLabelTexts(const std::string& dbcontent_name, 
+                                           unsigned int buffer_index,
+                                           const std::optional<unsigned int>& override_lod = std::optional<unsigned int>());
     std::vector<std::string> getFullTexts(const std::string& dbcontent_name, unsigned int buffer_index);
 
     bool autoLabel() const;
