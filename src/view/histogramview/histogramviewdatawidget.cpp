@@ -516,8 +516,23 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
         }
         else
         {
-            chart_y_axis = new QValueAxis;
-            chart_y_axis->setRange(0, (int)max_count);
+            int max_i = std::max(1, (int)std::ceil(max_count));
+
+            // pick a "nice" tick step from {1, 2, 5} x 10^n targeting ~8 ticks
+            double raw_step = max_i / 8.0;
+            double pow10    = std::pow(10.0, std::floor(std::log10(raw_step)));
+            double n        = raw_step / pow10;
+            double nice     = (n <= 1.0) ? 1.0 : (n <= 2.0) ? 2.0 : (n <= 5.0) ? 5.0 : 10.0;
+            int step        = std::max(1, (int)(nice * pow10));
+            int upper       = (max_i / step + 1) * step;
+
+            QValueAxis* tmp_chart_y_axis = new QValueAxis;
+            tmp_chart_y_axis->setRange(0, upper);
+            tmp_chart_y_axis->setLabelFormat("%d");
+            tmp_chart_y_axis->setTickType(QValueAxis::TicksDynamic);
+            tmp_chart_y_axis->setTickAnchor(0.0);
+            tmp_chart_y_axis->setTickInterval(step);
+            chart_y_axis = tmp_chart_y_axis;
         }
         traced_assert(chart_y_axis);
 
@@ -541,16 +556,16 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
         auto addCount = [ & ] (QBarSet* set, unsigned int count)
         {
-            if (count > max_count)
-                max_count = count;
-
             if (use_log_scale && count == 0)
                 *set << LogZeroFallback;
             else
                 *set << count;
         };
 
-        //generate a bar set for each layer
+        //generate a bar set for each layer; track per-bin stack totals so the
+        //y axis upper bound covers the summed bar height, not the per-layer max
+
+        std::vector<unsigned int> bin_totals;
 
         for (const auto& data_series : histogram_raw_.dataSeries())
         {
@@ -560,8 +575,15 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
             QBarSet* set = new QBarSet(bar_legend_name);
 
-            for (const auto& bin : histogram.getBins())
-                addCount(set, bin.count);
+            const auto& bins = histogram.getBins();
+            if (bin_totals.size() < bins.size())
+                bin_totals.resize(bins.size(), 0);
+
+            for (size_t i = 0; i < bins.size(); ++i)
+            {
+                addCount(set, bins[i].count);
+                bin_totals[i] += bins[i].count;
+            }
 
             set->setColor(data_series.color);
             // Remove the bar outline so adjacent same-colored stack segments
@@ -579,6 +601,10 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
             categories << QString::fromStdString(l);
 
         chart_x_axis->append(categories);
+
+        for (unsigned int v : bin_totals)
+            if (v > max_count)
+                max_count = v;
 
         //to generate a safe range we set max count to 1
         max_count = std::max(max_count, (unsigned)1);
