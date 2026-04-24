@@ -16,6 +16,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/gridviewconfigwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewdatawidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewchart.h"
+        "${CMAKE_CURRENT_LIST_DIR}/gridleafpayload.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/grid2d_defs.cpp"

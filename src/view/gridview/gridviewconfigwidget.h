@@ -27,6 +27,9 @@ class GridView;
 class ColorScaleSelection;
 class PropertyValueEdit;
 
+class DBContentRootItem;
+class LayerPanelWidget;
+
 class QCheckBox;
 class QLineEdit;
 class QComboBox;
@@ -42,8 +45,15 @@ class QDialog;
  */
 class GridViewConfigWidget : public VariableViewConfigWidget
 {
+    Q_OBJECT
+
+public slots:
+    /// Re-apply the default expansion to the DBContent subtree. Connected to
+    /// the data widget's layerTreeRebuiltSignal.
+    void applyDefaultExpansionSlot();
+
 public:
-    GridViewConfigWidget(GridViewWidget* view_widget, 
+    GridViewConfigWidget(GridViewWidget* view_widget,
                          QWidget* parent = nullptr);
     virtual ~GridViewConfigWidget();
 
@@ -93,4 +103,7 @@ protected:
     QPushButton*         reset_max_button_             = nullptr;
     QPushButton*         export_button_                = nullptr;
     QLabel*              range_info_label_             = nullptr;
+
+    LayerPanelWidget*  layer_panel_     {nullptr};
+    DBContentRootItem* db_content_root_ {nullptr};
 };
