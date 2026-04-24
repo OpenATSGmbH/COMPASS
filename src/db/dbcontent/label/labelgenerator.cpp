@@ -59,8 +59,9 @@ LabelGenerator::~LabelGenerator()
 {
 }
 
-std::vector<std::string> LabelGenerator::getLabelTexts(
-        const std::string& dbcontent_name, unsigned int buffer_index)
+std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcontent_name, 
+                                                       unsigned int buffer_index,
+                                                       const std::optional<unsigned int>& override_lod)
 {
     std::vector<std::string> tmp;
 
@@ -70,6 +71,8 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
         logerr << "dbcontent_name '" << dbcontent_name << "' not in buffers";
         return tmp;
     }
+
+    unsigned int lod = override_lod.has_value() ? override_lod.value() : round(config_.current_lod_);
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
     traced_assert(buffer_index < buffer->size());
@@ -132,7 +135,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
         tmp.push_back(main_id);
     }
 
-    if (round(config_.current_lod_) == 1)
+    if (lod == 1)
         return tmp;
 
     // 1,2
@@ -148,7 +151,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
     acid.erase(std::remove(acid.begin(), acid.end(), ' '), acid.end());
     tmp.push_back(acid);
 
-    if (round(config_.current_lod_) == 3)
+    if (lod == 3)
     {
         // 1,3
         tmp.push_back(getVariableValue(dbcontent_name, 0*3+2, buffer, buffer_index));
@@ -169,7 +172,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(
 
     tmp.push_back(getModeCText(dbcontent_name, buffer_index, buffer));
 
-    if (round(config_.current_lod_) == 2)
+    if (lod == 2)
         return tmp;
 
     // 2,3
