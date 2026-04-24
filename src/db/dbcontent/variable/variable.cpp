@@ -237,8 +237,6 @@ std::string Variable::info() const
     ss << "Description: " << description() << endl;
     ss << "Data Type: " << dataTypeString() << endl;
     ss << "Unit: " << dimensionUnitStr() << endl;
-    ss << "Representation: " << representationString() << endl;
-    ss << "DB Column: " << dbColumnName() << endl;
 
 //    QTextEdit* description_edit_ {nullptr};
 //    VariableDataTypeComboBox* type_combo_ {nullptr};
@@ -784,7 +782,7 @@ bool Variable::hasDBContent() const
     {
         for (auto& var_name : db_expression_variables_)
         {
-            loginf << "dbcontent " << dbcontent_->name() << " var " << var_name << " exists " << dbcontent_->hasVariable(var_name);
+            logdbg << "dbcontent " << dbcontent_->name() << " var " << var_name << " exists " << dbcontent_->hasVariable(var_name);
 
             traced_assert (dbcontent_->hasVariable(var_name));
 

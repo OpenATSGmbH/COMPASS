@@ -68,10 +68,7 @@ public slots:
     void livePauseResumeSlot();
     void liveStopSlot();
 
-    void configureDataSourcesSlot();
-    void configureFFTsSlot();
     void configureMetaVariablesSlot();
-    void configureSectorsSlot();
 
     void importAsterixRecordingSlot();
     void importRecentAsterixRecordingSlot();
@@ -163,9 +160,6 @@ protected:
     QAction* close_db_action_ {nullptr};
     QAction* save_config_action_ {nullptr};
     QAction* quit_wo_cfg_sav_action_ {nullptr};
-
-    // configure sectors
-    QAction* sectors_action_ {nullptr};
 
     // context menu
     QMenu* context_menu_ {nullptr};

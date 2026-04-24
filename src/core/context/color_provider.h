@@ -20,9 +20,12 @@
 #include <QColor>
 
 #include <array>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
+
+class COMPASS;
 
 namespace context
 {
@@ -106,5 +109,22 @@ public:
     /// lightness offsets used by autoLineColors (fractions of 1.0)
     static constexpr double kLineOffsetStep = 0.08;
 };
+
+/**
+ * Resolves the chart color for a (ds_type, ds_name, line_index, dbcontent)
+ * slice given COMPASS's current color mode and active data context.
+ *
+ * `hashed_fallback` supplies a stable color for keys that aren't resolvable
+ * through the active context's palettes. Pass a cached hash-based function
+ * (e.g. ViewDataWidget::colorForGroupName) to keep the caller's per-group
+ * color map in sync; an empty std::function falls back to
+ * ColorProvider::hashedColor.
+ */
+QColor resolveSeriesColor(const std::string& ds_type,
+                          const std::string& ds_name,
+                          int line_index,
+                          const std::string& dbcontent_name,
+                          COMPASS& compass,
+                          std::function<QColor(const std::string&)> hashed_fallback = {});
 
 } // namespace context

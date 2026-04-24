@@ -28,7 +28,14 @@
 
 #include <QVariant>
 
+#include <boost/optional.hpp>
+
+#include <map>
 #include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 class HistogramView;
 class HistogramViewWidget;
@@ -37,7 +44,10 @@ class QTabWidget;
 class QHBoxLayout;
 class Buffer;
 class DBContent;
+class DBContentRootItem;
 class HistogramGenerator;
+class HistogramLeafPayload;
+class LayerTreeModel;
 
 enum HistogramViewDataTool
 {
@@ -79,8 +89,17 @@ public:
 
     ViewInfo getViewInfo() const;
 
+    /// Called by HistogramViewConfigWidget once the LayerPanelWidget is built.
+    /// Provides the DBContent root item (owned by the panel's model) and the
+    /// layer tree model used for future hidden-state round-tripping.
+    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+
 signals:
     void exportDoneSignal(bool cancelled);
+
+    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
+    /// The config widget uses this to re-apply default expansion.
+    void layerTreeRebuiltSignal();
 
 public slots:
     void exportDataSlot(bool overwrite);
@@ -131,4 +150,32 @@ protected:
     RawHistogramCollection                            histogram_raw_;
     std::string                                       x_axis_name_;
     std::string                                       title_;
+
+    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
+    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
+
+    std::vector<std::unique_ptr<HistogramLeafPayload>> payloads_;
+
+    std::set<std::string> hidden_layer_ids_;  // persisted hidden layer ids from the layer panel
+
+    /// Current zoom bin range [first, second], valid only while zoom is
+    /// active. Captured on zoomToSubrange and re-applied after a generator
+    /// regeneration (e.g. selection-triggered redrawData(true)) so the
+    /// user's zoom survives. Cleared on data reload and on resetZoomSlot.
+    boost::optional<std::pair<unsigned int, unsigned int>> saved_zoom_range_;
+
+    /// Per-dbcontent per-row layer id, recomputed each updateFromVariables.
+    /// Rows whose (ds_id, line_id) can't be mapped get an empty string.
+    /// Referenced via closures passed as the HistogramGeneratorBuffer row
+    /// filter + layer lookup, so this must outlive the generator.
+    std::map<std::string, std::vector<std::string>> row_layer_ids_;
+
+private:
+    /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
+    /// subtree. Emits layerTreeRebuiltSignal.
+    void rebuildLayerTree();
+
+    /// Populate row_layer_ids_ from current viewData(). Empty string for
+    /// rows without ds_id/line_id (unmappable).
+    void computeRowLayerIds();
 };

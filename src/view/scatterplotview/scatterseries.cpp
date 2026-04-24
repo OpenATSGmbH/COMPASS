@@ -209,13 +209,15 @@ void ScatterSeriesCollection::reset()
 void ScatterSeriesCollection::addDataSeries(const ScatterSeries& scatter_series,
                                             const std::string& name,
                                             const QColor& color,
-                                            double marker_size)
+                                            double marker_size,
+                                            size_t null_count)
 {
     DataSeries series;
     series.scatter_series = scatter_series;
     series.name           = name;
     series.color          = color;
     series.marker_size    = marker_size;
+    series.null_count     = null_count;
 
     traced_assert(!data_series_.count(name));
     data_series_[name] = series;

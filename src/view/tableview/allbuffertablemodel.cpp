@@ -20,6 +20,8 @@
 #include "allbuffercsvexportjob.h"
 #include "buffer.h"
 #include "compass.h"
+#include "data_source.h"
+#include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
@@ -27,9 +29,16 @@
 #include "global.h"
 #include "jobmanager.h"
 #include "logger.h"
+#include "number.h"
 #include "stringconv.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
+#include "viewdatawidget.h"
+
+#include <QBrush>
+#include <QPainter>
+#include <QPen>
+#include <QPixmap>
 
 #include "json.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -164,7 +173,7 @@ BaseBufferTableModel::RowData AllBufferTableModel::resolveRow(int row) const
 
 unsigned int AllBufferTableModel::prefixColumnCount() const
 {
-    return 2;  // checkbox + DBContent name
+    return 2;  // checkbox+icon (same cell) + DBContent name
 }
 
 unsigned int AllBufferTableModel::dataColumnCount() const
@@ -174,12 +183,87 @@ unsigned int AllBufferTableModel::dataColumnCount() const
 
 QVariant AllBufferTableModel::prefixColumnData(unsigned int col, const RowData& row_data) const
 {
-    if (col == 0)  // checkbox column returns empty for DisplayRole
+    if (col == 0)  // checkbox+icon cell — checkbox via CheckStateRole, icon via
+                   // DecorationRole; no DisplayRole text.
         return QVariant();
     if (col == 1)  // DBContent name column
         return QVariant(row_data.dbcontent_name.c_str());
 
     return QVariant();
+}
+
+QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const RowData& row_data) const
+{
+    if (col != 0)
+        return QVariant();
+
+    // Is the row selected? A null selected_var_ counts as not selected.
+    bool selected = false;
+    if (row_data.buffer &&
+        row_data.buffer->has<bool>(dbcontent_vars::selected_var_.name()))
+    {
+        const auto& selected_vec = row_data.buffer->get<bool>(dbcontent_vars::selected_var_.name());
+        if (!selected_vec.isNull(row_data.buffer_index) &&
+            selected_vec.get(row_data.buffer_index))
+            selected = true;
+    }
+
+    // Resolve this row's layer id from the buffer (ds_id + line_id +
+    // dbcontent) at render time. Cost: a handful of null-checks per cell
+    // paint, which is fast enough for the icon column.
+
+    std::string layer_id;
+    if (row_data.buffer)
+    {
+        DBContentManager& dbcont_man = view_.compass().dbContentManager();
+        auto& ctx_mgr = view_.compass().dbContextManager();
+
+        if (dbcont_man.metaCanGetVariable(row_data.dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+            dbcont_man.metaCanGetVariable(row_data.dbcontent_name, dbcontent_vars::meta_var_line_id_))
+        {
+            const std::string ds_id_name = dbcont_man.metaGetVariable(
+                row_data.dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+            const std::string line_id_name = dbcont_man.metaGetVariable(
+                row_data.dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+
+            if (row_data.buffer->has<unsigned int>(ds_id_name) &&
+                row_data.buffer->has<unsigned int>(line_id_name))
+            {
+                const auto& ds_ids   = row_data.buffer->get<unsigned int>(ds_id_name);
+                const auto& line_ids = row_data.buffer->get<unsigned int>(line_id_name);
+
+                if (!ds_ids.isNull(row_data.buffer_index) &&
+                    !line_ids.isNull(row_data.buffer_index))
+                {
+                    const unsigned int ds_id   = ds_ids.get(row_data.buffer_index);
+                    const unsigned int line_id = line_ids.get(row_data.buffer_index);
+
+                    std::string ds_type, ds_name;
+                    if (ctx_mgr.hasDataSource(ds_id))
+                    {
+                        const auto* ds = ctx_mgr.dataSource(ds_id);
+                        ds_type = ds->dsType();
+                        ds_name = ds->name();
+                    }
+                    else
+                    {
+                        ds_type = "Other";
+                        ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                                + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+                    }
+
+                    layer_id = ds_type + ":" + ds_name + ":"
+                              + Utils::String::lineStrFrom(line_id) + ":"
+                              + row_data.dbcontent_name;
+                }
+            }
+        }
+    }
+
+    QIcon icon = iconFor(layer_id, selected);
+    if (icon.isNull())
+        return QVariant();
+    return icon;
 }
 
 QVariant AllBufferTableModel::prefixColumnHeader(unsigned int col) const
@@ -190,6 +274,50 @@ QVariant AllBufferTableModel::prefixColumnHeader(unsigned int col) const
         return QString("DBContent");
 
     return QVariant();
+}
+
+QIcon AllBufferTableModel::iconFor(const std::string& layer_id, bool selected) const
+{
+    auto cache_key = std::make_pair(layer_id, selected);
+    auto it = icon_cache_.find(cache_key);
+    if (it != icon_cache_.end())
+        return it->second;
+
+    QColor color;
+    if (selected)
+    {
+        // Selection yellow wins over the layer's own color, even for layers
+        // that would otherwise render blank (non-target-report) — so
+        // selection is always visible.
+        color = ViewDataWidget::ColorSelected;
+    }
+    else
+    {
+        auto layer_it = layer_colors_.find(layer_id);
+        if (layer_it != layer_colors_.end())
+            color = layer_it->second;
+    }
+
+    constexpr int w = 14;
+    constexpr int h = 14;
+    constexpr qreal radius = 3.0;
+
+    QPixmap pixmap(w, h);
+    pixmap.fill(Qt::transparent);
+
+    if (color.isValid())
+    {
+        QPainter p(&pixmap);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(QPen(Qt::darkGray, 1, Qt::SolidLine));
+        p.setBrush(QBrush(color));
+        QRectF r(0.5, 0.5, w - 1.0, h - 1.0);
+        p.drawRoundedRect(r, radius, radius);
+    }
+
+    QIcon icon = color.isValid() ? QIcon(pixmap) : QIcon();
+    icon_cache_[cache_key] = icon;
+    return icon;
 }
 
 bool AllBufferTableModel::resolveVariable(unsigned int data_col,
@@ -286,6 +414,8 @@ void AllBufferTableModel::buildRowIndexes()
     timed_entries.reserve(total_size);
 
     DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    auto& ctx_mgr = view_.compass().dbContextManager();
+    const bool filter_enabled = allowed_layer_ids_.has_value();
 
     for (auto& buf_it : buffers_)
     {
@@ -312,6 +442,34 @@ void AllBufferTableModel::buildRowIndexes()
         traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
+        // Per-row layer id resolution — only wire these up if the filter is
+        // active, to keep the non-filtered fast path untouched.
+        const NullableVector<unsigned int>* ds_ids_vec   = nullptr;
+        const NullableVector<unsigned int>* line_ids_vec = nullptr;
+
+        if (filter_enabled)
+        {
+            if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+                dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            {
+                const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+                    dbcontent_vars::meta_var_ds_id_).name();
+                const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+                    dbcontent_vars::meta_var_line_id_).name();
+
+                if (buf_it.second->has<unsigned int>(ds_id_name) &&
+                    buf_it.second->has<unsigned int>(line_id_name))
+                {
+                    ds_ids_vec   = &buf_it.second->get<unsigned int>(ds_id_name);
+                    line_ids_vec = &buf_it.second->get<unsigned int>(line_id_name);
+                }
+            }
+        }
+
+        // Cache (ds_id, line_id) -> layer id to avoid a DataSourceManager
+        // lookup per row.
+        std::map<std::pair<unsigned int, unsigned int>, std::string> layer_id_cache;
+
         unsigned int num_time_none = 0;
 
         for (unsigned int buffer_index = 0; buffer_index < buffer_size; ++buffer_index)
@@ -319,6 +477,48 @@ void AllBufferTableModel::buildRowIndexes()
             if (view_.settings().show_only_selected_)
             {
                 if (selected_vec.isNull(buffer_index) || !selected_vec.get(buffer_index))
+                    continue;
+            }
+
+            if (filter_enabled)
+            {
+                if (!ds_ids_vec || !line_ids_vec ||
+                    ds_ids_vec->isNull(buffer_index) ||
+                    line_ids_vec->isNull(buffer_index))
+                    continue;   // no ds/line -> can't match any layer
+
+                const unsigned int ds_id   = ds_ids_vec->get(buffer_index);
+                const unsigned int line_id = line_ids_vec->get(buffer_index);
+
+                const auto cache_key = std::make_pair(ds_id, line_id);
+                auto cache_it = layer_id_cache.find(cache_key);
+                std::string layer_id;
+
+                if (cache_it == layer_id_cache.end())
+                {
+                    std::string ds_type, ds_name;
+                    if (ctx_mgr.hasDataSource(ds_id))
+                    {
+                        const auto* ds = ctx_mgr.dataSource(ds_id);
+                        ds_type = ds->dsType();
+                        ds_name = ds->name();
+                    }
+                    else
+                    {
+                        ds_type = "Other";
+                        ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                                + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+                    }
+                    layer_id = ds_type + ":" + ds_name + ":"
+                              + Utils::String::lineStrFrom(line_id) + ":" + dbcontent_name;
+                    layer_id_cache[cache_key] = layer_id;
+                }
+                else
+                {
+                    layer_id = cache_it->second;
+                }
+
+                if (!allowed_layer_ids_->count(layer_id))
                     continue;
             }
 
@@ -367,6 +567,26 @@ void AllBufferTableModel::rebuild()
     endCustomResetModel();
 }
 
+void AllBufferTableModel::setAllowedLayerIds(std::optional<std::set<std::string>> keys)
+{
+    allowed_layer_ids_ = std::move(keys);
+}
+
+void AllBufferTableModel::setLayerColors(std::map<std::string, QColor> layer_colors)
+{
+    layer_colors_ = std::move(layer_colors);
+    icon_cache_.clear();
+
+    // Refresh the icon column so color-mode changes / palette tweaks show up
+    // without waiting for a full reload.
+    if (!row_indexes_.empty())
+    {
+        QModelIndex tl = index(0, 0);
+        QModelIndex br = index((int)row_indexes_.size() - 1, 0);
+        emit dataChanged(tl, br, {Qt::DecorationRole});
+    }
+}
+
 void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& perm)
 {
     std::vector<std::pair<unsigned int, unsigned int>> new_indexes(perm.size());
@@ -383,15 +603,8 @@ void AllBufferTableModel::sortRowIndexes()
     unsigned int col = static_cast<unsigned int>(sort_column_);
     bool ascending = (sort_order_ == Qt::AscendingOrder);
 
-    if (col == 0)  // checkbox column
-    {
-        std::map<unsigned int, std::string> var_names;
-        for (const auto& p : number_to_dbcont_)
-            var_names[p.first] = dbcontent_vars::selected_var_.name();
-
-        typedSortPairs<bool>(row_indexes_, number_to_dbcont_, buffers_, var_names, ascending);
+    if (col == 0)  // checkbox+icon column — not sortable
         return;
-    }
 
     if (col == 1)  // DBContent name column
     {

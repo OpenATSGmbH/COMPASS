@@ -134,6 +134,12 @@ QVariant BaseBufferTableModel::data(const QModelIndex& index, int role) const
                 return Qt::Unchecked;
         }
     }
+    else if (role == Qt::DecorationRole)
+    {
+        if (col < prefixColumnCount())
+            return prefixColumnDecoration(col, rd);
+        return QVariant();
+    }
     else if (role == Qt::DisplayRole)
     {
         traced_assert(rd.buffer);
@@ -217,6 +223,19 @@ bool BaseBufferTableModel::setData(const QModelIndex& index, const QVariant& val
 
         if (view_.settings().show_only_selected_)
             rebuild();
+        else
+        {
+            // Tell the view the prefix-column cells on this row need a
+            // refresh — other prefix columns (e.g. selection-yellow icon)
+            // depend on the checkbox state.
+            const int prefix_last = (int)prefixColumnCount() - 1;
+            if (prefix_last > 0)
+            {
+                QModelIndex lhs = this->index(index.row(), 0);
+                QModelIndex rhs = this->index(index.row(), prefix_last);
+                emit dataChanged(lhs, rhs, {Qt::CheckStateRole, Qt::DecorationRole});
+            }
+        }
 
         QApplication::restoreOverrideCursor();
     }

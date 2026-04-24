@@ -42,6 +42,19 @@ public:
     nlohmann::json selectedDeleteInfo() const;
     QString deleteDescription() const;
 
+    /// Pre-select tree DSType rows by name (ticking them). Call before exec().
+    void preselectDSTypes(const std::set<std::string>& names);
+    /// Pre-select tree DataSource rows (and their parent DSType) by id.
+    void preselectDataSources(const std::set<unsigned int>& ds_ids);
+    /// Pre-check the top DBContent checkboxes by name.
+    void preselectDBContents(const std::set<std::string>& names);
+
+    /// If non-empty, restrict the dialog's output to the listed DBContents
+    /// only — both the top-check "delete everywhere" and the per-DS step.
+    /// Intended for scoped deletes where the caller wants to confine the
+    /// dialog to a single DBContent (e.g. from a DBContent row click).
+    void setRestrictedDBContents(const std::set<std::string>& names);
+
 private:
     void createUI();
     void populateDataSourcesTree();
@@ -65,4 +78,6 @@ private:
 
     std::map<std::string, QCheckBox*> dbcontent_checks_;
     QTreeWidget* ds_tree_{nullptr};
+
+    std::set<std::string> restricted_dbcontents_; // empty = no restriction
 };

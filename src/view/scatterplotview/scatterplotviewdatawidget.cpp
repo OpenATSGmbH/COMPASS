@@ -25,15 +25,15 @@
 #include "buffer.h"
 #include "compass.h"
 #include "color_provider.h"
-#include "data_source.h"
-#include "db_context.h"
-#include "db_context_manager.h"
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
 #include "scatterplotviewdatasource.h"
 #include "scatterplotviewchartview.h"
+#include "scatterleafpayload.h"
+#include "dbcontentlayer.h"
+#include "layertreemodel.h"
 #include "logger.h"
 #include "property_templates.h"
 #include "timeconv.h"
@@ -65,6 +65,15 @@ using namespace Utils;
 
 const int ScatterPlotViewDataWidget::ConnectLinesDataCountMax = 100000;
 
+namespace
+{
+    // Series key used for the pooled selection overlay. It is intentionally
+    // outside the "<ds_type>:<ds_name>:L<n>:<dbcontent>" scheme so the layer
+    // tree can render it as a dedicated top-level leaf instead of bucketing
+    // it into the DBContent subtree.
+    const std::string kSelectedSeriesKey = "Selected";
+}
+
 /**
 */
 ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view_widget,
@@ -89,10 +98,8 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     updateDateTimeInfoFromVariables();
     updateChart();
 
-    connect (&data_model_, &ScatterSeriesModel::visibilityChangedSignal, this, &ScatterPlotViewDataWidget::updateChartSlot);
-    connect (&data_model_, &ScatterSeriesModel::colorChangedSignal,
-             this, &ScatterPlotViewDataWidget::updateChartSlot);
-
+    // Layer panel signals are wired by ScatterPlotViewConfigWidget via
+    // attachLayerPanel(); color-mode redraw is connected here independently.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
             this, [this](unsigned int /*mode*/) { redrawData(true); });
 }
@@ -119,7 +126,111 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     bounds_ = {};
 
-    data_model_.updateFrom(scatter_series_, view_->compass());
+    rebuildLayerTree();
+}
+
+/**
+*/
+void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
+                                                 LayerTreeModel* layer_model)
+{
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    // If scatter_series_ was already populated before the panel was attached,
+    // push it into the tree now so the UI matches reality.
+    rebuildLayerTree();
+}
+
+/**
+*/
+void ScatterPlotViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
+    // :L<n>:<dbcontent>" key convention. The pooled "Selected" overlay series
+    // does not fit that scheme — it is kept aside and injected as a dedicated
+    // top-level leaf after the DBContent subtree is built.
+    std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
+    std::vector<DBContentRootItem::LeafEntry>        entries;
+    new_payloads.reserve(scatter_series_.numDataSeries());
+    entries.reserve(scatter_series_.numDataSeries());
+
+    ScatterLeafPayload* selected_payload = nullptr;
+
+    for (auto& kv : scatter_series_.dataSeries())
+    {
+        const std::string& full_key = kv.first;
+        auto& data_series           = kv.second;
+
+        if (full_key == kSelectedSeriesKey)
+        {
+            new_payloads.emplace_back(
+                std::make_unique<ScatterLeafPayload>(full_key, &data_series));
+            selected_payload = new_payloads.back().get();
+            continue;
+        }
+
+        std::string ds_type, ds_name, line_tok, dbcontent;
+        {
+            std::vector<std::string> parts;
+            size_t start = 0;
+            for (size_t i = 0; i <= full_key.size(); ++i)
+            {
+                if (i == full_key.size() || full_key[i] == ':')
+                {
+                    parts.push_back(full_key.substr(start, i - start));
+                    start = i + 1;
+                }
+            }
+            if (parts.size() == 4)
+            {
+                ds_type   = parts[0];
+                ds_name   = parts[1];
+                line_tok  = parts[2];
+                dbcontent = parts[3];
+            }
+            else
+            {
+                // malformed key fallback — collapse to a single leaf under an
+                // "<unknown>" branch so it's still visible.
+                ds_type   = "<unknown>";
+                ds_name   = full_key;
+                line_tok  = "L1";
+                dbcontent = "<unknown>";
+            }
+        }
+
+        new_payloads.emplace_back(
+            std::make_unique<ScatterLeafPayload>(full_key, &data_series));
+        entries.push_back({ds_type, ds_name, line_tok, dbcontent,
+                           new_payloads.back().get()});
+    }
+
+    // Scoped subtree refresh: removes old children, swaps payloads while the
+    // DBContent root is empty, then attaches the new subtree. Avoids a full
+    // modelReset that would make QHeaderView drop its section widths.
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        payloads_ = std::move(new_payloads);
+        auto children = db_content_root_->buildChildrenFrom(entries);
+        if (selected_payload)
+        {
+            // Place the Selected overlay at the top of the tree so it is
+            // always visible regardless of how the DBContent subtree expands.
+            auto leaf = std::make_unique<DBContentLeafItem>(
+                kSelectedSeriesKey, selected_payload);
+            children.insert(children.begin(), std::move(leaf));
+        }
+        return children;
+    });
+    db_content_root_->recomputeColorsRecursive();
+
+    if (!hidden_series_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_series_);
+
+    emit layerTreeRebuiltSignal();
 }
 
 /**
@@ -143,18 +254,52 @@ bool ScatterPlotViewDataWidget::postLoadTrigger()
 void ScatterPlotViewDataWidget::resetVariableDisplay()
 {
     chart_view_.reset(nullptr);
+    prior_draw_had_content_ = false;
 }
 
 /**
 */
-ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay() 
+ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 {
     loginf;
 
+    // Remember the current axis ranges so a redraw caused by e.g. a selection
+    // change does not throw away the user's zoom. Only do this if the prior
+    // render actually drew content — otherwise the "captured" range is the
+    // meaningless default of an empty chart.
+    bool capture_zoom = prior_draw_had_content_ &&
+                        chart_view_ &&
+                        chart_view_->chart() &&
+                       !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
+                       !chart_view_->chart()->axes(Qt::Vertical).empty();
+
+    boost::optional<std::pair<double, double>> x_range, y_range;
+    if (capture_zoom)
+    {
+        x_range = getAxisRange(chart_view_->chart()->axes(Qt::Horizontal).first());
+        y_range = getAxisRange(chart_view_->chart()->axes(Qt::Vertical).first());
+    }
+
     auto draw_state = updateChart();
 
-    //reset zoom after update
-    resetZoomSlot();
+    bool has_axes_now = chart_view_ &&
+                        chart_view_->chart() &&
+                       !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
+                       !chart_view_->chart()->axes(Qt::Vertical).empty();
+
+    if (capture_zoom && has_axes_now && x_range.has_value() && y_range.has_value())
+    {
+        setAxisRange(chart_view_->chart()->axes(Qt::Horizontal).first(),
+                     x_range->first, x_range->second);
+        setAxisRange(chart_view_->chart()->axes(Qt::Vertical).first(),
+                     y_range->first, y_range->second);
+    }
+    else
+    {
+        resetZoomSlot();
+    }
+
+    prior_draw_had_content_ = (draw_state == DrawState::DrawnContent);
 
     return draw_state;
 }
@@ -225,12 +370,15 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
         size_t n = x_values.size();
 
+        size_t dbc_null_count = 0;
+
         for (size_t i = 0; i < n; ++i)
         {
             if (dbc_stash.second.nan_values[ i ])
             {
                 //nan = null, each value of the triplet must not be null
                 ++num_null_values;
+                ++dbc_null_count;
                 continue;
             }
             else if (dbc_stash.second.selected_values[ i ])
@@ -281,9 +429,11 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
                 }
             }
 
-            QColor line_color = resolveSeriesColor(ds_type, ds_name, line_index, dbcontent_name);
+            QColor line_color = context::resolveSeriesColor(
+                ds_type, ds_name, line_index, dbcontent_name, view_->compass(),
+                [this](const std::string& key) { return colorForGroupName(key); });
 
-            scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx);
+            scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);
         }
     }
 
@@ -293,9 +443,8 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
     //add selected dataset as the last one (important for render order)
     if (!selected_series.points.empty())
     {
-        std::string name = "Selected";
-
-        scatter_series_.addDataSeries(selected_series, name, ColorSelected, MarkerSizeSelectedPx);
+        scatter_series_.addDataSeries(selected_series, kSelectedSeriesKey,
+                                      ColorSelected, MarkerSizeSelectedPx);
     }
 
     x_axis_name_ = view_->variable(0).description();
@@ -306,108 +455,11 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    data_model_.updateFrom(scatter_series_, view_->compass());
-    loginf << "applying " << hidden_series_.size() << " hidden series after processStash";
-    data_model_.applyHiddenSeriesNames(hidden_series_);
+    rebuildLayerTree();
 
     bounds_ = scatter_series_.getDataBounds();
 
     loginf << "done, generated " << scatter_series_.numDataSeries() << " series";
-}
-
-/**
-*/
-QColor ScatterPlotViewDataWidget::resolveSeriesColor(const std::string& ds_type,
-                                                     const std::string& ds_name,
-                                                     int line_index,
-                                                     const std::string& dbcontent_name)
-{
-    // line_index is 0..3 (parsed from "L<n>" token)
-    const unsigned int line_id = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
-
-    auto& compass = view_->compass();
-    auto& ctx_mgr = compass.dbContextManager();
-
-    const auto mode = (context::ColorProvider::Mode)compass.colorMode();
-
-    auto derive_line_shade = [line_id](const QColor& base) {
-        auto shades = context::ColorProvider::autoLineColors(base);
-        return shades[line_id];
-    };
-
-    auto hashed_fallback = [this, ds_type, ds_name, dbcontent_name, derive_line_shade, mode]() {
-        std::string key;
-        switch (mode)
-        {
-            case context::ColorProvider::Mode::DSType:    key = ds_type;        break;
-            case context::ColorProvider::Mode::DBContent: key = dbcontent_name; break;
-            default:                                      key = ds_name;        break;
-        }
-        if (key.empty())
-            key = ds_name;
-        QColor base = colorForGroupName(key);
-        if (mode == context::ColorProvider::Mode::DataSourceLine)
-            return derive_line_shade(base);
-        return base;
-    };
-
-    if (!ctx_mgr.hasActiveContext())
-    {
-        // key carries ds_type / dbcontent_name directly — DSType & DBContent palettes still resolvable
-        if (mode == context::ColorProvider::Mode::DSType && !ds_type.empty())
-            return context::ColorProvider::defaultDSTypeColor(ds_type);
-        if (mode == context::ColorProvider::Mode::DBContent && !dbcontent_name.empty())
-            return context::ColorProvider::defaultDBContentColor(dbcontent_name);
-        return hashed_fallback();
-    }
-
-    const auto& ctx = ctx_mgr.activeContext();
-    const context::DataSource* ds = nullptr;
-    if (ctx_mgr.hasDataSource(ds_name))
-        ds = ctx_mgr.dataSource(ctx_mgr.getDataSourceId(ds_name));
-
-    switch (mode)
-    {
-        case context::ColorProvider::Mode::DSType:
-        {
-            if (ds_type.empty())
-                return hashed_fallback();
-            const auto& palette = ctx.colors().ds_type_colors;
-            auto it = palette.find(ds_type);
-            if (it != palette.end() && it->second.isValid())
-                return it->second;
-            return context::ColorProvider::defaultDSTypeColor(ds_type);
-        }
-        case context::ColorProvider::Mode::DBContent:
-        {
-            if (dbcontent_name.empty())
-                return hashed_fallback();
-            const auto& palette = ctx.colors().dbcontent_colors;
-            auto it = palette.find(dbcontent_name);
-            if (it != palette.end() && it->second.isValid())
-                return it->second;
-            return context::ColorProvider::defaultDBContentColor(dbcontent_name);
-        }
-        case context::ColorProvider::Mode::DataSource:
-        {
-            if (ds && ds->baseColor().isValid())
-                return ds->baseColor();
-            return hashed_fallback();
-        }
-        case context::ColorProvider::Mode::DataSourceLine:
-        {
-            if (ds)
-            {
-                QColor c = ds->lineColor(line_id);
-                if (c.isValid())
-                    return c;
-                if (ds->baseColor().isValid())
-                    return derive_line_shade(ds->baseColor());
-            }
-            return hashed_fallback();
-        }
-    }
-    return hashed_fallback();
 }
 
 /**
@@ -449,8 +501,7 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
 
         correctSeriesDateTime(scatter_series_);
 
-        data_model_.updateFrom(scatter_series_, view_->compass());
-        data_model_.applyHiddenSeriesNames(hidden_series_);
+        rebuildLayerTree();
 
         bounds_ = scatter_series_.getDataBounds();
 
@@ -655,13 +706,6 @@ boost::optional<std::pair<double, double>> ScatterPlotViewDataWidget::getAxisRan
 
 /**
 */
-ScatterSeriesModel& ScatterPlotViewDataWidget::dataModel()
-{
-    return data_model_;
-}
-
-/**
-*/
 void ScatterPlotViewDataWidget::resetZoomSlot()
 {
     loginf;
@@ -719,7 +763,8 @@ void ScatterPlotViewDataWidget::resetZoomSlot()
 void ScatterPlotViewDataWidget::updateChartSlot()
 {
     // remember which series are hidden so we can restore after reload
-    hidden_series_ = data_model_.hiddenSeriesNames();
+    if (layer_model_)
+        hidden_series_ = layer_model_->persistedHiddenIds();
     loginf << "captured " << hidden_series_.size() << " hidden series";
 
     //remember current axis ranges if available

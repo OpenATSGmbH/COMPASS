@@ -38,7 +38,6 @@
 class COMPASS;
 class DataSourcesToolWidget;
 class DataSourcesStatusToolWidget;
-class DataSourcesConfigurationDialog;
 class SectorLayer;
 class Sector;
 class AirSpace;
@@ -313,7 +312,6 @@ public:
     // ================================================================
     DataSourcesToolWidget* loadWidget();
     DataSourcesStatusToolWidget* statusWidget();
-    DataSourcesConfigurationDialog* configurationDialog();
 
     // ================================================================
     // Utility
@@ -359,7 +357,6 @@ private:
     // widgets (lazy, owned)
     std::unique_ptr<DataSourcesToolWidget> load_widget_;
     std::unique_ptr<DataSourcesStatusToolWidget> status_widget_;
-    std::unique_ptr<DataSourcesConfigurationDialog> config_dialog_;
 
     static constexpr double max_fft_plot_distance_m_ = 5000.0;
 };

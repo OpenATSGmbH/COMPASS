@@ -19,8 +19,15 @@
 
 #include "basetablemodel.h"
 
+#include <QColor>
+#include <QIcon>
+
 #include <map>
 #include <memory>
+#include <optional>
+#include <set>
+#include <string>
+#include <utility>
 
 class AllBufferCSVExportJob;
 class AllBufferTableWidget;
@@ -44,12 +51,24 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     std::pair<int,int> getSelectedRows(); // min, max selected row
 
+    /// Installs a layer-level filter keyed by "<ds_type>:<ds_name>:L<n>:<dbcont>".
+    /// nullopt = no filter (all rows shown). An empty set filters everything out.
+    /// The filter is consulted inside buildRowIndexes(); callers must trigger a
+    /// rebuild() (or setData()) after changing this to refresh the view.
+    void setAllowedLayerIds(std::optional<std::set<std::string>> ids);
+
+    /// Per-layer color map used to render the icon prefix column. Invalid
+    /// QColor entries render as empty space (for non-target-report layers).
+    /// Keys not present in the map render empty too.
+    void setLayerColors(std::map<std::string, QColor> layer_colors);
+
   protected:
     unsigned int dataRowCount() const override;
     RowData resolveRow(int row) const override;
     unsigned int prefixColumnCount() const override;
     unsigned int dataColumnCount() const override;
     QVariant prefixColumnData(unsigned int col, const RowData& row_data) const override;
+    QVariant prefixColumnDecoration(unsigned int col, const RowData& row_data) const override;
     QVariant prefixColumnHeader(unsigned int col) const override;
     bool resolveVariable(unsigned int data_col, const std::string& dbcontent_name,
                          dbContent::Variable*& out_var) const override;
@@ -66,6 +85,15 @@ class AllBufferTableModel : public BaseBufferTableModel
     std::map<std::string, unsigned int> dbcont_to_number_;
 
     std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> [dbcont num, buffer index]
+
+    std::optional<std::set<std::string>> allowed_layer_ids_;
+    std::map<std::string, QColor>        layer_colors_;
+
+    /// Cache: (layer_id, is_selected) -> QIcon. Cleared whenever layer_colors_
+    /// changes. "" key is used for rows without a known layer color.
+    mutable std::map<std::pair<std::string, bool>, QIcon> icon_cache_;
+
+    QIcon iconFor(const std::string& layer_id, bool selected) const;
 
     void buildRowIndexes();
 };

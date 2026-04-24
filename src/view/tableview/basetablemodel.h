@@ -94,6 +94,12 @@ class BaseBufferTableModel : public QAbstractTableModel
     /// Returns display data for a prefix column (DisplayRole only)
     virtual QVariant prefixColumnData(unsigned int col, const RowData& row_data) const = 0;
 
+    /// Optional DecorationRole source for a prefix column. Default: no icon.
+    /// Called by data() when role == Qt::DecorationRole and col is inside
+    /// prefixColumnCount().
+    virtual QVariant prefixColumnDecoration(unsigned int /*col*/,
+                                            const RowData& /*row_data*/) const { return {}; }
+
     /// Returns header text for a prefix column
     virtual QVariant prefixColumnHeader(unsigned int col) const = 0;
 

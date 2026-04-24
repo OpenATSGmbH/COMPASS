@@ -19,13 +19,21 @@
 #include "tableviewwidget.h"
 #include "tableview.h"
 #include "allbuffertablewidget.h"
+#include "allbuffertablemodel.h"
 #include "compass.h"
-//#include "buffer.h"
-#include "buffertablewidget.h"
+#include "buffer.h"
+#include "data_source.h"
+#include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-//#include "tableviewdatasource.h"
+#include "dbcontent/variable/variable.h"
+#include "dbcontent/variable/metavariable.h"
+#include "color_provider.h"
+#include "dbcontentlayer.h"
+#include "layertreemodel.h"
+#include "tableleafpayload.h"
 #include "logger.h"
+#include "number.h"
 #include "stringconv.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -33,12 +41,11 @@
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QMessageBox>
-#include <QTabWidget>
 #include <QTableView>
 #include <QHeaderView>
 
-TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget, 
-                                             QWidget* parent, 
+TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
+                                             QWidget* parent,
                                              Qt::WindowFlags f)
 :   ViewDataWidget(view_widget, parent, f)
 {
@@ -51,32 +58,37 @@ TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
     QHBoxLayout* layout = new QHBoxLayout();
     layout->setMargin(0);
 
-    tab_widget_ = new QTabWidget();
-    layout->addWidget(tab_widget_);
-
-    for (auto& obj_it : view_->compass().dbContentManager())
-    {
-        if (!all_buffer_table_widget_)
-        {
-            all_buffer_table_widget_ = new AllBufferTableWidget(*view_, *data_source_);
-            tab_widget_->addTab(all_buffer_table_widget_, "All");
-            connect(all_buffer_table_widget_, &AllBufferTableWidget::exportDoneSignal, this,
-                    &TableViewDataWidget::exportDoneSlot);
-        }
-
-        BufferTableWidget* buffer_table =
-            new BufferTableWidget(*obj_it.second, *view_, *data_source_);
-        tab_widget_->addTab(buffer_table, obj_it.first.c_str());
-        buffer_tables_[obj_it.first] = buffer_table;
-        connect(buffer_table, &BufferTableWidget::exportDoneSignal, this,
-                &TableViewDataWidget::exportDoneSlot);
-    }
+    all_buffer_table_widget_ = new AllBufferTableWidget(*view_, *data_source_);
+    layout->addWidget(all_buffer_table_widget_);
+    connect(all_buffer_table_widget_, &AllBufferTableWidget::exportDoneSignal, this,
+            &TableViewDataWidget::exportDoneSlot);
 
     setLayout(layout);
 }
 
-TableViewDataWidget::~TableViewDataWidget()
+TableViewDataWidget::~TableViewDataWidget() = default;
+
+void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model)
 {
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    // Single fire at end of any visibility change (group toggles cascade
+    // through multiple leaves but emit hiddenChangedSignal once).
+    connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
+            this, [this]() {
+                pushLayerStateToModel();
+                redrawData(true);
+            });
+
+    // Color-mode change (from the data source widget) → resolveSeriesColor
+    // outputs differ → rebuild payloads + icons. AllBufferTableModel::
+    // setLayerColors emits dataChanged so the icon column refreshes without
+    // a full redraw.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int) { rebuildLayerTree(); });
+
+    rebuildLayerTree();
 }
 
 void TableViewDataWidget::clearData_impl()
@@ -85,9 +97,6 @@ void TableViewDataWidget::clearData_impl()
 
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->clear();
-
-    for (auto buffer_table : buffer_tables_)
-        buffer_table.second->clear();
 
     logdbg << "end";
 }
@@ -122,11 +131,13 @@ void TableViewDataWidget::loadingDone_impl()
 
     loginf << "begin with " << num_records << " records";
 
+    // Rebuild the layer tree first so the panel reflects current data; the
+    // base redraw below will then consult the allowed-layer-ids set we push
+    // into the model from rebuildLayerTree.
+    rebuildLayerTree();
+
     //default behavior
     ViewDataWidget::loadingDone_impl();
-
-    for (auto& buf_widget : buffer_tables_)
-        showTab(buf_widget.second, buf_widget.second->hasData());
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
@@ -151,30 +162,12 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
 
     all_buffer_table_widget_->show(viewData());
 
-    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
-    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
-
-    logdbg << "all buffer with " << num_records << " records in "
-           << Utils::String::timeStringFromDouble(elapsed_s, true);
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buffer_tables_.count(buf_it.first) > 0);
-        buffer_tables_.at(buf_it.first)->show(buf_it.second);
-
-        stop_time = boost::posix_time::microsec_clock::local_time();
-        elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
-
-        logdbg << buf_it.first << " buffer with " << buf_it.second->size() << " records in "
-           << Utils::String::timeStringFromDouble(elapsed_s, true);
-    }
-
     selectFirstSelectedRow();
 
     setUpdatesEnabled(true);
 
-    stop_time = boost::posix_time::microsec_clock::local_time();
-    elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
 
     loginf << "done with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
@@ -190,37 +183,24 @@ void TableViewDataWidget::liveReload_impl()
 void TableViewDataWidget::exportDataSlot()
 {
     logdbg;
-    traced_assert(tab_widget_);
 
-    AllBufferTableWidget* all_buffer_widget =
-        dynamic_cast<AllBufferTableWidget*>(tab_widget_->currentWidget());
-
-    BufferTableWidget* buffer_widget =
-        dynamic_cast<BufferTableWidget*>(tab_widget_->currentWidget());
-
-    if (all_buffer_widget && !buffer_widget)
-    {
-        all_buffer_widget->exportSlot();
-        return;
-    }
-
-    if (!all_buffer_widget && !buffer_widget)
+    if (!all_buffer_table_widget_ || all_buffer_table_widget_->rowCount() == 0)
     {
         QMessageBox msgBox;
         msgBox.setText("Export can not be used without loaded data.");
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
 
-        exportDoneSignal(true);
+        emit exportDoneSignal(true);
         return;
     }
 
-    buffer_widget->exportSlot();
+    all_buffer_table_widget_->exportSlot();
 }
 
-void TableViewDataWidget::exportDoneSlot(bool cancelled) 
-{ 
-    emit exportDoneSignal(cancelled); 
+void TableViewDataWidget::exportDoneSlot(bool cancelled)
+{
+    emit exportDoneSignal(cancelled);
 }
 
 void TableViewDataWidget::updateToSettingsChange()
@@ -229,47 +209,18 @@ void TableViewDataWidget::updateToSettingsChange()
 
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->updateToSettingsChange();
-
-    for (auto& buf_wgt : buffer_tables_)
-    {
-        buf_wgt.second->updateToSettingsChange();
-        showTab(buf_wgt.second, buf_wgt.second->hasData());
-    }
-}
-
-void TableViewDataWidget::showTab(QWidget* widget_ptr, bool value)
-{
-    if (tab_widget_)
-    {
-        traced_assert(widget_ptr);
-        int index = tab_widget_->indexOf(widget_ptr);
-        traced_assert(index >= 0);
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-        tab_widget_->setTabVisible(index, value);
-#else
-        tab_widget_->setTabEnabled(index, value); // setTabVisitable only for >=Qt 5.15
-        tab_widget_->setStyleSheet("QTabBar::tab::disabled {min-width: 0px;max-width: 0px;color:rgba(0,0,0,0);background-color: rgba(0,0,0,0);}");
-#endif
-    }
 }
 
 void TableViewDataWidget::resetModels()
 {
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->resetModel();
-
-    for (auto& table_widget_it : buffer_tables_)
-        table_widget_it.second->resetModel();
 }
 
 void TableViewDataWidget::updateToSelection()
 {
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->updateToSelection();
-
-    for (auto& table_widget_it : buffer_tables_)
-        table_widget_it.second->updateToSelection();
 }
 
 void TableViewDataWidget::selectFirstSelectedRow()
@@ -293,7 +244,7 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 {
     nlohmann::json table_infos = nlohmann::json::array();
 
-    auto addTable = [ & ] (const std::string& db_content, 
+    auto addTable = [ & ] (const std::string& db_content,
                            const QTableView* table,
                            bool show_only_selected,
                            bool use_presentation, bool ignore_non_target_reports)
@@ -310,11 +261,11 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         std::vector<std::string> properties;
         for(int i = 0; i < table->model()->columnCount(); i++)
             properties.push_back(table->model()->headerData(i, Qt::Horizontal).toString().toStdString());
-        
+
         table_info[ "properties" ] = properties;
 
         //get line zero
-        std::vector<std::string> line0; 
+        std::vector<std::string> line0;
         if (table->model()->rowCount() > 0)
         {
             for(int i = 0; i < table->model()->columnCount(); i++)
@@ -329,19 +280,197 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         table_infos.push_back(table_info);
     };
 
-    addTable("All", 
-             all_buffer_table_widget_->table(), 
+    addTable("All",
+             all_buffer_table_widget_->table(),
              view_->showOnlySelected(),
              view_->usePresentation(), view_->ignoreNonTargetReports());
-
-    for (const auto& it : buffer_tables_)
-    {
-        addTable(it.first, 
-                 it.second->table(), 
-                 view_->showOnlySelected(),
-                 view_->usePresentation(), view_->ignoreNonTargetReports());
-    }
 
     info[ "tables" ] = table_infos;
 }
 
+namespace
+{
+    /// Aggregate a single loaded buffer into per-layer row counts, keyed by
+    /// "<ds_type>:<ds_name>:L<n>:<dbcontent>". Mirrors the grouping logic
+    /// used by VariableViewStashDataWidget and AllBufferTableModel's filter.
+    struct LayerAgg
+    {
+        std::string ds_type;
+        std::string ds_name;
+        std::string line;
+        std::string dbcontent;
+        unsigned int count = 0;
+        int          line_index = 0;   // 0..3, for color resolution
+    };
+}
+
+void TableViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    auto& compass = view_->compass();
+    auto& dbcont_man = compass.dbContentManager();
+    auto& ctx_mgr = compass.dbContextManager();
+
+    // Count records per (ds_type, ds_name, line, dbcontent) layer by scanning
+    // ds_id + line_id columns on each loaded buffer. Lookups cached.
+    std::map<std::string, LayerAgg> agg;  // full_key -> aggregate
+
+    for (auto& buf_it : viewData())
+    {
+        const std::string& dbcontent_name = buf_it.first;
+        Buffer&            buffer         = *buf_it.second;
+        if (buffer.size() == 0)
+            continue;
+
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
+            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            continue;
+
+        const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+            dbcontent_vars::meta_var_ds_id_).name();
+        const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+            dbcontent_vars::meta_var_line_id_).name();
+
+        if (!buffer.has<unsigned int>(ds_id_name) ||
+            !buffer.has<unsigned int>(line_id_name))
+            continue;
+
+        const auto& ds_ids  = buffer.get<unsigned int>(ds_id_name);
+        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
+
+        const unsigned int n = buffer.size();
+        for (unsigned int i = 0; i < n; ++i)
+        {
+            if (ds_ids.isNull(i) || line_ids.isNull(i))
+                continue;
+
+            const unsigned int ds_id   = ds_ids.get(i);
+            const unsigned int line_id = line_ids.get(i);
+
+            std::string ds_type, ds_name;
+            if (ctx_mgr.hasDataSource(ds_id))
+            {
+                const auto* ds = ctx_mgr.dataSource(ds_id);
+                ds_type = ds->dsType();
+                ds_name = ds->name();
+            }
+            else
+            {
+                ds_type = "Other";
+                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+            }
+
+            const std::string line_str = Utils::String::lineStrFrom(line_id);
+            const std::string full_key = ds_type + ":" + ds_name + ":"
+                                       + line_str + ":" + dbcontent_name;
+
+            auto it = agg.find(full_key);
+            if (it == agg.end())
+            {
+                LayerAgg a;
+                a.ds_type    = ds_type;
+                a.ds_name    = ds_name;
+                a.line       = line_str;
+                a.dbcontent  = dbcontent_name;
+                a.count      = 1;
+                a.line_index = (line_str.size() >= 2 && line_str[0] == 'L')
+                             ? std::max(0, std::atoi(line_str.c_str() + 1) - 1)
+                             : 0;
+                agg.emplace(full_key, std::move(a));
+            }
+            else
+            {
+                it->second.count++;
+            }
+        }
+    }
+
+    // Build payloads + LeafEntry list.
+    std::vector<std::unique_ptr<TableLeafPayload>> new_payloads;
+    std::vector<DBContentRootItem::LeafEntry>      entries;
+    new_payloads.reserve(agg.size());
+    entries.reserve(agg.size());
+
+    for (const auto& kv : agg)
+    {
+        const std::string& full_key = kv.first;
+        const LayerAgg&    a        = kv.second;
+
+        QColor color = context::resolveSeriesColor(
+            a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
+
+        new_payloads.emplace_back(std::make_unique<TableLeafPayload>(
+            full_key, a.count, color));
+
+        entries.push_back({a.ds_type, a.ds_name, a.line, a.dbcontent,
+                           new_payloads.back().get()});
+    }
+
+    // Scoped subtree refresh — keeps the header widths untouched.
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        payloads_ = std::move(new_payloads);
+        return db_content_root_->buildChildrenFrom(entries);
+    });
+    db_content_root_->recomputeColorsRecursive();
+
+    if (!hidden_layer_ids_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_layer_ids_);
+
+    // Push initial allowed set to the model so the first redraw filters correctly.
+    pushLayerStateToModel();
+
+    emit layerTreeRebuiltSignal();
+}
+
+void TableViewDataWidget::pushLayerStateToModel()
+{
+    if (!all_buffer_table_widget_)
+        return;
+
+    // Capture hidden keys snapshot for viewpoint round-trip across reloads.
+    if (layer_model_)
+        hidden_layer_ids_ = layer_model_->persistedHiddenIds();
+
+    auto* model = all_buffer_table_widget_->allBufferTableModel();
+    if (!model)
+        return;
+
+    if (payloads_.empty())
+    {
+        model->setAllowedLayerIds(std::nullopt);
+        model->setLayerColors({});
+        return;
+    }
+
+    std::set<std::string> allowed;
+    std::map<std::string, QColor> layer_colors;
+
+    auto& dbcont_man = view_->compass().dbContentManager();
+    for (const auto& payload : payloads_)
+    {
+        if (payload->visible())
+            allowed.insert(payload->persistenceId());
+
+        // Only target-report DBContents get a colored icon. Matches scatter's
+        // leafColorFor rule: non-TR DBContents render as blank space.
+        const std::string dbcontent = [&]() {
+            // persistenceId is "<ds_type>:<ds_name>:L<n>:<dbcontent>"
+            const std::string& k = payload->persistenceId();
+            auto last = k.rfind(':');
+            return last == std::string::npos ? std::string{} : k.substr(last + 1);
+        }();
+
+        QColor color;
+        if (dbcont_man.existsDBContent(dbcontent) &&
+            dbcont_man.dbContent(dbcontent).containsTargetReports())
+            color = payload->color();
+
+        layer_colors.emplace(payload->persistenceId(), color);
+    }
+
+    model->setAllowedLayerIds(std::move(allowed));
+    model->setLayerColors(std::move(layer_colors));
+}

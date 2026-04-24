@@ -295,6 +295,12 @@ void MetaVariable::updateDescription()
         description_ += "For " + variable_it.first +" ("+ variable_it.second.dataTypeString()+"):\n";
         description_ += variable_it.second.info() + "\n\n";
     }
+
+    for (auto dbcont_it = object_manager_.begin(); dbcont_it != object_manager_.end(); ++dbcont_it)
+    {
+        if (variables_.count(dbcont_it->first) == 0)
+            description_ += dbcont_it->first + ": Not defined\n";
+    }
 }
 
 void MetaVariable::checkSubVariables()

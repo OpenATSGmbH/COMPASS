@@ -55,6 +55,9 @@ void DataSourcesToolWidget::createUI()
 
     ds_widget_ = new DataSourcesWidget(true, ctx_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
+    // Flight-Deck panel doesn't use row selection — silence the blue
+    // highlight and current-item marker.
+    ds_widget_->disableSelection();
 
     connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
             this, [this] { logdbg << "activeContextChangedSignal received"; updateContent(true); });
@@ -81,15 +84,17 @@ void DataSourcesToolWidget::createUI()
         mode_layout->addWidget(mode_label);
 
         color_mode_combo_ = new QComboBox();
-        color_mode_combo_->addItem("DSType");
-        color_mode_combo_->addItem("DBContent");
-        color_mode_combo_->addItem("Data Source");
-        color_mode_combo_->addItem("Data Source + Line");
+        // Items carry the ColorProvider::Mode enum value as user data so the
+        // UI order can be changed independently of the persisted numeric mode.
+        color_mode_combo_->addItem("DSType",              (unsigned int)0); // DSType
+        color_mode_combo_->addItem("Data Source",         (unsigned int)2); // DataSource
+        color_mode_combo_->addItem("Data Source + Line",  (unsigned int)3); // DataSourceLine
+        color_mode_combo_->addItem("DBContent",           (unsigned int)1); // DBContent
 
         unsigned int current = ctx_man_.compass().colorMode();
-        if (current >= (unsigned int)color_mode_combo_->count())
-            current = 0;
-        color_mode_combo_->setCurrentIndex((int)current);
+        int current_idx = color_mode_combo_->findData(current);
+        if (current_idx < 0) current_idx = 0;
+        color_mode_combo_->setCurrentIndex(current_idx);
 
         connect(color_mode_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
                 this, &DataSourcesToolWidget::colorModeChangedSlot);
@@ -239,9 +244,11 @@ void DataSourcesToolWidget::colorModeChangedSlot(int index)
     if (index < 0)
         return;
 
-    loginf << "color mode " << index;
+    // combo index != mode value — the UI order diverges from the enum order
+    const unsigned int mode = color_mode_combo_->itemData(index).toUInt();
+    loginf << "color mode " << mode;
 
-    ctx_man_.compass().colorMode((unsigned int)index);
+    ctx_man_.compass().colorMode(mode);
     if (ds_widget_)
         ds_widget_->updateContent();
 }

@@ -21,29 +21,48 @@
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "scatterplotviewwidget.h"
 #include "scatterplotview.h"
+#include "scatterplotviewdatawidget.h"
 #include "logger.h"
 #include "variable.h"
 #include "metavariable.h"
 #include "ui_test_common.h"
-#include "scatterseriestreeitem.h"
-#include "scatterplotviewdatawidget.h"
+
+#include "dbcontentlayer.h"
+#include "layerpanelwidget.h"
+#include "layertreemodel.h"
 
 #include <QCheckBox>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
-#include <QMessageBox>
 #include <QPushButton>
-#include <QVBoxLayout>
-#include <QTabWidget>
 #include <QTreeView>
-#include <QHeaderView>
+#include <QVBoxLayout>
 
 using namespace Utils;
 using namespace dbContent;
 
+namespace
+{
+    /// Sum aggregator for integer-valued custom columns — ignores invalid
+    /// entries and returns an invalid QVariant if no valid value was found.
+    QVariant sumULongLong(const std::vector<QVariant>& vals)
+    {
+        unsigned long long sum = 0;
+        bool any = false;
+        for (const auto& v : vals)
+        {
+            bool ok = false;
+            unsigned long long n = v.toULongLong(&ok);
+            if (ok) { sum += n; any = true; }
+        }
+        return any ? QVariant((qulonglong)sum) : QVariant();
+    }
+}
+
 /**
 */
-ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget, 
+ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget,
                                                          QWidget* parent)
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
@@ -62,33 +81,38 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
     }
 
     {
-        loginf << "creating lay view";
+        layer_panel_ = new LayerPanelWidget(this);
 
-        layer_view_ = new QTreeView(this);
-        ScatterSeriesTreeItemDelegate* delegate = new ScatterSeriesTreeItemDelegate(this);
-        layer_view_->setItemDelegate(delegate);
+        // Register the scatter-specific "# NULL" column (custom col 0).
+        LayerColumnSpec null_col;
+        null_col.header           = "# NULL";
+        null_col.default_width    = 70;
+        null_col.resize_mode      = QHeaderView::Interactive;
+        null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
+        null_col.group_aggregator = &sumULongLong;
+        layer_panel_->model()->addColumn(null_col);
+        layer_panel_->model()->applyHeaderSettings(layer_panel_->treeView()->header());
 
-        layer_view_->setModel(&view_widget->getViewDataWidget()->dataModel());
+        // Always-shown "DBContent" root — panel owns it via the model.
+        auto root_uptr = std::make_unique<DBContentRootItem>();
+        db_content_root_ = static_cast<DBContentRootItem*>(
+            layer_panel_->addRootItem(std::move(root_uptr)));
 
-        layer_view_->header()->resizeSection(0 /*column index*/, 300 /*width*/);
+        // Hand the root + model to the data widget so it can populate and
+        // round-trip hidden state.
+        auto* data_widget = view_widget->getViewDataWidget();
+        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
 
-        connect(&view_widget->getViewDataWidget()->dataModel(), &ScatterSeriesModel::visibilityChangedSignal,
-                this, &ScatterPlotViewConfigWidget::updateToVisibilitySlot);
+        // Visibility change -> redraw chart.
+        connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
+                data_widget, &ScatterPlotViewDataWidget::updateChartSlot);
 
-        // tree collapses on beginResetModel/endResetModel — re-expand after each refresh
-        connect(&view_widget->getViewDataWidget()->dataModel(), &QAbstractItemModel::modelReset,
-                this, &ScatterPlotViewConfigWidget::updateToVisibilitySlot);
+        // Data widget rebuilt the tree -> re-apply default expansion.
+        connect(data_widget, &ScatterPlotViewDataWidget::layerTreeRebuiltSignal,
+                this, &ScatterPlotViewConfigWidget::applyDefaultExpansionSlot);
 
-        //getTabWidget()->addTab(layer_view_, "Layers");
-        layout->addWidget(layer_view_);
-
-        QPushButton* push_button = new QPushButton("Deselect All");
-        push_button->setObjectName("deselect_all");
-        layout->addWidget(push_button);
-        QObject::connect(push_button, &QPushButton::pressed,
-                         this, &ScatterPlotViewConfigWidget::deselectAllSlot);
+        layout->addWidget(layer_panel_);
     }
-
 
     use_connection_lines_ = new QCheckBox("Use Connection Lines");
     use_connection_lines_->setChecked(view_->useConnectionLines());
@@ -96,10 +120,8 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
 
     connect(use_connection_lines_, &QCheckBox::clicked,
             this, &ScatterPlotViewConfigWidget::useConnectionLinesSlot);
-    
-    layout->addWidget(use_connection_lines_);
 
-    //showSwitch(0, true);
+    layout->addWidget(use_connection_lines_);
 }
 
 /**
@@ -118,18 +140,12 @@ void ScatterPlotViewConfigWidget::useConnectionLinesSlot()
 
 /**
 */
-void ScatterPlotViewConfigWidget::updateToVisibilitySlot()
+void ScatterPlotViewConfigWidget::applyDefaultExpansionSlot()
 {
-    traced_assert(layer_view_);
-    layer_view_->expandToDepth(3);
-    layer_view_->header()->resizeSection(0 /*column index*/, 300 /*width*/);
-}
-
-/**
-*/
-void ScatterPlotViewConfigWidget::deselectAllSlot()
-{
-    view_->getDataWidget()->dataModel().deselectAll();
+    if (!db_content_root_ || !layer_panel_)
+        return;
+    db_content_root_->applyDefaultExpansionForColorMode(
+        layer_panel_->treeView(), view_->compass().colorMode());
 }
 
 /**
@@ -138,6 +154,11 @@ void ScatterPlotViewConfigWidget::colorModeChangedSlot(unsigned int mode)
 {
     traced_assert(color_mode_label_);
     color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+
+    // Re-expand so the level that differentiates colors stays visible; the
+    // data widget will re-run resolveSeriesColor on the next redraw triggered
+    // by COMPASS::colorModeChangedSignal elsewhere.
+    applyDefaultExpansionSlot();
 }
 
 /**
@@ -180,28 +201,3 @@ void ScatterPlotViewConfigWidget::configChanged_impl()
     use_connection_lines_->setChecked(view_->useConnectionLines());
     use_connection_lines_->blockSignals(false);
 }
-
-//void ScatterPlotViewConfigWidget::exportSlot()
-//{
-//    logdbg;
-//    //assert(overwrite_check_);
-//    traced_assert(export_button_);
-
-//    export_button_->setDisabled(true);
-//    //emit exportSignal(overwrite_check_->checkState() == Qt::Checked);
-//}
-
-//void ScatterPlotViewConfigWidget::exportDoneSlot(bool cancelled)
-//{
-//    traced_assert(export_button_);
-
-//    export_button_->setDisabled(false);
-
-//    if (!cancelled)
-//    {
-//        QMessageBox msgBox;
-//        msgBox.setText("Export complete.");
-//        msgBox.exec();
-//    }
-//}
-

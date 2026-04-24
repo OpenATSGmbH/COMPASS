@@ -28,7 +28,11 @@ namespace dbContent {
 class TableView;
 class TableViewWidget;
 
+class DBContentRootItem;
+class LayerPanelWidget;
+
 class QCheckBox;
+class QLabel;
 class QPushButton;
 
 /**
@@ -51,6 +55,12 @@ public slots:
     void exportSlot();
     void exportDoneSlot(bool cancelled);
 
+    void colorModeChangedSlot(unsigned int mode);
+
+    /// Re-apply default expansion after the data widget rebuilt the DBContent
+    /// subtree. Connected to TableViewDataWidget::layerTreeRebuiltSignal.
+    void applyDefaultExpansionSlot();
+
 signals:
     void exportSignal();
 
@@ -65,5 +75,11 @@ protected:
 
     QPushButton*    export_button_{nullptr};
 
+    QLabel*            color_mode_label_ {nullptr};
+    LayerPanelWidget*  layer_panel_      {nullptr};
+    DBContentRootItem* db_content_root_  {nullptr};
+
     dbContent::VariableOrderedSetWidget* set_config_widget_ {nullptr};
+
+    static QString colorModeText(unsigned int mode);
 };

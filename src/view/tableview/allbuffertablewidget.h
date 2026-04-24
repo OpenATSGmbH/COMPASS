@@ -45,6 +45,8 @@ class AllBufferTableWidget : public BaseBufferTableWidget
     std::vector<std::vector<std::string>> getSelectedText(); // first is header
     std::vector<std::vector<std::string>> getText(unsigned int max_rows=30); // first is header
 
+    AllBufferTableModel* allBufferTableModel() const { return all_buffer_model_; }
+
   private:
     AllBufferTableModel* all_buffer_model_{nullptr};
 };

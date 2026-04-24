@@ -33,6 +33,9 @@
 #include "timeconv.h"
 #include "json.hpp"
 
+#include <functional>
+#include <set>
+
 #include <QLabel>
 #include <QCheckBox>
 #include <QPainter>
@@ -74,6 +77,31 @@ QIcon makeColorIcon(const QColor& color)
     }
 
     return QIcon(pixmap);
+}
+
+/// Return the common effective color of `item`'s direct children. Children
+/// with an invalid (no-color) effectiveColor are ignored; the result is
+/// invalid only if the children with valid colors disagree, or if no child
+/// has a valid color at all. This lets a subtree with some "colorless"
+/// members (e.g. non-target-report DBContents) still propagate the shared
+/// color of the rest up to the parent.
+QColor commonChildEffectiveColor(const QTreeWidgetItem* item)
+{
+    QColor common;
+    for (int i = 0; i < item->childCount(); ++i)
+    {
+        auto* child = dynamic_cast<const DataSourcesWidgetItem*>(item->child(i));
+        if (!child)
+            continue;
+        const QColor cc = child->effectiveColor();
+        if (!cc.isValid())
+            continue; // colorless child — ignored
+        if (!common.isValid())
+            common = cc;
+        else if (common != cc)
+            return QColor(); // conflicting valid colors
+    }
+    return common; // invalid if no child contributed a color
 }
 
 } // anonymous
@@ -148,41 +176,48 @@ void DataSourceTypeItem::updateContent()
     traced_assert(is_init_);
     traced_assert(!ds_type_.empty());
 
-    bool has_sources = false;
+    // The DSType is "enabled" only when at least one of its Data Sources has
+    // inserted data in the current database — otherwise there is nothing to
+    // act on. Disabled rows are greyed out and carry no checkbox.
+    bool has_data = false;
 
     auto& ctx_man = widget_->ctxManager();
     if (ctx_man.hasActiveContext())
     {
         for (const auto& ds : ctx_man.activeContext().dataSources())
-            if (ds.dsType() == ds_type_)
-                has_sources = true;
+        {
+            if (ds.dsType() == ds_type_ && ctx_man.hasNumInserted(ds.id()))
+            {
+                has_data = true;
+                break;
+            }
+        }
     }
 
-    if (has_sources)
+    if (has_data)
     {
+        setFlags(flags() | Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable);
         setCheckState(0, widget_->getUseDSType(ds_type_) ? Qt::Checked : Qt::Unchecked);
-        setFlags(flags() | Qt::ItemFlag::ItemIsEnabled);
     }
     else
     {
+        // Non-interactive + greyed out; keep an Unchecked state so the
+        // checkbox slot stays reserved and the row aligns with its siblings.
+        setFlags(flags() & ~(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable));
         setCheckState(0, Qt::Unchecked);
-        setFlags(flags() & ~Qt::ItemFlag::ItemIsEnabled);
     }
 
-    // color icon for DSType mode only — no icon in other modes
-    if (ctx_man.compass().colorMode() == 0 /*DSType*/ && ctx_man.hasActiveContext())
-    {
-        QColor color;
-        const auto& palette = ctx_man.activeContext().colors().ds_type_colors;
-        auto it = palette.find(ds_type_);
-        if (it != palette.end())
-            color = it->second;
-        setIcon(0, makeColorIcon(color));
-    }
-    else
-    {
-        setIcon(0, QIcon());
-    }
+    // Icon color propagates up from descendants — painted only when every
+    // leaf under this DSType agrees on a single color (see effectiveColor).
+    // Disabled rows (no data) show no color; makeColorIcon with an invalid
+    // color yields a transparent 14x14 pixmap so the slot stays reserved and
+    // rows remain aligned.
+    setIcon(0, makeColorIcon(has_data ? effectiveColor() : QColor()));
+}
+
+QColor DataSourceTypeItem::effectiveColor() const
+{
+    return commonChildEffectiveColor(this);
 }
 
 /**************************************************************************************************
@@ -243,16 +278,32 @@ void DataSourceItem::updateContent()
     traced_assert(is_init_);
     traced_assert(has_widget_);
 
-    setCheckState(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
-
-    // color icon for DataSource mode only — no icon in other modes
-    if (widget_->ctxManager().compass().colorMode() == 2 /*DataSource*/ && ds_)
-        setIcon(0, makeColorIcon(ds_->baseColor()));
+    // Empty Data Sources (no inserted data in the DB) are greyed out and
+    // their checkbox is non-interactive, but the slot is reserved so the row
+    // still aligns with its siblings.
+    const bool has_data = widget_->ctxManager().hasNumInserted(ds_id_);
+    if (has_data)
+    {
+        setFlags(flags() | Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable);
+        setCheckState(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
+    }
     else
-        setIcon(0, QIcon());
+    {
+        setFlags(flags() & ~(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable));
+        setCheckState(0, Qt::Unchecked);
+    }
+
+    // Disabled rows show no color icon; the slot stays reserved via the
+    // transparent pixmap from makeColorIcon(QColor()).
+    setIcon(0, makeColorIcon(has_data ? effectiveColor() : QColor()));
 
     for (auto lb : line_buttons_)
         lb->updateContent();
+}
+
+QColor DataSourceItem::effectiveColor() const
+{
+    return commonChildEffectiveColor(this);
 }
 
 /**
@@ -334,19 +385,52 @@ void DataSourceCountItem::updateContent()
     setText(2, QString::number(num_loaded));
     setText(3, QString::number(num_inserted));
 
-    // color icon for DBContent mode only — no icon in other modes
-    if (ctx_man.compass().colorMode() == 1 /*DBContent*/ && ctx_man.hasActiveContext())
+    // Leaf color depends on the active color mode; the group items above
+    // propagate it up when every DBContent under a DS/DSType agrees. An
+    // invalid color yields a transparent 14x14 placeholder that keeps rows
+    // aligned.
+    setIcon(0, makeColorIcon(effectiveColor()));
+}
+
+QColor DataSourceCountItem::effectiveColor() const
+{
+    auto& ctx_man = widget_->ctxManager();
+    if (!ctx_man.hasActiveContext())
+        return QColor();
+
+    // Non-target DBContents (status/service messages, etc.) never contribute
+    // an icon color; they are also ignored by the parent's propagation rule.
+    auto& dbcont_man = ctx_man.compass().dbContentManager();
+    if (!dbcont_man.existsDBContent(dbc_name_) ||
+        !dbcont_man.dbContent(dbc_name_).containsTargetReports())
+        return QColor();
+
+    const unsigned int mode = ctx_man.compass().colorMode();
+    const auto& colors = ctx_man.activeContext().colors();
+
+    switch (mode)
     {
-        QColor color;
-        const auto& palette = ctx_man.activeContext().colors().dbcontent_colors;
-        auto it = palette.find(dbc_name_);
-        if (it != palette.end())
-            color = it->second;
-        setIcon(0, makeColorIcon(color));
-    }
-    else
-    {
-        setIcon(0, QIcon());
+        case 0: /* DSType */
+        {
+            if (!ds_) return QColor();
+            const auto& palette = colors.ds_type_colors;
+            auto it = palette.find(ds_->dsType());
+            return (it != palette.end()) ? it->second : QColor();
+        }
+        case 1: /* DBContent */
+        {
+            const auto& palette = colors.dbcontent_colors;
+            auto it = palette.find(dbc_name_);
+            return (it != palette.end()) ? it->second : QColor();
+        }
+        case 2: /* DataSource */
+        {
+            return ds_ ? ds_->baseColor() : QColor();
+        }
+        case 3: /* DataSourceLine */
+        default:
+            // Line color is rendered on the line buttons, not as a tree icon.
+            return QColor();
     }
 }
 
@@ -585,8 +669,12 @@ void DataSourcesWidget::createUI()
     tree_widget_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
 
     connect(tree_widget_, &QTreeWidget::itemChanged, this, &DataSourcesWidget::itemChanged);
-    connect(tree_widget_, &QTreeWidget::itemSelectionChanged, 
+    connect(tree_widget_, &QTreeWidget::itemSelectionChanged,
             this, &DataSourcesWidget::onItemSelectionChanged);
+
+    tree_widget_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(tree_widget_, &QTreeWidget::customContextMenuRequested,
+            this, &DataSourcesWidget::showContextMenuSlot);
 
     top_layout_->addWidget(tree_widget_);
 
@@ -594,6 +682,13 @@ void DataSourcesWidget::createUI()
 
     // update
     updateContent(true);
+}
+
+void DataSourcesWidget::disableSelection()
+{
+    traced_assert(tree_widget_);
+    tree_widget_->setSelectionMode(QAbstractItemView::NoSelection);
+    tree_widget_->setFocusPolicy(Qt::NoFocus);
 }
 
 void DataSourcesWidget::addActionsToConfigMenu(QMenu* menu)
@@ -1176,9 +1271,382 @@ void DataSourcesWidget::toogleShowCounts()
     updateContent();
 }
 
+void DataSourcesWidget::setAllCheckboxes(bool select)
+{
+    loginf << "select " << select;
+
+    for (auto& ds_type_name : context::DataSource::dsTypeStrings())
+        setUseDSType(ds_type_name, select);
+
+    if (ctx_man_.hasActiveContext())
+        for (const auto& ds : ctx_man_.activeContext().dataSources())
+            setUseDS(ds.id(), select);
+
+    updateContent();
+}
+
+void DataSourcesWidget::deselectOtherDSTypes(const std::string& keep)
+{
+    loginf << "keep '" << keep << "'";
+
+    for (auto& ds_type_name : context::DataSource::dsTypeStrings())
+        if (ds_type_name != keep)
+            setUseDSType(ds_type_name, false);
+
+    updateContent();
+}
+
+void DataSourcesWidget::setAllChildrenOfDSType(const std::string& ds_type, bool select)
+{
+    loginf << "ds_type '" << ds_type << "' select " << select;
+
+    if (ctx_man_.hasActiveContext())
+        for (const auto& ds : ctx_man_.activeContext().dataSources())
+            if (ds.dsType() == ds_type)
+                setUseDS(ds.id(), select);
+
+    updateContent();
+}
+
+void DataSourcesWidget::deselectOtherDataSources(unsigned int keep_ds_id)
+{
+    loginf << "keep " << keep_ds_id;
+
+    if (ctx_man_.hasActiveContext())
+        for (const auto& ds : ctx_man_.activeContext().dataSources())
+            if (ds.id() != keep_ds_id)
+                setUseDS(ds.id(), false);
+
+    updateContent();
+}
+
+void DataSourcesWidget::expandSubtree(QTreeWidgetItem* item, bool expand)
+{
+    if (!item) return;
+    item->setExpanded(expand);
+    for (int i = 0; i < item->childCount(); ++i)
+        expandSubtree(item->child(i), expand);
+}
+
+void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
+{
+    // No database open → nothing to act on; suppress the context menu entirely.
+    if (!ctx_man_.compass().dbOpened())
+        return;
+
+    QTreeWidgetItem* raw   = tree_widget_->itemAt(pos);
+    auto*            item  = dynamic_cast<DataSourcesWidgetItem*>(raw);
+
+    QMenu menu(this);
+    menu.setToolTipsVisible(true);
+
+    auto add = [&](const QString& text, const QString& tip, std::function<void()> fn)
+    {
+        QAction* a = menu.addAction(text);
+        a->setToolTip(tip);
+        connect(a, &QAction::triggered, this, [fn]{ fn(); });
+    };
+
+    // --- Per-item section (only when clicked on a row) ---
+    if (item)
+    {
+        switch (item->type())
+        {
+            case DataSourcesWidgetItem::Type::DataSourceType:
+            {
+                auto*             ti      = static_cast<DataSourceTypeItem*>(item);
+                const std::string ds_type = ti->dsType();
+                QTreeWidgetItem*  raw_ti  = raw;
+
+                // Skip the per-item section entirely for empty DSTypes —
+                // they have no data and their row carries no interactive
+                // state, so only the global "All" actions apply.
+                bool dstype_has_data = false;
+                if (ctx_man_.hasActiveContext())
+                    for (const auto& ds : ctx_man_.activeContext().dataSources())
+                        if (ds.dsType() == ds_type && ctx_man_.hasNumInserted(ds.id()))
+                        { dstype_has_data = true; break; }
+                if (!dstype_has_data)
+                    break;
+
+                menu.addSection(QString("DSType \"%1\"")
+                                .arg(QString::fromStdString(ds_type)));
+                add("Deselect Other DSTypes",
+                    "Keep this DSType selected; deselect all other DSTypes",
+                    [this, ds_type]{ deselectOtherDSTypes(ds_type); });
+                add("Select All Children",
+                    "Check every Data Source under this DSType",
+                    [this, ds_type]{ setAllChildrenOfDSType(ds_type, true); });
+                add("Deselect All Children",
+                    "Uncheck every Data Source under this DSType",
+                    [this, ds_type]{ setAllChildrenOfDSType(ds_type, false); });
+                add("Expand",
+                    "Expand this DSType's sub-tree",
+                    [this, raw_ti]{ expandSubtree(raw_ti, true); });
+                add("Collapse",
+                    "Collapse this DSType's sub-tree",
+                    [this, raw_ti]{ expandSubtree(raw_ti, false); });
+
+                // Only offer Delete if at least one DS of this DSType has
+                // data in the database — otherwise there is nothing to delete.
+                bool any_has_data = false;
+                if (ctx_man_.hasActiveContext())
+                {
+                    for (const auto& ds : ctx_man_.activeContext().dataSources())
+                    {
+                        if (ds.dsType() == ds_type && ctx_man_.hasNumInserted(ds.id()))
+                        {
+                            any_has_data = true;
+                            break;
+                        }
+                    }
+                }
+                if (any_has_data)
+                {
+                    add("Delete…",
+                        "Open the delete dialog with this DSType and its Data Sources preselected",
+                        [this, ds_type]{ deleteForDSType(ds_type); });
+                }
+                break;
+            }
+            case DataSourcesWidgetItem::Type::DataSource:
+            case DataSourcesWidgetItem::Type::DataSourceCount:
+            {
+                // A DBContent row uses the same menu as its parent Data Source:
+                // all actions (selection, delete) operate on the containing DS.
+                unsigned int ds_id;
+                QString      ds_name;
+                if (item->type() == DataSourcesWidgetItem::Type::DataSource)
+                {
+                    auto* di = static_cast<DataSourceItem*>(item);
+                    ds_id    = di->dsID();
+                    ds_name  = raw->text(0);
+                }
+                else
+                {
+                    auto* ci = static_cast<DataSourceCountItem*>(item);
+                    ds_id    = ci->dsID();
+                    ds_name  = raw->parent() ? raw->parent()->text(0) : QString();
+                }
+
+                // Empty Data Source: no per-item actions make sense, fall
+                // through to the global "All" section only.
+                if (!ctx_man_.hasNumInserted(ds_id))
+                    break;
+
+                const std::string ds_type =
+                    ctx_man_.hasDataSource(ds_id) ? ctx_man_.dataSource(ds_id)->dsType()
+                                                  : std::string();
+
+                menu.addSection(QString("Data Source \"%1\"").arg(ds_name));
+                add("Deselect Other Data Sources",
+                    "Keep this Data Source selected; deselect all other Data Sources",
+                    [this, ds_id]{ deselectOtherDataSources(ds_id); });
+                if (!ds_type.empty())
+                {
+                    add(QString("Select All %1 Data Sources")
+                            .arg(QString::fromStdString(ds_type)),
+                        QString("Check every Data Source of type \"%1\"")
+                            .arg(QString::fromStdString(ds_type)),
+                        [this, ds_type]{ setAllChildrenOfDSType(ds_type, true); });
+                }
+                if (ctx_man_.hasNumInserted(ds_id))
+                {
+                    add("Delete…",
+                        "Open the delete dialog with this Data Source preselected",
+                        [this, ds_id]{ deleteForDataSource(ds_id); });
+                }
+                break;
+            }
+        }
+    }
+
+    // --- Global section (always) — mirrors the top-right "Data Sources"
+    //     menu (addActionsToConfigMenu) with the same labels and submenus;
+    //     plus a few context-menu-only conveniences (Select All, Expand All).
+    menu.addSection("All");
+
+    auto addTo = [this](QMenu* m, const QString& text, const QString& tip,
+                        std::function<void()> fn)
+    {
+        QAction* a = m->addAction(text);
+        a->setToolTip(tip);
+        connect(a, &QAction::triggered, this, [fn]{ fn(); });
+    };
+
+    add("Select All",
+        "Check every DSType and Data Source row (lines stay unchanged)",
+        [this]{ setAllCheckboxes(true); });
+    add("Deselect All",
+        "Uncheck every DSType and Data Source row (lines stay unchanged)",
+        [this]{ setAllCheckboxes(false); });
+    menu.addSeparator();
+
+    add("Select All DSTypes",
+        "Select every DSType",
+        [this]{ selectAllDSTypes(); });
+    add("Deselect All DSTypes",
+        "Deselect every DSType",
+        [this]{ deselectAllDSTypes(); });
+    menu.addSeparator();
+
+    // Which DSTypes actually have at least one Data Source with data?
+    std::set<std::string> dstypes_with_data;
+    if (ctx_man_.hasActiveContext())
+    {
+        for (const auto& ds : ctx_man_.activeContext().dataSources())
+            if (ctx_man_.hasNumInserted(ds.id()))
+                dstypes_with_data.insert(ds.dsType());
+    }
+
+    // Select Data Sources submenu
+    {
+        QMenu* sub = menu.addMenu("Select Data Sources");
+        sub->setToolTipsVisible(true);
+        sub->menuAction()->setToolTip("Select every Data Source, or only those of a given DSType");
+        addTo(sub, "All",
+              "Select every Data Source",
+              [this]{ selectAllDataSources(); });
+        for (const auto& ds_type : context::DataSource::dsTypeStrings())
+        {
+            const std::string ds_type_s = ds_type;
+            QAction* a = sub->addAction(QString::fromStdString("From " + ds_type_s));
+            a->setToolTip(QString("Select every Data Source of type \"%1\"")
+                              .arg(QString::fromStdString(ds_type_s)));
+            if (dstypes_with_data.count(ds_type_s))
+            {
+                connect(a, &QAction::triggered, this, [this, ds_type_s]{
+                    if (ctx_man_.hasActiveContext())
+                        for (const auto& ds : ctx_man_.activeContext().dataSources())
+                            if (ds.dsType() == ds_type_s)
+                                setUseDS(ds.id(), true);
+                    updateContent();
+                });
+            }
+            else
+            {
+                a->setEnabled(false);
+            }
+        }
+    }
+
+    // Deselect Data Sources submenu
+    {
+        QMenu* sub = menu.addMenu("Deselect Data Sources");
+        sub->setToolTipsVisible(true);
+        sub->menuAction()->setToolTip("Deselect every Data Source, or only those of a given DSType");
+        addTo(sub, "All",
+              "Deselect every Data Source",
+              [this]{ deselectAllDataSources(); });
+        for (const auto& ds_type : context::DataSource::dsTypeStrings())
+        {
+            const std::string ds_type_s = ds_type;
+            QAction* a = sub->addAction(QString::fromStdString("From " + ds_type_s));
+            a->setToolTip(QString("Deselect every Data Source of type \"%1\"")
+                              .arg(QString::fromStdString(ds_type_s)));
+            if (dstypes_with_data.count(ds_type_s))
+            {
+                connect(a, &QAction::triggered, this, [this, ds_type_s]{
+                    if (ctx_man_.hasActiveContext())
+                        for (const auto& ds : ctx_man_.activeContext().dataSources())
+                            if (ds.dsType() == ds_type_s)
+                                setUseDS(ds.id(), false);
+                    updateContent();
+                });
+            }
+            else
+            {
+                a->setEnabled(false);
+            }
+        }
+    }
+    menu.addSeparator();
+
+    // Set Line submenu
+    {
+        // Which of L1..L4 actually have data somewhere?
+        bool line_has_data[4] = { false, false, false, false };
+        if (ctx_man_.hasActiveContext())
+        {
+            for (const auto& ds : ctx_man_.activeContext().dataSources())
+            {
+                auto lines_map = ctx_man_.numInsertedLinesMap(ds.id());
+                for (unsigned int l = 0; l < 4; ++l)
+                    if (lines_map.count(l) && lines_map.at(l) > 0)
+                        line_has_data[l] = true;
+            }
+        }
+
+        QMenu* sub = menu.addMenu("Set Line");
+        sub->setToolTipsVisible(true);
+        sub->menuAction()->setToolTip("Set the line selection across every Data Source");
+        addTo(sub, "Deselect All",
+              "Disable all lines across every Data Source",
+              [this]{ deselectAllLines(); });
+        for (unsigned int l = 0; l < 4; ++l)
+        {
+            const QString line_str = QString::fromStdString(Utils::String::lineStrFrom(l));
+            QAction* a = sub->addAction("Select " + line_str);
+            a->setToolTip(QString("Enable line L%1 across every Data Source").arg(l + 1));
+            if (line_has_data[l])
+            {
+                connect(a, &QAction::triggered, this, [this, l]{
+                    if (ctx_man_.hasActiveContext())
+                        for (const auto& ds : ctx_man_.activeContext().dataSources())
+                            setUseDSLine(ds.id(), l, true);
+                    updateContent();
+                });
+            }
+            else
+            {
+                a->setEnabled(false);
+            }
+        }
+    }
+    menu.addSeparator();
+
+    add("Toggle Show Counts",
+        "Toggle per-DBContent count columns",
+        [this]{ toogleShowCounts(); });
+    add("Expand All",
+        "Expand every row",
+        [this]{ tree_widget_->expandAll(); });
+    add("Collapse All",
+        "Collapse every row",
+        [this]{ tree_widget_->collapseAll(); });
+
+    menu.exec(tree_widget_->viewport()->mapToGlobal(pos));
+}
+
 /**
  */
 void DataSourcesWidget::deleteDataSlot()
+{
+    runDeleteDialog([](DeleteDataDialog&){}); // no preselection
+}
+
+void DataSourcesWidget::deleteForDSType(const std::string& ds_type)
+{
+    std::set<unsigned int> ds_ids;
+    if (ctx_man_.hasActiveContext())
+        for (const auto& ds : ctx_man_.activeContext().dataSources())
+            if (ds.dsType() == ds_type)
+                ds_ids.insert(ds.id());
+
+    runDeleteDialog([ds_type, ds_ids](DeleteDataDialog& dlg){
+        dlg.preselectDSTypes({ds_type});
+        dlg.preselectDataSources(ds_ids);
+    });
+}
+
+void DataSourcesWidget::deleteForDataSource(unsigned int ds_id)
+{
+    runDeleteDialog([ds_id](DeleteDataDialog& dlg){
+        dlg.preselectDataSources({ds_id});
+    });
+}
+
+void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> preselect)
 {
     loginf;
 
@@ -1189,6 +1657,9 @@ void DataSourcesWidget::deleteDataSlot()
     }
 
     DeleteDataDialog dlg(ctx_man_, this);
+
+    if (preselect)
+        preselect(dlg);
 
     if (dlg.exec() != QDialog::Accepted)
         return;
