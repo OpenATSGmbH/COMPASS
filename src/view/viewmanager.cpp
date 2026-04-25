@@ -46,6 +46,9 @@
 #include <QWidget>
 #include <QMetaType>
 #include <QApplication>
+#include <QCoreApplication>
+#include <QEventLoop>
+#include <QScopedValueRollback>
 #include <QTabWidget>
 
 #include "traced_assert.h"
@@ -55,6 +58,20 @@
 using namespace Utils;
 using namespace nlohmann;
 using namespace std;
+
+namespace
+{
+    // Pump only the events that are safe during loading dispatch:
+    //   paint / timer / WM-ping replies (so the WM does not flag us as unresponsive).
+    // Excluded:
+    //   user input  — modal dialog already blocks it; double-belt against any non-modal load path.
+    //   sockets     — keeps RT command TCP from firing a second load mid-dispatch.
+    inline void pumpLoadingEvents()
+    {
+        QCoreApplication::processEvents(
+            QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
+    }
+}
 
 ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
@@ -832,13 +849,26 @@ void ViewManager::loadingStartedSlot()
     if (disable_data_distribution_)
         return;
 
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        QMetaObject::invokeMethod(this, &ViewManager::loadingStartedSlot, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadingStartedSlot");
+
     //reset reload flag
     reload_needed_ = false;
+    loading_done_dispatched_ = false;
 
-    loginf;
+    loginf << "begin, " << views_.size() << " views";
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();
+
+    loginf << "end";
 }
 
 // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
@@ -848,9 +878,25 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
     if (disable_data_distribution_)
         return;
 
-    logdbg << "reset " << requires_reset;
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        // data captured by value (the map holds shared_ptrs to immutable Buffers).
+        auto data_copy = data;
+        QMetaObject::invokeMethod(this,
+            [this, data_copy = std::move(data_copy), requires_reset]() {
+                loadedDataSlot(data_copy, requires_reset);
+            }, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadedDataSlot");
 
-    processing_data_ = true;
+    if (loading_done_dispatched_)
+        logwrn << "called AFTER loadingDoneSlot completed - lifecycle contract violated";
+
+    loginf << "begin, " << views_.size() << " views, requires_reset " << requires_reset;
 
     using namespace boost::posix_time;
     ptime tmp_time;
@@ -860,13 +906,11 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
         tmp_time = microsec_clock::local_time();
         view_it.second->loadedData(data, requires_reset);
 
-        logdbg << "start" << view_it.first << " took "
+        loginf << "view " << view_it.first << " took "
                << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
     }
 
-    processing_data_ = false;
-
-    logdbg << "done";
+    loginf << "end";
 }
 
 void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
@@ -880,15 +924,35 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
         return;
     }
 
-    loginf;
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        QMetaObject::invokeMethod(this, &ViewManager::loadingDoneSlot, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadingDoneSlot");
+
+    loginf << "begin, " << views_.size() << " views";
 
     dbcm.beginViewProgressPhase(static_cast<unsigned int>(views_.size()));
 
+    using namespace boost::posix_time;
+    ptime tmp_time;
+
     for (auto& view_it : views_)
     {
+        tmp_time = microsec_clock::local_time();
         view_it.second->loadingDone();
+        loginf << "view " << view_it.first << " took "
+               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
         dbcm.advanceViewProgress();
+        pumpLoadingEvents();
     }
+
+    loading_done_dispatched_ = true;
+    loginf << "end";
 }
 
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)

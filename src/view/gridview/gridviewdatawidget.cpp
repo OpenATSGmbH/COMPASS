@@ -252,7 +252,7 @@ void GridViewDataWidget::buildGridFromStash()
     auto bounds = getXYVariableBounds(true);
     if (!bounds.has_value() || bounds->isEmpty())
     {
-        loginf << "bounds empty, skipping...";
+        loginf << "bounds empty, skipping";
         return;
     }
     traced_assert(bounds->isValid());

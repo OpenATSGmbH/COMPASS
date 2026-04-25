@@ -118,14 +118,14 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
         bool is_empty = view_var.settings().allow_empty_var && view_var.isEmpty();
         if (is_empty)
         {
-            loginf << "view_var " << view_var.id() << " empty";
+            logdbg << "view_var " << view_var.id() << " empty";
             continue;
         }
 
         //otherwise return on invalid variable
         if (!view_var.getFor(dbcontent_name))
         {
-            loginf << "view_var " << view_var.variableName()
+            logdbg << "view_var " << view_var.variableName()
                    << " not existing in " << dbcontent_name << ", skipping";
             return;
         }
@@ -297,7 +297,7 @@ void VariableViewStashDataWidget::updateVariableData(size_t var_idx,
     //handle special cases
     if (is_empty)
     {
-        loginf << "adding empty variable to stash";
+        logdbg << "adding empty variable to stash";
 
         //empty variable selected => add zero values (valid values)
         //(a little bit hacky, but we do not want to count the values as Nan or NULL values)
