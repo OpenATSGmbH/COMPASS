@@ -17,7 +17,7 @@ COMPASS is a **monolithic Qt5 desktop application** with a **DuckDB** embedded d
 
 **Key architectural layers:**
 - **GUI layer**: Qt5 Widgets with signals/slots. Main thread runs the Qt event loop; views render from a single shared in-memory dataset.
-- **Data layer**: Columnar `Buffer`/`NullableVector<T>` containers loaded from DuckDB (primary) or SQLite3 (legacy). Only one unified dataset exists at a time; all views share it.
+- **Data layer**: Columnar `Buffer`/`NullableVector<T>` containers loaded from DuckDB. Only one unified dataset exists at a time; all views share it.
 - **Processing layer**: Async job management (`JobManager`), parallelized via Intel TBB. Reconstruction and evaluation run in background jobs on worker threads.
 - **3D rendering**: OpenSceneGraph + osgEarth for the Geographic View. Runs on the main thread with 1-second update intervals and overload detection (skip rendering at >3s latency, skip ASTERIX decoding at >60s).
 - **Configuration**: `Configurable` base class — most components inherit from it. Parameters are auto-serialized to/from JSON files in `~/.compass/<version>/`. Read at startup, written at shutdown.
@@ -76,7 +76,7 @@ src/                    Main source code
     unit_tests/         Core unit tests (buffer, projection, number)
   db/                   Database layer
     dbcontent/          Database content types, variables, targets, labels
-    interface/          Database backends (SQLite, DuckDB)
+    interface/          Database backend (DuckDB)
   eval/                 Evaluation framework
     requirement/        Requirement definitions (detection, position, speed, ...)
     results/            Evaluation results and reports
@@ -150,8 +150,7 @@ All source files must include the GPL-3.0 header (see any existing `.h`/`.cpp` f
 - **Qt5** (Widgets, Core, OpenGL, Charts, Test)
 - **Boost** (regex, system, program_options, filesystem, iostreams, thread, stacktrace_backtrace)
 - **Eigen3** — linear algebra
-- **DuckDB** — primary database backend
-- **SQLite3** — legacy database backend
+- **DuckDB** — embedded database backend
 - **GDAL** — geographic data
 - **OpenSceneGraph** — 3D rendering
 - **osgEarth** — geographic visualization

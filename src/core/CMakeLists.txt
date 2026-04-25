@@ -123,7 +123,6 @@ target_link_libraries(compass_core
         TBB::tbb
         Threads::Threads
         ${CMAKE_DL_LIBS}
-        ${SQLITE3_LIBRARIES}
         ${DUCKDB_LIBRARIES}
         Eigen3::Eigen
         ${OPENSCENEGRAPH_LIBRARIES}

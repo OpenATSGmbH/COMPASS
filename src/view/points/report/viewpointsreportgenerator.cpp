@@ -29,7 +29,6 @@
 #include "global.h"
 #include "dbinterface.h"
 #include "dbconnection.h"
-#include "sqliteconnection.h"
 #include "files.h"
 #include "latexdocument.h"
 #include "latexvisitor.h"

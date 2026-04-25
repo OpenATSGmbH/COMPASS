@@ -31,8 +31,6 @@ static const bool UI_ICON_BUTTON_FLAT=true;
 static const std::string META_OBJECT_NAME="Meta";
 static const std::string NULL_STRING="NULL";
 
-static const std::string SQLITE_IDENTIFIER="sqlite";
-
 static const double DEG2RAD = 2*M_PI/360.0;
 static const double RAD2DEG = 1.0/DEG2RAD;
 static const double FT2M = 0.3048;
