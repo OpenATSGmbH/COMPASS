@@ -242,7 +242,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     {
         //interaction mode => show error immediately
         if (show_dialog)
-            QMessageBox::critical(nullptr, "Evaluation Failed", QString::fromStdString(eval_res.error()));
+            QMessageBox::critical(QApplication::activeWindow(), "Evaluation Failed", QString::fromStdString(eval_res.error()));
 
         return eval_res;
     }

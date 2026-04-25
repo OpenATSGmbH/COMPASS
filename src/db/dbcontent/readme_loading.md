@@ -78,6 +78,41 @@ Coarse only: one tick per DBContent, advanced from `addLoadedData`. There is no 
 - emit per-chunk from the job (instead of accumulating into `cached_buffer_` and delivering once on done) and tally rows in `addLoadedData`;
 - precompute expected totals via `SELECT COUNT(*)` with the same WHERE before submitting and report arrival % against that.
 
+## View distribution (`ViewManager`)
+
+`ViewManager` is the canonical consumer of the three lifecycle signals; it fans them out to every registered `View`:
+
+| Slot | Per-view call | Notes |
+|---|---|---|
+| `loadingStartedSlot` | `view->loadingStarted()` | Resets `reload_needed_`. Skipped when `disable_data_distribution_` is set (used during processing-only loads). |
+| `loadedDataSlot(data, reset)` | `view->loadedData(data, reset)` | Fires once per DBContent (one buffer arrival per signal). |
+| `loadingDoneSlot` | `view->loadingDone()` | Heavy work — view rebuilds, scene-graph re-zooms, table-model index rebuilds. |
+
+### Re-entrancy guard
+
+All three slots share a single `processing_data_` flag, scoped via `QScopedValueRollback` for the duration of the per-view loop. If any of them is invoked while `processing_data_` is set, it re-posts itself via `Qt::QueuedConnection` and returns immediately. This preserves the contracted ordering `started → loaded* → done` even when the slots are interrupted by event-loop pumping (see below).
+
+### Threshold-based event pumping in `loadingDoneSlot`
+
+`loadingDoneSlot` is the single place where a load can take long enough on the GUI thread for the window manager to flag the application as unresponsive (`_NET_WM_PING` timeout on X11 / similar on Wayland). For wide loads with several heavy views the per-view loop can run for tens of seconds — the original symptom was a Linux "Application is not responding — Wait / Force Quit" dialog mid-load.
+
+To keep the GUI responsive, the loop calls
+
+```cpp
+QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents
+                              | QEventLoop::ExcludeSocketNotifiers);
+```
+
+after each `view->loadingDone()` — but only **after the loop has been running longer than `pump_threshold_ms` (3 s)**. The threshold matters: pumping unconditionally lets queued events (notably RT commands posted from the asio-driven `RTCommandManager` runner thread) interleave with view dispatch. UI integration tests waiting on a single view's `viewRefreshed` signal would then issue their next command while later views in the loop are still being processed, breaking signal-injection assumptions (e.g. popup-menu tests). The threshold keeps short loads (typical UI tests, ~1–2 s total) below the pump line entirely, so the loop runs uninterrupted; long loads still get periodic pumping once they pass 3 s.
+
+Excluded event categories (`UserInput`, `SocketNotifiers`) further narrow what can fire during a pump:
+- no menu/button slot from a real user click
+- no Qt `QSocketNotifier` (RT commands from the boost::asio session bypass this — they post `QMetaCallEvent`s directly, hence the additional threshold and re-entrancy guard above)
+
+What still fires during a pump: paint events, timer events, WM ping replies, internal queued slots. The re-entrancy guard ensures that if a queued `loadedDataSlot` / `loadingDoneSlot` happens to be among them, it defers cleanly instead of running mid-iteration.
+
+`loadingStartedSlot` and `loadedDataSlot` do **not** pump. The chunk-by-chunk delivery of `loadedDataSignal` from the worker thread already yields the event loop between contents; pumping inside their per-view loops adds no responsiveness gain and used to allow `loadedDataSlot` to be re-posted past a queued `loadingDoneSlot`, breaking the ordering contract.
+
 ## Migrating away from per-content loads
 
 `DBContent::loadInternal` is private. Tasks that previously called `DBContent::load(read_set, ...)` directly (Reconstructor, RadarPlot, ARTAS, RT `get_data`) now build a `LoadRequest` and call the manager. Patterns:

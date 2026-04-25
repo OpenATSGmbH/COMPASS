@@ -181,7 +181,7 @@ void EvaluationStandardWidget::addGroupSlot()
 
     bool ok;
     QString text =
-        QInputDialog::getText(nullptr, tr("Group Name"),
+        QInputDialog::getText(this, tr("Group Name"),
                               tr("Specify a (unique) group name:"), QLineEdit::Normal, "", &ok);
 
     if (ok && !text.isEmpty())
@@ -233,7 +233,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
 
     bool ok;
     QString text =
-        QInputDialog::getText(nullptr, tr("Requirement Name"),
+        QInputDialog::getText(this, tr("Requirement Name"),
                               tr("Specify a (unique) requirement name:"), QLineEdit::Normal,
                               "", &ok);
 
@@ -264,7 +264,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
 
     std::string req_short_name;
 
-    text =  QInputDialog::getText(nullptr, tr("Requirement Short Name"),
+    text =  QInputDialog::getText(this, tr("Requirement Short Name"),
                                  tr("Specify a requirement short name:"), QLineEdit::Normal,
                                  "", &ok);
 

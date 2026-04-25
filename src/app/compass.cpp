@@ -458,7 +458,7 @@ bool COMPASS::openDBFile(const std::string& filename)
     QApplication::restoreOverrideCursor();
 
     if (!result.ok())
-        QMessageBox::critical(nullptr, "Error", QString::fromStdString(result.error()));
+        QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
     else
         addDBFileToList(filename);
 
@@ -511,7 +511,7 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 
     if (!result.ok())
     {
-        QMessageBox::critical(nullptr, "Error", QString::fromStdString(result.error()));
+        QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
     }
     else
     {
@@ -569,7 +569,7 @@ bool COMPASS::createInMemDBFile(const std::string& future_filename)
     auto result = createInMemDBFileInternal(future_filename);
 
     if (!result.ok())
-        QMessageBox::critical(nullptr, "Error", QString::fromStdString(result.error()));
+        QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
 
     return result.ok();
 }
@@ -615,7 +615,7 @@ bool COMPASS::createNewDBFileFromMemory()
 
     traced_assert(canCreateDBFileFromMemory());
 
-    QMessageBox* msg_box = new QMessageBox;
+    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
 
     msg_box->setWindowTitle("Exporting Database");
     msg_box->setText("Please wait ...");
@@ -633,7 +633,7 @@ bool COMPASS::createNewDBFileFromMemory()
     delete msg_box;
 
     if (!result.ok())
-        QMessageBox::critical(nullptr, "Error", QString::fromStdString(result.error()));
+        QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
     else
         addDBFileToList(last_db_filename_);
     
@@ -673,7 +673,7 @@ bool COMPASS::exportDBFile(const std::string& filename)
     traced_assert(db_opened_);
     traced_assert(!db_export_in_progress_);
 
-    QMessageBox* msg_box = new QMessageBox;
+    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
 
     msg_box->setWindowTitle("Exporting Database");
     msg_box->setText("Please wait ...");
@@ -691,7 +691,7 @@ bool COMPASS::exportDBFile(const std::string& filename)
     delete msg_box;
 
     if (!result.ok())
-        QMessageBox::critical(nullptr, "Error", QString::fromStdString(result.error()));
+        QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
 
     return result.ok();
 }
@@ -732,7 +732,7 @@ bool COMPASS::closeDB()
     auto result = closeDBInternal();
 
     if (!result.ok())
-        QMessageBox::critical(nullptr, "Error", QString::fromStdString(result.error()));
+        QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
 
     return result.ok();
 }
@@ -1218,7 +1218,7 @@ void COMPASS::appMode(const AppMode& app_mode)
             emit appModeSwitchSignal(last_app_mode, app_mode_);
 
             // load all data in db
-            msg_box = new QMessageBox;
+            msg_box = new QMessageBox(QApplication::activeWindow());
             traced_assert(msg_box);
             msg_box->setWindowTitle(("Switching to "+toString(app_mode_)).c_str());
             msg_box->setText("Loading data");
@@ -1234,7 +1234,7 @@ void COMPASS::appMode(const AppMode& app_mode)
         {
             // load first, switch after to add to existing cache
 
-            msg_box = new QMessageBox;
+            msg_box = new QMessageBox(QApplication::activeWindow());
             traced_assert(msg_box);
             msg_box->setWindowTitle(("Switching to "+toString(app_mode_)).c_str());
             msg_box->setText("Loading data");

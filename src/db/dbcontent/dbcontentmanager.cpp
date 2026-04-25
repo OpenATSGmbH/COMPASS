@@ -566,7 +566,10 @@ void DBContentManager::beginViewProgressPhase(unsigned int num_views)
     }
 
     progress_dialog_->setValue(static_cast<int>(progress_value_));
-    QCoreApplication::processEvents();
+    // Synchronous paint, not processEvents() — pumping arbitrary queued events
+    // here lets queued RT commands (e.g. uiset from UI tests) fire mid-loop in
+    // ViewManager::loadingDoneSlot and break injection assumptions.
+    progress_dialog_->repaint();
 }
 
 /**
@@ -580,7 +583,7 @@ void DBContentManager::advanceViewProgress()
     if (progress_value_ > 100.0)
         progress_value_ = 100.0;
     progress_dialog_->setValue(static_cast<int>(progress_value_));
-    QCoreApplication::processEvents();
+    progress_dialog_->repaint(); // see comment in beginViewProgressPhase
 }
 
 /**
@@ -640,7 +643,8 @@ void DBContentManager::load(const LoadRequest& req)
 
     if (req.show_status_ && progress_load_total_ > 0)
     {
-        progress_dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0, 100, nullptr));
+        progress_dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0, 100,
+                                                   QApplication::activeWindow()));
         progress_dialog_->setWindowModality(Qt::ApplicationModal);
         progress_dialog_->setMinimumDuration(0);
         progress_dialog_->setAutoClose(false);

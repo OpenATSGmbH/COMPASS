@@ -204,7 +204,12 @@ bool ReconstructorTask::canRun()
 {
     traced_assert(currentReconstructor());
 
-    return manager().compass().dbContentManager().hasData() && currentReconstructor()->hasNextTimeSlice();
+    bool has_data       = manager().compass().dbContentManager().hasData();
+    bool has_next_slice = has_data && currentReconstructor()->hasNextTimeSlice();
+
+    loginf << "has_data " << has_data << " has_next_slice " << has_next_slice;
+
+    return has_data && has_next_slice;
 }
 
 void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress)
@@ -467,7 +472,8 @@ void ReconstructorTask::run()
     QLabel* tmp_label = new QLabel();
     tmp_label->setTextFormat(Qt::RichText);
 
-    progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100));
+    progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
+                                               QApplication::activeWindow()));
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
@@ -1231,7 +1237,7 @@ void ReconstructorTask::runCancelledSlot()
 
     cancelled_ = true;
 
-    QMessageBox* msg_box = new QMessageBox;
+    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
 
     msg_box->setWindowTitle("Cancelling Reconstruction");
     msg_box->setText("Please wait ...");

@@ -922,7 +922,7 @@ void JSONImportTask::updateMsgBox()
 
     if (!msg_box_)
     {
-        msg_box_.reset(new QMessageBox());
+        msg_box_.reset(new QMessageBox(QApplication::activeWindow()));
 
         loginf << "creating";
 

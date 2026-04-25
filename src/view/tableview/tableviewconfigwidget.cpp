@@ -173,7 +173,7 @@ void TableViewConfigWidget::exportDoneSlot(bool cancelled)
 
     if (!cancelled)
     {
-        QMessageBox msgBox;
+        QMessageBox msgBox(this);
         msgBox.setText("Export complete.");
         msgBox.exec();
     }

@@ -816,7 +816,7 @@ void ViewManager::viewShutdown(View* view, const std::string& err)
     delete view;
 
     if (err.size())
-        QMessageBox::critical(NULL, "View Shutdown", QString::fromStdString(err));
+        QMessageBox::critical(QApplication::activeWindow(), "View Shutdown", QString::fromStdString(err));
 }
 
 void ViewManager::selectionChangedSlot()
@@ -940,6 +940,15 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
 
     using namespace boost::posix_time;
     ptime tmp_time;
+    ptime loop_start = microsec_clock::local_time();
+
+    // Threshold: only pump events between views once the loop has been running
+    // for a while. Short loops (typical UI test loads, ~1-2 s total) finish
+    // before the threshold and never pump — this keeps queued RT commands from
+    // interleaving with view dispatch and breaking UI test injection. Long
+    // loads (the original "WM unresponsive" case, 12+ s) cross the threshold
+    // and start pumping, restoring responsiveness for the user.
+    constexpr int pump_threshold_ms = 3000;
 
     for (auto& view_it : views_)
     {
@@ -948,7 +957,10 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
         loginf << "view " << view_it.first << " took "
                << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
         dbcm.advanceViewProgress();
-        pumpLoadingEvents();
+
+        auto elapsed_ms = (microsec_clock::local_time() - loop_start).total_milliseconds();
+        if (elapsed_ms > pump_threshold_ms)
+            pumpLoadingEvents();
     }
 
     loading_done_dispatched_ = true;

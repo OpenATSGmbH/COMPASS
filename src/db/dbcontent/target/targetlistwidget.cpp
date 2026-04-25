@@ -294,7 +294,7 @@ void TargetListWidget::evalFilterSlot()
 {
     loginf;
 
-    EvaluationTargetFilterDialog dialog (dbcont_manager_.compass().evaluationManager().targetFilter(), model_);
+    EvaluationTargetFilterDialog dialog (dbcont_manager_.compass().evaluationManager().targetFilter(), model_, this);
     dialog.exec();
 }
 
@@ -327,7 +327,7 @@ void TargetListWidget::evalEditGlobalExcludeTimeWindowsSlot()
 {
     loginf;
 
-    EvaluationTimestampConditionsDialog dialog (dbcont_manager_.compass().evaluationManager());
+    EvaluationTimestampConditionsDialog dialog (dbcont_manager_.compass().evaluationManager(), this);
     dialog.exec();
 
     if (dialog.somethingChangedFlag())

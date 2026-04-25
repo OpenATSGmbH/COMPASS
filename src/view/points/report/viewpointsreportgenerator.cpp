@@ -320,7 +320,7 @@ void ViewPointsReportGenerator::run ()
                 }
                 else // show warnings
                 {
-                    QMessageBox msgBox;
+                    QMessageBox msgBox(QApplication::activeWindow());
                     msgBox.setText("PDF Latex failed with warnings:\n\n"+QString(command_out.c_str()));
                     msgBox.exec();
                 }
@@ -337,7 +337,7 @@ void ViewPointsReportGenerator::run ()
 
         if (show_done_)
         {
-            QMessageBox msgBox;
+            QMessageBox msgBox(QApplication::activeWindow());
             if (cancel_)
                 msgBox.setText("Export View Points as PDF Cancelled");
             else
