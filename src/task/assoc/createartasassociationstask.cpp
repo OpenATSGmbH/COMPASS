@@ -216,51 +216,61 @@ void CreateARTASAssociationsTask::run()
     connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
             this, &CreateARTASAssociationsTask::loadingDoneSlot);
 
+    std::set<std::string> targets;
+    std::string cat062_clause;
+
     for (auto& dbcont_it : dbcontent_man)
     {
         if (!dbcont_it.second->hasData())
             continue;
-
         if (!dbcont_it.second->containsTargetReports() ||
-            dbcont_it.second->isReferenceContent()) // not covered by ARTAS
+            dbcont_it.second->isReferenceContent())
             continue;
 
-        VariableSet read_set = getReadSetFor(dbcont_it.first);
-
-        if (dbcont_it.first == "CAT062")
-        {
-            bool ds_found{false};
-            unsigned int current_ds_id;
-
-            for (const auto& ds : ctx_man.activeContext().dataSources())
-            {
-                if (ctx_man.numInserted(ds.id(), "CAT062") == 0) // check if track data exists
-                    continue;
-
-                if ((ds.hasShortName() &&
-                     ds.shortName() == settings_.current_data_source_name_) ||
-                        (ds.name() == settings_.current_data_source_name_))
-                {
-                    ds_found = true;
-                    current_ds_id = ds.id();
-                    break;
-                }
-            }
-
-            traced_assert(ds_found);
-            std::string custom_filter_clause {
-                dbcontent_man.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_ds_id_).dbColumnName()
-                        + " in (" + std::to_string(current_ds_id) + ") AND " +
-                dbcontent_man.metaGetVariable(dbcont_it.first, dbcontent_vars::meta_var_line_id_).dbColumnName()
-                        + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")"
-            };
-
-            dbcont_it.second->loadFiltered(read_set, custom_filter_clause);
-        }
-        else
-            dbcont_it.second->load(read_set, false, false);
-
+        targets.insert(dbcont_it.first);
     }
+
+    if (targets.count("CAT062"))
+    {
+        bool ds_found{false};
+        unsigned int current_ds_id{0};
+
+        for (const auto& ds : ctx_man.activeContext().dataSources())
+        {
+            if (ctx_man.numInserted(ds.id(), "CAT062") == 0)
+                continue;
+
+            if ((ds.hasShortName() &&
+                 ds.shortName() == settings_.current_data_source_name_) ||
+                    (ds.name() == settings_.current_data_source_name_))
+            {
+                ds_found = true;
+                current_ds_id = ds.id();
+                break;
+            }
+        }
+
+        traced_assert(ds_found);
+
+        cat062_clause =
+            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_ds_id_).dbColumnName()
+                + " in (" + std::to_string(current_ds_id) + ") AND " +
+            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_line_id_).dbColumnName()
+                + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")";
+    }
+
+    LoadRequest req;
+    req.dbcontents_           = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
+    req.custom_filter_clause_ = [cat062_clause](const std::string& name) -> std::string {
+        return name == "CAT062" ? cat062_clause : "";
+    };
+
+    dbcontent_man.load(req);
 }
 
 bool CreateARTASAssociationsTask::wasRun()

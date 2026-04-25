@@ -1316,7 +1316,9 @@ void MainWindow::loadButtonSlot()
     loading_ = true;
     load_button_->setText("Stop");
 
-    compass_.dbContentManager().load("", true);
+    LoadRequest req = LoadRequest::standard();
+    req.measure_db_performance_ = true;
+    compass_.dbContentManager().load(req);
 }
 
 void MainWindow::loadingStartedSlot()

@@ -48,6 +48,9 @@
 
 #include <QApplication>
 #include <QMessageBox>
+#include <QProgressDialog>
+#include <QPushButton>
+#include <QThread>
 
 #include <algorithm>
 #include <boost/none.hpp>
@@ -389,13 +392,173 @@ VariableSet DBContentManager::getReadSet(const std::string& dbcontent_name)
 
 /**
  */
-void DBContentManager::load(const std::string& custom_filter_clause, 
-                            bool measure_db_performance,
-                            const std::map<std::string, dbContent::VariableSet>* custom_read_set)
+std::set<std::string> DBContentManager::resolveTargetSet(const LoadRequest& req) const
+{
+    auto& ctx_man = compass_.dbContextManager();
+
+    std::set<std::string> targets;
+
+    const bool wildcard = req.dbcontents_.count("*") > 0;
+
+    for (const auto& object : dbcontent_)
+    {
+        if (!object.second->loadable())
+            continue;
+
+        if (wildcard)
+        {
+            if (!ctx_man.loadingWanted(object.first))
+                continue;
+            targets.insert(object.first);
+        }
+        else if (req.dbcontents_.count(object.first))
+        {
+            targets.insert(object.first);
+        }
+    }
+
+    return targets;
+}
+
+/**
+ */
+std::string DBContentManager::composeWhereClause(const std::string& name,
+                                                  const LoadRequest& req,
+                                                  dbContent::VariableSet& read_set)
+{
+    auto& ctx_man = compass_.dbContextManager();
+    DBContent& dbc = *dbcontent_.at(name);
+
+    std::string filter_clause;
+
+    if (req.apply_datasrc_filters_
+        && (ctx_man.hasDSFilter(name) || ctx_man.lineSpecificLoadingRequired(name)))
+    {
+        std::vector<unsigned int> ds_ids_to_load = ctx_man.unfilteredDS(name);
+        traced_assert(ds_ids_to_load.size());
+
+        traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
+        Variable& datasource_var = dbc.variable(dbcontent_vars::meta_var_ds_id_.name());
+        traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
+
+        if (ctx_man.lineSpecificLoadingRequired(name))
+        {
+            traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_line_id_.name()));
+            Variable& line_var = dbc.variable(dbcontent_vars::meta_var_line_id_.name());
+            traced_assert(line_var.dataType() == PropertyDataType::UINT);
+
+            bool any_added = false;
+            for (auto ds_id_it : ds_ids_to_load)
+            {
+                traced_assert(ctx_man.hasDataSource(ds_id_it));
+
+                if (filter_clause.size())
+                    filter_clause += " OR";
+                else
+                    filter_clause += " (";
+
+                filter_clause += " (" + datasource_var.dbColumnName() + " = " + std::to_string(ds_id_it);
+
+                bool any_lines_wanted = false;
+                std::vector<unsigned int> wanted_lines;
+                for (unsigned int line = 0; line < 4; ++line)
+                {
+                    if (ctx_man.lineLoadingWanted(ds_id_it, line))
+                    {
+                        any_lines_wanted = true;
+                        wanted_lines.push_back(line);
+                    }
+                }
+
+                if (!any_lines_wanted)
+                {
+                    filter_clause += " AND " + line_var.dbColumnName() + " IN ())";
+                    any_added = true;
+                    continue;
+                }
+
+                filter_clause += " AND " + line_var.dbColumnName() + " IN (";
+                bool first = true;
+                for (auto line_it : wanted_lines)
+                {
+                    if (!first)
+                        filter_clause += ",";
+                    filter_clause += std::to_string(line_it);
+                    first = false;
+                }
+                filter_clause += "))";
+                any_added = true;
+            }
+
+            if (ds_ids_to_load.size() && any_added)
+                filter_clause += ")";
+        }
+        else
+        {
+            filter_clause = datasource_var.dbColumnName() + " IN (";
+            for (auto ds_id_it = ds_ids_to_load.begin(); ds_id_it != ds_ids_to_load.end(); ++ds_id_it)
+            {
+                if (ds_id_it != ds_ids_to_load.begin())
+                    filter_clause += ",";
+                filter_clause += std::to_string(*ds_id_it);
+            }
+            filter_clause += ")";
+        }
+    }
+
+    if (req.apply_view_filters_ && compass_.filterManager().useFilters())
+    {
+        // getSQLCondition may add filter-required variables to read_set
+        std::string filter_sql = compass_.filterManager().getSQLCondition(name, read_set);
+        if (filter_sql.size())
+        {
+            if (filter_clause.size())
+                filter_clause += " AND ";
+            filter_clause += filter_sql;
+        }
+    }
+
+    if (req.custom_filter_clause_)
+    {
+        std::string custom = req.custom_filter_clause_(name);
+        if (custom.size())
+        {
+            if (filter_clause.size())
+                filter_clause += " AND ";
+            filter_clause += custom;
+        }
+    }
+
+    return filter_clause;
+}
+
+/**
+ */
+void DBContentManager::advanceProgress()
+{
+    if (!progress_dialog_)
+        return;
+
+    ++progress_done_;
+    progress_dialog_->setValue(std::min(progress_done_, progress_total_));
+}
+
+/**
+ */
+void DBContentManager::cancelLoadingSlot()
+{
+    loginf;
+    if (load_in_progress_)
+        quitLoading();
+}
+
+/**
+ */
+void DBContentManager::load(const LoadRequest& req)
 {
     loading_done_ = false;
 
-    logdbg << "custom_filter_clause '" << custom_filter_clause << "'";
+    logdbg << "load_in_progress_ " << load_in_progress_;
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -409,10 +572,9 @@ void DBContentManager::load(const std::string& custom_filter_clause,
                 object.second->quitLoading();
         }
 
-        while (load_in_progress_) // compass_.jobManager().hasDBJobs()
+        while (load_in_progress_)
         {
             loginf << "previous load to finish";
-
             QCoreApplication::processEvents();
             QThread::msleep(1);
         }
@@ -423,47 +585,66 @@ void DBContentManager::load(const std::string& custom_filter_clause,
     saveSelectedRecNums();
     clearData();
 
+    current_request_ = req;
     load_in_progress_ = true;
+
+    DBInterface& db_interface = compass_.dbInterface();
+    if (req.measure_db_performance_)
+        db_interface.startPerformanceMetrics();
+
+    std::set<std::string> targets = resolveTargetSet(req);
+
+    progress_done_  = 0;
+    progress_total_ = static_cast<unsigned int>(targets.size());
+
+    if (req.show_status_ && progress_total_ > 0)
+    {
+        progress_dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0,
+                                                   static_cast<int>(progress_total_), nullptr));
+        progress_dialog_->setWindowModality(Qt::ApplicationModal);
+        progress_dialog_->setMinimumDuration(0);
+        progress_dialog_->setAutoClose(false);
+        progress_dialog_->setAutoReset(false);
+
+        if (req.cancellable_)
+        {
+            connect(progress_dialog_.get(), &QProgressDialog::canceled,
+                    this, &DBContentManager::cancelLoadingSlot);
+        }
+        else
+        {
+            progress_dialog_->setCancelButton(nullptr);
+        }
+
+        // make sure the dialog actually paints before the main thread gets busy
+        // submitting jobs and processing the first arriving buffers
+        progress_dialog_->show();
+        QCoreApplication::processEvents();
+    }
 
     bool load_job_created = false;
 
-    auto& ctx_man = compass_.dbContextManager();
-    DBInterface& db_interface = compass_.dbInterface();
-
-    if (measure_db_performance)
-        db_interface.startPerformanceMetrics();
-
-    for (auto& object : dbcontent_)
+    for (const auto& name : targets)
     {
-        logdbg << "object " << object.first
-               << " loadable " << object.second->loadable()
-               << " loading wanted " << ctx_man.loadingWanted(object.first)
-               << " filters " << compass_.filterManager().useFilters();
+        DBContent* obj = dbcontent_.at(name);
 
-        if (object.second->loadable() && ctx_man.loadingWanted(object.first))
+        VariableSet read_set = req.read_set_ ? req.read_set_(name) : getReadSet(name);
+
+        if (read_set.getSize() == 0)
         {
-            logdbg << "loading object " << object.first;
-            
-            auto read_set = getReadSet(object.first);
-
-            if (custom_read_set && custom_read_set->count(object.first))
-                read_set.add(custom_read_set->at(object.first));
-
-            if (read_set.getSize() == 0)
-            {
-                logwrn << "skipping loading of object " << object.first
-                       << " since an empty read list was detected";
-                continue;
-            }
-
-            // load(dbContent::VariableSet& read_set, bool use_datasrc_filters, bool use_filters,
-            // const std::string& custom_filter_clause="")
-            object.second->load(read_set, true, compass_.filterManager().useFilters(),
-                                custom_filter_clause);
-
-            load_job_created = true;
+            logwrn << "skipping loading of " << name << ": empty read set";
+            continue;
         }
+
+        std::string where = composeWhereClause(name, req, read_set);
+
+        logdbg << name << " read set " << read_set.str()
+               << " where '" << where << "'";
+
+        obj->loadInternal(read_set, where);
+        load_job_created = true;
     }
+
     emit loadingStartedSignal();
 
     if (!load_job_created)
@@ -472,12 +653,9 @@ void DBContentManager::load(const std::string& custom_filter_clause,
 
 /**
  */
-void DBContentManager::loadBlocking(const std::string& custom_filter_clause, 
-                                    bool measure_db_performance,
-                                    unsigned int sleep_msecs,
-                                    const std::map<std::string, dbContent::VariableSet>* custom_read_set)
+void DBContentManager::loadBlocking(const LoadRequest& req, unsigned int sleep_msecs)
 {
-    load(custom_filter_clause, measure_db_performance, custom_read_set);
+    load(req);
 
     while (!loading_done_)
     {
@@ -537,6 +715,9 @@ void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffe
         logdbg << "emitting signal";
 
         emit loadedDataSignal(data_, false);
+
+        // one tick per content as its buffer arrives
+        advanceProgress();
     }
 }
 
@@ -716,6 +897,9 @@ void DBContentManager::finishLoading()
 
     tmp_selected_rec_nums_.clear();
 
+    progress_done_  = 0;
+    progress_total_ = 0;
+
     compass_.viewManager().doViewPointAfterLoad();
 
     DBInterface& db_interface = compass_.dbInterface();
@@ -729,6 +913,17 @@ void DBContentManager::finishLoading()
     QApplication::restoreOverrideCursor();
 
     loading_done_ = true;
+
+    current_request_ = LoadRequest{};
+
+    // close the dialog only after every listener (views, etc.) has processed the signal —
+    // direct-connected slots ran inside emit; processEvents drains queued ones
+    if (progress_dialog_)
+    {
+        QCoreApplication::processEvents();
+        progress_dialog_->close();
+        progress_dialog_.reset();
+    }
 
     loginf << "done";
 }

@@ -618,7 +618,7 @@ void View::updateView(int flags)
     {
         //start reload (will reset all cached updates)
         if (view_manager_.compass().dbOpened())
-            view_manager_.compass().dbContentManager().load();
+            view_manager_.compass().dbContentManager().load(LoadRequest::standard());
     }
     else //handle all other updates
     {

@@ -108,7 +108,6 @@ public slots:
     void databaseOpenedSlot();
     void databaseClosedSlot();
 
-    void readJobIntermediateSlot(std::shared_ptr<Buffer> buffer);
     void readJobObsoleteSlot();
     void readJobDoneSlot();
 
@@ -147,14 +146,6 @@ public:
 
     bool loadable() const { return is_loadable_; }
 
-    void load(dbContent::VariableSet& read_set, 
-              bool use_datasrc_filters, 
-              bool use_filters,
-              const std::string& custom_filter_clause=""); // main load function
-    void loadFiltered(dbContent::VariableSet& read_set, 
-                      std::string custom_filter_clause);
-    
-    // load function for custom filtering
     void quitLoading();
 
     bool prepareInsert(std::shared_ptr<Buffer>& buffer);
@@ -202,6 +193,14 @@ public:
     bool isReferenceContent() const;
 
     COMPASS& compass() { return compass_; }
+
+private:
+    friend class DBContentManager;
+
+    // Sole low-level entry to start a read job. Always called by the manager from
+    // DBContentManager::load(LoadRequest) after composing the WHERE clause.
+    void loadInternal(dbContent::VariableSet& read_set,
+                      std::string custom_filter_clause);
 
 protected:
     void checkStaticVariable(const Property& property);

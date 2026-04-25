@@ -375,9 +375,9 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
     emit showViewPointSignal(current_viewable_);
 
     if (load_blocking)
-        compass_.dbContentManager().loadBlocking();
+        compass_.dbContentManager().loadBlocking(LoadRequest::standard());
     else
-        compass_.dbContentManager().load();
+        compass_.dbContentManager().load(LoadRequest::standard());
 }
 
 

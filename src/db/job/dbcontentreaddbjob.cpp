@@ -83,12 +83,12 @@ void DBContentReadDBJob::run_impl()
 
         traced_assert(buffer->dbContentName() == dbcontent_.name());
 
-        logdbg << "start" << dbcontent_.name() << ": intermediate signal, #buffers "
-               << cnt << " last one " << last_buffer;
+        logdbg << "start" << dbcontent_.name() << ": read chunk #" << cnt
+               << " last " << last_buffer;
         row_count_ += buffer->size();
 
-        // add data to cache
-        if (!cached_buffer_) // no cache
+        // accumulate
+        if (!cached_buffer_)
             cached_buffer_ = buffer;
         else
         {
@@ -96,33 +96,16 @@ void DBContentReadDBJob::run_impl()
             buffer = nullptr;
         }
 
-        if (obsolete_)
-            break;
-
-        if (last_buffer) // distribute data, !view_manager.isProcessingData() || 
-        {
-            logdbg << dbcontent_.name()
-                   << ": emitting intermediate read, size " << cached_buffer_->size();
-            //cached_buffer_->printProperties();
-
-            //loginf << cached_buffer_->asJSON(10).dump(2);
-
-            emit intermediateSignal(cached_buffer_);
-
-            cached_buffer_ = nullptr;
-        }
-
         if (last_buffer)
         {
-            logdbg << "start" << dbcontent_.name() << ": last buffer";
+            logdbg << "start" << dbcontent_.name() << ": last buffer, size "
+                   << cached_buffer_->size();
             break;
         }
     }
 
     if (obsolete_)
         cached_buffer_ = nullptr;
-
-    traced_assert(!cached_buffer_);
 
     logdbg << "start" << dbcontent_.name() << ": finalizing statement";
     db_interface_.finalizeReadStatement(dbcontent_);

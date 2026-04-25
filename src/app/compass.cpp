@@ -1225,13 +1225,7 @@ void COMPASS::appMode(const AppMode& app_mode)
             msg_box->setStandardButtons(QMessageBox::NoButton);
             msg_box->show();
 
-            dbcontent_manager_->load();
-
-            while (dbcontent_manager_->loadInProgress())
-            {
-                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-                QThread::msleep(10);
-            }
+            dbcontent_manager_->loadBlocking(LoadRequest::standard());
 
             msg_box->close();
             delete msg_box;
@@ -1254,13 +1248,7 @@ void COMPASS::appMode(const AppMode& app_mode)
 
             loginf << "resuming with custom filter load '" << custom_filter << "'";
 
-            dbcontent_manager_->load(custom_filter);
-
-            while (dbcontent_manager_->loadInProgress())
-            {
-                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-                QThread::msleep(10);
-            }
+            dbcontent_manager_->loadBlocking(LoadRequest::withFilter(custom_filter));
 
             traced_assert(msg_box);
             msg_box->close();

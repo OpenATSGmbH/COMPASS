@@ -148,6 +148,7 @@ void RadarPlotPositionCalculatorTask::run()
 
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
+    std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
     {
         if (dbcont_it.first != "CAT001" && dbcont_it.first != "CAT010" && dbcont_it.first != "CAT048")
@@ -156,10 +157,18 @@ void RadarPlotPositionCalculatorTask::run()
         if (!dbcont_it.second->hasData())
             continue;
 
-        VariableSet read_set = getReadSetFor(dbcont_it.first);
-
-        dbcont_it.second->load(read_set, false, false);
+        targets.insert(dbcont_it.first);
     }
+
+    LoadRequest req;
+    req.dbcontents_            = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;   // task owns its own QMessageBox
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
+
+    dbcontent_man.load(req);
 }
 
 void RadarPlotPositionCalculatorTask::loadedDataSlot(

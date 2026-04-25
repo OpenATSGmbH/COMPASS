@@ -604,14 +604,14 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
 
     if (blocking)
     {
-        dbcontent_man.loadBlocking();
+        dbcontent_man.loadBlocking(LoadRequest::standard());
         loadingDone();
     }
     else
     {
         connect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
         active_load_connection_ = true;
-        dbcontent_man.load();
+        dbcontent_man.load(LoadRequest::standard());
     }
 
     needs_additional_variables_ = false;

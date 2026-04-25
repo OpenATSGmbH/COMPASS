@@ -20,7 +20,9 @@
 #include "configurable.h"
 #include "buffer.h"
 #include "targetmodel.h"
+#include "loadrequest.h"
 class ViewableDataConfig;
+class QProgressDialog;
 
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/optional.hpp>
@@ -63,6 +65,8 @@ public slots:
     void metaDialogOKSlot();
 
     void processLiveModeSlot();
+
+    void cancelLoadingSlot();
 
 signals:
     void dbContentStatusChanged();
@@ -111,13 +115,8 @@ public:
     bool usedInMetaVariable(const dbContent::Variable& variable);
     dbContent::MetaVariableConfigurationDialog* metaVariableConfigdialog();
 
-    void load(const std::string& custom_filter_clause="", 
-              bool measure_db_performance = false,
-              const std::map<std::string, dbContent::VariableSet>* custom_read_set = nullptr);
-    void loadBlocking(const std::string& custom_filter_clause="", 
-                      bool measure_db_performance = false,
-                      unsigned int sleep_msecs = 1,
-                      const std::map<std::string, dbContent::VariableSet>* custom_read_set = nullptr);
+    void load(const LoadRequest& req);
+    void loadBlocking(const LoadRequest& req, unsigned int sleep_msecs = 1);
     
     void addLoadedData(std::map<std::string, std::shared_ptr<Buffer>> data);
     std::map<std::string, std::shared_ptr<Buffer>> loadedData();
@@ -222,6 +221,12 @@ protected:
     void finishInserting();
     void finishDeleting();
 
+    std::set<std::string> resolveTargetSet(const LoadRequest& req) const;
+    std::string composeWhereClause(const std::string& dbcontent_name,
+                                   const LoadRequest& req,
+                                   dbContent::VariableSet& read_set);
+    void advanceProgress();
+
     void addInsertedDataToChache();
     void filterDataSources();
     void cutCachedData();
@@ -269,6 +274,11 @@ protected:
     bool load_in_progress_{false};
     bool insert_in_progress_{false};
     bool loading_done_{false};
+
+    LoadRequest current_request_;
+    std::unique_ptr<QProgressDialog> progress_dialog_;
+    unsigned int progress_done_{0};
+    unsigned int progress_total_{0};
 
     bool show_data_counts_{false};
 

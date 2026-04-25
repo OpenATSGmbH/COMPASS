@@ -686,21 +686,35 @@ void ReconstructorTask::loadDataSlice()
 
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
+    std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
     {
         logdbg << "start" << dbcont_it.first
                << " has data " << dbcont_it.second->hasData();
 
-        if (!dbcont_it.second->hasData()) // also include status messages
+        if (!dbcont_it.second->hasData())
             continue;
 
-        VariableSet read_set = currentReconstructor()->getReadSetFor(dbcont_it.first);
-
-        if (dbcont_it.second->containsTargetReports())
-            dbcont_it.second->load(read_set, false, false, timestamp_filter+position_filter);
-        else
-            dbcont_it.second->load(read_set, false, false, timestamp_filter);
+        targets.insert(dbcont_it.first);
     }
+
+    LoadRequest req;
+    req.dbcontents_            = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) {
+        return currentReconstructor()->getReadSetFor(name);
+    };
+    req.custom_filter_clause_ = [&dbcontent_man, timestamp_filter, position_filter]
+        (const std::string& name) -> std::string {
+        return dbcontent_man.dbContent(name).containsTargetReports()
+                   ? timestamp_filter + position_filter
+                   : timestamp_filter;
+    };
+
+    dbcontent_man.load(req);
 }
 
 void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
