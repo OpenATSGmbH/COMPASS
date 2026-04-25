@@ -49,7 +49,7 @@
 #include "dbcontentlayer.h"
 #include "layerpanelwidget.h"
 #include "layertreemodel.h"
-#include "layertreeitemdelegate.h"
+#include "annotationsrootitem.h"
 
 #include <QComboBox>
 #include <QLineEdit>
@@ -207,14 +207,11 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     updateDistributedVariable();
     updateUIFromSource();
 
-    // Layer panel at the bottom of the config pane. Grid layers have no
-    // per-series colors, so the icon column is suppressed and names sit
-    // directly next to the checkboxes.
+    // Layer panel at the bottom of the config pane. DBContent items have no
+    // color (grid layers aren't color-coded) but the icon column is still
+    // reserved so the sibling Annotations root can show the compass icon.
     {
-        auto* delegate = new LayerTreeItemDelegate(this);
-        delegate->setReserveIconColumn(false);
-
-        layer_panel_ = new LayerPanelWidget(this, delegate);
+        layer_panel_ = new LayerPanelWidget(this);
 
         LayerColumnSpec null_col;
         null_col.header           = "# Null";
@@ -228,6 +225,10 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
         auto root_uptr = std::make_unique<DBContentRootItem>();
         db_content_root_ = static_cast<DBContentRootItem*>(
             layer_panel_->addRootItem(std::move(root_uptr)));
+
+        // Sibling "Annotations" root, placed after DBContent. Placeholder for
+        // now — matches the Geographic View item in name and icon.
+        layer_panel_->addRootItem(std::make_unique<AnnotationsRootItem>());
 
         auto* data_widget = view_widget->getViewDataWidget();
         data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
