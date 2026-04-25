@@ -117,6 +117,13 @@ public:
 
     void load(const LoadRequest& req);
     void loadBlocking(const LoadRequest& req, unsigned int sleep_msecs = 1);
+
+    // Progress-dialog hooks for the post-load view-processing phase.
+    // The progress bar is sized so the load phase fills 0..50% (one slice per
+    // DBContent loaded) and the view phase fills 50..100% (one slice per view).
+    // No-ops when no dialog is shown (show_status_=false or empty load).
+    void beginViewProgressPhase(unsigned int num_views);
+    void advanceViewProgress();
     
     void addLoadedData(std::map<std::string, std::shared_ptr<Buffer>> data);
     std::map<std::string, std::shared_ptr<Buffer>> loadedData();
@@ -277,8 +284,9 @@ protected:
 
     LoadRequest current_request_;
     std::unique_ptr<QProgressDialog> progress_dialog_;
-    unsigned int progress_done_{0};
-    unsigned int progress_total_{0};
+    double       progress_value_{0.0};   // accumulator on a 0..100 scale
+    unsigned int progress_load_total_{0};
+    unsigned int progress_view_total_{0};
 
     bool show_data_counts_{false};
 

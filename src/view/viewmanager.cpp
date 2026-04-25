@@ -871,13 +871,24 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
 
 void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
 {
+    auto& dbcm = compass_.dbContentManager();
+
     if (disable_data_distribution_)
+    {
+        // no views will be processed; jump the dialog to 100% so it's not stuck at 50%
+        dbcm.beginViewProgressPhase(0);
         return;
+    }
 
     loginf;
 
+    dbcm.beginViewProgressPhase(static_cast<unsigned int>(views_.size()));
+
     for (auto& view_it : views_)
+    {
         view_it.second->loadingDone();
+        dbcm.advanceViewProgress();
+    }
 }
 
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)

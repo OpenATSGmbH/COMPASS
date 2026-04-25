@@ -536,11 +536,51 @@ std::string DBContentManager::composeWhereClause(const std::string& name,
  */
 void DBContentManager::advanceProgress()
 {
+    if (!progress_dialog_ || progress_load_total_ == 0)
+        return;
+
+    progress_value_ += 50.0 / static_cast<double>(progress_load_total_);
+    if (progress_value_ > 50.0)
+        progress_value_ = 50.0;
+    progress_dialog_->setValue(static_cast<int>(progress_value_));
+}
+
+/**
+ */
+void DBContentManager::beginViewProgressPhase(unsigned int num_views)
+{
     if (!progress_dialog_)
         return;
 
-    ++progress_done_;
-    progress_dialog_->setValue(std::min(progress_done_, progress_total_));
+    progress_view_total_ = num_views;
+
+    if (num_views == 0)
+    {
+        // no views to process; jump straight to 100% and leave the label as-is
+        progress_value_ = 100.0;
+    }
+    else
+    {
+        progress_value_ = 50.0;
+        progress_dialog_->setLabelText("Updating views...");
+    }
+
+    progress_dialog_->setValue(static_cast<int>(progress_value_));
+    QCoreApplication::processEvents();
+}
+
+/**
+ */
+void DBContentManager::advanceViewProgress()
+{
+    if (!progress_dialog_ || progress_view_total_ == 0)
+        return;
+
+    progress_value_ += 50.0 / static_cast<double>(progress_view_total_);
+    if (progress_value_ > 100.0)
+        progress_value_ = 100.0;
+    progress_dialog_->setValue(static_cast<int>(progress_value_));
+    QCoreApplication::processEvents();
 }
 
 /**
@@ -594,13 +634,13 @@ void DBContentManager::load(const LoadRequest& req)
 
     std::set<std::string> targets = resolveTargetSet(req);
 
-    progress_done_  = 0;
-    progress_total_ = static_cast<unsigned int>(targets.size());
+    progress_value_      = 0.0;
+    progress_load_total_ = static_cast<unsigned int>(targets.size());
+    progress_view_total_ = 0;
 
-    if (req.show_status_ && progress_total_ > 0)
+    if (req.show_status_ && progress_load_total_ > 0)
     {
-        progress_dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0,
-                                                   static_cast<int>(progress_total_), nullptr));
+        progress_dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0, 100, nullptr));
         progress_dialog_->setWindowModality(Qt::ApplicationModal);
         progress_dialog_->setMinimumDuration(0);
         progress_dialog_->setAutoClose(false);
@@ -897,8 +937,9 @@ void DBContentManager::finishLoading()
 
     tmp_selected_rec_nums_.clear();
 
-    progress_done_  = 0;
-    progress_total_ = 0;
+    progress_value_      = 0.0;
+    progress_load_total_ = 0;
+    progress_view_total_ = 0;
 
     compass_.viewManager().doViewPointAfterLoad();
 
