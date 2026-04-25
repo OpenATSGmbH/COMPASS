@@ -203,7 +203,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     std::string report_name;
     if (show_dialog)
     {
-        EvaluationDialog dlg(*calculator_);
+        EvaluationDialog dlg(*calculator_, QApplication::activeWindow());
 
         if (!custom_result_name.empty())
             dlg.setReportName(custom_result_name);

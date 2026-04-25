@@ -70,7 +70,7 @@ CreateARTASAssociationsTask::~CreateARTASAssociationsTask() {}
 
 void CreateARTASAssociationsTask::showDialog()
 {
-    CreateARTASAssociationsTaskDialog dialog(*this);
+    CreateARTASAssociationsTaskDialog dialog(*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;

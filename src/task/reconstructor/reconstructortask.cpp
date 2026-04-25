@@ -1570,7 +1570,7 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
 
 void ReconstructorTask::showDialog()
 {
-    ReconstructorTaskDialog dlg(*this);
+    ReconstructorTaskDialog dlg(*this, QApplication::activeWindow());
     if (dlg.exec() == QDialog::Rejected)
         return;
 

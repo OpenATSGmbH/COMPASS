@@ -366,7 +366,7 @@ void ViewPointsReportGenerator::run ()
 
         QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
                               (string("Error message:\n")+e.what()).c_str(),
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, QApplication::activeWindow());
         m_warning.exec();
     }
 }

@@ -113,6 +113,14 @@ What still fires during a pump: paint events, timer events, WM ping replies, int
 
 `loadingStartedSlot` and `loadedDataSlot` do **not** pump. The chunk-by-chunk delivery of `loadedDataSignal` from the worker thread already yields the event loop between contents; pumping inside their per-view loops adds no responsiveness gain and used to allow `loadedDataSlot` to be re-posted past a queued `loadingDoneSlot`, breaking the ordering contract.
 
+### Progress dialog updates use `repaint()`, not `processEvents()`
+
+`DBContentManager::beginViewProgressPhase` and `advanceViewProgress` are called from inside the `loadingDoneSlot` loop after each view, to advance the `QProgressDialog` value. The natural choice would be `QCoreApplication::processEvents()` after `setValue(...)` so the dialog repaints — but that would re-introduce the same problem the threshold above avoids: an unconditional pump on every progress tick dispatches all queued events, including RT commands waiting on the main-thread queue. A regression of the popup-injection failure was traced to exactly this path.
+
+The helpers therefore call `progress_dialog_->repaint()` instead — a synchronous paint of the dialog widget, with no event-queue dispatch. The dialog updates visually without pumping. The single coarse-grained pump in `loadingDoneSlot` (gated by the 3 s threshold) remains the only place where queued events get a chance to run during the loop.
+
+Treat unconditional `processEvents()` calls inside the load lifecycle as suspect; prefer `repaint()` on the specific widget that needs to update.
+
 ## Migrating away from per-content loads
 
 `DBContent::loadInternal` is private. Tasks that previously called `DBContent::load(read_set, ...)` directly (Reconstructor, RadarPlot, ARTAS, RT `get_data`) now build a `LoadRequest` and call the manager. Patterns:

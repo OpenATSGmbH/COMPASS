@@ -527,7 +527,7 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
 
     EvaluationTargetExcludedTimeWindowsDialog dialog(dbcont_manager_,
                                                      String::compress(utns, ','),
-                                                     filtered_time_windows);
+                                                     filtered_time_windows, this);
     int result = dialog.exec();
 
     if (result == QDialog::Rejected)
@@ -551,7 +551,7 @@ void TargetListWidget::evalExcludeRequirementsTarget(const std::set<unsigned int
     {
         QMessageBox m_warning(QMessageBox::Information, "Exclude Requirements",
                               "Please select a current evaluation standard to disable requirements.",
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, this);
         m_warning.exec();
 
         return;
@@ -589,9 +589,9 @@ void TargetListWidget::evalExcludeRequirementsTarget(const std::set<unsigned int
     }
 
     EvaluationTargetExcludedRequirementsDialog dialog(String::compress(utns, ','),
-                                                      selected_requirements, 
+                                                      selected_requirements,
                                                       all_requirements,
-                                                      String::compress(comments, '\n'));
+                                                      String::compress(comments, '\n'), this);
     int result = dialog.exec();
 
     if (result == QDialog::Rejected)

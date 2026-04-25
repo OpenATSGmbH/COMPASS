@@ -65,7 +65,7 @@ ProjectionManager& RadarPlotPositionCalculatorTask::projectionManager()
 
 void RadarPlotPositionCalculatorTask::showDialog()
 {
-    RadarPlotPositionCalculatorTaskDialog dialog (*this);
+    RadarPlotPositionCalculatorTaskDialog dialog (*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;

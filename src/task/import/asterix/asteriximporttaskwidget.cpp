@@ -258,7 +258,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
     if (task_.schema() == nullptr)
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON Object Parser Adding Failed",
-                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok);
+                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok, this);
 
         m_warning.exec();
         return;
@@ -280,7 +280,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
         if (current->hasObjectParser(cat))
         {
             QMessageBox m_warning(QMessageBox::Warning, "ASTERIX JSON Parser Adding Failed",
-                                  "ASTERIX parser for category already defined.", QMessageBox::Ok);
+                                  "ASTERIX parser for category already defined.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;

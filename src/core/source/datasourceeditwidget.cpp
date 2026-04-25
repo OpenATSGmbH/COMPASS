@@ -662,7 +662,7 @@ void DataSourceEditWidget::nameEditedSlot(const QString& value)
     {
         QMessageBox m_warning(QMessageBox::Warning, "Invalid Name",
                               "Empty names are not permitted. Please set another name.",
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, this);
 
         m_warning.exec();
         return;
@@ -999,7 +999,7 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     auto ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
     QString title = add ? QString::fromStdString("Add Remote Unit for Sensor '" + ds_name + "'") :
                           QString::fromStdString("Edit Remote Unit " + std::to_string(idx) + " for Sensor '" + ds_name + "'");
-    QDialog dlg;
+    QDialog dlg(this);
     dlg.setWindowTitle(title);
 
     auto main_layout   = new QVBoxLayout;

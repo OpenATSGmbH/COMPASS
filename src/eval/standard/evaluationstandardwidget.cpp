@@ -191,7 +191,7 @@ void EvaluationStandardWidget::addGroupSlot()
         if (!name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Group Failed",
-                                  "Group has to have a non-empty name.", QMessageBox::Ok);
+                                  "Group has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -199,7 +199,7 @@ void EvaluationStandardWidget::addGroupSlot()
         if (standard_.hasGroup(name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Group Failed",
-                                  "Group with this name already exists.", QMessageBox::Ok);
+                                  "Group with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -248,7 +248,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
         if (!req_name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                                  "Requirement has to have a non-empty name.", QMessageBox::Ok);
+                                  "Requirement has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -256,7 +256,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
         if (group.hasRequirementConfig(req_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                                  "Requirement with this name already exists.", QMessageBox::Ok);
+                                  "Requirement with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -289,7 +289,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
     else
     {
         QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                              "Requirement has to have a non-empty name and short name.", QMessageBox::Ok);
+                              "Requirement has to have a non-empty name and short name.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }

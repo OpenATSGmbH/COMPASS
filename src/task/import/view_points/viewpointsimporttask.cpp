@@ -64,7 +64,7 @@ ViewPointsImportTask::~ViewPointsImportTask()
 
 void ViewPointsImportTask::showDialog()
 {
-    ViewPointsImportTaskDialog dialog (*this);
+    ViewPointsImportTaskDialog dialog (*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;
