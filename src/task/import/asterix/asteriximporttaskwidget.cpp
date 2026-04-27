@@ -18,6 +18,7 @@
 #include "asteriximporttaskwidget.h"
 #include "asterixconfigwidget.h"
 #include "asterixframingcombobox.h"
+#include "asteriximportdatasourceswidget.h"
 #include "asteriximporttask.h"
 #include "compass.h"
 #include "asterixoverridewidget.h"
@@ -61,6 +62,7 @@ ASTERIXImportTaskWidget::ASTERIXImportTaskWidget(ASTERIXImportTask& task, QWidge
 
     addMainTab();
     addDecoderTab();
+    addDataSourcesTab();
     addOverrideTab();
     addMappingsTab();
 
@@ -209,6 +211,14 @@ void ASTERIXImportTaskWidget::addOverrideTab()
 
     override_widget_ = new ASTERIXOverrideWidget(task_, this);
     tab_widget_->addTab(override_widget_, "Override/Filter");
+}
+
+void ASTERIXImportTaskWidget::addDataSourcesTab()
+{
+    traced_assert(tab_widget_);
+
+    data_sources_widget_ = new ASTERIXImportDataSourcesWidget(task_);
+    tab_widget_->addTab(data_sources_widget_, "Data Sources");
 }
 
 void ASTERIXImportTaskWidget::addMappingsTab()

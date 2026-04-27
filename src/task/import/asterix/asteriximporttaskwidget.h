@@ -25,6 +25,7 @@
 #include <memory>
 
 class ASTERIXImportTask;
+class ASTERIXImportDataSourcesWidget;
 class ASTERIXConfigWidget;
 class ASTERIXOverrideWidget;
 class ASTERIXFramingComboBox;
@@ -73,6 +74,7 @@ protected:
     void addMainTab();
     void addDecoderTab();
     void addOverrideTab();
+    void addDataSourcesTab();
     void addMappingsTab();
 
     void updateParserBox();
@@ -96,6 +98,7 @@ protected:
 
     ASTERIXConfigWidget* config_widget_{nullptr};
     ASTERIXOverrideWidget* override_widget_{nullptr};
+    ASTERIXImportDataSourcesWidget* data_sources_widget_{nullptr};
 
     ASTERIXFramingComboBox* framing_combo_{nullptr};
     QPushButton* framing_edit_{nullptr};
