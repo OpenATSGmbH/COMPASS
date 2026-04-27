@@ -27,6 +27,7 @@
 #include "viewpointswidget.h"
 #include "logger.h"
 
+#include <QApplication>
 #include <QMessageBox>
 
 #include <fstream>
@@ -524,7 +525,8 @@ void ViewPointsTableModel::exportViewPoints (const std::string& filename)
 
     QMessageBox m_info(QMessageBox::Information, "View Points Export File",
                        "File export: '"+QString(filename.c_str())+"' done.\n"
-                       +QString::number(view_points.size())+" View Points saved.", QMessageBox::Ok);
+                       +QString::number(view_points.size())+" View Points saved.", QMessageBox::Ok,
+                       QApplication::activeWindow());
     m_info.exec();
 }
 

@@ -46,6 +46,11 @@
 #include "colorscaleselection.h"
 #include "propertyvalueedit.h"
 
+#include "dbcontentlayer.h"
+#include "layerpanelwidget.h"
+#include "layertreemodel.h"
+#include "annotationsrootitem.h"
+
 #include <QComboBox>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -55,14 +60,34 @@
 #include <QMenu>
 #include <QFormLayout>
 #include <QFileDialog>
+#include <QHeaderView>
 #include <QLabel>
+#include <QTreeView>
 
 using namespace Utils;
 using namespace dbContent;
 
+namespace
+{
+    /// Sum aggregator for integer-valued custom columns — ignores invalid
+    /// entries and returns an invalid QVariant if no valid value was found.
+    QVariant sumULongLong(const std::vector<QVariant>& vals)
+    {
+        unsigned long long sum = 0;
+        bool any = false;
+        for (const auto& v : vals)
+        {
+            bool ok = false;
+            unsigned long long n = v.toULongLong(&ok);
+            if (ok) { sum += n; any = true; }
+        }
+        return any ? QVariant((qulonglong)sum) : QVariant();
+    }
+}
+
 /**
 */
-GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget, 
+GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
                                            QWidget* parent)
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
@@ -182,7 +207,58 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     updateDistributedVariable();
     updateUIFromSource();
 
+    // Layer panel at the bottom of the config pane. DBContent items have no
+    // color (grid layers aren't color-coded) but the icon column is still
+    // reserved so the sibling Annotations root can show the compass icon.
+    {
+        layer_panel_ = new LayerPanelWidget(this);
+
+        LayerColumnSpec null_col;
+        null_col.header           = "# Null";
+        null_col.default_width    = 70;
+        null_col.resize_mode      = QHeaderView::Interactive;
+        null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
+        null_col.group_aggregator = &sumULongLong;
+        layer_panel_->model()->addColumn(null_col);
+        layer_panel_->model()->applyHeaderSettings(layer_panel_->treeView()->header());
+
+        auto root_uptr = std::make_unique<DBContentRootItem>();
+        db_content_root_ = static_cast<DBContentRootItem*>(
+            layer_panel_->addRootItem(std::move(root_uptr)));
+
+        // Sibling "Annotations" root, placed after DBContent. Placeholder for
+        // now — matches the Geographic View item in name and icon.
+        layer_panel_->addRootItem(std::make_unique<AnnotationsRootItem>());
+
+        auto* data_widget = view_widget->getViewDataWidget();
+        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
+
+        // Visibility toggle -> recompute grid (only checked layers contribute).
+        connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
+                data_widget, &GridViewDataWidget::layersChangedSlot);
+
+        // Tree was rebuilt -> re-apply default expansion.
+        connect(data_widget, &GridViewDataWidget::layerTreeRebuiltSignal,
+                this, &GridViewConfigWidget::applyDefaultExpansionSlot);
+
+        config_layout->addWidget(layer_panel_);
+    }
+
     //showSwitch(0, true);
+}
+
+/**
+*/
+void GridViewConfigWidget::applyDefaultExpansionSlot()
+{
+    if (!db_content_root_ || !layer_panel_)
+        return;
+
+    // Mirror the expansion the other views use. The grid view has no color
+    // mode of its own — pick the DBContent expansion so the user sees the
+    // innermost rows.
+    db_content_root_->applyDefaultExpansionForColorMode(
+        layer_panel_->treeView(), /*DBContent*/ 1);
 }
 
 /**

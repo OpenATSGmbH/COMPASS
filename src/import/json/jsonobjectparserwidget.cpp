@@ -385,7 +385,7 @@ void JSONObjectParserWidget::mappingActiveChangedSlot()
     if (!mapping->hasVariable() && widget->checkState() == Qt::Checked)
     {
         QMessageBox m_warning(QMessageBox::Warning, "Activation failed", "DBContent Variable not defined.",
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, this);
 
         m_warning.exec();
 
@@ -397,7 +397,7 @@ void JSONObjectParserWidget::mappingActiveChangedSlot()
     {
         QMessageBox m_warning(QMessageBox::Warning, "Deactivation failed",
                               "Deactivation of mandatory variables is not allowed.",
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, this);
 
         m_warning.exec();
 

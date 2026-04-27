@@ -65,7 +65,7 @@ ProjectionManager& RadarPlotPositionCalculatorTask::projectionManager()
 
 void RadarPlotPositionCalculatorTask::showDialog()
 {
-    RadarPlotPositionCalculatorTaskDialog dialog (*this);
+    RadarPlotPositionCalculatorTaskDialog dialog (*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;
@@ -139,7 +139,7 @@ void RadarPlotPositionCalculatorTask::run()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     std::string msg = "Loading object data";
-    msg_box_ = new QMessageBox;
+    msg_box_ = new QMessageBox(QApplication::activeWindow());
     traced_assert(msg_box_);
     msg_box_->setWindowTitle("Calculating Radar Plot Positions");
     msg_box_->setText(msg.c_str());
@@ -148,6 +148,7 @@ void RadarPlotPositionCalculatorTask::run()
 
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
+    std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
     {
         if (dbcont_it.first != "CAT001" && dbcont_it.first != "CAT010" && dbcont_it.first != "CAT048")
@@ -156,10 +157,18 @@ void RadarPlotPositionCalculatorTask::run()
         if (!dbcont_it.second->hasData())
             continue;
 
-        VariableSet read_set = getReadSetFor(dbcont_it.first);
-
-        dbcont_it.second->load(read_set, false, false);
+        targets.insert(dbcont_it.first);
     }
+
+    LoadRequest req;
+    req.dbcontents_            = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;   // task owns its own QMessageBox
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
+
+    dbcontent_man.load(req);
 }
 
 void RadarPlotPositionCalculatorTask::loadedDataSlot(
@@ -226,7 +235,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     if (buffers_size)
     {
         std::string msg;
-        msg_box_ = new QMessageBox;
+        msg_box_ = new QMessageBox(QApplication::activeWindow());
         traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg = "Writing object data";
@@ -282,7 +291,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
 
         QApplication::restoreOverrideCursor();
 
-        msg_box_ = new QMessageBox;
+        msg_box_ = new QMessageBox(QApplication::activeWindow());
         traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg_box_->setText("Writing of object data done.");

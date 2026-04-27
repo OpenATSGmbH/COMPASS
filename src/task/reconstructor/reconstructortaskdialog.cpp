@@ -42,8 +42,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task)
-    : QDialog(), task_(task)
+ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidget* parent)
+    : QDialog(parent), task_(task)
 {
     setWindowTitle("Reconstruct Reference Trajectories");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);

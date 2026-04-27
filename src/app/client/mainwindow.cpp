@@ -1248,7 +1248,7 @@ void MainWindow::toggleDarkModeSlot()
     compass_.darkMode(!compass_.darkMode());
 
     QMessageBox m_warning(QMessageBox::Information, "Dark Mode",
-                          "Please restart the applications for the Dark Mode change to take effect.", QMessageBox::Ok);
+                          "Please restart the applications for the Dark Mode change to take effect.", QMessageBox::Ok, this);
     m_warning.exec();
 }
 
@@ -1298,7 +1298,7 @@ void MainWindow::loadButtonSlot()
     {
         QMessageBox m_warning(QMessageBox::Warning, "Loading Not Possible",
                               "There are no Views active, so loading is not possible.",
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, this);
 
         m_warning.exec();
         return;
@@ -1316,7 +1316,9 @@ void MainWindow::loadButtonSlot()
     loading_ = true;
     load_button_->setText("Stop");
 
-    compass_.dbContentManager().load("", true);
+    LoadRequest req = LoadRequest::standard();
+    req.measure_db_performance_ = true;
+    compass_.dbContentManager().load(req);
 }
 
 void MainWindow::loadingStartedSlot()

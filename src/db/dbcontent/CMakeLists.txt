@@ -17,6 +17,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentcombobox.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanager.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagerwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/loadrequest.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentstatusinfo.h"
         "${CMAKE_CURRENT_LIST_DIR}/stringrepresentationcombobox.h"
         "${CMAKE_CURRENT_LIST_DIR}/selectdialog.h"

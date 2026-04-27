@@ -30,6 +30,7 @@
 #include "dbcontentlayer.h"
 #include "layerpanelwidget.h"
 #include "layertreemodel.h"
+#include "annotationsrootitem.h"
 
 #include <QCheckBox>
 #include <QHeaderView>
@@ -97,6 +98,10 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
         auto root_uptr = std::make_unique<DBContentRootItem>();
         db_content_root_ = static_cast<DBContentRootItem*>(
             layer_panel_->addRootItem(std::move(root_uptr)));
+
+        // Sibling "Annotations" root, placed after DBContent. Placeholder for
+        // now — matches the Geographic View item in name and icon.
+        layer_panel_->addRootItem(std::make_unique<AnnotationsRootItem>());
 
         // Hand the root + model to the data widget so it can populate and
         // round-trip hidden state.

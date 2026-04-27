@@ -24,7 +24,7 @@ namespace db
 
 enum class SQLPlaceholder
 {
-    AtVar = 0,   //e.g. sqlite
+    AtVar = 0,
     QuestionMark //e.g. duckdb
 };
 

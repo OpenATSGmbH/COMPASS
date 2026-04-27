@@ -15,52 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sqlitereader.h"
-#include "dbresult.h"
-#include "buffer.h"
-#include "property_templates.h"
+#include "annotationsrootitem.h"
 
-#include "logger.h"
+#include "files.h"
 
-/**
- */
-SQLiteReader::SQLiteReader(sqlite3* connection)
-:   connection_(connection)
+AnnotationsRootItem::AnnotationsRootItem()
+    : LayerTreeItem("Annotations")
+    , icon_(Utils::Files::IconProvider::getIcon("compass.png"))
 {
-    traced_assert(connection_);
 }
 
-/**
- */
-SQLiteReader::~SQLiteReader() = default;
-
-/**
- */
-bool SQLiteReader::init_impl()
+QVariant AnnotationsRootItem::icon() const
 {
-    //@TODO
-    return false;
-}
-
-/**
- */
-void SQLiteReader::finish_impl()
-{
-    //@TODO
-}
-
-/**
- */
-std::shared_ptr<DBResult> SQLiteReader::readChunk_impl()
-{
-    //@TODO
-    return std::shared_ptr<DBResult>();
-}
-
-/**
- */
-size_t SQLiteReader::numLeft() const
-{
-    //@TODO
-    return 0;
+    return QVariant(icon_);
 }

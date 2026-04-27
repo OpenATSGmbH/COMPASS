@@ -236,7 +236,7 @@ void JSONImportTaskWidget::addSchemaSlot()
         if (!name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "JSON Parsing Schema Adding Failed",
-                                  "A schema name must be set.", QMessageBox::Ok);
+                                  "A schema name must be set.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;
@@ -245,7 +245,7 @@ void JSONImportTaskWidget::addSchemaSlot()
         if (task_.hasSchema(name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "JSON Parsing Schema Adding Failed",
-                                  "Schema with this name is already defined.", QMessageBox::Ok);
+                                  "Schema with this name is already defined.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;
@@ -268,7 +268,7 @@ void JSONImportTaskWidget::removeSchemaSlot()
     if (!task_.currentSchemaName().size())
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON File Deletion Failed",
-                              "Please select a file in the list.", QMessageBox::Ok);
+                              "Please select a file in the list.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }
@@ -340,7 +340,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
     if (!task_.hasCurrentSchema())
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON Object Parser Adding Failed",
-                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok);
+                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok, this);
 
         m_warning.exec();
         return;
@@ -361,7 +361,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
         if (!dbcontent_name.size() || current->hasObjectParser(dbcontent_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "JSON Object Parser Adding Failed",
-                                  "Object parser name empty or already defined.", QMessageBox::Ok);
+                                  "Object parser name empty or already defined.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;
@@ -453,7 +453,7 @@ void JSONImportTaskWidget::testImportSlot()
     if (!task_.canImportFile())
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON File Test Import Failed",
-                              "Please select a file in the list.", QMessageBox::Ok);
+                              "Please select a file in the list.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }

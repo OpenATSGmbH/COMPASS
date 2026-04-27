@@ -122,7 +122,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
         }
     }
 
-    QProgressDialog postprocess_dialog ("", "", 0, num_req_evals);
+    QProgressDialog postprocess_dialog ("", "", 0, num_req_evals, QApplication::activeWindow());
     postprocess_dialog.setWindowTitle("Evaluating");
     postprocess_dialog.setCancelButton(nullptr);
     postprocess_dialog.setWindowModality(Qt::ApplicationModal);
@@ -462,7 +462,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     loading_start_time = boost::posix_time::microsec_clock::local_time();
 
-    QProgressDialog dlg; // QApplication::topLevelWidgets().first()
+    QProgressDialog dlg(QApplication::activeWindow());
     dlg.setWindowTitle("Updating Results");
     dlg.setLabelText( "Please wait...");
     dlg.setRange(0, 0);

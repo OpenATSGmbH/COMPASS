@@ -18,6 +18,7 @@
 #include "asteriximporttaskwidget.h"
 #include "asterixconfigwidget.h"
 #include "asterixframingcombobox.h"
+#include "asteriximportdatasourceswidget.h"
 #include "asteriximporttask.h"
 #include "compass.h"
 #include "asterixoverridewidget.h"
@@ -61,6 +62,7 @@ ASTERIXImportTaskWidget::ASTERIXImportTaskWidget(ASTERIXImportTask& task, QWidge
 
     addMainTab();
     addDecoderTab();
+    addDataSourcesTab();
     addOverrideTab();
     addMappingsTab();
 
@@ -211,6 +213,33 @@ void ASTERIXImportTaskWidget::addOverrideTab()
     tab_widget_->addTab(override_widget_, "Override/Filter");
 }
 
+void ASTERIXImportTaskWidget::addDataSourcesTab()
+{
+    traced_assert(tab_widget_);
+
+    data_sources_widget_ = new ASTERIXImportDataSourcesWidget(task_);
+    data_sources_tab_index_ = tab_widget_->addTab(data_sources_widget_, "Data Sources");
+
+    connect(data_sources_widget_, &ASTERIXImportDataSourcesWidget::warningsChanged,
+            this, &ASTERIXImportTaskWidget::dataSourcesWarningsChangedSlot);
+
+    // initial state: widget already ran rebuildAll() in its constructor, so the
+    // very first signal was emitted before we connected. Seed the icon now.
+    dataSourcesWarningsChangedSlot(data_sources_widget_->hasWarnings());
+}
+
+void ASTERIXImportTaskWidget::dataSourcesWarningsChangedSlot(bool any)
+{
+    if (data_sources_tab_index_ < 0 || !tab_widget_)
+        return;
+
+    if (any)
+        tab_widget_->setTabIcon(data_sources_tab_index_,
+                                Utils::Files::IconProvider::getIcon("hint.png"));
+    else
+        tab_widget_->setTabIcon(data_sources_tab_index_, QIcon());
+}
+
 void ASTERIXImportTaskWidget::addMappingsTab()
 {
     QVBoxLayout* parsers_layout = new QVBoxLayout();
@@ -258,7 +287,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
     if (task_.schema() == nullptr)
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON Object Parser Adding Failed",
-                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok);
+                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok, this);
 
         m_warning.exec();
         return;
@@ -280,7 +309,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
         if (current->hasObjectParser(cat))
         {
             QMessageBox m_warning(QMessageBox::Warning, "ASTERIX JSON Parser Adding Failed",
-                                  "ASTERIX parser for category already defined.", QMessageBox::Ok);
+                                  "ASTERIX parser for category already defined.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;

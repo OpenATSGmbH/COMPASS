@@ -193,6 +193,14 @@ protected:
     bool processing_data_ = false;
     bool reload_needed_   = false;
 
+    // Diagnostic state for loading lifecycle:
+    //   loading_done_dispatched_: set true after a loadingDoneSlot body completes,
+    //     reset on loadingStartedSlot. Used to detect late loadedDataSlot calls.
+    //   current_dispatch_: name of slot currently inside its per-view loop, or
+    //     empty when idle. Logged when re-entry happens.
+    bool loading_done_dispatched_ = false;
+    std::string current_dispatch_;
+
     QTabWidget* main_tab_widget_{nullptr};
 
     std::map<std::string, ViewContainer*> containers_;

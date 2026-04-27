@@ -29,9 +29,6 @@ class DBContentReadDBJob : public Job
 {
     Q_OBJECT
 
-signals:
-    void intermediateSignal(std::shared_ptr<Buffer> buffer);
-
 public:
     DBContentReadDBJob(DBInterface& db_interface, DBContent& dbcontent, dbContent::VariableSet read_list,
                        std::string custom_filter_clause);
@@ -40,6 +37,10 @@ public:
     dbContent::VariableSet& readList() { return read_list_; }
 
     unsigned int rowCount() const;
+
+    // takes ownership of the accumulated buffer; called by the consumer slot after doneSignal.
+    // empty / null if obsolete or no rows.
+    std::shared_ptr<Buffer> takeBuffer() { return std::move(cached_buffer_); }
 
 protected:
     virtual void run_impl();

@@ -86,7 +86,7 @@ void BaseBufferTableWidget::exportSlot()
 {
     loginf;
 
-    QFileDialog dialog(nullptr);
+    QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setDirectory(view_.compass().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");

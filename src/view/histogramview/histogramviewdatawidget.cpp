@@ -529,9 +529,15 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
             QValueAxis* tmp_chart_y_axis = new QValueAxis;
             tmp_chart_y_axis->setRange(0, upper);
             tmp_chart_y_axis->setLabelFormat("%d");
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
             tmp_chart_y_axis->setTickType(QValueAxis::TicksDynamic);
             tmp_chart_y_axis->setTickAnchor(0.0);
             tmp_chart_y_axis->setTickInterval(step);
+#else
+            // Qt < 5.12 lacks dynamic ticks; with range [0, upper] aligned to step,
+            // (upper/step)+1 evenly spaced ticks reproduces the desired anchoring.
+            tmp_chart_y_axis->setTickCount(upper / step + 1);
+#endif
             chart_y_axis = tmp_chart_y_axis;
         }
         traced_assert(chart_y_axis);

@@ -25,8 +25,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-RadarPlotPositionCalculatorTaskDialog::RadarPlotPositionCalculatorTaskDialog(RadarPlotPositionCalculatorTask& task)
-    : task_(task)
+RadarPlotPositionCalculatorTaskDialog::RadarPlotPositionCalculatorTaskDialog(RadarPlotPositionCalculatorTask& task, QWidget* parent)
+    : QDialog(parent), task_(task)
 {
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 

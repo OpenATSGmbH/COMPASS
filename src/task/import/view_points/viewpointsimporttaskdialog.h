@@ -29,7 +29,7 @@ class ViewPointsImportTaskDialog : public QDialog
     Q_OBJECT
 
 public:
-    ViewPointsImportTaskDialog(ViewPointsImportTask& task);
+    ViewPointsImportTaskDialog(ViewPointsImportTask& task, QWidget* parent = nullptr);
 
 protected:
     ViewPointsImportTask& task_;

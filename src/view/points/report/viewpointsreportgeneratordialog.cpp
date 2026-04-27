@@ -252,7 +252,7 @@ void ViewPointsReportGeneratorDialog::setRunning (bool value)
 
 void ViewPointsReportGeneratorDialog::setPathSlot ()
 {
-    QFileDialog dialog(nullptr);
+    QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setDirectory(generator_.viewManager().compass().lastUsedPath().c_str());
     dialog.setNameFilter("TEX Files (*.tex)");

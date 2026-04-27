@@ -210,7 +210,7 @@ void DBContentWidget::editDBContentVariableNameSlot()
     if (new_name.size() == 0 || object_->hasVariable(new_name))
     {
         QMessageBox m_warning(QMessageBox::Warning, "DBContent Variable Renaming Failed",
-                              "New name is empty or already exists.", QMessageBox::Ok);
+                              "New name is empty or already exists.", QMessageBox::Ok, this);
 
         m_warning.exec();
         edit->setText(variable->name().c_str());

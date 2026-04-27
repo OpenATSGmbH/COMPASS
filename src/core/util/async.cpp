@@ -62,7 +62,7 @@ bool waitDialogAsync(const std::function<bool()>& task,
 
     start_time = boost::posix_time::microsec_clock::local_time();
 
-    QProgressDialog dialog("", "", 0, steps);
+    QProgressDialog dialog("", "", 0, steps, QApplication::activeWindow());
     dialog.setWindowTitle(QString::fromStdString(task_name));
     dialog.setCancelButton(nullptr);
     dialog.setWindowModality(Qt::ApplicationModal);

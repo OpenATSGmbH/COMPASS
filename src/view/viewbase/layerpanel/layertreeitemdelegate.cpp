@@ -75,13 +75,16 @@ void LayerTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
         x += cbox_w + kSpace;
     }
 
-    QIcon icon = qvariant_cast<QIcon>(index.data(LayerTreeModel::IconRole));
-    if (!icon.isNull())
+    if (reserve_icon_column_)
     {
-        const QRect iconRect(x, y + (row_h - kIconH) / 2, kIconW, kIconH);
-        icon.paint(painter, iconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
+        QIcon icon = qvariant_cast<QIcon>(index.data(LayerTreeModel::IconRole));
+        if (!icon.isNull())
+        {
+            const QRect iconRect(x, y + (row_h - kIconH) / 2, kIconW, kIconH);
+            icon.paint(painter, iconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
+        }
+        x += kIconW + kSpace;
     }
-    x += kIconW + kSpace;
 
     painter->setFont(font);
     const QString text = index.data(Qt::DisplayRole).toString();
