@@ -50,6 +50,15 @@ public:
                                             QWidget* parent = nullptr);
     ~ASTERIXImportDataSourcesWidget() override;
 
+    /// Current warning state (matches the most recent warningsChanged signal).
+    bool hasWarnings() const { return has_warnings_; }
+
+signals:
+    /// Emitted whenever the warning state of the displayed tree changes.
+    /// `any` is true when at least one data source has a warning (missing
+    /// radar position, DSType "Other", or detected-but-not-in-context).
+    void warningsChanged(bool any);
+
 private slots:
     void rebuildAll();
     void onTreeSelectionChanged();
@@ -76,4 +85,6 @@ private:
     // remember last selection across rebuilds
     boost::optional<unsigned int> selected_ds_id_;
     boost::optional<unsigned int> selected_category_;
+
+    bool has_warnings_ = false;   // last reported state to limit signal emission
 };

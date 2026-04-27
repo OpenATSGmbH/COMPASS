@@ -70,6 +70,9 @@ public slots:
 
     ASTERIXOverrideWidget* overrideWidget() const;
 
+protected slots:
+    void dataSourcesWarningsChangedSlot(bool any);
+
 protected:
     void addMainTab();
     void addDecoderTab();
@@ -99,6 +102,7 @@ protected:
     ASTERIXConfigWidget* config_widget_{nullptr};
     ASTERIXOverrideWidget* override_widget_{nullptr};
     ASTERIXImportDataSourcesWidget* data_sources_widget_{nullptr};
+    int data_sources_tab_index_{-1};
 
     ASTERIXFramingComboBox* framing_combo_{nullptr};
     QPushButton* framing_edit_{nullptr};

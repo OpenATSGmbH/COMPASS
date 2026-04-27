@@ -723,7 +723,10 @@ void DataSourceEditWidget::updateIntervalEditedSlot(const QString& value_str)
 traced_assert(current_ds_);
 
         if (currentDataSource().hasUpdateInterval())
+        {
             currentDataSource().removeUpdateInterval();
+            update_ds_func_(currentDataSource().id());
+        }
 
         return;
     }
@@ -732,6 +735,7 @@ traced_assert(current_ds_);
 
 traced_assert(current_ds_);
     currentDataSource().updateInterval(value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::detectionTypeChangedSlot(int index)
@@ -741,6 +745,7 @@ void DataSourceEditWidget::detectionTypeChangedSlot(int index)
 
     // Detection type as int: 0=Undefined, 1=PrimaryOnly, 2=ModeAC, 3=ModeACCombined, 4=ModeS, 5=ModeSCombined
     currentDataSource().detectionTypeInt(index);
+    update_ds_func_(currentDataSource().id());
 
     updateContent();
 }
@@ -756,6 +761,7 @@ void DataSourceEditWidget::groundOnlyCheckedSlot()
 
 traced_assert(current_ds_);
     currentDataSource().groundOnly(checked);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
@@ -768,7 +774,8 @@ void DataSourceEditWidget::ignoreRadarAzmRangeCheckedSlot()
     bool checked = radar_ignore_azmrng_check_->checkState() == Qt::Checked;
 
 traced_assert(current_ds_);
-    currentDataSource().ignoreRadarAzmRange(checked);    
+    currentDataSource().ignoreRadarAzmRange(checked);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
@@ -796,6 +803,7 @@ void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().latitude(value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
@@ -820,6 +828,7 @@ void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().longitude(value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
@@ -839,6 +848,7 @@ void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().probabilityOfDetection(value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
@@ -858,6 +868,7 @@ void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().clutterRate(value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
@@ -869,6 +880,7 @@ void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().altitude(value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::addRadarRangesSlot()
@@ -879,6 +891,7 @@ void DataSourceEditWidget::addRadarRangesSlot()
 
 traced_assert(current_ds_);
     currentDataSource().addRadarRangesIfMissing();
+    update_ds_func_(currentDataSource().id());
 
     updateContent();
 }
@@ -902,6 +915,7 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
         }
 
         currentDataSource().removeRadarRange(key);
+        update_ds_func_(currentDataSource().id());
 
         return;
     }
@@ -912,6 +926,7 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().radarRange(key, value);
+    update_ds_func_(currentDataSource().id());
 }
 
 
@@ -928,6 +943,7 @@ void DataSourceEditWidget::radarAccuraciesEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().radarAccuracy(key, value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::addRadarBiasSlot()
@@ -936,6 +952,7 @@ void DataSourceEditWidget::addRadarBiasSlot()
 
     traced_assert(current_ds_);
     currentDataSource().addRadarBiasIfMissing();
+    update_ds_func_(currentDataSource().id());
 
     updateContent();
 }
@@ -953,6 +970,7 @@ void DataSourceEditWidget::radarBiasEditedSlot(const QString& value_str)
 
     traced_assert(current_ds_);
     currentDataSource().radarBias(key, value);
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::addMLATRemoteUnitsSlot()
@@ -965,8 +983,9 @@ void DataSourceEditWidget::addMLATRemoteUnitsSlot()
     traced_assert(ds.dsType() == "MLAT");
     traced_assert(ds.dsType() == "MLAT");
 
-    
+
         ds.addRemoteUnitsIfMissing();
+    update_ds_func_(ds.id());
 
     updateContent();
 }
@@ -1101,6 +1120,7 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
         ds.info()["remote_units"][key] = ru_j;
     }
 
+    update_ds_func_(ds.id());
     updateMLAT(&ds);
 
     return true;
@@ -1151,6 +1171,7 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
         ds.info()["remote_units"][key] = ru_j;
     }
 
+    update_ds_func_(ds.id());
     updateMLAT(&ds);
 }
 
@@ -1162,8 +1183,9 @@ void DataSourceEditWidget::clearMLATRemoteUnitsSlot()
     traced_assert(ds.dsType() == "MLAT");
     traced_assert(ds.dsType() == "MLAT");
 
-    
+
         ds.removeRemoteUnits();
+    update_ds_func_(ds.id());
 
     updateMLAT(&ds);
 }
@@ -1201,6 +1223,7 @@ void DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot()
         ds.removeRemoteUnit(index);
     }
 
+    update_ds_func_(ds.id());
     updateMLAT(&ds);
 }
 
@@ -1222,6 +1245,7 @@ void DataSourceEditWidget::addNetLinesSlot()
 
 traced_assert(current_ds_);
     currentDataSource().addNetworkLinesIfMissing();
+    update_ds_func_(currentDataSource().id());
 
     updateContent();
 }
@@ -1262,6 +1286,8 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
         traced_assert(item == "MCast Port");
         ds.info()["network_lines"][line_key]["mcast_port"] = value;
     }
+
+    update_ds_func_(ds.id());
 }
 
 void DataSourceEditWidget::deleteSlot()

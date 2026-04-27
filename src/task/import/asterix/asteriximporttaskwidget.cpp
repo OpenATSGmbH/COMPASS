@@ -218,7 +218,26 @@ void ASTERIXImportTaskWidget::addDataSourcesTab()
     traced_assert(tab_widget_);
 
     data_sources_widget_ = new ASTERIXImportDataSourcesWidget(task_);
-    tab_widget_->addTab(data_sources_widget_, "Data Sources");
+    data_sources_tab_index_ = tab_widget_->addTab(data_sources_widget_, "Data Sources");
+
+    connect(data_sources_widget_, &ASTERIXImportDataSourcesWidget::warningsChanged,
+            this, &ASTERIXImportTaskWidget::dataSourcesWarningsChangedSlot);
+
+    // initial state: widget already ran rebuildAll() in its constructor, so the
+    // very first signal was emitted before we connected. Seed the icon now.
+    dataSourcesWarningsChangedSlot(data_sources_widget_->hasWarnings());
+}
+
+void ASTERIXImportTaskWidget::dataSourcesWarningsChangedSlot(bool any)
+{
+    if (data_sources_tab_index_ < 0 || !tab_widget_)
+        return;
+
+    if (any)
+        tab_widget_->setTabIcon(data_sources_tab_index_,
+                                Utils::Files::IconProvider::getIcon("hint.png"));
+    else
+        tab_widget_->setTabIcon(data_sources_tab_index_, QIcon());
 }
 
 void ASTERIXImportTaskWidget::addMappingsTab()

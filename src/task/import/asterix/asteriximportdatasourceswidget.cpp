@@ -24,6 +24,7 @@
 #include "datasourceeditwidget.h"
 #include "db_context.h"
 #include "db_context_manager.h"
+#include "files.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -62,6 +63,40 @@ enum class ItemKind : int
 QString sacSicString(unsigned int sac, unsigned int sic)
 {
     return QString("(%1/%2)").arg(sac).arg(sic);
+}
+
+constexpr int kSortRole = Qt::UserRole + 100;
+
+/// Table item that sorts by a numeric value stored in kSortRole, while showing
+/// any free-form text via setText() (e.g. "1234 (99.7 %)").
+class NumericSortItem : public QTableWidgetItem
+{
+public:
+    using QTableWidgetItem::QTableWidgetItem;
+
+    bool operator<(const QTableWidgetItem& other) const override
+    {
+        const QVariant a = data(kSortRole);
+        const QVariant b = other.data(kSortRole);
+        if (a.isValid() && b.isValid())
+            return a.toDouble() < b.toDouble();
+        if (a.isValid()) return true;   // unsorted (no data) comes last
+        if (b.isValid()) return false;
+        return QTableWidgetItem::operator<(other);
+    }
+};
+
+/// Build a warning tooltip for a context data source. Returns an empty string
+/// when no warning applies.
+QString contextDsWarning(const context::DataSource& ds)
+{
+    QStringList msgs;
+    if (ds.dsType() == "Radar" && !ds.hasPosition())
+        msgs << QObject::tr("Radar position is not configured.");
+    if (ds.dsType() == "Other")
+        msgs << QObject::tr("Data source has DS type \"Other\" — assign a real type "
+                            "(Radar, MLAT, ADSB, Tracker, RefTraj).");
+    return msgs.join('\n');
 }
 
 } // anonymous namespace
@@ -143,34 +178,26 @@ void ASTERIXImportDataSourcesWidget::buildUI()
     items_layout->addWidget(items_header_);
 
     items_table_ = new QTableWidget();
-    items_table_->setColumnCount(5);
-    items_table_->setHorizontalHeaderLabels({"Item", "Description", "Count", "Min", "Max"});
+    items_table_->setColumnCount(4);
+    items_table_->setHorizontalHeaderLabels({"Item", "Count", "Min", "Max"});
 
-    // all columns manually adjustable; set generous defaults
+    // Item column auto-expands; the three numeric columns are smaller and
+    // remain manually adjustable.
     auto* h_header = items_table_->horizontalHeader();
-    h_header->setSectionResizeMode(QHeaderView::Interactive);
+    h_header->setSectionResizeMode(0, QHeaderView::Stretch);
+    h_header->setSectionResizeMode(1, QHeaderView::Interactive);
+    h_header->setSectionResizeMode(2, QHeaderView::Interactive);
+    h_header->setSectionResizeMode(3, QHeaderView::Interactive);
     h_header->setStretchLastSection(false);
-    items_table_->setColumnWidth(0, 180);   // Item
-    items_table_->setColumnWidth(1, 420);   // Description (wider per request)
-    items_table_->setColumnWidth(2, 90);    // Count
-    items_table_->setColumnWidth(3, 110);   // Min
-    items_table_->setColumnWidth(4, 110);   // Max
+    items_table_->setColumnWidth(1, 130);   // Count (with %)
+    items_table_->setColumnWidth(2, 90);    // Min
+    items_table_->setColumnWidth(3, 90);    // Max
 
     items_table_->verticalHeader()->setVisible(false);
     items_table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     items_table_->setSelectionBehavior(QAbstractItemView::SelectRows);
     items_table_->setSortingEnabled(true);
-    items_table_->setWordWrap(true);                            // honour \n in cells
     items_table_->setTextElideMode(Qt::ElideRight);
-
-    // cap row height at 2 lines (verticalHeader is hidden so only the data rows
-    // are constrained; descriptions longer than 2 lines are pre-cut + tooltip)
-    {
-        const int line_h = items_table_->fontMetrics().lineSpacing();
-        const int row_h  = line_h * 2 + 6; // small padding
-        items_table_->verticalHeader()->setDefaultSectionSize(row_h);
-        items_table_->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    }
 
     items_layout->addWidget(items_table_);
 
@@ -198,11 +225,20 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
 
     tree_widget_->clear();
 
+    auto report_warnings = [this](bool any) {
+        if (any != has_warnings_)
+        {
+            has_warnings_ = any;
+            emit warningsChanged(any);
+        }
+    };
+
     // empty/error states
     if (!ctx_man.hasActiveContext())
     {
         placeholder_->setText("No active context — open or create a context to see data sources.");
         showDetailWidget(placeholder_);
+        report_warnings(false);
         return;
     }
 
@@ -210,6 +246,7 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
     {
         placeholder_->setText("Data Sources tab applies to file imports only.");
         showDetailWidget(placeholder_);
+        report_warnings(false);
         return;
     }
 
@@ -217,10 +254,14 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
     {
         placeholder_->setText("Run the decoding check to populate data source information.");
         showDetailWidget(placeholder_);
+        report_warnings(false);
         return;
     }
 
     placeholder_->setText("Select a data source or category to see details.");
+
+    const QIcon hint_icon = Utils::Files::IconProvider::getIcon("hint.png");
+    bool any_warning = false;
 
     // group context+probe data sources by ds_type for the tree.
     // probe-only sources are placed in a special "Detected (not in context)" group.
@@ -254,6 +295,8 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
         type_item->setFirstColumnSpanned(false);
         tree_widget_->addTopLevelItem(type_item);
 
+        bool any_warning_in_type = false;
+
         for (auto id : by_type.at(ds_type))
         {
             auto* ds = ctx_man.dataSource(id);
@@ -269,6 +312,15 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
             ds_item->setText(1, sacSicString(ds->sac(), ds->sic()));
             ds_item->setData(0, kRoleKind,  static_cast<int>(ItemKind::DataSource));
             ds_item->setData(0, kRoleDsId,  id);
+
+            QString warning = contextDsWarning(*ds);
+            if (!warning.isEmpty())
+            {
+                ds_item->setIcon(0, hint_icon);
+                ds_item->setToolTip(0, warning);
+                any_warning_in_type = true;
+                any_warning = true;
+            }
 
             std::size_t total = 0;
             const auto probe_it = last_result_.probe_by_dsid.find(id);
@@ -294,14 +346,22 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
                 }
             }
         }
+
+        if (any_warning_in_type)
+            type_item->setIcon(0, hint_icon);
     }
 
     // probe-only data sources
     if (!last_result_.probe_only_ds_ids.empty())
     {
+        any_warning = true;
+
         auto* group_item = new QTreeWidgetItem();
         group_item->setText(0, "Detected (not in context)");
         group_item->setData(0, kRoleKind, static_cast<int>(ItemKind::SpecialGroup));
+        group_item->setIcon(0, hint_icon);
+        group_item->setToolTip(0, tr("These sensors were detected in the probed data "
+                                     "but are not yet defined in the active context."));
         tree_widget_->addTopLevelItem(group_item);
 
         for (auto id : last_result_.probe_only_ds_ids)
@@ -313,6 +373,8 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
             ds_item->setText(1, sacSicString(probe.sac, probe.sic));
             ds_item->setData(0, kRoleKind, static_cast<int>(ItemKind::DataSource));
             ds_item->setData(0, kRoleDsId, id);
+            ds_item->setIcon(0, hint_icon);
+            ds_item->setToolTip(0, tr("Detected in data but not present in the active context."));
 
             std::size_t total = 0;
             for (const auto& cat_kv : probe.categories)
@@ -359,6 +421,8 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
     }
 
     tree_widget_->expandAll();
+
+    report_warnings(any_warning);
 
     // restore selection if possible
     if (selected_ds_id_)
@@ -513,6 +577,8 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
 
     items_table_->setRowCount(static_cast<int>(all_keys.size()));
 
+    const std::size_t cat_total = probe ? probe->total_count : 0;
+
     int row = 0;
     for (const auto& key : all_keys)
     {
@@ -532,31 +598,27 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
         auto* name_item = new QTableWidgetItem(QString::fromStdString(key));
         items_table_->setItem(row, 0, name_item);
 
-        // cap displayed description to the first 2 \n-paragraphs;
-        // append " …" when there is more so the user knows the tooltip has the rest
-        QString display = description;
-        if (!description.isEmpty())
-        {
-            auto paras = description.split('\n');
-            if (paras.size() > 2)
-                display = paras.at(0) + '\n' + paras.at(1) + QStringLiteral(" …");
-        }
-
-        auto* desc_item = new QTableWidgetItem(display);
-        if (!description.isEmpty())
-        {
-            // force rich-text tooltip so \n survives as <br> on every platform
-            desc_item->setToolTip(Qt::convertFromPlainText(description));
-        }
-        items_table_->setItem(row, 1, desc_item);
-
-        auto* count_item = new QTableWidgetItem();
+        // Count and presence percentage share one cell — sort numerically by count
+        auto* count_item = new NumericSortItem();
         if (stats)
-            count_item->setData(Qt::EditRole, static_cast<qulonglong>(stats->count));
+        {
+            QString text = QString::number(static_cast<qulonglong>(stats->count));
+            if (cat_total > 0)
+            {
+                const double pct = 100.0 * static_cast<double>(stats->count)
+                                  / static_cast<double>(cat_total);
+                text += " (" + QString::number(pct, 'f', 1) + " %)";
+            }
+            count_item->setText(text);
+            count_item->setData(kSortRole, static_cast<qulonglong>(stats->count));
+        }
         else
+        {
             count_item->setText("-");
+            count_item->setData(kSortRole, 0);
+        }
         count_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        items_table_->setItem(row, 2, count_item);
+        items_table_->setItem(row, 1, count_item);
 
         auto json_to_text = [](const nlohmann::json& v) -> QString {
             if (v.is_null())
@@ -576,17 +638,25 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
 
         auto* min_item = new QTableWidgetItem(stats ? json_to_text(stats->min) : QString("-"));
         min_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        items_table_->setItem(row, 3, min_item);
+        items_table_->setItem(row, 2, min_item);
 
         auto* max_item = new QTableWidgetItem(stats ? json_to_text(stats->max) : QString("-"));
         max_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        items_table_->setItem(row, 4, max_item);
+        items_table_->setItem(row, 3, max_item);
+
+        // description as tooltip on every cell of the row (force rich text so \n survives)
+        if (!description.isEmpty())
+        {
+            const QString tt = Qt::convertFromPlainText(description);
+            for (int c = 0; c < 4; ++c)
+                items_table_->item(row, c)->setToolTip(tt);
+        }
 
         // grey out items that exist in the edition but were not probed
         if (!stats)
         {
-            QColor faded = palette().color(QPalette::Disabled, QPalette::Text);
-            for (int c = 0; c < 5; ++c)
+            const QColor faded = palette().color(QPalette::Disabled, QPalette::Text);
+            for (int c = 0; c < 4; ++c)
                 items_table_->item(row, c)->setForeground(faded);
         }
 
