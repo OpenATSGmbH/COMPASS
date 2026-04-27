@@ -199,6 +199,33 @@ bool ASTERIXImportProbeAggregator::isDisplayableDataItem(const std::string& key)
     return true;
 }
 
+std::string ASTERIXImportProbeAggregator::inferDsType(
+    const std::map<unsigned int, CategoryProbe>& cats)
+{
+    auto category_to_type = [](unsigned int cat) -> std::string {
+        switch (cat)
+        {
+            case 1:  case 2:  case 34: case 48: return "Radar";
+            case 19: case 20:                   return "MLAT";
+            case 21: case 23:                   return "ADSB";
+            case 62: case 63: case 65:          return "Tracker";
+            default:                            return "";
+        }
+    };
+
+    std::set<std::string> types;
+    for (const auto& kv : cats)
+    {
+        std::string t = category_to_type(kv.first);
+        if (!t.empty())
+            types.insert(t);
+    }
+
+    if (types.size() == 1)
+        return *types.begin();
+    return "Other";
+}
+
 ASTERIXImportProbeAggregator::Result
 ASTERIXImportProbeAggregator::aggregate(const ASTERIXImportSource& source,
                                         const context::DBContextManager& ctx_man)

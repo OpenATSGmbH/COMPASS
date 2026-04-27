@@ -23,15 +23,20 @@
 
 #include <boost/optional.hpp>
 
+#include <memory>
+
 class ASTERIXImportTask;
 class DataSourceEditWidget;
 
 class QLabel;
+class QPushButton;
 class QSplitter;
 class QStackedWidget;
 class QTableWidget;
 class QTreeWidget;
 class QTreeWidgetItem;
+
+namespace context { class DataSource; }
 
 /**
  * Tab widget showing data sources of the active context joined with the
@@ -62,6 +67,7 @@ signals:
 private slots:
     void rebuildAll();
     void onTreeSelectionChanged();
+    void addToContextClicked();
 
 private:
     void buildUI();
@@ -76,6 +82,10 @@ private:
     QTreeWidget*     tree_widget_  = nullptr;
     QStackedWidget*  detail_stack_ = nullptr;
 
+    // banner shown above detail_stack_ when editing a transient (probe-only) DS
+    QWidget*      banner_widget_         = nullptr;
+    QPushButton*  add_to_context_button_ = nullptr;
+
     DataSourceEditWidget* ds_edit_widget_ = nullptr;
     QWidget*              items_page_     = nullptr;
     QLabel*               items_header_   = nullptr;
@@ -87,4 +97,9 @@ private:
     boost::optional<unsigned int> selected_category_;
 
     bool has_warnings_ = false;   // last reported state to limit signal emission
+
+    // transient editing of a probe-only data source
+    std::unique_ptr<context::DataSource> transient_ds_;
+    bool                                  transient_editing_  = false;
+    QTreeWidgetItem*                      last_committed_item_ = nullptr;
 };

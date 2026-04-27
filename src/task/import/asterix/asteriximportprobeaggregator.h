@@ -87,4 +87,10 @@ public:
     /// Drops jASTERIX bookkeeping ("index", "length") and FX extension bits
     /// ("FX", "*.FX") which are decoder internals, not real data items.
     static bool isDisplayableDataItem(const std::string& key);
+
+    /// Best-effort guess of the data source type from the set of categories
+    /// observed for it. Returns one of "Radar", "MLAT", "ADSB", "Tracker", or
+    /// "Other". Falls back to "Other" when categories from different groups
+    /// are mixed or when no category matches a known group.
+    static std::string inferDsType(const std::map<unsigned int, CategoryProbe>& cats);
 };

@@ -26,6 +26,8 @@
 #include "db_context_manager.h"
 #include "files.h"
 #include "logger.h"
+#include "number.h"
+#include "questiondialog.h"
 #include "stringconv.h"
 
 #include <jasterix/category.h>
@@ -37,7 +39,9 @@
 #include <QTextDocument>
 #include <QHeaderView>
 #include <QLabel>
+#include <QPushButton>
 #include <QScrollArea>
+#include <QSignalBlocker>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QTableWidget>
@@ -99,6 +103,32 @@ QString contextDsWarning(const context::DataSource& ds)
     return msgs.join('\n');
 }
 
+/// True when a Radar data source has all of latitude, longitude and altitude
+/// filled in. Always true for non-Radar types.
+bool radarPositionComplete(const context::DataSource& ds)
+{
+    if (ds.dsType() != "Radar")
+        return true;
+
+    const auto& info = ds.info();
+    if (!info.contains("position"))
+        return false;
+    const auto& pos = info.at("position");
+    return pos.contains("latitude")
+        && pos.contains("longitude")
+        && pos.contains("altitude");
+}
+
+/// Conditions for enabling the "Add to Context" button on a transient DS.
+bool canAddTransient(const context::DataSource& ds)
+{
+    if (ds.name().empty())
+        return false;
+    if (!radarPositionComplete(ds))
+        return false;
+    return true;
+}
+
 } // anonymous namespace
 
 
@@ -139,12 +169,38 @@ void ASTERIXImportDataSourcesWidget::buildUI()
             this, &ASTERIXImportDataSourcesWidget::onTreeSelectionChanged);
     splitter_->addWidget(tree_widget_);
 
-    // right: stacked detail inside scroll area
+    // right: banner + stacked detail inside scroll area
     auto* scroll = new QScrollArea();
     scroll->setWidgetResizable(true);
 
+    auto* right_pane    = new QWidget();
+    auto* right_layout  = new QVBoxLayout(right_pane);
+    right_layout->setContentsMargins(0, 0, 0, 0);
+    right_layout->setSpacing(0);
+
+    // banner row, only visible while editing a transient (probe-only) DS
+    banner_widget_ = new QWidget();
+    auto* banner_layout = new QHBoxLayout(banner_widget_);
+    banner_layout->setContentsMargins(8, 6, 8, 6);
+    auto* banner_label = new QLabel(
+        tr("This sensor was detected in the probed data but is not yet in "
+           "the active context."));
+    banner_label->setWordWrap(true);
+    banner_layout->addWidget(banner_label, 1);
+    add_to_context_button_ = new QPushButton(tr("Add to Context"));
+    add_to_context_button_->setIcon(QIcon());
+    add_to_context_button_->setToolTip(
+        tr("Create this data source in the active context using the values entered below."));
+    connect(add_to_context_button_, &QPushButton::clicked,
+            this, &ASTERIXImportDataSourcesWidget::addToContextClicked);
+    banner_layout->addWidget(add_to_context_button_);
+    banner_widget_->hide();
+    right_layout->addWidget(banner_widget_);
+
     detail_stack_ = new QStackedWidget();
-    scroll->setWidget(detail_stack_);
+    right_layout->addWidget(detail_stack_, 1);
+
+    scroll->setWidget(right_pane);
 
     // page 0: placeholder
     placeholder_ = new QLabel("Select a data source or category to see details.");
@@ -156,7 +212,18 @@ void ASTERIXImportDataSourcesWidget::buildUI()
     ds_edit_widget_ = new DataSourceEditWidget(
         /*show_network_lines=*/false,
         [this](unsigned int /*ds_id*/) {
-            // user edited the data source — persist and refresh icons in tree
+            // suppressed while editing a transient (not-yet-in-context) DS:
+            // saving the context now would do nothing useful and rebuilding
+            // the tree would wipe the row we are editing.
+            if (transient_editing_)
+            {
+                // re-evaluate whether the transient DS is ready to add
+                if (add_to_context_button_)
+                    add_to_context_button_->setEnabled(
+                        transient_ds_ && canAddTransient(*transient_ds_));
+                return;
+            }
+
             auto& ctx_man = task_.compass().dbContextManager();
             if (ctx_man.hasActiveContext())
                 ctx_man.saveContext(ctx_man.activeContextName());
@@ -223,6 +290,8 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
 {
     auto& ctx_man = task_.compass().dbContextManager();
 
+    // tree items about to be deleted — drop the dangling pointer
+    last_committed_item_ = nullptr;
     tree_widget_->clear();
 
     auto report_warnings = [this](bool any) {
@@ -468,54 +537,106 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
 void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
 {
     auto items = tree_widget_->selectedItems();
-    if (items.isEmpty())
+    QTreeWidgetItem* new_item = items.isEmpty() ? nullptr : items.first();
+
+    // Confirm before leaving an in-progress transient (probe-only) edit.
+    // Prompt always — even when nothing was actually changed — per spec.
+    if (transient_editing_ && new_item != last_committed_item_)
+    {
+        const bool ok = QuestionDialog::ask(
+            this, tr("Discard Changes"),
+            tr("All changes to this detected sensor will be lost.\n\nContinue?"));
+
+        if (!ok)
+        {
+            // revert the selection without re-entering this slot
+            QSignalBlocker blocker(tree_widget_);
+            tree_widget_->setCurrentItem(last_committed_item_);
+            return;
+        }
+
+        // discard the transient — the new selection will overwrite ds_edit_widget_
+        transient_editing_ = false;
+        transient_ds_.reset();
+        banner_widget_->hide();
+    }
+
+    if (!new_item)
     {
         selected_ds_id_.reset();
         selected_category_.reset();
         showDetailWidget(placeholder_);
+        last_committed_item_ = nullptr;
         return;
     }
 
-    auto* it = items.first();
-    auto kind = static_cast<ItemKind>(it->data(0, kRoleKind).toInt());
+    const auto kind = static_cast<ItemKind>(new_item->data(0, kRoleKind).toInt());
 
     if (kind == ItemKind::DataSource)
     {
-        unsigned int ds_id = it->data(0, kRoleDsId).toUInt();
+        const unsigned int ds_id = new_item->data(0, kRoleDsId).toUInt();
         selected_ds_id_    = ds_id;
         selected_category_.reset();
 
         auto& ctx_man = task_.compass().dbContextManager();
         if (auto* ds = ctx_man.dataSource(ds_id))
         {
+            // existing context DS — normal edit flow
+            banner_widget_->hide();
             ds_edit_widget_->show(*ds, task_.compass().lastUsedPath());
             showDetailWidget(ds_edit_widget_);
         }
         else
         {
-            // probe-only — no context entry yet, no edit widget for it (TODO: "Add to context")
-            placeholder_->setText("This sensor was detected in the data but is not yet in the active context.");
-            showDetailWidget(placeholder_);
-        }
-        return;
-    }
+            // probe-only DS — build a transient DataSource and show the
+            // edit widget on it. Nothing is added to the context until the
+            // user clicks "Add to Context".
+            const auto probe_it = last_result_.probe_by_dsid.find(ds_id);
+            if (probe_it == last_result_.probe_by_dsid.end())
+            {
+                showDetailWidget(placeholder_);
+                last_committed_item_ = new_item;
+                return;
+            }
 
-    if (kind == ItemKind::Category)
+            transient_ds_ = std::make_unique<context::DataSource>();
+            transient_ds_->sac(probe_it->second.sac);
+            transient_ds_->sic(probe_it->second.sic);
+            transient_ds_->dsType(
+                ASTERIXImportProbeAggregator::inferDsType(probe_it->second.categories));
+            // pre-fill name with "sac/sic" — gives the user a sensible default
+            // and makes the "Add to Context" button immediately enabled
+            transient_ds_->name(std::to_string(probe_it->second.sac) + "/" +
+                                std::to_string(probe_it->second.sic));
+            transient_editing_ = true;
+
+            ds_edit_widget_->show(*transient_ds_, task_.compass().lastUsedPath());
+            add_to_context_button_->setEnabled(canAddTransient(*transient_ds_));
+            showDetailWidget(ds_edit_widget_);
+            banner_widget_->show();
+        }
+    }
+    else if (kind == ItemKind::Category)
     {
-        unsigned int ds_id = it->data(0, kRoleDsId).toUInt();
-        unsigned int cat   = it->data(0, kRoleCategory).toUInt();
+        const unsigned int ds_id = new_item->data(0, kRoleDsId).toUInt();
+        const unsigned int cat   = new_item->data(0, kRoleCategory).toUInt();
         selected_ds_id_    = ds_id;
         selected_category_ = cat;
 
+        banner_widget_->hide();
         populateItemsTable(ds_id, cat);
         showDetailWidget(items_page_);
-        return;
+    }
+    else
+    {
+        // group / unrecognised
+        selected_ds_id_.reset();
+        selected_category_.reset();
+        banner_widget_->hide();
+        showDetailWidget(placeholder_);
     }
 
-    // group / unrecognised
-    selected_ds_id_.reset();
-    selected_category_.reset();
-    showDetailWidget(placeholder_);
+    last_committed_item_ = new_item;
 }
 
 void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
@@ -674,4 +795,50 @@ void ASTERIXImportDataSourcesWidget::showDetailWidget(QWidget* widget)
     if (detail_stack_->indexOf(widget) < 0)
         detail_stack_->addWidget(widget);
     detail_stack_->setCurrentWidget(widget);
+}
+
+void ASTERIXImportDataSourcesWidget::addToContextClicked()
+{
+    if (!transient_editing_ || !transient_ds_)
+        return;
+
+    // belt-and-braces: button should be disabled in these cases, but verify
+    // before mutating the context.
+    if (!canAddTransient(*transient_ds_))
+        return;
+
+    auto& ctx_man = task_.compass().dbContextManager();
+    if (!ctx_man.hasActiveContext())
+        return;
+
+    // pull values the user entered
+    const unsigned int sac     = transient_ds_->sac();
+    const unsigned int sic     = transient_ds_->sic();
+    const std::string  name    = transient_ds_->name();
+    const std::string  ds_type = transient_ds_->dsType();
+
+    // create the new DS in the context (auto-assigns color)
+    auto& new_ds = ctx_man.createDataSource(sac, sic, name, ds_type);
+
+    // copy the fields the edit widget commonly sets (everything stored in
+    // info() — position, ranges, accuracies, bias, MLAT remote units,
+    // network lines — plus an explicit short name if set). Color stays
+    // whatever createDataSource auto-assigned.
+    new_ds.info(transient_ds_->info());
+    if (transient_ds_->hasShortName())
+        new_ds.shortName(transient_ds_->shortName());
+
+    ctx_man.saveContext(ctx_man.activeContextName());
+
+    // tear down transient state BEFORE rebuildAll so the prompt logic
+    // does not fire when find_match restores selection
+    transient_editing_ = false;
+    transient_ds_.reset();
+    banner_widget_->hide();
+
+    // keep selection on the same DS (now in its real DSType group)
+    selected_ds_id_ = Utils::Number::dsIdFrom(sac, sic);
+    selected_category_.reset();
+
+    rebuildAll();
 }

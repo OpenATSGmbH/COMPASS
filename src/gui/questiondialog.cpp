@@ -17,7 +17,10 @@
 
 #include "questiondialog.h"
 
+#include <QAbstractButton>
+#include <QIcon>
 #include <QMessageBox>
+#include <QPushButton>
 
 bool QuestionDialog::ask(QWidget* parent, const QString& title, const QString& text)
 {
@@ -27,6 +30,11 @@ bool QuestionDialog::ask(QWidget* parent, const QString& title, const QString& t
     msg.setIcon(QMessageBox::NoIcon);
     msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.setDefaultButton(QMessageBox::No);
+
+    // strip platform-default Yes/No button icons (project rule: no colored icons)
+    for (auto* btn : msg.buttons())
+        if (auto* push = qobject_cast<QPushButton*>(btn))
+            push->setIcon(QIcon());
 
     return msg.exec() == QMessageBox::Yes;
 }
