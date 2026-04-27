@@ -28,6 +28,9 @@
  *   - Clicking the checkbox toggles the item's hidden state.
  *   - Color icon is NOT clickable — colors cannot be edited from the tree.
  *
+ * Views that do not use per-layer colors can turn off the icon column with
+ * setReserveIconColumn(false) so names sit directly after the checkbox.
+ *
  * Other columns: delegate to the default painting path, with alignment taken
  * from the model's TextAlignmentRole.
  */
@@ -38,10 +41,16 @@ class LayerTreeItemDelegate : public QStyledItemDelegate
 public:
     explicit LayerTreeItemDelegate(QObject* parent = nullptr);
 
+    void setReserveIconColumn(bool on) { reserve_icon_column_ = on; }
+    bool reserveIconColumn() const { return reserve_icon_column_; }
+
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
     bool editorEvent(QEvent* event, QAbstractItemModel* model,
                      const QStyleOptionViewItem& option,
                      const QModelIndex& index) override;
+
+private:
+    bool reserve_icon_column_ {true};
 };

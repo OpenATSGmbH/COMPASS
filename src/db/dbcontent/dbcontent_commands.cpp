@@ -98,20 +98,19 @@ bool RTCommandGetData::run_impl()
 
     VariableSet read_set = getReadSetFor();
 
+    std::string custom_clause;
     if (utn_.has_value())
     {
         dbContent::Variable& var = compass_->dbContentManager().metaVariable(
             dbcontent_vars::meta_var_utn_.name()).getFor(dbcontent_name_);
 
-        string custom_clause = var.dbColumnName() + " IN (" + std::to_string(utn_.value()) + ")";
-
-        //stringstream ss;
-        //ss << " json_each.value IN (" << to_string(utn_.value()) << ")"; // rest done in SQLGenerator::getSelectCommand
-
-        db_content.load(read_set, false, false, custom_clause);
+        custom_clause = var.dbColumnName() + " IN (" + std::to_string(utn_.value()) + ")";
     }
-    else
-        db_content.load(read_set, false, false);
+
+    LoadRequest r = LoadRequest::forContent(dbcontent_name_, read_set, custom_clause);
+    r.show_status_  = false;
+    r.cancellable_  = false;
+    dbcontent_man.load(r);
 
     return true; // if ok
 }

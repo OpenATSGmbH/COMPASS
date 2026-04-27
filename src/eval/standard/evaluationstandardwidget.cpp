@@ -181,7 +181,7 @@ void EvaluationStandardWidget::addGroupSlot()
 
     bool ok;
     QString text =
-        QInputDialog::getText(nullptr, tr("Group Name"),
+        QInputDialog::getText(this, tr("Group Name"),
                               tr("Specify a (unique) group name:"), QLineEdit::Normal, "", &ok);
 
     if (ok && !text.isEmpty())
@@ -191,7 +191,7 @@ void EvaluationStandardWidget::addGroupSlot()
         if (!name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Group Failed",
-                                  "Group has to have a non-empty name.", QMessageBox::Ok);
+                                  "Group has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -199,7 +199,7 @@ void EvaluationStandardWidget::addGroupSlot()
         if (standard_.hasGroup(name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Group Failed",
-                                  "Group with this name already exists.", QMessageBox::Ok);
+                                  "Group with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -233,7 +233,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
 
     bool ok;
     QString text =
-        QInputDialog::getText(nullptr, tr("Requirement Name"),
+        QInputDialog::getText(this, tr("Requirement Name"),
                               tr("Specify a (unique) requirement name:"), QLineEdit::Normal,
                               "", &ok);
 
@@ -248,7 +248,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
         if (!req_name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                                  "Requirement has to have a non-empty name.", QMessageBox::Ok);
+                                  "Requirement has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -256,7 +256,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
         if (group.hasRequirementConfig(req_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                                  "Requirement with this name already exists.", QMessageBox::Ok);
+                                  "Requirement with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -264,7 +264,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
 
     std::string req_short_name;
 
-    text =  QInputDialog::getText(nullptr, tr("Requirement Short Name"),
+    text =  QInputDialog::getText(this, tr("Requirement Short Name"),
                                  tr("Specify a requirement short name:"), QLineEdit::Normal,
                                  "", &ok);
 
@@ -289,7 +289,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
     else
     {
         QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                              "Requirement has to have a non-empty name and short name.", QMessageBox::Ok);
+                              "Requirement has to have a non-empty name and short name.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }

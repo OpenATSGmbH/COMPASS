@@ -25,8 +25,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-ViewPointsImportTaskDialog::ViewPointsImportTaskDialog(ViewPointsImportTask& task)
-    : QDialog(), task_(task)
+ViewPointsImportTaskDialog::ViewPointsImportTaskDialog(ViewPointsImportTask& task, QWidget* parent)
+    : QDialog(parent), task_(task)
 {
     setWindowTitle("Import View Points");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);

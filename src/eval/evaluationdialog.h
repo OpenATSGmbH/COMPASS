@@ -32,7 +32,7 @@ class QLabel;
 class EvaluationDialog : public QDialog
 {
 public:
-    EvaluationDialog(EvaluationCalculator& calculator);
+    EvaluationDialog(EvaluationCalculator& calculator, QWidget* parent = nullptr);
     virtual ~EvaluationDialog();
 
     void updateDataSources();

@@ -84,10 +84,6 @@ message("  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
 find_package (Eigen3 3.2 REQUIRED)
 
-find_package ( Sqlite3 3.35 REQUIRED )
-message("  SQLite3_INCLUDE_DIR: ${SQLITE3_INCLUDE_DIR}")
-message("  SQLite3_LIBRARY_DIR: ${SQLITE3_LIBRARIES}")
-
 find_package ( LOG4CPP REQUIRED )
 message("  LOG4CPP_INCLUDE_DIR: ${LOG4CPP_INCLUDE_DIR}")
 message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}")
@@ -162,7 +158,6 @@ include_directories (
     ${Qt5Charts_INCLUDE_DIRS}
     ${Qt5Test_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    ${SQLITE3_INCLUDE_DIR}
     ${LOG4CPP_INCLUDE_DIR}
     ${GDAL_INCLUDE_DIRS}
     ${OPENSCENEGRAPH_INCLUDE_DIRS}

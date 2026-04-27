@@ -587,7 +587,7 @@ void ViewPointsWidget::exportSlot()
 {
     loginf;
 
-    QFileDialog dialog(nullptr);
+    QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setDirectory(view_manager_.compass().lastUsedPath().c_str());
     dialog.setNameFilter("JSON Files (*.json)");

@@ -49,7 +49,7 @@ int main(int argc, char** argv)
         QString err = "COMPASS client not found";
         QTextStream(stderr) << err << "\n";
         if (!has_rt_cmd_port)
-            QMessageBox::critical(nullptr, "Error", err);
+            QMessageBox::critical(QApplication::activeWindow(), "Error", err);
         return -1;
     }
 
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
                         + " (relaying " + QString::number(relay_code) + ")";
             QTextStream(stderr) << err << "\n";
             if (!has_rt_cmd_port)
-                QMessageBox::critical(nullptr, "Application Crash", err);
+                QMessageBox::critical(QApplication::activeWindow(), "Application Crash", err);
         }
         else
         {
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
         QString err = "Could not start COMPASS client:\n" + process->errorString();
         QTextStream(stderr) << err << "\n";
         if (!has_rt_cmd_port)
-            QMessageBox::critical(nullptr, "Error", err);
+            QMessageBox::critical(QApplication::activeWindow(), "Error", err);
         return -1;
     }
 

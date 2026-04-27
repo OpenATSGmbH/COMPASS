@@ -204,7 +204,12 @@ bool ReconstructorTask::canRun()
 {
     traced_assert(currentReconstructor());
 
-    return manager().compass().dbContentManager().hasData() && currentReconstructor()->hasNextTimeSlice();
+    bool has_data       = manager().compass().dbContentManager().hasData();
+    bool has_next_slice = has_data && currentReconstructor()->hasNextTimeSlice();
+
+    loginf << "has_data " << has_data << " has_next_slice " << has_next_slice;
+
+    return has_data && has_next_slice;
 }
 
 void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress)
@@ -467,7 +472,8 @@ void ReconstructorTask::run()
     QLabel* tmp_label = new QLabel();
     tmp_label->setTextFormat(Qt::RichText);
 
-    progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100));
+    progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
+                                               QApplication::activeWindow()));
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
@@ -686,21 +692,35 @@ void ReconstructorTask::loadDataSlice()
 
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
+    std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
     {
         logdbg << "start" << dbcont_it.first
                << " has data " << dbcont_it.second->hasData();
 
-        if (!dbcont_it.second->hasData()) // also include status messages
+        if (!dbcont_it.second->hasData())
             continue;
 
-        VariableSet read_set = currentReconstructor()->getReadSetFor(dbcont_it.first);
-
-        if (dbcont_it.second->containsTargetReports())
-            dbcont_it.second->load(read_set, false, false, timestamp_filter+position_filter);
-        else
-            dbcont_it.second->load(read_set, false, false, timestamp_filter);
+        targets.insert(dbcont_it.first);
     }
+
+    LoadRequest req;
+    req.dbcontents_            = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) {
+        return currentReconstructor()->getReadSetFor(name);
+    };
+    req.custom_filter_clause_ = [&dbcontent_man, timestamp_filter, position_filter]
+        (const std::string& name) -> std::string {
+        return dbcontent_man.dbContent(name).containsTargetReports()
+                   ? timestamp_filter + position_filter
+                   : timestamp_filter;
+    };
+
+    dbcontent_man.load(req);
 }
 
 void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
@@ -1217,7 +1237,7 @@ void ReconstructorTask::runCancelledSlot()
 
     cancelled_ = true;
 
-    QMessageBox* msg_box = new QMessageBox;
+    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
 
     msg_box->setWindowTitle("Cancelling Reconstruction");
     msg_box->setText("Please wait ...");
@@ -1550,7 +1570,7 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
 
 void ReconstructorTask::showDialog()
 {
-    ReconstructorTaskDialog dlg(*this);
+    ReconstructorTaskDialog dlg(*this, QApplication::activeWindow());
     if (dlg.exec() == QDialog::Rejected)
         return;
 

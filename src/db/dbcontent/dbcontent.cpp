@@ -274,144 +274,7 @@ void DBContent::closeWidget()
 
 /**
  */
-void DBContent::load(dbContent::VariableSet& read_set, 
-                     bool use_datasrc_filters, 
-                     bool use_filters,
-                     const std::string& custom_filter_clause)
-{
-    traced_assert(is_loadable_);
-    traced_assert(existsInDB());
-
-    string filter_clause;
-
-    auto& ctx_man = compass_.dbContextManager();
-
-    dbContent::VariableSet read_set_copy = read_set;
-
-    if (use_datasrc_filters && (ctx_man.hasDSFilter(name_) || ctx_man.lineSpecificLoadingRequired(name_)))
-    {
-        vector<unsigned int> ds_ids_to_load = ctx_man.unfilteredDS(name_);
-        traced_assert(ds_ids_to_load.size());
-
-        traced_assert(hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
-
-        Variable& datasource_var = variable(dbcontent_vars::meta_var_ds_id_.name());
-        traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
-
-        if (ctx_man.lineSpecificLoadingRequired(name_)) // ds specific line loading
-        {
-            logdbg << name_ << ": load: line specific loading wanted";
-
-            traced_assert(hasVariable(dbcontent_vars::meta_var_line_id_.name()));
-
-            Variable& line_var = variable(dbcontent_vars::meta_var_line_id_.name());
-            traced_assert(line_var.dataType() == PropertyDataType::UINT);
-
-            bool any_added = false;
-
-            for (auto ds_id_it : ds_ids_to_load)
-            {
-                traced_assert(ctx_man.hasDataSource(ds_id_it));
-
-                // prefix
-                if (filter_clause.size())
-                    filter_clause += " OR";
-                else
-                    filter_clause += " (";
-
-                // add data source specific part
-                filter_clause += " (" + datasource_var.dbColumnName() + " = " + to_string(ds_id_it);
-
-                // check if any lines should be loaded for this ds
-                bool any_lines_wanted = false;
-                std::vector<unsigned int> wanted_lines;
-                for (unsigned int line = 0; line < 4; ++line)
-                {
-                    if (ctx_man.lineLoadingWanted(ds_id_it, line))
-                    {
-                        any_lines_wanted = true;
-                        wanted_lines.push_back(line);
-                    }
-                }
-
-                if (!any_lines_wanted)
-                {
-                    filter_clause += " AND " + line_var.dbColumnName() + " IN ())"; // empty lines to load
-
-                    any_added = true;
-                    continue;
-                }
-
-                filter_clause += " AND " + line_var.dbColumnName() + " IN (";
-
-                bool first = true;
-                for (auto line_it : wanted_lines)
-                {
-                    if (!first)
-                        filter_clause += ",";
-
-                    filter_clause += to_string(line_it);
-
-                    first = false;
-                }
-
-                filter_clause += "))";
-
-                any_added = true;
-            }
-
-            if (ds_ids_to_load.size() && any_added)
-                filter_clause += ")";
-        }
-        else // simple ds id in statement
-        {
-            logdbg << name_ << ": load: no line specific loading wanted";
-
-            filter_clause = datasource_var.dbColumnName() + " IN (";
-
-            for (auto ds_id_it = ds_ids_to_load.begin(); ds_id_it != ds_ids_to_load.end(); ++ds_id_it)
-            {
-                if (ds_id_it != ds_ids_to_load.begin())
-                    filter_clause += ",";
-
-                filter_clause += to_string(*ds_id_it);
-            }
-
-            filter_clause += ")";
-        }
-    }
-
-    logdbg << name_ << ": load: use_filters " << use_filters;
-
-    if (use_filters)
-    {
-        string filter_sql = compass_.filterManager().getSQLCondition(name_, read_set_copy);
-
-        if (filter_sql.size())
-        {
-            if (filter_clause.size())
-                filter_clause += " AND ";
-
-            filter_clause += filter_sql;
-        }
-    }
-
-    if (custom_filter_clause.size())
-    {
-        if (filter_clause.size())
-            filter_clause += " AND ";
-
-        filter_clause += custom_filter_clause;
-    }
-
-    logdbg << name_ << " read set " << read_set_copy.str() << " filter_clause '" << filter_clause << "'";
-
-    loadFiltered(read_set_copy, filter_clause);
-}
-
-/**
- */
-void DBContent::loadFiltered(dbContent::VariableSet& read_set, 
+void DBContent::loadInternal(dbContent::VariableSet& read_set,
                              std::string custom_filter_clause)
 {
     logdbg << "name " << name_ << " loadable " << is_loadable_;
@@ -434,8 +297,6 @@ void DBContent::loadFiltered(dbContent::VariableSet& read_set,
     read_job_ = shared_ptr<DBContentReadDBJob>(
                 new DBContentReadDBJob(compass_.dbInterface(), *this, read_set, custom_filter_clause));
 
-    connect(read_job_.get(), &DBContentReadDBJob::intermediateSignal,
-            this, &DBContent::readJobIntermediateSlot, Qt::QueuedConnection);
     connect(read_job_.get(),  &DBContentReadDBJob::obsoleteSignal,
             this, &DBContent::readJobObsoleteSlot, Qt::QueuedConnection);
     connect(read_job_.get(), &DBContentReadDBJob::doneSignal,
@@ -735,47 +596,6 @@ void DBContent::deleteJobDoneSlot()
 
 /**
  */
-void DBContent::readJobIntermediateSlot(shared_ptr<Buffer> buffer)
-{
-    traced_assert(buffer);
-    logdbg << name_ << " buffer size " << buffer->size();
-
-    DBContentReadDBJob* sender = dynamic_cast<DBContentReadDBJob*>(QObject::sender());
-
-    traced_assert(sender);
-    traced_assert(sender == read_job_.get());
-
-    // check variables
-    const vector<Variable*>& variables = sender->readList().getSet();
-    const PropertyList& properties = buffer->properties();
-
-    for (auto var_it : variables)
-    {
-        traced_assert(properties.hasProperty(var_it->dbColumnOrExpression()));
-        const Property& property = properties.get(var_it->dbColumnOrExpression());
-        traced_assert(property.dataType() == var_it->dataType());
-    }
-
-    logdbg << name_ << ": got buffer with size " << buffer->size();
-
-    // finalize buffer
-    buffer_utils::transformVariables(*buffer, sender->readList(), true);
-
-    // add boolean to indicate selection
-    buffer->addProperty(dbcontent_vars::selected_var_);
-
-    // add loaded data
-    dbcont_manager_.addLoadedData({{name_, buffer}});
-
-    if (!isLoading())  // is last one
-    {
-        loginf << name() << ": loading done";
-        dbcont_manager_.loadingDone(*this);
-    }
-}
-
-/**
- */
 void DBContent::readJobObsoleteSlot()
 {
     logdbg << name_;
@@ -790,6 +610,33 @@ void DBContent::readJobObsoleteSlot()
 void DBContent::readJobDoneSlot()
 {
     logdbg << name_;
+
+    traced_assert(read_job_);
+
+    shared_ptr<Buffer> buffer = read_job_->takeBuffer();
+
+    if (buffer && buffer->size())
+    {
+        // verify variables present and typed correctly
+        const vector<Variable*>& variables = read_job_->readList().getSet();
+        const PropertyList& properties = buffer->properties();
+
+        for (auto var_it : variables)
+        {
+            traced_assert(properties.hasProperty(var_it->dbColumnOrExpression()));
+            const Property& property = properties.get(var_it->dbColumnOrExpression());
+            traced_assert(property.dataType() == var_it->dataType());
+        }
+
+        // rename DB columns to variable names
+        buffer_utils::transformVariables(*buffer, read_job_->readList(), true);
+
+        // add boolean to indicate selection
+        buffer->addProperty(dbcontent_vars::selected_var_);
+
+        dbcont_manager_.addLoadedData({{name_, buffer}});
+    }
+
     read_job_ = nullptr;
 
     logdbg << name_ << ": done";

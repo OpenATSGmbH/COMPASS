@@ -25,6 +25,7 @@
 
 #include <Eigen/Core>
 
+#include <QApplication>
 #include <QPainter>
 #include <QDialog>
 #include <QVBoxLayout>
@@ -212,7 +213,7 @@ void LabelPlacementEngine::showData(const TestConfig& test_config) const
     computeScreenTransform(config, test_labels);
 
     //create test dialog
-    QDialog dlg;
+    QDialog dlg(QApplication::activeWindow());
 
     QVBoxLayout* layoutv = new QVBoxLayout;
     dlg.setLayout(layoutv);
@@ -320,7 +321,7 @@ void LabelPlacementEngine::runTest(const std::vector<TestLabel>& test_labels,
     std::vector<TestLabel> labels = test_labels;
 
     //create test dialog
-    QDialog dlg;
+    QDialog dlg(QApplication::activeWindow());
 
     QHBoxLayout* layouth = new QHBoxLayout;
     dlg.setLayout(layouth);

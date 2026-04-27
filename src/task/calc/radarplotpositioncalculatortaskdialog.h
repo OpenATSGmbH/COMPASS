@@ -30,7 +30,7 @@ class RadarPlotPositionCalculatorTaskDialog : public QDialog
     Q_OBJECT
 
 public:
-    RadarPlotPositionCalculatorTaskDialog(RadarPlotPositionCalculatorTask& task);
+    RadarPlotPositionCalculatorTaskDialog(RadarPlotPositionCalculatorTask& task, QWidget* parent = nullptr);
     virtual ~RadarPlotPositionCalculatorTaskDialog() = default;
 
 protected:

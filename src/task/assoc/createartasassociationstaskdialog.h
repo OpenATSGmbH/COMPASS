@@ -29,7 +29,7 @@ class CreateARTASAssociationsTaskDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit CreateARTASAssociationsTaskDialog(CreateARTASAssociationsTask& task);
+    explicit CreateARTASAssociationsTaskDialog(CreateARTASAssociationsTask& task, QWidget* parent = nullptr);
 
 protected:
     CreateARTASAssociationsTask& task_;

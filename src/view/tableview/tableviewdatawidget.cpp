@@ -186,7 +186,7 @@ void TableViewDataWidget::exportDataSlot()
 
     if (!all_buffer_table_widget_ || all_buffer_table_widget_->rowCount() == 0)
     {
-        QMessageBox msgBox;
+        QMessageBox msgBox(this);
         msgBox.setText("Export can not be used without loaded data.");
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();

@@ -39,6 +39,7 @@
 #include "compass.h"
 #include "tbbhack.h"
 
+#include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -350,7 +351,7 @@ bool Joined::exportAsCSV() const
 
     loginf << "start" << type();
 
-    QFileDialog dialog(nullptr);
+    QFileDialog dialog(QApplication::activeWindow());
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setDirectory(calculator_.manager().compass().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");
@@ -370,7 +371,7 @@ bool Joined::exportAsCSV() const
 
     if (!output_file || !output_file.is_open() || !exportAsCSV(output_file))
     {
-        QMessageBox::critical(nullptr, "Error", "Exporting CSV file failed.");
+        QMessageBox::critical(QApplication::activeWindow(), "Error", "Exporting CSV file failed.");
         return false;
     }
 

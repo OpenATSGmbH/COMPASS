@@ -1,64 +1,130 @@
 # DBContent Loading
 
-Describes how data is read from the database into the in-memory `Buffer`s that views and tasks operate on. A load always ends up constructing one `DBContentReadDBJob` per `DBContent` and submitting it to the `JobManager`'s DB worker (DB jobs are serialised behind one DB connection).
+Describes how data is read from the database into the in-memory `Buffer`s that views and tasks operate on. Every load runs through one entry point on `DBContentManager` and produces one `DBContentReadDBJob` per `DBContent` (DB jobs serialise behind the single DB connection in the JobManager).
 
-There is exactly **one low-level path**: `DBContent::loadFiltered` in [dbcontent.cpp:434](dbcontent.cpp#L434) — new `shared_ptr<DBContentReadDBJob>` → connect 3 signals → `compass_.jobManager().addDBJob(read_job_)`.
+## Single entry point
 
-## Entry points
+```cpp
+DBContentManager::load(const LoadRequest& req);
+DBContentManager::loadBlocking(const LoadRequest& req, unsigned sleep_ms = 1);
+```
 
-- **`DBContentManager::load(custom_filter_clause, measure_db_performance, custom_read_set)`** — [dbcontentmanager.cpp:392](dbcontentmanager.cpp#L392). Fan-out: iterates every DBContent where `loadable() && DBContextManager::loadingWanted()`, builds a `VariableSet` via `getReadSet(name)`, then calls `DBContent::load(...)` on each. This is the standard load. Callers:
-  - [../../view/viewmanager.cpp:380](../../view/viewmanager.cpp#L380), [../../view/viewbase/view.cpp:613](../../view/viewbase/view.cpp#L613), [../../view/viewbase/viewwidget.cpp:396](../../view/viewbase/viewwidget.cpp#L396) — view reload.
-  - [../../app/client/mainwindow.cpp:1362](../../app/client/mainwindow.cpp#L1362) — "Reload" menu action.
-  - [../../app/compass.cpp:1224](../../app/compass.cpp#L1224), [../../app/compass.cpp:1253](../../app/compass.cpp#L1253) — CLI batch mode (followed by a `loadInProgress()` spin).
-- **`DBContentManager::loadBlocking(...)`** — [dbcontentmanager.cpp:475](dbcontentmanager.cpp#L475). Thin wrapper: calls `load(...)` then spins `QCoreApplication::processEvents()` until `loading_done_`.
-- **`DBContent::load(read_set, use_datasrc_filters, use_filters, custom_filter_clause)`** — [dbcontent.cpp:277](dbcontent.cpp#L277). Single-content load. Builds the `WHERE` clause from DBContext ds/line filters + FilterManager conditions + custom clause, then calls `loadFiltered`. Direct caller outside the manager: [dbcontent_commands.cpp:111-114](dbcontent_commands.cpp#L111-L114) — the `get_data` RT command.
-- **`DBContent::loadFiltered(read_set, custom_filter_clause)`** — [dbcontent.cpp:414](dbcontent.cpp#L414). Lowest-level; always appends `rec_num`, `ds_id`, `line_id` to the read set, then creates the job.
+`LoadRequest` ([loadrequest.h](loadrequest.h)) is a simple struct:
 
-No other code paths construct a `DBContentReadDBJob`.
+| Field | Default | Meaning |
+|---|---|---|
+| `dbcontents_` | `{}` | `{"*"}` = all eligible (`loadable() && loadingWanted()`); explicit names = exactly those (still gated by `loadable()`); empty = no-op load |
+| `apply_datasrc_filters_` | `true` | Apply DBContext ds/line filters to WHERE |
+| `apply_view_filters_` | `true` | Apply FilterManager conditions to WHERE (and let filters add required vars to read set) |
+| `custom_filter_clause_` | unset | Per-content `std::function<std::string(name)>` AND-ed after the filter clauses |
+| `read_set_` | unset | Per-content `std::function<VariableSet(name)>`; defaults to `mgr.getReadSet(name)` |
+| `show_status_` | `true` | Manager owns a `QProgressDialog` (one tick per content). Set `false` if the caller owns its own progress UI |
+| `cancellable_` | `true` | Dialog Cancel button calls `quitLoading()` |
+| `measure_db_performance_` | `false` | Enables `DBInterface` perf metrics for this load |
+
+Three factories cover the common shapes:
+
+```cpp
+LoadRequest::standard();                                      // fan-out, all filters on
+LoadRequest::withFilter(std::string clause);                  // fan-out + uniform clause
+LoadRequest::forContent(std::string name, VariableSet rs,
+                        std::string clause = "");              // single content, no filters
+```
+
+Default-constructed `LoadRequest{}` loads nothing — the `{"*"}` sentinel must be explicit. This makes accidental empty-set bugs benign.
 
 ## Workflow
 
-**1. Start (`DBContentManager::load`).** `loading_done_ = false`; wait-cursor set. If a load is already running, iterates `quitLoading()` on each DBContent (sets `read_job_->setObsolete()`), spins events until `load_in_progress_` clears. Saves selected rec_nums, `clearData()` (wipes `data_`, resets `DBContentDataStore`, clears views), sets `load_in_progress_ = true`.
+**1. Start.** `load(req)` saves the request, sets the wait cursor, and if a previous load is still running iterates `quitLoading()` on each content and spins `processEvents()` until `load_in_progress_` clears. Then `saveSelectedRecNums()`, `clearData()`, `load_in_progress_ = true`. If `req.show_status_` and the resolved target set is non-empty, a `QProgressDialog` is created with `setMinimumDuration(500)` (so fast loads don't flicker); the Cancel button is wired to `quitLoading()` when `req.cancellable_`.
 
-**2. Fan-out.** For every eligible DBContent it calls `DBContent::load(...)`. Emits **`loadingStartedSignal()`**. If no job got created, immediately calls `finishLoading()`.
+**2. Resolve target set.** `resolveTargetSet(req)` returns the names to load: if `req.dbcontents_ == {"*"}`, all `loadable() && loadingWanted()` contents; otherwise the explicit set intersected with `loadable()`.
 
-**3. `DBContent::loadFiltered`.** Asserts `!read_job_`, creates the `DBContentReadDBJob`, connects the three job signals to `DBContent` slots **with `Qt::QueuedConnection`** (important — the job runs on a worker thread, slots run on the GUI thread), submits via `jobManager().addDBJob(...)`.
+**3. Per-content fan-out.** For each target name the manager:
+- gets the read set (`req.read_set_(name)` or `getReadSet(name)`);
+- composes WHERE in `composeWhereClause(name, req, read_set)`: DBContext ds/line filter (if `apply_datasrc_filters_`), then `FilterManager::getSQLCondition(name, read_set)` (which may add filter-required vars to `read_set`), then `req.custom_filter_clause_(name)` — AND-ed in that order;
+- calls `DBContent::loadInternal(read_set, where)`.
 
-**4. Job execution (`DBContentReadDBJob::run_impl`, DB worker thread)** — [../job/dbcontentreaddbjob.cpp:50](../job/dbcontentreaddbjob.cpp#L50):
-- `started_ = true`; fast-exit if already obsolete.
-- `db_interface_.prepareRead(...)` → loops `readDataChunk(dbcontent_)` pulling chunks, accumulates them into `cached_buffer_` via `seizeBuffer`.
-- When `last_buffer` is true (or obsolete), emits **`intermediateSignal(cached_buffer_)` once** — current code emits only on last chunk even though the loop collects many (see [../job/dbcontentreaddbjob.cpp:102](../job/dbcontentreaddbjob.cpp#L102) `if (last_buffer)`).
-- `finalizeReadStatement()`; `done_ = true`. JobManager then emits the base-class `doneSignal` (or `obsoleteSignal`).
+`loadInternal` is private and only callable by the manager (`friend class DBContentManager;`). It appends `rec_num`, `ds_id`, `line_id` to the read set, creates the `DBContentReadDBJob`, connects its `doneSignal` and `obsoleteSignal` to `DBContent` slots with `Qt::QueuedConnection`, and submits via `jobManager().addDBJob(...)`.
 
-**5. Back on the GUI thread, `DBContent` slots:**
-- `readJobIntermediateSlot(buffer)` — verifies properties, renames DB columns → variable names, adds the `selected_` bool property, calls `DBContentManager::addLoadedData({{name_, buffer}})`.
-- `readJobDoneSlot()` / `readJobObsoleteSlot()` — `read_job_ = nullptr`; call `DBContentManager::loadingDone(*this)`.
+After the loop the manager emits **`loadingStartedSignal()`**. If no jobs were created, `finishLoading()` is invoked immediately.
 
-Ordering caveat: `intermediateSignal` and `doneSignal` are both queued; `addLoadedData` also calls `loadingDone` as a belt-and-braces when `!isLoading()` ([dbcontent.cpp:770](dbcontent.cpp#L770)).
+**4. Job execution (`DBContentReadDBJob::run_impl`, DB worker thread)** — `prepareRead` → loop `readDataChunk` accumulating into `cached_buffer_` via `seizeBuffer` → on `last_buffer` break out → `finalizeReadStatement` → `done_ = true`. If cancelled mid-loop, `cached_buffer_` is nulled. JobManager then fires the base-class `doneSignal()` on the GUI thread.
 
-**6. `DBContentManager::addLoadedData`** — [dbcontentmanager.cpp:491](dbcontentmanager.cpp#L491). Seizes the buffer into `data_[name]`, updates `inserted/loaded` counts, restores selection, refreshes `DBContentDataStore`, emits **`loadedDataSignal(data_, false)`** — views and tasks pick up buffers here.
+**5. `DBContent::readJobDoneSlot`** (GUI thread). Calls `read_job_->takeBuffer()` to retrieve the accumulated buffer; if non-empty, verifies the read-list properties, runs `buffer_utils::transformVariables` (renames DB columns to variable names), adds the `selected_` bool property, and hands the buffer to `DBContentManager::addLoadedData({{name, buffer}})`. Then `read_job_ = nullptr; dbcont_manager_.loadingDone(*this)`.
 
-**7. `DBContentManager::loadingDone(object)`.** Polls every DBContent; if any `isLoading()`, bails. Otherwise `finishLoading()`.
+`readJobObsoleteSlot` is declared but never reached today (JobManager only emits `doneSignal`).
 
-**8. `DBContentManager::finishLoading`** — [dbcontentmanager.cpp:712](dbcontentmanager.cpp#L712). `load_in_progress_ = false`, `doViewPointAfterLoad`, logs perf, emits **`loadingDoneSignal()`**, restores cursor, `loading_done_ = true`.
+**6. `DBContentManager::addLoadedData`** seizes the buffer into `data_[name]`, updates `inserted/loaded` counts, restores selection, refreshes `DBContentDataStore`, emits **`loadedDataSignal(data, false)`**, and advances the progress dialog by one tick.
+
+**7. `DBContentManager::loadingDone(object)`** polls every DBContent; if any `isLoading()`, returns. Otherwise calls `finishLoading()`.
+
+**8. `finishLoading`** closes/clears the progress dialog, resets counters, calls `doViewPointAfterLoad`, logs perf metrics, emits **`loadingDoneSignal()`**, restores cursor, sets `loading_done_ = true`, clears `current_request_`.
 
 ## Observable signals
 
 | Signal | Emitter | Meaning |
 |---|---|---|
 | `loadingStartedSignal()` | `DBContentManager` | Load has begun. |
-| `loadedDataSignal(data, reset)` | `DBContentManager` | One DBContent's buffer has arrived (roughly once per content, because `intermediateSignal` fires only on last chunk). |
+| `loadedDataSignal(data, reset)` | `DBContentManager` | One DBContent's buffer has arrived (once per content; the buffer is delivered in full on `doneSignal`, no streaming). |
 | `loadingDoneSignal()` | `DBContentManager` | All contents finished (or were aborted). |
 
-Polling helpers:
-- `DBContentManager::loadInProgress()` (bool).
-- `DBContent::status()` — returns `"Idle" / "Queued" / "Started" / "Loading"` ([dbcontent.cpp:231](dbcontent.cpp#L231)).
-- `DBContent::isLoading()` — `read_job_ != nullptr`.
+Polling helpers: `DBContentManager::loadInProgress()`, `DBContent::status()`, `DBContent::isLoading()`.
+
+`loadBlocking` is a convenience spin-wait wrapper around `load(req)` for callers that genuinely need to block (app-mode switch, EvaluationManager, ViewManager viewpoint apply). Treat it as a future-removal target — async + signal-driven continuation is preferred.
 
 ## Progress granularity
 
-There is **no per-row progress today**. The job increments `row_count_` internally ([../job/dbcontentreaddbjob.cpp:88](../job/dbcontentreaddbjob.cpp#L88)) but only emits the buffer once on the last chunk; no intermediate progress is surfaced.
+Coarse only: one tick per DBContent, advanced from `addLoadedData`. There is no per-row / per-chunk progress signal. Two paths to fine-grained feedback if needed later:
+- emit per-chunk from the job (instead of accumulating into `cached_buffer_` and delivering once on done) and tally rows in `addLoadedData`;
+- precompute expected totals via `SELECT COUNT(*)` with the same WHERE before submitting and report arrival % against that.
 
-Two realistic levels:
-- **Coarse (no changes to the job):** N contents = N steps. Listen to `loadedDataSignal`, count which contents' buffers have arrived (or query `loaded_counts_`), compare to the set of contents with `loadable() && loadingWanted()`. Precedents: `DataSourcesStatusWidget` at [../../core/source/datasourcesstatuswidget.cpp:220](../../core/source/datasourcesstatuswidget.cpp#L220); `MainWindow` at [../../app/client/mainwindow.cpp:287](../../app/client/mainwindow.cpp#L287).
-- **Fine (row-level %):** precompute expected totals per content (a `SELECT COUNT(*)` with the same filter clause before submitting, or reuse the inserted/loaded counts on `DBContextManager` as an upper bound), and either (a) emit buffer chunks from the job per chunk rather than only on last, or (b) tally `buffer->size()` inside `addLoadedData` for an after-the-fact arrival %. (b) is the minimally invasive option; (a) gives smoother feedback on very large contents.
+## View distribution (`ViewManager`)
+
+`ViewManager` is the canonical consumer of the three lifecycle signals; it fans them out to every registered `View`:
+
+| Slot | Per-view call | Notes |
+|---|---|---|
+| `loadingStartedSlot` | `view->loadingStarted()` | Resets `reload_needed_`. Skipped when `disable_data_distribution_` is set (used during processing-only loads). |
+| `loadedDataSlot(data, reset)` | `view->loadedData(data, reset)` | Fires once per DBContent (one buffer arrival per signal). |
+| `loadingDoneSlot` | `view->loadingDone()` | Heavy work — view rebuilds, scene-graph re-zooms, table-model index rebuilds. |
+
+### Re-entrancy guard
+
+All three slots share a single `processing_data_` flag, scoped via `QScopedValueRollback` for the duration of the per-view loop. If any of them is invoked while `processing_data_` is set, it re-posts itself via `Qt::QueuedConnection` and returns immediately. This preserves the contracted ordering `started → loaded* → done` even when the slots are interrupted by event-loop pumping (see below).
+
+### Threshold-based event pumping in `loadingDoneSlot`
+
+`loadingDoneSlot` is the single place where a load can take long enough on the GUI thread for the window manager to flag the application as unresponsive (`_NET_WM_PING` timeout on X11 / similar on Wayland). For wide loads with several heavy views the per-view loop can run for tens of seconds — the original symptom was a Linux "Application is not responding — Wait / Force Quit" dialog mid-load.
+
+To keep the GUI responsive, the loop calls
+
+```cpp
+QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents
+                              | QEventLoop::ExcludeSocketNotifiers);
+```
+
+after each `view->loadingDone()` — but only **after the loop has been running longer than `pump_threshold_ms` (3 s)**. The threshold matters: pumping unconditionally lets queued events (notably RT commands posted from the asio-driven `RTCommandManager` runner thread) interleave with view dispatch. UI integration tests waiting on a single view's `viewRefreshed` signal would then issue their next command while later views in the loop are still being processed, breaking signal-injection assumptions (e.g. popup-menu tests). The threshold keeps short loads (typical UI tests, ~1–2 s total) below the pump line entirely, so the loop runs uninterrupted; long loads still get periodic pumping once they pass 3 s.
+
+Excluded event categories (`UserInput`, `SocketNotifiers`) further narrow what can fire during a pump:
+- no menu/button slot from a real user click
+- no Qt `QSocketNotifier` (RT commands from the boost::asio session bypass this — they post `QMetaCallEvent`s directly, hence the additional threshold and re-entrancy guard above)
+
+What still fires during a pump: paint events, timer events, WM ping replies, internal queued slots. The re-entrancy guard ensures that if a queued `loadedDataSlot` / `loadingDoneSlot` happens to be among them, it defers cleanly instead of running mid-iteration.
+
+`loadingStartedSlot` and `loadedDataSlot` do **not** pump. The chunk-by-chunk delivery of `loadedDataSignal` from the worker thread already yields the event loop between contents; pumping inside their per-view loops adds no responsiveness gain and used to allow `loadedDataSlot` to be re-posted past a queued `loadingDoneSlot`, breaking the ordering contract.
+
+### Progress dialog updates use `repaint()`, not `processEvents()`
+
+`DBContentManager::beginViewProgressPhase` and `advanceViewProgress` are called from inside the `loadingDoneSlot` loop after each view, to advance the `QProgressDialog` value. The natural choice would be `QCoreApplication::processEvents()` after `setValue(...)` so the dialog repaints — but that would re-introduce the same problem the threshold above avoids: an unconditional pump on every progress tick dispatches all queued events, including RT commands waiting on the main-thread queue. A regression of the popup-injection failure was traced to exactly this path.
+
+The helpers therefore call `progress_dialog_->repaint()` instead — a synchronous paint of the dialog widget, with no event-queue dispatch. The dialog updates visually without pumping. The single coarse-grained pump in `loadingDoneSlot` (gated by the 3 s threshold) remains the only place where queued events get a chance to run during the loop.
+
+Treat unconditional `processEvents()` calls inside the load lifecycle as suspect; prefer `repaint()` on the specific widget that needs to update.
+
+## Migrating away from per-content loads
+
+`DBContent::loadInternal` is private. Tasks that previously called `DBContent::load(read_set, ...)` directly (Reconstructor, RadarPlot, ARTAS, RT `get_data`) now build a `LoadRequest` and call the manager. Patterns:
+
+- **Time-sliced loads (Reconstructor).** Build one `LoadRequest` per slice with `dbcontents_` populated explicitly (the slice's targets), `apply_*_filters_=false`, `read_set_` and `custom_filter_clause_` lambdas for per-content variation, `show_status_=false`, `cancellable_=false`. The slice-to-slice iteration is driven by listening to `loadingDoneSignal` and re-issuing `load(req)` for the next slice.
+- **Single content (RT `get_data`).** `LoadRequest::forContent(name, rs, clause)` plus `show_status_=false`, `cancellable_=false`.
+- **Restricted fan-out (ARTAS, RadarPlot).** Set `dbcontents_` to the explicit target names, `apply_*_filters_=false`, `read_set_` lambda, optionally `custom_filter_clause_` lambda for per-content WHERE.

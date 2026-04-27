@@ -31,6 +31,7 @@
 
 #include "dbcontentlayer.h"
 #include "layerpanelwidget.h"
+#include "annotationsrootitem.h"
 #include "layertreemodel.h"
 
 #include <QCheckBox>
@@ -88,6 +89,10 @@ HistogramViewConfigWidget::HistogramViewConfigWidget(HistogramViewWidget* view_w
         auto root_uptr = std::make_unique<DBContentRootItem>();
         db_content_root_ = static_cast<DBContentRootItem*>(
             layer_panel_->addRootItem(std::move(root_uptr)));
+
+        // Sibling "Annotations" root, placed after DBContent. Placeholder for
+        // now — matches the Geographic View item in name and icon.
+        layer_panel_->addRootItem(std::make_unique<AnnotationsRootItem>());
 
         auto* data_widget = view_widget->getViewDataWidget();
         data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());

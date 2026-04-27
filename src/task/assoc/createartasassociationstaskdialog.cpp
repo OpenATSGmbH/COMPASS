@@ -25,8 +25,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTASAssociationsTask& task)
-: QDialog(), task_(task)
+CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTASAssociationsTask& task, QWidget* parent)
+: QDialog(parent), task_(task)
 {
     setWindowTitle("Calculate ARTAS Target Report Usage");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);

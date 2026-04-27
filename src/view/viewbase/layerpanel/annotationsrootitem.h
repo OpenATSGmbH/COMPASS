@@ -15,26 +15,26 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "questiondialog.h"
+#pragma once
 
-#include <QAbstractButton>
+#include "layertreeitem.h"
+
 #include <QIcon>
-#include <QMessageBox>
-#include <QPushButton>
 
-bool QuestionDialog::ask(QWidget* parent, const QString& title, const QString& text)
+/**
+ * "Annotations" root item placed as a sibling to the DBContent root in a
+ * LayerPanelWidget. Mirrors the Geographic View's Annotations item in name
+ * and icon (compass.png). Currently a structural placeholder — no children,
+ * visibility toggling is display-only.
+ */
+class AnnotationsRootItem : public LayerTreeItem
 {
-    QMessageBox msg(parent);
-    msg.setWindowTitle(title);
-    msg.setText(text);
-    msg.setIcon(QMessageBox::NoIcon);
-    msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    msg.setDefaultButton(QMessageBox::No);
+public:
+    AnnotationsRootItem();
+    ~AnnotationsRootItem() override = default;
 
-    // strip platform-default Yes/No button icons (project rule: no colored icons)
-    for (auto* btn : msg.buttons())
-        if (auto* push = qobject_cast<QPushButton*>(btn))
-            push->setIcon(QIcon());
+    QVariant icon() const override;
 
-    return msg.exec() == QMessageBox::Yes;
-}
+private:
+    QIcon icon_;
+};

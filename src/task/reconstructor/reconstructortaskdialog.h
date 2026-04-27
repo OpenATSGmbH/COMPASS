@@ -34,7 +34,7 @@ public slots:
     void reconstructorMethodChangedSlot(const QString& value);
 
 public:
-    ReconstructorTaskDialog(ReconstructorTask& task);
+    ReconstructorTaskDialog(ReconstructorTask& task, QWidget* parent = nullptr);
     virtual ~ReconstructorTaskDialog();
 
     void showCurrentReconstructorWidget();

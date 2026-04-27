@@ -969,7 +969,7 @@ void ASTERIXImportTask::decodeASTERIXDoneSlot()
 
         if (allow_user_interactions_)
         {
-            QMessageBox msgBox;
+            QMessageBox msgBox(QApplication::activeWindow());
             msgBox.setText(("Decoding error: " + error_message_ + "\n\nPlease check the decoder settings.").c_str());
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
@@ -1736,7 +1736,8 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
     if (!file_progress_dialog_)
     {
         file_progress_dialog_.reset(
-            new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100));
+            new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100,
+                                QApplication::activeWindow()));
         file_progress_dialog_->setWindowTitle("Importing ASTERIX Recording(s)");
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);

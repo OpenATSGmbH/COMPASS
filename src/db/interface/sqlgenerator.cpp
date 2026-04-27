@@ -103,25 +103,6 @@ std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
 {
     stringstream ss;
 
-    //    CREATE TABLE contacts (
-    //     contact_id integer PRIMARY KEY,
-    //     first_name text NOT NULL,
-    //     last_name text NOT NULL,
-    //     email text NOT NULL UNIQUE,
-    //     phone text NOT NULL UNIQUE
-    //    );
-
-    // sqlite
-    //    if (data_type == "BOOLEAN")
-    //        data_type = "BOOL";
-    //    else if (data_type == "TEXT")
-    //        data_type = "STRING";
-    //    else if (data_type == "REAL")
-    //        data_type = "DOUBLE";
-    //    else if (data_type == "INTEGER")
-    //        data_type = "INT";
-    // mysql same
-
     ss << "CREATE TABLE " << table_name << "(";
 
     string data_type;
