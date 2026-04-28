@@ -195,14 +195,16 @@ void FilterManagerWidget::rightClicked()
  */
 void FilterManagerWidget::loadingStarted()
 {
-    scroll_area_->setEnabled(false);
+    // The offline load progress dialog (Qt::ApplicationModal) blocks input
+    // application-wide. In LiveRunning the started→done envelope wraps the
+    // entire live session, so disabling here would freeze the filter panel
+    // for the duration of live mode. Either way: nothing to disable.
 }
 
 /**
  */
 void FilterManagerWidget::loadingDone()
 {
-    scroll_area_->setEnabled(true);
 }
 
 /**

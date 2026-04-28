@@ -21,6 +21,7 @@
 #include "buffer.h"
 #include "targetmodel.h"
 #include "loadrequest.h"
+#include "appmode.h"
 class ViewableDataConfig;
 class QProgressDialog;
 
@@ -65,6 +66,8 @@ public slots:
     void metaDialogOKSlot();
 
     void processLiveModeSlot();
+
+    void appModeSwitchSlot(AppMode app_mode_previous, AppMode app_mode_current);
 
     void cancelLoadingSlot();
 

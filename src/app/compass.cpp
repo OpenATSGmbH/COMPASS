@@ -223,6 +223,11 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     // appmode
     connect (this, &COMPASS::appModeSwitchSignal,
              filter_manager_.get(), &FilterManager::appModeSwitchSlot);
+    // bookends the LiveRunning "one long load cycle" with loadingStartedSignal /
+    // loadingDoneSignal (Direct so the started signal lands before the first
+    // processLiveModeSlot tick that follows the appmode flip).
+    connect (this, &COMPASS::appModeSwitchSignal,
+             dbcontent_manager_.get(), &DBContentManager::appModeSwitchSlot);
 
     // features
     connect (license_manager_.get(), &LicenseManager::changed, task_manager_.get(), &TaskManager::updateFeatures);

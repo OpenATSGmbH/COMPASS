@@ -1284,6 +1284,36 @@ void DBContentManager::finishInserting()
 }
 
 /**
+ * Bookends the live-mode "one long load cycle" with the manager lifecycle
+ * signals so that ViewManager and other Path A consumers see live entry/exit
+ * as a single started → loaded* → done cycle (loadedDataSignal fires per
+ * processLiveModeSlot tick in between).
+ *
+ * - leaving LiveRunning: emit loadingDoneSignal before any follow-up load
+ *   (the explicit Live↔Paused transitions in COMPASS::appMode trigger a
+ *   loadBlocking that has its own cycle, which is fine since done has already
+ *   been dispatched here);
+ * - entering LiveRunning: emit loadingStartedSignal so loading_done_dispatched_
+ *   in ViewManager is reset before the first live tick.
+ */
+void DBContentManager::appModeSwitchSlot(AppMode app_mode_previous, AppMode app_mode_current)
+{
+    const bool was_live = (app_mode_previous == AppMode::LiveRunning);
+    const bool now_live = (app_mode_current  == AppMode::LiveRunning);
+
+    if (was_live && !now_live)
+    {
+        loginf << "leaving LiveRunning, closing live cycle";
+        emit loadingDoneSignal();
+    }
+    else if (!was_live && now_live)
+    {
+        loginf << "entering LiveRunning, opening live cycle";
+        emit loadingStartedSignal();
+    }
+}
+
+/**
  */
 void DBContentManager::processLiveModeSlot()
 {
@@ -1419,15 +1449,22 @@ void DBContentManager::processLiveModeSlot()
 
         loginf << "distributing data, num buffers " << data_.size() << " had_data " << had_data;
 
-        data_store_->reset();
-
         if (data_.size())
         {
-            //emit loadedDataSignal(data_, true);
+            // Path B: rebuild geometry/items via providers (DBContentDataStore::update()
+            // resets the store internally before repopulating).
             data_store_->update();
+
+            // Path A: drive view chrome (TimeFilterWidget, info/status text, draw kick,
+            // overload detection, label generator). Emitted inside the live cycle that
+            // appModeSwitchSlot opens/closes on LiveRunning entry/exit.
+            emit loadedDataSignal(data_, true);
         }
         else if (had_data)
+        {
+            data_store_->reset();
             compass_.viewManager().clearDataInViews();
+        }
 
         logdbg << "distribute took "
                << String::timeStringFromDouble(
