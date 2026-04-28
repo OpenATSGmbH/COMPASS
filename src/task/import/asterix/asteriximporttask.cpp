@@ -414,6 +414,15 @@ void ASTERIXImportTask::sourceChanged()
     //switch to framing required by the decoder?
     settings_.setFileFramingOverride(decoder_->requiredASTERIXFraming());
 
+    // skip the network probe (10s UDP listen) when driven non-interactively
+    // (e.g. via the import_asterix_network rt-command) — the caller wants the
+    // import to start immediately
+    if (source_.isNetworkType() && !allow_user_interactions_)
+    {
+        loginf << "skipping network probe (non-interactive mode)";
+        return;
+    }
+
     //test decoding
     testFileDecoding();
 }
