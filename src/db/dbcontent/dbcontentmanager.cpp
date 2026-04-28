@@ -435,7 +435,6 @@ std::string DBContentManager::composeWhereClause(const std::string& name,
         && (ctx_man.hasDSFilter(name) || ctx_man.lineSpecificLoadingRequired(name)))
     {
         std::vector<unsigned int> ds_ids_to_load = ctx_man.unfilteredDS(name);
-        traced_assert(ds_ids_to_load.size());
 
         traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
         Variable& datasource_var = dbc.variable(dbcontent_vars::meta_var_ds_id_.name());
@@ -447,62 +446,70 @@ std::string DBContentManager::composeWhereClause(const std::string& name,
             Variable& line_var = dbc.variable(dbcontent_vars::meta_var_line_id_.name());
             traced_assert(line_var.dataType() == PropertyDataType::UINT);
 
-            bool any_added = false;
+            // Build per-DS clauses into a list, OR-join only the non-empty
+            // ones. A DS with no wanted lines must be skipped — emitting
+            // "line_id IN ()" would produce invalid SQL.
+            std::vector<std::string> per_ds_clauses;
             for (auto ds_id_it : ds_ids_to_load)
             {
                 traced_assert(ctx_man.hasDataSource(ds_id_it));
 
-                if (filter_clause.size())
-                    filter_clause += " OR";
-                else
-                    filter_clause += " (";
-
-                filter_clause += " (" + datasource_var.dbColumnName() + " = " + std::to_string(ds_id_it);
-
-                bool any_lines_wanted = false;
                 std::vector<unsigned int> wanted_lines;
                 for (unsigned int line = 0; line < 4; ++line)
-                {
                     if (ctx_man.lineLoadingWanted(ds_id_it, line))
-                    {
-                        any_lines_wanted = true;
                         wanted_lines.push_back(line);
-                    }
-                }
 
-                if (!any_lines_wanted)
-                {
-                    filter_clause += " AND " + line_var.dbColumnName() + " IN ())";
-                    any_added = true;
+                if (wanted_lines.empty())
                     continue;
-                }
 
-                filter_clause += " AND " + line_var.dbColumnName() + " IN (";
-                bool first = true;
-                for (auto line_it : wanted_lines)
+                std::string clause = "(" + datasource_var.dbColumnName() + " = "
+                                     + std::to_string(ds_id_it)
+                                     + " AND " + line_var.dbColumnName() + " IN (";
+                for (size_t i = 0; i < wanted_lines.size(); ++i)
                 {
-                    if (!first)
-                        filter_clause += ",";
-                    filter_clause += std::to_string(line_it);
-                    first = false;
+                    if (i) clause += ",";
+                    clause += std::to_string(wanted_lines[i]);
                 }
-                filter_clause += "))";
-                any_added = true;
+                clause += "))";
+                per_ds_clauses.push_back(std::move(clause));
             }
 
-            if (ds_ids_to_load.size() && any_added)
+            if (per_ds_clauses.empty())
+            {
+                // Nothing wanted from any DS — return a no-row sentinel
+                // rather than asserting or emitting empty IN().
+                filter_clause = "1=0";
+            }
+            else
+            {
+                filter_clause = "(";
+                for (size_t i = 0; i < per_ds_clauses.size(); ++i)
+                {
+                    if (i) filter_clause += " OR ";
+                    filter_clause += per_ds_clauses[i];
+                }
                 filter_clause += ")";
+            }
         }
         else
         {
-            filter_clause = datasource_var.dbColumnName() + " IN (";
-            for (auto ds_id_it = ds_ids_to_load.begin(); ds_id_it != ds_ids_to_load.end(); ++ds_id_it)
+            if (ds_ids_to_load.empty())
             {
-                if (ds_id_it != ds_ids_to_load.begin())
-                    filter_clause += ",";
-                filter_clause += std::to_string(*ds_id_it);
+                // Same situation in the non-line branch: empty wanted set
+                // would yield "ds_id IN ()". Emit no-row sentinel instead.
+                filter_clause = "1=0";
             }
-            filter_clause += ")";
+            else
+            {
+                filter_clause = datasource_var.dbColumnName() + " IN (";
+                for (auto ds_id_it = ds_ids_to_load.begin(); ds_id_it != ds_ids_to_load.end(); ++ds_id_it)
+                {
+                    if (ds_id_it != ds_ids_to_load.begin())
+                        filter_clause += ",";
+                    filter_clause += std::to_string(*ds_id_it);
+                }
+                filter_clause += ")";
+            }
         }
     }
 

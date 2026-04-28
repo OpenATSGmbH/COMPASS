@@ -567,6 +567,13 @@ void DBContextManager::setLoadOnlyDataSources(map<unsigned int, set<unsigned int
     {
         ds_loading_wanted_[ds_id] = true;
 
+        // Also enable the DSType of this DS — otherwise an inconsistent
+        // viewpoint (lists this DS but not its DSType) or a stale per-DSType
+        // filter would silently override the explicit per-DS request and
+        // skip loading data for DBContents whose DS lives in another DSType.
+        if (auto* ds = dataSource(ds_id))
+            ds_type_loading_wanted_[ds->dsType()] = true;
+
         if (!lines.empty())
         {
             for (const auto& line : lines)
