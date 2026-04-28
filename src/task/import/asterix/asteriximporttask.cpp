@@ -597,8 +597,6 @@ void ASTERIXImportTask::decodeCategory(unsigned int category, bool decode)
     loginf << "cat " << category << " decode " << decode;
 
     settings_.decodeCategory(category, decode);
-
-    testFileDecoding();
 }
 
 /**
@@ -617,25 +615,6 @@ std::string ASTERIXImportTask::editionForCategory(unsigned int category)
     }
 
     return cfg->edition();
-}
-
-/**
-*/
-void ASTERIXImportTask::editionForCategory(unsigned int category, const std::string& edition)
-{
-    traced_assert(jasterix_->hasCategory(category));
-
-    loginf << "cat " << category << " edition " << edition;
-
-    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
-        category,
-        edition,
-        jasterix_->category(category)->defaultREFEdition());
-    cfg.edition(edition);
-
-    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
-
-    testFileDecoding();
 }
 
 /**
@@ -659,25 +638,6 @@ std::string ASTERIXImportTask::refEditionForCategory(unsigned int category)
 
 /**
 */
-void ASTERIXImportTask::refEditionForCategory(unsigned int category, const std::string& ref)
-{
-    traced_assert(jasterix_->hasCategory(category));
-
-    loginf << "cat " << category << " ref '" << ref << "'";
-
-    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
-        category,
-        jasterix_->category(category)->defaultEdition(),
-        ref);
-    cfg.ref(ref);
-
-    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
-
-    testFileDecoding();
-}
-
-/**
-*/
 std::string ASTERIXImportTask::spfEditionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
@@ -697,27 +657,7 @@ std::string ASTERIXImportTask::spfEditionForCategory(unsigned int category)
 
 /**
 */
-void ASTERIXImportTask::spfEditionForCategory(unsigned int category, const std::string& spf)
-{
-    traced_assert(jasterix_->hasCategory(category));
-
-    loginf << "cat " << category << " spf '" << spf << "'";
-
-    auto& cfg = compass_.dbContextManager().getOrCreateAsterixConfig(
-        category,
-        jasterix_->category(category)->defaultEdition(),
-        "",
-        spf);
-    cfg.spf(spf);
-
-    compass_.dbContextManager().saveContext(compass_.dbContextManager().activeContextName());
-
-    testFileDecoding();
-}
-
-/**
-*/
-std::shared_ptr<ASTERIXJSONParsingSchema> ASTERIXImportTask::schema() const 
+std::shared_ptr<ASTERIXJSONParsingSchema> ASTERIXImportTask::schema() const
 { 
     return schema_; 
 }

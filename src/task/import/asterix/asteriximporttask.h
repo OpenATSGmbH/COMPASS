@@ -124,11 +124,8 @@ public:
     bool decodeCategory(unsigned int category);
     void decodeCategory(unsigned int category, bool decode);
     std::string editionForCategory(unsigned int category);
-    void editionForCategory(unsigned int category, const std::string& edition);
     std::string refEditionForCategory(unsigned int category);
-    void refEditionForCategory(unsigned int category, const std::string& ref);
     std::string spfEditionForCategory(unsigned int category);
-    void spfEditionForCategory(unsigned int category, const std::string& spf);
 
     std::shared_ptr<ASTERIXJSONParsingSchema> schema() const;
 

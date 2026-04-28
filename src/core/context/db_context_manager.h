@@ -279,6 +279,13 @@ public:
         const std::string& default_ref = "",
         const std::string& default_spf = "");
 
+    void setAsterixEdition(unsigned int category, const std::string& edition,
+                           const std::string& default_ref = "");
+    void setAsterixRef(unsigned int category, const std::string& ref,
+                       const std::string& default_edition = "");
+    void setAsterixSpf(unsigned int category, const std::string& spf,
+                       const std::string& default_edition = "");
+
     // ================================================================
     // DB sync
     // ================================================================

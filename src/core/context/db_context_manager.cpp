@@ -1914,6 +1914,30 @@ ASTERIXDecodingConfig& DBContextManager::getOrCreateAsterixConfig(unsigned int c
     return activeContext().asterixDecoding().back();
 }
 
+void DBContextManager::setAsterixEdition(unsigned int category, const string& edition,
+                                         const string& default_ref)
+{
+    auto& cfg = getOrCreateAsterixConfig(category, edition, default_ref);
+    cfg.edition(edition);
+    saveContext(activeContextName());
+}
+
+void DBContextManager::setAsterixRef(unsigned int category, const string& ref,
+                                     const string& default_edition)
+{
+    auto& cfg = getOrCreateAsterixConfig(category, default_edition, ref);
+    cfg.ref(ref);
+    saveContext(activeContextName());
+}
+
+void DBContextManager::setAsterixSpf(unsigned int category, const string& spf,
+                                     const string& default_edition)
+{
+    auto& cfg = getOrCreateAsterixConfig(category, default_edition, "", spf);
+    cfg.spf(spf);
+    saveContext(activeContextName());
+}
+
 // ============================================================
 // Per-section import/export
 // ============================================================

@@ -269,13 +269,7 @@ void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const s
 
     traced_assert(jasterix_->hasCategory(cat));
 
-    auto& cfg = ctx_mgr_.getOrCreateAsterixConfig(
-        cat,
-        ed_str,
-        jasterix_->category(cat)->defaultREFEdition());
-    cfg.edition(ed_str);
-
-    ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+    ctx_mgr_.setAsterixEdition(cat, ed_str, jasterix_->category(cat)->defaultREFEdition());
 
     emit decodingConfigChangedSignal();
 }
@@ -289,13 +283,7 @@ void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
 
     traced_assert(jasterix_->hasCategory(cat));
 
-    auto& cfg = ctx_mgr_.getOrCreateAsterixConfig(
-        cat,
-        jasterix_->category(cat)->defaultEdition(),
-        ed_str);
-    cfg.ref(ed_str);
-
-    ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+    ctx_mgr_.setAsterixRef(cat, ed_str, jasterix_->category(cat)->defaultEdition());
 
     traced_assert(ref_edit_buttons_.count(cat));
     if (ed_str.size())
@@ -315,14 +303,7 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
 
     traced_assert(jasterix_->hasCategory(cat));
 
-    auto& cfg = ctx_mgr_.getOrCreateAsterixConfig(
-        cat,
-        jasterix_->category(cat)->defaultEdition(),
-        "",
-        ed_str);
-    cfg.spf(ed_str);
-
-    ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+    ctx_mgr_.setAsterixSpf(cat, ed_str, jasterix_->category(cat)->defaultEdition());
 
     traced_assert(spf_edit_buttons_.count(cat));
     if (ed_str.size())

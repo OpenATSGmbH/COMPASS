@@ -56,8 +56,7 @@ MetaVariableDetailWidget::MetaVariableDetailWidget(DBContentManager& dbcont_man,
     {
         VariableSelectionWidget* var_sel = new VariableSelectionWidget(dbcont_man_, true);
         var_sel->showDBContentOnly(dbcont_it->first);
-        var_sel->showExistingInDBOnly(false);
-        
+
         //var_sel->setProperty("DBContent", dbcont_it->first.c_str());
 
         connect(var_sel, &VariableSelectionWidget::selectionChanged,

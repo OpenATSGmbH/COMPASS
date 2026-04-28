@@ -42,15 +42,30 @@ Related files outside this directory:
 - **Owned by COMPASS** -- created in `COMPASS` constructor, accessed via `compass.dbContextManager()`.
 - **"No Context" is a legal state** -- `hasActiveContext()` may be `false` at startup and at any time afterward (e.g. after deleting the active context). No startup dialog forces context selection; the main window disables everything except DB-open / context-create / exit while in this state. See [No Context state](#no-context-state).
 - **One active context at a time** -- when `hasActiveContext()` is true, all queries (data sources, FFTs, sectors) operate on the active context.
-- **Qt signals** for change notification, with narrow semantics:
-  - `activeContextChangedSignal()` -- the *identity* of the active context changed (switched, renamed, deleted, or DB open made it meaningful). Listeners that only care about which context is active (window title, menu gating) connect to this only.
-  - `contextsChangedSignal()` -- the set of known contexts changed (created/deleted/duplicated).
-  - `dataSourcesChangedSignal()` -- the data source list of the active context was mutated (added/edited/deleted/imported, or new DS auto-created during ASTERIX/JSON import).
-  - `fftsChangedSignal()` -- the FFT list of the active context was mutated.
-  - `sectorsChangedSignal()` -- the sector list of the active context was mutated.
-  - `countsChangedSignal()` -- per-session inserted/loaded counts changed.
+- **Qt signals** for change notification -- see [Signals](#signals) for the full per-section breakdown. All signals may fire with `hasActiveContext() == false`; handlers must guard.
 
-  Listeners that care about a section's contents (e.g. data source widgets) must connect to BOTH the section signal AND `activeContextChangedSignal` -- a context switch wipes the previous list. These signals may fire with `hasActiveContext() == false`; signal handlers must guard.
+## Signals
+
+`DBContextManager` exposes section-specific signals. Each one has narrow semantics — pick the narrowest signal that matches the change. Listeners that care about a section's contents must connect to BOTH the section signal AND `activeContextChangedSignal`, because a context switch wipes the previous list.
+
+| Signal | Fires when |
+|--------|------------|
+| `activeContextChangedSignal()` | *Identity* of the active context changed: switched (`setActiveContext`), renamed (when active), the active was deleted, or a DB open made the active context meaningful. NOT for content edits within the same context. |
+| `contextsChangedSignal()` | The set of known contexts changed (created / deleted / duplicated / renamed). |
+| `dataSourcesChangedSignal()` | Data source list of the active context was mutated: `createDataSource`, `deleteDataSource`, `importSensors`, plus auto-creation during ASTERIX/JSON insert and post-delete cleanup. |
+| `fftsChangedSignal()` | FFT list of the active context was mutated: `createFFT`, `deleteFFT`, `deleteAllFFTs`, `importFFTs`. |
+| `sectorsChangedSignal()` | Sector list of the active context was mutated. |
+| `countsChangedSignal()` | Per-session inserted/loaded counts changed. |
+
+All signals may fire with `hasActiveContext() == false` -- handlers must early-return when no context is active (see [No Context state](#no-context-state)).
+
+**Common listener patterns:**
+
+- *Identity-only listener* (window title, menu gating): connect to `activeContextChangedSignal` only.
+- *Section-content listener* (data source widget, FFT widget): connect to BOTH the section signal AND `activeContextChangedSignal`. The section signal catches in-context mutations; the identity signal catches context switches.
+- *Multi-section listener* (the context edit dialog tree): connect to all relevant section signals plus `activeContextChangedSignal` and `contextsChangedSignal`.
+
+**Do not** emit `activeContextChangedSignal` to broadcast "something inside the active context changed" -- use the section-specific signal instead. If a new section is added to `DBContext`, give it its own signal rather than overloading `activeContextChangedSignal`.
 
 ## DBContext (data container)
 
