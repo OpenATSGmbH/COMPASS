@@ -19,6 +19,7 @@
 
 #include "json.hpp"
 
+#include <map>
 #include <string>
 
 #include <QObject>
@@ -74,7 +75,9 @@ struct ASTERIXImportFileSection
     std::string            contentinfo;          // information about the content
     std::vector<char>      raw_data;             // raw data (possibly only a part of the total data)
     size_t                 total_size_bytes = 0; // total size of this section in bytes
-    
+
+    std::map<unsigned int, size_t> records_per_category; // record count per ASTERIX category
+
     ASTERIXImportFileError error;                // error information (e.g. decoding)
     std::string            warning;              // warning
     bool                   used = true;          // use this section for import
@@ -105,6 +108,8 @@ struct ASTERIXImportFileInfo
     std::string            filename;
     //unsigned int         line_id = 0; // TODO rework
     std::string            contentinfo;
+
+    std::map<unsigned int, size_t> records_per_category; // record count per ASTERIX category
 
     Sections                sections;
     boost::optional<size_t> total_size_bytes;

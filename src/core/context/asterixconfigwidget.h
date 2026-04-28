@@ -41,6 +41,11 @@ class ASTERIXConfigWidget : public QWidget
 {
     Q_OBJECT
 
+  signals:
+    // emitted whenever a setting that affects decoding is changed by the user
+    // (category enabled/disabled, edition/REF/SPF changed)
+    void decodingConfigChangedSignal();
+
   public slots:
     void categoryCheckedSlot();
     void editionChangedSlot(const std::string& cat_str, const std::string& ed_str);

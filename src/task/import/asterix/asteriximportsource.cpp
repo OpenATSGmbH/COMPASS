@@ -61,6 +61,7 @@ void ASTERIXImportFileInfo::reset()
     error.reset();
     warning = "";
     contentinfo = "";
+    records_per_category.clear();
     sections.clear();
 
     decoding_tested = false;

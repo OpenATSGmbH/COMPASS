@@ -257,6 +257,8 @@ void ASTERIXConfigWidget::categoryCheckedSlot()
     loginf << "cat " << cat;
 
     decode_setter_(cat, decode);
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const std::string& ed_str)
@@ -274,6 +276,8 @@ void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const s
     cfg.edition(ed_str);
 
     ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
@@ -298,6 +302,8 @@ void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
         ref_edit_buttons_.at(cat)->setDisabled(false);
     else
         ref_edit_buttons_.at(cat)->setDisabled(true);
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
@@ -323,6 +329,8 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
         spf_edit_buttons_.at(cat)->setDisabled(false);
     else
         spf_edit_buttons_.at(cat)->setDisabled(true);
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::categoryEditionEditSlot()
