@@ -37,7 +37,10 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QApplication>
+#include <QProgressDialog>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QDateEdit>
@@ -185,10 +188,7 @@ void ASTERIXImportTaskWidget::addDecoderTab()
                 this, &ASTERIXImportTaskWidget::framingEditSlot);
         framing_grid->addWidget(framing_edit_, 0, 2);
 
-        if (task_.settings().activeFileFraming() == "")
-            framing_edit_->setDisabled(true);
-        else
-            framing_edit_->setDisabled(false);
+        updateFramingControls();
 
         decoder_layout->addLayout(framing_grid);
     }
@@ -466,12 +466,9 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         delete child;
     }
 
-    if (task_.source().isNetworkType())
     {
-        sources_grid_->addWidget(new QLabel("Source: Network"), 0, 0);
-    }
-    else // files
-    {
+        const bool is_network = task_.source().isNetworkType();
+
         QStringList headers;
         headers << "";
         headers << "Name";
@@ -538,7 +535,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                                               file_info.hasWarning(), file_info.warning);
 
             auto item = new QTreeWidgetItem;
-            item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+            if (!is_network)
+                item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
             item->setText(1, QString::fromStdString(file_info.filename));
             item->setText(2, QString::fromStdString(status));
 
@@ -546,6 +544,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
 
             if (has_error)
                 item->setFlags(Qt::ItemIsSelectable);
+            else if (is_network)
+                item->setFlags(Qt::ItemIsEnabled);
 
             if (!file_info.hasSections())
             {
@@ -563,9 +563,14 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                 bool sec_err = tested && section.error.hasError();
                 std::string sec_status = statusString(tested, sec_err, section.error.errinfo,
                                                       !section.warning.empty(), section.warning);
+                // for network sections, !used means no data was received during the probe;
+                // surface that in the status column instead of a warning, and disable the row.
+                if (is_network && !sec_err && !section.used && !section.info.empty())
+                    sec_status = section.info;
 
                 auto sec_item = new QTreeWidgetItem;
-                sec_item->setCheckState(0, section.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+                if (!is_network)
+                    sec_item->setCheckState(0, section.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
                 sec_item->setText(1, QString::fromStdString(section.description));
                 sec_item->setText(2, QString::fromStdString(sec_status));
 
@@ -573,6 +578,10 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
 
                 if (sec_err)
                     sec_item->setFlags(Qt::ItemIsSelectable);
+                else if (is_network && !section.used)
+                    sec_item->setFlags(Qt::NoItemFlags);
+                else if (is_network)
+                    sec_item->setFlags(Qt::ItemIsEnabled);
 
                 QString tip = buildTooltip(section.info, section.records_per_category);
                 if (!tip.isEmpty())
@@ -606,10 +615,31 @@ ASTERIXOverrideWidget* ASTERIXImportTaskWidget::overrideWidget() const
 void ASTERIXImportTaskWidget::decodingStateChangedSlot()
 {
     updateSourcesGrid();
+    updateFramingControls();
+}
+
+void ASTERIXImportTaskWidget::updateFramingControls()
+{
+    if (!framing_combo_ || !framing_edit_)
+        return;
+
+    // Network and PCAP decoders force "raw/netto" (no framing) via requiredASTERIXFraming();
+    // when forced, the combo and edit reflect that and are disabled. The persisted
+    // current_file_framing_ is preserved in settings — only the override is active.
+    const bool forced = task_.requiresFixedFraming();
+
+    QSignalBlocker block(framing_combo_);
+    framing_combo_->setFraming(task_.settings().activeFileFraming());
+
+    framing_combo_->setEnabled(!forced);
+    framing_edit_->setEnabled(!forced && task_.settings().activeFileFraming() != "");
 }
 
 void ASTERIXImportTaskWidget::sourceClicked(QTreeWidgetItem* item, int column)
 {
+    if (task_.source().isNetworkType())
+        return; // network rows have no per-line opt-out
+
     if (item && column == 0)
     {
         bool selected = item->checkState(0) == Qt::CheckState::Checked;
@@ -626,10 +656,7 @@ void ASTERIXImportTaskWidget::framingChangedSlot()
 
     task_.settings().setActiveFileFraming(framing_combo_->getFraming());
 
-    if (task_.settings().activeFileFraming() == "")
-        framing_edit_->setDisabled(true);
-    else
-        framing_edit_->setDisabled(false);
+    updateFramingControls();
 
     task_.testFileDecoding();
 }

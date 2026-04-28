@@ -119,6 +119,7 @@ struct ASTERIXImportFileInfo
 
 private:
     friend class ASTERIXDecoderFile;
+    friend class ASTERIXNetworkDecoder;
 
     bool decoding_tested = false;
     bool processed       = false;
@@ -154,6 +155,7 @@ public:
     void addFile(const std::string& fn);
     void addFiles(const std::vector<std::string>& filenames);
     void clearFiles();
+    void setNetworkProbeResults(FileInfos infos); // network mode synthesizes file infos
     const FileInfos& files() const;
     std::string filesAsString() const;
 

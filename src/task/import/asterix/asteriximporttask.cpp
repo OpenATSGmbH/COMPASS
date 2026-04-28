@@ -467,9 +467,36 @@ void ASTERIXImportTask::configurejASTERIX() const
     jasterix_->decodeNoCategories();
 
     if (!compass_.hasActiveContext())
+    {
+        logdbg << "no active context, no categories configured";
         return;
+    }
 
     auto& ctx_mgr = compass_.dbContextManager();
+
+    // Build a signature of what we're about to apply so we can decide whether to log
+    // verbosely (first run, or config changed since last run) or quietly. Configure
+    // is called on every refreshjASTERIX (i.e. once per analyze line) — full per-cat
+    // logging there would be very noisy.
+    std::string signature = ctx_mgr.activeContext().name() + "|";
+    for (const auto& cfg : ctx_mgr.activeContext().asterixDecoding())
+    {
+        signature += std::to_string(cfg.category()) + ":"
+                  + (settings_.decodeCategory(cfg.category()) ? "1" : "0") + ":"
+                  + cfg.edition() + ":" + cfg.ref() + ":" + cfg.spf() + ";";
+    }
+
+    const bool config_changed = (signature != last_applied_asterix_config_);
+    last_applied_asterix_config_ = signature;
+
+    if (config_changed)
+        loginf << "applying asterix decoding from context '"
+               << ctx_mgr.activeContext().name() << "'";
+    else
+        logdbg << "applying asterix decoding from context '"
+               << ctx_mgr.activeContext().name() << "' (unchanged)";
+
+    unsigned int applied = 0, skipped = 0;
 
     for (const auto& cfg : ctx_mgr.activeContext().asterixDecoding())
     {
@@ -477,47 +504,61 @@ void ASTERIXImportTask::configurejASTERIX() const
 
         bool decode = settings_.decodeCategory(cat);
 
-        logdbg << "setting cat " << cat << " decode "
-               << decode << " edition '" << cfg.edition() << "' ref '"
-               << cfg.ref() << "'";
-
         if (!jasterix_->hasCategory(cat))
         {
-            logwrn << "cat '" << cat
-                   << "' not defined in decoder";
+            logwrn << "cat " << cat << " not defined in decoder, skipping";
+            ++skipped;
             continue;
         }
 
         if (!jasterix_->category(cat)->hasEdition(cfg.edition()))
         {
-            logwrn << "cat " << cat << " edition '"
-                   << cfg.edition() << "' not defined in decoder";
+            logwrn << "cat " << cat << " edition '" << cfg.edition()
+                   << "' not defined in decoder, skipping (parser will fall back to default edition)";
+            ++skipped;
             continue;
         }
 
         if (cfg.ref().size() &&
             !jasterix_->category(cat)->hasREFEdition(cfg.ref()))
         {
-            logwrn << "cat " << cat << " ref '"
-                   << cfg.ref() << "' not defined in decoder";
+            logwrn << "cat " << cat << " ref '" << cfg.ref()
+                   << "' not defined in decoder, skipping";
+            ++skipped;
             continue;
         }
 
         if (cfg.spf().size() &&
             !jasterix_->category(cat)->hasSPFEdition(cfg.spf()))
         {
-            logwrn << "cat " << cat << " spf '"
-                   << cfg.spf() << "' not defined in decoder";
+            logwrn << "cat " << cat << " spf '" << cfg.spf()
+                   << "' not defined in decoder, skipping";
+            ++skipped;
             continue;
         }
 
         jasterix_->setDecodeCategory(cat, decode);
-        logdbg << "setting cat " << cat
-               << " edition " << cfg.edition();
         jasterix_->category(cat)->setCurrentEdition(cfg.edition());
         jasterix_->category(cat)->setCurrentREFEdition(cfg.ref());
         jasterix_->category(cat)->setCurrentSPFEdition(cfg.spf());
+
+        const std::string per_cat_msg = "cat " + std::to_string(cat) + " decode "
+            + std::to_string(decode) + " edition '" + cfg.edition() + "'"
+            + (cfg.ref().size() ? " ref '" + cfg.ref() + "'" : std::string())
+            + (cfg.spf().size() ? " spf '" + cfg.spf() + "'" : std::string());
+
+        if (config_changed)
+            loginf << per_cat_msg;
+        else
+            logdbg << per_cat_msg;
+
+        ++applied;
     }
+
+    if (config_changed)
+        loginf << "applied " << applied << " category configurations, " << skipped << " skipped";
+    else
+        logdbg << "applied " << applied << " category configurations, " << skipped << " skipped";
 }
 
 void ASTERIXImportTask::refreshjASTERIX() const
@@ -716,7 +757,7 @@ void ASTERIXImportTask::testFileDecoding()
         return Result::succeeded();
     };
 
-    AsyncFuncTask task(check_decoding, "Testing decoding", "Please wait...", false);
+    AsyncFuncTask task(check_decoding, "Testing Decoding", "Please wait...", false);
     task.runAsyncDialog(true, nullptr);
 
     // restore chunk sizes for actual import

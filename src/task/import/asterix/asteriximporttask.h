@@ -174,6 +174,7 @@ protected:
     std::unique_ptr<QTimer>          data_received_timer_;
 
     mutable std::shared_ptr<jASTERIX::jASTERIX> jasterix_;
+    mutable std::string last_applied_asterix_config_; // signature of last config applied by configurejASTERIX, for logging
     ASTERIXPostProcess post_process_;
 
     //sub-configurables

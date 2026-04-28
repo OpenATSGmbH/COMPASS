@@ -35,6 +35,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <algorithm>
+#include <unordered_set>
 
 using namespace std;
 using namespace nlohmann;
@@ -90,13 +91,26 @@ void ASTERIXJSONParser::doMappingChecks()
 
     beginResetModel();
 
-    // update non existing keys
-    not_existing_json_keys_.clear();
+    // run per-mapping check first; check() may clear dbcontent_variable_name_,
+    // so the lookup sets must be built afterwards.
+    for (auto& map_it : data_mappings_)
+        map_it->check();
+
+    // build O(1) lookup sets from the (possibly updated) mapping list to avoid
+    // the O(N×M) scans hasJSONKeyMapped/hasDBContentVariableMapped would do below.
+    std::unordered_set<std::string> mapped_json_keys;
+    std::unordered_set<std::string> mapped_dbcont_vars;
+    mapped_json_keys.reserve(data_mappings_.size());
+    mapped_dbcont_vars.reserve(data_mappings_.size());
 
     for (auto& map_it : data_mappings_)
     {
-        map_it->check();
+        mapped_json_keys.insert(map_it->jsonKey());
+        mapped_dbcont_vars.insert(map_it->dbcontVariableName());
     }
+
+    // update non existing keys
+    not_existing_json_keys_.clear();
 
     for (auto& map_it : data_mappings_)
     {
@@ -109,7 +123,7 @@ void ASTERIXJSONParser::doMappingChecks()
 
     for (auto& info_it : item_info_)
     {
-        if (!hasJSONKeyMapped(info_it.first))
+        if (!mapped_json_keys.count(info_it.first))
             not_added_json_keys_.push_back(info_it.first);
     }
 
@@ -118,7 +132,7 @@ void ASTERIXJSONParser::doMappingChecks()
 
     for (auto& dbcontvar_it : dbContent().variables())
     {
-        if (!hasDBContentVariableMapped(dbcontvar_it.first))
+        if (!mapped_dbcont_vars.count(dbcontvar_it.first))
             not_added_dbcont_variables_.push_back(dbcontvar_it.first);
     }
 
