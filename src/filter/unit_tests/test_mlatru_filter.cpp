@@ -96,6 +96,36 @@ TEST_CASE("MLATRUFilter inactive returns empty", "[filter][mlatru]")
     CHECK(sql.empty());
 }
 
+TEST_CASE("MLATRUFilter rus_str with empty tokens does not hang", "[filter][mlatru][empty]")
+{
+    // Strings like "kor,," / ",,kor" / ",, ,kor," contain empty tokens after
+    // splitting on ','. Previously the parsing loop did `continue` without
+    // advancing the iterator, hanging the GUI. The filter must process the
+    // valid tokens and ignore the empty ones.
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("MLATRUFilter", "MLATRUFilter0", {
+        {"active", true},
+        {"rus_str", "kor,, ,42,"},
+        {"match_all", false}
+    });
+
+    MLATRUFilter filter(cfg, nullptr, mock);
+
+    std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> lookup;
+    lookup[100]["kor"] = {3};
+    filter.updateMLATDataSources(lookup);
+
+    VariableSet read_set;
+    bool first = true;
+    // Must not hang. The valid entries (kor, 42) must be reflected in the SQL.
+    std::string sql = filter.getConditionString("CAT020", read_set, first);
+
+    CHECK_FALSE(first);
+    CHECK(sql.find("ds_id = 100") != std::string::npos);
+    CHECK(sql.find("'3'") != std::string::npos);   // kor → index 3
+    CHECK(sql.find("'42'") != std::string::npos);  // raw number 42
+}
+
 TEST_CASE("MLATRUFilter checkRUs", "[filter][mlatru]")
 {
     auto mock = createStandardMock();

@@ -147,6 +147,61 @@ TEST_CASE("ADSBQualityFilter with quality checks", "[filter][adsbquality]")
     CHECK(sql.find("nucp_nic >= 5") != std::string::npos);
 }
 
+TEST_CASE("ADSBQualityFilter all version flags off does not emit empty IN()", "[filter][adsbquality][empty]")
+{
+    // All three version flags off, all min/max checks off, but filter is
+    // active. Must NOT emit "mops_version IN ()" (invalid SQL) nor a
+    // dangling " AND ".
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ADSBQualityFilter", "ADSBQualityFilter", {
+        {"active", true},
+        {"use_v0", false}, {"use_v1", false}, {"use_v2", false},
+        {"use_min_nucp", false}, {"use_max_nucp", false},
+        {"use_min_nic", false}, {"use_max_nic", false},
+        {"use_min_nacp", false}, {"use_max_nacp", false},
+        {"use_min_sil_v1", false}, {"use_max_sil_v1", false},
+        {"use_min_sil_v2", false}, {"use_max_sil_v2", false}
+    });
+
+    ADSBQualityFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT021", read_set, first);
+
+    CHECK(sql.empty());
+    CHECK(first);   // outer query must be unaffected
+    CHECK(sql.find("IN ()") == std::string::npos);
+    CHECK(sql.find("IN()") == std::string::npos);
+}
+
+TEST_CASE("ADSBQualityFilter all versions off but min check on", "[filter][adsbquality][empty]")
+{
+    // No version flags but a min/max check is enabled. Must skip the
+    // version IN clause entirely and emit only the min/max clause —
+    // without a leading dangling " AND".
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ADSBQualityFilter", "ADSBQualityFilter", {
+        {"active", true},
+        {"use_v0", false}, {"use_v1", false}, {"use_v2", false},
+        {"use_min_nucp", true}, {"min_nucp", 4}
+    });
+
+    ADSBQualityFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT021", read_set, first);
+
+    CHECK_FALSE(first);
+    CHECK(sql.find("IN ()") == std::string::npos);
+    CHECK(sql.find("IN()") == std::string::npos);
+    CHECK(sql.find("nucp_nic >= 4") != std::string::npos);
+    // SQL must not start with " AND" (would be left over from missing version IN clause).
+    REQUIRE(sql.size() > 4);
+    CHECK(sql.substr(0, 5) != " AND ");
+}
+
 TEST_CASE("ADSBQualityFilter viewpoint save/load round-trip", "[filter][adsbquality][viewpoint]")
 {
     auto mock = createStandardMock();
