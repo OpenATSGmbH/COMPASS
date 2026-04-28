@@ -207,7 +207,7 @@ public:
 
         unsigned int ds_font_size{10};
 
-        nlohmann::json sensor_status_max_status_age_options;
+        nlohmann::json sensor_status_max_status_age_options = nlohmann::json::array({10u, 20u, 30u, 40u, 50u, 60u});
         unsigned int sensor_status_max_status_age_index{1};
         unsigned int sensor_status_max_event_buf_size{1000};
         bool sensor_status_show_last_updates{false};

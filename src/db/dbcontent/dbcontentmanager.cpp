@@ -1417,10 +1417,15 @@ void DBContentManager::processLiveModeSlot()
             tmp_time = microsec_clock::local_time();
         }
 
-        logdbg << "distributing data " << (bool) data_.size();
+        loginf << "distributing data, num buffers " << data_.size() << " had_data " << had_data;
+
+        data_store_->reset();
 
         if (data_.size())
-            emit loadedDataSignal(data_, true);
+        {
+            //emit loadedDataSignal(data_, true);
+            data_store_->update();
+        }
         else if (had_data)
             compass_.viewManager().clearDataInViews();
 
