@@ -199,6 +199,182 @@ TEST_CASE("DBFilter ADSBMOPS condition with IN operator", "[filter][condition]")
     }
 }
 
+TEST_CASE("DBFilterCondition IN with NULL token", "[filter][condition][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TrackNumFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TrackNumFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "TrackNumCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", "IN"},
+                {"value", "0,NULL"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "Track Number"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    // Expect both the IN clause for the non-NULL value AND an IS NULL OR clause
+    CHECK(sql.find("track_num IN(0)") != std::string::npos);
+    CHECK(sql.find("track_num IS NULL") != std::string::npos);
+    CHECK(sql.find(" OR ") != std::string::npos);
+}
+
+TEST_CASE("DBFilterCondition IN with only NULL", "[filter][condition][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TrackNumFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TrackNumFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "TrackNumCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", "IN"},
+                {"value", "NULL"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "Track Number"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    // Only IS NULL clause, no IN(...)
+    CHECK(sql.find("track_num IS NULL") != std::string::npos);
+    CHECK(sql.find("IN(") == std::string::npos);
+    CHECK(sql.find("IN (") == std::string::npos);
+}
+
+TEST_CASE("DBFilterCondition equality with NULL value", "[filter][condition][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "TrackNumFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "TrackNumFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "TrackNumCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", "="},
+                {"value", "NULL"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "Track Number"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    // Bare NULL on a non-IN operator should still collapse to IS NULL
+    CHECK(sql.find("track_num IS NULL") != std::string::npos);
+    CHECK(sql.find("=") == std::string::npos);
+}
+
+TEST_CASE("DBFilter custom with partially present meta vars", "[filter][condition][partial]")
+{
+    // Custom filter with two conditions on different meta vars where the
+    // queried dbcontent has only one of them. The condition whose meta var
+    // is not present in the dbcontent must be silently skipped, not asserted.
+    //
+    // Track Number is in all CATs in the standard mock; X StdDev is only in
+    // RefTraj and CAT062. CAT048 therefore has Track Number but not X StdDev.
+
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("DBFilter", "PartialMetaFilter", {
+        {"active", true},
+        {"is_custom", true},
+        {"name", "PartialMetaFilter"}
+    });
+
+    cfg["sub_configs"] = nlohmann::json::array({
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "TrackNumCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", "="},
+                {"value", "42"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "Track Number"}
+            }}
+        },
+        {
+            {"class_name", "DBFilterCondition"},
+            {"instance_name", "XStdDevCond"},
+            {"parameters", {
+                {"absolute_value", false},
+                {"operator", "<"},
+                {"value", "10"},
+                {"variable_dbcontent_name", "Meta"},
+                {"variable_name", "X StdDev"}
+            }}
+        }
+    });
+
+    DBFilter filter(cfg, true, nullptr, mock);
+
+    CHECK(filter.getNumConditions() == 2);
+
+    SECTION("filters CAT048 — Track Number present, X StdDev not")
+    {
+        CHECK(filter.filters("CAT048"));
+
+        VariableSet read_set;
+        bool first = true;
+        std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+        // Track Number must be applied, X StdDev must be skipped.
+        CHECK(sql.find("track_num") != std::string::npos);
+        CHECK(sql.find("=42") != std::string::npos);
+        CHECK(sql.find("x_stddev") == std::string::npos);
+    }
+
+    SECTION("filters CAT062 — both present")
+    {
+        CHECK(filter.filters("CAT062"));
+
+        VariableSet read_set;
+        bool first = true;
+        std::string sql = filter.getConditionString("CAT062", read_set, first);
+
+        CHECK(sql.find("track_num") != std::string::npos);
+        CHECK(sql.find("x_stddev") != std::string::npos);
+    }
+}
+
 TEST_CASE("DBFilter Detection Type condition", "[filter][condition]")
 {
     auto mock = createStandardMock();

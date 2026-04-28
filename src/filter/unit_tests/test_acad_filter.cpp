@@ -110,6 +110,61 @@ TEST_CASE("ACADFilter unknown dbcontent returns empty", "[filter][acad]")
     CHECK(sql.empty());
 }
 
+TEST_CASE("ACADFilter values with NULL token", "[filter][acad][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ACADFilter", "Aircraft Address", {
+        {"active", true},
+        {"values_str", "4C8070,NULL"}
+    });
+
+    ACADFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("target_addr IN (5013616)") != std::string::npos);
+    CHECK(sql.find("target_addr IS NULL") != std::string::npos);
+    CHECK(sql.find("OR") != std::string::npos);
+}
+
+TEST_CASE("ACADFilter NULL only", "[filter][acad][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ACADFilter", "Aircraft Address", {
+        {"active", true},
+        {"values_str", "NULL"}
+    });
+
+    ACADFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("target_addr IS NULL") != std::string::npos);
+    CHECK(sql.find("IN (") == std::string::npos);
+}
+
+TEST_CASE("ACADFilter null lowercase token", "[filter][acad][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("ACADFilter", "Aircraft Address", {
+        {"active", true},
+        {"values_str", "4C8070,null"}
+    });
+
+    ACADFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("target_addr IN (5013616)") != std::string::npos);
+    CHECK(sql.find("target_addr IS NULL") != std::string::npos);
+}
+
 TEST_CASE("ACADFilter viewpoint save/load round-trip", "[filter][acad][viewpoint]")
 {
     auto mock = createStandardMock();

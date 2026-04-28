@@ -135,6 +135,61 @@ TEST_CASE("UTNFilter multiple UTNs", "[filter][utn]")
     CHECK(sql.find("10") != std::string::npos);
 }
 
+TEST_CASE("UTNFilter utns with NULL token", "[filter][utn][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("UTNFilter", "UTNFilter0", {
+        {"active", true},
+        {"utns_str", "1,5,NULL"}
+    });
+
+    UTNFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("utn IN (") != std::string::npos);
+    CHECK(sql.find("utn IS NULL") != std::string::npos);
+    CHECK(sql.find("OR") != std::string::npos);
+}
+
+TEST_CASE("UTNFilter NULL only", "[filter][utn][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("UTNFilter", "UTNFilter0", {
+        {"active", true},
+        {"utns_str", "NULL"}
+    });
+
+    UTNFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("utn IS NULL") != std::string::npos);
+    CHECK(sql.find("IN (") == std::string::npos);
+}
+
+TEST_CASE("UTNFilter null lowercase token", "[filter][utn][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("UTNFilter", "UTNFilter0", {
+        {"active", true},
+        {"utns_str", "1,null"}
+    });
+
+    UTNFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("utn IN (") != std::string::npos);
+    CHECK(sql.find("utn IS NULL") != std::string::npos);
+}
+
 TEST_CASE("UTNFilter viewpoint save/load round-trip", "[filter][utn][viewpoint]")
 {
     auto mock = createStandardMock();

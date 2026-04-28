@@ -127,6 +127,62 @@ TEST_CASE("Mode3AFilter first=false prepends AND", "[filter][mode3a]")
     CHECK(sql.substr(0, 4) == " AND");
 }
 
+TEST_CASE("Mode3AFilter values with NULL token", "[filter][mode3a][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("Mode3AFilter", "Mode 3/A Codes", {
+        {"active", true},
+        {"values_str", "3771,NULL"}
+    });
+
+    Mode3AFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    // 3771 octal = 2041 decimal
+    CHECK(sql.find("mode3a_code IN (2041)") != std::string::npos);
+    CHECK(sql.find("mode3a_code IS NULL") != std::string::npos);
+    CHECK(sql.find("OR") != std::string::npos);
+}
+
+TEST_CASE("Mode3AFilter NULL only", "[filter][mode3a][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("Mode3AFilter", "Mode 3/A Codes", {
+        {"active", true},
+        {"values_str", "NULL"}
+    });
+
+    Mode3AFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("mode3a_code IS NULL") != std::string::npos);
+    CHECK(sql.find("IN (") == std::string::npos);
+}
+
+TEST_CASE("Mode3AFilter null lowercase token", "[filter][mode3a][null]")
+{
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("Mode3AFilter", "Mode 3/A Codes", {
+        {"active", true},
+        {"values_str", "3771,null"}
+    });
+
+    Mode3AFilter filter(cfg, nullptr, mock);
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.find("mode3a_code IN (2041)") != std::string::npos);
+    CHECK(sql.find("mode3a_code IS NULL") != std::string::npos);
+}
+
 TEST_CASE("Mode3AFilter viewpoint save/load round-trip", "[filter][mode3a][viewpoint]")
 {
     auto mock = createStandardMock();
