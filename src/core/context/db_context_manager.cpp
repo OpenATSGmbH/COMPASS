@@ -412,7 +412,7 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
     if (compass_.dbOpened())
         writeContextToDB();
 
-    emit activeContextChangedSignal();
+    emit dataSourcesChangedSignal();
 
     return activeContext().dataSources().back();
 }
@@ -456,7 +456,7 @@ void DBContextManager::deleteDataSource(unsigned int ds_id)
         sources.end());
 
     saveContext(active_context_name_);
-    emit activeContextChangedSignal();
+    emit dataSourcesChangedSignal();
 }
 
 // ============================================================
@@ -1111,7 +1111,7 @@ FFT& DBContextManager::createFFT(const string& name)
     activeContext().ffts().push_back(std::move(f));
     saveContext(active_context_name_);
 
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 
     return activeContext().ffts().back();
 }
@@ -1127,7 +1127,7 @@ void DBContextManager::deleteFFT(const string& name)
         ffts.end());
 
     saveContext(active_context_name_);
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 }
 
 void DBContextManager::deleteAllFFTs()
@@ -1135,7 +1135,7 @@ void DBContextManager::deleteAllFFTs()
     traced_assert(hasActiveContext());
     activeContext().ffts().clear();
     saveContext(active_context_name_);
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 }
 
 pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longitude_deg,
@@ -1952,7 +1952,7 @@ void DBContextManager::importSensors(const string& filepath)
 
     loginf << "imported " << data_arr.size() << " sensors";
 
-    emit activeContextChangedSignal();
+    emit dataSourcesChangedSignal();
 }
 
 void DBContextManager::importFFTs(const string& filepath)
@@ -1984,7 +1984,7 @@ void DBContextManager::importFFTs(const string& filepath)
 
     loginf << "imported " << data_arr.size() << " FFTs";
 
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 }
 
 void DBContextManager::importSectors(const string& filepath)

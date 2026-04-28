@@ -579,7 +579,7 @@ void DBContent::deleteJobDoneSlot()
     delete_job_ = nullptr;
 
     compass_.dbContextManager().writeContextToDB();
-    emit compass_.dbContextManager().activeContextChangedSignal();
+    emit compass_.dbContextManager().dataSourcesChangedSignal();
 
     // remove from inserted count
     //compass_.dataSourceManager().clearInsertedCounts(name_);

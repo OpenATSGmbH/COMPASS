@@ -272,6 +272,12 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
             this, [this]() { rebuildContextCombo(); rebuildTree(); });
     connect(&manager_, &DBContextManager::contextsChangedSignal,
             this, [this]() { rebuildContextCombo(); rebuildTree(); });
+    connect(&manager_, &DBContextManager::dataSourcesChangedSignal,
+            this, [this]() { rebuildTree(); });
+    connect(&manager_, &DBContextManager::fftsChangedSignal,
+            this, [this]() { rebuildTree(); });
+    connect(&manager_, &DBContextManager::sectorsChangedSignal,
+            this, [this]() { rebuildTree(); });
 }
 
 DBContextEditDialog::~DBContextEditDialog() = default;

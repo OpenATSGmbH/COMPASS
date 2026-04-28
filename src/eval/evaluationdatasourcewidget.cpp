@@ -100,6 +100,8 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot); // update if data sources changed
+    connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+            this, &EvaluationDataSourceWidget::updateDataSourcesSlot);
 }
 
 /**

@@ -146,6 +146,9 @@ ASTERIXImportDataSourcesWidget::ASTERIXImportDataSourcesWidget(ASTERIXImportTask
     connect(&task_.compass().dbContextManager(),
             &context::DBContextManager::activeContextChangedSignal,
             this, &ASTERIXImportDataSourcesWidget::rebuildAll);
+    connect(&task_.compass().dbContextManager(),
+            &context::DBContextManager::dataSourcesChangedSignal,
+            this, &ASTERIXImportDataSourcesWidget::rebuildAll);
 
     rebuildAll();
 }

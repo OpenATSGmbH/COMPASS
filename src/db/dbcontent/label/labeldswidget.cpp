@@ -60,6 +60,8 @@ LabelDSWidget::LabelDSWidget(LabelGenerator& label_generator, QWidget* parent, Q
 
     connect(&label_generator_.dbContentManager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
             this, &LabelDSWidget::updateListSlot); // update if data sources changed
+    connect(&label_generator_.dbContentManager().compass().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+            this, &LabelDSWidget::updateListSlot);
 
     connect(&label_generator, &LabelGenerator::labelLinesChangedSignal,
             this, &LabelDSWidget::updateListSlot); // update if lines changed

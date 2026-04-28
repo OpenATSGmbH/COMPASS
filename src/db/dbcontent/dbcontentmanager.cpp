@@ -1081,7 +1081,7 @@ void DBContentManager::insertData(std::map<std::string, std::shared_ptr<Buffer>>
 
     auto& ctx_man = compass_.dbContextManager();
     if (ds_added_any)
-        emit ctx_man.activeContextChangedSignal();
+        emit ctx_man.dataSourcesChangedSignal();
     emit ctx_man.countsChangedSignal();
 
     insert_job_ = make_shared<DBContentInsertDBJob>(compass_.dbInterface(), *this, data, false);

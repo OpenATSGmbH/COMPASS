@@ -62,6 +62,8 @@ class DBContextManager : public QObject, public IDataSourceProvider
 signals:
     void activeContextChangedSignal();
     void contextsChangedSignal();
+    void dataSourcesChangedSignal();
+    void fftsChangedSignal();
     void sectorsChangedSignal();
     void countsChangedSignal();
 

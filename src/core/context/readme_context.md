@@ -42,7 +42,15 @@ Related files outside this directory:
 - **Owned by COMPASS** -- created in `COMPASS` constructor, accessed via `compass.dbContextManager()`.
 - **"No Context" is a legal state** -- `hasActiveContext()` may be `false` at startup and at any time afterward (e.g. after deleting the active context). No startup dialog forces context selection; the main window disables everything except DB-open / context-create / exit while in this state. See [No Context state](#no-context-state).
 - **One active context at a time** -- when `hasActiveContext()` is true, all queries (data sources, FFTs, sectors) operate on the active context.
-- **Qt signals** for change notification: `activeContextChangedSignal()`, `contextsChangedSignal()`, `sectorsChangedSignal()`. These may fire with `hasActiveContext() == false` -- signal handlers must guard.
+- **Qt signals** for change notification, with narrow semantics:
+  - `activeContextChangedSignal()` -- the *identity* of the active context changed (switched, renamed, deleted, or DB open made it meaningful). Listeners that only care about which context is active (window title, menu gating) connect to this only.
+  - `contextsChangedSignal()` -- the set of known contexts changed (created/deleted/duplicated).
+  - `dataSourcesChangedSignal()` -- the data source list of the active context was mutated (added/edited/deleted/imported, or new DS auto-created during ASTERIX/JSON import).
+  - `fftsChangedSignal()` -- the FFT list of the active context was mutated.
+  - `sectorsChangedSignal()` -- the sector list of the active context was mutated.
+  - `countsChangedSignal()` -- per-session inserted/loaded counts changed.
+
+  Listeners that care about a section's contents (e.g. data source widgets) must connect to BOTH the section signal AND `activeContextChangedSignal` -- a context switch wipes the previous list. These signals may fire with `hasActiveContext() == false`; signal handlers must guard.
 
 ## DBContext (data container)
 

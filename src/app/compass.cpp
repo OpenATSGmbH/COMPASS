@@ -180,6 +180,8 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
                      filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
+    QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
+                     filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
                      view_manager_.get(), &ViewManager::databaseOpenedSlot);
@@ -203,6 +205,8 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     // data sources changed
     QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
+                     eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
+    QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
                      eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
 
     // sectors changed (direct edits within active context)
