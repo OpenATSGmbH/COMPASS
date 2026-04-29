@@ -28,7 +28,7 @@ class ColorScaleSelection;
 class PropertyValueEdit;
 
 class DBContentRootItem;
-class LayerPanelWidget;
+class ViewLayerPanelWidget;
 
 class QCheckBox;
 class QLineEdit;
@@ -104,6 +104,6 @@ protected:
     QPushButton*         export_button_                = nullptr;
     QLabel*              range_info_label_             = nullptr;
 
-    LayerPanelWidget*  layer_panel_     {nullptr};
-    DBContentRootItem* db_content_root_ {nullptr};
+    ViewLayerPanelWidget* layer_panel_     {nullptr};
+    DBContentRootItem*    db_content_root_ {nullptr};
 };

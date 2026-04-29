@@ -26,7 +26,8 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 
-LayerPanelWidget::LayerPanelWidget(QWidget* parent, LayerTreeItemDelegate* delegate)
+LayerPanelWidget::LayerPanelWidget(QWidget* parent, 
+                                   LayerTreeItemDelegate* delegate)
     : QWidget(parent)
     , model_(std::make_unique<LayerTreeModel>())
 {

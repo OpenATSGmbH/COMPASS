@@ -28,7 +28,7 @@
 #include "ui_test_common.h"
 
 #include "dbcontentlayer.h"
-#include "layerpanelwidget.h"
+#include "viewlayerpanelwidget.h"
 #include "layertreemodel.h"
 #include "annotationsrootitem.h"
 
@@ -82,8 +82,6 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
     }
 
     {
-        layer_panel_ = new LayerPanelWidget(this);
-
         // Register the scatter-specific "# NULL" column (custom col 0).
         LayerColumnSpec null_col;
         null_col.header           = "# NULL";
@@ -91,17 +89,9 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
         null_col.resize_mode      = QHeaderView::Interactive;
         null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
         null_col.group_aggregator = &sumULongLong;
-        layer_panel_->model()->addColumn(null_col);
-        layer_panel_->model()->applyHeaderSettings(layer_panel_->treeView()->header());
 
-        // Always-shown "DBContent" root — panel owns it via the model.
-        auto root_uptr = std::make_unique<DBContentRootItem>();
-        db_content_root_ = static_cast<DBContentRootItem*>(
-            layer_panel_->addRootItem(std::move(root_uptr)));
-
-        // Sibling "Annotations" root, placed after DBContent. Placeholder for
-        // now — matches the Geographic View item in name and icon.
-        layer_panel_->addRootItem(std::make_unique<AnnotationsRootItem>());
+        layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
+        db_content_root_ = layer_panel_->dbContentRootItem();
 
         // Hand the root + model to the data widget so it can populate and
         // round-trip hidden state.

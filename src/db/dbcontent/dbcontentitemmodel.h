@@ -66,6 +66,9 @@ public:
 
     // --- Public API ---
 
+    DBContentItemProvider&       provider()       { return provider_; }
+    const DBContentItemProvider& provider() const { return provider_; }
+
     /** Returns the display name for an item: "<grouping> <id_string>". */
     QString itemName(const nlohmann::json& item_id) const;
 

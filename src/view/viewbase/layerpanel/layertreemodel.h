@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "layertreedefs.h"
+
 #include <QAbstractItemModel>
 #include <QHeaderView>
 #include <QString>
@@ -29,23 +31,6 @@
 #include <vector>
 
 class LayerTreeItem;
-
-/**
- * Spec for a custom column. Custom columns start at index 2 (Name=0, Count=1).
- *
- * group_aggregator: optional — when a group row has no own value for this
- * column (itemData returns invalid), the model collects valid values from the
- * full descendant subtree and passes them to this callback. Without an
- * aggregator the group row stays empty.
- */
-struct LayerColumnSpec
-{
-    QString                 header;
-    int                     default_width = 80;
-    QHeaderView::ResizeMode resize_mode   = QHeaderView::Interactive;
-    Qt::Alignment           alignment     = Qt::AlignLeft | Qt::AlignVCenter;
-    std::function<QVariant(const std::vector<QVariant>&)> group_aggregator;
-};
 
 /**
  * QAbstractItemModel over a LayerTreeItem tree.

@@ -279,13 +279,21 @@ void DBContentItemModel::rebuild()
     item_ids_.clear();
     visibility_.clear();
 
+    std::map<nlohmann::json, nlohmann::json> name_cache;
+
     for (const auto& [item_id, locations] : provider_.itemLocations())
     {
         item_ids_.push_back(item_id);
 
         auto it = snapshot.find(item_id);
         visibility_[item_id] = (it != snapshot.end()) ? it->second : true;
+
+        name_cache[item_id] = provider_.itemSortValue(item_id);
     }
+
+    std::sort(item_ids_.begin(), item_ids_.end(),
+              [&name_cache](const nlohmann::json& a, const nlohmann::json& b)
+              { return name_cache.at(a) < name_cache.at(b); });
 
     endResetModel();
 }

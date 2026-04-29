@@ -17,24 +17,63 @@
 
 #include "dbcontentitemview.h"
 #include "dbcontentitemmodel.h"
+#include "dbcontentitemprovider.h"
+
+#include <QComboBox>
+#include <QTreeView>
+#include <QVBoxLayout>
 
 /**
  */
 DBContentItemView::DBContentItemView(DBContentItemModel& model, QWidget* parent)
-    : QTreeView(parent)
+    : QWidget(parent)
     , model_(model)
 {
-    setModel(&model_);
-    setRootIsDecorated(false);
-    setContextMenuPolicy(Qt::CustomContextMenu);
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
 
-    connect(this, &QTreeView::customContextMenuRequested,
+    // Grouping combo — populated before connecting to avoid spurious setGrouping() calls
+    grouping_box_ = new QComboBox(this);
+
+    for (auto g : DBContentItemProvider::getGroupings())
+    {
+        grouping_box_->addItem(
+            QString::fromStdString(DBContentItemProvider::groupingToString(g)));
+    }
+
+    grouping_box_->setCurrentText(
+        QString::fromStdString(
+            DBContentItemProvider::groupingToString(model_.provider().grouping())));
+
+    connect(grouping_box_, &QComboBox::currentTextChanged,
+            this, &DBContentItemView::groupingChangedSlot);
+
+    layout->addWidget(grouping_box_);
+
+    // Item tree view
+    tree_view_ = new QTreeView(this);
+    tree_view_->setModel(&model_);
+    tree_view_->setRootIsDecorated(false);
+    tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(tree_view_, &QTreeView::customContextMenuRequested,
             [this](const QPoint& pos) {
-                model_.showContextMenu(indexAt(pos),
-                                       viewport()->mapToGlobal(pos),
-                                       this);
+                model_.showContextMenu(tree_view_->indexAt(pos),
+                                       tree_view_->viewport()->mapToGlobal(pos),
+                                       tree_view_);
             });
 
-    connect(this, &QTreeView::doubleClicked,
+    connect(tree_view_, &QTreeView::doubleClicked,
             &model_, &DBContentItemModel::itemDoubleClickedSlot);
+
+    layout->addWidget(tree_view_);
+}
+
+/**
+ */
+void DBContentItemView::groupingChangedSlot(const QString& text)
+{
+    model_.provider().setGrouping(
+        DBContentItemProvider::groupingFromString(text.toStdString()));
 }

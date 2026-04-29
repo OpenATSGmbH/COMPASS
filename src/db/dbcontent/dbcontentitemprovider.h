@@ -32,6 +32,11 @@ namespace dbContent
     class TargetReportAccessor;
 }
 
+namespace context
+{
+    class DBContextManager;
+}
+
 /**
  * Provides DBContent buffer items grouped by certain attributes (e.g. UTN),
  * given a DBContentDataStore. 
@@ -72,17 +77,20 @@ public:
     DBContentDataStore& dataStore() { return data_store_; }
 
     std::string itemName(const nlohmann::json& item_id) const;
+    nlohmann::json itemSortValue(const nlohmann::json& item_id) const;
 
     static std::string groupingToString(Grouping grouping);
     static Grouping groupingFromString(const std::string& str);
     static bool isGroupingString(const std::string& str);
     static bool isTargetSpecific(Grouping grouping);
     static bool isNumeric(Grouping grouping);
+    static std::vector<Grouping> getGroupings();
 
     static const std::string GroupingStrNone;
     static const std::string GroupingStrAircraftAddress;
     static const std::string GroupingStrAircraftID;
     static const std::string GroupingStrTrackNumber;
+    static const std::string GroupingStrDSIDTrackNumber;
     static const std::string GroupingStrMode3ACode;
     static const std::string GroupingStrUTN;
 
@@ -105,6 +113,7 @@ private:
     std::function<nlohmann::json(unsigned int)> createGroupFunc(dbContent::TargetReportAccessor& accessor) const;
 
     DBContentDataStore&                                 data_store_;                // data store providing the data
+    context::DBContextManager&                          context_manager_;           // context manager
     Grouping                                            grouping_ = Grouping::None; // item grouping mode
     std::vector<std::unique_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups
     std::map<nlohmann::json, ItemLocations>             item_locations_;            // per item group locations

@@ -23,7 +23,7 @@ class ScatterPlotViewWidget;
 class ScatterPlotView;
 
 class DBContentRootItem;
-class LayerPanelWidget;
+class ViewLayerPanelWidget;
 
 class QCheckBox;
 class QLabel;
@@ -60,9 +60,9 @@ protected:
 
     ScatterPlotView* view_ = nullptr;
 
-    QLabel*            color_mode_label_ {nullptr};
-    LayerPanelWidget*  layer_panel_      {nullptr};
-    DBContentRootItem* db_content_root_  {nullptr};
+    QLabel*               color_mode_label_ {nullptr};
+    ViewLayerPanelWidget* layer_panel_      {nullptr};
+    DBContentRootItem*    db_content_root_  {nullptr};
 
     QCheckBox* use_connection_lines_ {nullptr};
 

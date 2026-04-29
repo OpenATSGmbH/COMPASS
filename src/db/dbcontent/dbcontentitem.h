@@ -35,6 +35,7 @@ enum class Grouping
     AircraftAddress,
     AircraftID,
     TrackNumber,
+    DSIDTrackNumber,
     Mode3ACode,
     UTN
 };
