@@ -24,6 +24,8 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent_commands.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentdatastore.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemprovider.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemmodel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemview.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentaccessor.cpp"
@@ -36,4 +38,6 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent_commands.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentdatastore.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemprovider.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemmodel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemview.cpp"
 )
