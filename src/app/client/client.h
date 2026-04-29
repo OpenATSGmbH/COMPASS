@@ -37,6 +37,10 @@ public:
 
     COMPASS& compass();
 
+    /// Apply (or revert) the dark palette + stylesheet to QApplication.
+    /// On first call, captures the current palette/stylesheet as the "light" baseline.
+    static void applyDarkMode(bool dark);
+
 private:
     std::unique_ptr<ConfigurationManager> config_manager_;
     std::unique_ptr<COMPASS> compass_;

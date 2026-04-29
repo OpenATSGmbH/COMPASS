@@ -17,6 +17,7 @@
 
 #include "mainwindow.h"
 #include "mainwindow_commands.h"
+#include "client.h"
 #include "compass.h"
 #include "configurationmanager.h"
 #include "db_context_copy_dialog.h"
@@ -451,6 +452,7 @@ void MainWindow::createMenus ()
     dark_mode_action_ = config_menu_->addAction("Dark Mode");
     dark_mode_action_->setCheckable(true);
     dark_mode_action_->setChecked(compass_.darkMode());
+    dark_mode_action_->setShortcut(tr("Ctrl+D"));
     connect(dark_mode_action_, &QAction::toggled, this, &MainWindow::toggleDarkModeSlot);
 
     fullscreen_action_ = config_menu_->addAction("Fullscreen [F11]");
@@ -1245,11 +1247,9 @@ void MainWindow::toggleDarkModeSlot()
 {
     loginf;
 
-    compass_.darkMode(!compass_.darkMode());
-
-    QMessageBox m_warning(QMessageBox::Information, "Dark Mode",
-                          "Please restart the applications for the Dark Mode change to take effect.", QMessageBox::Ok, this);
-    m_warning.exec();
+    bool dark = !compass_.darkMode();
+    Client::applyDarkMode(dark);
+    compass_.darkMode(dark);
 }
 
 void MainWindow::toggleFullscreenSlot()

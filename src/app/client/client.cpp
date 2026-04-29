@@ -410,42 +410,7 @@ bool Client::run ()
     {
         compass_ = std::make_unique<COMPASS>(*config_manager_);
 
-        if (compass_->darkMode())
-        {
-            // Define a simple dark mode stylesheet
-            QPalette dark_pal;
-            dark_pal.setColor(QPalette::Window, QColor(53, 53, 53));
-            dark_pal.setColor(QPalette::WindowText, Qt::white);
-            dark_pal.setColor(QPalette::Base, QColor(25, 25, 25));
-            dark_pal.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-            dark_pal.setColor(QPalette::ToolTipBase, Qt::white);
-            dark_pal.setColor(QPalette::ToolTipText, Qt::white);
-            dark_pal.setColor(QPalette::Text, Qt::white);
-            dark_pal.setColor(QPalette::Button, QColor(75, 75, 75));
-            dark_pal.setColor(QPalette::ButtonText, Qt::white);
-            dark_pal.setColor(QPalette::BrightText, Qt::red);
-            dark_pal.setColor(QPalette::Link, QColor(42, 130, 218));
-            dark_pal.setColor(QPalette::Highlight, QColor(42, 130, 218));
-            dark_pal.setColor(QPalette::HighlightedText, Qt::black);
-
-            dark_pal.setColor(QPalette::Disabled, QPalette::Window, dark_pal.window().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::WindowText, dark_pal.windowText().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::Base, dark_pal.base().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::AlternateBase, dark_pal.alternateBase().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::Text, dark_pal.text().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::Button, dark_pal.button().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::ButtonText, dark_pal.buttonText().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::BrightText, dark_pal.brightText().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::Link, dark_pal.link().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::Highlight, dark_pal.highlight().color().darker());
-            dark_pal.setColor(QPalette::Disabled, QPalette::HighlightedText, dark_pal.highlightedText().color().darker());
-
-            // Apply the palette
-            QApplication::setPalette(dark_pal);
-
-            // (Optional) Apply a global stylesheet for further refinement
-            QApplication::setStyleSheet("QToolTip { color: #ffffff; background-color: #2a2a2a; border: 1px solid white; }");
-        }
+        applyDarkMode(compass_->darkMode());
 
         // make system your application font (applies to all widgets)
         if (Utils::System::appDir() != nullptr)
@@ -790,6 +755,57 @@ COMPASS& Client::compass()
 {
     traced_assert(compass_);
     return *compass_;
+}
+
+void Client::applyDarkMode(bool dark)
+{
+    static bool baseline_captured = false;
+    static QPalette light_palette;
+    static QString light_stylesheet;
+
+    if (!baseline_captured)
+    {
+        light_palette = QApplication::palette();
+        light_stylesheet = qApp->styleSheet();
+        baseline_captured = true;
+    }
+
+    if (!dark)
+    {
+        QApplication::setPalette(light_palette);
+        qApp->setStyleSheet(light_stylesheet);
+        return;
+    }
+
+    QPalette dark_pal;
+    dark_pal.setColor(QPalette::Window, QColor(53, 53, 53));
+    dark_pal.setColor(QPalette::WindowText, Qt::white);
+    dark_pal.setColor(QPalette::Base, QColor(25, 25, 25));
+    dark_pal.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+    dark_pal.setColor(QPalette::ToolTipBase, Qt::white);
+    dark_pal.setColor(QPalette::ToolTipText, Qt::white);
+    dark_pal.setColor(QPalette::Text, Qt::white);
+    dark_pal.setColor(QPalette::Button, QColor(75, 75, 75));
+    dark_pal.setColor(QPalette::ButtonText, Qt::white);
+    dark_pal.setColor(QPalette::BrightText, Qt::red);
+    dark_pal.setColor(QPalette::Link, QColor(42, 130, 218));
+    dark_pal.setColor(QPalette::Highlight, QColor(42, 130, 218));
+    dark_pal.setColor(QPalette::HighlightedText, Qt::black);
+
+    dark_pal.setColor(QPalette::Disabled, QPalette::Window, dark_pal.window().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::WindowText, dark_pal.windowText().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::Base, dark_pal.base().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::AlternateBase, dark_pal.alternateBase().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::Text, dark_pal.text().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::Button, dark_pal.button().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::ButtonText, dark_pal.buttonText().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::BrightText, dark_pal.brightText().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::Link, dark_pal.link().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::Highlight, dark_pal.highlight().color().darker());
+    dark_pal.setColor(QPalette::Disabled, QPalette::HighlightedText, dark_pal.highlightedText().color().darker());
+
+    QApplication::setPalette(dark_pal);
+    qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a2a2a; border: 1px solid white; }");
 }
 
 void Client::checkAndSetupConfig()

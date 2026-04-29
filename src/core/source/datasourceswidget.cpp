@@ -682,6 +682,9 @@ DataSourcesWidget::DataSourcesWidget(bool can_show_counts, context::DBContextMan
 :   can_show_counts_(can_show_counts), ctx_man_(ctx_man)
 {
     createUI();
+
+    connect(&ctx_man_.compass(), &COMPASS::darkModeChangedSignal,
+            this, [this](bool) { updateContent(true); });
 }
 
 /**

@@ -1091,7 +1091,11 @@ bool COMPASS::darkMode() const
 
 void COMPASS::darkMode(bool value)
 {
+    if (dark_mode_ == value)
+        return;
+
     dark_mode_ = value;
+    emit darkModeChangedSignal(dark_mode_);
 }
 
 void COMPASS::colorMode(unsigned int value)
