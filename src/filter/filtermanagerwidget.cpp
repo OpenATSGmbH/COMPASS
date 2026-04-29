@@ -103,8 +103,8 @@ FilterManagerWidget::~FilterManagerWidget()
  */
 QIcon FilterManagerWidget::toolIcon() const 
 {
-    return QIcon(Utils::Files::getIconFilepath(filters_check_->isChecked() ?
-                                                   "db_filters_enabled.png" : "db_filters.png").c_str());
+    return Utils::Files::IconProvider::getIcon(filters_check_->isChecked() ?
+                                                   "db_filters_enabled.png" : "db_filters.png");
 }
 
 /**

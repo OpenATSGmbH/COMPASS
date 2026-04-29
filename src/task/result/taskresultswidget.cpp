@@ -377,7 +377,7 @@ void TaskResultsWidget::refreshCurrentResult()
  */
 QIcon TaskResultsWidget::toolIcon() const
 {
-    return QIcon(Utils::Files::getIconFilepath("reports.png").c_str());
+    return Utils::Files::IconProvider::getIcon("reports.png");
 }
 
 /**

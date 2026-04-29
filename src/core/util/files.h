@@ -87,6 +87,12 @@ std::string join(const std::string& path0, const std::string& path1);
 class IconProvider {
 public:
     static QIcon getIcon(const std::string& name, const boost::optional<QColor>& color = boost::optional<QColor>());
+
+    /// Toggle dark-mode icon rendering globally. Path-loaded plain icons are
+    /// inverted at paint time when dark; explicitly colored icons (createIcon)
+    /// are unaffected. Forces a global pixmap-cache flush + repaint so already
+    /// drawn widgets pick up the new variant.
+    static void setDarkMode(bool dark);
 };
 
 }  // namespace Files

@@ -142,7 +142,7 @@ void DataSourcesToolWidget::createUI()
  */
 QIcon DataSourcesToolWidget::toolIcon() const 
 {
-    return QIcon(Utils::Files::getIconFilepath("data_sources.png").c_str());
+    return Utils::Files::IconProvider::getIcon("data_sources.png");
 }
 
 /**
