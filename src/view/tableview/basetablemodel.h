@@ -77,6 +77,7 @@ class BaseBufferTableModel : public QAbstractTableModel
         Buffer* buffer;
         unsigned int buffer_index;
         std::string dbcontent_name;
+        unsigned int row{0};       // display-row index (== caller's index.row())
     };
 
     /// Returns the number of data rows (after filtering)

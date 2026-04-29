@@ -139,8 +139,9 @@ void BaseBufferTableWidget::updateToSelection()
 {
     traced_assert(model_);
     model_->rebuild();
-    traced_assert(table_);
-    table_->resizeColumnsToContents();
+    // No resizeColumnsToContents() here — fires on every external selection
+    // change (broadcast from any view); the column widths don't depend on
+    // which rows are selected, only on data values.
 }
 
 TableView& BaseBufferTableWidget::view() const { return view_; }
