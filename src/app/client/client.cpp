@@ -781,7 +781,9 @@ void Client::applyDarkMode(bool dark)
     }
 
     QPalette dark_pal;
-    dark_pal.setColor(QPalette::Window, QColor(53, 53, 53));
+    // Window drives Fusion's indicator/frame outlines via
+    // Window.darker(140).lighter(110). Higher value → brighter borders.
+    dark_pal.setColor(QPalette::Window, QColor(95, 95, 95));
     dark_pal.setColor(QPalette::WindowText, Qt::white);
     dark_pal.setColor(QPalette::Base, QColor(25, 25, 25));
     dark_pal.setColor(QPalette::AlternateBase, QColor(53, 53, 53));

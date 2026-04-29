@@ -71,6 +71,7 @@ protected:
     virtual void mousePressEvent(QMouseEvent* event) override final;
     virtual void mouseMoveEvent(QMouseEvent* event) override final;
     virtual void mouseReleaseEvent(QMouseEvent* event) override final;
+    virtual void changeEvent(QEvent* event) override;
 
     virtual bool handleMousePress(Qt::MouseButtons buttons, const QPointF& widget_pos) = 0;
     virtual bool handleMouseRelease(Qt::MouseButtons buttons, const QPointF& widget_pos, bool update_pos) = 0;
@@ -101,6 +102,7 @@ protected:
 private:
     void createDisplayElements(QtCharts::QChart* chart);
     void updateXAxisLabelPosition();
+    void applyPaletteTheme();
 
     void clearSelection();
     void updateSelectionBox(const QRectF& region);

@@ -24,6 +24,8 @@
 #include "dbcontentmanager.h"
 #include "ui_test_common.h"
 
+#include <QApplication>
+#include <QEvent>
 #include <QPushButton>
 #include <QToolButton>
 #include <QLabel>
@@ -330,6 +332,17 @@ std::string ViewLoadStateWidget::buttonTextFromState(State state)
 /**
  * Returns a label color given a state.
 */
+void ViewLoadStateWidget::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+
+    // setState() bakes the foreground color into the widget's own palette via
+    // setPalette(); that override survives QApplication::setPalette() changes.
+    // Re-apply on PaletteChange so dark-mode toggling refreshes the text color.
+    if (event->type() == QEvent::PaletteChange)
+        setState(state_);
+}
+
 QColor ViewLoadStateWidget::colorFromState(State state)
 {
     switch (state)
@@ -339,12 +352,12 @@ QColor ViewLoadStateWidget::colorFromState(State state)
         case State::Drawing:
         case State::Loaded:
         case State::NoData:
-            return Qt::black;
+            return QApplication::palette().color(QPalette::WindowText);
         case State::ReloadRequired:
         case State::RedrawRequired:
             return Qt::red;
     }
-    return Qt::black;
+    return QApplication::palette().color(QPalette::WindowText);
 }
 
 /**

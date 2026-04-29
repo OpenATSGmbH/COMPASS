@@ -18,11 +18,14 @@
 #include "chartview.h"
 #include <logger.h>
 
+#include <QApplication>
+#include <QEvent>
 #include <QRubberBand>
 #include <QChart>
 #include <QAreaSeries>
 #include <QLineSeries>
 #include <QXYSeries>
+#include <QLegend>
 #include <QLegendMarker>
 #include <QBarCategoryAxis>
 #include <QFontMetricsF>
@@ -63,11 +66,75 @@ ChartView::ChartView(QtCharts::QChart* chart, SelectionStyle sel_style, QWidget*
     createDisplayElements(chart);
 
     setRenderHint(QPainter::Antialiasing);
+
+    applyPaletteTheme();
 }
 
 /**
  */
 ChartView::~ChartView() = default;
+
+void ChartView::changeEvent(QEvent* event)
+{
+    QChartView::changeEvent(event);
+
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
+        applyPaletteTheme();
+}
+
+/**
+ * Applies QApplication::palette()-derived colors to the chart chrome
+ * (background, axes, grid, legend, title) so charts follow the dark/light
+ * palette automatically. Series colors are not touched — callers keep their
+ * explicit per-data-source coloring.
+ *
+ * Re-runs on QEvent::PaletteChange (delivered to all widgets when
+ * QApplication::setPalette() is called), so live dark-mode toggle works.
+ */
+void ChartView::applyPaletteTheme()
+{
+    auto* c = chart();
+    if (!c)
+        return;
+
+    QPalette pal = QApplication::palette();
+
+    c->setBackgroundBrush(pal.window());
+    c->setTitleBrush(pal.windowText());
+    c->setPlotAreaBackgroundBrush(pal.base());
+    c->setPlotAreaBackgroundVisible(true);
+
+    if (auto* legend = c->legend())
+    {
+        legend->setLabelBrush(pal.windowText());
+        legend->setBackgroundVisible(false);
+    }
+
+    QColor line_color = pal.color(QPalette::Mid);
+    QColor grid_color = line_color;
+    grid_color.setAlpha(60);
+
+    QPen line_pen(line_color);
+    line_pen.setWidthF(1.0);
+
+    QPen grid_pen(grid_color);
+    grid_pen.setStyle(Qt::SolidLine);
+
+    for (auto* axis : c->axes())
+    {
+        axis->setLabelsBrush(pal.text());
+        // Skip the spacer-title trick (titleText == " " with transparent brush)
+        // used by histogram/scatter to reserve layout space; flipping its brush
+        // to the palette text would render the space character visibly.
+        if (axis->titleBrush().color() != Qt::transparent)
+            axis->setTitleBrush(pal.text());
+        axis->setLinePen(line_pen);
+        axis->setGridLinePen(grid_pen);
+    }
+
+    if (x_axis_label_item_)
+        x_axis_label_item_->setBrush(pal.text());
+}
 
 /**
  * Sets a custom x-axis label rendered as a QGraphicsSimpleTextItem on the chart.
@@ -94,6 +161,7 @@ void ChartView::setXAxisLabel(const QString& label)
         QFont f = chart()->font();
         f.setBold(true);
         x_axis_label_item_->setFont(f);
+        x_axis_label_item_->setBrush(QApplication::palette().text());
     }
 
     x_axis_label_item_->setText(label);
