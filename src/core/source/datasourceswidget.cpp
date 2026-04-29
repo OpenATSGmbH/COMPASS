@@ -132,6 +132,42 @@ void DataSourcesWidgetItem::setItemWidget(int column, QWidget* w)
     widget_->tree_widget_->setItemWidget(this, column, w);
 }
 
+/**
+ */
+void DataSourcesWidgetItem::setTextIfChanged(int column, const QString& s)
+{
+    if (text(column) != s)
+        setText(column, s);
+}
+
+/**
+ */
+void DataSourcesWidgetItem::setColorIconIfChanged(int column, const QColor& color)
+{
+    if (last_color_set_ && last_color_ == color)
+        return;
+
+    setIcon(column, makeColorIcon(color));
+    last_color_     = color;
+    last_color_set_ = true;
+}
+
+/**
+ */
+void DataSourcesWidgetItem::setCheckStateIfChanged(int column, Qt::CheckState state)
+{
+    if (checkState(column) != state)
+        setCheckState(column, state);
+}
+
+/**
+ */
+void DataSourcesWidgetItem::setFlagsIfChanged(Qt::ItemFlags new_flags)
+{
+    if (flags() != new_flags)
+        setFlags(new_flags);
+}
+
 /**************************************************************************************************
  * DataSourceTypeItem
  **************************************************************************************************/
@@ -196,15 +232,15 @@ void DataSourceTypeItem::updateContent()
 
     if (has_data)
     {
-        setFlags(flags() | Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable);
-        setCheckState(0, widget_->getUseDSType(ds_type_) ? Qt::Checked : Qt::Unchecked);
+        setFlagsIfChanged(flags() | Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable);
+        setCheckStateIfChanged(0, widget_->getUseDSType(ds_type_) ? Qt::Checked : Qt::Unchecked);
     }
     else
     {
         // Non-interactive + greyed out; keep an Unchecked state so the
         // checkbox slot stays reserved and the row aligns with its siblings.
-        setFlags(flags() & ~(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable));
-        setCheckState(0, Qt::Unchecked);
+        setFlagsIfChanged(flags() & ~(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable));
+        setCheckStateIfChanged(0, Qt::Unchecked);
     }
 
     // Icon color propagates up from descendants — painted only when every
@@ -212,7 +248,7 @@ void DataSourceTypeItem::updateContent()
     // Disabled rows (no data) show no color; makeColorIcon with an invalid
     // color yields a transparent 14x14 pixmap so the slot stays reserved and
     // rows remain aligned.
-    setIcon(0, makeColorIcon(has_data ? effectiveColor() : QColor()));
+    setColorIconIfChanged(0, has_data ? effectiveColor() : QColor());
 }
 
 QColor DataSourceTypeItem::effectiveColor() const
@@ -284,18 +320,18 @@ void DataSourceItem::updateContent()
     const bool has_data = widget_->ctxManager().hasNumInserted(ds_id_);
     if (has_data)
     {
-        setFlags(flags() | Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable);
-        setCheckState(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
+        setFlagsIfChanged(flags() | Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable);
+        setCheckStateIfChanged(0, widget_->getUseDS(ds_id_) ? Qt::Checked : Qt::Unchecked);
     }
     else
     {
-        setFlags(flags() & ~(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable));
-        setCheckState(0, Qt::Unchecked);
+        setFlagsIfChanged(flags() & ~(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsUserCheckable));
+        setCheckStateIfChanged(0, Qt::Unchecked);
     }
 
     // Disabled rows show no color icon; the slot stays reserved via the
     // transparent pixmap from makeColorIcon(QColor()).
-    setIcon(0, makeColorIcon(has_data ? effectiveColor() : QColor()));
+    setColorIconIfChanged(0, has_data ? effectiveColor() : QColor());
 
     for (auto lb : line_buttons_)
         lb->updateContent();
@@ -382,14 +418,14 @@ void DataSourceCountItem::updateContent()
     unsigned int num_inserted = ctx_man.numInserted(ds_id_, dbc_name_);
     unsigned int num_loaded = ctx_man.numLoaded(ds_id_, dbc_name_);
 
-    setText(2, QString::number(num_loaded));
-    setText(3, QString::number(num_inserted));
+    setTextIfChanged(2, QString::number(num_loaded));
+    setTextIfChanged(3, QString::number(num_inserted));
 
     // Leaf color depends on the active color mode; the group items above
     // propagate it up when every DBContent under a DS/DSType agrees. An
     // invalid color yields a transparent 14x14 placeholder that keeps rows
     // aligned.
-    setIcon(0, makeColorIcon(effectiveColor()));
+    setColorIconIfChanged(0, effectiveColor());
 }
 
 QColor DataSourceCountItem::effectiveColor() const
@@ -514,26 +550,78 @@ void DataSourceLineButton::updateContent()
     bool live_mode = app_mode == AppMode::LivePaused || app_mode == AppMode::LiveRunning;
     bool dark_mode = ctx_man.compass().darkMode();
 
+    auto apply_stylesheet = [this](const QString& css)
+    {
+        if (last_stylesheet_ != css)
+        {
+            setStyleSheet(css);
+            last_stylesheet_ = css;
+        }
+    };
+
+    auto apply_hidden = [this](bool h)
+    {
+        if (!last_hidden_set_ || last_hidden_ != h)
+        {
+            setHidden(h);
+            last_hidden_     = h;
+            last_hidden_set_ = true;
+        }
+    };
+
+    auto apply_disabled = [this](bool d)
+    {
+        if (!last_disabled_set_ || last_disabled_ != d)
+        {
+            setDisabled(d);
+            last_disabled_     = d;
+            last_disabled_set_ = true;
+        }
+    };
+
+    auto apply_checked = [this](bool c)
+    {
+        if (!last_checked_set_ || last_checked_ != c)
+        {
+            setChecked(c);
+            last_checked_     = c;
+            last_checked_set_ = true;
+        }
+    };
+
+    auto apply_palette_color = [this](const QColor& col)
+    {
+        if (last_auto_fill_bg_ && last_palette_color_ == col)
+            return;
+        QPalette pal = palette();
+        pal.setColor(QPalette::Button, col);
+        setAutoFillBackground(true);
+        setPalette(pal);
+        update();
+        last_palette_color_ = col;
+        last_auto_fill_bg_  = true;
+    };
+
     // Color Mode: DataSource + Line -> paint a 3px border in the corresponding line color
     unsigned int color_mode = ctx_man.compass().colorMode();
     if (color_mode == 3 /*DataSourceLine*/ && ds_ && ds_->lineColor(line_id_).isValid())
     {
         QString color_name = ds_->lineColor(line_id_).name();
-        setStyleSheet(QString(" QPushButton { border: 3px solid %1; } "
-                              " QPushButton:pressed { border: 3px outset %1; } "
-                              " QPushButton:checked { border: 3px outset %1; }").arg(color_name));
+        apply_stylesheet(QString(" QPushButton { border: 3px solid %1; } "
+                                 " QPushButton:pressed { border: 3px outset %1; } "
+                                 " QPushButton:checked { border: 3px outset %1; }").arg(color_name));
     }
     else
     {
         if (dark_mode)
         {
-            setStyleSheet(" QPushButton:pressed { border: 3px outset white; } "
-                          " QPushButton:checked { border: 3px outset white; }");
+            apply_stylesheet(" QPushButton:pressed { border: 3px outset white; } "
+                             " QPushButton:checked { border: 3px outset white; }");
         }
         else
         {
-            setStyleSheet(" QPushButton:pressed { border: 3px outset; } "
-                          " QPushButton:checked { border: 3px outset; }");
+            apply_stylesheet(" QPushButton:pressed { border: 3px outset; } "
+                             " QPushButton:checked { border: 3px outset; }");
         }
     }
 
@@ -543,31 +631,22 @@ void DataSourceLineButton::updateContent()
 
         bool hidden = !net_lines.count(ds_id_) || !net_lines.at(ds_id_).count(line_str_); // hide if not defined
 
-        setHidden(hidden);
+        apply_hidden(hidden);
 
         if (!hidden)
         {
             bool disabled = app_mode == AppMode::LivePaused ?
                 (ctx_man.numInsertedPerLine(ds_id_, "").count(line_id_) == 0) : false;
-            setDisabled(disabled);
+            apply_disabled(disabled);
 
             if (disabled)
             {
-                setChecked(false);
-
-                QPalette pal = palette();
-                if (dark_mode)
-                    pal.setColor(QPalette::Button, QColor(Qt::darkGray));
-                else
-                    pal.setColor(QPalette::Button, QColor(Qt::lightGray));
-
-                setAutoFillBackground(true);
-                setPalette(pal);
-                update();
+                apply_checked(false);
+                apply_palette_color(QColor(dark_mode ? Qt::darkGray : Qt::lightGray));
             }
             else
             {
-                setChecked(widget_->getUseDSLine(ds_id_, line_id_));
+                apply_checked(widget_->getUseDSLine(ds_id_, line_id_));
 
                 boost::posix_time::ptime current_time = Utils::Time::currentUTCTime();
 
@@ -576,31 +655,9 @@ void DataSourceLineButton::updateContent()
                     Utils::Time::partialSeconds(current_time - max_ts) < 30.0;
 
                 if (has_live)
-                {
-                    QPalette pal = palette();
-
-                    if (dark_mode)
-                        pal.setColor(QPalette::Button, QColor(Qt::darkGreen));
-                    else
-                        pal.setColor(QPalette::Button, QColor(Qt::green));
-
-                    setAutoFillBackground(true);
-                    setPalette(pal);
-                    update();
-                }
+                    apply_palette_color(QColor(dark_mode ? Qt::darkGreen : Qt::green));
                 else
-                {
-                    QPalette pal = palette();
-
-                    if (dark_mode)
-                        pal.setColor(QPalette::Button, QColor(Qt::darkGray));
-                    else
-                        pal.setColor(QPalette::Button, QColor(Qt::lightGray));
-
-                    setAutoFillBackground(true);
-                    setPalette(pal);
-                    update();
-                }
+                    apply_palette_color(QColor(dark_mode ? Qt::darkGray : Qt::lightGray));
             }
         }
     }
@@ -608,8 +665,8 @@ void DataSourceLineButton::updateContent()
     {
         std::map<unsigned int, unsigned int> inserted_lines = ctx_man.numInsertedLinesMap(ds_id_);
 
-        setChecked(widget_->getUseDSLine(ds_id_, line_id_));
-        setHidden(!inserted_lines.count(line_id_)); // hide if no data
+        apply_checked(widget_->getUseDSLine(ds_id_, line_id_));
+        apply_hidden(!inserted_lines.count(line_id_)); // hide if no data
     }
 }
 
@@ -625,6 +682,9 @@ DataSourcesWidget::DataSourcesWidget(bool can_show_counts, context::DBContextMan
 :   can_show_counts_(can_show_counts), ctx_man_(ctx_man)
 {
     createUI();
+
+    connect(&ctx_man_.compass(), &COMPASS::darkModeChangedSignal,
+            this, [this](bool) { updateContent(true); });
 }
 
 /**
@@ -812,7 +872,11 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
     }
 
     tree_widget_->blockSignals(false);
-    tree_widget_->expandAll();
+
+    // expandAll is expensive — skip when no structural change. Existing
+    // expansion state is preserved across plain count updates.
+    if (force_rebuild || changes > 0)
+        tree_widget_->expandAll();
 
     //updateAdditionalInfo();
 

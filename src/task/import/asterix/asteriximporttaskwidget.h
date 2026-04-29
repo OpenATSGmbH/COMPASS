@@ -67,6 +67,7 @@ public slots:
     virtual ~ASTERIXImportTaskWidget();
 
     void updateSourcesGrid();
+    void updateFramingControls();
 
     ASTERIXOverrideWidget* overrideWidget() const;
 

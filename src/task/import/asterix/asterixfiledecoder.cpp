@@ -119,6 +119,8 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     bool has_invalid_cat         = false;
     bool has_no_sac_sic_item     = false;
 
+    file_info.records_per_category.clear();
+
     std::set<std::string> categories;
     for (const auto& sac_sic : analysis_info->items())
     {
@@ -149,6 +151,10 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
             {
                 auto cat_str = String::categoryString(cat);
                 categories.insert(cat_str);
+
+                if (category.value().is_object() && category.value().contains("count"))
+                    file_info.records_per_category[(unsigned int)cat] +=
+                        category.value().at("count").get<size_t>();
             }
             else
             {

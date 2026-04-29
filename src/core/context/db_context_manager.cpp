@@ -412,7 +412,7 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
     if (compass_.dbOpened())
         writeContextToDB();
 
-    emit activeContextChangedSignal();
+    emit dataSourcesChangedSignal();
 
     return activeContext().dataSources().back();
 }
@@ -456,7 +456,7 @@ void DBContextManager::deleteDataSource(unsigned int ds_id)
         sources.end());
 
     saveContext(active_context_name_);
-    emit activeContextChangedSignal();
+    emit dataSourcesChangedSignal();
 }
 
 // ============================================================
@@ -566,6 +566,13 @@ void DBContextManager::setLoadOnlyDataSources(map<unsigned int, set<unsigned int
     for (const auto& [ds_id, lines] : ds_ids)
     {
         ds_loading_wanted_[ds_id] = true;
+
+        // Also enable the DSType of this DS — otherwise an inconsistent
+        // viewpoint (lists this DS but not its DSType) or a stale per-DSType
+        // filter would silently override the explicit per-DS request and
+        // skip loading data for DBContents whose DS lives in another DSType.
+        if (auto* ds = dataSource(ds_id))
+            ds_type_loading_wanted_[ds->dsType()] = true;
 
         if (!lines.empty())
         {
@@ -1111,7 +1118,7 @@ FFT& DBContextManager::createFFT(const string& name)
     activeContext().ffts().push_back(std::move(f));
     saveContext(active_context_name_);
 
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 
     return activeContext().ffts().back();
 }
@@ -1127,7 +1134,7 @@ void DBContextManager::deleteFFT(const string& name)
         ffts.end());
 
     saveContext(active_context_name_);
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 }
 
 void DBContextManager::deleteAllFFTs()
@@ -1135,7 +1142,7 @@ void DBContextManager::deleteAllFFTs()
     traced_assert(hasActiveContext());
     activeContext().ffts().clear();
     saveContext(active_context_name_);
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 }
 
 pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longitude_deg,
@@ -1914,6 +1921,30 @@ ASTERIXDecodingConfig& DBContextManager::getOrCreateAsterixConfig(unsigned int c
     return activeContext().asterixDecoding().back();
 }
 
+void DBContextManager::setAsterixEdition(unsigned int category, const string& edition,
+                                         const string& default_ref)
+{
+    auto& cfg = getOrCreateAsterixConfig(category, edition, default_ref);
+    cfg.edition(edition);
+    saveContext(activeContextName());
+}
+
+void DBContextManager::setAsterixRef(unsigned int category, const string& ref,
+                                     const string& default_edition)
+{
+    auto& cfg = getOrCreateAsterixConfig(category, default_edition, ref);
+    cfg.ref(ref);
+    saveContext(activeContextName());
+}
+
+void DBContextManager::setAsterixSpf(unsigned int category, const string& spf,
+                                     const string& default_edition)
+{
+    auto& cfg = getOrCreateAsterixConfig(category, default_edition, "", spf);
+    cfg.spf(spf);
+    saveContext(activeContextName());
+}
+
 // ============================================================
 // Per-section import/export
 // ============================================================
@@ -1952,7 +1983,7 @@ void DBContextManager::importSensors(const string& filepath)
 
     loginf << "imported " << data_arr.size() << " sensors";
 
-    emit activeContextChangedSignal();
+    emit dataSourcesChangedSignal();
 }
 
 void DBContextManager::importFFTs(const string& filepath)
@@ -1984,7 +2015,7 @@ void DBContextManager::importFFTs(const string& filepath)
 
     loginf << "imported " << data_arr.size() << " FFTs";
 
-    emit activeContextChangedSignal();
+    emit fftsChangedSignal();
 }
 
 void DBContextManager::importSectors(const string& filepath)

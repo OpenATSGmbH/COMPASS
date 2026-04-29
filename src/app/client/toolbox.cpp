@@ -536,11 +536,10 @@ void ToolBox::updateButtons()
  */
 void ToolBox::loadingStarted()
 {
-    tool_bar_->setEnabled(false);
-    config_button_->setEnabled(false);
-    panel_widget_->setEnabled(false);
-    main_widget_->setEnabled(false);
-
+    // The offline load progress dialog is Qt::ApplicationModal and already
+    // blocks the whole UI; in LiveRunning the started→done envelope wraps the
+    // entire live session, so disabling the toolbox here would freeze the
+    // sidebar + central widget for the duration of live mode. Just propagate.
     for (auto& t : tools_)
         t.widget->loadingStarted();
 }
@@ -549,11 +548,6 @@ void ToolBox::loadingStarted()
  */
 void ToolBox::loadingDone()
 {
-    tool_bar_->setEnabled(true);
-    config_button_->setEnabled(true);
-    panel_widget_->setEnabled(true);
-    main_widget_->setEnabled(true);
-
     for (auto& t : tools_)
         t.widget->loadingDone();
 }

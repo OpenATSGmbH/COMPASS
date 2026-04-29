@@ -58,6 +58,9 @@ DBDataSourceWidget::DBDataSourceWidget(
     main_layout_->addLayout(grid_layout_);
 
     setLayout(main_layout_);
+
+    connect(&ctx_man_.compass(), &COMPASS::darkModeChangedSignal,
+            this, [this](bool) { recreateWidgets(); updateWidgets(); });
 }
 
 void DBDataSourceWidget::setLoadChecked (bool value)

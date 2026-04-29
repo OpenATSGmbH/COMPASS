@@ -257,6 +257,8 @@ void ASTERIXConfigWidget::categoryCheckedSlot()
     loginf << "cat " << cat;
 
     decode_setter_(cat, decode);
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const std::string& ed_str)
@@ -267,13 +269,9 @@ void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const s
 
     traced_assert(jasterix_->hasCategory(cat));
 
-    auto& cfg = ctx_mgr_.getOrCreateAsterixConfig(
-        cat,
-        ed_str,
-        jasterix_->category(cat)->defaultREFEdition());
-    cfg.edition(ed_str);
+    ctx_mgr_.setAsterixEdition(cat, ed_str, jasterix_->category(cat)->defaultREFEdition());
 
-    ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
@@ -285,19 +283,15 @@ void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
 
     traced_assert(jasterix_->hasCategory(cat));
 
-    auto& cfg = ctx_mgr_.getOrCreateAsterixConfig(
-        cat,
-        jasterix_->category(cat)->defaultEdition(),
-        ed_str);
-    cfg.ref(ed_str);
-
-    ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+    ctx_mgr_.setAsterixRef(cat, ed_str, jasterix_->category(cat)->defaultEdition());
 
     traced_assert(ref_edit_buttons_.count(cat));
     if (ed_str.size())
         ref_edit_buttons_.at(cat)->setDisabled(false);
     else
         ref_edit_buttons_.at(cat)->setDisabled(true);
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
@@ -309,20 +303,15 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
 
     traced_assert(jasterix_->hasCategory(cat));
 
-    auto& cfg = ctx_mgr_.getOrCreateAsterixConfig(
-        cat,
-        jasterix_->category(cat)->defaultEdition(),
-        "",
-        ed_str);
-    cfg.spf(ed_str);
-
-    ctx_mgr_.saveContext(ctx_mgr_.activeContextName());
+    ctx_mgr_.setAsterixSpf(cat, ed_str, jasterix_->category(cat)->defaultEdition());
 
     traced_assert(spf_edit_buttons_.count(cat));
     if (ed_str.size())
         spf_edit_buttons_.at(cat)->setDisabled(false);
     else
         spf_edit_buttons_.at(cat)->setDisabled(true);
+
+    emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::categoryEditionEditSlot()

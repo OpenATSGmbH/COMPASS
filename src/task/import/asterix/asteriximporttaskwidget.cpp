@@ -37,7 +37,10 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QApplication>
+#include <QProgressDialog>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QDateEdit>
@@ -185,10 +188,7 @@ void ASTERIXImportTaskWidget::addDecoderTab()
                 this, &ASTERIXImportTaskWidget::framingEditSlot);
         framing_grid->addWidget(framing_edit_, 0, 2);
 
-        if (task_.settings().activeFileFraming() == "")
-            framing_edit_->setDisabled(true);
-        else
-            framing_edit_->setDisabled(false);
+        updateFramingControls();
 
         decoder_layout->addLayout(framing_grid);
     }
@@ -199,6 +199,10 @@ void ASTERIXImportTaskWidget::addDecoderTab()
         [this](unsigned int cat) { return task_.decodeCategory(cat); },
         [this](unsigned int cat, bool decode) { task_.decodeCategory(cat, decode); },
         this);
+    // re-probe the file decoding whenever a category is enabled/disabled or an
+    // edition / REF / SPF is changed
+    connect(config_widget_, &ASTERIXConfigWidget::decodingConfigChangedSignal,
+            this, [this]() { task_.testFileDecoding(); });
     decoder_layout->addWidget(config_widget_);
 
     decoder_tab->setLayout(decoder_layout);
@@ -462,93 +466,132 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         delete child;
     }
 
-    if (task_.source().isNetworkType())
     {
-        sources_grid_->addWidget(new QLabel("Source: Network"), 0, 0);
-    }
-    else // files
-    {
+        const bool is_network = task_.source().isNetworkType();
+
         QStringList headers;
         headers << "";
         headers << "Name";
-        headers << "Info";
-        headers << "Content";
         headers << "Decoding";
-        headers << "Error";
 
         QTreeWidget* tree_widget = new QTreeWidget;
         tree_widget->setColumnCount(headers.count());
         tree_widget->setHeaderLabels(headers);
 
         tree_widget->header()->setSectionResizeMode(0, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(1, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(3, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(4, QHeaderView::ResizeMode::ResizeToContents);
-        tree_widget->header()->setSectionResizeMode(5, QHeaderView::ResizeMode::Stretch);
+        tree_widget->header()->setSectionResizeMode(1, QHeaderView::ResizeMode::Stretch);
+        tree_widget->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::Stretch);
+        tree_widget->header()->setStretchLastSection(false);
 
-        tree_widget->setColumnHidden(2, task_.compass().isAppImage());
-        //tree_widget->setColumnHidden(3, true);
+        auto statusString = [](bool tested, bool has_error, const std::string& errinfo,
+                               bool has_warning, const std::string& warninfo) -> std::string
+        {
+            if (!tested)     return "?";
+            if (has_error)   return errinfo.empty()  ? "Error"   : "Error: "   + errinfo;
+            if (has_warning) return warninfo.empty() ? "Warning" : "Warning: " + warninfo;
+            return "OK";
+        };
+
+        auto buildTooltip = [](const std::string& info,
+                               const std::map<unsigned int, size_t>& rpc) -> QString
+        {
+            QString tip;
+            if (!info.empty())
+                tip += QString::fromStdString(info);
+            if (!rpc.empty())
+            {
+                if (!tip.isEmpty())
+                    tip += "\n\n";
+                size_t total = 0;
+                for (const auto& kv : rpc)
+                {
+                    tip += QString("CAT%1: %2\n")
+                               .arg(kv.first, 3, 10, QChar('0'))
+                               .arg(kv.second);
+                    total += kv.second;
+                }
+                tip += QString("\nTotal: %1 records").arg(total);
+            }
+            return tip;
+        };
+
+        auto addCategoriesChild = [](QTreeWidgetItem* parent, const std::string& contentinfo)
+        {
+            if (contentinfo.empty())
+                return;
+            auto* dbc_item = new QTreeWidgetItem;
+            dbc_item->setText(1, QString::fromStdString(contentinfo));
+            dbc_item->setFlags(Qt::ItemIsEnabled);
+            parent->addChild(dbc_item);
+        };
 
         unsigned int file_idx = 0;
 
         for (const auto& file_info : task_.source().files())
         {
-            std::string name   = file_info.filename;
-            std::string info   = "";
-            std::string cinfo  = file_info.contentinfo;
-            std::string status = file_info.decodingTested() ? (!file_info.canDecode() ? "Error" : (file_info.hasWarning() ? "Warning" : "OK")) : "?";
-            std::string descr  = !file_info.error.errinfo.empty() ? file_info.error.errinfo : (!file_info.warning.empty() ? file_info.warning : "");
+            bool tested    = file_info.decodingTested();
+            bool has_error = tested && !file_info.canDecode();
+            std::string status = statusString(tested, has_error, file_info.error.errinfo,
+                                              file_info.hasWarning(), file_info.warning);
 
             auto item = new QTreeWidgetItem;
-            item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-            item->setText(1, QString::fromStdString(name  ));
-            item->setText(2, QString::fromStdString(info  ));
-            item->setText(3, QString::fromStdString(cinfo  ));
-            item->setText(4, QString::fromStdString(status));
-            item->setText(5, QString::fromStdString(descr ));
+            if (!is_network)
+                item->setCheckState(0, file_info.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+            item->setText(1, QString::fromStdString(file_info.filename));
+            item->setText(2, QString::fromStdString(status));
 
             item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, -1)));
 
-            bool has_error = file_info.decodingTested() && !file_info.canDecode();
-
-            //loginf << "decoding tested: " << file_info.decodingTested() << ", " << file_info.canDecode();
-
             if (has_error)
                 item->setFlags(Qt::ItemIsSelectable);
+            else if (is_network)
+                item->setFlags(Qt::ItemIsEnabled);
 
-            //file itself has no error? => add sections
-            //if (!has_error)
+            if (!file_info.hasSections())
             {
-                unsigned int section_idx = 0;
+                // recording: file row owns categories and tooltip
+                QString tip = buildTooltip("", file_info.records_per_category);
+                if (!tip.isEmpty())
+                    item->setToolTip(1, tip);
+                addCategoriesChild(item, file_info.contentinfo);
+            }
 
-                for (const auto& section : file_info.sections)
-                {
-                    std::string name   = section.description;
-                    std::string info   = section.info;
-                    std::string cinfo  = section.contentinfo;
-                    std::string status = file_info.decodingTested() ? (section.error.hasError() ? "Error" : (!section.warning.empty() ? "Warning" : "OK")) : "?";
-                    std::string descr  = !section.error.errinfo.empty() ? section.error.errinfo : (!section.warning.empty() ? section.warning : "");
+            unsigned int section_idx = 0;
 
-                    auto sec_item = new QTreeWidgetItem;
+            for (const auto& section : file_info.sections)
+            {
+                bool sec_err = tested && section.error.hasError();
+                std::string sec_status = statusString(tested, sec_err, section.error.errinfo,
+                                                      !section.warning.empty(), section.warning);
+                // for network sections, !used means no data was received during the probe;
+                // surface that in the status column instead of a warning, and disable the row.
+                if (is_network && !sec_err && !section.used && !section.info.empty())
+                    sec_status = section.info;
+
+                auto sec_item = new QTreeWidgetItem;
+                if (!is_network)
                     sec_item->setCheckState(0, section.used ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-                    sec_item->setText(1, QString::fromStdString(name  ));
-                    sec_item->setText(2, QString::fromStdString(info  ));
-                    sec_item->setText(3, QString::fromStdString(cinfo  ));
-                    sec_item->setText(4, QString::fromStdString(status));
-                    sec_item->setText(5, QString::fromStdString(descr ));
+                sec_item->setText(1, QString::fromStdString(section.description));
+                sec_item->setText(2, QString::fromStdString(sec_status));
 
-                    sec_item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, section_idx)));
+                sec_item->setData(0, Qt::UserRole, QVariant(QPoint(file_idx, section_idx)));
 
-                    bool has_error = file_info.decodingTested() && section.error.hasError();
+                if (sec_err)
+                    sec_item->setFlags(Qt::ItemIsSelectable);
+                else if (is_network && !section.used)
+                    sec_item->setFlags(Qt::NoItemFlags);
+                else if (is_network)
+                    sec_item->setFlags(Qt::ItemIsEnabled);
 
-                    if (has_error)
-                        sec_item->setFlags(Qt::ItemIsSelectable);
+                QString tip = buildTooltip(section.info, section.records_per_category);
+                if (!tip.isEmpty())
+                    sec_item->setToolTip(1, tip);
 
-                    item->addChild(sec_item);
+                addCategoriesChild(sec_item, section.contentinfo);
 
-                    ++section_idx;
-                }
+                item->addChild(sec_item);
+
+                ++section_idx;
             }
 
             tree_widget->addTopLevelItem(item);
@@ -572,10 +615,31 @@ ASTERIXOverrideWidget* ASTERIXImportTaskWidget::overrideWidget() const
 void ASTERIXImportTaskWidget::decodingStateChangedSlot()
 {
     updateSourcesGrid();
+    updateFramingControls();
+}
+
+void ASTERIXImportTaskWidget::updateFramingControls()
+{
+    if (!framing_combo_ || !framing_edit_)
+        return;
+
+    // Network and PCAP decoders force "raw/netto" (no framing) via requiredASTERIXFraming();
+    // when forced, the combo and edit reflect that and are disabled. The persisted
+    // current_file_framing_ is preserved in settings — only the override is active.
+    const bool forced = task_.requiresFixedFraming();
+
+    QSignalBlocker block(framing_combo_);
+    framing_combo_->setFraming(task_.settings().activeFileFraming());
+
+    framing_combo_->setEnabled(!forced);
+    framing_edit_->setEnabled(!forced && task_.settings().activeFileFraming() != "");
 }
 
 void ASTERIXImportTaskWidget::sourceClicked(QTreeWidgetItem* item, int column)
 {
+    if (task_.source().isNetworkType())
+        return; // network rows have no per-line opt-out
+
     if (item && column == 0)
     {
         bool selected = item->checkState(0) == Qt::CheckState::Checked;
@@ -592,10 +656,7 @@ void ASTERIXImportTaskWidget::framingChangedSlot()
 
     task_.settings().setActiveFileFraming(framing_combo_->getFraming());
 
-    if (task_.settings().activeFileFraming() == "")
-        framing_edit_->setDisabled(true);
-    else
-        framing_edit_->setDisabled(false);
+    updateFramingControls();
 
     task_.testFileDecoding();
 }

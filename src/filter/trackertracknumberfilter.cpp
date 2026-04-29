@@ -19,6 +19,7 @@
 #include "trackertracknumberfilterwidget.h"
 #include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
+#include "stringconv.h"
 //#include "util/timeconv.h"
 
 #include <sstream>
@@ -68,35 +69,38 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
         string line_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_line_id_);
         string tn_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_track_num_);
 
-        if (!first)
-        {
-            ss << " AND ";
-        }
-
-        ss << "(";
-
+        stringstream inner;
         bool first_inside = true;
 
         for (auto& ds_it : active_tns)
         {
             for (auto& line_it : ds_it.second)
             {
-                if (!first_inside)
-                {
-                    ss << " OR ";
-                }
+                // Skip lines without configured track numbers — emitting
+                // "IN ()" would produce invalid SQL and crash the query.
+                if (String::trim(line_it.second).empty())
+                    continue;
 
-                ss << " (" + ds_id_col << " = " << ds_it.first;
-                ss << " AND " + line_col << " = " << line_it.first;
-                ss << " AND " << tn_col << " IN (" << line_it.second << "))";
+                if (!first_inside)
+                    inner << " OR ";
+
+                inner << " (" << ds_id_col << " = " << ds_it.first;
+                inner << " AND " << line_col << " = " << line_it.first;
+                inner << " AND " << tn_col << " IN (" << line_it.second << "))";
 
                 first_inside = false;
             }
         }
 
-        ss << ")";
+        if (!first_inside) // at least one inner clause emitted
+        {
+            if (!first)
+                ss << " AND ";
 
-        first = false;
+            ss << "(" << inner.str() << ")";
+
+            first = false;
+        }
     }
 
     loginf << "here '" << ss.str() << "'";

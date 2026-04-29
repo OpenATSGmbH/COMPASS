@@ -149,7 +149,11 @@ public:
     void quitLoading();
 
     bool prepareInsert(std::shared_ptr<Buffer>& buffer);
-    void updateDataSourcesBeforeInsert(std::shared_ptr<Buffer>& buffer);
+    /// Returns true if a new data source was created in the active context.
+    /// Does NOT emit countsChangedSignal/dataSourcesChangedSignal — the
+    /// caller (DBContentManager::insertData) coalesces those across all
+    /// buffers of one insert and emits once at the end.
+    bool updateDataSourcesBeforeInsert(std::shared_ptr<Buffer>& buffer);
     void finalizeInsert(std::shared_ptr<Buffer>& buffer);
 
     void updateData(dbContent::Variable& key_var, 

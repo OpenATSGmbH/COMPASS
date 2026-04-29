@@ -1064,7 +1064,7 @@ void JSONImportTask::insertDoneSlot()
         insert_slot_connected_ = false;
 
         compass_.dbContextManager().writeContextToDB();
-        emit compass_.dbContextManager().activeContextChangedSignal();
+        emit compass_.dbContextManager().dataSourcesChangedSignal();
 
         //emit doneSignal(name_); emitted in checkAllDone
     }

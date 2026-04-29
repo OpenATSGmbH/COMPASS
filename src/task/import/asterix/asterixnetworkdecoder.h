@@ -47,6 +47,8 @@ public:
 
     virtual std::string currentDataSourceName() const override { return "Network"; }
 
+    boost::optional<std::string> requiredASTERIXFraming() const override { return std::string(""); }
+
     static constexpr unsigned int MAX_UDP_READ_SIZE    = MAX_UDP_READ_SIZE_VALUE;
     static constexpr unsigned int MAX_ALL_RECEIVE_SIZE = MAX_ALL_RECEIVE_SIZE_VALUE;
 
@@ -59,10 +61,15 @@ protected:
 
     bool canRun_impl() const override final;
     bool canDecode_impl() const override final;
+    void checkDecoding_impl(bool force_recompute, AsyncTaskProgressWrapper* progress) const override final;
+
+    static const int    ProbeDurationSeconds;
+    static const size_t ProbeMaxBytesPerLine;
 
 private:
     std::map<unsigned int, std::map<std::string, std::shared_ptr<DataSourceLineInfo>>> ds_lines_;
     // ds_id -> line str ->(ip, port)
+    std::map<unsigned int, std::string> ds_names_; // ds_id -> data source name
 
     boost::interprocess::interprocess_semaphore receive_semaphore_;
     std::map<unsigned int, std::unique_ptr<boost::array<char, MAX_ALL_RECEIVE_SIZE>>> receive_buffers_copy_; // line->buf

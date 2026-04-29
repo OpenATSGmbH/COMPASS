@@ -43,22 +43,32 @@ RefTrajAccuracyFilter::~RefTrajAccuracyFilter() {}
 
 bool RefTrajAccuracyFilter::filters(const std::string& dbcontent_name)
 {
-    return dbcontent_name == "RefTraj";
+    if (dbcontent_name != "RefTraj")
+        return false;
+
+    auto& resolver = variableResolver();
+    return resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_)
+        && resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 }
 
 std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
+    auto& resolver = variableResolver();
+
+    // The condition needs both X StdDev and Y StdDev meta vars on the
+    // dbcontent; without them metaGetVariableDBColumn() would assert.
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_)
+        || !resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        string x_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
-        string y_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
+        string x_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
+        string y_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 
         if (!first)
         {

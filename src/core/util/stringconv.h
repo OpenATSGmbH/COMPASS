@@ -59,6 +59,10 @@ extern std::string octStringFromInt(int number, int width, char c);
 extern std::string hexStringFromInt(int number);
 extern std::string hexStringFromInt(int number, int width, char c);
 
+// Hex dump of a byte buffer, e.g. "03 bb 89 65 ...". Pass max_len to cap the
+// output at the first N bytes (0 = no cap); a trailing "..." indicates truncation.
+extern std::string bytesToHex(const char* data, std::size_t len, std::size_t max_len = 0);
+
 extern int getAppendedInt(std::string text);
 extern unsigned int lineFromStr(const std::string& line_str);
 extern std::string lineStrFrom(unsigned int line);

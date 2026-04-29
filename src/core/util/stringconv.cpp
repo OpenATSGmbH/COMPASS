@@ -214,6 +214,29 @@ std::string hexStringFromInt(int number, int width, char c)
     return out.str();
 }
 
+std::string bytesToHex(const char* data, std::size_t len, std::size_t max_len)
+{
+    static const char hex[] = "0123456789abcdef";
+
+    const std::size_t n = (max_len && len > max_len) ? max_len : len;
+
+    std::string out;
+    out.reserve(n * 3 + 4);
+
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        unsigned char b = static_cast<unsigned char>(data[i]);
+
+        out += hex[b >> 4];
+        out += hex[b & 0x0f];
+    }
+
+    if (n < len)
+        out += " ...";
+
+    return out;
+}
+
 int getAppendedInt(std::string text)
 {
     int ret = 0;

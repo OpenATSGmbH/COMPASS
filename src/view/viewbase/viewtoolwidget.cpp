@@ -392,8 +392,11 @@ void ViewToolWidget::updateItems()
  */
 void ViewToolWidget::loadingStarted()
 {
+    // The offline load progress dialog is Qt::ApplicationModal, which already
+    // blocks input application-wide. In LiveRunning the started→done envelope
+    // wraps the whole live session, so disabling here would freeze the toolbar
+    // for the entire session. Just refresh the action enabled-state.
     updateItems();
-    setEnabled(false);
 }
 
 /**
@@ -402,7 +405,6 @@ void ViewToolWidget::loadingStarted()
 void ViewToolWidget::loadingDone()
 {
     updateItems();
-    setEnabled(true);
 }
 
 /**

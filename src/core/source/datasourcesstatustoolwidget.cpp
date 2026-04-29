@@ -165,6 +165,8 @@ void DataSourcesStatusToolWidget::createUI()
     
     connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
             this, &DataSourcesStatusToolWidget::onDataSourcesChanged);
+    connect(&ctx_man_, &context::DBContextManager::dataSourcesChangedSignal,
+            this, &DataSourcesStatusToolWidget::onDataSourcesChanged);
 }
 
 /**

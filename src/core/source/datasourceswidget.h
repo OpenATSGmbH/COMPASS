@@ -59,6 +59,16 @@ private:
     bool               is_init_ = false;
 
     const context::DataSource* ds_ = nullptr;
+
+    QString last_stylesheet_;
+    QColor  last_palette_color_;
+    bool    last_auto_fill_bg_   = false;
+    bool    last_hidden_set_     = false;
+    bool    last_hidden_         = false;
+    bool    last_disabled_set_   = false;
+    bool    last_disabled_       = false;
+    bool    last_checked_set_    = false;
+    bool    last_checked_        = false;
 };
 
 /**
@@ -94,11 +104,23 @@ public:
 protected:
     void setItemWidget(int column, QWidget* w);
 
+    /// Helpers that suppress no-op QTreeWidgetItem mutations. setText / setIcon
+    /// / setCheckState / setFlags all invalidate the cell, force re-layout,
+    /// and re-run text shaping (HarfBuzz). Avoid the work when the value is
+    /// unchanged.
+    void setTextIfChanged(int column, const QString& text);
+    void setColorIconIfChanged(int column, const QColor& color);
+    void setCheckStateIfChanged(int column, Qt::CheckState state);
+    void setFlagsIfChanged(Qt::ItemFlags new_flags);
+
     DataSourcesWidget*     widget_ = nullptr;
     DataSourcesWidgetItem* parent_ = nullptr;
 
     bool is_init_ = false;
     Type type_;
+
+    QColor last_color_;
+    bool   last_color_set_ = false;
 };
 
 /**

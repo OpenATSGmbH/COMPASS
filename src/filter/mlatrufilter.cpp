@@ -82,7 +82,10 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
         boost::algorithm::to_lower(tmp);
 
         if (!tmp.size())
+        {
+            it = split_str.erase(it);
             continue;
+        }
 
         if (tmp == "null")
         {
@@ -90,7 +93,7 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
             it = split_str.erase(it);
             continue;
         }
-        
+
         // check if number
         unsigned int num_tmp = QString(it->c_str()).toInt(&ok);
 

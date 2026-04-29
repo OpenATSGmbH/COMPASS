@@ -62,6 +62,8 @@ class DBContextManager : public QObject, public IDataSourceProvider
 signals:
     void activeContextChangedSignal();
     void contextsChangedSignal();
+    void dataSourcesChangedSignal();
+    void fftsChangedSignal();
     void sectorsChangedSignal();
     void countsChangedSignal();
 
@@ -207,7 +209,7 @@ public:
 
         unsigned int ds_font_size{10};
 
-        nlohmann::json sensor_status_max_status_age_options;
+        nlohmann::json sensor_status_max_status_age_options = nlohmann::json::array({10u, 20u, 30u, 40u, 50u, 60u});
         unsigned int sensor_status_max_status_age_index{1};
         unsigned int sensor_status_max_event_buf_size{1000};
         bool sensor_status_show_last_updates{false};
@@ -276,6 +278,13 @@ public:
         const std::string& default_edition = "",
         const std::string& default_ref = "",
         const std::string& default_spf = "");
+
+    void setAsterixEdition(unsigned int category, const std::string& edition,
+                           const std::string& default_ref = "");
+    void setAsterixRef(unsigned int category, const std::string& ref,
+                       const std::string& default_edition = "");
+    void setAsterixSpf(unsigned int category, const std::string& spf,
+                       const std::string& default_edition = "");
 
     // ================================================================
     // DB sync

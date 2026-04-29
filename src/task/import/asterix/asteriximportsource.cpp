@@ -61,6 +61,7 @@ void ASTERIXImportFileInfo::reset()
     error.reset();
     warning = "";
     contentinfo = "";
+    records_per_category.clear();
     sections.clear();
 
     decoding_tested = false;
@@ -320,6 +321,17 @@ void ASTERIXImportSource::clearFiles()
 
     emit filesChanged();
     emit changed();
+}
+
+/**
+*/
+void ASTERIXImportSource::setNetworkProbeResults(FileInfos infos)
+{
+    file_infos_ = std::move(infos);
+
+    // do not emit changed(): that slot recreates the decoder via sourceChanged,
+    // which would delete the decoder while testFileDecoding's worker is still inside it.
+    emit filesChanged();
 }
 
 /**

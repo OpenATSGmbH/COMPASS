@@ -88,7 +88,7 @@ TEST_CASE("RefTrajAccuracyFilter inactive returns empty", "[filter][reftrajaccur
     CHECK(sql.empty());
 }
 
-TEST_CASE("RefTrajAccuracyFilter non-RefTraj returns empty", "[filter][reftrajaccuracy]")
+TEST_CASE("RefTrajAccuracyFilter non-RefTraj with x/y stddev still emits", "[filter][reftrajaccuracy]")
 {
     auto mock = createStandardMock();
     auto cfg = makeFilterConfig("RefTrajAccuracyFilter", "RefTrajAccuracyFilter0", {
@@ -98,16 +98,36 @@ TEST_CASE("RefTrajAccuracyFilter non-RefTraj returns empty", "[filter][reftrajac
 
     RefTrajAccuracyFilter filter(cfg, nullptr, mock);
 
-    // CAT062 has mc but is not RefTraj — guard checks metaCanGetVariable for mc
-    // The mock has mc for CAT062, so the guard passes, but filters() returns false
-    // However getConditionString doesn't check filters() — it checks metaCanGetVariable for mc
+    // The guard in getConditionString is on x/y stddev availability, not on
+    // dbcontent name; CAT062 has both in the standard mock so SQL is emitted.
     VariableSet read_set;
     bool first = true;
     std::string sql = filter.getConditionString("CAT062", read_set, first);
 
-    // CAT062 has mc in the mock, so it will actually generate SQL
-    // This is expected behavior — the guard is on mc, not on RefTraj
     CHECK_FALSE(sql.empty());
+}
+
+TEST_CASE("RefTrajAccuracyFilter without x/y stddev returns empty", "[filter][reftrajaccuracy][partial]")
+{
+    // dbcontent without X StdDev / Y StdDev meta vars must not assert in
+    // metaGetVariableDBColumn — the filter must early-return.
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("RefTrajAccuracyFilter", "RefTrajAccuracyFilter0", {
+        {"active", true},
+        {"min_value", 30.0}
+    });
+
+    RefTrajAccuracyFilter filter(cfg, nullptr, mock);
+
+    // CAT048 has neither x_stddev nor y_stddev in the standard mock.
+    CHECK_FALSE(filter.filters("CAT048"));
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT048", read_set, first);
+
+    CHECK(sql.empty());
+    CHECK(first);
 }
 
 TEST_CASE("RefTrajAccuracyFilter setter", "[filter][reftrajaccuracy]")

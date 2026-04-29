@@ -61,6 +61,8 @@ void DataSourcesToolWidget::createUI()
 
     connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
             this, [this] { logdbg << "activeContextChangedSignal received"; updateContent(true); });
+    connect(&ctx_man_, &context::DBContextManager::dataSourcesChangedSignal,
+            this, [this] { logdbg << "dataSourcesChangedSignal received"; updateContent(true); });
 
     connect(&ctx_man_, &context::DBContextManager::countsChangedSignal,
             this, [this] { logdbg << "countsChangedSignal received"; updateContent(false); });
@@ -188,14 +190,16 @@ void DataSourcesToolWidget::addToToolBar(QToolBar* tool_bar)
  */
 void DataSourcesToolWidget::loadingStarted()
 {
-    ds_widget_->setEnabled(false);
+    // The offline load progress dialog (Qt::ApplicationModal) blocks input
+    // application-wide. In LiveRunning the started→done envelope wraps the
+    // entire live session, so disabling here would lock the data sources
+    // panel for the duration of live mode. Either way: nothing to disable.
 }
 
 /**
  */
 void DataSourcesToolWidget::loadingDone()
 {
-    ds_widget_->setEnabled(true);
 }
 
 /**

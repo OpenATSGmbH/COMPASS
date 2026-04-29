@@ -80,6 +80,73 @@ TEST_CASE("TrackerTrackNumberFilter getConditionString", "[filter][trackertrackn
     CHECK(sql.find("track_num IN (4227)") != std::string::npos);
 }
 
+TEST_CASE("TrackerTrackNumberFilter empty source does not crash", "[filter][trackertracknum][empty]")
+{
+    // Two tracker sources are pushed; only one has a track-number value
+    // configured. The empty one must NOT produce "IN ()" — it must be
+    // skipped, and the other source must still emit a valid clause.
+
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("TrackerTrackNumberFilter", "TrackerTrackNumberFilter0", {
+        {"active", true},
+        {"tracker_track_nums", nlohmann::json::object()}
+    });
+
+    TrackerTrackNumberFilter filter(cfg, nullptr, mock);
+
+    std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
+    tracker_lines[10][1] = 5;   // ds 10, line 1 — has data
+    tracker_lines[20][1] = 7;   // ds 20, line 1 — has data, no track num set
+    std::map<unsigned int, std::string> ds_names;
+    ds_names[10] = "ARTAS";
+    ds_names[20] = "Other";
+    filter.updateTrackerDataSources(tracker_lines, ds_names);
+
+    // Only ds 10 gets a track number; ds 20 is left empty.
+    filter.setTrackerTrackNum(10, 1, "4227");
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT062", read_set, first);
+
+    // Must contain the populated source's clause...
+    CHECK(sql.find("ds_id = 10") != std::string::npos);
+    CHECK(sql.find("track_num IN (4227)") != std::string::npos);
+    // ...and must NOT reference the empty source nor emit IN ().
+    CHECK(sql.find("ds_id = 20") == std::string::npos);
+    CHECK(sql.find("IN ()") == std::string::npos);
+    CHECK_FALSE(first);
+}
+
+TEST_CASE("TrackerTrackNumberFilter all sources empty yields no clause", "[filter][trackertracknum][empty]")
+{
+    // If every configured source is empty, no clause must be emitted at all
+    // and `first` must remain true so the outer query stays well-formed.
+
+    auto mock = createStandardMock();
+    auto cfg = makeFilterConfig("TrackerTrackNumberFilter", "TrackerTrackNumberFilter0", {
+        {"active", true},
+        {"tracker_track_nums", nlohmann::json::object()}
+    });
+
+    TrackerTrackNumberFilter filter(cfg, nullptr, mock);
+
+    std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
+    tracker_lines[10][1] = 5;
+    std::map<unsigned int, std::string> ds_names;
+    ds_names[10] = "ARTAS";
+    filter.updateTrackerDataSources(tracker_lines, ds_names);
+
+    // Don't set any track numbers — all entries remain "".
+
+    VariableSet read_set;
+    bool first = true;
+    std::string sql = filter.getConditionString("CAT062", read_set, first);
+
+    CHECK(sql.empty());
+    CHECK(first);
+}
+
 TEST_CASE("TrackerTrackNumberFilter non-CAT062 returns empty", "[filter][trackertracknum]")
 {
     auto mock = createStandardMock();

@@ -180,6 +180,8 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
                      filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
+    QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
+                     filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
                      view_manager_.get(), &ViewManager::databaseOpenedSlot);
@@ -204,6 +206,8 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     // data sources changed
     QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
                      eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
+    QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
+                     eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
 
     // sectors changed (direct edits within active context)
     connect (context_manager_.get(), &context::DBContextManager::sectorsChangedSignal,
@@ -223,6 +227,11 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     // appmode
     connect (this, &COMPASS::appModeSwitchSignal,
              filter_manager_.get(), &FilterManager::appModeSwitchSlot);
+    // bookends the LiveRunning "one long load cycle" with loadingStartedSignal /
+    // loadingDoneSignal (Direct so the started signal lands before the first
+    // processLiveModeSlot tick that follows the appmode flip).
+    connect (this, &COMPASS::appModeSwitchSignal,
+             dbcontent_manager_.get(), &DBContentManager::appModeSwitchSlot);
 
     // features
     connect (license_manager_.get(), &LicenseManager::changed, task_manager_.get(), &TaskManager::updateFeatures);
@@ -1082,7 +1091,11 @@ bool COMPASS::darkMode() const
 
 void COMPASS::darkMode(bool value)
 {
+    if (dark_mode_ == value)
+        return;
+
     dark_mode_ = value;
+    emit darkModeChangedSignal(dark_mode_);
 }
 
 void COMPASS::colorMode(unsigned int value)

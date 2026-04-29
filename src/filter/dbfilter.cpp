@@ -145,6 +145,9 @@ std::string DBFilter::getConditionString(
                 continue;
             }
 
+            if (!conditions_.at(cnt)->filters(dbcontent_name))
+                continue;
+
             if (use_or)
             {
                 std::string text =

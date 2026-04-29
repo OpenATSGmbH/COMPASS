@@ -350,7 +350,7 @@ bool DBContent::prepareInsert(shared_ptr<Buffer>& buffer)
 
 /**
  */
-void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
+bool DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 {
     logdbg << name_;
 
@@ -431,10 +431,7 @@ void DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
         }
     }
 
-    if (ds_added)
-        emit ctx_man.activeContextChangedSignal();
-
-    emit ctx_man.countsChangedSignal();
+    return ds_added;
 }
 
 /**
@@ -582,7 +579,7 @@ void DBContent::deleteJobDoneSlot()
     delete_job_ = nullptr;
 
     compass_.dbContextManager().writeContextToDB();
-    emit compass_.dbContextManager().activeContextChangedSignal();
+    emit compass_.dbContextManager().dataSourcesChangedSignal();
 
     // remove from inserted count
     //compass_.dataSourceManager().clearInsertedCounts(name_);
