@@ -385,8 +385,9 @@ bool Client::run ()
     // Enable High DPI support
     QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 
-    // Set the "Fusion" style for better cross-platform results
-    //QApplication::setStyle(QStyleFactory::create("Fusion"));
+    // Fusion respects palette colors uniformly across distros and renders
+    // checkbox/radio/slider indicators correctly under the dark palette.
+    QApplication::setStyle(QStyleFactory::create("Fusion"));
 
     QPixmap pixmap(Files::getImageFilepath("logo.png").c_str());
     QSplashScreen splash(pixmap);
@@ -770,6 +771,8 @@ void Client::applyDarkMode(bool dark)
         baseline_captured = true;
     }
 
+    Utils::Files::IconProvider::setDarkMode(dark);
+
     if (!dark)
     {
         QApplication::setPalette(light_palette);
@@ -778,7 +781,9 @@ void Client::applyDarkMode(bool dark)
     }
 
     QPalette dark_pal;
-    dark_pal.setColor(QPalette::Window, QColor(53, 53, 53));
+    // Window drives Fusion's indicator/frame outlines via
+    // Window.darker(140).lighter(110). Higher value → brighter borders.
+    dark_pal.setColor(QPalette::Window, QColor(95, 95, 95));
     dark_pal.setColor(QPalette::WindowText, Qt::white);
     dark_pal.setColor(QPalette::Base, QColor(25, 25, 25));
     dark_pal.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
@@ -791,6 +796,14 @@ void Client::applyDarkMode(bool dark)
     dark_pal.setColor(QPalette::Link, QColor(42, 130, 218));
     dark_pal.setColor(QPalette::Highlight, QColor(42, 130, 218));
     dark_pal.setColor(QPalette::HighlightedText, Qt::black);
+
+    // Fusion derives indicator/frame borders from these roles. Without explicit
+    // values they collapse onto Window and checkbox/radio borders disappear.
+    dark_pal.setColor(QPalette::Light,    QColor(95, 95, 95));
+    dark_pal.setColor(QPalette::Midlight, QColor(80, 80, 80));
+    dark_pal.setColor(QPalette::Mid,      QColor(120, 120, 120));
+    dark_pal.setColor(QPalette::Dark,     QColor(35, 35, 35));
+    dark_pal.setColor(QPalette::Shadow,   QColor(20, 20, 20));
 
     dark_pal.setColor(QPalette::Disabled, QPalette::Window, dark_pal.window().color().darker());
     dark_pal.setColor(QPalette::Disabled, QPalette::WindowText, dark_pal.windowText().color().darker());

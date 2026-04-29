@@ -67,8 +67,8 @@ LogWidget::LogWidget(LogStore& log_store)
 
     setLayout(main_layout);
 
-    default_icon_ = QIcon(Utils::Files::getIconFilepath("log.png").c_str());
-    error_icon_ = QIcon(Utils::Files::getIconFilepath("log_err.png").c_str());
+    default_icon_ = Utils::Files::IconProvider::getIcon("log.png");
+    error_icon_ = Utils::Files::IconProvider::getIcon("log_err.png");
 
     connect (&log_store_, &LogStore::messagesChangedSignal,
             this, &LogWidget::messagesChangedSlot, Qt::QueuedConnection);

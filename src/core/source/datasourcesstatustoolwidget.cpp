@@ -173,7 +173,7 @@ void DataSourcesStatusToolWidget::createUI()
  */
 QIcon DataSourcesStatusToolWidget::toolIcon() const 
 {
-    return QIcon(Utils::Files::getIconFilepath("sensor_status.png").c_str());
+    return Utils::Files::IconProvider::getIcon("sensor_status.png");
 }
 
 /**

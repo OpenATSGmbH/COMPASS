@@ -78,6 +78,7 @@ public:
 
 protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
+    virtual void changeEvent(QEvent* event) override;
 
 private:
     static std::string messageFromState(State state);

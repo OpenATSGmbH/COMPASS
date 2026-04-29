@@ -23,7 +23,12 @@
 #include <QString>
 #include <QRegularExpression>
 #include <QApplication>
+#include <QIconEngine>
+#include <QPainter>
+#include <QPixmapCache>
 #include <QStyle>
+#include <QStyleOption>
+#include <QWidget>
 
 #include "traced_assert.h"
 #include <iostream>
@@ -322,6 +327,80 @@ QIcon createIcon(const std::string& name, const QColor& color)
     return QIcon(QPixmap::fromImage(img));
 }
 
+namespace
+{
+/// QIconEngine that loads a path-based icon and inverts RGB (keeping alpha)
+/// when the global dark flag is set. Black-on-transparent UI icons become
+/// white-on-transparent without needing a second asset set.
+class DarkAwareIconEngine : public QIconEngine
+{
+public:
+    explicit DarkAwareIconEngine(const QString& path) : path_(path) {}
+
+    static bool dark_mode_;
+
+    QPixmap pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state) override
+    {
+        QPixmap base(path_);
+        if (base.isNull())
+            return base;
+
+        if (size.isValid() && base.size() != size)
+            base = base.scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+        QPixmap rendered = dark_mode_ ? invert(base) : base;
+
+        if (mode == QIcon::Normal)
+            return rendered;
+
+        // QCommonStyle::generatedIconPixmap dereferences opt->palette, so a
+        // non-null QStyleOption with a valid palette is required.
+        QStyleOption opt;
+        opt.palette = QApplication::palette();
+        return QApplication::style()->generatedIconPixmap(mode, rendered, &opt);
+    }
+
+    void paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state) override
+    {
+        painter->drawPixmap(rect, pixmap(rect.size(), mode, state));
+    }
+
+    QIconEngine* clone() const override { return new DarkAwareIconEngine(path_); }
+    QString key() const override { return QStringLiteral("DarkAwareIconEngine"); }
+    QString iconName() const override { return path_; }
+
+    QList<QSize> availableSizes(QIcon::Mode /*mode*/, QIcon::State /*state*/) const override
+    {
+        QPixmap base(path_);
+        return base.isNull() ? QList<QSize>{} : QList<QSize>{ base.size() };
+    }
+
+private:
+    static QPixmap invert(const QPixmap& src)
+    {
+        QImage img = src.toImage().convertToFormat(QImage::Format_ARGB32);
+        const int h = img.height();
+        const int w = img.width();
+        for (int y = 0; y < h; ++y)
+        {
+            QRgb* line = reinterpret_cast<QRgb*>(img.scanLine(y));
+            for (int x = 0; x < w; ++x)
+            {
+                QRgb p = line[x];
+                if (qAlpha(p) == 0)
+                    continue;
+                line[x] = qRgba(255 - qRed(p), 255 - qGreen(p), 255 - qBlue(p), qAlpha(p));
+            }
+        }
+        return QPixmap::fromImage(img);
+    }
+
+    QString path_;
+};
+
+bool DarkAwareIconEngine::dark_mode_ = false;
+}
+
 QIcon IconProvider::getIcon(const std::string& name, const boost::optional<QColor>& color)
 {
     static std::map<std::string, QIcon> icon_cache_;
@@ -331,27 +410,36 @@ QIcon IconProvider::getIcon(const std::string& name, const boost::optional<QColo
     if (!icon_cache_.count(name_internal))
     {
         QIcon icon;
-        
+
         if (color.has_value())
         {
             icon = createIcon(name, color.value());
         }
         else
         {
-            QString path = getIconFilepath(name).c_str();
-
-            icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_ToolBarIconSize),
-                                    QApplication::style()->pixelMetric(QStyle::PM_ToolBarIconSize)));
-            icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_SmallIconSize),
-                                    QApplication::style()->pixelMetric(QStyle::PM_SmallIconSize)));
-            icon.addFile(path, QSize(QApplication::style()->pixelMetric(QStyle::PM_LargeIconSize),
-                                    QApplication::style()->pixelMetric(QStyle::PM_LargeIconSize)));
+            QString path = QString::fromStdString(getIconFilepath(name));
+            icon = QIcon(new DarkAwareIconEngine(path));
         }
 
         icon_cache_[name_internal] = icon;
     }
 
     return icon_cache_.at(name_internal);
+}
+
+void IconProvider::setDarkMode(bool dark)
+{
+    if (DarkAwareIconEngine::dark_mode_ == dark)
+        return;
+
+    DarkAwareIconEngine::dark_mode_ = dark;
+
+    // QIcon caches rendered pixmaps in QPixmapCache. Flush so paints re-query
+    // our engine and observe the new dark flag.
+    QPixmapCache::clear();
+
+    for (QWidget* w : QApplication::allWidgets())
+        w->update();
 }
 
 }  // namespace Files

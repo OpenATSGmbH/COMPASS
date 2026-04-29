@@ -103,7 +103,7 @@ table_view_->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
  */
 QIcon TargetListWidget::toolIcon() const
 {
-    return QIcon(Utils::Files::getIconFilepath("targets.png").c_str());
+    return Utils::Files::IconProvider::getIcon("targets.png");
 }
 
 /**
