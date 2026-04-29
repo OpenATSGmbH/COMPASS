@@ -46,7 +46,9 @@ signals:
     void dataRefreshedSignal();
 
 public:
-    typedef dbContent::Grouping Grouping;
+    typedef dbContent::Grouping                            Grouping;
+    typedef std::pair<dbContent::ItemGroup*, unsigned int> ItemLocation;
+    typedef std::vector<ItemLocation>                      ItemLocations;
 
     DBContentItemProvider(DBContentDataStore& data_store, 
                           Grouping grouping = Grouping::None,
@@ -63,8 +65,13 @@ public:
     bool groupingIsTargetSpecific() const;
 
     const std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() const { return item_groups_; }
+    const std::map<nlohmann::json, ItemLocations>& itemLocations() const { return item_locations_; }
+    const ItemLocations& itemLocations(const nlohmann::json& item_id) const;
+
     const DBContentDataStore& dataStore() const { return data_store_; }
     DBContentDataStore& dataStore() { return data_store_; }
+
+    std::string itemName(const nlohmann::json& item_id) const;
 
     static std::string groupingToString(Grouping grouping);
     static Grouping groupingFromString(const std::string& str);
@@ -97,7 +104,8 @@ private:
 
     std::function<nlohmann::json(unsigned int)> createGroupFunc(dbContent::TargetReportAccessor& accessor) const;
 
-    DBContentDataStore&                                data_store_;                // data store providing the data
-    Grouping                                           grouping_ = Grouping::None; // item grouping mode
-    std::vector<std::unique_ptr<dbContent::ItemGroup>> item_groups_;               // per (dbcontent, ds, line) item groups
+    DBContentDataStore&                                 data_store_;                // data store providing the data
+    Grouping                                            grouping_ = Grouping::None; // item grouping mode
+    std::vector<std::unique_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups
+    std::map<nlohmann::json, ItemLocations>             item_locations_;            // per item group locations
 };

@@ -123,6 +123,14 @@ bool DBContentItemProvider::isNumeric(Grouping grouping)
 }
 
 /**
+ */
+const DBContentItemProvider::ItemLocations& DBContentItemProvider::itemLocations(const nlohmann::json& item_id) const
+{
+    traced_assert(item_locations_.count(item_id));
+    return item_locations_.at(item_id);
+}
+
+/**
  * Sets the grouping mode used to partition buffer rows into items.
  * Triggers a full rebuild of all item groups if the grouping changes.
  */
@@ -287,6 +295,8 @@ void DBContentItemProvider::dataChanged(unsigned int dbc_id)
             group->accessor = tr_acc;
             group->buffer   = buffer;
 
+            size_t gidx = item_groups_.size();
+
             // partition row indices by their grouping key
             std::map<nlohmann::json, std::vector<unsigned int>> item_indices_map;
 
@@ -318,12 +328,15 @@ void DBContentItemProvider::dataChanged(unsigned int dbc_id)
                 item.idx_begin = idx0;
                 item.idx_end   = idx1;
 
+                size_t item_idx = group->items.size();
+
+                item_locations_[ item.item_id ].emplace_back(group.get(), item_idx);
+
                 group->items.push_back(item);
             }
 
             setGroupIDNames(*group);
 
-            size_t gidx = item_groups_.size();
             group->group_index = gidx;
 
             item_groups_.push_back(std::move(group));
@@ -443,4 +456,12 @@ std::string DBContentItemProvider::toString() const
     }
 
     return ss.str();
+}
+
+/**
+ */
+std::string DBContentItemProvider::itemName(const nlohmann::json& item_id) const
+{
+    std::string id_str = item_id.is_null() ? "None" : item_id.dump(0);
+    return groupingAsString() + " " + id_str;
 }

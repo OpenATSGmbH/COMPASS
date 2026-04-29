@@ -656,6 +656,8 @@ void LabelGenerator::currentLOD(unsigned int current_lod)
         emit labelConfigChanged();
 
     config_.current_lod_ = current_lod;
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::autoLOD() const
