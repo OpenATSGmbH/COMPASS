@@ -19,6 +19,7 @@
 #include "fft.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
+#include "traced_assert.h"
 
 #include <QFormLayout>
 #include <QLabel>
@@ -128,6 +129,12 @@ void FFTEditWidget::show(FFT& fft)
         mode_c_edit_->setText("");
 
     name_edit_->blockSignals(false);
+}
+
+std::string FFTEditWidget::currentFFTName() const
+{
+    traced_assert(current_fft_);
+    return current_fft_->name();
 }
 
 void FFTEditWidget::clear()

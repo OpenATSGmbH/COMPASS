@@ -33,6 +33,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class COMPASS;
@@ -102,6 +103,12 @@ public:
     DataSource* dataSource(unsigned int ds_id);
     bool hasDataSource(const std::string& name) const;
     unsigned int getDataSourceId(const std::string& name) const;
+
+    /// O(1) remote-unit name lookup. Returns the configured RU name for the
+    /// given (data source, RU index) pair. Falls back to the index as a string
+    /// when the data source or RU is unknown. Backed by a lazy cache that is
+    /// invalidated on context / data-source mutations.
+    std::string remoteUnitName(unsigned int ds_id, int ru_idx) const;
 
     std::vector<unsigned int> allDataSourceIds() const;
     std::vector<IDataSourceProvider::DataSourceInfo> dataSourceInfos() const override;
@@ -339,6 +346,9 @@ private:
     void loadActiveContextName();
     void loadCountsFromDB();
 
+    void ensureDataSourceCache() const;
+    void invalidateDataSourceCache() const;
+
     COMPASS& compass_;
     std::string active_context_name_;
     std::map<std::string, DBContext> contexts_;
@@ -368,6 +378,14 @@ private:
     std::unique_ptr<DataSourcesStatusToolWidget> status_widget_;
 
     static constexpr double max_fft_plot_distance_m_ = 5000.0;
+
+    // Lazy lookup caches over active context's data sources. Invalidated on
+    // context switch and on any saveContext (which is called after every edit
+    // and structural change). Build is O(D + R), where D is the data source
+    // count and R the total RU count of the active context.
+    mutable std::unordered_map<unsigned int, DataSource*> ds_by_id_cache_;
+    mutable std::unordered_map<unsigned int, std::unordered_map<int, std::string>> ru_name_cache_;
+    mutable bool ds_cache_valid_ {false};
 };
 
 } // namespace context

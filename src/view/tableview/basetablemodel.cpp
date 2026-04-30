@@ -284,61 +284,30 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
     if (data_type != PropertyDataType::JSON)
         return false;
 
-    // handle CAT020 contributing receivers
-    if (var.dbContent().id() == 20 && var.name() == dbcontent_vars::var_cat020_contrib_recv_.name())
+    if (var.representation() == dbContent::Variable::Representation::STANDARD)
+        return false;
+
+    if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))
+        return false;
+
+    const auto& json_value = buffer.get<nlohmann::json>(property_name).getRef(buffer_idx);
+
+    // resolve the row's data source id (used by row-aware representations like MLAT_RUS)
+    unsigned int ds_id = 0;
+    auto& dbcontent_man = compass.dbContentManager();
+    if (dbcontent_man.metaCanGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_))
     {
-        if (buffer.get<nlohmann::json>(property_name).isNull(buffer_idx))
-            return false;
-
-        const auto& contrib_receivers = buffer.get<nlohmann::json>(property_name).getRef(buffer_idx);
-
-        if (!contrib_receivers.is_array() || contrib_receivers.empty())
-            return false;
-
-        auto& dbcontent_man = compass.dbContentManager();
-
-        traced_assert(dbcontent_man.metaCanGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_));
         auto& ds_var = dbcontent_man.metaGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_);
-        traced_assert(buffer.hasAnyPropertyNamed(ds_var.name()));
-
-        auto& ds_vec = buffer.get<unsigned int>(ds_var.name());
-        if (ds_vec.isNull(buffer_idx))
-            return false;
-
-        auto ds_id = ds_vec.get(buffer_idx);
-
-        auto& ctx_man = compass.dbContextManager();
-        traced_assert(ctx_man.hasDataSource(ds_id));
-
-        auto* ds = ctx_man.dataSource(ds_id);
-        traced_assert(ds);
-
-        repr = "[";
-
-        size_t i = 0;
-        size_t n = contrib_receivers.size();
-        for (const auto& j_idx : contrib_receivers)
+        if (buffer.hasAnyPropertyNamed(ds_var.name()))
         {
-            traced_assert(j_idx.is_number_integer());
-            int idx = j_idx.get<int>();
-
-            if (ds->hasRemoteUnit(idx))
-                repr += ds->remoteUnitName(idx);
-            else
-                repr += std::to_string(idx);
-
-            if (i < n - 1)
-                repr += ", ";
-
-            ++i;
+            auto& ds_vec = buffer.get<unsigned int>(ds_var.name());
+            if (!ds_vec.isNull(buffer_idx))
+                ds_id = ds_vec.get(buffer_idx);
         }
-
-        repr += "]";
-
-        return true;
     }
 
-    return false;
+    repr = var.getAsJSONRepresentationString(json_value, &compass.dbContextManager(), ds_id);
+    return true;
 }
 
 void BaseBufferTableModel::sort(int column, Qt::SortOrder order)

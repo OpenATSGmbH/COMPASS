@@ -107,7 +107,7 @@
                 "dimension": "",
                 "is_key": false,
                 "name": "Contributing Receivers",
-                "representation_str": "STANDARD",
+                "representation_str": "MLAT_RUS",
                 "short_name": "RUx",
                 "unit": ""
             }

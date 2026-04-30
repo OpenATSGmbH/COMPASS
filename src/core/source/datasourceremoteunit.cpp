@@ -19,7 +19,6 @@
 #include "traced_assert.h"
 #include "json.hpp"
 
-const std::string DataSourceRemoteUnit::KeyIndex     = "index";
 const std::string DataSourceRemoteUnit::KeyName      = "name";
 const std::string DataSourceRemoteUnit::KeyComment   = "comment";
 const std::string DataSourceRemoteUnit::KeyLatitude  = "latitude";
@@ -41,46 +40,11 @@ DataSourceRemoteUnit::~DataSourceRemoteUnit() = default;
  */
 void DataSourceRemoteUnit::configure(const RemoteUnitDefinition& def)
 {
-    //once set an index shall not be changed
-    traced_assert(!config_.contains(KeyIndex) || index() == def.index);
-
-    index(def.index);
     name(def.name);
     comment(def.comment);
     latitude(def.latitude);
     longitude(def.longitude);
     altitude(def.altitude);
-}
-
-/**
- */
-RemoteUnitDefinition DataSourceRemoteUnit::toDefinition() const
-{
-    RemoteUnitDefinition def;
-    def.index     = index();
-    def.name      = name();
-    def.comment   = comment();
-    def.latitude  = latitude();
-    def.longitude = longitude();
-    def.altitude  = altitude();
-
-    return def;
-}
-
-/**
- */
-int DataSourceRemoteUnit::index() const
-{
-    traced_assert(config_.contains(KeyIndex));
-    traced_assert(config_.at(KeyIndex).is_number_integer());
-    return config_.at(KeyIndex).get<int>();
-}
-
-/**
- */
-void DataSourceRemoteUnit::index(int idx)
-{
-    config_[KeyIndex] = idx;
 }
 
 /**

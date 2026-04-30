@@ -48,6 +48,9 @@ public:
     void clear();
     void setReadOnly(bool read_only);
 
+    bool hasCurrentSector() const { return current_sector_ != nullptr; }
+    unsigned int currentSectorId() const;
+
 private slots:
     void nameEditedSlot();
     void layerChangedSlot();

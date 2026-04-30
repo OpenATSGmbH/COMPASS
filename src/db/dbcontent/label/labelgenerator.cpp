@@ -574,7 +574,28 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
                 null = buffer->get<nlohmann::json>(property_name).isNull(buffer_index);
                 if (!null)
                 {
-                    value_str = buffer->get<nlohmann::json>(property_name).getAsString(buffer_index);
+                    if (use_presentation)
+                    {
+                        unsigned int row_ds_id = 0;
+                        if (dbcont_manager_.metaCanGetVariable(
+                                dbcontent_name, dbcontent_vars::meta_var_ds_id_))
+                        {
+                            auto& ds_var = dbcont_manager_.metaGetVariable(
+                                dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+                            if (buffer->hasAnyPropertyNamed(ds_var.name()))
+                            {
+                                auto& ds_vec = buffer->get<unsigned int>(ds_var.name());
+                                if (!ds_vec.isNull(buffer_index))
+                                    row_ds_id = ds_vec.get(buffer_index);
+                            }
+                        }
+                        value_str = var_it.second->getAsJSONRepresentationString(
+                            buffer->get<nlohmann::json>(property_name).getRef(buffer_index),
+                            &dbcont_manager_.compass().dbContextManager(),
+                            row_ds_id);
+                    }
+                    else
+                        value_str = buffer->get<nlohmann::json>(property_name).getAsString(buffer_index);
                 }
             }
             else if (data_type == PropertyDataType::TIMESTAMP)
@@ -1859,7 +1880,28 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
             if (values.isNull(index))
                 return "";
 
-            value = values.getAsString(index);
+            if (var.representation() != Variable::Representation::STANDARD)
+            {
+                unsigned int row_ds_id = 0;
+                if (dbcont_manager_.metaCanGetVariable(
+                        dbcontent_name, dbcontent_vars::meta_var_ds_id_))
+                {
+                    auto& ds_var = dbcont_manager_.metaGetVariable(
+                        dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+                    if (buffer->hasAnyPropertyNamed(ds_var.name()))
+                    {
+                        auto& ds_vec = buffer->get<unsigned int>(ds_var.name());
+                        if (!ds_vec.isNull(index))
+                            row_ds_id = ds_vec.get(index);
+                    }
+                }
+                value = var.getAsJSONRepresentationString(
+                    values.getRef(index),
+                    &dbcont_manager_.compass().dbContextManager(),
+                    row_ds_id);
+            }
+            else
+                value = values.getAsString(index);
 
             return value;
         }

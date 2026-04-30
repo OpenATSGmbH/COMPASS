@@ -962,19 +962,12 @@ void DataSourceBase::parseRemoteUnits()
         json& remote_units = info_.at(remote_units_key);
         traced_assert(remote_units.is_object());
 
-        for (auto& ru_it : remote_units.items())  // iterate over array
+        for (auto& ru_it : remote_units.items())
         {
             traced_assert(ru_it.value().is_object());
 
-            auto ptr = std::make_shared<DataSourceRemoteUnit>(ru_it.value());
-
-            //check key validity
-            auto key = std::to_string(ptr->index());
-            traced_assert(ru_it.key() == key);
-
-            remote_unit_info_[ ptr->index() ] = ptr;
-
-            //loginf << "Adding remote unit " << ptr->index() << ":\n" << ptr->asString();
+            int idx = std::stoi(ru_it.key());
+            remote_unit_info_[idx] = std::make_shared<DataSourceRemoteUnit>(ru_it.value());
         }
     }
 }

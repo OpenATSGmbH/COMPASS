@@ -25,11 +25,15 @@
 
 #include <QObject>
 
+#include <json_fwd.hpp>
+
 #include <string>
 #include <vector>
 
 class DBTableColumn;
 class DBContent;
+
+namespace context { class DBContextManager; }
 
 namespace dbContent
 {
@@ -53,7 +57,8 @@ class Variable : public QObject, public Property, public Configurable
         FLOAT_PREC1,
         FLOAT_PREC2,
         FLOAT_PREC4,
-        LINE_NAME
+        LINE_NAME,
+        MLAT_RUS  // JSON int-array of contributing receiver indices, formatted via DBContextManager RU names
     };
 
     static Representation stringToRepresentation(const std::string& representation_str);
@@ -203,6 +208,16 @@ class Variable : public QObject, public Property, public Configurable
 
         return out.str();
     }
+
+    /// Formats a JSON-typed variable's value according to representation_.
+    /// For STANDARD (and any non-JSON-aware mode) returns value.dump().
+    /// For MLAT_RUS expects value to be an array of integer RU indices and
+    /// resolves each through ctx_man.remoteUnitName(ds_id, idx); returns a
+    /// "[name1, name2, ...]" string. ctx_man may be null and ds_id 0 — in
+    /// which case the index is rendered as a number.
+    std::string getAsJSONRepresentationString(const nlohmann::json& value,
+                                              const context::DBContextManager* ctx_man,
+                                              unsigned int ds_id) const;
 
     std::string getRepresentationStringFromValue(const std::string& value_str) const;
     std::string getValueStringFromRepresentation(const std::string& representation_str) const;
