@@ -12,6 +12,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/layerpanelwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentlayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/annotationsrootitem.h"
+        "${CMAKE_CURRENT_LIST_DIR}/viewlayertreemodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewlayerpanelwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/layertreeitem.cpp"
@@ -20,5 +21,6 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/layerpanelwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentlayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/annotationsrootitem.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/viewlayertreemodel.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewlayerpanelwidget.cpp"
 )

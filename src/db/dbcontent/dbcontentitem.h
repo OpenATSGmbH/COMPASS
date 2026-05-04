@@ -41,6 +41,20 @@ enum class Grouping
 };
 
 /**
+ * Item grouping flags.
+ */
+enum GroupingFlags
+{
+    GroupingNone            = 1 << 0,
+    GroupingAircraftAddress = 1 << 1,
+    GroupingAircraftID      = 1 << 2,
+    GroupingTrackNumber     = 1 << 3,
+    GroupingDSIDTrackNumber = 1 << 4,
+    GroupingMode3ACode      = 1 << 5,
+    GroupingUTN             = 1 << 6
+};
+
+/**
  * DBContent item containing buffer data which is determined by a certain grouping (e.g. an UTN).
  */
 struct Item
@@ -68,6 +82,7 @@ struct ItemGroup
 
     std::string dbc_name;
     std::string ds_name;
+    std::string ds_type;
     std::string line_name;
     
     std::vector<unsigned int>  indices; // buffer indices belonging to this group,

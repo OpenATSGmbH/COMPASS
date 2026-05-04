@@ -51,10 +51,14 @@ public:
     /// The panel takes ownership of a non-null delegate.
     explicit LayerPanelWidget(QWidget* parent = nullptr,
                               LayerTreeItemDelegate* delegate = nullptr);
+    explicit LayerPanelWidget(QWidget* parent,
+                              LayerTreeItemDelegate* delegate,
+                              LayerTreeModel* model,
+                              bool external_model);
     ~LayerPanelWidget() override;
 
-    LayerTreeModel* model() const { return model_.get(); }
-    QTreeView*      treeView() const { return tree_view_; }
+    virtual LayerTreeModel* model() const { return model_; }
+    QTreeView* treeView() const { return tree_view_; }
 
     /// Convenience: append a top-level item to the model's invisible root.
     LayerTreeItem* addRootItem(std::unique_ptr<LayerTreeItem> item);
@@ -63,11 +67,22 @@ public:
     std::set<std::string> persistedHiddenIds() const;
     void applyPersistedHiddenIds(const std::set<std::string>& ids);
 
+    void enableAutoExpand(int max_depth = -1);
+    void expandLayers(int max_depth = -1);
+
 private slots:
     void onContextMenuRequested(const QPoint& pos);
 
 private:
-    std::unique_ptr<LayerTreeModel>       model_;
-    LayerTreeItemDelegate*                delegate_ {nullptr};
-    QTreeView*                            tree_view_{nullptr};
+    void init(LayerTreeItemDelegate* delegate);
+
+    void autoExpand();
+
+    LayerTreeModel*                 model_    {nullptr};
+    LayerTreeItemDelegate*          delegate_ {nullptr};
+    QTreeView*                      tree_view_{nullptr};
+
+    bool model_is_external_     = false;
+    bool auto_expand_           = false;
+    int  auto_expand_max_depth_ = -1;
 };

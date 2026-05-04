@@ -121,6 +121,8 @@ public:
 
     void buildContextMenu(QMenu& menu) override;
 
+    DBContentLeafPayload* payload() const { return payload_; }
+
 private:
     DBContentLeafPayload* payload_ {nullptr};
 };

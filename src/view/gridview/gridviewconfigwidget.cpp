@@ -48,7 +48,7 @@
 
 #include "dbcontentlayer.h"
 #include "viewlayerpanelwidget.h"
-#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
 #include <QComboBox>
@@ -219,7 +219,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
         null_col.group_aggregator = &sumULongLong;
 
         layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->dbContentRootItem();
+        db_content_root_ = layer_panel_->model()->dbContentRootItem();
 
         auto* data_widget = view_widget->getViewDataWidget();
         data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());

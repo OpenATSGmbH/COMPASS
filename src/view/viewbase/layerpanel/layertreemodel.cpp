@@ -25,9 +25,18 @@ LayerTreeModel::LayerTreeModel(QObject* parent)
 {
     // invisible root's model_ = this; children inherit on appendChild.
     root_item_->setModel(this);
+
+    connect(this, &LayerTreeModel::hiddenChangedSignal,
+            this, [this]{ emit layoutChanged(); });
 }
 
 LayerTreeModel::~LayerTreeModel() = default;
+
+void LayerTreeModel::endResetModel()
+{
+    QAbstractItemModel::endResetModel();
+    emit modelChangedSignal();
+}
 
 LayerTreeItem* LayerTreeModel::addRootItem(std::unique_ptr<LayerTreeItem> item)
 {

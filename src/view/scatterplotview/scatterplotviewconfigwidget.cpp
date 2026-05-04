@@ -29,7 +29,7 @@
 
 #include "dbcontentlayer.h"
 #include "viewlayerpanelwidget.h"
-#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
 #include <QCheckBox>
@@ -91,7 +91,7 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
         null_col.group_aggregator = &sumULongLong;
 
         layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->dbContentRootItem();
+        db_content_root_ = layer_panel_->model()->dbContentRootItem();
 
         // Hand the root + model to the data widget so it can populate and
         // round-trip hidden state.

@@ -31,8 +31,8 @@
 
 #include "dbcontentlayer.h"
 #include "viewlayerpanelwidget.h"
+#include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
-#include "layertreemodel.h"
 
 #include <QCheckBox>
 #include <QHeaderView>
@@ -83,7 +83,7 @@ HistogramViewConfigWidget::HistogramViewConfigWidget(HistogramViewWidget* view_w
                 this, &HistogramViewConfigWidget::colorModeChangedSlot);
 
         layer_panel_     = new ViewLayerPanelWidget({}, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->dbContentRootItem();
+        db_content_root_ = layer_panel_->model()->dbContentRootItem();
 
         auto* data_widget = view_widget->getViewDataWidget();
         data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());

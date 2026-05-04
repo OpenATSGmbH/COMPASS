@@ -59,6 +59,9 @@ public:
     LayerTreeItem* appendChild(std::unique_ptr<LayerTreeItem> child);
     void clearChildren();
 
+    /// Remove and destroy a single child by row index.
+    void removeChildAt(int row);
+
     /// Transfer all children out as a flat vector, detaching their parent
     /// pointers. Used to build a subtree that will be reattached via
     /// LayerTreeModel::refreshSubtree.

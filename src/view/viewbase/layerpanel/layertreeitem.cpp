@@ -66,6 +66,13 @@ void LayerTreeItem::clearChildren()
     children_.clear();
 }
 
+void LayerTreeItem::removeChildAt(int row)
+{
+    if (row < 0 || row >= (int)children_.size())
+        return;
+    children_.erase(children_.begin() + row);
+}
+
 std::vector<std::unique_ptr<LayerTreeItem>> LayerTreeItem::moveChildrenOut()
 {
     auto out = std::move(children_);

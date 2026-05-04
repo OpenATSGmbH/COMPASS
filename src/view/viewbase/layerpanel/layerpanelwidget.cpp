@@ -26,16 +26,50 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 
+/**
+ * Default ctor.
+ */
 LayerPanelWidget::LayerPanelWidget(QWidget* parent, 
                                    LayerTreeItemDelegate* delegate)
-    : QWidget(parent)
-    , model_(std::make_unique<LayerTreeModel>())
+    : QWidget           (parent)
+    , model_            (new LayerTreeModel)
+    , model_is_external_(false)
+{
+    init(delegate);
+}
+
+/**
+ * Ctor with external model to manage.
+ */
+LayerPanelWidget::LayerPanelWidget(QWidget* parent, 
+                                   LayerTreeItemDelegate* delegate,
+                                   LayerTreeModel* model,
+                                   bool external_model)
+    : QWidget           (parent)
+    , model_            (model ? model : new LayerTreeModel)
+    , model_is_external_(external_model)
+{
+    init(delegate);
+
+    connect(model_, &LayerTreeModel::modelChangedSignal, this, &LayerPanelWidget::autoExpand);
+}
+
+LayerPanelWidget::~LayerPanelWidget()
+{
+    if (!model_is_external_)
+    {
+        delete model_;
+        model_ = nullptr;
+    }
+}
+
+void LayerPanelWidget::init(LayerTreeItemDelegate* delegate)
 {
     auto* layout = new QVBoxLayout(this);
     layout->setMargin(0);
 
     tree_view_ = new QTreeView(this);
-    tree_view_->setModel(model_.get());
+    tree_view_->setModel(model_);
 
     delegate_ = delegate ? delegate : new LayerTreeItemDelegate(this);
     tree_view_->setItemDelegate(delegate_);
@@ -51,8 +85,6 @@ LayerPanelWidget::LayerPanelWidget(QWidget* parent,
     layout->addWidget(tree_view_);
     setLayout(layout);
 }
-
-LayerPanelWidget::~LayerPanelWidget() = default;
 
 LayerTreeItem* LayerPanelWidget::addRootItem(std::unique_ptr<LayerTreeItem> item)
 {
@@ -114,4 +146,31 @@ void LayerPanelWidget::onContextMenuRequested(const QPoint& pos)
     connect(collapse_all, &QAction::triggered, this, [this]{ tree_view_->collapseAll(); });
 
     menu.exec(tree_view_->viewport()->mapToGlobal(pos));
+}
+
+void LayerPanelWidget::expandLayers(int max_depth)
+{
+    auto expandCB = [ & ] (const QModelIndex& index, LayerTreeItem* item)
+    {
+        if (item && !item->isExpandable())
+            return;
+
+        treeView()->expand(index);
+    };
+
+    model()->traverse(expandCB, max_depth);
+}
+
+void LayerPanelWidget::enableAutoExpand(int max_depth)
+{
+    auto_expand_           = true;
+    auto_expand_max_depth_ = max_depth;
+}
+
+void LayerPanelWidget::autoExpand()
+{
+    if (!auto_expand_)
+        return;
+
+    expandLayers(auto_expand_max_depth_);
 }

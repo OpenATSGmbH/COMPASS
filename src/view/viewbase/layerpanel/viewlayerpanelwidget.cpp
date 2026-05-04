@@ -16,7 +16,6 @@
  */
 
 #include "viewlayerpanelwidget.h"
-#include "layertreemodel.h"
 
 #include "dbcontentlayer.h"
 #include "annotationsrootitem.h"
@@ -28,23 +27,12 @@
 ViewLayerPanelWidget::ViewLayerPanelWidget(const std::vector<LayerColumnSpec>& custom_columns,
                                            bool show_annotations,
                                            QWidget* parent, 
-                                           LayerTreeItemDelegate* delegate)
-    : LayerPanelWidget(parent, delegate)
+                                           LayerTreeItemDelegate* delegate,
+                                           ViewLayerTreeModel* external_model)
+    : LayerPanelWidget(parent, 
+                       delegate, 
+                       external_model ? external_model : new ViewLayerTreeModel(custom_columns, show_annotations),
+                       external_model != nullptr)
 {
-    for (const auto& col : custom_columns)
-        model()->addColumn(col);
-    
     model()->applyHeaderSettings(treeView()->header());
-
-    // Always-shown "DBContent" root — panel owns it via the model.
-    auto root_uptr = std::make_unique<DBContentRootItem>();
-    dbcontent_root_item_ = root_uptr.get();
-    addRootItem(std::move(root_uptr));
-
-    if (show_annotations)
-    {
-        auto annot_root_uptr = std::make_unique<AnnotationsRootItem>();
-        annotations_root_item_ = annot_root_uptr.get();
-        addRootItem(std::move(annot_root_uptr));
-    }
 }

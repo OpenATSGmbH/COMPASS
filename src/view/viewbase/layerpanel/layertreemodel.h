@@ -54,6 +54,7 @@ class LayerTreeModel : public QAbstractItemModel
 signals:
     void hiddenChangedSignal();
     void colorChangedSignal();
+    void modelChangedSignal();
 
 public:
     enum DataRole
@@ -66,7 +67,7 @@ public:
 
     // Expose reset-scope methods so views can wrap non-trivial tree rewrites.
     using QAbstractItemModel::beginResetModel;
-    using QAbstractItemModel::endResetModel;
+    void endResetModel();
 
     // ---- tree construction -------------------------------------------------
 

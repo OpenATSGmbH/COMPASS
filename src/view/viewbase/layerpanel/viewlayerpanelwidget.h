@@ -20,8 +20,9 @@
 #include "layerpanelwidget.h"
 #include "layertreedefs.h"
 
-class DBContentRootItem;
-class AnnotationsRootItem;
+#include "viewlayertreemodel.h"
+
+class ViewLayerTreeModel;
 
 /**
  */
@@ -30,21 +31,15 @@ class ViewLayerPanelWidget : public LayerPanelWidget
     Q_OBJECT
 
 public:
-    explicit ViewLayerPanelWidget(const std::vector<LayerColumnSpec>& custom_columns = std::vector<LayerColumnSpec>(),
-                                  bool show_annotations = false,
+    explicit ViewLayerPanelWidget(const std::vector<LayerColumnSpec>& custom_columns,
+                                  bool show_annotations,
                                   QWidget* parent = nullptr,
-                                  LayerTreeItemDelegate* delegate = nullptr);
+                                  LayerTreeItemDelegate* delegate = nullptr,
+                                  ViewLayerTreeModel* external_model = nullptr);
     virtual ~ViewLayerPanelWidget() override = default;
 
-    DBContentRootItem* dbContentRootItem() { return dbcontent_root_item_; }
-    const DBContentRootItem* dbContentRootItem() const { return dbcontent_root_item_; }
-
-    AnnotationsRootItem* annotationsRootItem() { return annotations_root_item_; }
-    const AnnotationsRootItem* annotationsRootItem() const { return annotations_root_item_; }
-
-    bool showsAnnotations() const { return annotations_root_item_ != nullptr; }
-
-private:
-    DBContentRootItem*   dbcontent_root_item_   = nullptr;
-    AnnotationsRootItem* annotations_root_item_ = nullptr;
+    virtual ViewLayerTreeModel* model() const override
+    {
+        return dynamic_cast<ViewLayerTreeModel*>(LayerPanelWidget::model());
+    }
 };

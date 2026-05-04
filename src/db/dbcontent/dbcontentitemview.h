@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "dbcontentitem.h"
+
+#include <optional>
+
 #include <QWidget>
 
 class DBContentItemModel;
@@ -44,6 +48,9 @@ public:
 
     QTreeView* treeView() const { return tree_view_; }
 
+    void setActiveGroupings(unsigned int flags, 
+                            const std::optional<dbContent::Grouping>& grouping = std::optional<dbContent::Grouping>(),
+                            bool run_update = true);
 private slots:
     void groupingChangedSlot(const QString& text);
 
@@ -52,4 +59,6 @@ private:
 
     QComboBox* grouping_box_ {nullptr};
     QTreeView* tree_view_    {nullptr};
+
+    unsigned int active_groupings_ = std::numeric_limits<unsigned int>::max();
 };

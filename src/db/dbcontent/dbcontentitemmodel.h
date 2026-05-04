@@ -19,7 +19,6 @@
 
 #include "dbcontentitemprovider.h"
 
-#include <map>
 #include <vector>
 
 #include "json.hpp"
@@ -72,16 +71,16 @@ public:
     /** Returns the display name for an item: "<grouping> <id_string>". */
     QString itemName(const nlohmann::json& item_id) const;
 
-    /** Returns true if the item is currently marked visible. */
+    /** Returns true if the item is currently marked visible (queried from provider). */
     bool isVisible(const nlohmann::json& item_id) const;
 
-    /** Sets visibility for a single item and emits dataChanged. */
+    /** Toggles visibility for a single item via the provider. */
     void setVisible(const nlohmann::json& item_id, bool visible);
 
-    /** Sets visibility for all but a single item and emits dataChanged. */
+    /** Toggles visibility for all but a single item via the provider. */
     void setSiblingsVisible(const nlohmann::json& item_id, bool visible);
 
-    /** Sets visibility for all current items. Emits a single dataChanged covering all rows. */
+    /** Toggles visibility for all current items via the provider. */
     void setAllVisible(bool visible);
 
     /**
@@ -97,10 +96,8 @@ public:
 protected:
     // --- Virtual hooks ---
 
-    virtual void setItemVisible_impl(const nlohmann::json& item_id, bool visible) {}
-    virtual void setItemsVisible_impl(const std::vector<nlohmann::json>& item_ids, bool visible) {}
-    virtual void setAllItemsVisible_impl(bool visible) {}
-
+    /// Subclass hook invoked from showContextMenu() between the built-in
+    /// "Show <item>"/"Hide <item>" entries and the "Show All"/"Hide All" entries.
     virtual void fillItemContextMenu(QMenu& menu, const nlohmann::json& item_id) {}
     virtual void onItemDoubleClicked(const nlohmann::json& item_id) {}
 
@@ -110,11 +107,11 @@ public slots:
 private slots:
     void dataResetSlot();
     void dataRefreshedSlot();
+    void itemVisibilityChangedSlot();
 
 private:
     void rebuild();
 
     DBContentItemProvider&          provider_;
     std::vector<nlohmann::json>     item_ids_;   // ordered list of unique item IDs
-    std::map<nlohmann::json, bool>  visibility_; // per-item visibility; new items default to true
 };
