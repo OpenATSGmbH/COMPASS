@@ -38,10 +38,6 @@ public:
     ~DataSourceRemoteUnit();
 
     void configure(const RemoteUnitDefinition& def);
-    RemoteUnitDefinition toDefinition() const;
-
-    int index() const;
-    void index(int idx);
 
     std::string name() const;
     void name(const std::string& name);
@@ -60,7 +56,6 @@ public:
 
     std::string asString() const;
 
-    static const std::string KeyIndex;
     static const std::string KeyName;
     static const std::string KeyComment;
     static const std::string KeyLatitude;

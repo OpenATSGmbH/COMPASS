@@ -49,12 +49,14 @@
 namespace
 {
 
-/// Extracts native-typed keys from multiple buffers and sorts row_indexes in-place.
-/// Each row references a (dbcont_num, buffer_index) pair; the NullableVector for each
-/// dbcont_num is resolved once via nvec_map to avoid per-row map lookups.
+/// Computes the sort permutation by extracting native-typed keys from multiple
+/// buffers. Each row references a (dbcont_num, buffer_index) pair; the
+/// NullableVector for each dbcont_num is resolved once via nvec_map to avoid
+/// per-row map lookups. Returns a permutation perm such that
+/// new[i] = old[perm[i]] — caller applies it (row_indexes_ + parallel arrays).
 template <typename T>
-void typedSortPairs(
-    std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
+std::vector<unsigned int> typedSortPerm(
+    const std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
     const std::map<unsigned int, std::string>& number_to_dbcont,
     const std::map<std::string, std::shared_ptr<Buffer>>& buffers,
     const std::map<unsigned int, std::string>& dbcont_num_to_var_name,
@@ -92,7 +94,6 @@ void typedSortPairs(
         }
     }
 
-    // sort permutation by typed keys
     std::vector<unsigned int> perm(n);
     std::iota(perm.begin(), perm.end(), 0);
 
@@ -104,15 +105,11 @@ void typedSortPairs(
         return ascending ? (values[a] < values[b]) : (values[b] < values[a]);
     });
 
-    // apply permutation
-    std::vector<std::pair<unsigned int, unsigned int>> new_indexes(n);
-    for (unsigned int i = 0; i < n; ++i)
-        new_indexes[i] = row_indexes[perm[i]];
-    row_indexes = std::move(new_indexes);
+    return perm;
 }
 
-void dispatchTypedSort(
-    std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
+std::vector<unsigned int> dispatchTypedSortPerm(
+    const std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
     const std::map<unsigned int, std::string>& number_to_dbcont,
     const std::map<std::string, std::shared_ptr<Buffer>>& buffers,
     const std::map<unsigned int, std::string>& dbcont_num_to_var_name,
@@ -120,19 +117,19 @@ void dispatchTypedSort(
 {
     switch (dt)
     {
-    case PropertyDataType::BOOL:      typedSortPairs<bool>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::CHAR:      typedSortPairs<char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::UCHAR:     typedSortPairs<unsigned char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::INT:       typedSortPairs<int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::UINT:      typedSortPairs<unsigned int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::LONGINT:   typedSortPairs<long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::ULONGINT:  typedSortPairs<unsigned long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::FLOAT:     typedSortPairs<float>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::DOUBLE:    typedSortPairs<double>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::STRING:    typedSortPairs<std::string>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::JSON:      typedSortPairs<nlohmann::json>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    case PropertyDataType::TIMESTAMP: typedSortPairs<boost::posix_time::ptime>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending); break;
-    default: break;
+    case PropertyDataType::BOOL:      return typedSortPerm<bool>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::CHAR:      return typedSortPerm<char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::UCHAR:     return typedSortPerm<unsigned char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::INT:       return typedSortPerm<int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::UINT:      return typedSortPerm<unsigned int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::LONGINT:   return typedSortPerm<long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::ULONGINT:  return typedSortPerm<unsigned long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::FLOAT:     return typedSortPerm<float>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::DOUBLE:    return typedSortPerm<double>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::STRING:    return typedSortPerm<std::string>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::JSON:      return typedSortPerm<nlohmann::json>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::TIMESTAMP: return typedSortPerm<boost::posix_time::ptime>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    default: return {};
     }
 }
 
@@ -145,6 +142,15 @@ AllBufferTableModel::AllBufferTableModel(TableView& view, AllBufferTableWidget* 
 }
 
 AllBufferTableModel::~AllBufferTableModel() {}
+
+void AllBufferTableModel::setChangedSlot()
+{
+    // Variable column layout depends on the data source's variable set; clear
+    // the (data_col, dbcontent) -> Variable* cache so resolveVariable() picks
+    // up the new mapping on next paint.
+    variable_cache_.clear();
+    BaseBufferTableModel::setChangedSlot();
+}
 
 unsigned int AllBufferTableModel::dataRowCount() const
 {
@@ -168,6 +174,7 @@ BaseBufferTableModel::RowData AllBufferTableModel::resolveRow(int row) const
     rd.buffer = buffers_.at(dbcontent_name).get();
     rd.buffer_index = buffer_index;
     rd.dbcontent_name = dbcontent_name;
+    rd.row = (unsigned int)row;
     return rd;
 }
 
@@ -208,57 +215,14 @@ QVariant AllBufferTableModel::prefixColumnDecoration(unsigned int col, const Row
             selected = true;
     }
 
-    // Resolve this row's layer id from the buffer (ds_id + line_id +
-    // dbcontent) at render time. Cost: a handful of null-checks per cell
-    // paint, which is fast enough for the icon column.
-
-    std::string layer_id;
-    if (row_data.buffer)
-    {
-        DBContentManager& dbcont_man = view_.compass().dbContentManager();
-        auto& ctx_mgr = view_.compass().dbContextManager();
-
-        if (dbcont_man.metaCanGetVariable(row_data.dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
-            dbcont_man.metaCanGetVariable(row_data.dbcontent_name, dbcontent_vars::meta_var_line_id_))
-        {
-            const std::string ds_id_name = dbcont_man.metaGetVariable(
-                row_data.dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
-            const std::string line_id_name = dbcont_man.metaGetVariable(
-                row_data.dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
-
-            if (row_data.buffer->has<unsigned int>(ds_id_name) &&
-                row_data.buffer->has<unsigned int>(line_id_name))
-            {
-                const auto& ds_ids   = row_data.buffer->get<unsigned int>(ds_id_name);
-                const auto& line_ids = row_data.buffer->get<unsigned int>(line_id_name);
-
-                if (!ds_ids.isNull(row_data.buffer_index) &&
-                    !line_ids.isNull(row_data.buffer_index))
-                {
-                    const unsigned int ds_id   = ds_ids.get(row_data.buffer_index);
-                    const unsigned int line_id = line_ids.get(row_data.buffer_index);
-
-                    std::string ds_type, ds_name;
-                    if (ctx_mgr.hasDataSource(ds_id))
-                    {
-                        const auto* ds = ctx_mgr.dataSource(ds_id);
-                        ds_type = ds->dsType();
-                        ds_name = ds->name();
-                    }
-                    else
-                    {
-                        ds_type = "Other";
-                        ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
-                                + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
-                    }
-
-                    layer_id = ds_type + ":" + ds_name + ":"
-                              + Utils::String::lineStrFrom(line_id) + ":"
-                              + row_data.dbcontent_name;
-                }
-            }
-        }
-    }
+    // Layer id was resolved once in buildRowIndexes() and stored in
+    // row_layer_index_; the empty-string pool slot 0 means "unknown".
+    static const std::string empty_layer;
+    const std::string& layer_id =
+        (row_data.row < row_layer_index_.size() &&
+         row_layer_index_[row_data.row] < layer_id_pool_.size())
+            ? layer_id_pool_[row_layer_index_[row_data.row]]
+            : empty_layer;
 
     QIcon icon = iconFor(layer_id, selected);
     if (icon.isNull())
@@ -326,30 +290,36 @@ bool AllBufferTableModel::resolveVariable(unsigned int data_col,
 {
     traced_assert(data_col < data_source_.getSet()->getSize());
 
+    auto cache_key = std::make_pair(data_col, dbcontent_name);
+    auto cache_it = variable_cache_.find(cache_key);
+    if (cache_it != variable_cache_.end())
+    {
+        out_var = cache_it->second;
+        return out_var != nullptr;
+    }
+
     std::string variable_dbcontent_name, variable_name;
     std::tie(variable_dbcontent_name, variable_name) = data_source_.getSet()->variableDefinition(data_col);
 
     DBContentManager& manager = view_.compass().dbContentManager();
 
+    dbContent::Variable* var = nullptr;
     if (variable_dbcontent_name == META_OBJECT_NAME)
     {
         traced_assert(manager.existsMetaVariable(variable_name));
-        if (!manager.metaVariable(variable_name).existsIn(dbcontent_name))
-            return false;
+        if (manager.metaVariable(variable_name).existsIn(dbcontent_name))
+            var = &manager.metaVariable(variable_name).getFor(dbcontent_name);
     }
-    else
+    else if (dbcontent_name == variable_dbcontent_name)
     {
-        if (dbcontent_name != variable_dbcontent_name)
-            return false;
-
         traced_assert(manager.existsDBContent(dbcontent_name));
         traced_assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
+        var = &manager.dbContent(dbcontent_name).variable(variable_name);
     }
 
-    out_var = (variable_dbcontent_name == META_OBJECT_NAME)
-                  ? &manager.metaVariable(variable_name).getFor(dbcontent_name)
-                  : &manager.dbContent(dbcontent_name).variable(variable_name);
-    return true;
+    variable_cache_[cache_key] = var;
+    out_var = var;
+    return var != nullptr;
 }
 
 QVariant AllBufferTableModel::dataColumnHeader(unsigned int data_col) const
@@ -366,6 +336,9 @@ void AllBufferTableModel::clearData()
     beginCustomResetModel();
 
     row_indexes_.clear();
+    row_layer_index_.clear();
+    layer_id_pool_.clear();
+    variable_cache_.clear();
     buffers_.clear();
 
     endCustomResetModel();
@@ -402,20 +375,33 @@ void AllBufferTableModel::buildRowIndexes()
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
     row_indexes_.clear();
+    row_layer_index_.clear();
+    layer_id_pool_.clear();
+    layer_id_pool_.push_back("");  // index 0 = unknown / no layer
 
     // count total records to reserve vector capacity
     unsigned int total_size = 0;
     for (auto& buf_it : buffers_)
         total_size += buf_it.second->size();
 
-    // build (timestamp, dbcont_num, buffer_index) entries in a flat vector
-    using TimedEntry = std::pair<boost::posix_time::ptime, std::pair<unsigned int, unsigned int>>;
+    // (timestamp, dbcont_num, buffer_index, layer_id_index) per accepted row
+    struct TimedEntry
+    {
+        boost::posix_time::ptime ts;
+        unsigned int dbcont_num;
+        unsigned int buffer_index;
+        unsigned int layer_index;
+    };
     std::vector<TimedEntry> timed_entries;
     timed_entries.reserve(total_size);
 
     DBContentManager& dbcont_man = view_.compass().dbContentManager();
     auto& ctx_mgr = view_.compass().dbContextManager();
     const bool filter_enabled = allowed_layer_ids_.has_value();
+
+    // dedup pool across all buffers — typical datasets have a few dozen
+    // distinct layer ids vs. millions of rows.
+    std::map<std::string, unsigned int> layer_id_to_index;
 
     for (auto& buf_it : buffers_)
     {
@@ -442,33 +428,30 @@ void AllBufferTableModel::buildRowIndexes()
         traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
-        // Per-row layer id resolution — only wire these up if the filter is
-        // active, to keep the non-filtered fast path untouched.
+        // Per-row layer id resolution — wire ds_id/line_id columns up once
+        // per buffer.
         const NullableVector<unsigned int>* ds_ids_vec   = nullptr;
         const NullableVector<unsigned int>* line_ids_vec = nullptr;
 
-        if (filter_enabled)
+        if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+            dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
         {
-            if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
-                dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
-            {
-                const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
-                    dbcontent_vars::meta_var_ds_id_).name();
-                const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
-                    dbcontent_vars::meta_var_line_id_).name();
+            const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+                dbcontent_vars::meta_var_ds_id_).name();
+            const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
+                dbcontent_vars::meta_var_line_id_).name();
 
-                if (buf_it.second->has<unsigned int>(ds_id_name) &&
-                    buf_it.second->has<unsigned int>(line_id_name))
-                {
-                    ds_ids_vec   = &buf_it.second->get<unsigned int>(ds_id_name);
-                    line_ids_vec = &buf_it.second->get<unsigned int>(line_id_name);
-                }
+            if (buf_it.second->has<unsigned int>(ds_id_name) &&
+                buf_it.second->has<unsigned int>(line_id_name))
+            {
+                ds_ids_vec   = &buf_it.second->get<unsigned int>(ds_id_name);
+                line_ids_vec = &buf_it.second->get<unsigned int>(line_id_name);
             }
         }
 
-        // Cache (ds_id, line_id) -> layer id to avoid a DataSourceManager
-        // lookup per row.
-        std::map<std::pair<unsigned int, unsigned int>, std::string> layer_id_cache;
+        // Per-buffer cache (ds_id, line_id) -> pool index, avoids a
+        // DataSourceManager lookup + layer-id string build per row.
+        std::map<std::pair<unsigned int, unsigned int>, unsigned int> ds_line_to_layer_idx;
 
         unsigned int num_time_none = 0;
 
@@ -480,21 +463,22 @@ void AllBufferTableModel::buildRowIndexes()
                     continue;
             }
 
-            if (filter_enabled)
-            {
-                if (!ds_ids_vec || !line_ids_vec ||
-                    ds_ids_vec->isNull(buffer_index) ||
-                    line_ids_vec->isNull(buffer_index))
-                    continue;   // no ds/line -> can't match any layer
+            unsigned int layer_index = 0;  // 0 = unknown
 
+            if (ds_ids_vec && line_ids_vec &&
+                !ds_ids_vec->isNull(buffer_index) &&
+                !line_ids_vec->isNull(buffer_index))
+            {
                 const unsigned int ds_id   = ds_ids_vec->get(buffer_index);
                 const unsigned int line_id = line_ids_vec->get(buffer_index);
 
                 const auto cache_key = std::make_pair(ds_id, line_id);
-                auto cache_it = layer_id_cache.find(cache_key);
-                std::string layer_id;
-
-                if (cache_it == layer_id_cache.end())
+                auto cache_it = ds_line_to_layer_idx.find(cache_key);
+                if (cache_it != ds_line_to_layer_idx.end())
+                {
+                    layer_index = cache_it->second;
+                }
+                else
                 {
                     std::string ds_type, ds_name;
                     if (ctx_mgr.hasDataSource(ds_id))
@@ -509,16 +493,30 @@ void AllBufferTableModel::buildRowIndexes()
                         ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
                                 + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
                     }
-                    layer_id = ds_type + ":" + ds_name + ":"
-                              + Utils::String::lineStrFrom(line_id) + ":" + dbcontent_name;
-                    layer_id_cache[cache_key] = layer_id;
-                }
-                else
-                {
-                    layer_id = cache_it->second;
-                }
+                    std::string layer_id = ds_type + ":" + ds_name + ":"
+                                         + Utils::String::lineStrFrom(line_id) + ":"
+                                         + dbcontent_name;
 
-                if (!allowed_layer_ids_->count(layer_id))
+                    auto pool_it = layer_id_to_index.find(layer_id);
+                    if (pool_it == layer_id_to_index.end())
+                    {
+                        layer_index = (unsigned int)layer_id_pool_.size();
+                        layer_id_to_index[layer_id] = layer_index;
+                        layer_id_pool_.push_back(std::move(layer_id));
+                    }
+                    else
+                    {
+                        layer_index = pool_it->second;
+                    }
+                    ds_line_to_layer_idx[cache_key] = layer_index;
+                }
+            }
+
+            if (filter_enabled)
+            {
+                // unknown layer (index 0) can't match anything
+                if (layer_index == 0 ||
+                    !allowed_layer_ids_->count(layer_id_pool_[layer_index]))
                     continue;
             }
 
@@ -531,24 +529,32 @@ void AllBufferTableModel::buildRowIndexes()
             else
                 ts = ts_vec.get(buffer_index);
 
-            timed_entries.emplace_back(ts, std::make_pair(dbcont_num, buffer_index));
+            timed_entries.push_back({ts, dbcont_num, buffer_index, layer_index});
         }
 
         if (num_time_none)
             loginf << dbcontent_name << " skipped " << num_time_none << " indexes with no time";
     }
 
-    // sort by timestamp (stable_sort preserves insertion order for equal timestamps)
-    std::stable_sort(timed_entries.begin(), timed_entries.end(),
-        [](const TimedEntry& a, const TimedEntry& b)
-        {
-            return a.first < b.first;
-        });
+    // Default ordering: timestamp. If a sort column is active, sortRowIndexes()
+    // will overwrite this anyway — skip the work in that case.
+    if (sort_column_ < 0)
+    {
+        std::stable_sort(timed_entries.begin(), timed_entries.end(),
+            [](const TimedEntry& a, const TimedEntry& b)
+            {
+                return a.ts < b.ts;
+            });
+    }
 
-    // extract row index map (strip timestamps)
     row_indexes_.resize(timed_entries.size());
+    row_layer_index_.resize(timed_entries.size());
     for (unsigned int i = 0; i < timed_entries.size(); ++i)
-        row_indexes_[i] = timed_entries[i].second;
+    {
+        row_indexes_[i] = std::make_pair(timed_entries[i].dbcont_num,
+                                         timed_entries[i].buffer_index);
+        row_layer_index_[i] = timed_entries[i].layer_index;
+    }
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
@@ -593,6 +599,14 @@ void AllBufferTableModel::applyRowPermutation(const std::vector<unsigned int>& p
     for (unsigned int i = 0; i < perm.size(); ++i)
         new_indexes[i] = row_indexes_[perm[i]];
     row_indexes_ = std::move(new_indexes);
+
+    if (row_layer_index_.size() == perm.size())
+    {
+        std::vector<unsigned int> new_layer(perm.size());
+        for (unsigned int i = 0; i < perm.size(); ++i)
+            new_layer[i] = row_layer_index_[perm[i]];
+        row_layer_index_ = std::move(new_layer);
+    }
 }
 
 void AllBufferTableModel::sortRowIndexes()
@@ -648,7 +662,12 @@ void AllBufferTableModel::sortRowIndexes()
     }
 
     if (have_type)
-        dispatchTypedSort(row_indexes_, number_to_dbcont_, buffers_, dbcont_num_to_var_name, dt, ascending);
+    {
+        auto perm = dispatchTypedSortPerm(row_indexes_, number_to_dbcont_, buffers_,
+                                          dbcont_num_to_var_name, dt, ascending);
+        if (!perm.empty())
+            applyRowPermutation(perm);
+    }
 }
 
 void AllBufferTableModel::saveAsCSV(const std::string& file_name)

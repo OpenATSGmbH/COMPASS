@@ -490,10 +490,8 @@ void DataSourceEditWidget::createRemoteUnitsTab()
     remote_units_list_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
     remote_units_list_->header()->setSectionResizeMode(2, QHeaderView::ResizeMode::Stretch);
 
-    ru_layout->addWidget(remote_units_list_);
-
     auto button_layout = new QHBoxLayout;
-    
+
     ru_add_button_ = new QPushButton("Add");
     connect(ru_add_button_, &QPushButton::pressed, this, &DataSourceEditWidget::addMLATRemoteUnitSlot);
 
@@ -509,6 +507,7 @@ void DataSourceEditWidget::createRemoteUnitsTab()
     button_layout->addStretch();
 
     ru_layout->addLayout(button_layout);
+    ru_layout->addWidget(remote_units_list_);
 
     main_layout->addWidget(remote_units_widget_);
 
@@ -669,8 +668,6 @@ void DataSourceEditWidget::nameEditedSlot(const QString& value)
     }
 
     traced_assert(current_ds_);
-
-traced_assert(current_ds_);
     currentDataSource().name(text);
 
     update_ds_func_(currentDataSource().id());
@@ -685,8 +682,6 @@ void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
     loginf << "'" << text << "'";
 
     traced_assert(current_ds_);
-
-traced_assert(current_ds_);
     currentDataSource().shortName(text);
 
     update_ds_func_(currentDataSource().id());
@@ -701,8 +696,6 @@ void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
     loginf << "'" << text << "'";
 
     traced_assert(current_ds_);
-
-traced_assert(current_ds_);
     currentDataSource().dsType(text);
 
     update_ds_func_(currentDataSource().id());
@@ -888,8 +881,6 @@ void DataSourceEditWidget::addRadarRangesSlot()
     loginf;
 
     traced_assert(current_ds_);
-
-traced_assert(current_ds_);
     currentDataSource().addRadarRangesIfMissing();
     update_ds_func_(currentDataSource().id());
 
@@ -981,7 +972,6 @@ void DataSourceEditWidget::addMLATRemoteUnitsSlot()
 
     // assert already in currentDataSource()
     traced_assert(ds.dsType() == "MLAT");
-    traced_assert(ds.dsType() == "MLAT");
 
 
         ds.addRemoteUnitsIfMissing();
@@ -997,7 +987,6 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     auto& ds = currentDataSource();
 
     // assert already in currentDataSource()
-    traced_assert(ds.dsType() == "MLAT");
     traced_assert(ds.dsType() == "MLAT");
 
     RemoteUnitDefinition ru_def_in;
@@ -1137,7 +1126,6 @@ void DataSourceEditWidget::importMLATRemoteUnitsSlot()
 
     // assert already in currentDataSource()
     traced_assert(ds.dsType() == "MLAT");
-    traced_assert(ds.dsType() == "MLAT");
 
     auto    ds_name = ds.hasShortName() ? ds.shortName() : ds.name();
     QString title   = QString::fromStdString("Select CSV File for Sensor '" + ds_name + "'");
@@ -1181,7 +1169,6 @@ void DataSourceEditWidget::clearMLATRemoteUnitsSlot()
 
     // assert already in currentDataSource()
     traced_assert(ds.dsType() == "MLAT");
-    traced_assert(ds.dsType() == "MLAT");
 
 
         ds.removeRemoteUnits();
@@ -1215,7 +1202,6 @@ void DataSourceEditWidget::clearSelectedMLATRemoteUnitsSlot()
 
     // assert already in currentDataSource()
     traced_assert(ds.dsType() == "MLAT");
-    traced_assert(ds.dsType() == "MLAT");
 
     for (auto item : remote_units_list_->selectedItems())
     {
@@ -1242,8 +1228,6 @@ void DataSourceEditWidget::addNetLinesSlot()
     loginf;
 
     traced_assert(current_ds_);
-
-traced_assert(current_ds_);
     currentDataSource().addNetworkLinesIfMissing();
     update_ds_func_(currentDataSource().id());
 
@@ -1306,6 +1290,12 @@ context::DataSource& DataSourceEditWidget::currentDataSource()
 {
     traced_assert(current_ds_);
     return *current_ds_;
+}
+
+unsigned int DataSourceEditWidget::currentDataSourceId() const
+{
+    traced_assert(current_ds_);
+    return current_ds_->id();
 }
 
 void DataSourceEditWidget::updateContent()

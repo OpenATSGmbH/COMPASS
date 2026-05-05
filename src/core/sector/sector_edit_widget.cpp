@@ -19,6 +19,7 @@
 #include "sector.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
+#include "traced_assert.h"
 
 #include <QCheckBox>
 #include <QColorDialog>
@@ -128,6 +129,12 @@ void SectorEditWidget::show(Sector& sector)
     name_edit_->blockSignals(false);
     layer_combo_->blockSignals(false);
     exclude_check_->blockSignals(false);
+}
+
+unsigned int SectorEditWidget::currentSectorId() const
+{
+    traced_assert(current_sector_);
+    return current_sector_->id();
 }
 
 void SectorEditWidget::clear()

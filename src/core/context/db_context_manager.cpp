@@ -179,6 +179,7 @@ void DBContextManager::deleteContext(const string& name)
 
     if (active_context_name_ == name)
     {
+        invalidateDataSourceCache();
         active_context_name_.clear();
         saveActiveContextName();
         emit activeContextChangedSignal();
@@ -204,6 +205,7 @@ void DBContextManager::renameContext(const string& old_name, const string& new_n
 
     if (active_context_name_ == old_name)
     {
+        invalidateDataSourceCache();
         active_context_name_ = new_name;
         saveActiveContextName();
         emit activeContextChangedSignal();
@@ -236,6 +238,8 @@ void DBContextManager::duplicateContext(const string& src, const string& dest)
 void DBContextManager::saveContext(const string& name)
 {
     traced_assert(hasContext(name));
+
+    invalidateDataSourceCache();
 
     auto& ctx = contexts_.at(name);
     ctx.modified(DBContext::currentTimestamp());
@@ -290,6 +294,8 @@ void DBContextManager::setActiveContext(const string& name)
     if (active_context_name_ == name)
         return;
 
+    invalidateDataSourceCache();
+
     // switching context while a DB with imported data is open is not allowed —
     // callers (GUI, RT commands) must prevent this
     traced_assert(!compass_.dbOpened() || !hasInsertedData());
@@ -324,17 +330,68 @@ bool DBContextManager::hasDataSource(unsigned int ds_id) const
 const DataSource* DBContextManager::dataSource(unsigned int ds_id) const
 {
     if (!hasActiveContext()) return nullptr;
-    for (const auto& ds : activeContext().dataSources())
-        if (ds.id() == ds_id) return &ds;
-    return nullptr;
+    ensureDataSourceCache();
+    auto it = ds_by_id_cache_.find(ds_id);
+    return it == ds_by_id_cache_.end() ? nullptr : it->second;
 }
 
 DataSource* DBContextManager::dataSource(unsigned int ds_id)
 {
     if (!hasActiveContext()) return nullptr;
-    for (auto& ds : activeContext().dataSources())
-        if (ds.id() == ds_id) return &ds;
-    return nullptr;
+    ensureDataSourceCache();
+    auto it = ds_by_id_cache_.find(ds_id);
+    return it == ds_by_id_cache_.end() ? nullptr : it->second;
+}
+
+std::string DBContextManager::remoteUnitName(unsigned int ds_id, int ru_idx) const
+{
+    if (!hasActiveContext()) return std::to_string(ru_idx);
+    ensureDataSourceCache();
+    auto ds_it = ru_name_cache_.find(ds_id);
+    if (ds_it == ru_name_cache_.end()) return std::to_string(ru_idx);
+    auto ru_it = ds_it->second.find(ru_idx);
+    return ru_it == ds_it->second.end() ? std::to_string(ru_idx) : ru_it->second;
+}
+
+void DBContextManager::ensureDataSourceCache() const
+{
+    if (ds_cache_valid_) return;
+
+    ds_by_id_cache_.clear();
+    ru_name_cache_.clear();
+
+    if (hasActiveContext())
+    {
+        // const_cast: dataSources() is non-const on DBContext; the cache exposes
+        // both const and non-const DataSource* through the same map, and the
+        // const accessor returns it as const DataSource*.
+        auto& sources = const_cast<DBContext&>(activeContext()).dataSources();
+        for (auto& ds : sources)
+        {
+            ds_by_id_cache_[ds.id()] = &ds;
+
+            if (!ds.hasRemoteUnits()) continue;
+            const auto& ru_obj = ds.info().at("remote_units");
+            if (!ru_obj.is_object()) continue;
+            auto& by_idx = ru_name_cache_[ds.id()];
+            for (auto it = ru_obj.begin(); it != ru_obj.end(); ++it)
+            {
+                int idx;
+                try { idx = std::stoi(it.key()); } catch (...) { continue; }
+                if (it.value().is_object() && it.value().contains("name") && it.value().at("name").is_string())
+                    by_idx[idx] = it.value().at("name").get<std::string>();
+            }
+        }
+    }
+
+    ds_cache_valid_ = true;
+}
+
+void DBContextManager::invalidateDataSourceCache() const
+{
+    ds_cache_valid_ = false;
+    ds_by_id_cache_.clear();
+    ru_name_cache_.clear();
 }
 
 bool DBContextManager::hasDataSource(const string& name) const
@@ -1414,6 +1471,8 @@ DBContextDiff DBContextManager::diff(const DBContext& a, const DBContext& b) con
 void DBContextManager::databaseOpenedSlot()
 {
     loginf << "database opened";
+
+    invalidateDataSourceCache();
 
     auto& db = compass_.dbInterface();
 

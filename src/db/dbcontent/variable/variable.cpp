@@ -24,6 +24,8 @@
 #include "stringconv.h"
 #include "global.h"
 
+#include <json.hpp>
+
 #include <algorithm>
 
 
@@ -45,7 +47,8 @@ std::map<Variable::Representation, std::string> Variable::representation_2_strin
     {Variable::Representation::FLOAT_PREC1, "FLOAT_PREC1"},
     {Variable::Representation::FLOAT_PREC2, "FLOAT_PREC2"},
     {Variable::Representation::FLOAT_PREC4, "FLOAT_PREC4"},
-    {Variable::Representation::LINE_NAME, "LINE_NAME"}};
+    {Variable::Representation::LINE_NAME, "LINE_NAME"},
+    {Variable::Representation::MLAT_RUS, "MLAT_RUS"}};
 
 std::map<std::string, Variable::Representation> Variable::string_2_representation_{
     {"STANDARD", Variable::Representation::STANDARD},
@@ -59,7 +62,8 @@ std::map<std::string, Variable::Representation> Variable::string_2_representatio
     {"FLOAT_PREC1", Variable::Representation::FLOAT_PREC1},
     {"FLOAT_PREC2", Variable::Representation::FLOAT_PREC2},
     {"FLOAT_PREC4", Variable::Representation::FLOAT_PREC4},
-    {"LINE_NAME", Variable::Representation::LINE_NAME}};
+    {"LINE_NAME", Variable::Representation::LINE_NAME},
+    {"MLAT_RUS", Variable::Representation::MLAT_RUS}};
 
 Variable::Representation Variable::stringToRepresentation(
     const std::string& representation_str)
@@ -361,6 +365,35 @@ void Variable::representation(const Variable::Representation& representation)
 {
     representation_str_ = representationToString(representation);
     representation_ = representation;
+}
+
+std::string Variable::getAsJSONRepresentationString(const nlohmann::json& value,
+                                                    const context::DBContextManager* ctx_man,
+                                                    unsigned int ds_id) const
+{
+    if (representation_ == Representation::MLAT_RUS)
+    {
+        if (!value.is_array() || value.empty())
+            return value.dump();
+
+        std::string out = "[";
+        bool first = true;
+        for (const auto& j_idx : value)
+        {
+            if (!j_idx.is_number_integer())
+                continue;
+
+            int idx = j_idx.get<int>();
+            if (!first) out += ", ";
+            first = false;
+
+            out += ctx_man ? ctx_man->remoteUnitName(ds_id, idx) : std::to_string(idx);
+        }
+        out += "]";
+        return out;
+    }
+
+    return value.dump();
 }
 
 std::string Variable::getRepresentationStringFromValue(const std::string& value_str) const

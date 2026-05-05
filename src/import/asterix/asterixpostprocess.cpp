@@ -20,6 +20,7 @@
 #include "logger.h"
 #include "number.h"
 #include "json.hpp"
+#include "traced_assert.h"
 
 using namespace Utils;
 using namespace nlohmann;
@@ -266,6 +267,46 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
             double cov_xy = cov_arr[i].get<double>();
             cov_arr[i] = (cov_xy < 0) ? -std::pow(cov_xy, 2) : std::pow(cov_xy, 2);
         }
+    }
+
+    // 400 contributing receivers: decode per-record [{RUx: byte}, ...] (each byte is an
+    // 8-RU bitmap; the array is in spec order, last byte = lowest RUs) into a list of
+    // 1-based RU indexes for set bits, written under "400.Contributing Receivers.RUx"
+    if (d.contains("400.Contributing Receivers"))
+    {
+        const json& contrib_arr = d.at("400.Contributing Receivers");
+
+        json out_arr = json::array();
+        out_arr.get_ref<json::array_t&>().resize(num_records, nullptr);
+
+        for (size_t i = 0; i < contrib_arr.size() && i < num_records; ++i)
+        {
+            const json& rec = contrib_arr[i];
+            if (rec.is_null() || !rec.is_array() || rec.empty())
+                continue;
+
+            std::vector<unsigned int> ru_indexes;
+            unsigned int prev_bit_cnt = 0;
+
+            for (auto it = rec.crbegin(); it != rec.crend(); ++it)
+            {
+                traced_assert(it->contains("RUx"));
+                unsigned int rux_bits = it->at("RUx").get<unsigned int>();
+                traced_assert(rux_bits < 256);
+
+                for (unsigned int bit = 0; bit < 8; ++bit)
+                {
+                    if (rux_bits & (0x1u << bit))
+                        ru_indexes.push_back(prev_bit_cnt + bit + 1); // 1-based per ASTERIX
+                }
+                prev_bit_cnt += 8;
+            }
+
+            out_arr[i] = std::move(ru_indexes);
+        }
+
+        d["400.Contributing Receivers.RUx"] = std::move(out_arr);
+        d.erase("400.Contributing Receivers");
     }
 }
 

@@ -202,9 +202,6 @@ protected:
 
     ToolBox* tool_box_ = nullptr;
 
-protected:
-    void keyPressEvent(QKeyEvent *event);
-
 private:
     void showCommandShell();
 

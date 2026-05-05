@@ -41,6 +41,9 @@ public:
     void clear();
     void setReadOnly(bool read_only);
 
+    bool hasCurrentFFT() const { return current_fft_ != nullptr; }
+    std::string currentFFTName() const;
+
 private slots:
     void nameEditedSlot();
     void positionEditedSlot();

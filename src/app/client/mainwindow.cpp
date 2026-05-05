@@ -455,9 +455,11 @@ void MainWindow::createMenus ()
     dark_mode_action_->setShortcut(tr("Ctrl+D"));
     connect(dark_mode_action_, &QAction::toggled, this, &MainWindow::toggleDarkModeSlot);
 
-    fullscreen_action_ = config_menu_->addAction("Fullscreen [F11]");
+    fullscreen_action_ = config_menu_->addAction("Fullscreen");
     fullscreen_action_->setCheckable(true);
     fullscreen_action_->setChecked(isFullScreen());
+    fullscreen_action_->setShortcut(Qt::Key_F11);
+    fullscreen_action_->setShortcutContext(Qt::ApplicationShortcut);
     connect(fullscreen_action_, &QAction::toggled, this, &MainWindow::toggleFullscreenSlot);
 
     ViewManager& view_manager = compass_.viewManager();
@@ -1581,15 +1583,6 @@ void MainWindow::createDebugMenu()
     }
 
     debug_menu->menuAction()->setVisible(!compass_.isAppImage());
-}
-
-void MainWindow::keyPressEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_F11) {
-        toggleFullscreenSlot();
-    } else {
-        QMainWindow::keyPressEvent(event); // Let base class handle other keys
-    }
 }
 
 void MainWindow::showCommandShell()

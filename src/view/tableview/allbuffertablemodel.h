@@ -36,6 +36,9 @@ class AllBufferTableModel : public BaseBufferTableModel
 {
     Q_OBJECT
 
+  public slots:
+    void setChangedSlot() override;
+
   public:
     AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget,
                         TableViewDataSource& data_source);
@@ -86,12 +89,25 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> [dbcont num, buffer index]
 
+    /// Per-row layer-id index, parallel to row_indexes_. Each entry indexes
+    /// into layer_id_pool_. Computed once in buildRowIndexes() and reordered
+    /// via applyRowPermutation() — avoids per-cell-paint DBContent / data
+    /// source lookups in prefixColumnDecoration().
+    std::vector<unsigned int> row_layer_index_;
+    std::vector<std::string>  layer_id_pool_;   // 0 = "" (unknown)
+
     std::optional<std::set<std::string>> allowed_layer_ids_;
     std::map<std::string, QColor>        layer_colors_;
 
     /// Cache: (layer_id, is_selected) -> QIcon. Cleared whenever layer_colors_
     /// changes. "" key is used for rows without a known layer color.
     mutable std::map<std::pair<std::string, bool>, QIcon> icon_cache_;
+
+    /// Cache: (data_col, dbcontent_name) -> Variable*. nullptr means "tried
+    /// and not applicable" (a meta variable not present for this dbcontent,
+    /// or the column belongs to a different dbcontent). Cleared in
+    /// setChangedSlot() when the data source variable set changes.
+    mutable std::map<std::pair<unsigned int, std::string>, dbContent::Variable*> variable_cache_;
 
     QIcon iconFor(const std::string& layer_id, bool selected) const;
 

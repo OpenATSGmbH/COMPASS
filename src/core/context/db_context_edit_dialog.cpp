@@ -39,6 +39,7 @@
 #include "logger.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
 
 #include <QApplication>
 #include <QComboBox>
@@ -114,7 +115,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     loginf << "opening edit dialog";
 
     setWindowTitle("Edit Data Contexts");
-    setMinimumSize(900, 600);
+    setMinimumSize(1000, 600);
     setModal(true);
 
     auto* main_layout = new QVBoxLayout();
@@ -311,6 +312,21 @@ void DBContextEditDialog::rebuildTree()
 {
     loginf << "rebuilding tree";
 
+    // capture currently shown detail item so it survives a rebuild triggered
+    // by an in-place property edit (e.g. "Add Remote Units", sector color, FFT
+    // position). without this the *_edit_widget_->clear() calls below would
+    // drop the current_* pointer and the slot's trailing update would fall
+    // through to a disabled / empty state.
+    boost::optional<unsigned int> shown_ds_id;
+    if (ds_edit_widget_->hasCurrentDataSource())
+        shown_ds_id = ds_edit_widget_->currentDataSourceId();
+    boost::optional<unsigned int> shown_sector_id;
+    if (sector_edit_widget_->hasCurrentSector())
+        shown_sector_id = sector_edit_widget_->currentSectorId();
+    boost::optional<std::string> shown_fft_name;
+    if (fft_edit_widget_->hasCurrentFFT())
+        shown_fft_name = fft_edit_widget_->currentFFTName();
+
     tree_model_->rebuild();
     tree_view_->expandAll();
     ds_edit_widget_->clear();
@@ -319,6 +335,22 @@ void DBContextEditDialog::rebuildTree()
 
     // refresh ASTERIX widget
     asterix_widget_->updateSlot();
+
+    if (shown_ds_id)
+    {
+        if (auto* ds = manager_.dataSource(*shown_ds_id))
+            ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
+    }
+    if (shown_sector_id)
+    {
+        if (auto sector = manager_.sector(*shown_sector_id))
+            sector_edit_widget_->show(*sector);
+    }
+    if (shown_fft_name)
+    {
+        if (auto* fft = manager_.fft(*shown_fft_name))
+            fft_edit_widget_->show(*fft);
+    }
 }
 
 void DBContextEditDialog::contextComboChangedSlot(const QString& name)
