@@ -825,6 +825,16 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
 
     tree_widget_->blockSignals(true);
 
+    // Preserve data source selection across a forced rebuild. clear() drops
+    // the selection, which would otherwise force the user to reselect the
+    // edited row after every name/position change in the edit widget.
+    int prev_selected_ds_id = -1;
+    if (force_rebuild)
+    {
+        if (auto* current = dynamic_cast<DataSourceItem*>(tree_widget_->currentItem()))
+            prev_selected_ds_id = (int)current->dsID();
+    }
+
     //clear everything to force a complete rebuild
     if (force_rebuild)
         clear();
@@ -869,6 +879,26 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
         changes += generateDataSourceType(item, ds_type_name);
 
         ++cnt;
+    }
+
+    // Restore the previously selected data source after a forced rebuild.
+    // Signals stay blocked so the edit widget is not redundantly refreshed.
+    if (prev_selected_ds_id >= 0)
+    {
+        for (int i = 0, n_top = tree_widget_->topLevelItemCount(); i < n_top; ++i)
+        {
+            auto* type_item = tree_widget_->topLevelItem(i);
+            for (int j = 0, n_child = type_item->childCount(); j < n_child; ++j)
+            {
+                auto* ds_item = dynamic_cast<DataSourceItem*>(type_item->child(j));
+                if (ds_item && (int)ds_item->dsID() == prev_selected_ds_id)
+                {
+                    tree_widget_->setCurrentItem(ds_item);
+                    ds_item->setSelected(true);
+                    break;
+                }
+            }
+        }
     }
 
     tree_widget_->blockSignals(false);
