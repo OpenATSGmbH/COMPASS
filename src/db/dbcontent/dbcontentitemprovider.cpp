@@ -31,8 +31,13 @@ const std::string DBContentItemProvider::GroupingStrNone            = "None";
 const std::string DBContentItemProvider::GroupingStrAircraftAddress = "Aircraft Address";
 const std::string DBContentItemProvider::GroupingStrAircraftID      = "Aircraft Identification";
 const std::string DBContentItemProvider::GroupingStrTrackNumber     = "Track Number";
+const std::string DBContentItemProvider::GroupingStrDSIDTrackNumber = "DS ID + Track Number";
 const std::string DBContentItemProvider::GroupingStrMode3ACode      = "Mode 3/A Code";
 const std::string DBContentItemProvider::GroupingStrUTN             = "UTN";
+
+const DBContentItemProvider::Grouping DBContentItemProvider::DefaultGrouping = DBContentItemProvider::Grouping::AircraftAddress;
+
+const std::string DBContentItemProvider::DsTypeOther = "Other";
 
 /**
  * Constructs the item provider and connects to the given data store's signals,
@@ -41,8 +46,9 @@ const std::string DBContentItemProvider::GroupingStrUTN             = "UTN";
 DBContentItemProvider::DBContentItemProvider(DBContentDataStore& data_store, 
                                              Grouping grouping,
                                              bool auto_update)
-:   data_store_(data_store)
-,   grouping_  (grouping  )
+:   data_store_      (data_store)
+,   context_manager_ (data_store.dbcManager().compass().dbContextManager())
+,   grouping_        (grouping)
 {
     if (auto_update)
     {
@@ -67,6 +73,7 @@ std::string DBContentItemProvider::groupingToString(Grouping grouping)
         case Grouping::AircraftAddress: return GroupingStrAircraftAddress;
         case Grouping::AircraftID:      return GroupingStrAircraftID;
         case Grouping::TrackNumber:     return GroupingStrTrackNumber;
+        case Grouping::DSIDTrackNumber: return GroupingStrDSIDTrackNumber;
         case Grouping::Mode3ACode:      return GroupingStrMode3ACode;
         case Grouping::UTN:             return GroupingStrUTN;
         case Grouping::None:            return GroupingStrNone;
@@ -83,6 +90,7 @@ DBContentItemProvider::Grouping DBContentItemProvider::groupingFromString(const 
     if (str == GroupingStrAircraftAddress) return Grouping::AircraftAddress;
     if (str == GroupingStrAircraftID)      return Grouping::AircraftID;
     if (str == GroupingStrTrackNumber)     return Grouping::TrackNumber;
+    if (str == GroupingStrDSIDTrackNumber) return Grouping::DSIDTrackNumber;
     if (str == GroupingStrMode3ACode)      return Grouping::Mode3ACode;
     if (str == GroupingStrUTN)             return Grouping::UTN;
     if (str == GroupingStrNone)            return Grouping::None;
@@ -98,6 +106,7 @@ bool DBContentItemProvider::isGroupingString(const std::string& str)
     return str == GroupingStrAircraftAddress
         || str == GroupingStrAircraftID
         || str == GroupingStrTrackNumber
+        || str == GroupingStrDSIDTrackNumber
         || str == GroupingStrMode3ACode
         || str == GroupingStrUTN
         || str == GroupingStrNone;
@@ -109,7 +118,7 @@ bool DBContentItemProvider::isTargetSpecific(Grouping grouping)
 {
     return grouping == Grouping::AircraftAddress ||
            grouping == Grouping::AircraftID      ||
-           grouping == Grouping::TrackNumber     ||
+           grouping == Grouping::DSIDTrackNumber ||
            grouping == Grouping::UTN;
 }
 
@@ -120,6 +129,30 @@ bool DBContentItemProvider::isNumeric(Grouping grouping)
     return grouping == Grouping::UTN         ||
            grouping == Grouping::TrackNumber ||
            grouping == Grouping::Mode3ACode;
+}
+
+/**
+ */
+std::vector<DBContentItemProvider::Grouping> DBContentItemProvider::getGroupings(unsigned int flags)
+{
+    std::vector<Grouping> groupings;
+
+    if (flags & GroupingFlags::GroupingNone)
+        groupings.push_back(Grouping::None);
+    if (flags & GroupingFlags::GroupingAircraftAddress)
+        groupings.push_back(Grouping::AircraftAddress);
+    if (flags & GroupingFlags::GroupingAircraftID)
+        groupings.push_back(Grouping::AircraftID);
+    //if (flags & GroupingFlags::GroupingTrackNumber)
+    //    groupings.push_back(Grouping::TrackNumber);
+    if (flags & GroupingFlags::GroupingDSIDTrackNumber)
+        groupings.push_back(Grouping::DSIDTrackNumber);
+    if (flags & GroupingFlags::GroupingMode3ACode)
+        groupings.push_back(Grouping::Mode3ACode);
+    if (flags & GroupingFlags::GroupingUTN)
+        groupings.push_back(Grouping::UTN);
+
+    return groupings;
 }
 
 /**
@@ -140,6 +173,8 @@ void DBContentItemProvider::setGrouping(Grouping grouping, bool run_update)
         return;
 
     grouping_ = grouping;
+
+    emit groupingChangedSignal(grouping_, run_update);
 
     if (run_update)
         update();
@@ -176,8 +211,99 @@ void DBContentItemProvider::reset()
     reset_impl();
 
     item_groups_.clear();
+    item_locations_.clear();
+    item_visibility_.clear();
 
     emit dataResetSignal();
+}
+
+/**
+ */
+bool DBContentItemProvider::itemVisible(const nlohmann::json& item_id) const
+{
+    auto it = item_visibility_.find(item_id);
+    return (it != item_visibility_.end()) ? it->second : true;
+}
+
+/**
+ */
+void DBContentItemProvider::setItemVisible(const nlohmann::json& item_id, bool visible)
+{
+    bool changed = setItemVisibleSilent(item_id, visible);
+
+    setItemVisible_impl(item_id, visible);
+
+    if (changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+void DBContentItemProvider::setItemsVisible(const std::vector<nlohmann::json>& item_ids, bool visible)
+{
+    bool any_changed = false;
+    for (const auto& id : item_ids)
+        any_changed |= setItemVisibleSilent(id, visible);
+
+    setItemsVisible_impl(item_ids, visible);
+
+    if (any_changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+void DBContentItemProvider::setAllItemsVisible(bool visible)
+{
+    bool any_changed = false;
+    for (const auto& [id, _] : item_locations_)
+        any_changed |= setItemVisibleSilent(id, visible);
+
+    setAllItemsVisible_impl(visible);
+
+    if (any_changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+void DBContentItemProvider::setSiblingItemsVisible(const nlohmann::json& item_id, bool visible)
+{
+    std::vector<nlohmann::json> siblings;
+    siblings.reserve(item_locations_.size());
+
+    bool any_changed = false;
+    for (const auto& [id, _] : item_locations_)
+    {
+        if (id == item_id)
+            continue;
+        siblings.push_back(id);
+        any_changed |= setItemVisibleSilent(id, visible);
+    }
+
+    setItemsVisible_impl(siblings, visible);
+
+    if (any_changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+bool DBContentItemProvider::setItemVisibleSilent(const nlohmann::json& item_id, bool visible)
+{
+    auto it = item_visibility_.find(item_id);
+    if (it == item_visibility_.end())
+    {
+        // Defaulted to true; only insert when we deviate.
+        if (visible)
+            return false;
+        item_visibility_[item_id] = false;
+        return true;
+    }
+    if (it->second == visible)
+        return false;
+    it->second = visible;
+    return true;
 }
 
 /**
@@ -217,6 +343,27 @@ std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFu
             if (!tn.has_value())
                 return nlohmann::json();
             return nlohmann::json(tn.value());
+        };
+    }
+    else if (grouping_ == Grouping::DSIDTrackNumber)
+    {
+        auto ctx_man = &context_manager_;
+
+        func = [ &accessor, ctx_man ] (unsigned int idx)
+        {
+            auto ds_id = accessor.dsID(idx);
+            auto tn    = accessor.trackNumber(idx);
+
+            if (!tn.has_value())
+                return nlohmann::json();
+
+            traced_assert(ctx_man->hasDataSource(ds_id));
+            const auto& ds = ctx_man->dataSource(ds_id);
+            traced_assert(ds);
+
+            std::string ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+
+            return nlohmann::json(ds_name + std::to_string(tn.value()));
         };
     }
     else if (grouping_ == Grouping::Mode3ACode)
@@ -355,17 +502,17 @@ void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
     // dbcontent name
     group.dbc_name = data_store_.dbcManager().dbContentWithId(group.dbc_id);
 
-    // ds name
-    const auto& ctx_manager = data_store_.dbcManager().compass().dbContextManager();
-
-    if (ctx_manager.hasDataSource(group.ds_id))
+    // ds name + type
+    if (context_manager_.hasDataSource(group.ds_id))
     {
-        const auto* ds = ctx_manager.dataSource(group.ds_id);
+        const auto* ds = context_manager_.dataSource(group.ds_id);
         group.ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+        group.ds_type = ds->dsType();
     }
     else
     {
         group.ds_name = std::to_string(group.ds_id);
+        group.ds_type = DsTypeOther;
     }
 
     // line name
@@ -417,11 +564,9 @@ std::string DBContentItemProvider::toString() const
     {
         const auto dbc_name   = data_store_.dbcManager().dbContentWithId(group->dbc_id);
 
-        const auto& ctx_manager = data_store_.dbcManager().compass().dbContextManager();
-
         std::string ds_name = "unknown";
-        if (ctx_manager.hasDataSource(group->ds_id))
-            ds_name = ctx_manager.dataSource(group->ds_id)->name();
+        if (context_manager_.hasDataSource(group->ds_id))
+            ds_name = context_manager_.dataSource(group->ds_id)->name();
 
         size_t n_items   = group->items.size();
         size_t n_indices = group->indices.size();
@@ -462,6 +607,27 @@ std::string DBContentItemProvider::toString() const
  */
 std::string DBContentItemProvider::itemName(const nlohmann::json& item_id) const
 {
-    std::string id_str = item_id.is_null() ? "None" : item_id.dump(0);
-    return groupingAsString() + " " + id_str;
+    if (grouping_ == Grouping::None)
+        return "All Data";
+
+    if (item_id.is_null())
+        return "None";
+
+    if (grouping_ == Grouping::AircraftAddress)
+        return Utils::String::hexStringFromInt(item_id.get<unsigned int>());
+
+    return item_id.dump(0);
+}
+
+/**
+ */
+nlohmann::json DBContentItemProvider::itemSortValue(const nlohmann::json& item_id) const
+{
+    if (item_id.is_null())
+        return item_id;
+
+    if (grouping_ == Grouping::AircraftAddress)
+        return Utils::String::hexStringFromInt(item_id.get<unsigned int>());
+
+    return item_id;
 }

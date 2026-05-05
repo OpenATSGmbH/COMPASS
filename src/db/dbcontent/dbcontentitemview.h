@@ -17,18 +17,28 @@
 
 #pragma once
 
-#include <QTreeView>
+#include "dbcontentitem.h"
+
+#include <optional>
+
+#include <QWidget>
 
 class DBContentItemModel;
+class QComboBox;
+class QTreeView;
 
 /**
- * QTreeView subclass that wires a DBContentItemModel automatically:
- *   - sets the model
- *   - configures flat display (no expand decoration)
- *   - connects context-menu requests to DBContentItemModel::showContextMenu()
- *   - connects double-click to DBContentItemModel::itemDoubleClickedSlot()
+ * Widget combining a grouping selector and a flat item list for a DBContentItemModel.
+ *
+ * Layout (top → bottom):
+ *   [ QComboBox  — grouping mode selector ]
+ *   [ QTreeView  — flat item list with checkbox + context menu ]
+ *
+ * The combo is pre-populated with all DBContentItemProvider grouping modes and
+ * wired to call provider().setGrouping() on change. The tree view is wired
+ * for context menus and double-click automatically.
  */
-class DBContentItemView : public QTreeView
+class DBContentItemView : public QWidget
 {
     Q_OBJECT
 
@@ -36,6 +46,19 @@ public:
     explicit DBContentItemView(DBContentItemModel& model, QWidget* parent = nullptr);
     virtual ~DBContentItemView() = default;
 
+    QTreeView* treeView() const { return tree_view_; }
+
+    void setActiveGroupings(unsigned int flags, 
+                            const std::optional<dbContent::Grouping>& grouping = std::optional<dbContent::Grouping>(),
+                            bool run_update = true);
+private slots:
+    void groupingChangedSlot(const QString& text);
+
 private:
     DBContentItemModel& model_;
+
+    QComboBox* grouping_box_ {nullptr};
+    QTreeView* tree_view_    {nullptr};
+
+    unsigned int active_groupings_ = std::numeric_limits<unsigned int>::max();
 };

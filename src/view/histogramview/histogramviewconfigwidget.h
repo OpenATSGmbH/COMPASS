@@ -23,7 +23,7 @@ class HistogramView;
 class HistogramViewWidget;
 
 class DBContentRootItem;
-class LayerPanelWidget;
+class ViewLayerPanelWidget;
 
 namespace dbContent {
 class VariableOrderedSetWidget;
@@ -72,9 +72,9 @@ protected:
     // general
     QCheckBox* log_check_{nullptr};
 
-    QLabel*            color_mode_label_ {nullptr};
-    LayerPanelWidget*  layer_panel_      {nullptr};
-    DBContentRootItem* db_content_root_  {nullptr};
+    QLabel*                color_mode_label_ {nullptr};
+    ViewLayerPanelWidget*  layer_panel_      {nullptr};
+    DBContentRootItem*     db_content_root_  {nullptr};
 
     static QString colorModeText(unsigned int mode);
 };
