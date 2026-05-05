@@ -276,6 +276,59 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
     fs::remove_all(tmp);
 }
 
+TEST_CASE("DBContextSerializer toJSON matches on-disk section files", "[context]")
+{
+    fs::path tmp = fs::temp_directory_path() / fs::unique_path("compass_test_tojson_%%%%");
+    fs::create_directories(tmp);
+
+    DBContext ctx("combined");
+    ctx.description("combined-format test");
+
+    DataSource ds;
+    ds.dsType("Radar");
+    ds.sac(7);
+    ds.sic(3);
+    ds.name("R1");
+    ctx.dataSources().push_back(ds);
+
+    FFT fft;
+    fft.name("FFT_X");
+    ctx.ffts().push_back(fft);
+
+    ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, "1.31"));
+    ctx.colors().preference = ContextColors::Preference::Dark;
+
+    json combined = DBContextSerializer::toJSON(ctx);
+
+    // top-level keys mirror the on-disk section filenames (without .json)
+    REQUIRE(combined.contains("context_meta"));
+    REQUIRE(combined.contains("data_sources"));
+    REQUIRE(combined.contains("ffts"));
+    REQUIRE(combined.contains("asterix_decoding"));
+    REQUIRE(combined.contains("sectors"));
+    REQUIRE(combined.contains("colors"));
+
+    // every section value must equal the JSON written to the corresponding file
+    DBContextSerializer::save(ctx, tmp.string());
+
+    auto readFile = [](const fs::path& p) {
+        std::ifstream ifs(p.string());
+        json j;
+        ifs >> j;
+        return j;
+    };
+
+    fs::path dir = tmp / "combined";
+    REQUIRE(combined["context_meta"]     == readFile(dir / "context_meta.json"));
+    REQUIRE(combined["data_sources"]     == readFile(dir / "data_sources.json"));
+    REQUIRE(combined["ffts"]             == readFile(dir / "ffts.json"));
+    REQUIRE(combined["asterix_decoding"] == readFile(dir / "asterix_decoding.json"));
+    REQUIRE(combined["sectors"]          == readFile(dir / "sectors.json"));
+    REQUIRE(combined["colors"]           == readFile(dir / "colors.json"));
+
+    fs::remove_all(tmp);
+}
+
 // ============================================================
 // DBContextDiff
 // ============================================================

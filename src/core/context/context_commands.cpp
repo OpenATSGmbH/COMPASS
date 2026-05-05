@@ -18,6 +18,8 @@
 #include "context_commands.h"
 #include "rtcommand_registry.h"
 #include "db_context_manager.h"
+#include "db_context.h"
+#include "db_context_serializer.h"
 #include "sector_import_utils.h"
 #include "compass.h"
 #include "logger.h"
@@ -33,6 +35,7 @@ REGISTER_RTCOMMAND(context_cmd::RTCommandSetContext)
 REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteContext)
 REGISTER_RTCOMMAND(context_cmd::RTCommandListContexts)
 REGISTER_RTCOMMAND(context_cmd::RTCommandGetContextInfo)
+REGISTER_RTCOMMAND(context_cmd::RTCommandGetContext)
 REGISTER_RTCOMMAND(context_cmd::RTCommandImportFFTsJSON)
 REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteAllSectors)
 REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteAllFFTs)
@@ -50,6 +53,7 @@ void init_context_commands()
     RTCommandDeleteContext::init();
     RTCommandListContexts::init();
     RTCommandGetContextInfo::init();
+    RTCommandGetContext::init();
     RTCommandImportFFTsJSON::init();
     RTCommandDeleteAllSectors::init();
     RTCommandDeleteAllFFTs::init();
@@ -231,6 +235,44 @@ bool RTCommandGetContextInfo::run_impl()
     setJSONReply(j);
 
     return true;
+}
+
+// ============================================================
+// get_context
+// ============================================================
+
+rtcommand::IsValid RTCommandGetContext::valid() const
+{
+    CHECK_RTCOMMAND_INVALID_CONDITION(name_.empty(), "Context name empty")
+    return RTCommand::valid();
+}
+
+bool RTCommandGetContext::run_impl()
+{
+    auto& ctx_man = compass_->dbContextManager();
+
+    if (!ctx_man.hasContext(name_))
+    {
+        setResultMessage("Context '" + name_ + "' does not exist");
+        return false;
+    }
+
+    setJSONReply(context::DBContextSerializer::toJSON(ctx_man.context(name_)));
+
+    return true;
+}
+
+void RTCommandGetContext::collectOptions_impl(OptionsDescription& options,
+                                              PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("name,n", po::value<string>()->required(), "context name");
+    ADD_RTCOMMAND_POS_OPTION(positional, "name")
+}
+
+void RTCommandGetContext::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "name", string, name_)
 }
 
 // ============================================================

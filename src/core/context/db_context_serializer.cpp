@@ -81,64 +81,56 @@ string DBContextSerializer::contextDir(const string& base_path, const string& na
     return base_path + "/" + name;
 }
 
-void DBContextSerializer::save(const DBContext& ctx, const string& base_path)
+json DBContextSerializer::toJSON(const DBContext& ctx)
 {
-    string dir = contextDir(base_path, ctx.name());
+    json out;
 
-    // create directory if needed
-    fs::create_directories(dir);
-
-    // context_meta.json
     {
         json meta;
-        meta["version"] = CURRENT_VERSION;
-        meta["name"] = ctx.name();
+        meta["version"]     = CURRENT_VERSION;
+        meta["name"]        = ctx.name();
         meta["description"] = ctx.description();
-        meta["created"] = ctx.created();
-        meta["modified"] = ctx.modified();
-        writeJSONFile(dir + "/" + META_FILENAME, meta);
+        meta["created"]     = ctx.created();
+        meta["modified"]    = ctx.modified();
+        out["context_meta"] = std::move(meta);
     }
 
-    // data_sources.json
     {
         json j;
-        j["version"] = DATA_SOURCES_VERSION;
+        j["version"]      = DATA_SOURCES_VERSION;
         j["content_type"] = "data_sources";
         json arr = json::array();
         for (const auto& ds : ctx.dataSources())
             arr.push_back(ds.toJSON());
-        j["data"] = arr;
-        writeJSONFile(dir + "/" + SENSORS_FILENAME, j);
+        j["data"] = std::move(arr);
+        out["data_sources"] = std::move(j);
     }
 
-    // ffts.json
     {
         json j;
-        j["version"] = CURRENT_VERSION;
+        j["version"]      = CURRENT_VERSION;
         j["content_type"] = "ffts";
         json arr = json::array();
         for (const auto& fft : ctx.ffts())
             arr.push_back(fft.toJSON());
-        j["data"] = arr;
-        writeJSONFile(dir + "/" + FFTS_FILENAME, j);
+        j["data"] = std::move(arr);
+        out["ffts"] = std::move(j);
     }
 
-    // asterix_decoding.json
     {
         json j;
-        j["version"] = CURRENT_VERSION;
+        j["version"]      = CURRENT_VERSION;
         j["content_type"] = "asterix_decoding";
         json arr = json::array();
         for (const auto& cfg : ctx.asterixDecoding())
             arr.push_back(cfg.toJSON());
-        j["data"] = arr;
-        writeJSONFile(dir + "/" + ASTERIX_DECODING_FILENAME, j);
+        j["data"] = std::move(arr);
+        out["asterix_decoding"] = std::move(j);
     }
 
-    // sectors.json
     {
         json j;
-        j["version"] = CURRENT_VERSION;
+        j["version"]      = CURRENT_VERSION;
         j["content_type"] = "sectors";
         json arr = json::array();
         for (const auto& sec : ctx.sectors())
@@ -146,18 +138,35 @@ void DBContextSerializer::save(const DBContext& ctx, const string& base_path)
             traced_assert(sec);
             arr.push_back(sec->jsonData());
         }
-        j["data"] = arr;
-        writeJSONFile(dir + "/" + SECTORS_FILENAME, j);
+        j["data"] = std::move(arr);
+        out["sectors"] = std::move(j);
     }
 
-    // colors.json
     {
         json j;
-        j["version"] = CURRENT_VERSION;
+        j["version"]      = CURRENT_VERSION;
         j["content_type"] = "colors";
-        j["data"] = ctx.colors().toJSON();
-        writeJSONFile(dir + "/" + COLORS_FILENAME, j);
+        j["data"]         = ctx.colors().toJSON();
+        out["colors"] = std::move(j);
     }
+
+    return out;
+}
+
+void DBContextSerializer::save(const DBContext& ctx, const string& base_path)
+{
+    string dir = contextDir(base_path, ctx.name());
+
+    fs::create_directories(dir);
+
+    json all = toJSON(ctx);
+
+    writeJSONFile(dir + "/" + META_FILENAME,             all["context_meta"]);
+    writeJSONFile(dir + "/" + SENSORS_FILENAME,          all["data_sources"]);
+    writeJSONFile(dir + "/" + FFTS_FILENAME,             all["ffts"]);
+    writeJSONFile(dir + "/" + ASTERIX_DECODING_FILENAME, all["asterix_decoding"]);
+    writeJSONFile(dir + "/" + SECTORS_FILENAME,          all["sectors"]);
+    writeJSONFile(dir + "/" + COLORS_FILENAME,           all["colors"]);
 
     loginf << "saved context '" << ctx.name() << "' to " << dir;
 }
