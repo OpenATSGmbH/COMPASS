@@ -46,11 +46,12 @@ class DBContentItemProvider : public QObject
     Q_OBJECT
 
 signals:
+    void dataAboutToBeResetSignal();
     void dataResetSignal();
     void dataChangedSignal(unsigned int dbc_id, size_t group_idx);
     void dataRefreshedSignal();
     void itemVisibilityChangedSignal();
-    void groupingChangedSignal(dbContent::Grouping grouping, bool update_needed);
+    void groupingChangedSignal();
 
 public:
     typedef dbContent::Grouping                            Grouping;
@@ -66,7 +67,9 @@ public:
     void update();
     void reset();
 
-    void setGrouping(Grouping grouping, bool run_update = true);
+    void setGrouping(Grouping grouping, 
+                     bool run_update = true,
+                     bool notify = true);
     Grouping grouping() const { return grouping_; }
     std::string groupingAsString() const;
     bool groupingIsNumeric() const;
@@ -108,7 +111,6 @@ public:
     static const std::string GroupingStrAircraftAddress;
     static const std::string GroupingStrAircraftID;
     static const std::string GroupingStrTrackNumber;
-    static const std::string GroupingStrDSIDTrackNumber;
     static const std::string GroupingStrMode3ACode;
     static const std::string GroupingStrUTN;
 

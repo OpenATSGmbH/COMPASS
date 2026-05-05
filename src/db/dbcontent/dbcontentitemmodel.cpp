@@ -17,6 +17,8 @@
 
 #include "dbcontentitemmodel.h"
 
+#include "logger.h"
+
 #include <QMenu>
 
 /**
@@ -25,7 +27,7 @@ DBContentItemModel::DBContentItemModel(DBContentItemProvider& provider, QObject*
     : QAbstractListModel(parent)
     , provider_(provider)
 {
-    connect(&provider_, &DBContentItemProvider::dataResetSignal,
+    connect(&provider_, &DBContentItemProvider::dataAboutToBeResetSignal,
             this, &DBContentItemModel::dataResetSlot,
             Qt::QueuedConnection);
 

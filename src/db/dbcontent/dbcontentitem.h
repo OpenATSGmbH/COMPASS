@@ -35,7 +35,6 @@ enum class Grouping
     AircraftAddress,
     AircraftID,
     TrackNumber,
-    DSIDTrackNumber,
     Mode3ACode,
     UTN
 };
@@ -49,9 +48,8 @@ enum GroupingFlags
     GroupingAircraftAddress = 1 << 1,
     GroupingAircraftID      = 1 << 2,
     GroupingTrackNumber     = 1 << 3,
-    GroupingDSIDTrackNumber = 1 << 4,
-    GroupingMode3ACode      = 1 << 5,
-    GroupingUTN             = 1 << 6
+    GroupingMode3ACode      = 1 << 4,
+    GroupingUTN             = 1 << 5
 };
 
 /**

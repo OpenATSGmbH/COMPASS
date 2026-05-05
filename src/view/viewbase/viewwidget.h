@@ -135,6 +135,8 @@ public:
     void init();
     bool isInit() const { return init_; }
 
+    void runPostInit();
+
     bool isVariableSetLoaded() const;
 
     View* getView() { return view_; }

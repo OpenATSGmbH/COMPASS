@@ -48,13 +48,17 @@ public:
 
     QTreeView* treeView() const { return tree_view_; }
 
-    void setActiveGroupings(unsigned int flags, 
-                            const std::optional<dbContent::Grouping>& grouping = std::optional<dbContent::Grouping>(),
-                            bool run_update = true);
+    dbContent::Grouping currentGrouping() const;
+
+    void setActiveGroupings(unsigned int flags);
+    bool isGroupingActive(dbContent::Grouping grouping) const;
+
 private slots:
     void groupingChangedSlot(const QString& text);
 
 private:
+    void updateGrouping();
+
     DBContentItemModel& model_;
 
     QComboBox* grouping_box_ {nullptr};

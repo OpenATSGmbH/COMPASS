@@ -47,6 +47,7 @@ public:
     virtual void redrawDone();
     virtual void appModeSwitch(AppMode app_mode);
     virtual void configChanged();
+    virtual void onInit() {} //reacts on view init (both data and config widget created)
 
     nlohmann::json viewInfoJSON() const override final;
 
