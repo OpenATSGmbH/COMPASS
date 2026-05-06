@@ -785,15 +785,36 @@ void DBContextManager::deselectDSTypeSpecificDataSources(const string& ds_type)
 
 vector<unsigned int> DBContextManager::unfilteredDS(const string& /*dbcontent_name*/) const
 {
-    vector<unsigned int> result;
-    if (!hasActiveContext()) return result;
+    set<unsigned int> result;
 
-    for (const auto& [ds_id, ds] : activeContext().dataSources())
+    // context-resident ds_ids that pass dstype + per-DS wanted checks
+    // (preserves "no entry in ds_loading_wanted_ = default wanted" semantics)
+    if (hasActiveContext())
     {
-        if (dsTypeLoadingWanted(ds.dsType()) && loadingWanted(ds.id()))
-            result.push_back(ds.id());
+        for (const auto& [ds_id, ds] : activeContext().dataSources())
+        {
+            if (dsTypeLoadingWanted(ds.dsType()) && loadingWanted(ds.id()))
+                result.insert(ds.id());
+        }
     }
-    return result;
+
+    // explicitly-wanted ds_ids that may not yet be registered in the context
+    // (e.g. ref/tst sources supplied via the evaluate command's config)
+    for (const auto& [ds_id, wanted] : ds_loading_wanted_)
+    {
+        if (!wanted) continue;
+
+        if (dsTypeFiltered())
+        {
+            if (const DataSource* ds = dataSource(ds_id))
+                if (!dsTypeLoadingWanted(ds->dsType()))
+                    continue;
+        }
+
+        result.insert(ds_id);
+    }
+
+    return vector<unsigned int>(result.begin(), result.end());
 }
 
 // ============================================================
