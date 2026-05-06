@@ -379,11 +379,11 @@ private:
 
     static constexpr double max_fft_plot_distance_m_ = 5000.0;
 
-    // Lazy lookup caches over active context's data sources. Invalidated on
-    // context switch and on any saveContext (which is called after every edit
-    // and structural change). Build is O(D + R), where D is the data source
-    // count and R the total RU count of the active context.
-    mutable std::unordered_map<unsigned int, DataSource*> ds_by_id_cache_;
+    // Lazy RU-name cache over active context's data sources. ds_id lookup
+    // itself is served directly by activeContext().dataSources() (a std::map),
+    // so no by-id cache is needed. Invalidated on context switch and on any
+    // saveContext (which is called after every edit and structural change).
+    // Build is O(R), where R is the total RU count of the active context.
     mutable std::unordered_map<unsigned int, std::unordered_map<int, std::string>> ru_name_cache_;
     mutable bool ds_cache_valid_ {false};
 };

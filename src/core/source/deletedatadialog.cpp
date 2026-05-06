@@ -142,9 +142,8 @@ void DeleteDataDialog::populateDataSourcesTree()
 
     if (ctx_man_.hasActiveContext())
     {
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
         {
-            unsigned int ds_id = ds.id();
 
             if (!ctx_man_.hasNumInserted(ds_id))
                 continue;

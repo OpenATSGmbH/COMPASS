@@ -203,7 +203,7 @@ void DBContentDataStore::update(const std::string& dbc_name,
 
     //add to buffer
     buffers_[ dbc_id ] = buffer;
-        
+
     //add to index map
     auto& dbc_indices = indices_[ dbc_id ];
 
@@ -218,7 +218,7 @@ void DBContentDataStore::update(const std::string& dbc_name,
         auto& idx_ptr = dbc_indices[ ds_id ][ line_id ];
         if (!idx_ptr)
             idx_ptr.reset(new BufferIndices());
-        
+
         idx_ptr->push_back(i);
     }
 

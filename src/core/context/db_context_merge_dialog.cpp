@@ -706,19 +706,15 @@ void DBContextMergeDialog::buildMergedContext()
             // only in config, user wants DB (doesn't have it) — remove
             if (mi.section == "sensors")
             {
-                unsigned int ds_id = 0;
-                for (const auto& ds : merged_.dataSources())
+                unsigned int target_ds_id = 0;
+                for (const auto& [ds_id, ds] : merged_.dataSources())
                 {
                     std::string key = std::to_string(ds.sac()) + "/" + std::to_string(ds.sic());
                     if (key == mi.diff->key)
-                    { ds_id = ds.id(); break; }
+                    { target_ds_id = ds_id; break; }
                 }
-                if (ds_id > 0)
-                {
-                    auto& vec = merged_.dataSources();
-                    vec.erase(std::remove_if(vec.begin(), vec.end(),
-                        [ds_id](const DataSource& ds) { return ds.id() == ds_id; }), vec.end());
-                }
+                if (target_ds_id > 0)
+                    merged_.dataSources().erase(target_ds_id);
             }
             else if (mi.section == "ffts")
             {

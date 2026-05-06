@@ -100,7 +100,7 @@ json DBContextSerializer::toJSON(const DBContext& ctx)
         j["version"]      = DATA_SOURCES_VERSION;
         j["content_type"] = "data_sources";
         json arr = json::array();
-        for (const auto& ds : ctx.dataSources())
+        for (const auto& [ds_id, ds] : ctx.dataSources())
             arr.push_back(ds.toJSON());
         j["data"] = std::move(arr);
         out["data_sources"] = std::move(j);
@@ -251,7 +251,7 @@ DBContext DBContextSerializer::load(const string& context_dir)
                     existing_by_type[ds.dsType()].push_back(ds.baseColor());
 
                     seen_ids.insert(ds_id);
-                    ctx.dataSources().push_back(std::move(ds));
+                    ctx.dataSources().emplace(ds_id, std::move(ds));
                 }
             }
         }

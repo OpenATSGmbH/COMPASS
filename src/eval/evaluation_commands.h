@@ -44,3 +44,19 @@ protected:
     DECLARE_RTCOMMAND(evaluate, "run evaluation")
     DECLARE_RTCOMMAND_OPTIONS
 };
+
+/**
+ * get_eval_standards
+ */
+struct RTCommandGetEvalStandards : public rtcommand::RTCommand
+{
+public:
+    RTCommandGetEvalStandards();
+
+protected:
+    virtual bool run_impl() override;
+    virtual bool checkResult_impl() override;
+
+    DECLARE_RTCOMMAND(get_eval_standards, "retrieves available evaluation standards with their requirement groups and requirements")
+    DECLARE_RTCOMMAND_NOOPTIONS
+};

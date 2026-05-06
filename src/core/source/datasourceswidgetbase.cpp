@@ -325,7 +325,7 @@ std::vector<const context::DataSource*> DataSourcesWidgetBase::dataSources(bool 
     if (!ctx_man_.hasActiveContext())
         return data_sources;
 
-    for (const auto& ds : ctx_man_.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
     {
         if (filter && !showDS(ds.id()))
             continue;

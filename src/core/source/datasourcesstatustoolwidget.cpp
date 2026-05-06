@@ -304,7 +304,7 @@ DataSourcesStatusToolWidget::ActiveTrackerLines DataSourcesStatusToolWidget::act
 
     if (ctx_man_.hasActiveContext())
     {
-        for (const auto& db_ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, db_ds] : ctx_man_.activeContext().dataSources())
         {
             if (dbContent::DataSourceBase::dsTypeFromString(db_ds.dsType()) != dbContent::DataSourceType::Tracker)
                 continue;

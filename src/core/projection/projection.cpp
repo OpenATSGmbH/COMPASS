@@ -60,7 +60,7 @@ void Projection::addAllCoordinateSystems()
         if (!ctx_man.hasActiveContext())
             return; // will be called again when context becomes available
 
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         {
             if (!hasCoordinateSystem(ds.id()))
             {

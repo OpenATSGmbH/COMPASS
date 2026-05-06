@@ -411,7 +411,7 @@ std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 
     if (current_reconstructor_str_ == ScoringUMReconstructorName)
     {
-        for (const auto& ds : manager().compass().dbContextManager().activeContext().dataSources())
+        for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
         {
             if (ds.name() == "CalcRef")
                 disabled_ds.insert(ds.id());
@@ -1062,7 +1062,9 @@ void ReconstructorTask::writeDoneSlot()
 
     loginf << "is last = " << last_slice_->is_last_slice_;
 
-    if (last_slice_->is_last_slice_)
+    bool was_last = last_slice_->is_last_slice_;
+
+    if (was_last)
     {
         last_slice_.reset();
 
@@ -1072,7 +1074,16 @@ void ReconstructorTask::writeDoneSlot()
     // release unused memory
     malloc_trim(0);
 
-    loginf << "done";
+    // doneSignal must mean "all cleanup is complete" so that the RT-command
+    // gating on it (RTCommandReconstructReferences) doesn't release the
+    // next command before this slot's tail (malloc_trim, etc.) has run.
+    // The dialog-cancel path in non-interactive mode used to emit it from
+    // runCancelledSlot's early-return, which fires synchronously inside
+    // endReconstruction's progress_dialog_->close() above - that put the
+    // signal BEFORE malloc_trim. Now the normal-completion path emits it
+    // here; the early-return below no longer emits.
+    if (was_last)
+        emit doneSignal();
 }
 
 void ReconstructorTask::endReconstruction()
@@ -1214,7 +1225,7 @@ void ReconstructorTask::sectorsChangedSlot()
 
 void ReconstructorTask::runCancelledSlot()
 {
-    loginf;
+    loginf << "done_ " << done_;
 
     traced_assert(progress_dialog_);
 
@@ -1223,8 +1234,12 @@ void ReconstructorTask::runCancelledSlot()
         //close progress dialog
         progress_dialog_.reset();
 
-        emit doneSignal();
-
+        // doneSignal is emitted from writeDoneSlot's tail in this path -
+        // not here. Emitting from this slot would fire BEFORE writeDoneSlot
+        // completes its malloc_trim, since this slot is reached
+        // synchronously via the dialog-close in endReconstruction (which
+        // runs inside writeDoneSlot). That race caused std::bad_alloc in
+        // the subsequent evaluate RT command (see doc/evaluations.md).
         return;
     }
 
@@ -1294,8 +1309,6 @@ void ReconstructorTask::runCancelledSlot()
     manager().compass().taskManager().endTaskResultWriting(false);
 
     emit doneSignal();
-
-    loginf << "done";
 }
 
 bool ReconstructorTask::useDStype(const std::string& ds_type) const
@@ -1349,7 +1362,7 @@ std::set<unsigned int> ReconstructorTask::unusedDSIDs() const
 {
     std::set<unsigned int> unused_ds = disabledDataSources();
 
-    for (const auto& ds : manager().compass().dbContextManager().activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
     {
         if (unused_ds.count(ds.id()))
             continue;
@@ -1367,7 +1380,7 @@ std::map<unsigned int, std::set<unsigned int>> ReconstructorTask::unusedDSIDLine
 
     std::map<unsigned int, std::set<unsigned int>> unused_lines;
 
-    for (const auto& ds : manager().compass().dbContextManager().activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
     {
         if (unused_ds.count(ds.id()))
             continue;

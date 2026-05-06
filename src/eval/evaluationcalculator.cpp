@@ -1234,7 +1234,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     // init non-existing ones with false
     if (ds_man.hasDataSourcesOfDBContent(settings_.dbcontent_name_ref_))
     {
-        for (const auto& ds : ds_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ds_man.activeContext().dataSources())
         {
             if (ds_man.numInserted(ds.id(), settings_.dbcontent_name_ref_) == 0)
                 continue;
@@ -1276,7 +1276,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     // init non-existing ones with false
     if (ds_man.hasDataSourcesOfDBContent(settings_.dbcontent_name_tst_))
     {
-        for (const auto& ds : ds_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ds_man.activeContext().dataSources())
         {
             if (ds_man.numInserted(ds.id(), settings_.dbcontent_name_tst_) == 0)
                 continue;

@@ -261,7 +261,7 @@ ASTERIXImportProbeAggregator::aggregate(const ASTERIXImportSource& source,
     std::set<unsigned int> context_ds_ids;
     if (ctx_man.hasActiveContext())
     {
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
             context_ds_ids.insert(ds.id());
     }
 

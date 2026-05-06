@@ -507,7 +507,7 @@ void FilterManager::dataSourcesChangedSlot()
         // build tracker lines map: ds_id -> line_id -> count
         std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
         std::map<unsigned int, std::string> ds_names;
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         {
             if (ds.dsType() != "Tracker")
                 continue;
@@ -541,7 +541,7 @@ void FilterManager::dataSourcesChangedSlot()
         std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> mlat_ru_lookup;
         std::set<std::string> known_ru_names;
 
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         {
             if (ds.dsType() == "MLAT" && ds.hasRemoteUnits())
             {

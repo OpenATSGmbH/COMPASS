@@ -214,9 +214,22 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
 {
     DBContextDiff result;
 
-    // sensors — keyed by sac/sic, display includes name
+    // sensors — keyed by sac/sic, display includes name. dataSources() is a
+    // map<ds_id, DataSource>; diffSection needs random-access containers, so
+    // copy values into vectors here (one-shot, used only for diff display).
+    auto map_to_vec = [](const std::map<unsigned int, DataSource>& m)
+    {
+        std::vector<DataSource> v;
+        v.reserve(m.size());
+        for (const auto& [ds_id, ds] : m)
+            v.push_back(ds);
+        return v;
+    };
+    auto a_ds_vec = map_to_vec(a.dataSources());
+    auto b_ds_vec = map_to_vec(b.dataSources());
+
     result.sensor_diffs = diffSection(
-        a.dataSources(), b.dataSources(),
+        a_ds_vec, b_ds_vec,
         [](const DataSource& ds) { return to_string(ds.sac()) + "/" + to_string(ds.sic()); },
         [](const DataSource& ds) { return ds.toJSON(); },
         [](const DataSource& ds) { return ds.name() + " " + to_string(ds.sac()) + "/" + to_string(ds.sic()); }

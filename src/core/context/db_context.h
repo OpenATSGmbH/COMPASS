@@ -84,8 +84,12 @@ public:
     void modified(const std::string& ts) { modified_ = ts; }
 
     // data sections
-    std::vector<DataSource>& dataSources() { return data_sources_; }
-    const std::vector<DataSource>& dataSources() const { return data_sources_; }
+    // Keyed by ds_id. Callers should not cache DataSource* across event-loop
+    // turns: erase/clear/wholesale-replace can happen via edit/merge dialogs
+    // and command handlers, and the previous cached-pointer scheme dangled.
+    // Look up by ds_id every time (O(log N), ~200 ns).
+    std::map<unsigned int, DataSource>& dataSources() { return data_sources_; }
+    const std::map<unsigned int, DataSource>& dataSources() const { return data_sources_; }
     void addOrReplaceDataSource(DataSource ds);
 
     std::vector<FFT>& ffts() { return ffts_; }
@@ -118,7 +122,7 @@ private:
     std::string created_;
     std::string modified_;
 
-    std::vector<DataSource> data_sources_;
+    std::map<unsigned int, DataSource> data_sources_;
     std::vector<FFT> ffts_;
     std::vector<ASTERIXDecodingConfig> asterix_decoding_;
     std::vector<std::shared_ptr<Sector>> sectors_;

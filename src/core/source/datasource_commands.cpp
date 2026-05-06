@@ -28,6 +28,7 @@
 #include <boost/program_options.hpp>
 
 REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSources)
+REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSourceCounts)
 REGISTER_RTCOMMAND(dbContent::RTCommandSetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandDeleteData)
 
@@ -39,6 +40,7 @@ namespace dbContent
 void init_data_source_commands()
 {
     dbContent::RTCommandGetDataSources::init();
+    dbContent::RTCommandGetDataSourceCounts::init();
     dbContent::RTCommandSetDataSources::init();
     dbContent::RTCommandDeleteData::init();
 }
@@ -67,10 +69,56 @@ bool RTCommandGetDataSources::checkResult_impl()
     auto& ctx_man = compass_->dbContextManager();
 
     nlohmann::json j = nlohmann::json::array();
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         j.push_back(ds.toJSON());
     setJSONReply(j);
 
+    return true;
+}
+
+// get_data_source_counts
+
+RTCommandGetDataSourceCounts::RTCommandGetDataSourceCounts()
+    : rtcommand::RTCommand()
+{
+    condition.setDelay(10);
+}
+
+bool RTCommandGetDataSourceCounts::run_impl()
+{
+    if (!compass_->dbContextManager().hasActiveContext())
+    {
+        setResultMessage("No active context");
+        return false;
+    }
+
+    return true;
+}
+
+bool RTCommandGetDataSourceCounts::checkResult_impl()
+{
+    auto& ctx_man = compass_->dbContextManager();
+
+    // inserted_counts_ is ds_id -> dbcontent -> line_id -> count.
+    // Serialize keyed by string ds_id / line_id so the JSON object form is stable.
+    nlohmann::json reply = nlohmann::json::object();
+
+    for (const auto& [ds_id, dbcont_map] : ctx_man.insertedCounts())
+    {
+        nlohmann::json& ds_json = reply[std::to_string(ds_id)];
+        ds_json = nlohmann::json::object();
+
+        for (const auto& [dbcontent_name, line_map] : dbcont_map)
+        {
+            nlohmann::json& dbc_json = ds_json[dbcontent_name];
+            dbc_json = nlohmann::json::object();
+
+            for (const auto& [line_id, count] : line_map)
+                dbc_json[std::to_string(line_id)] = count;
+        }
+    }
+
+    setJSONReply(reply);
     return true;
 }
 

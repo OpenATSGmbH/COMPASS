@@ -312,7 +312,7 @@ void ColorsEditWidget::refresh()
 
     int row_idx = 0;
     const auto& ds_list = manager_.activeContext().dataSources();
-    for (const auto& ds : ds_list)
+    for (const auto& [ds_id, ds] : ds_list)
     {
         QString label = QString::fromStdString(ds.name()) +
                         " (" + QString::number(ds.sac()) + "/" + QString::number(ds.sic()) + ")";
@@ -515,7 +515,7 @@ void regenerateAllBaseColors(DBContextManager& manager, ColorProvider::Band band
 {
     // group by ds_type so same-type sources get hue-distance spacing
     std::map<std::string, std::vector<QColor>> existing_by_type;
-    for (auto& ds : manager.activeContext().dataSources())
+    for (auto& [ds_id, ds] : manager.activeContext().dataSources())
     {
         ds.baseColor(ColorProvider::generateBaseColor(
             existing_by_type[ds.dsType()], band, ds.dsType()));
@@ -551,7 +551,7 @@ void ColorsEditWidget::resetAllClickedSlot()
     if (!manager_.hasActiveContext()) return;
 
     loginf << "bulk reset all base colors (using context preference)";
-    for (auto& ds : manager_.activeContext().dataSources())
+    for (auto& [ds_id, ds] : manager_.activeContext().dataSources())
     {
         ds.baseColor(QColor());
         manager_.autoAssignColors(ds);

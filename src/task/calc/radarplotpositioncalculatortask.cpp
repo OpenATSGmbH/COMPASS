@@ -91,7 +91,7 @@ bool RadarPlotPositionCalculatorTask::canRun()
     auto& ctx_man = compass_.dbContextManager();
 
     bool found_radar_with_data = false;
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
         if (ds.dsType() == "Radar" && ctx_man.hasNumInserted(ds.id()))
         {
