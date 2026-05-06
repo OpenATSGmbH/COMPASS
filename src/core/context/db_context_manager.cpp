@@ -322,9 +322,7 @@ void DBContextManager::setActiveContext(const string& name)
 bool DBContextManager::hasDataSource(unsigned int ds_id) const
 {
     if (!hasActiveContext()) return false;
-    for (const auto& [ds_id, ds] : activeContext().dataSources())
-        if (ds.id() == ds_id) return true;
-    return false;
+    return activeContext().dataSources().find(ds_id) != activeContext().dataSources().end();
 }
 
 const DataSource* DBContextManager::dataSource(unsigned int ds_id) const

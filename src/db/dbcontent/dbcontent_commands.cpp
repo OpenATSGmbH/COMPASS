@@ -214,6 +214,9 @@ void RTCommandGetData::collectOptions_impl(OptionsDescription &options,
 void RTCommandGetData::assignVariables_impl(const VariablesMap &vars)
 {
     RTCOMMAND_GET_VAR_OR_THROW(vars, "dbcontent", std::string, dbcontent_name_)
+    //@TODO: migrate variables list separator from '|' to ';' to match the project-wide
+    //list-to-string convention (see import_asterix_files filenames, reconstruct_references
+    //disable_sensors). Likely requires changing RTCommand::ParameterListSeparator.
     RTCOMMAND_GET_STRINGLIST_OR_THROW(vars, "variables", variables_)
     RTCOMMAND_GET_VAR(vars, "utn", unsigned int, utn_)
     RTCOMMAND_GET_VAR(vars, "max_size", unsigned int, max_size_)
