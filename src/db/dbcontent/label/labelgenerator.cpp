@@ -731,7 +731,7 @@ void LabelGenerator::labelAllDSIDs()
     if (!ctx_man.hasActiveContext())
         return;
 
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         config_.label_ds_ids_[to_string(ds.id())] = true;
 
     emit labelConfigChanged();

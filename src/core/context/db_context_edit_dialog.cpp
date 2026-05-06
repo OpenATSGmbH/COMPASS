@@ -483,6 +483,7 @@ void DBContextEditDialog::showContextMenuSlot(const QPoint& pos)
         case GroupItem::DataSources:  showDataSourcesGroupMenu(); break;
         case GroupItem::SectorLayers: showSectorLayersGroupMenu(); break;
         case GroupItem::FFTs:         showFFTsGroupMenu(); break;
+        case GroupItem::Colors:       break;
         }
     }
     else if (auto* ds_item = dynamic_cast<DataSourceItem*>(item))
@@ -559,7 +560,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     // disable if empty or if any data source has data in the database
     bool any_has_data = false;
-    for (const auto& ds : manager_.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager_.activeContext().dataSources())
     {
         if (manager_.hasNumInserted(ds.id()))
         {

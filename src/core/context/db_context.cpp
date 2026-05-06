@@ -128,7 +128,7 @@ json DBContext::toJSON() const
 
     // data sources
     json ds_arr = json::array();
-    for (const auto& ds : data_sources_)
+    for (const auto& [ds_id, ds] : data_sources_)
         ds_arr.push_back(ds.toJSON());
     j["data_sources"] = ds_arr;
 
@@ -176,7 +176,10 @@ DBContext DBContext::fromJSON(const json& j)
     if (j.contains("data_sources"))
     {
         for (const auto& ds_j : j.at("data_sources"))
-            ctx.data_sources_.push_back(DataSource::fromJSON(ds_j));
+        {
+            DataSource ds = DataSource::fromJSON(ds_j);
+            ctx.data_sources_.emplace(ds.id(), std::move(ds));
+        }
     }
 
     // ffts
@@ -214,17 +217,7 @@ DBContext DBContext::fromJSON(const json& j)
 void DBContext::addOrReplaceDataSource(DataSource ds)
 {
     unsigned int ds_id = ds.id();
-
-    for (auto& existing : data_sources_)
-    {
-        if (existing.id() == ds_id)
-        {
-            existing = std::move(ds);
-            return;
-        }
-    }
-
-    data_sources_.push_back(std::move(ds));
+    data_sources_.insert_or_assign(ds_id, std::move(ds));
 }
 
 bool DBContext::operator==(const DBContext& other) const

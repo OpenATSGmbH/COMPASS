@@ -59,7 +59,6 @@
 #include <memory>
 #include <fstream>
 #include <cstdlib>
-#include <system.h>
 
 using namespace Utils;
 using namespace std;
@@ -189,10 +188,10 @@ Result EvaluationManager::canEvaluate() const
 
 /**
  */
-Result EvaluationManager::evaluate(bool show_dialog, 
+Result EvaluationManager::evaluate(bool show_dialog,
                                    const std::string& custom_result_name)
 {
-    loginf;
+    loginf << "show_dialog " << show_dialog;
 
     traced_assert(initialized_);
     traced_assert(calculator_);
@@ -580,6 +579,8 @@ void EvaluationManager::onConfigurationChanged(const std::vector<std::string>& c
 void EvaluationManager::loadData(const EvaluationCalculator& calculator,
                                  bool blocking)
 {
+    loginf << "blocking " << blocking;
+
     traced_assert(!raw_data_available_);
 
     auto& ctx_man = compass_.dbContextManager();
@@ -602,16 +603,20 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
     //add variables needed by evaluation
     needs_additional_variables_ = true;
 
+    LoadRequest req;
+    req.dbcontents_ = { calculator.dbContentNameRef(),
+                        calculator.dbContentNameTst() };
+
     if (blocking)
     {
-        dbcontent_man.loadBlocking(LoadRequest::standard());
+        dbcontent_man.loadBlocking(req);
         loadingDone();
     }
     else
     {
         connect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
         active_load_connection_ = true;
-        dbcontent_man.load(LoadRequest::standard());
+        dbcontent_man.load(req);
     }
 
     needs_additional_variables_ = false;

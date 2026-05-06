@@ -87,6 +87,20 @@ protected:
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
+// get_context <name>
+struct RTCommandGetContext : public rtcommand::RTCommand
+{
+    std::string name_;
+
+    virtual rtcommand::IsValid valid() const override;
+
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(get_context, "returns the full data context with the given name as JSON")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
 // import_ffts_json <file>
 struct RTCommandImportFFTsJSON : public rtcommand::RTCommand
 {

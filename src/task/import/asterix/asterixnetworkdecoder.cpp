@@ -60,7 +60,7 @@ ASTERIXNetworkDecoder::ASTERIXNetworkDecoder(ASTERIXImportTask& task,
 
     // build DataSourceLineInfo objects from context data sources' network line JSON
     auto& ctx_man = task.compass().dbContextManager();
-    for (auto& ds : ctx_man.activeContext().dataSources())
+    for (auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
         if (!ds.hasNetworkLines())
             continue;

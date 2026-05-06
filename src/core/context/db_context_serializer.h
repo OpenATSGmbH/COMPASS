@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <json_fwd.hpp>
+
 #include <string>
 #include <vector>
 
@@ -50,6 +52,11 @@ public:
 
     static constexpr const char* CURRENT_VERSION            = "1.0";
     static constexpr const char* DATA_SOURCES_VERSION       = "1.1"; // bumped for base_color/line_colors
+
+    /// Build the combined JSON representation of a context. Each top-level key
+    /// matches a section file (without the .json extension); each value is the
+    /// exact object that save() writes to that file.
+    static nlohmann::json toJSON(const DBContext& ctx);
 
     /// Save a complete context to directory_path/<name>/
     static void save(const DBContext& ctx, const std::string& base_path);

@@ -113,7 +113,7 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
     unsigned int current_ds_id {0};
     unsigned int line_count = 0;
 
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
         if (ctx_man.numInserted(ds.id(), "CAT062") == 0) // check if track data exists
             continue;
@@ -235,7 +235,7 @@ void CreateARTASAssociationsTask::run()
         bool ds_found{false};
         unsigned int current_ds_id{0};
 
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         {
             if (ctx_man.numInserted(ds.id(), "CAT062") == 0)
                 continue;

@@ -208,12 +208,29 @@ filename \dots given filename, e.g. "/data/db2/report.tex" \\
 \textbf{get\_data\_sources} \\
 \textit{retrieves descriptions of data sources in the active context} \\
 
+\textbf{get\_data\_source\_counts} \\
+\textit{retrieves per data source per dbcontent per line inserted record counts} \\
+The reply is a JSON object of the form
+\texttt{\{"<ds\_id>":\{"<dbcontent>":\{"<line\_id>":count\}\}\}} - one entry per
+data source that has had records inserted in the open database, useful to
+resolve a data source's actual DBContent at runtime (e.g. to drive the
+\textbf{evaluate} configuration). Empty object when no data is inserted yet. \\
+
 \textbf{get\_dbcontent\_data} \\
 \textit{retrieves dbcontent data from the database} \\
 dbcontent \dots DBContent to retrieve data for \\
 variables \dots variables to retrieve data for \\
 utn \dots UTN to retrieve data for \\
 max\_size \dots maximum number of results rows \\
+
+\textbf{get\_eval\_standards} \\
+\textit{retrieves available evaluation standards with their requirement groups and requirements} \\
+The reply is a JSON object of the form
+\texttt{\{"standards":[\{"name":..,"groups":[\{"name":..,"requirements":[..]\}]\}]\}}
+covering every standard known to the evaluation calculator. Useful to populate
+the \textbf{evaluate} command's \texttt{config} JSON
+(\texttt{current\_standard}, \texttt{use\_grp\_in\_sector},
+\texttt{use\_requirement}). Does not require a database to be opened. \\
 
 \textbf{get\_existing\_reports} \\
 \textit{returns a list of names of all existing reports} \\

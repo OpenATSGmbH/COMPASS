@@ -18,6 +18,7 @@
 #include "client.h"
 
 #include "compass.h"
+#include "dbcontent.h"
 #include "db_context_manager.h"
 #include "config.h"
 #include "configurationmanager.h"
@@ -38,10 +39,13 @@
 
 #include "traced_assert.h"
 
+#include <sstream>
+
 #include <QApplication>
 #include "questiondialog.h"
 
 #include <QMessageBox>
+#include <QMetaEnum>
 #include <QSurfaceFormat>
 #include <QSplashScreen>
 #include <QStyleFactory>
@@ -725,6 +729,35 @@ Client::~Client()
     logdbg;
 }
 
+static std::string describeNotifyContext(QObject* receiver, QEvent* event)
+{
+    std::string class_name = "<null receiver>";
+    std::string object_name;
+    if (receiver && receiver->metaObject())
+    {
+        class_name = receiver->metaObject()->className();
+        object_name = receiver->objectName().toStdString();
+    }
+
+    std::string event_name = "<null event>";
+    int event_type_int = -1;
+    if (event)
+    {
+        event_type_int = static_cast<int>(event->type());
+        const char* key = QMetaEnum::fromType<QEvent::Type>().valueToKey(event_type_int);
+        event_name = key ? key : "User/Unknown";
+    }
+
+    std::ostringstream oss;
+    oss << "receiver " << class_name;
+    if (!object_name.empty())
+        oss << " ('" << object_name << "')";
+    if (auto* dbc = dynamic_cast<DBContent*>(receiver))
+        oss << " dbcontent '" << dbc->name() << "'";
+    oss << " event " << event_name << " (" << event_type_int << ")";
+    return oss.str();
+}
+
 bool Client::notify(QObject* receiver, QEvent* event)
 {
     try
@@ -733,19 +766,15 @@ bool Client::notify(QObject* receiver, QEvent* event)
     }
     catch (exception& e)
     {
-        std::string msg = "Unhandled exception '" + std::string(e.what()) + "'";
+        std::string msg = "Unhandled exception '" + std::string(e.what()) + "' | "
+                          + describeNotifyContext(receiver, event);
         traced_assert_msg(false, msg.c_str());
-
-        // traced_assert(false);
-        //QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", QString(e.what()));
     }
     catch (...)
     {
-        std::string msg = "Unhandled exception";
+        std::string msg = "Unhandled unknown exception | "
+                          + describeNotifyContext(receiver, event);
         traced_assert_msg(false, msg.c_str());
-
-        // traced_assert(false);
-        //QMessageBox::critical(nullptr, "COMPASSClient: notify: exception", "Unknown exception");
     }
     return false;
 }

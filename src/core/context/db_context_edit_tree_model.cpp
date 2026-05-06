@@ -55,7 +55,7 @@ void DBContextEditTreeModel::buildTree()
     {
         // collect unique ds types in order
         std::map<std::string, std::vector<const DataSource*>> by_type;
-        for (const auto& ds : ctx.dataSources())
+        for (const auto& [ds_id, ds] : ctx.dataSources())
             by_type[ds.dsType()].push_back(&ds);
 
         for (const auto& [type, sources] : by_type)

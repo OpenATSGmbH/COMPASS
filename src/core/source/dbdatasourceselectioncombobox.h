@@ -106,7 +106,7 @@ class DBDataSourceComboBox : public QComboBox
         if (show_dbcontent_only_)
             loginf << "show_dbcontent_only " << show_dbcontent_only_ << " only_dbcontent_name '" << only_dbcontent_name_ << "'";
 
-        for (const auto& ds_it : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds_it] : ctx_man_.activeContext().dataSources())
         {
             if (show_dstype_only_ && ds_it.dsType() != only_dstype_name_)
             {

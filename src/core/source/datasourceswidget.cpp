@@ -220,7 +220,7 @@ void DataSourceTypeItem::updateContent()
     auto& ctx_man = widget_->ctxManager();
     if (ctx_man.hasActiveContext())
     {
-        for (const auto& ds : ctx_man.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         {
             if (ds.dsType() == ds_type_ && ctx_man.hasNumInserted(ds.id()))
             {
@@ -280,9 +280,7 @@ bool DataSourceItem::init(unsigned int ds_id)
         auto& ctx_man = widget_->ctxManager();
         traced_assert(ctx_man.hasDataSource(ds_id));
 
-        ds_ = ctx_man.dataSource(ds_id);
-
-        std::string ds_name = ds_->name();
+        std::string ds_name = ctx_man.dataSource(ds_id)->name();
 
         setCheckState(0, Qt::Checked);
         setText(0, QString::fromStdString(ds_name));
@@ -342,6 +340,11 @@ QColor DataSourceItem::effectiveColor() const
     return commonChildEffectiveColor(this);
 }
 
+const context::DataSource* DataSourceItem::dataSource() const
+{
+    return widget_->ctxManager().dataSource(ds_id_);
+}
+
 /**
  */
 QWidget* DataSourceItem::createLinesWidget()
@@ -390,10 +393,7 @@ bool DataSourceCountItem::init(unsigned int ds_id,
         ds_id_    = ds_id;
         dbc_name_ = dbc_name;
 
-        auto& ctx_man = widget_->ctxManager();
-        traced_assert(ctx_man.hasDataSource(ds_id));
-
-        ds_ = ctx_man.dataSource(ds_id);
+        traced_assert(widget_->ctxManager().hasDataSource(ds_id));
 
         setText(0, QString::fromStdString(dbc_name));
 
@@ -444,13 +444,15 @@ QColor DataSourceCountItem::effectiveColor() const
     const unsigned int mode = ctx_man.compass().colorMode();
     const auto& colors = ctx_man.activeContext().colors();
 
+    const auto* ds = dataSource();
+
     switch (mode)
     {
         case 0: /* DSType */
         {
-            if (!ds_) return QColor();
+            if (!ds) return QColor();
             const auto& palette = colors.ds_type_colors;
-            auto it = palette.find(ds_->dsType());
+            auto it = palette.find(ds->dsType());
             return (it != palette.end()) ? it->second : QColor();
         }
         case 1: /* DBContent */
@@ -461,13 +463,18 @@ QColor DataSourceCountItem::effectiveColor() const
         }
         case 2: /* DataSource */
         {
-            return ds_ ? ds_->baseColor() : QColor();
+            return ds ? ds->baseColor() : QColor();
         }
         case 3: /* DataSourceLine */
         default:
             // Line color is rendered on the line buttons, not as a tree icon.
             return QColor();
     }
+}
+
+const context::DataSource* DataSourceCountItem::dataSource() const
+{
+    return widget_->ctxManager().dataSource(ds_id_);
 }
 
 /**************************************************************************************************
@@ -491,7 +498,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
     setFixedSize(button_size_px, button_size_px);
     setCheckable(true);
 
-    // initial style — updateContent() will re-apply once ds_ is known
+    // initial style — updateContent() will re-apply once init() has set ds_id_
     bool dark_mode = widget_->ctxManager().compass().darkMode();
 
     if (dark_mode)
@@ -523,10 +530,7 @@ bool DataSourceLineButton::init(unsigned int ds_id)
     {
         ds_id_ = ds_id;
 
-        auto& ctx_man = widget_->ctxManager();
-        traced_assert(ctx_man.hasDataSource(ds_id_));
-
-        ds_ = ctx_man.dataSource(ds_id_);
+        traced_assert(widget_->ctxManager().hasDataSource(ds_id_));
 
         is_init_ = true;
         changes  = true;
@@ -535,6 +539,11 @@ bool DataSourceLineButton::init(unsigned int ds_id)
     updateContent();
 
     return changes;
+}
+
+const context::DataSource* DataSourceLineButton::dataSource() const
+{
+    return widget_->ctxManager().dataSource(ds_id_);
 }
 
 /**
@@ -604,9 +613,10 @@ void DataSourceLineButton::updateContent()
 
     // Color Mode: DataSource + Line -> paint a 3px border in the corresponding line color
     unsigned int color_mode = ctx_man.compass().colorMode();
-    if (color_mode == 3 /*DataSourceLine*/ && ds_ && ds_->lineColor(line_id_).isValid())
+    const auto* ds = dataSource();
+    if (color_mode == 3 /*DataSourceLine*/ && ds && ds->lineColor(line_id_).isValid())
     {
-        QString color_name = ds_->lineColor(line_id_).name();
+        QString color_name = ds->lineColor(line_id_).name();
         apply_stylesheet(QString(" QPushButton { border: 3px solid %1; } "
                                  " QPushButton:pressed { border: 3px outset %1; } "
                                  " QPushButton:checked { border: 3px outset %1; }").arg(color_name));
@@ -925,7 +935,7 @@ int DataSourcesWidget::generateDataSourceType(DataSourceTypeItem* item,
     std::vector<const context::DataSource*> matching_ds;
     if (ctx_man_.hasActiveContext())
     {
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
         {
             if (ds.dsType() == ds_type_name)
                 matching_ds.push_back(&ds);
@@ -1265,7 +1275,7 @@ void DataSourcesWidget::selectAllDataSources()
     loginf;
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             setUseDS(ds.id(), true);
 
     updateContent();
@@ -1278,7 +1288,7 @@ void DataSourcesWidget::deselectAllDataSources()
     loginf;
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             setUseDS(ds.id(), false);
 
     updateContent();
@@ -1296,7 +1306,7 @@ void DataSourcesWidget::selectDSTypeSpecificDataSources()
     loginf << "ds_type '" << ds_type << "'";
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             if (ds.dsType() == ds_type)
                 setUseDS(ds.id(), true);
 
@@ -1315,7 +1325,7 @@ void DataSourcesWidget::deselectDSTypeSpecificDataSources()
     loginf << "ds_type '" << ds_type << "'";
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             if (ds.dsType() == ds_type)
                 setUseDS(ds.id(), false);
 
@@ -1329,7 +1339,7 @@ void DataSourcesWidget::deselectAllLines()
     loginf;
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             for (int line = 0; line < 4; ++line)
                 setUseDSLine(ds.id(), line, false);
 
@@ -1348,7 +1358,7 @@ void DataSourcesWidget::selectSpecificLines()
     loginf << "line_id " << line_id;
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             setUseDSLine(ds.id(), line_id, true);
 
     updateContent();
@@ -1373,7 +1383,7 @@ void DataSourcesWidget::setAllCheckboxes(bool select)
         setUseDSType(ds_type_name, select);
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             setUseDS(ds.id(), select);
 
     updateContent();
@@ -1395,7 +1405,7 @@ void DataSourcesWidget::setAllChildrenOfDSType(const std::string& ds_type, bool 
     loginf << "ds_type '" << ds_type << "' select " << select;
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             if (ds.dsType() == ds_type)
                 setUseDS(ds.id(), select);
 
@@ -1407,7 +1417,7 @@ void DataSourcesWidget::deselectOtherDataSources(unsigned int keep_ds_id)
     loginf << "keep " << keep_ds_id;
 
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             if (ds.id() != keep_ds_id)
                 setUseDS(ds.id(), false);
 
@@ -1457,7 +1467,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
                 // state, so only the global "All" actions apply.
                 bool dstype_has_data = false;
                 if (ctx_man_.hasActiveContext())
-                    for (const auto& ds : ctx_man_.activeContext().dataSources())
+                    for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
                         if (ds.dsType() == ds_type && ctx_man_.hasNumInserted(ds.id()))
                         { dstype_has_data = true; break; }
                 if (!dstype_has_data)
@@ -1486,7 +1496,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
                 bool any_has_data = false;
                 if (ctx_man_.hasActiveContext())
                 {
-                    for (const auto& ds : ctx_man_.activeContext().dataSources())
+                    for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
                     {
                         if (ds.dsType() == ds_type && ctx_man_.hasNumInserted(ds.id()))
                         {
@@ -1588,7 +1598,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
     std::set<std::string> dstypes_with_data;
     if (ctx_man_.hasActiveContext())
     {
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             if (ctx_man_.hasNumInserted(ds.id()))
                 dstypes_with_data.insert(ds.dsType());
     }
@@ -1611,7 +1621,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
             {
                 connect(a, &QAction::triggered, this, [this, ds_type_s]{
                     if (ctx_man_.hasActiveContext())
-                        for (const auto& ds : ctx_man_.activeContext().dataSources())
+                        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
                             if (ds.dsType() == ds_type_s)
                                 setUseDS(ds.id(), true);
                     updateContent();
@@ -1642,7 +1652,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
             {
                 connect(a, &QAction::triggered, this, [this, ds_type_s]{
                     if (ctx_man_.hasActiveContext())
-                        for (const auto& ds : ctx_man_.activeContext().dataSources())
+                        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
                             if (ds.dsType() == ds_type_s)
                                 setUseDS(ds.id(), false);
                     updateContent();
@@ -1662,7 +1672,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
         bool line_has_data[4] = { false, false, false, false };
         if (ctx_man_.hasActiveContext())
         {
-            for (const auto& ds : ctx_man_.activeContext().dataSources())
+            for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             {
                 auto lines_map = ctx_man_.numInsertedLinesMap(ds.id());
                 for (unsigned int l = 0; l < 4; ++l)
@@ -1686,7 +1696,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
             {
                 connect(a, &QAction::triggered, this, [this, l]{
                     if (ctx_man_.hasActiveContext())
-                        for (const auto& ds : ctx_man_.activeContext().dataSources())
+                        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
                             setUseDSLine(ds.id(), l, true);
                     updateContent();
                 });
@@ -1723,7 +1733,7 @@ void DataSourcesWidget::deleteForDSType(const std::string& ds_type)
 {
     std::set<unsigned int> ds_ids;
     if (ctx_man_.hasActiveContext())
-        for (const auto& ds : ctx_man_.activeContext().dataSources())
+        for (const auto& [ds_id, ds] : ctx_man_.activeContext().dataSources())
             if (ds.dsType() == ds_type)
                 ds_ids.insert(ds.id());
 

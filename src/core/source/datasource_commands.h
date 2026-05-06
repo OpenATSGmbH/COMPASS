@@ -41,6 +41,20 @@ protected:
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
+// get_data_source_counts
+struct RTCommandGetDataSourceCounts : public rtcommand::RTCommand
+{
+public:
+    RTCommandGetDataSourceCounts();
+
+protected:
+    virtual bool run_impl() override;
+    virtual bool checkResult_impl() override;
+
+    DECLARE_RTCOMMAND(get_data_source_counts, "retrieves per data source per dbcontent per line inserted record counts")
+    DECLARE_RTCOMMAND_NOOPTIONS
+};
+
 // set_data_sources "{\"content_type\":\"data_sources\",\"content_version\":\"0.2\",\"data_sources\":[{\"ds_type\":\"RefTraj\",\"info\":{},\"name\":\"Reconst\",\"sac\":0,\"short_name\":\"Reconst\",\"sic\":0}]}"
 struct RTCommandSetDataSources : public rtcommand::RTCommand
 {

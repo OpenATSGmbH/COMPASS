@@ -86,7 +86,7 @@ void LabelDSWidget::updateListSlot()
         return;
 
     std::map<std::string, std::string> current_sources;
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
         current_sources[ds.name()] = String::lineStrFrom(label_generator_.labelLine(ds.id()))
                 + to_string((unsigned int)label_generator_.labelDirection(ds.id()));
 
@@ -123,7 +123,7 @@ void LabelDSWidget::updateListSlot()
     dir_label->setFont(font_bold);
     ds_grid_->addWidget(dir_label, row, 2);
 
-    for (const auto& ds : ctx_man.activeContext().dataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
         ++row;
 

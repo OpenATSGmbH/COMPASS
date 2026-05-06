@@ -52,13 +52,16 @@ public:
     unsigned int lineID() const { return line_id_; }
 
 private:
+    /// Live lookup; not cached. The DataSource map can be re-keyed by edits or
+    /// reconstruct cleanup; a cached pointer would dangle. O(log N) on a small
+    /// map is negligible vs. the surrounding Qt repaint cost.
+    const context::DataSource* dataSource() const;
+
     DataSourcesWidget* widget_ = nullptr;
     unsigned int       ds_id_;
     unsigned int       line_id_;
     std::string        line_str_;
     bool               is_init_ = false;
-
-    const context::DataSource* ds_ = nullptr;
 
     QString last_stylesheet_;
     QColor  last_palette_color_;
@@ -158,13 +161,16 @@ public:
     QColor effectiveColor() const override;
 
     unsigned int dsID() const { return ds_id_; }
-    const context::DataSource* dataSource() const { return ds_; }
+
+    /// Live lookup; not cached. The DataSource map can be re-keyed by edits or
+    /// reconstruct cleanup; a cached pointer would dangle. O(log N) on a small
+    /// map is negligible vs. the surrounding Qt repaint cost.
+    const context::DataSource* dataSource() const;
 
 private:
     QWidget* createLinesWidget();
 
     unsigned int                   ds_id_;
-    const context::DataSource* ds_         = nullptr;
     bool                           has_widget_ = false;
 
     std::vector<DataSourceLineButton*> line_buttons_;
@@ -191,9 +197,13 @@ public:
 private:
     QWidget* createLinesWidget();
 
+    /// Live lookup; not cached. The DataSource map can be re-keyed by edits or
+    /// reconstruct cleanup; a cached pointer would dangle. O(log N) on a small
+    /// map is negligible vs. the surrounding Qt repaint cost.
+    const context::DataSource* dataSource() const;
+
     unsigned int                   ds_id_;
     std::string                    dbc_name_;
-    const context::DataSource* ds_ = nullptr;
 };
 
 class QHBoxLayout;

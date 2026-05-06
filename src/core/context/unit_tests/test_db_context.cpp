@@ -154,7 +154,7 @@ TEST_CASE("DBContext JSON round-trip", "[context]")
     ds.sac(12);
     ds.sic(1);
     ds.name("Malta PSR");
-    ctx.dataSources().push_back(ds);
+    ctx.addOrReplaceDataSource(ds);
 
     // add an FFT
     FFT fft;
@@ -170,7 +170,7 @@ TEST_CASE("DBContext JSON round-trip", "[context]")
     REQUIRE(ctx2.name() == "test_context");
     REQUIRE(ctx2.description() == "A test context");
     REQUIRE(ctx2.dataSources().size() == 1);
-    REQUIRE(ctx2.dataSources()[0].sac() == 12);
+    REQUIRE(ctx2.dataSources().begin()->second.sac() == 12);
     REQUIRE(ctx2.ffts().size() == 1);
     REQUIRE(ctx2.ffts()[0].name() == "FFT_01");
     REQUIRE(ctx2.asterixDecoding().size() == 1);
@@ -197,7 +197,7 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
         ds.sac(12);
         ds.sic(1);
         ds.name("Malta PSR");
-        ctx.dataSources().push_back(ds);
+        ctx.addOrReplaceDataSource(ds);
 
         ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, "1.31"));
 
@@ -215,7 +215,7 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
         REQUIRE(loaded.name() == "malta_site");
         REQUIRE(loaded.description() == "Malta radar site config");
         REQUIRE(loaded.dataSources().size() == 1);
-        REQUIRE(loaded.dataSources()[0].sac() == 12);
+        REQUIRE(loaded.dataSources().begin()->second.sac() == 12);
         REQUIRE(loaded.asterixDecoding().size() == 1);
     }
 
@@ -276,6 +276,59 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
     fs::remove_all(tmp);
 }
 
+TEST_CASE("DBContextSerializer toJSON matches on-disk section files", "[context]")
+{
+    fs::path tmp = fs::temp_directory_path() / fs::unique_path("compass_test_tojson_%%%%");
+    fs::create_directories(tmp);
+
+    DBContext ctx("combined");
+    ctx.description("combined-format test");
+
+    DataSource ds;
+    ds.dsType("Radar");
+    ds.sac(7);
+    ds.sic(3);
+    ds.name("R1");
+    ctx.addOrReplaceDataSource(ds);
+
+    FFT fft;
+    fft.name("FFT_X");
+    ctx.ffts().push_back(fft);
+
+    ctx.asterixDecoding().push_back(ASTERIXDecodingConfig(48, "1.31"));
+    ctx.colors().preference = ContextColors::Preference::Dark;
+
+    json combined = DBContextSerializer::toJSON(ctx);
+
+    // top-level keys mirror the on-disk section filenames (without .json)
+    REQUIRE(combined.contains("context_meta"));
+    REQUIRE(combined.contains("data_sources"));
+    REQUIRE(combined.contains("ffts"));
+    REQUIRE(combined.contains("asterix_decoding"));
+    REQUIRE(combined.contains("sectors"));
+    REQUIRE(combined.contains("colors"));
+
+    // every section value must equal the JSON written to the corresponding file
+    DBContextSerializer::save(ctx, tmp.string());
+
+    auto readFile = [](const fs::path& p) {
+        std::ifstream ifs(p.string());
+        json j;
+        ifs >> j;
+        return j;
+    };
+
+    fs::path dir = tmp / "combined";
+    REQUIRE(combined["context_meta"]     == readFile(dir / "context_meta.json"));
+    REQUIRE(combined["data_sources"]     == readFile(dir / "data_sources.json"));
+    REQUIRE(combined["ffts"]             == readFile(dir / "ffts.json"));
+    REQUIRE(combined["asterix_decoding"] == readFile(dir / "asterix_decoding.json"));
+    REQUIRE(combined["sectors"]          == readFile(dir / "sectors.json"));
+    REQUIRE(combined["colors"]           == readFile(dir / "colors.json"));
+
+    fs::remove_all(tmp);
+}
+
 // ============================================================
 // DBContextDiff
 // ============================================================
@@ -283,11 +336,12 @@ TEST_CASE("DBContextSerializer save and load", "[context]")
 TEST_CASE("DBContextDiff identical contexts", "[context]")
 {
     DBContext a("ctx");
-    a.dataSources().push_back(DataSource());
-    a.dataSources()[0].dsType("Radar");
-    a.dataSources()[0].sac(1);
-    a.dataSources()[0].sic(2);
-    a.dataSources()[0].name("Test");
+    DataSource init_ds;
+    init_ds.dsType("Radar");
+    init_ds.sac(1);
+    init_ds.sic(2);
+    init_ds.name("Test");
+    a.addOrReplaceDataSource(init_ds);
 
     DBContext b = a; // copy
 
@@ -303,7 +357,7 @@ TEST_CASE("DBContextDiff added and removed sensors", "[context]")
     ds1.sac(1);
     ds1.sic(1);
     ds1.name("Sensor A");
-    a.dataSources().push_back(ds1);
+    a.addOrReplaceDataSource(ds1);
 
     DBContext b("ctx_b");
     DataSource ds2;
@@ -311,7 +365,7 @@ TEST_CASE("DBContextDiff added and removed sensors", "[context]")
     ds2.sac(2);
     ds2.sic(2);
     ds2.name("Sensor B");
-    b.dataSources().push_back(ds2);
+    b.addOrReplaceDataSource(ds2);
 
     auto diff = DBContextDiff::compute(a, b);
     REQUIRE(diff.hasSensorDifferences());
@@ -336,10 +390,10 @@ TEST_CASE("DBContextDiff modified sensor", "[context]")
     ds.sac(1);
     ds.sic(1);
     ds.name("Original Name");
-    a.dataSources().push_back(ds);
+    a.addOrReplaceDataSource(ds);
 
     DBContext b = a;
-    b.dataSources()[0].name("Changed Name");
+    b.dataSources().begin()->second.name("Changed Name");
 
     auto diff = DBContextDiff::compute(a, b);
     REQUIRE(diff.hasSensorDifferences());
@@ -433,7 +487,7 @@ TEST_CASE("DBContext colors persisted through serializer", "[context][colors]")
     ds.dsType("Radar");
     ds.sac(1); ds.sic(1); ds.name("R1");
     ds.baseColor(QColor(Qt::red));
-    ctx.dataSources().push_back(ds);
+    ctx.addOrReplaceDataSource(ds);
 
     DBContextSerializer::save(ctx, tmp.string());
 
@@ -443,7 +497,7 @@ TEST_CASE("DBContext colors persisted through serializer", "[context][colors]")
     REQUIRE(loaded.colors().preference == ContextColors::Preference::Dark);
     REQUIRE(loaded.colors().ds_type_colors.at("Radar") == QColor(Qt::cyan));
     REQUIRE(loaded.dataSources().size() == 1);
-    REQUIRE(loaded.dataSources()[0].baseColor() == QColor(Qt::red));
+    REQUIRE(loaded.dataSources().begin()->second.baseColor() == QColor(Qt::red));
 
     fs::remove_all(tmp);
 }
@@ -484,7 +538,7 @@ TEST_CASE("Legacy data_sources.json without color fields gets autogenerated colo
 
     DBContext loaded = DBContextSerializer::load(ctx_dir.string());
     REQUIRE(loaded.dataSources().size() == 1);
-    REQUIRE(loaded.dataSources()[0].baseColor().isValid());
+    REQUIRE(loaded.dataSources().begin()->second.baseColor().isValid());
 
     fs::remove_all(tmp);
 }

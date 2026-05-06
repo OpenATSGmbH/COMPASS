@@ -324,6 +324,7 @@ Registered via `init_context_commands()` in `context_commands.h/.cpp`:
 | `delete_context` | Delete a context |
 | `list_contexts` | List all context names |
 | `get_context_info` | Get active context details |
+| `get_context` | Return the full context with the given name as JSON (same per-section structure as on-disk files, packed into one object keyed by section) |
 | `import_ffts_json` | Import FFTs from JSON file |
 | `delete_all_sectors` | Delete all sectors from active context |
 | `delete_all_ffts` | Delete all FFTs from active context |

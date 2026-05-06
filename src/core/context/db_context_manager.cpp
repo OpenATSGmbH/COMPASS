@@ -322,7 +322,7 @@ void DBContextManager::setActiveContext(const string& name)
 bool DBContextManager::hasDataSource(unsigned int ds_id) const
 {
     if (!hasActiveContext()) return false;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         if (ds.id() == ds_id) return true;
     return false;
 }
@@ -330,17 +330,17 @@ bool DBContextManager::hasDataSource(unsigned int ds_id) const
 const DataSource* DBContextManager::dataSource(unsigned int ds_id) const
 {
     if (!hasActiveContext()) return nullptr;
-    ensureDataSourceCache();
-    auto it = ds_by_id_cache_.find(ds_id);
-    return it == ds_by_id_cache_.end() ? nullptr : it->second;
+    const auto& sources = activeContext().dataSources();
+    auto it = sources.find(ds_id);
+    return it == sources.end() ? nullptr : &it->second;
 }
 
 DataSource* DBContextManager::dataSource(unsigned int ds_id)
 {
     if (!hasActiveContext()) return nullptr;
-    ensureDataSourceCache();
-    auto it = ds_by_id_cache_.find(ds_id);
-    return it == ds_by_id_cache_.end() ? nullptr : it->second;
+    auto& sources = activeContext().dataSources();
+    auto it = sources.find(ds_id);
+    return it == sources.end() ? nullptr : &it->second;
 }
 
 std::string DBContextManager::remoteUnitName(unsigned int ds_id, int ru_idx) const
@@ -357,23 +357,19 @@ void DBContextManager::ensureDataSourceCache() const
 {
     if (ds_cache_valid_) return;
 
-    ds_by_id_cache_.clear();
     ru_name_cache_.clear();
 
     if (hasActiveContext())
     {
-        // const_cast: dataSources() is non-const on DBContext; the cache exposes
-        // both const and non-const DataSource* through the same map, and the
-        // const accessor returns it as const DataSource*.
-        auto& sources = const_cast<DBContext&>(activeContext()).dataSources();
-        for (auto& ds : sources)
+        // ds_id lookup is served directly by activeContext().dataSources() (a
+        // std::map) — no by-id cache needed. Only the RU-name cache is built
+        // here, since it requires JSON parsing per-DS.
+        for (const auto& [ds_id, ds] : activeContext().dataSources())
         {
-            ds_by_id_cache_[ds.id()] = &ds;
-
             if (!ds.hasRemoteUnits()) continue;
             const auto& ru_obj = ds.info().at("remote_units");
             if (!ru_obj.is_object()) continue;
-            auto& by_idx = ru_name_cache_[ds.id()];
+            auto& by_idx = ru_name_cache_[ds_id];
             for (auto it = ru_obj.begin(); it != ru_obj.end(); ++it)
             {
                 int idx;
@@ -390,21 +386,20 @@ void DBContextManager::ensureDataSourceCache() const
 void DBContextManager::invalidateDataSourceCache() const
 {
     ds_cache_valid_ = false;
-    ds_by_id_cache_.clear();
     ru_name_cache_.clear();
 }
 
 bool DBContextManager::hasDataSource(const string& name) const
 {
     if (!hasActiveContext()) return false;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         if (ds.name() == name) return true;
     return false;
 }
 
 unsigned int DBContextManager::getDataSourceId(const string& name) const
 {
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         if (ds.name() == name) return ds.id();
     traced_assert(false); // not found
     return 0;
@@ -414,7 +409,7 @@ vector<unsigned int> DBContextManager::allDataSourceIds() const
 {
     vector<unsigned int> ids;
     if (!hasActiveContext()) return ids;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         ids.push_back(ds.id());
     return ids;
 }
@@ -423,7 +418,7 @@ vector<IDataSourceProvider::DataSourceInfo> DBContextManager::dataSourceInfos() 
 {
     vector<IDataSourceProvider::DataSourceInfo> infos;
     if (!hasActiveContext()) return infos;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         infos.push_back({ds.id(), ds.name(), ds.dsType()});
     return infos;
 }
@@ -432,7 +427,7 @@ set<unsigned int> DBContextManager::groundOnlyDataSources() const
 {
     set<unsigned int> result;
     if (!hasActiveContext()) return result;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
     {
         if (ds.info().contains("ground_only") && ds.info().at("ground_only") == true)
             result.insert(ds.id());
@@ -444,7 +439,7 @@ map<unsigned int, string> DBContextManager::dsTypes() const
 {
     map<unsigned int, string> result;
     if (!hasActiveContext()) return result;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         result[ds.id()] = ds.dsType();
     return result;
 }
@@ -463,7 +458,9 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
 
     autoAssignColors(ds);
 
-    activeContext().dataSources().push_back(std::move(ds));
+    unsigned int new_id = ds.id();
+    auto [it, inserted] = activeContext().dataSources().emplace(new_id, std::move(ds));
+    traced_assert(inserted);
     saveContext(active_context_name_);
 
     if (compass_.dbOpened())
@@ -471,7 +468,7 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
 
     emit dataSourcesChangedSignal();
 
-    return activeContext().dataSources().back();
+    return it->second;
 }
 
 void DBContextManager::autoAssignColors(DataSource& ds) const
@@ -488,9 +485,9 @@ void DBContextManager::autoAssignColors(DataSource& ds) const
         if (activeContext().colors().preference == ContextColors::Preference::Dark)
             band = ColorProvider::Band::Dark;
 
-        for (const auto& other : activeContext().dataSources())
+        for (const auto& [other_id, other] : activeContext().dataSources())
         {
-            if (other.id() == ds.id())
+            if (other_id == ds.id())
                 continue;
             if (other.dsType() != ds.dsType())
                 continue;
@@ -506,11 +503,7 @@ void DBContextManager::deleteDataSource(unsigned int ds_id)
 {
     traced_assert(hasActiveContext());
 
-    auto& sources = activeContext().dataSources();
-    sources.erase(
-        remove_if(sources.begin(), sources.end(),
-                  [ds_id](const DataSource& ds) { return ds.id() == ds_id; }),
-        sources.end());
+    activeContext().dataSources().erase(ds_id);
 
     saveContext(active_context_name_);
     emit dataSourcesChangedSignal();
@@ -546,7 +539,7 @@ void DBContextManager::setLoadDSTypes(bool loading_wanted)
         // set all known types to false
         if (hasActiveContext())
         {
-            for (const auto& ds : activeContext().dataSources())
+            for (const auto& [ds_id, ds] : activeContext().dataSources())
                 ds_type_loading_wanted_[ds.dsType()] = false;
         }
     }
@@ -557,7 +550,7 @@ void DBContextManager::setLoadOnlyDSTypes(set<string> ds_types)
     if (!hasActiveContext()) return;
 
     // set all to false, then enable only specified
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         ds_type_loading_wanted_[ds.dsType()] = false;
 
     for (const auto& t : ds_types)
@@ -579,7 +572,7 @@ bool DBContextManager::loadingWanted(const string& dbcontent_name) const
 {
     if (!hasActiveContext()) return false;
 
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
     {
         if (dsTypeLoadingWanted(ds.dsType()) && loadingWanted(ds.id()))
         {
@@ -609,7 +602,7 @@ void DBContextManager::setLoadDataSources(bool loading_wanted)
 
     if (!loading_wanted && hasActiveContext())
     {
-        for (const auto& ds : activeContext().dataSources())
+        for (const auto& [ds_id, ds] : activeContext().dataSources())
             ds_loading_wanted_[ds.id()] = false;
     }
 }
@@ -650,7 +643,7 @@ map<unsigned int, set<unsigned int>> DBContextManager::getLoadDataSources() cons
 
     if (!hasActiveContext()) return result;
 
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
     {
         if (!dsTypeLoadingWanted(ds.dsType()))
             continue;
@@ -676,7 +669,7 @@ bool DBContextManager::loadDataSourcesFiltered() const
 {
     if (!hasActiveContext()) return false;
 
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         if (!loadingWanted(ds.id()))
             return true;
 
@@ -691,7 +684,7 @@ set<string> DBContextManager::wantedDSTypes() const
 
     // collect all known ds types
     set<string> all_types;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         all_types.insert(ds.dsType());
 
     for (const auto& t : all_types)
@@ -749,7 +742,7 @@ void DBContextManager::deselectAllLines()
 {
     if (!hasActiveContext()) return;
 
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
     {
         // get network lines from info
         if (ds.info().contains("network_lines"))
@@ -770,14 +763,14 @@ void DBContextManager::selectSpecificLine(unsigned int line_id)
 {
     if (!hasActiveContext()) return;
 
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         line_loading_wanted_[ds.id()][line_id] = true;
 }
 
 void DBContextManager::selectDSTypeSpecificDataSources(const string& ds_type)
 {
     if (!hasActiveContext()) return;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         if (ds.dsType() == ds_type)
             ds_loading_wanted_[ds.id()] = true;
 }
@@ -785,22 +778,43 @@ void DBContextManager::selectDSTypeSpecificDataSources(const string& ds_type)
 void DBContextManager::deselectDSTypeSpecificDataSources(const string& ds_type)
 {
     if (!hasActiveContext()) return;
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         if (ds.dsType() == ds_type)
             ds_loading_wanted_[ds.id()] = false;
 }
 
 vector<unsigned int> DBContextManager::unfilteredDS(const string& /*dbcontent_name*/) const
 {
-    vector<unsigned int> result;
-    if (!hasActiveContext()) return result;
+    set<unsigned int> result;
 
-    for (const auto& ds : activeContext().dataSources())
+    // context-resident ds_ids that pass dstype + per-DS wanted checks
+    // (preserves "no entry in ds_loading_wanted_ = default wanted" semantics)
+    if (hasActiveContext())
     {
-        if (dsTypeLoadingWanted(ds.dsType()) && loadingWanted(ds.id()))
-            result.push_back(ds.id());
+        for (const auto& [ds_id, ds] : activeContext().dataSources())
+        {
+            if (dsTypeLoadingWanted(ds.dsType()) && loadingWanted(ds.id()))
+                result.insert(ds.id());
+        }
     }
-    return result;
+
+    // explicitly-wanted ds_ids that may not yet be registered in the context
+    // (e.g. ref/tst sources supplied via the evaluate command's config)
+    for (const auto& [ds_id, wanted] : ds_loading_wanted_)
+    {
+        if (!wanted) continue;
+
+        if (dsTypeFiltered())
+        {
+            if (const DataSource* ds = dataSource(ds_id))
+                if (!dsTypeLoadingWanted(ds->dsType()))
+                    continue;
+        }
+
+        result.insert(ds_id);
+    }
+
+    return vector<unsigned int>(result.begin(), result.end());
 }
 
 // ============================================================
@@ -1113,7 +1127,7 @@ map<unsigned int, map<string, json>> DBContextManager::getNetworkLines() const
 
     if (!hasActiveContext()) return result;
 
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
     {
         if (ds.info().contains("network_lines"))
             result[ds.id()] = ds.info().at("network_lines").get<map<string, json>>();
@@ -1294,7 +1308,7 @@ void DBContextManager::writeContextToDB()
     json sensors;
     sensors["version"] = DBContextSerializer::CURRENT_VERSION;
     json arr = json::array();
-    for (const auto& ds : ctx.dataSources())
+    for (const auto& [ds_id, ds] : ctx.dataSources())
         arr.push_back(ds.toJSON());
     sensors["data"] = arr;
     db.saveDBContextSection("sensors", sensors.dump());
@@ -1402,7 +1416,7 @@ DBContext DBContextManager::readContextFromDB() const
                 existing_by_type[ds.dsType()].push_back(ds.baseColor());
 
                 seen_ids.insert(ds_id);
-                ctx.dataSources().push_back(std::move(ds));
+                ctx.dataSources().emplace(ds_id, std::move(ds));
             }
         }
     }
@@ -2128,7 +2142,7 @@ void DBContextManager::exportSensors(const string& filepath)
     j["version"] = DBContextSerializer::CURRENT_VERSION;
     j["content_type"] = "sensors";
     json arr = json::array();
-    for (const auto& ds : activeContext().dataSources())
+    for (const auto& [ds_id, ds] : activeContext().dataSources())
         arr.push_back(ds.toJSON());
     j["data"] = arr;
 
