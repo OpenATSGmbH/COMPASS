@@ -19,6 +19,7 @@
 #include "dbcontentdatastore.h"
 #include "dbcontentaccessor.h"
 #include "dbcontentmanager.h"
+#include "targetmodel.h"
 #include "targetreportaccessor.h"
 #include "targetreportdefs.h"
 
@@ -667,6 +668,24 @@ std::string DBContentItemProvider::itemName(const nlohmann::json& item_id) const
         return item_id.get<std::string>();
 
     return item_id.dump(0);
+}
+
+/**
+ */
+std::string DBContentItemProvider::itemBestAvailableIdentification(const nlohmann::json& item_id) const
+{
+    if (grouping_ != Grouping::UTN || item_id.is_null() || !item_id.is_number_unsigned())
+        return {};
+
+    const auto* target_model = data_store_.dbcManager().targetModel();
+    if (!target_model)
+        return {};
+
+    auto utn = item_id.get<unsigned int>();
+    if (!target_model->existsTarget(utn))
+        return {};
+
+    return target_model->target(utn).getBestAvailableIdentifications();
 }
 
 /**

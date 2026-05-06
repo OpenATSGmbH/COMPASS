@@ -26,6 +26,7 @@
 #include "boost/date_time/posix_time/ptime.hpp"
 
 #include <set>
+#include <string>
 
 namespace dbContent 
 {
@@ -91,6 +92,8 @@ public:
     void aircraftIdentifications(const std::set<std::string>& ids);
     std::set<std::string> aircraftIdentifications() const;
     std::string aircraftIdentificationsStr() const;
+
+    std::string getBestAvailableIdentifications() const;
 
     std::set<unsigned int> aircraftAddresses() const;
     void aircraftAddresses(const std::set<unsigned int>& tas);

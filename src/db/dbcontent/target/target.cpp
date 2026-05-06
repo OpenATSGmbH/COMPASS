@@ -16,10 +16,14 @@
  */
 
 #include "target.h"
-#include <exception>
+
 #include "stringconv.h"
 #include "timeconv.h"
 #include "traced_assert.h"
+
+#include <vector>
+#include <algorithm>
+#include <exception>
 
 using namespace std;
 using namespace Utils;
@@ -210,6 +214,45 @@ std::string Target::aircraftIdentificationsStr() const
     }
 
     return out.str().c_str();
+}
+
+std::string Target::getBestAvailableIdentifications() const
+{
+    // Hierarchy follows LabelGenerator::getFullTexts() lines 256-298:
+    // Aircraft Identification > Aircraft Address > Mode 3/A Code.
+    // Return all values at the highest level that has any data; existence is
+    // checked via Target's accessors.
+
+    std::vector<std::string> result;
+
+    auto acids = aircraftIdentifications();
+    if (!acids.empty())
+    {
+        for (auto acid : acids)
+        {
+            acid.erase(std::remove(acid.begin(), acid.end(), ' '), acid.end());
+            result.push_back(acid);
+        }
+        return String::compress(result, ',');
+    }
+
+    auto acads = aircraftAddresses();
+    if (!acads.empty())
+    {
+        for (auto acad : acads)
+            result.push_back(String::hexStringFromInt(acad, 6, '0'));
+        return String::compress(result, ',');
+    }
+
+    auto m3as = modeACodes();
+    if (!m3as.empty())
+    {
+        for (auto m3a : m3as)
+            result.push_back(String::octStringFromInt(m3a, 4, '0'));
+        return String::compress(result, ',');
+    }
+
+    return "???";
 }
 
 std::set<unsigned int> Target::aircraftAddresses() const
