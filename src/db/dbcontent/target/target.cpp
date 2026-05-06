@@ -240,7 +240,7 @@ std::string Target::getBestAvailableIdentifications() const
     if (!acads.empty())
     {
         for (auto acad : acads)
-            result.push_back(String::hexStringFromInt(acad, 6, '0'));
+            result.push_back(String::hexStringFromInt(acad, 6, '0', true));
         return String::compress(result, ',');
     }
 
