@@ -20,6 +20,7 @@
 #include "dbcontentitemprovider.h"
 
 #include "traced_assert.h"
+#include "logger.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -98,11 +99,16 @@ void DBContentItemView::groupingChangedSlot(const QString& text)
  */
 void DBContentItemView::updateGrouping()
 {
+    auto new_text = QString::fromStdString(model_.provider().groupingAsString());
+
     traced_assert(isGroupingActive(model_.provider().grouping()));
-    traced_assert(grouping_box_->findText(QString::fromStdString(model_.provider().groupingAsString())) >= 0);
+    traced_assert(grouping_box_->findText(new_text) >= 0);
+
+    if (grouping_box_->currentText() == new_text)
+        return;
 
     grouping_box_->blockSignals(true);
-    grouping_box_->setCurrentText(QString::fromStdString(model_.provider().groupingAsString()));
+    grouping_box_->setCurrentText(new_text);
     grouping_box_->blockSignals(false);
 }
 

@@ -25,6 +25,7 @@
 #include "compass.h"
 #include "db_context_manager.h"
 
+#include "stringconv.h"
 #include "traced_assert.h"
 
 const std::string DBContentItemProvider::GroupingStrNone            = "None";
@@ -161,19 +162,17 @@ const DBContentItemProvider::ItemLocations& DBContentItemProvider::itemLocations
  * Triggers a full rebuild of all item groups if the grouping changes.
  */
 void DBContentItemProvider::setGrouping(Grouping grouping, 
-                                        bool run_update,
-                                        bool notify)
+                                        bool run_update)
 {
     if (grouping_ == grouping)
         return;
 
     grouping_ = grouping;
 
-    if (notify)
-        emit groupingChangedSignal();
-
     if (run_update)
         update();
+
+    emit groupingChangedSignal();
 }
 
 /**
@@ -211,6 +210,7 @@ void DBContentItemProvider::reset()
     item_groups_.clear();
     item_locations_.clear();
     item_visibility_.clear();
+    item_colors_.clear();
 
     emit dataResetSignal();
 }
@@ -283,6 +283,44 @@ void DBContentItemProvider::setSiblingItemsVisible(const nlohmann::json& item_id
 
     if (any_changed)
         emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+QColor DBContentItemProvider::itemColor(const nlohmann::json& item_id) const
+{
+    auto it = item_colors_.find(item_id);
+    if (it == item_colors_.end())
+        return QColor();
+    return it->second;
+}
+
+/**
+ */
+void DBContentItemProvider::setShowItemColors(bool show)
+{
+    if (show_item_colors_ == show)
+        return;
+    show_item_colors_ = show;
+    emit showItemColorsChangedSignal();
+}
+
+/**
+ */
+QColor DBContentItemProvider::colorFromItemId(const nlohmann::json& item_id)
+{
+    if (item_id.is_null())
+        return QColor();
+
+    QColor base = QColor::fromRgb(Utils::String::hash(item_id.dump()));
+
+    constexpr qreal kMinLightness = 0.55;
+    qreal h = 0.0, s = 0.0, l = 0.0, a = 0.0;
+    base.getHslF(&h, &s, &l, &a);
+    if (l < kMinLightness)
+        base = QColor::fromHslF(h, s, kMinLightness, a);
+
+    return base;
 }
 
 /**
@@ -467,6 +505,9 @@ void DBContentItemProvider::dataChanged(unsigned int dbc_id)
                 size_t item_idx = group->items.size();
 
                 item_locations_[ item.item_id ].emplace_back(group.get(), item_idx);
+
+                if (!item_colors_.count(item.item_id))
+                    item_colors_[ item.item_id ] = colorFromItemId(item.item_id);
 
                 group->items.push_back(item);
             }

@@ -108,6 +108,7 @@ private slots:
     void dataResetSlot();
     void dataRefreshedSlot();
     void itemVisibilityChangedSlot();
+    void showItemColorsChangedSlot();
 
 private:
     void rebuild();
