@@ -86,6 +86,7 @@ public:
 
     std::string itemName(const nlohmann::json& item_id) const;
     nlohmann::json itemSortValue(const nlohmann::json& item_id) const;
+    std::string itemBestAvailableIdentification(const nlohmann::json& item_id) const;
 
     // --- per-item visibility cache ---
     // Single source of truth for "is item visible?". The DBContentItemModel

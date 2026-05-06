@@ -28,6 +28,7 @@
 #include <QStandardItemModel>
 #include <QTreeView>
 #include <QVBoxLayout>
+#include <QApplication>
 
 /**
  */
@@ -91,8 +92,12 @@ DBContentItemView::DBContentItemView(DBContentItemModel& model, QWidget* parent)
  */
 void DBContentItemView::groupingChangedSlot(const QString& text)
 {
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     model_.provider().setGrouping(
         DBContentItemProvider::groupingFromString(text.toStdString()), true);
+
+    QApplication::restoreOverrideCursor();
 }
 
 /**

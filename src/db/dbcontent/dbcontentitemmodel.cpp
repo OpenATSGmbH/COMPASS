@@ -41,6 +41,9 @@ DBContentItemModel::DBContentItemModel(DBContentItemProvider& provider, QObject*
     connect(&provider_, &DBContentItemProvider::showItemColorsChangedSignal,
             this, &DBContentItemModel::showItemColorsChangedSlot);
 
+    connect(&provider_, &DBContentItemProvider::groupingChangedSignal,
+            this, &DBContentItemModel::groupingChangedSlot);
+
     rebuild();
 }
 
@@ -57,10 +60,22 @@ int DBContentItemModel::rowCount(const QModelIndex& parent) const
 
 /**
  */
+int DBContentItemModel::columnCount(const QModelIndex& parent) const
+{
+    if (parent.isValid())
+        return 0;
+    return provider_.grouping() == DBContentItemProvider::Grouping::UTN ? 2 : 1;
+}
+
+/**
+ */
 QVariant DBContentItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (orientation == Qt::Horizontal && role == Qt::DisplayRole && section == 0)
-        return tr("Item");
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+    {
+        if (section == 0) return tr("Item");
+        if (section == 1) return tr("Best Available Identification");
+    }
     return {};
 }
 
@@ -74,7 +89,16 @@ QVariant DBContentItemModel::data(const QModelIndex& index, int role) const
     const auto& item_id = item_ids_.at(index.row());
 
     if (role == Qt::DisplayRole)
-        return itemName(item_id);
+    {
+        if (index.column() == 0)
+            return itemName(item_id);
+        if (index.column() == 1)
+            return QString::fromStdString(provider_.itemBestAvailableIdentification(item_id));
+        return {};
+    }
+
+    if (index.column() != 0)
+        return {};
 
     if (role == Qt::CheckStateRole)
         return provider_.itemVisible(item_id) ? Qt::Checked : Qt::Unchecked;
@@ -96,6 +120,9 @@ bool DBContentItemModel::setData(const QModelIndex& index, const QVariant& value
     if (!index.isValid() || index.row() < 0 || index.row() >= (int)item_ids_.size())
         return false;
 
+    if (index.column() != 0)
+        return false;
+
     if (role == Qt::CheckStateRole)
     {
         const auto& item_id = item_ids_.at(index.row());
@@ -113,7 +140,9 @@ Qt::ItemFlags DBContentItemModel::flags(const QModelIndex& index) const
 {
     if (!index.isValid())
         return Qt::NoItemFlags;
-    return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
+    if (index.column() == 0)
+        return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
+    return Qt::ItemIsEnabled;
 }
 
 // --- Public API ---
@@ -255,6 +284,14 @@ void DBContentItemModel::showItemColorsChangedSlot()
     emit dataChanged(createIndex(0, 0),
                      createIndex(static_cast<int>(item_ids_.size()) - 1, 0),
                      {Qt::DecorationRole});
+}
+
+/**
+ */
+void DBContentItemModel::groupingChangedSlot()
+{
+    beginResetModel();
+    endResetModel();
 }
 
 // --- Private ---
