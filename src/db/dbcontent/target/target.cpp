@@ -252,7 +252,7 @@ std::string Target::getBestAvailableIdentifications() const
         return String::compress(result, ',');
     }
 
-    return "???";
+    return "";
 }
 
 std::set<unsigned int> Target::aircraftAddresses() const
