@@ -19,10 +19,12 @@
 
 #include "dbcontentitem.h"
 
+#include <map>
 #include <tuple>
 
 #include "json.hpp"
 
+#include <QColor>
 #include <QObject>
 
 class DBContentDataStore;
@@ -46,11 +48,13 @@ class DBContentItemProvider : public QObject
     Q_OBJECT
 
 signals:
+    void dataAboutToBeResetSignal();
     void dataResetSignal();
     void dataChangedSignal(unsigned int dbc_id, size_t group_idx);
     void dataRefreshedSignal();
     void itemVisibilityChangedSignal();
-    void groupingChangedSignal(dbContent::Grouping grouping, bool update_needed);
+    void groupingChangedSignal();
+    void showItemColorsChangedSignal();
 
 public:
     typedef dbContent::Grouping                            Grouping;
@@ -66,7 +70,8 @@ public:
     void update();
     void reset();
 
-    void setGrouping(Grouping grouping, bool run_update = true);
+    void setGrouping(Grouping grouping, 
+                     bool run_update = true);
     Grouping grouping() const { return grouping_; }
     std::string groupingAsString() const;
     bool groupingIsNumeric() const;
@@ -97,6 +102,11 @@ public:
     void setAllItemsVisible(bool visible);
     void setSiblingItemsVisible(const nlohmann::json& item_id, bool visible);
 
+    QColor itemColor(const nlohmann::json& item_id) const;
+
+    bool showItemColors() const { return show_item_colors_; }
+    void setShowItemColors(bool show);
+
     static std::string groupingToString(Grouping grouping);
     static Grouping groupingFromString(const std::string& str);
     static bool isGroupingString(const std::string& str);
@@ -108,7 +118,6 @@ public:
     static const std::string GroupingStrAircraftAddress;
     static const std::string GroupingStrAircraftID;
     static const std::string GroupingStrTrackNumber;
-    static const std::string GroupingStrDSIDTrackNumber;
     static const std::string GroupingStrMode3ACode;
     static const std::string GroupingStrUTN;
 
@@ -150,10 +159,14 @@ private:
 
     std::function<nlohmann::json(unsigned int)> createGroupFunc(dbContent::TargetReportAccessor& accessor) const;
 
+    static QColor colorFromItemId(const nlohmann::json& item_id);
+
     DBContentDataStore&                                 data_store_;                // data store providing the data
     context::DBContextManager&                          context_manager_;           // context manager
     Grouping                                            grouping_ = Grouping::None; // item grouping mode
     std::vector<std::unique_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups
     std::map<nlohmann::json, ItemLocations>             item_locations_;            // per item group locations
     std::map<nlohmann::json, bool>                      item_visibility_;           // per item visibility cache; missing entries default to true
+    std::map<nlohmann::json, QColor>                    item_colors_;
+    bool                                                show_item_colors_ {false};
 };

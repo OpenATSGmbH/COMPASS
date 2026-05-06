@@ -17,6 +17,8 @@
 
 #include "dbcontentitemmodel.h"
 
+#include "logger.h"
+
 #include <QMenu>
 
 /**
@@ -25,7 +27,7 @@ DBContentItemModel::DBContentItemModel(DBContentItemProvider& provider, QObject*
     : QAbstractListModel(parent)
     , provider_(provider)
 {
-    connect(&provider_, &DBContentItemProvider::dataResetSignal,
+    connect(&provider_, &DBContentItemProvider::dataAboutToBeResetSignal,
             this, &DBContentItemModel::dataResetSlot,
             Qt::QueuedConnection);
 
@@ -35,6 +37,9 @@ DBContentItemModel::DBContentItemModel(DBContentItemProvider& provider, QObject*
 
     connect(&provider_, &DBContentItemProvider::itemVisibilityChangedSignal,
             this, &DBContentItemModel::itemVisibilityChangedSlot);
+
+    connect(&provider_, &DBContentItemProvider::showItemColorsChangedSignal,
+            this, &DBContentItemModel::showItemColorsChangedSlot);
 
     rebuild();
 }
@@ -73,6 +78,13 @@ QVariant DBContentItemModel::data(const QModelIndex& index, int role) const
 
     if (role == Qt::CheckStateRole)
         return provider_.itemVisible(item_id) ? Qt::Checked : Qt::Unchecked;
+
+    if (role == Qt::DecorationRole && provider_.showItemColors())
+    {
+        QColor c = provider_.itemColor(item_id);
+        if (c.isValid())
+            return c;
+    }
 
     return {};
 }
@@ -231,6 +243,18 @@ void DBContentItemModel::itemVisibilityChangedSlot()
     emit dataChanged(createIndex(0, 0),
                      createIndex(static_cast<int>(item_ids_.size()) - 1, 0),
                      {Qt::CheckStateRole});
+}
+
+/**
+ */
+void DBContentItemModel::showItemColorsChangedSlot()
+{
+    if (item_ids_.empty())
+        return;
+
+    emit dataChanged(createIndex(0, 0),
+                     createIndex(static_cast<int>(item_ids_.size()) - 1, 0),
+                     {Qt::DecorationRole});
 }
 
 // --- Private ---

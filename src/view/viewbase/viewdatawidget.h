@@ -88,6 +88,7 @@ public:
 
     virtual void appModeSwitch(AppMode app_mode) {} //reacts on switching the application mode
     virtual void configChanged() {}                 //reacts on configuration changes
+    virtual void onInit() {}                        //reacts on view init (both data and config widget created)
 
     nlohmann::json viewInfoJSON() const override final;
 

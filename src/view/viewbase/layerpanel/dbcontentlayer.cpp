@@ -146,7 +146,7 @@ void DBContentLeafItem::buildContextMenu(QMenu& menu)
 // ---- DBContentRootItem ---------------------------------------------------
 
 DBContentRootItem::DBContentRootItem()
-    : DBContentGroupItem("DBContent", DBContentLayerLevel::Root)
+    : DBContentGroupItem("Data", DBContentLayerLevel::Root)
 {
 }
 

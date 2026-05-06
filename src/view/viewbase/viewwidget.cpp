@@ -253,6 +253,14 @@ void ViewWidget::init()
 
 /**
  */
+void ViewWidget::runPostInit()
+{
+    data_widget_->onInit();
+    config_widget_->onInit();
+}
+
+/**
+ */
 void ViewWidget::setDataWidget(ViewDataWidget* w)
 {
     if (!w)

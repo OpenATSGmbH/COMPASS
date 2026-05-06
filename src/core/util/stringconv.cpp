@@ -207,10 +207,13 @@ std::string hexStringFromInt(int number)
     return out.str();
 }
 
-std::string hexStringFromInt(int number, int width, char c)
+std::string hexStringFromInt(int number, int width, char c, bool upper_case)
 {
     std::ostringstream out;
-    out << std::hex << std::setfill(c) << std::setw(width) << number;
+    if (upper_case)
+        out << std::uppercase << std::hex << std::setfill(c) << std::setw(width) << number;
+    else
+        out << std::hex << std::setfill(c) << std::setw(width) << number;
     return out.str();
 }
 

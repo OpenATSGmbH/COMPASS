@@ -57,7 +57,7 @@ extern double timeFromString(std::string time_str, bool* ok=nullptr);
 extern std::string octStringFromInt(int number);
 extern std::string octStringFromInt(int number, int width, char c);
 extern std::string hexStringFromInt(int number);
-extern std::string hexStringFromInt(int number, int width, char c);
+extern std::string hexStringFromInt(int number, int width, char c, bool upper_case = false);
 
 // Hex dump of a byte buffer, e.g. "03 bb 89 65 ...". Pass max_len to cap the
 // output at the first N bytes (0 = no cap); a trailing "..." indicates truncation.

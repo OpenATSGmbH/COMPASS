@@ -24,6 +24,7 @@
 #include "compass.h"
 #include "dbcontentmanager.h"
 #include "viewdatawidget.h"
+#include "viewconfigwidget.h"
 #include "config.h"
 
 #include <QVBoxLayout>
@@ -131,6 +132,9 @@ bool View::init()
     w->init();
 
     init_ = true;
+
+    //all init => run post init ops on some widget components
+    w->runPostInit();
 
     return true;
 }
