@@ -1231,13 +1231,16 @@ void Chain::updateACIDs() const
 
     if (timestamp_index_lookup_.size())
     {
-        NullableVector<string>& value_vec = accessor_->getMetaVar<string>(dbcontent_name_, dbcontent_vars::meta_var_acid_);
-        map<boost::optional<string>, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
-
-        for (auto& val_it : distinct_values)
+        if (accessor_->hasMetaVar<std::string>(dbcontent_name_, dbcontent_vars::meta_var_acid_))
         {
-            if (val_it.first && !acids_.count(String::trim(*val_it.first)))
-                acids_.insert(String::trim(*val_it.first));
+            NullableVector<string>& value_vec = accessor_->getMetaVar<string>(dbcontent_name_, dbcontent_vars::meta_var_acid_);
+            map<boost::optional<string>, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
+
+            for (auto& val_it : distinct_values)
+            {
+                if (val_it.first && !acids_.count(String::trim(*val_it.first)))
+                    acids_.insert(String::trim(*val_it.first));
+            }
         }
     }
 }
@@ -1248,14 +1251,17 @@ void Chain::updateACADs() const
 
     if (timestamp_index_lookup_.size())
     {
-        NullableVector<unsigned int>& value_vec = accessor_->getMetaVar<unsigned int>(
-                    dbcontent_name_, dbcontent_vars::meta_var_acad_);
-        map<boost::optional<unsigned int>, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
-
-        for (auto& val_it : distinct_values)
+        if (accessor_->hasMetaVar<unsigned int>(dbcontent_name_, dbcontent_vars::meta_var_acad_))
         {
-            if (val_it.first && !acads_.count(*val_it.first))
-                acads_.insert(*val_it.first);
+            NullableVector<unsigned int>& value_vec = accessor_->getMetaVar<unsigned int>(
+                        dbcontent_name_, dbcontent_vars::meta_var_acad_);
+            map<boost::optional<unsigned int>, vector<unsigned int>> distinct_values = value_vec.distinctValuesWithIndexes(indexes_);
+
+            for (auto& val_it : distinct_values)
+            {
+                if (val_it.first && !acads_.count(*val_it.first))
+                    acads_.insert(*val_it.first);
+            }
         }
     }
 

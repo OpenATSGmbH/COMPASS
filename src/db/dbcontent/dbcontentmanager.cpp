@@ -635,7 +635,7 @@ void DBContentManager::load(const LoadRequest& req)
     saveSelectedRecNums();
     clearData();
 
-    current_request_ = req;
+    current_request_  = req;
     load_in_progress_ = true;
 
     DBInterface& db_interface = compass_.dbInterface();
@@ -761,7 +761,8 @@ void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffe
         restoreSelectedRecNums();
 
         //update all changed dbcontents in data store
-        data_store_->update(changed_dbc_contents);
+        if (distribute_data_)
+            data_store_->update(changed_dbc_contents);
 
         logdbg << "emitting signal";
 
@@ -1466,7 +1467,8 @@ void DBContentManager::processLiveModeSlot()
         {
             // Path B: rebuild geometry/items via providers (DBContentDataStore::update()
             // resets the store internally before repopulating).
-            data_store_->update();
+            if (distribute_data_)
+                data_store_->update();
 
             // Path A: drive view chrome (TimeFilterWidget, info/status text, draw kick,
             // overload detection, label generator). Emitted inside the live cycle that
@@ -2660,7 +2662,14 @@ void DBContentManager::showUTNs (std::set<unsigned int> utns)
         setViewableDataConfig(data);
     }
     else
+    {
         clearData();
+    }
 }
 
-
+/**
+ */
+void DBContentManager::enableDataDistribution(bool ok)
+{
+    distribute_data_ = ok;
+}

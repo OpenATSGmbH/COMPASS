@@ -594,6 +594,7 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
     run_start_time_after_del_ = boost::posix_time::microsec_clock::local_time();
 
     manager().compass().viewManager().disableDataDistribution(true);
+    manager().compass().dbContentManager().enableDataDistribution(false);
 
     currentReconstructor()->reset();
 
@@ -840,6 +841,7 @@ void ReconstructorTask::loadingDoneSlot()
                    this, &ReconstructorTask::loadingDoneSlot);
 
         manager().compass().viewManager().disableDataDistribution(false);
+        manager().compass().dbContentManager().enableDataDistribution(true);
     }
     else // do next load
     {
@@ -1290,6 +1292,7 @@ void ReconstructorTask::runCancelledSlot()
                this, &ReconstructorTask::loadingDoneSlot);
 
     manager().compass().viewManager().disableDataDistribution(false);
+    manager().compass().dbContentManager().enableDataDistribution(true);
 
     manager().compass().logInfo("Reconstructor") << "cancelled by user";
 
